@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+version=$1
+
+if [ -z $version ];then
+  echo "--- ERROR: version number required"
+  exit 1
+fi
+
+echo "--- installing signal-cli version ${version}"
+
+wget https://github.com/AsamK/signal-cli/releases/download/v"${version}"/signal-cli-"${version}".tar.gz
+sudo tar xf signal-cli-"${version}".tar.gz -C /opt
+sudo ln -sf /opt/signal-cli-"${version}"/bin/signal-cli /usr/local/bin/
+
+echo "--- SUCCESS! installed signal-cli. cleaning up."
+
+rm -rf signal-cli-"${version}".tar.gz
+
+popd # return to original dir
