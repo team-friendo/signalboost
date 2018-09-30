@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+message=$1
+args=("$@")
+recipients=${args[@]:1}
+
+if [ -z $RELAY_NUMBER ];then
+  echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
+  exit 1
+fi
+
+for recipient in ${recipients[@]}; do
+  echo "--- sending \"$message\" to ${recipient}"
+  signal-cli -u $RELAY_NUMBER send -m "$message" $recipient
+done
+
+echo "--- SUCCESS!"
+
+popd # return to original dir
