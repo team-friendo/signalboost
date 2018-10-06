@@ -1,23 +1,11 @@
 #!/usr/bin/env bash
 
-pushd `pwd` # store current dir
-cd `dirname "$0"` # cd to script path
-cd ..
-
-message=$1
-args=("$@")
-recipients=${args[@]:1}
+# usage: ./bin relay "hello everyone"  "+1-555+555-5555" "+1-444-444-4444"
 
 if [ -z $RELAY_NUMBER ];then
   echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
   exit 1
 fi
 
-for recipient in ${recipients[@]}; do
-  echo "--- sending \"$message\" to ${recipient}"
-  signal-cli -u $RELAY_NUMBER send -m "$message" $recipient
-done
+signal-cli -u $RELAY_NUMBER send -m $@
 
-echo "--- SUCCESS!"
-
-popd # return to original dir
