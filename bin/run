@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if [ -z $RELAY_NUMBER ];then
+  echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
+  exit 1
+fi
+
+echo "--- starting signal-relay service"
+
+signal-cli -u $RELAY_NUMBER daemon
