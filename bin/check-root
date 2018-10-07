@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [ ${USER} != 'root' ]
+then
+  echo "--- ERROR: you need to run this script as root. try running 'sudo su' then running again!"
+  exit 1
+fi
