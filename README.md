@@ -50,3 +50,13 @@ Voila! (NOTE: It's important to register/verify as the `signal-cli` user or else
 $ systemctl start signal-cli
 $ yarn start
 ```
+
+### Test App
+
+With the app running, you can send messages with the following `curl`:
+
+``` shell
+curl -i -H 'Content-type: application/json'  \
+  -d '{ "message": "this is a test", "recipients": ["+15555555555", "+13333333333"] }' \
+  localhost:3000/relay
+```

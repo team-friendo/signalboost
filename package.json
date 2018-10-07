@@ -7,8 +7,12 @@
   "author": "_",
   "license": "GPL-3.0",
   "private": false,
-  "scripts" :{
+  "scripts": {
     "start": "node app"
   },
-  "dependencies": {}
+  "dependencies": {
+    "koa": "^2.5.3",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0"
+  }
 }
