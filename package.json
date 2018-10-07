@@ -8,11 +8,13 @@
   "license": "GPL-3.0",
   "private": false,
   "scripts": {
+    "dev": "nodemon app",
     "start": "node app"
   },
   "dependencies": {
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
-    "koa-router": "^7.4.0"
+    "koa-router": "^7.4.0",
+    "nodemon": "^1.18.4"
   }
 }
