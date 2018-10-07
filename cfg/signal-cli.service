@@ -10,7 +10,7 @@ Type=dbus
 Environment="SIGNAL_CLI_OPTS=-Xms2m"
 ExecStart=%dir%/bin/signal-cli -u %number% daemon --system
 User=signal-cli
-BusName=oqrg.asamk.Signal
+BusName=org.asamk.Signal
 
 [Install]
 Alias=dbus-org.asamk.Signal.service
