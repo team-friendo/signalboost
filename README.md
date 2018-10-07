@@ -14,9 +14,39 @@ More forthcoming, but the basic idea is this:
 
 ## Getting Started
 
-* Install [blackbox](https://github.com/StackExchange/blackbox#installation-instructions)
+### Install System Dependencies
+
+Install blackbox, following [these instructions](https://github.com/StackExchange/blackbox#installation-instructions).
+
+Use it to decrypt secrets with:
+
+```
+$ ./bin/blackbox_decrypt_all_files
+```
+
+Perhaps you want a different $RELAY_NUMBER. Change it now in `.env`. (Using `blackbox_edit .env`.)
+
+Now let's set up `signal-cli`:
 
 ```
 $ ./bin/install-signal-cli
-$ ./bin/blackbox_decrypt_all_files
+$ useradd signal-cli
+$ su signal-cli
+$ ./bin/register
+```
+
+Get the verification code sent to your $RELAY_NUMBER. Set the value of $VERIFICATION_CODE (in `.env`) to this value. And continue...
+
+```
+$ ./bin/verify
+$ ./bin/configure-dbus
+```
+
+Voila! (NOTE: It's important to register/verify as the `signal-cli` user or else you won't be able to run `signal-cli` as a systemd service.)
+
+### Run App
+
+``` shell
+$ systemctl start signal-cli
+$ yarn start
 ```
