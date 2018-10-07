@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+cd `dirname "$0"` # cd to script path
+
+###############
+# USAGE NOTE: #
+###############
+# for this config script to work, you must have first:
+# - created a `signal-cli` user
+# - ran `./bin/register` and `./bin/verify` as `signal-cli`
+
+echo "--- checking dependencies"
+
+./check-root || exit $?
+./check-env RELAY_NUMBER $RELAY_NUMBER || exit $?
+./check-env SIGNAL_CLI_PATH $SIGNAL_CLI_PATH || exit $?
+
+echo "--- configuring services"
+
+cd ../cfg
+
+cp org.asamk.Signal.conf /etc/dbus-1/system.d/
+cp org.asamk.Signal.service /usr/share/dbus-1/system-services/
+cp signal-cli.service /etc/systemd/system/
+
+sed -i -e "s|%dir%|$SIGNAL_CLI_PATH|" -e "s|%number%|$RELAY_NUMBER|" /etc/systemd/system/signal-cli.service
+
+echo "--- starting services"
+
+systemctl daemon-reload
+systemctl enable signal-cli.service
+systemctl reload dbus.service
+echo `systemctl status signal-cli` && exit 0
+
+echo "--- SUCCESS!"
