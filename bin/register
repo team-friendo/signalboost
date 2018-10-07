@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ..
 
@@ -12,5 +11,3 @@ fi
 echo "--- sending verification code to ${RELAY_NUMBER}"
 
 signal-cli -u $RELAY_NUMBER register
-
-popd # return to original dir
