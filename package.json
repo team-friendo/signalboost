@@ -1,0 +1,14 @@
+{
+  "name": "signal-blaster-js",
+  "version": "0.0.1",
+  "description": "subscribable text loops over signal! wheeeeeee!!!!",
+  "main": "app/index.js",
+  "repository": "git@0xacab.org:signal-blasters/signal-blaster-js.git",
+  "author": "_",
+  "license": "GPL-3.0",
+  "private": false,
+  "scripts" :{
+    "start": "node app"
+  },
+  "dependencies": {}
+}
