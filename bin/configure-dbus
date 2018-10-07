@@ -30,6 +30,6 @@ echo "--- starting services"
 systemctl daemon-reload
 systemctl enable signal-cli.service
 systemctl reload dbus.service
-echo `systemctl status signal-cli` && exit 0
+systemctl start signal-cli
 
 echo "--- SUCCESS!"
