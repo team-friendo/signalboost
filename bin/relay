@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# usage: ./bin relay "hello everyone"  "+1-555+555-5555" "+1-444-444-4444"
+
+if [ -z $RELAY_NUMBER ];then
+  echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
+  exit 1
+fi
+
+signal-cli -u $RELAY_NUMBER send -m $@
+

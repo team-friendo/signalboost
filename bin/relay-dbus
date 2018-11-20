@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# usage: ./bin relay "hello everyone"  "+1-555+555-5555" "+1-444-444-4444"
+
+# TODO: is there a running signal-cli dbus thingy
+
+signal-cli --dbus send -m "$@"
+
