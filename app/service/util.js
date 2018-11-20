@@ -3,4 +3,4 @@ const promisifyCallback = (resolve, reject) => (err, res) => {
   else resolve(res)
 }
 
-module.export = { promisifyCallback }
+module.exports = { promisifyCallback }
