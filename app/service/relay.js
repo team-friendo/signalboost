@@ -1,24 +1,26 @@
-const util = require('util')
-const exec = util.promisify(require('child_process').exec)
-const { dest, path, methods } = require('../constants/signalDbusInterface.js')
+const { sendMessage } = require('./signalDbusInterface.js')
 
-// TODO: use dbus-native instead of calling shell command
-const relay =(msg, recipients) =>
-  exec(`dbus-send --system --type=method_call --print-reply --dest="${dest}" ${path} ${methods.sendMessage} string:'${msg}' array:string: array:string:${fmt(recipients)}`)
+const relay = async (msg, recipients) =>
+  sendMessage(msg, recipients)
     .then(() => `--- SUCCESS: Relayed message "${msg}" to [${recipients}]`)
     .catch(err => console.error(`--- TRANSMISSION ERROR: ${err}`))
 
 /************************************************
- if we handled the result in the `then` block of `relay`,
- we would have access to the following (returned by org.asamk.Signal.sendMessage):
- - method_return_time: float
- - sender: float
- - destination: float
- - seriai: int
- - reply_serial: int
-*****************************************/    
+  NOTES:
 
-const fmt = recipients =>
-  recipients.map(r => `"${r}"`).join(',')
+  (1) in future iterations: consider only sending one message at a time
+
+      (this would assist with rate limiting and make a more straighforward message
+       interface over channels)
+
+  (2) if we handled the result in the `then` block of `relay` we would have access to:
+
+      - method_return_time: float(err, res) => console.log('err: ', err); console.log('res: ', res) }
+      - sender: float
+      - destination: float
+      - seriai: int
+      - reply_serial: int
+
+*****************************************/
 
 module.exports = relay

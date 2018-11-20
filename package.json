@@ -12,6 +12,7 @@
     "start": "node app"
   },
   "dependencies": {
+    "dbus": "^1.0.3",
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
