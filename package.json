@@ -16,6 +16,7 @@
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
+    "moment": "^2.22.2",
     "nodemon": "^1.18.4"
   }
 }
