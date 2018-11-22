@@ -21,3 +21,6 @@
 /keyrings/live/pubring.kbx~
 /keyrings/live/secring.gpg
 /.env
+/users.json
+/data/members.json
+/data/admins.json

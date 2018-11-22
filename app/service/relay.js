@@ -1,26 +1,27 @@
-const { sendMessage } = require('./signalDbusInterface.js')
+const moment = require('moment')
+const { sendMessage, onReceviedMessage } = require('./signalDbusInterface.js')
+const { keys, includes } = require('lodash')
+// TODO: replace hard-coded recipients with dynamic ones in card #
+const admins = require('../../data/admins.json')
+const members = require('../../data/members.json')
 
-const relay = async (msg, recipients) =>
-  sendMessage(msg, recipients)
-    .then(() => `--- SUCCESS: Relayed message "${msg}" to [${recipients}]`)
-    .catch(err => console.error(`--- TRANSMISSION ERROR: ${err}`))
+const run = () => onReceviedMessage(relay)
 
-/************************************************
-  NOTES:
+const relay = ({ message, sender, timestamp}) =>
+  isAdmin(sender)
+    ? sendMessage(fmtMsg({ message, sender, timestamp }), keys(members)).catch(console.error)
+    : sendMessage(notAdminMsg, [sender]).catch(console.error)
 
-  (1) in future iterations: consider only sending one message at a time
+// TODO: implement admin filter to close card #20
+const isAdmin = userNumber => includes(keys(admins), userNumber)
 
-      (this would assist with rate limiting and make a more straighforward message
-       interface over channels)
+const fmtMsg = ({ message, sender, timestamp}) =>
+  `"${message}" \n ` +
+    `-- FROM: ${admins[sender]} \n` +
+      `-- AT: ${moment(timestamp).format('h:mm a (MM/DD/YY)')}`
 
-  (2) if we handled the result in the `then` block of `relay` we would have access to:
+const notAdminMsg =
+  'Whoops! You are not an admin for this group. ' +
+  'Only admins can send messages. Sorry! :)'
 
-      - method_return_time: float(err, res) => console.log('err: ', err); console.log('res: ', res) }
-      - sender: float
-      - destination: float
-      - seriai: int
-      - reply_serial: int
-
-*****************************************/
-
-module.exports = relay
+module.exports = { run }

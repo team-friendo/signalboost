@@ -43,6 +43,15 @@ const getInterface = () => (
   ))
 )
 
+const onReceviedMessage = handleMessage => (
+  // need to do something with either generators or streams here...
+  getInterface().then(iface => (
+    iface.on(
+      'MessageReceived',
+      (timestamp, sender, _, message, __) => handleMessage({ message, sender, timestamp }))
+  ))
+)
+
 const sendMessage = (msg, recipients) => (
   getInterface()
     .then(iface => (
@@ -52,4 +61,4 @@ const sendMessage = (msg, recipients) => (
     ))
 )
 
-module.exports = { sendMessage }
+module.exports = { sendMessage, onReceviedMessage }

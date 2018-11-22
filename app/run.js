@@ -1,7 +1,7 @@
 const Router = require('koa-router')
 const Koa = require('koa')
 const bodyParser = require('koa-bodyparser')
-const relay = require('./service/relay')
+const relayService = require('./service/relay.js')
 const port = 3000
 
 const run = async () => {
@@ -11,7 +11,10 @@ const run = async () => {
   configureRoutes(app)
 
   const server = await app.listen(port).on('error', console.error)
-  console.log(`Signal-Relay service listening on port ${port}`)
+  console.log(`API Server listening on port ${port}...`)
+
+  relayService.run()
+  console.log('Relay Service listening for incoming messages...')
 
   return Promise.resolve({ app, server })
 }
@@ -27,12 +30,8 @@ const configureBodyParser = (app) => {
 const configureRoutes = (app) => {
   const router = new Router()
 
-  router.post('/relay', async ctx => {
-    const { message, recipients } = ctx.request.body
-    const log = await relay(message, recipients)
-
-    console.log(log)
-    ctx.body = { status: 200, msg: log }
+  router.post('/hello', async ctx => {
+    ctx.body = { status: 200, msg: 'hello world' }
   })
 
   app.use(router.routes())
