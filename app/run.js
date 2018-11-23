@@ -5,6 +5,10 @@ const relayService = require('./service/relay.js')
 const port = 3000
 
 const run = async () => {
+  // TODO(22 Nov 2018):
+  // - extract api, message relay services, *and* signal cli daemon service into own files
+  // - run each as a child process from index (or in some other clever way)
+
   const app = new Koa()
   
   configureBodyParser(app)
