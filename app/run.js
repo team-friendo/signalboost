@@ -1,10 +1,14 @@
 const Router = require('koa-router')
 const Koa = require('koa')
 const bodyParser = require('koa-bodyparser')
-const relayService = require('./service/relay.js')
+const dispatchService = require('./service/dispatch.js')
 const port = 3000
 
 const run = async () => {
+  // TODO(22 Nov 2018):
+  // - extract `run` funcs for api, dispatch, *and* signal-cli daemaon into own files
+  // - run each as a child process from index (or in some other clever way)
+
   const app = new Koa()
   
   configureBodyParser(app)
@@ -13,7 +17,7 @@ const run = async () => {
   const server = await app.listen(port).on('error', console.error)
   console.log(`API Server listening on port ${port}...`)
 
-  relayService.run()
+  dispatchService.run()
   console.log('Relay Service listening for incoming messages...')
 
   return Promise.resolve({ app, server })
