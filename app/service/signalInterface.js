@@ -25,7 +25,7 @@ const getInterface = () =>
     })
   )
 
-const onReceviedMessage = handleMessage =>
+const onReceivedMessage = handleMessage =>
   getInterface().then(iface =>
     iface.on(
       'MessageReceived',
@@ -46,4 +46,4 @@ const sendMessage = (msg, recipients, attachments = []) =>
     )
   )
 
-module.exports = { sendMessage, onReceviedMessage }
+module.exports = { sendMessage, onReceivedMessage }
