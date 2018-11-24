@@ -1,4 +1,2 @@
 .env
-data/admins.json
-data/members.json
-users.json
+data/people.js
