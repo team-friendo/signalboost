@@ -17,7 +17,7 @@ echo "--- checking dependencies"
 
 echo "--- configuring services"
 
-cd ../cfg
+cd config
 
 cp org.asamk.Signal.conf /etc/dbus-1/system.d/
 cp org.asamk.Signal.service /usr/share/dbus-1/system-services/
