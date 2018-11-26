@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+if [ "$NODE_ENV" = "production" ];then
+  echo '---- ERROR: not permissible to run ./bin/db-migrate-dev on prod!'
+  exit 1
+fi
+
+export DATABASE_URL="postgres://localhost:5432/signal_blaster_test"
+
+echo "----- creating dev database..."
+npx sequelize db:create --env development
+
+echo "----- running dev migrations..."
+npx sequelize db:migrate --env development
+
+echo "----- running dev seeds..."
+npx sequelize db:seed:all --env development
+
+echo "----- creating test database..."
+npx sequelize db:create --env test
+
+echo "----- running test migrations..."
+npx sequelize db:migrate --env test
+
+export DATABASE_URL=""
+
+popd # return to original dir

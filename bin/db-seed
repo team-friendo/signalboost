@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+
+./db-seed-dev
+./db-seed-prod
+
+popd # return to original dir

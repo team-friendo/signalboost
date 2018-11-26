@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+if [ -z $DATABASE_URL ] || [ "$DATABASE_URL" == "postgres://localhost:5432/signal_blaster_test" ];then
+  export DATABASE_URL="postgres://localhost:5432/signal_blaster_production"
+fi
+
+echo "----- seeding produ db..."
+npx sequelize db:seed:all --env production
+
+popd # return to original dir

@@ -8,6 +8,14 @@
   "license": "GPL-3.0",
   "private": false,
   "scripts": {
+    "db:drop": "./bin/db-drop",
+    "db:migrate": "./bin/db-migrate",
+    "db:migrate:prod": "./bin/db-migrate-prod",
+    "db:seed": "./bin/db-seed",
+    "db:seed:prod": "./bin/db-seed-prod",
+    "db:setup": "./bin/db-setup",
+    "db:unseed": "./bin/db-unseed",
+    "db:unseed:prod": "./bin/db-unseed-prod",
     "dev": "nodemon app",
     "start": "node app"
   },
