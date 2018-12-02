@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../test
+
+export NODE_ENV=test
+
+if [ -z $DATABASE_URL ];then
+  # for local tests
+  export DATABASE_URL="postgres://localhost:5432/signal_boost_test"
+fi
+
+echo "----- running unit tests..."
+find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+
+popd # return to original dir

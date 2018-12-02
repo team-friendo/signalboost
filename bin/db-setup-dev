@@ -9,7 +9,7 @@ if [ "$NODE_ENV" = "production" ];then
   exit 1
 fi
 
-export DATABASE_URL="postgres://localhost:5432/signal_blaster_test"
+export DATABASE_URL="postgres://localhost:5432/signal_boost_test"
 
 echo "----- creating dev database..."
 npx sequelize db:create --env development

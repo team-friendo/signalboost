@@ -1,18 +1,18 @@
 {
   "development": {
-    "database": "signal_blaster_development",
+    "database": "signal_boost_development",
     "host": "127.0.0.1",
     "dialect": "postgres",
     "logging": false
   },
   "test": {
-    "database": "signal_blaster_test",
+    "database": "signal_boost_test",
     "dialect": "postgres",
     "logging": false,
     "use_env_variable": "DATABASE_URL"
   },
   "production": {
-    "database": "signal_blaster_production",
+    "database": "signal_boost_production",
     "dialect": "postgres",
     "use_env_variable": "DATABASE_URL",
     "logging": false,
@@ -22,4 +22,3 @@
     }
   }
 }
-
