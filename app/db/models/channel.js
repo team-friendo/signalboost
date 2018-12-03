@@ -15,6 +15,10 @@ const channelOf = (sequelize, DataTypes) => {
   })
 
   channel.associate = db => {
+    channel.hasMany(db.administration, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
     channel.hasMany(db.subscription, {
       hooks: true,
       onDelete: 'cascade',
