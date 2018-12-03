@@ -8,13 +8,18 @@ import { initDb } from '../../../app/db'
 import {
   addSubscriber,
   getSubscriberNumbers,
-  getSubscribers,
+  isAdmin,
 } from '../../../app/service/dbInterface/channel'
 import { subscriptionFactory } from '../../support/factories/subscription'
+import { administrationFactory } from '../../support/factories/administration'
 
 describe('channel db interface service', () => {
   chai.use(chaiAsPromised)
-  let db, channel, sub, subs, subCount
+
+  const chPNum = phoneNumberFactory()
+  const subPNums = [phoneNumberFactory(), phoneNumberFactory()]
+  const adminPNums = [phoneNumberFactory(), phoneNumberFactory()]
+  let db, channel, sub, subCount
 
   before(() => (db = initDb()))
   afterEach(() => {
@@ -61,9 +66,6 @@ describe('channel db interface service', () => {
   })
 
   describe('#getSubscribers', () => {
-    const chPNum = phoneNumberFactory()
-    const subPNums = [phoneNumberFactory(), phoneNumberFactory()]
-
     describe('when a channel has subscribers', () => {
       beforeEach(async () => {
         await db.channel.create(
@@ -101,6 +103,35 @@ describe('channel db interface service', () => {
           'cannot retrieve subscriptions to non-existent channel',
         )
       })
+    })
+  })
+
+  describe('#isAdmin', () => {
+    beforeEach(async () => {
+      channel = await db.channel.create(
+        {
+          ...channelFactory({ phoneNumber: chPNum }),
+          administrations: [
+            administrationFactory({ humanPhoneNumber: adminPNums[0] }),
+            administrationFactory({ humanPhoneNumber: adminPNums[1] }),
+          ],
+        },
+        {
+          include: [{ model: db.administration }],
+        },
+      )
+    })
+
+    it("returns true when given a channel admin's phone number", async () => {
+      expect(await isAdmin(db, chPNum, adminPNums[0])).to.eql(true)
+    })
+
+    it("it returns false when given a non-admin's phone number", async () => {
+      expect(await isAdmin(db, chPNum, subPNums[0])).to.eql(false)
+    })
+
+    it('returns false when asked to check a non existent channel', async () => {
+      expect(await isAdmin(db, phoneNumberFactory(), subPNums[0])).to.eql(false)
     })
   })
 })
