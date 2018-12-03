@@ -5,11 +5,16 @@ import { pick } from 'lodash'
 import { channelFactory } from '../../support/factories/channel'
 import { phoneNumberFactory } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db'
-import { addSubscriber } from '../../../app/service/dbInterface/channel'
+import {
+  addSubscriber,
+  getSubscriberNumbers,
+  getSubscribers,
+} from '../../../app/service/dbInterface/channel'
+import { subscriptionFactory } from '../../support/factories/subscription'
 
 describe('channel db interface service', () => {
   chai.use(chaiAsPromised)
-  let db
+  let db, channel, sub, subs, subCount
 
   before(() => (db = initDb()))
   afterEach(() => {
@@ -23,8 +28,6 @@ describe('channel db interface service', () => {
   describe('#addSubscriber', () => {
     describe('when given the pNum of an existing channel and a new human', () => {
       const subscriberPhone = phoneNumberFactory()
-      let channel, sub, subCount
-
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
@@ -53,6 +56,50 @@ describe('channel db interface service', () => {
         expect(
           await addSubscriber(db, phoneNumberFactory(), phoneNumberFactory()).catch(e => e),
         ).to.contain('cannot subscribe human to non-existent channel')
+      })
+    })
+  })
+
+  describe('#getSubscribers', () => {
+    const chPNum = phoneNumberFactory()
+    const subPNums = [phoneNumberFactory(), phoneNumberFactory()]
+
+    describe('when a channel has subscribers', () => {
+      beforeEach(async () => {
+        await db.channel.create(
+          {
+            ...channelFactory({ phoneNumber: chPNum }),
+            subscriptions: [
+              subscriptionFactory({ humanPhoneNumber: subPNums[0] }),
+              subscriptionFactory({ humanPhoneNumber: subPNums[1] }),
+            ],
+          },
+          {
+            include: [{ model: db.subscription }],
+          },
+        )
+      })
+
+      it('returns the subscriber phone numbers', async () => {
+        expect(await getSubscriberNumbers(db, chPNum)).to.eql(subPNums)
+      })
+    })
+
+    describe('when channel has no subscribers', () => {
+      beforeEach(async () => {
+        await db.channel.create(channelFactory({ phoneNumber: chPNum }))
+      })
+
+      it('returns an empty array', async () => {
+        expect(await getSubscriberNumbers(db, chPNum)).to.eql([])
+      })
+    })
+
+    describe('when channel does not exist', () => {
+      it('rejects a promise with an error', async () => {
+        expect(await getSubscriberNumbers(db, phoneNumberFactory()).catch(e => e)).to.contain(
+          'cannot retrieve subscriptions to non-existent channel',
+        )
       })
     })
   })
