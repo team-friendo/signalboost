@@ -83,7 +83,7 @@ describe('channel db interface service', () => {
       })
 
       it('returns the subscriber phone numbers', async () => {
-        expect(await getSubscriberNumbers(db, chPNum)).to.eql(subPNums)
+        expect(await getSubscriberNumbers(db, chPNum)).to.have.members(subPNums)
       })
     })
 
