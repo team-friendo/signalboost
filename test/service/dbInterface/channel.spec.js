@@ -9,7 +9,7 @@ import {
   addSubscriber,
   getSubscriberNumbers,
   isAdmin,
-} from '../../../app/service/dbInterface/channel'
+} from '../../../app/service/repository/channel'
 import { subscriptionFactory } from '../../support/factories/subscription'
 import { administrationFactory } from '../../support/factories/administration'
 

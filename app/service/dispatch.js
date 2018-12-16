@@ -1,26 +1,31 @@
-const moment = require('moment')
-const signal = require('./signalInterface.js')
-const { isAdmin, getMemberNumbers } = require('../service/people.js')
+const signal = require('./signalInterface')
+const { channelPhoneNumber } = require('../config')
+import channelRepository from './repository/channel'
 
-const run = () => signal.onReceivedMessage(dispatch)
+const run = db =>
+  signal.onReceivedMessage(payload => dispatch({ db, channelPhoneNumber, ...payload }))
 
-const dispatch = ({ message, sender, attachments }) =>
-  isAdmin(sender)
-    ? relayMessage({ message, sender, attachments })
-    : sendNotAdminMessage(sender)
+const messages = {
+  added: "You've been added to the channel! Yay!",
+  notAdmin: 'Whoops! You are not an admin for this group. Only admins can send messages. Sorry! :)',
+}
 
-const relayMessage = ({ message, sender, attachments }) =>
+const dispatch = async ({ db, channelPhoneNumber, message, sender, attachments }) => {
+  const shouldRelay = await channelRepository.isAdmin(db, channelPhoneNumber, sender)
+  return shouldRelay
+    ? relay({ db, channelPhoneNumber, message, attachments })
+    : sendNotAdminApology(sender)
+}
+
+const relay = async ({ db, channelPhoneNumber, message, attachments }) =>
   signal.sendMessage(
     message,
-    getMemberNumbers(),
-    attachments
-  ).catch(console.error)
+    await channelRepository.getSubscriberNumbers(db, channelPhoneNumber),
+    attachments,
+  )
 
-const sendNotAdminMessage = (sender) =>
-  signal.sendMessage(notAdminMsg, [sender]).catch(console.error)
+const sendNotAdminApology = sender => signal.sendMessage(messages.notAdmin, [sender])
 
-const notAdminMsg =
-  'Whoops! You are not an admin for this group. ' +
-  'Only admins can send messages. Sorry! :)'
+const sendAddedNotification = sender => signal.sendMessage(messages.added, [sender])
 
-module.exports = { run }
+module.exports = { run, dispatch, messages }
