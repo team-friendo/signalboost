@@ -14,12 +14,12 @@ const { promisifyCallback } = require('./util.js')
 
 const systemBus = getBus('system')
 const dest = 'org.asamk.Signal'
-const interface = dest
+const interfaceName = dest
 const path = '/org/asamk/Signal'
 
 const getInterface = () =>
   new Promise((resolve, reject) =>
-    systemBus.getInterface(dest, path, interface, (err, iface) => {
+    systemBus.getInterface(dest, path, interfaceName, (err, iface) => {
       if (err) reject(err)
       else resolve(iface)
     })
