@@ -3,7 +3,7 @@
 cd `dirname "$0"` # cd to script path
 
 ./check-env SIGNAL_CLI_VERSION $SIGNAL_CLI_VERSION || exit $?
-./check-env RELAY_NUMBER $RELAY_NUMBER || exit $?
+./check-env CHANNEL_PHONE_NUMBER $CHANNEL_PHONE_NUMBER || exit $?
 
 echo "--- installing signal-cli version ${version}"
 

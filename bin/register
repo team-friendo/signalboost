@@ -3,11 +3,11 @@
 cd `dirname "$0"` # cd to script path
 cd ..
 
-if [ -z $RELAY_NUMBER ];then
-  echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
+if [ -z $CHANNEL_PHONE_NUMBER ];then
+  echo "--- ERROR: no CHANNEL_PHONE_NUMBER found. try \`\$ source .env\`"
   exit 1
 fi
 
-echo "--- sending verification code to ${RELAY_NUMBER}"
+echo "--- sending verification code to ${CHANNEL_PHONE_NUMBER}"
 
-signal-cli -u $RELAY_NUMBER register
+signal-cli -u $CHANNEL_PHONE_NUMBER register
