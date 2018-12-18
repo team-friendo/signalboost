@@ -18,4 +18,7 @@ const getSubscriberNumbers = (db, channelPhoneNumber) =>
 const isAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
   db.administration.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
 
-module.exports = { addSubscriber, getSubscriberNumbers, isAdmin }
+const isSubscriber = (db, channelPhoneNumber, humanPhoneNumber) =>
+  db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber }}).then(Boolean)
+
+module.exports = { addSubscriber, getSubscriberNumbers, isAdmin, isSubscriber }
