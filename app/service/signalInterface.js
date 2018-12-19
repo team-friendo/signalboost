@@ -22,15 +22,15 @@ const getInterface = () =>
     systemBus.getInterface(dest, path, interfaceName, (err, iface) => {
       if (err) reject(err)
       else resolve(iface)
-    })
+    }),
   )
 
+// Function[Dispatchable => Promise<any>] => void
 const onReceivedMessage = handleMessage =>
   getInterface().then(iface =>
-    iface.on(
-      'MessageReceived',
-      (timestamp, sender, _, message, attachments) =>
-        handleMessage({ message, sender, timestamp, attachments }))
+    iface.on('MessageReceived', (timestamp, sender, _, message, attachments) =>
+      handleMessage({ message, sender, timestamp, attachments }),
+    ),
   )
 
 const sendMessage = (msg, recipients, attachments = []) =>
@@ -38,12 +38,13 @@ const sendMessage = (msg, recipients, attachments = []) =>
   // or else the dbus stream is closed when trying to send attachments
   getInterface().then(iface =>
     Promise.all(
-      recipients.map(recipient =>
-        new Promise((resolve, reject) =>
-          iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject))
-        )
-      )
-    )
+      recipients.map(
+        recipient =>
+          new Promise((resolve, reject) =>
+            iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject)),
+          ),
+      ),
+    ),
   )
 
 module.exports = { sendMessage, onReceivedMessage }
