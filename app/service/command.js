@@ -3,12 +3,14 @@ import channelRepository from './repository/channel'
 // CONSTANTS
 
 const statuses = {
+  NOOP: 'NOOP',
   SUCCESS: 'SUCCESS',
   FAILURE: 'FAILURE',
 }
 
 const commands = {
   ADD: 'ADD',
+  NOOP: 'NOOP',
 }
 
 const messages = {
@@ -20,7 +22,12 @@ const messages = {
 
 // PUBLIC FUNCTIONS
 
-const parseCommand = msg => (msg.trim().match(/^add$/i) ? commands.ADD : null)
+const parseCommand = msg => {
+  const _msg = msg.trim()
+  if (_msg.match(/^add$/i)) return commands.ADD
+  // more match statements here...
+  else return commands.NOOP
+}
 
 const execute = (command, { db, channelPhoneNumber, sender }) => {
   switch (command) {
@@ -54,7 +61,7 @@ const add = async (db, channelPhoneNumber, sender) =>
 
 const noop = () =>
   Promise.resolve({
-    status: statuses.FAILURE,
+    status: statuses.NOOP,
     message: messages.INVALID,
   })
 

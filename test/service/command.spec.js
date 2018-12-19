@@ -17,9 +17,9 @@ describe('command service', () => {
       expect(parseCommand(' add ')).to.eql(commands.ADD)
     })
     it('does not parse an ADD command when string contains characters other than `add`', () => {
-      expect(parseCommand('please add ')).to.eql(null)
-      expect(parseCommand('add me!')).to.eql(null)
-      expect(parseCommand('join')).to.eql(null)
+      expect(parseCommand('please add ')).to.eql(commands.NOOP)
+      expect(parseCommand('add me!')).to.eql(commands.NOOP)
+      expect(parseCommand('join')).to.eql(commands.NOOP)
     })
   })
 
@@ -88,10 +88,10 @@ describe('command service', () => {
     })
 
     describe('invalid command', () => {
-      it('returns FAILURE status / INVALID message', async () => {
+      it('returns NOOP status/message', async () => {
         expect(await execute('foobar', {})).to.eql({
-          status: statuses.FAILURE,
-          message: messages.INVALID,
+          status: statuses.NOOP,
+          message: messages.NOOP,
         })
       })
     })
