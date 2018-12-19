@@ -1,65 +1,59 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
-import { dispatch, messages } from '../../app/service/dispatch'
 import sinon from 'sinon'
-import signalInterfaceService from '../../app/service/signalInterface'
-import channelRepository from '../../app/service/repository/channel'
+import { dispatch } from '../../app/service/dispatch'
+import commandService, { statuses, messages } from '../../app/service/command'
+import messageService from '../../app/service/message'
 
 describe('dispatch service', () => {
-  describe('processing messages', () => {
-    let isAdminStub, getSubscriberNumbersStub, sendMessageStub
-    const sender = '+10000000000'
-    const subscriberNumbers = ['+11111111111', '+12222222222']
+  const sender = '+10000000000'
+  const channelPhoneNumber = '+13333333333'
+
+  describe('handling a message', () => {
+    let executeStub, sendStub, maybeBroadcastStub
 
     beforeEach(() => {
-      isAdminStub = sinon.stub(channelRepository, 'isAdmin')
-      getSubscriberNumbersStub = sinon
-        .stub(channelRepository, 'getSubscriberNumbers')
-        .returns(Promise.resolve(subscriberNumbers))
-      sendMessageStub = sinon.stub(signalInterfaceService, 'sendMessage')
+      executeStub = sinon.stub(commandService, 'execute')
+      sendStub = sinon.stub(messageService, 'send')
+      maybeBroadcastStub = sinon.stub(messageService, 'maybeBroadcast')
     })
 
     afterEach(() => {
-      isAdminStub.restore()
-      getSubscriberNumbersStub.restore()
-      sendMessageStub.restore()
+      executeStub.restore()
+      sendStub.restore()
+      maybeBroadcastStub.restore()
     })
 
-    describe('when sender is an admin', () => {
-      beforeEach(() => {
-        isAdminStub.returns(Promise.resolve(true))
+    describe('when message contains a command that is executed', () => {
+      beforeEach(async () => {
+        executeStub.returns(
+          Promise.resolve({ status: statuses.SUCCESS, message: messages.ADD_SUCCESS }),
+        )
+        await dispatch({ channelPhoneNumber, sender, message: 'ADD' })
       })
 
-      it('relays the message to all channel subscribers', async () => {
-        await dispatch({
-          db: {},
-          channelPhoneNumber: '',
-          message: 'hello',
-          sender,
-          attachments: ['fake'],
-        })
+      it('responds to the sender of the command', () => {
+        expect(sendStub.getCall(0).args).to.have.members([messages.ADD_SUCCESS, sender])
+      })
 
-        expect(sendMessageStub.getCall(0).args).to.eql(['hello', subscriberNumbers, ['fake']])
+      it('does not attempt to broadcast a message', () => {
+        expect(maybeBroadcastStub.callCount).to.eql(0)
       })
     })
 
-    describe('when sender is not an admin', () => {
-      beforeEach(() => {
-        isAdminStub.returns(Promise.resolve(false))
+    describe('when message does not contain a command', () => {
+      beforeEach(async () => {
+        executeStub.returns(Promise.resolve({ status: statuses.NOOP, message: messages.NOOP }))
+        await dispatch({ channelPhoneNumber, sender, message: 'foobar' })
       })
 
-      it('relays the message to all channel subscribers', async () => {
-        await dispatch({
-          db: {},
-          channelPhoneNumber: '',
-          message: 'hello',
-          sender,
-          attachments: ['fake'],
-        })
+      it('does not respond to the sender', () => {
+        expect(sendStub.callCount).to.eql(0)
+      })
 
-        expect(sendMessageStub.getCall(0).args).to.eql([
-          messages.notAdmin,
-          [sender],
+      it('attempts to broadcast the message', () => {
+        expect(maybeBroadcastStub.getCall(0).args).to.have.deep.members([
+          { channelPhoneNumber, sender, message: 'foobar' },
         ])
       })
     })
