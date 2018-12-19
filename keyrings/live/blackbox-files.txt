@@ -1,2 +1,3 @@
 .env
+app/db/seeders/20181219230951-tj-channel-and-admins.js
 data/people.js
