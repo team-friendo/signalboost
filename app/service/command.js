@@ -1,4 +1,4 @@
-import channelRepository from './repository/channel'
+const channelRepository = require('./repository/channel')
 
 // CONSTANTS
 
@@ -54,10 +54,13 @@ const add = async (db, channelPhoneNumber, sender) =>
       status: statuses.SUCCESS,
       message: messages.ADD_SUCCESS,
     }))
-    .catch(() => ({
-      status: statuses.FAILURE,
-      message: messages.ADD_FAILURE,
-    }))
+    .catch(err => {
+      console.error(`ERROR: ${err}`)
+      return {
+        status: statuses.FAILURE,
+        message: messages.ADD_FAILURE,
+      }
+    })
 
 const noop = () =>
   Promise.resolve({

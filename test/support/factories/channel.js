@@ -1,4 +1,4 @@
-import { phoneNumberFactory } from './phoneNumber'
+const { phoneNumberFactory } = require('./phoneNumber')
 
 export const channelFactory = attrs => ({
   phoneNumber: phoneNumberFactory(),

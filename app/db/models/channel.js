@@ -1,4 +1,4 @@
-import { isPhoneNumber } from '../validations'
+const { isPhoneNumber } = require('../validations')
 
 const channelOf = (sequelize, DataTypes) => {
   const channel = sequelize.define('channel', {

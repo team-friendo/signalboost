@@ -1,4 +1,4 @@
-import { isPhoneNumber } from '../validations'
+const { isPhoneNumber } = require('../validations')
 
 const administrationOf = (sequelize, DataTypes) => {
   const administration = sequelize.define(
