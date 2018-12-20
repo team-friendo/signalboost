@@ -18,12 +18,13 @@
     "db:unseed:prod": "./bin/db-unseed-prod",
     "test": "yarn test:unit",
     "test:unit": "./bin/test-unit",
-    "dev": "nodemon app",
-    "start": "node app"
+    "dev": "NODE_ENV=development nodemon app",
+    "start": "NODE_ENV=production node app"
   },
   "dependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "dbus": "^1.0.3",
+    "dotenv": "^6.2.0",
     "eslint": "^5.9.0",
     "eslint-config-prettier": "^3.3.0",
     "eslint-plugin-prettier": "^3.0.0",

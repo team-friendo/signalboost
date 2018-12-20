@@ -1,4 +1,5 @@
-import { get } from 'lodash'
+require('dotenv').config()
+const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')
 
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
