@@ -7,18 +7,14 @@
   },
   "test": {
     "database": "signal_boost_test",
+    "host": "127.0.0.1",
     "dialect": "postgres",
-    "logging": false,
-    "use_env_variable": "DATABASE_URL"
+    "logging": false
   },
   "production": {
     "database": "signal_boost_production",
+    "host": "127.0.0.1",
     "dialect": "postgres",
-    "use_env_variable": "DATABASE_URL",
-    "logging": false,
-    "ssl": true,
-    "dialectOptions": {
-      "ssl": true
-    }
+    "logging": false
   }
 }
