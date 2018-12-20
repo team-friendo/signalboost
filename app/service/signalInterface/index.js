@@ -1,5 +1,5 @@
 const { getBus } = require('dbus')
-const { promisifyCallback } = require('./util.js')
+const { promisifyCallback } = require('../util.js')
 
 /*****************************************
   For documentation on interface for org.asamk.Signal:
@@ -14,23 +14,23 @@ const { promisifyCallback } = require('./util.js')
 
 const systemBus = getBus('system')
 const dest = 'org.asamk.Signal'
-const interface = dest
+const interfaceName = dest
 const path = '/org/asamk/Signal'
 
 const getInterface = () =>
   new Promise((resolve, reject) =>
-    systemBus.getInterface(dest, path, interface, (err, iface) => {
+    systemBus.getInterface(dest, path, interfaceName, (err, iface) => {
       if (err) reject(err)
       else resolve(iface)
-    })
+    }),
   )
 
+// Function[Dispatchable => Promise<any>] => void
 const onReceivedMessage = handleMessage =>
   getInterface().then(iface =>
-    iface.on(
-      'MessageReceived',
-      (timestamp, sender, _, message, attachments) =>
-        handleMessage({ message, sender, timestamp, attachments }))
+    iface.on('MessageReceived', (timestamp, sender, _, message, attachments) =>
+      handleMessage({ message, sender, timestamp, attachments }),
+    ),
   )
 
 const sendMessage = (msg, recipients, attachments = []) =>
@@ -38,12 +38,13 @@ const sendMessage = (msg, recipients, attachments = []) =>
   // or else the dbus stream is closed when trying to send attachments
   getInterface().then(iface =>
     Promise.all(
-      recipients.map(recipient =>
-        new Promise((resolve, reject) =>
-          iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject))
-        )
-      )
-    )
+      recipients.map(
+        recipient =>
+          new Promise((resolve, reject) =>
+            iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject)),
+          ),
+      ),
+    ),
   )
 
 module.exports = { sendMessage, onReceivedMessage }

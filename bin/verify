@@ -5,8 +5,8 @@ cd `dirname "$0"` # cd to script path
 cd ..
 
 
-if [ -z $RELAY_NUMBER ];then
-  echo "--- ERROR: no RELAY_NUMBER found. try \`\$ source .env\`"
+if [ -z $CHANNEL_PHONE_NUMBER ];then
+  echo "--- ERROR: no CHANNEL_PHONE_NUMBER found. try \`\$ source .env\`"
   exit 1
 fi
 
@@ -16,9 +16,9 @@ if [ -z $VERIFICATION_CODE ];then
 fi
 
 
-echo "--- verifying ${RELAY_NUMBER}..."
+echo "--- verifying ${CHANNEL_PHONE_NUMBER}..."
 
-signal-cli -u $RELAY_NUMBER verify $VERIFICATION_CODE
+signal-cli -u $CHANNEL_PHONE_NUMBER verify $VERIFICATION_CODE
 
 echo "--- SUCCESS!"
 

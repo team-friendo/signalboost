@@ -22,3 +22,4 @@
 /keyrings/live/secring.gpg
 /.env
 /data/people.js
+/app/db/seeders/20181219230951-tj-channel-and-admins.js

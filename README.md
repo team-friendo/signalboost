@@ -26,7 +26,7 @@ Use it to decrypt secrets with:
 $ ./bin/blackbox_decrypt_all_files
 ```
 
-Perhaps you want a different $RELAY_NUMBER. Change it now in `.env`. (Using `blackbox_edit .env`.)
+Perhaps you want a different $CHANNEL_PHONE_NUMBER. Change it now in `.env`. (Using `blackbox_edit .env`.)
 
 Now let's set up `signal-cli`:
 
@@ -37,7 +37,7 @@ $ su signal-cli
 $ ./bin/register
 ```
 
-Get the verification code sent to your $RELAY_NUMBER. Set the value of $VERIFICATION_CODE (in `.env`) to this value. And continue...
+Get the verification code sent to your $CHANNEL_PHONE_NUMBER. Set the value of $VERIFICATION_CODE (in `.env`) to this value. And continue...
 
 ```
 $ ./bin/verify

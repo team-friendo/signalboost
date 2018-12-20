@@ -1,5 +1,5 @@
 {
-  "name": "signal-blaster-js",
+  "name": "signal-boost",
   "version": "0.0.1",
   "description": "subscribable text loops over signal! wheeeeeee!!!!",
   "main": "app/index.js",
@@ -8,15 +8,75 @@
   "license": "GPL-3.0",
   "private": false,
   "scripts": {
-    "dev": "nodemon app",
-    "start": "node app"
+    "db:drop": "./bin/db-drop",
+    "db:migrate": "./bin/db-migrate",
+    "db:migrate:prod": "./bin/db-migrate-prod",
+    "db:seed": "./bin/db-seed",
+    "db:seed:prod": "./bin/db-seed-prod",
+    "db:setup": "./bin/db-setup",
+    "db:unseed": "./bin/db-unseed",
+    "db:unseed:prod": "./bin/db-unseed-prod",
+    "test": "yarn test:unit",
+    "test:unit": "./bin/test-unit",
+    "dev": "NODE_ENV=development nodemon app",
+    "start": "NODE_ENV=production node app"
   },
   "dependencies": {
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
     "dbus": "^1.0.3",
+    "dotenv": "^6.2.0",
+    "eslint": "^5.9.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-plugin-prettier": "^3.0.0",
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
+    "lodash": "^4.17.11",
     "moment": "^2.22.2",
-    "nodemon": "^1.18.4"
+    "nodemon": "^1.18.4",
+    "pg": "^7.6.1",
+    "pg-hstore": "^2.3.2",
+    "pg-native": "^3.0.0",
+    "sequelize": "^4.41.2",
+    "sequelize-cli": "^5.3.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
+    "chai": "^4.2.0",
+    "eslint-config-last": "^0.0.5",
+    "mocha": "^5.2.0",
+    "prettier": "^1.15.2"
+  },
+  "babel": {
+    "presets": [
+      "env"
+    ],
+    "plugins": [
+      "transform-object-rest-spread",
+      "transform-async-to-generator",
+      "transform-runtime"
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true,
+      "es6": true
+    },
+    "extends": [
+      "last"
+    ],
+    "rules": {
+      "no-console": "off"
+    }
+  },
+  "prettier": {
+    "semi": false,
+    "printWidth": 100
   }
 }

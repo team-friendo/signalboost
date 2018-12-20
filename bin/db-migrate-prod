@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+if [ -z $DATABASE_URL ] || [ "$DATABASE_URL" == "postgres://localhost:5432/signal_boost_test" ];then
+  export DATABASE_URL="postgres://localhost:5432/signal_boost_production"
+fi
+
+echo "----- running production migrations..."
+npx sequelize db:migrate --env production
+
+popd # return to original dir
