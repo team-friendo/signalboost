@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { commands, statuses, messages, parseCommand, execute } from '../../app/service/command'
+import { commands, statuses, messages, parseCommand, execute } from '../../app/service/dispatch/command'
 import channelRepository from '../../app/service/repository/channel'
 import { subscriptionFactory } from '../support/factories/subscription'
 
@@ -91,7 +91,7 @@ describe('command service', () => {
       it('returns NOOP status/message', async () => {
         expect(await execute('foobar', {})).to.eql({
           status: statuses.NOOP,
-          message: messages.NOOP,
+          message: messages.INVALID,
         })
       })
     })

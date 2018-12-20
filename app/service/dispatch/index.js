@@ -1,5 +1,5 @@
-const { channelPhoneNumber } = require('../config')
-const signal = require('./signalInterface')
+const { channelPhoneNumber } = require('../../config/index')
+const signal = require('../signalInterface')
 const commandService = require('./command')
 const messageService = require('./message')
 const { statuses } = commandService

@@ -2,8 +2,8 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { dispatch } from '../../app/service/dispatch'
-import commandService, { statuses, messages } from '../../app/service/command'
-import messageService from '../../app/service/message'
+import commandService, { statuses, messages } from '../../app/service/dispatch/command'
+import messageService from '../../app/service/dispatch/message'
 
 describe('dispatch service', () => {
   const sender = '+10000000000'

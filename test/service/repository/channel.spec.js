@@ -25,6 +25,7 @@ describe('channel db interface service', () => {
   afterEach(() => {
     Promise.all([
       db.channel.destroy({ where: {}, force: true }),
+      db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
     ])
   })

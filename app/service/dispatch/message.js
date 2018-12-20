@@ -1,5 +1,5 @@
-const channelRepository = require('./repository/channel')
-const signal = require('./signalInterface')
+const channelRepository = require('../repository/channel')
+const signal = require('../signalInterface')
 
 const messages = {
   NOT_ADMIN:

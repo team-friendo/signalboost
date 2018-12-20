@@ -1,5 +1,5 @@
 const { getBus } = require('dbus')
-const { promisifyCallback } = require('./util.js')
+const { promisifyCallback } = require('../util.js')
 
 /*****************************************
   For documentation on interface for org.asamk.Signal:
