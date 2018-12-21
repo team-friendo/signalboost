@@ -17,6 +17,6 @@
     "dialect": "postgres",
     "logging": false,
     "username": "signal-booster",
-    "password": "",
+    "password": ""
   }
 }
