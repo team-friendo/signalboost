@@ -1,20 +1,22 @@
 {
   "development": {
-    "database": "signal_boost_development",
+    "database": "signal_booster_development",
     "host": "127.0.0.1",
     "dialect": "postgres",
     "logging": false
   },
   "test": {
-    "database": "signal_boost_test",
+    "database": "signal_booster_test",
     "host": "127.0.0.1",
     "dialect": "postgres",
     "logging": false
   },
   "production": {
-    "database": "signal_boost_production",
+    "database": "signal_booster_production",
     "host": "127.0.0.1",
     "dialect": "postgres",
-    "logging": false
+    "logging": false,
+    "username": "signal-booster",
+    "password": "",
   }
 }
