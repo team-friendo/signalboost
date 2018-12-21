@@ -3,3 +3,4 @@ app/db/seeders/20181219230951-tj-channel-and-admins.js
 data/people.js
 keys/id_signal_booster_deploy
 keys/id_signal_booster_deploy.pub
+keys/signal-booster-privkey.asc
