@@ -15,16 +15,16 @@ import { phoneNumberFactory } from '../support/factories/phoneNumber'
 
 describe('command service', () => {
   describe('parsing commands', () => {
-    it('parses an ADD command (regardless of case or whitespace)', () => {
-      expect(parseCommand('ADD')).to.eql(commands.ADD)
-      expect(parseCommand('add')).to.eql(commands.ADD)
-      expect(parseCommand(' add ')).to.eql(commands.ADD)
+    it('parses an JOIN command (regardless of case or whitespace)', () => {
+      expect(parseCommand('JOIN')).to.eql(commands.JOIN)
+      expect(parseCommand('join')).to.eql(commands.JOIN)
+      expect(parseCommand(' join ')).to.eql(commands.JOIN)
     })
 
-    it('does not parse an ADD command when string contains characters other than `add`', () => {
-      expect(parseCommand('please add ')).to.eql(commands.NOOP)
-      expect(parseCommand('add me!')).to.eql(commands.NOOP)
-      expect(parseCommand('join')).to.eql(commands.NOOP)
+    it('does not parse an JOIN command when string contains characters other than `add`', () => {
+      expect(parseCommand('i wanna join ')).to.eql(commands.NOOP)
+      expect(parseCommand('join it!')).to.eql(commands.NOOP)
+      expect(parseCommand('foobar')).to.eql(commands.NOOP)
     })
 
     it('parses a LEAVE command regardless of case or whitespace', () => {
@@ -40,7 +40,7 @@ describe('command service', () => {
   })
 
   describe('executing commands', () => {
-    describe('ADD command', () => {
+    describe('JOIN command', () => {
       let isSubscriberStub, addSubscriberStub
 
       beforeEach(() => {
@@ -64,9 +64,9 @@ describe('command service', () => {
           })
 
           it('returns SUCCESS status/message', async () => {
-            expect(await execute(commands.ADD, {})).to.eql({
+            expect(await execute(commands.JOIN, {})).to.eql({
               status: statuses.SUCCESS,
-              message: messages.ADD_SUCCESS,
+              message: messages.JOIN_SUCCESS,
             })
           })
         })
@@ -77,9 +77,9 @@ describe('command service', () => {
           })
 
           it('returns FAILURE status/message', async () => {
-            expect(await execute(commands.ADD, {})).to.eql({
+            expect(await execute(commands.JOIN, {})).to.eql({
               status: statuses.FAILURE,
-              message: messages.ADD_FAILURE,
+              message: messages.JOIN_FAILURE,
             })
           })
         })
@@ -89,7 +89,7 @@ describe('command service', () => {
         let result
         beforeEach(async () => {
           isSubscriberStub.returns(Promise.resolve(true))
-          result = await execute(commands.ADD, {})
+          result = await execute(commands.JOIN, {})
         })
         it('does not try to add subscriber', () => {
           expect(addSubscriberStub.callCount).to.eql(0)
@@ -97,7 +97,7 @@ describe('command service', () => {
         it('returns SUCCESS status / NOOP message', () => {
           expect(result).to.eql({
             status: statuses.SUCCESS,
-            message: messages.ADD_NOOP,
+            message: messages.JOIN_NOOP,
           })
         })
       })
