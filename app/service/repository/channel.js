@@ -1,7 +1,21 @@
+const messages = {
+  ALREADY_UNSUBSCRIBED: 'cannot unsubscribe human from channel they are not subscribed to',
+}
+
 const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
-  (await db.channel.findOne({ where: { phoneNumber: channelPhoneNumber } }))
-    ? db.subscription.create({ channelPhoneNumber, humanPhoneNumber })
-    : Promise.reject('cannot subscribe human to non-existent channel')
+  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
+    db.subscription.create({ channelPhoneNumber, humanPhoneNumber }),
+  )
+
+const removeSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
+  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () => {
+    const numRemoved = await db.subscription.destroy({
+      where: { channelPhoneNumber, humanPhoneNumber },
+    })
+    return numRemoved === 0
+      ? Promise.reject(messages.ALREADY_UNSUBSCRIBED)
+      : Promise.resolve(numRemoved)
+  })
 
 const getSubscriberNumbers = (db, channelPhoneNumber) =>
   db.channel
@@ -19,6 +33,20 @@ const isAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
   db.administration.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
 
 const isSubscriber = (db, channelPhoneNumber, humanPhoneNumber) =>
-  db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber }}).then(Boolean)
+  db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
 
-module.exports = { addSubscriber, getSubscriberNumbers, isAdmin, isSubscriber }
+// helpers
+
+const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, op) =>
+  (await db.channel.findOne({ where: { phoneNumber: channelPhoneNumber } }))
+    ? op()
+    : Promise.reject(`cannot ${opDescription} non-existent channel`)
+
+module.exports = {
+  messages,
+  addSubscriber,
+  removeSubscriber,
+  getSubscriberNumbers,
+  isAdmin,
+  isSubscriber,
+}

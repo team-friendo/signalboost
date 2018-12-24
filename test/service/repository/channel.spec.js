@@ -6,9 +6,11 @@ import { channelFactory } from '../../support/factories/channel'
 import { phoneNumberFactory } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db'
 import {
+  messages,
   addSubscriber,
   getSubscriberNumbers,
   isAdmin,
+  removeSubscriber,
 } from '../../../app/service/repository/channel'
 import { subscriptionFactory } from '../../support/factories/subscription'
 import { administrationFactory } from '../../support/factories/administration'
@@ -33,7 +35,7 @@ describe('channel db interface service', () => {
 
   describe('#addSubscriber', () => {
     describe('when given the pNum of an existing channel and a new human', () => {
-      const subscriberPhone = phoneNumberFactory()
+      const subscriberPhone = subPNums[0]
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
@@ -59,9 +61,50 @@ describe('channel db interface service', () => {
 
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
-        expect(
-          await addSubscriber(db, phoneNumberFactory(), phoneNumberFactory()).catch(e => e),
-        ).to.contain('cannot subscribe human to non-existent channel')
+        expect(await addSubscriber(db, phoneNumberFactory(), null).catch(e => e)).to.contain(
+          'cannot subscribe human to non-existent channel',
+        )
+      })
+    })
+  })
+
+  describe('#removeSubscriber', () => {
+    const [subscriberPhone, unsubscribedPhone] = subPNums
+
+    beforeEach(async () => {
+      channel = await db.channel.create(channelFactory())
+      sub = await addSubscriber(db, channel.phoneNumber, subscriberPhone)
+      subCount = await db.subscription.count()
+    })
+
+    describe('when given the phone number of an existing channel', () => {
+      describe('when asked to remove a number that is subscribed to the channel', () => {
+        let result
+        beforeEach(async () => {
+          result = await removeSubscriber(db, channel.phoneNumber, subscriberPhone)
+        })
+        it('deletes the subscription', async () => {
+          expect(await db.subscription.count()).to.eql(subCount - 1)
+          expect(await channel.getSubscriptions()).to.eql([])
+        })
+        it('resolves with a deletion count', () => {
+          expect(result).to.eql(1)
+        })
+      })
+      describe('when asked to remove a number that is not subscribed to the channel', () => {
+        it('rejects with an error', async () => {
+          expect(
+            await removeSubscriber(db, channel.phoneNumber, unsubscribedPhone).catch(e => e),
+          ).to.eql(messages.ALREADY_UNSUBSCRIBED)
+        })
+      })
+    })
+
+    describe('when given the phone number of a non-existent channel', () => {
+      it('it rejects with an error', async () => {
+        expect(await removeSubscriber(db, phoneNumberFactory(), null).catch(e => e)).to.contain(
+          'cannot unsubscribe human from non-existent channel',
+        )
       })
     })
   })
