@@ -6,7 +6,6 @@ import { channelFactory } from '../../support/factories/channel'
 import { phoneNumberFactory } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db'
 import {
-  messages,
   addSubscriber,
   getSubscriberNumbers,
   isAdmin,
