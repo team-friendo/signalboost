@@ -126,8 +126,8 @@ Export the public key and re-encrypt secrets to it:
 $ gpg --homedir . --export -a signal-booster > ./signal-booster-pubkey.asc
 $ gpg import ./signal-booster-pubkey.asc
 $ cd /path/to/signal-booster/repo
-$ ./bin/blackbox_shred_all_files
-$ ./bin/blackbox_update_all_files
+$ sudo -u signal-booster ./bin/blackbox_shred_all_files
+$ sudo -u signal-booster ./bin/blackbox_update_all_files
 ```
 
 Export the secret key and scp it to the production box:
@@ -144,7 +144,7 @@ Import the deploy key into the production box's keystore:
 ``` shell
 $ ssh ${SB_HOSTNAME}
 $ cd
-$ gpg import signal-booster-privkey.asc
+$ sudo -u signal-booster gpg import signal-booster-privkey.asc
 ```
 
 Delete unprotected private key material from your local machine:
@@ -177,7 +177,9 @@ Import it into your ssh agent:
 ``` shell
 $ ssh $SB_HOSTNAME
 $ cd
-$ mv ./id_signal_booster_deploy* /home/aguestuser/signal-booster/.ssh/
+$ mkdir /home/signal-booster/.ssh
+$ mv ./id_signal_booster_deploy* /home/signal-booster/.ssh/
+$ sudo chown -R signal-booster:signal-booster /home/signal-booster/.ssh
 $ eval `ssh-agent`
 $ ssh-add ./id_signal_booster_deploy
 ```
@@ -204,19 +206,49 @@ postgres# CREATE DATABASE signal_booster_production;
 postgres# ALTER DATABASE signal_booster_production owner to signal_booster;
 ```
 
-## First and Subsequent Times
+### Initial Deploy
 
 Pull changes down to prod:
 
 ``` shell
 $ ssh $SB_HOSTNAME
-$ cd /home/signal-booster/signal-booster
-$ ./bin/blackbox_shred_all_files
 $ ssh-eval `ssh-agent`
 $ ssh-add /home/signal-booster/.ssh/id_signal_booster_deploy
-$ git pull git@0xacab.org:team-friendo/signal-boost
-$ ./bin/blackbox_postdeploy
-$ yarn install
+$ cd /home/signal-booster
+$ sudo -u signal-booster git clone git@0xacab.org:team-friendo/signal-boost
+$ sudo -u signal-booster ./bin/blackbox_postdeploy
+$ sudo -u signal-booster yarn install
+$ sudo -u postgres yarn db:migrate:prod
+$ sudo -u postgres yarn db:seed:prod
+```
+
+Restart app:
+
+``` shell
+$ tmux attach
+<Ctrl-C>
+$ sudo -u signal-booster yarn start
+```
+
+## Subsequent Deploys
+
+Get shell and configure ssh for session:
+
+``` shell
+$ ssh $SB_HOSTNAME
+$ ssh-eval `ssh-agent`
+$ ssh-add /home/signal-booster/.ssh/id_signal_booster_deploy
+$ export GIT_SSH_COMMAND="ssh -i /home/signal-booster/.ssh/id_signal_booster_deploy"
+```
+
+Pull changes:
+
+``` shell
+$ cd /home/signal-booster/signal-booster
+$ sudo -u signal-booster ./bin/blackbox_shred_all_files
+$ sudo -u signal-booster git pull
+$ sudo -u signal-booster ./bin/blackbox_postdeploy
+$ sudo -u signal-booster yarn install
 $ sudo -u postgres yarn db:migrate:prod
 $ sudo -u postgres yarn db:seed:prod
 ```
