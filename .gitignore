@@ -26,3 +26,4 @@
 /keys/id_signal_booster_deploy
 /keys/id_signal_booster_deploy.pub
 /keys/signal-booster-privkey.asc
+/app/config/db.json

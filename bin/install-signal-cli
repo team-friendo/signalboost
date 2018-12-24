@@ -5,6 +5,10 @@ cd `dirname "$0"` # cd to script path
 ./check-env SIGNAL_CLI_VERSION $SIGNAL_CLI_VERSION || exit $?
 ./check-env CHANNEL_PHONE_NUMBER $CHANNEL_PHONE_NUMBER || exit $?
 
+echo "--- installing system dependencies"
+
+sudo apt install libpq-dev libunixsocket-java
+
 echo "--- installing signal-cli version ${version}"
 
 wget https://github.com/AsamK/signal-cli/releases/download/v"${SIGNAL_CLI_VERSION}"/signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz
