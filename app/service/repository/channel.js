@@ -8,14 +8,9 @@ const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
   )
 
 const removeSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () => {
-    const numRemoved = await db.subscription.destroy({
-      where: { channelPhoneNumber, humanPhoneNumber },
-    })
-    return numRemoved === 0
-      ? Promise.reject(messages.ALREADY_UNSUBSCRIBED)
-      : Promise.resolve(numRemoved)
-  })
+  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () =>
+    db.subscription.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+  )
 
 const getSubscriberNumbers = (db, channelPhoneNumber) =>
   db.channel

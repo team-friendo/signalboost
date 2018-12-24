@@ -87,15 +87,13 @@ describe('channel db interface service', () => {
           expect(await db.subscription.count()).to.eql(subCount - 1)
           expect(await channel.getSubscriptions()).to.eql([])
         })
-        it('resolves with a deletion count', () => {
+        it('resolves with a deletion count of 1', () => {
           expect(result).to.eql(1)
         })
       })
       describe('when asked to remove a number that is not subscribed to the channel', () => {
-        it('rejects with an error', async () => {
-          expect(
-            await removeSubscriber(db, channel.phoneNumber, unsubscribedPhone).catch(e => e),
-          ).to.eql(messages.ALREADY_UNSUBSCRIBED)
+        it('resolves with a deletion count of 0', async () => {
+          expect(await removeSubscriber(db, channel.phoneNumber, unsubscribedPhone)).to.eql(0)
         })
       })
     })
