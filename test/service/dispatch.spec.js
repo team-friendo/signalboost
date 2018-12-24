@@ -27,13 +27,13 @@ describe('dispatch service', () => {
     describe('when message contains a command that is executed', () => {
       beforeEach(async () => {
         executeStub.returns(
-          Promise.resolve({ status: statuses.SUCCESS, message: messages.ADD_SUCCESS }),
+          Promise.resolve({ status: statuses.SUCCESS, message: messages.JOIN_SUCCESS }),
         )
-        await dispatch({ channelPhoneNumber, sender, message: 'ADD' })
+        await dispatch({ channelPhoneNumber, sender, message: 'JOIN' })
       })
 
       it('responds to the sender of the command', () => {
-        expect(sendStub.getCall(0).args).to.have.members([messages.ADD_SUCCESS, sender])
+        expect(sendStub.getCall(0).args).to.have.members([messages.JOIN_SUCCESS, sender])
       })
 
       it('does not attempt to broadcast a message', () => {
