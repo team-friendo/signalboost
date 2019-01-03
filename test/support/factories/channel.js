@@ -1,7 +1,7 @@
-const { phoneNumberFactory } = require('./phoneNumber')
+const { genPhoneNumber } = require('./phoneNumber')
 
 export const channelFactory = attrs => ({
-  phoneNumber: phoneNumberFactory(),
+  phoneNumber: genPhoneNumber(),
   name: '#red-alert',
   ...attrs,
 })

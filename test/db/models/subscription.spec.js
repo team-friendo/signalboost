@@ -4,7 +4,7 @@ import { keys } from 'lodash'
 import { initDb } from '../../../app/db'
 import { subscriptionFactory } from '../../support/factories/subscription'
 import { channelFactory } from '../../support/factories/channel'
-import { phoneNumberFactory } from '../../support/factories/phoneNumber'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
 
 describe('subscription model', () => {
   let db, subscription
@@ -33,7 +33,7 @@ describe('subscription model', () => {
     before(async () => {
       const channel = await db.channel.create(channelFactory())
       subscription = await db.subscription.create({
-        humanPhoneNumber: phoneNumberFactory(),
+        humanPhoneNumber: genPhoneNumber(),
         channelPhoneNumber: channel.phoneNumber,
       })
     })

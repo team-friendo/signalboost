@@ -3,7 +3,7 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
 import { pick } from 'lodash'
 import { channelFactory } from '../../support/factories/channel'
-import { phoneNumberFactory } from '../../support/factories/phoneNumber'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db'
 import {
   addSubscriber,
@@ -17,9 +17,9 @@ import { administrationFactory } from '../../support/factories/administration'
 describe('channel db interface service', () => {
   chai.use(chaiAsPromised)
 
-  const chPNum = phoneNumberFactory()
-  const subPNums = [phoneNumberFactory(), phoneNumberFactory()]
-  const adminPNums = [phoneNumberFactory(), phoneNumberFactory()]
+  const chPNum = genPhoneNumber()
+  const subPNums = [genPhoneNumber(), genPhoneNumber()]
+  const adminPNums = [genPhoneNumber(), genPhoneNumber()]
   let db, channel, sub, subCount
 
   before(() => (db = initDb()))
@@ -60,7 +60,7 @@ describe('channel db interface service', () => {
 
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
-        expect(await addSubscriber(db, phoneNumberFactory(), null).catch(e => e)).to.contain(
+        expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
           'cannot subscribe human to non-existent channel',
         )
       })
@@ -99,7 +99,7 @@ describe('channel db interface service', () => {
 
     describe('when given the phone number of a non-existent channel', () => {
       it('it rejects with an error', async () => {
-        expect(await removeSubscriber(db, phoneNumberFactory(), null).catch(e => e)).to.contain(
+        expect(await removeSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
           'cannot unsubscribe human from non-existent channel',
         )
       })
@@ -140,7 +140,7 @@ describe('channel db interface service', () => {
 
     describe('when channel does not exist', () => {
       it('rejects a promise with an error', async () => {
-        expect(await getSubscriberNumbers(db, phoneNumberFactory()).catch(e => e)).to.contain(
+        expect(await getSubscriberNumbers(db, genPhoneNumber()).catch(e => e)).to.contain(
           'cannot retrieve subscriptions to non-existent channel',
         )
       })
@@ -172,7 +172,7 @@ describe('channel db interface service', () => {
     })
 
     it('returns false when asked to check a non existent channel', async () => {
-      expect(await isAdmin(db, phoneNumberFactory(), subPNums[0])).to.eql(false)
+      expect(await isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
     })
   })
 })

@@ -11,7 +11,7 @@ import {
 } from '../../app/service/dispatch/command'
 import channelRepository from '../../app/service/repository/channel'
 import { subscriptionFactory } from '../support/factories/subscription'
-import { phoneNumberFactory } from '../support/factories/phoneNumber'
+import { genPhoneNumber } from '../support/factories/phoneNumber'
 
 describe('command service', () => {
   describe('parsing commands', () => {
@@ -105,7 +105,7 @@ describe('command service', () => {
 
     describe('LEAVE command', () => {
       const db = {}
-      const [channelPhoneNumber, sender] = times(2, phoneNumberFactory)
+      const [channelPhoneNumber, sender] = times(2, genPhoneNumber)
       let isSubscriberStub, removeSubscriberStub
 
       beforeEach(() => {
