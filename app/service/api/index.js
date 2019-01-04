@@ -25,7 +25,7 @@ const configureBodyParser = app => {
 const configureRoutes = app => {
   const router = new Router()
 
-  router.post('/hello', async ctx => {
+  router.get('/hello', async ctx => {
     ctx.body = { status: 200, msg: 'hello world' }
   })
 

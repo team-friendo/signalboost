@@ -14,19 +14,41 @@ More forthcoming, but the basic idea is this:
 
 ## Getting Started
 
-### Install System Dependencies
+### System Dependencies
 
-*NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtim. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
+*NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtime. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
 
-Install blackbox, following [these instructions](https://github.com/StackExchange/blackbox#installation-instructions).
+We use `blackbox` to keep secrets under encrypted version control. (See [this link](https://github.com/StackExchange/blackbox) for docs and configurations not covered below.)
 
-Use it to decrypt secrets with:
+Upon cloning the repo, use blackbox to decrypt secrets:
 
 ```
+$ git clone git@0xacab.org:team-friendo/signal-boost
+$ cd signal-boost
 $ ./bin/blackbox_decrypt_all_files
 ```
 
-Perhaps you want a different $CHANNEL_PHONE_NUMBER. Change it now in `.env`. (Using `blackbox_edit .env`.)
+You might want to change a few of the secrets, most notably:
+
+* You want a different $CHANNEL_PHONE_NUMBER. You can change it with `./bin/blackbox_edit .env`.
+* You might want to change the admins in the seed file. Change it with `./bin/blackbox_edit app /db/seeders/20181219230951-tj-channel-and-admins.js`
+
+We use `ngrok` to provide an external URL for twilio sms webhook endpoints in dev mode. To install on debian-like linux, run:
+
+``` shell
+$ wget wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+$ unzip ngrok-stable-linux-amd64.zip
+$ sudo mv ngrok /usr/local/bin/
+$ source .env
+$ ngrok authtoken $NGROK_AUTH_TOKEN
+```
+
+If you want to test that `ngrok` is working run:
+
+``` shell
+$ ngrok help
+$ ngrok http 80
+```
 
 Now let's set up `signal-cli`:
 
@@ -37,7 +59,7 @@ $ su signal-cli
 $ ./bin/register
 ```
 
-Get the verification code sent to your $CHANNEL_PHONE_NUMBER. Set the value of $VERIFICATION_CODE (in `.env`) to this value. And continue...
+This will cause Signal to send a verification code to your $CHANNEL_PHONE_NUMBER (which you must control and which must be able to receive SMS messages). Set the value of $VERIFICATION_CODE (in `.env`) to the value of this code. Then continue...
 
 ```
 $ ./bin/verify
@@ -46,28 +68,46 @@ $ ./bin/configure-dbus
 
 Voila! (NOTE: It's important to register/verify as the `signal-cli` user or else you won't be able to run `signal-cli` as a systemd service.)
 
+## JDK Versioning
+
+Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
+
+The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
+
 ### Run App
+
+(For first runs), create and seed the database with :
+
+``` shell
+$ yarn db:setup
+```
+
+Run the app with:
 
 ``` shell
 $ systemctl start signal-cli
 $ yarn start
 ```
 
-### Test App
-
-With the app running, you can send messages with the following `curl`:
+### Run Tests
 
 ``` shell
-curl -i -H 'Content-type: application/json'  \
-  -d '{ "message": "this is a test", "recipients": ["+15555555555", "+13333333333"] }' \
-  localhost:3000/relay
+$ yarn test
 ```
 
-## JDK Versioning
+### Use App
 
-Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
+With the app running...
 
-The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
+Any human should be able to:
+
+* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
+* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
+
+Any admin should be able to:
+
+* Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
+* Receive all messages broadcast to the channel
 
 # Deployment
 

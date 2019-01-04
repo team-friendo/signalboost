@@ -1,7 +1,10 @@
 const { initDb } = require('./db')
 const dispatchService = require('./service/dispatch')
 const apiService = require('./service/api')
-const { port, channelPhoneNumber } = require('./config')
+const {
+  channelPhoneNumber,
+  api: { port },
+} = require('./config')
 
 const run = async () => {
   // CONFIG

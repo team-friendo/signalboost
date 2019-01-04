@@ -18,7 +18,7 @@
     "db:unseed:prod": "./bin/db-unseed-prod",
     "test": "yarn test:unit",
     "test:unit": "./bin/test-unit",
-    "dev": "NODE_ENV=development nodemon app",
+    "dev": "nf start",
     "start": "NODE_ENV=production node app"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "eslint": "^5.9.0",
     "eslint-config-prettier": "^3.3.0",
     "eslint-plugin-prettier": "^3.0.0",
+    "foreman": "^3.0.1",
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
