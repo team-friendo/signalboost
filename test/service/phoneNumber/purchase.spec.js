@@ -1,20 +1,19 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
-const sinon = require('sinon')
+import sinon from 'sinon'
 import {
   twilioClient,
   availableTwilioNumbers,
-  statuses,
-  errors,
   purchase,
-} from '../../app/service/phoneNumber'
-import { genPhoneNumber, twilioNumberCreationResponse } from '../support/factories/phoneNumber'
+} from '../../../app/service/phoneNumber/purchase'
+import { errors, statuses } from '../../../app/service/phoneNumber/common'
+import { genPhoneNumber, twilioNumberCreationResponse } from '../../support/factories/phoneNumber'
 
-describe('phone number service', () => {
+describe('phone number service - purchase module', () => {
+  const fakePhoneNumber = genPhoneNumber()
   let db
 
   describe('purchasing a phone number', () => {
-    const fakePhoneNumber = genPhoneNumber()
     let twilioListStub, twilioCreateStub
 
     beforeEach(() => {

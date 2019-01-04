@@ -1,8 +1,9 @@
 const { isPhoneNumber } = require('../validations')
 
 const statuses = {
+  ERROR: 'ERROR',
   PURCHASED: 'PURCHASED',
-  VERIFICATION_REQUESTED: 'VERIFICATION_REQUESTED',
+  REGISTERED: 'REGISTERED',
   VERIFIED: 'VERIFIED',
   ACTIVE: 'ACTIVE',
 }

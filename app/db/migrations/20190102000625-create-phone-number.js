@@ -13,7 +13,7 @@ module.exports = {
         status: {
           type: Sequelize.ENUM,
           allowNull: false,
-          values: ['PURCHASED', 'VERIFICATION_REQUESTED', 'VERIFIED', 'ACTIVE'],
+          values: ['PURCHASED', 'REGISTERED', 'VERIFIED', 'ACTIVE', 'ERROR'],
         },
         createdAt: {
           allowNull: false,

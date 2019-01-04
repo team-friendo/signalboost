@@ -55,7 +55,8 @@
     "eslint-config-last": "^0.0.5",
     "mocha": "^5.2.0",
     "prettier": "^1.15.2",
-    "sinon": "^7.2.2"
+    "sinon": "^7.2.2",
+    "supertest": "^3.3.0"
   },
   "babel": {
     "presets": [
