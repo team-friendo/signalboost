@@ -1,5 +1,5 @@
 const uuid = require('uuid/v4')
-const { isEmpty } = require('lodash')
+const { isEmpty, times, identity } = require('lodash')
 const { errors, statuses, extractStatus, errorStatus } = require('./common')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
@@ -28,11 +28,13 @@ const smsUrl = `https://${host}/${smsEndpoint}`
 
 // MAIN FUNCTION
 
+const purchaseN = ({ db, areaCode, n }) => Promise.all(times(n, () => purchase({ db, areaCode })))
+
 const purchase = ({ db, areaCode }) =>
   search(areaCode)
     .then(create)
     .then(recordPurchase(db))
-    .catch(errorStatus)
+    .catch(identity)
 
 // HELPERS
 
@@ -42,6 +44,7 @@ const search = areaCode =>
     .then(numbers =>
       isEmpty(numbers) ? Promise.reject(errors.searchEmpty) : numbers[0].phoneNumber,
     )
+    .catch(err => Promise.reject(errorStatus(errors.searchFailed(err))))
 
 const create = phoneNumber =>
   twilioClient.incomingPhoneNumbers
@@ -52,12 +55,13 @@ const create = phoneNumber =>
       friendlyName: `signal-boost number ${uuid()}`,
     })
     .then(twilioPhoneNumber => twilioPhoneNumber.phoneNumber)
+    .catch(err => Promise.reject(errorStatus(errors.purchaseFailed(err), phoneNumber)))
 
 const recordPurchase = db => phoneNumber =>
   db.phoneNumber
     .create({ phoneNumber, status: statuses.PURCHASED })
     .then(extractStatus)
-    .catch(err => errorStatus(errors.dbWriteFailed(err), phoneNumber))
+    .catch(err => Promise.reject(errorStatus(errors.dbWriteFailed(err), phoneNumber)))
 
 // EXPORTS
 
@@ -65,4 +69,5 @@ module.exports = {
   twilioClient,
   availableTwilioNumbers,
   purchase,
+  purchaseN,
 }

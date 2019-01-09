@@ -4,8 +4,10 @@ const { statuses } = require('../../db/models/phoneNumber')
 // STRINGS
 
 const errors = {
-  searchEmpty: 'twilio number search terms not satisfied',
+  searchEmpty: 'search returned empty list',
+  searchFailed: err => `twilio number search failed: ${err}`,
   dbWriteFailed: err => `database write failed: ${err}`,
+  purchaseFailed: err => `twilio phone number purchase failed: ${err}`,
   registrationFailed: err => `signal registration failed: ${err}`,
   verificationFailed: err => `signal verification failed: ${err}`,
   verificationTimeout: 'signal verification timed out',
