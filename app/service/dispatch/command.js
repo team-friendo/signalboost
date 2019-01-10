@@ -58,7 +58,7 @@ const add = (db, channelPhoneNumber, sender) =>
     .addSubscriber(db, channelPhoneNumber, sender)
     .then(() => ({ status: statuses.SUCCESS, message: messages.JOIN_SUCCESS }))
     .catch(err => {
-      console.error(`ERROR: ${err}`)
+      console.error(`> ERROR adding human: ${err}`)
       return { status: statuses.FAILURE, message: messages.JOIN_FAILURE }
     })
 
@@ -74,7 +74,7 @@ const remove = (db, channelPhoneNumber, sender) =>
     .removeSubscriber(db, channelPhoneNumber, sender)
     .then(() => ({ status: statuses.SUCCESS, message: messages.LEAVE_SUCCESS }))
     .catch(err => {
-      console.error(`ERROR: ${err}`)
+      console.error(`> ERROR removing human: ${err}`)
       return { status: statuses.FAILURE, message: messages.LEAVE_FAILURE }
     })
 
