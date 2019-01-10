@@ -4,17 +4,24 @@ const {
 } = require('../../../config')
 
 const phoneNumberRoutes = (router, db, emitter) => {
-  router.post('/phoneNumbers/register', async ctx => {
-    const { phoneNumber } = ctx.request.body
-    const { status, error } = await phoneNumberService.register({ db, emitter, phoneNumber })
+  router.post('/phoneNumbers/provision', async ctx => {
+    const { num, areaCode } = ctx.request.body
+    const n = parseInt(num) || 1
 
-    ctx.status = httpStatusOf(status)
-    ctx.body = { status, phoneNumber, ...(error ? { error } : {}) }
+    ctx.body = await phoneNumberService.provisionN({ db, emitter, areaCode, n })
   })
 
   router.post('/phoneNumbers/purchase', async ctx => {
     const { areaCode } = ctx.request.body
     const { status, phoneNumber, error } = await phoneNumberService.purchase({ db, areaCode })
+
+    ctx.status = httpStatusOf(status)
+    ctx.body = { status, phoneNumber, ...(error ? { error } : {}) }
+  })
+
+  router.post('/phoneNumbers/register', async ctx => {
+    const { phoneNumber } = ctx.request.body
+    const { status, error } = await phoneNumberService.register({ db, emitter, phoneNumber })
 
     ctx.status = httpStatusOf(status)
     ctx.body = { status, phoneNumber, ...(error ? { error } : {}) }

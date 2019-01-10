@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
-import { keys, pick } from 'lodash'
+import { times, keys, pick } from 'lodash'
 import { run } from '../../../app/service/api'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import phoneNumberService, { statuses } from '../../../app/service/phoneNumber'
@@ -18,6 +18,56 @@ describe('phone number routes', () => {
   let server
   before(async () => (server = (await run()).server))
   after(() => server.close())
+
+  describe('POST to /phoneNumbers/provision', () => {
+    const verifiedStatuses = times(3, () => ({
+      status: statuses.VERIFIED,
+      phoneNumber: genPhoneNumber(),
+    }))
+
+    let provisionNStub
+    beforeEach(() => (provisionNStub = sinon.stub(phoneNumberService, 'provisionN')))
+    afterEach(() => provisionNStub.restore())
+
+    describe('when num is an int', () => {
+      it('attempts to provision `num` phone numbers', async () => {
+        await request(server)
+          .post('/phoneNumbers/provision')
+          .send({ num: 3 })
+
+        expect(provisionNStub.getCall(0).args[0].n).to.eql(3)
+      })
+    })
+
+    describe('when `num` is not an int', () => {
+      it('attempts to provision 1 phone number', async () => {
+        await request(server)
+          .post('/phoneNumbers/provision')
+          .send({ num: 'foo' })
+
+        expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
+      })
+    })
+
+    describe('when `num` is not present', () => {
+      it('attempts to provision 1 phone number', async () => {
+        await request(server).post('/phoneNumbers/provision')
+
+        expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
+      })
+    })
+
+    describe('when provisioning succeeds', () => {
+      beforeEach(() => provisionNStub.returns(Promise.resolve(verifiedStatuses)))
+
+      it('returns success statuses', async () => {
+        await request(server)
+          .post('/phoneNumbers/provision')
+          .send({ num: 3 })
+          .expect(200, verifiedStatuses)
+      })
+    })
+  })
 
   describe('POST to /phoneNumbers/purchase', () => {
     let purchaseStub
