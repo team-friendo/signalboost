@@ -7,6 +7,13 @@ const {
 
 // PUBLIC FUNCTIONS
 
+const registerAll = async ({ db, emitter }) =>
+  db.phoneNumber
+    .find({ where: { status: statuses.PURCHASED } })
+    .then(phoneNumbers =>
+      Promise.all(phoneNumbers.map(({ phoneNumber }) => register({ db, emitter, phoneNumber }))),
+    )
+
 const register = ({ db, emitter, phoneNumber }) =>
   util
     .exec(`signal-cli -u ${phoneNumber} register`)
@@ -69,4 +76,4 @@ const parseVerificationCode = verificationMessage =>
 
 // EXPORTS
 
-module.exports = { register, verify, parseVerificationCode }
+module.exports = { registerAll, register, verify, parseVerificationCode }

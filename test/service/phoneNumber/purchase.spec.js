@@ -29,7 +29,7 @@ describe('phone number service - purchase module', () => {
     const fakeNumbers = times(3, genPhoneNumber)
     // NOTE(aguestuser): we focus on happy path here, b/c sad paths are exhaustively tested below
 
-    describe('when all twilio searches, twilio registrations, and db writes succeed', () => {
+    describe('when all searches, payments, and db writes succeed', () => {
       beforeEach(() => {
         fakeNumbers.forEach((number, i) =>
           twilioListStub.onCall(i).returns(Promise.resolve([{ phoneNumber: number }])),
@@ -56,7 +56,7 @@ describe('phone number service - purchase module', () => {
       })
     })
 
-    describe('when one twilio registration fails', () => {
+    describe('when one payment (twilio number creation) fails', () => {
       beforeEach(() => {
         fakeNumbers.forEach((number, i) =>
           twilioListStub.onCall(i).returns(Promise.resolve([{ phoneNumber: number }])),
@@ -67,7 +67,7 @@ describe('phone number service - purchase module', () => {
         db = { phoneNumber: { create: x => Promise.resolve(x) } }
       })
 
-      it('returns an array of success statuses', async () => {
+      it('returns an array of success AND error statuses', async () => {
         expect(await purchaseN({ db, n: 3 })).to.eql([
           {
             status: statuses.ERROR,
