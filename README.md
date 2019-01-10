@@ -20,12 +20,13 @@ More forthcoming, but the basic idea is this:
 
 We use `blackbox` to keep secrets under encrypted version control. (See [this link](https://github.com/StackExchange/blackbox) for docs and configurations not covered below.)
 
-Upon cloning the repo, use blackbox to decrypt secrets:
+Upon cloning the repo, use blackbox to decrypt secrets and export them into your environment:
 
 ```
 $ git clone git@0xacab.org:team-friendo/signal-boost
 $ cd signal-boost
 $ ./bin/blackbox_decrypt_all_files
+$ source .env
 ```
 
 You might want to change a few of the secrets, most notably:

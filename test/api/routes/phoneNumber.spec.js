@@ -6,6 +6,7 @@ import { times, keys, pick } from 'lodash'
 import { run } from '../../../app/service/api'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import phoneNumberService, { statuses } from '../../../app/service/phoneNumber'
+import { api } from '../../../app/config'
 
 describe('phone number routes', () => {
   const areaCode = '718'
@@ -33,6 +34,7 @@ describe('phone number routes', () => {
       it('attempts to provision `num` phone numbers', async () => {
         await request(server)
           .post('/phoneNumbers/provision')
+          .set('Token', api.authToken)
           .send({ num: 3 })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(3)
@@ -43,6 +45,7 @@ describe('phone number routes', () => {
       it('attempts to provision 1 phone number', async () => {
         await request(server)
           .post('/phoneNumbers/provision')
+          .set('Token', api.authToken)
           .send({ num: 'foo' })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
@@ -51,7 +54,9 @@ describe('phone number routes', () => {
 
     describe('when `num` is not present', () => {
       it('attempts to provision 1 phone number', async () => {
-        await request(server).post('/phoneNumbers/provision')
+        await request(server)
+          .post('/phoneNumbers/provision')
+          .set('Token', api.authToken)
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
       })
@@ -63,6 +68,7 @@ describe('phone number routes', () => {
       it('returns success statuses', async () => {
         await request(server)
           .post('/phoneNumbers/provision')
+          .set('Token', api.authToken)
           .send({ num: 3 })
           .expect(200, verifiedStatuses)
       })
@@ -79,6 +85,7 @@ describe('phone number routes', () => {
       it('attempts to purchase twilio phone number with area code parsed from request', async () => {
         await request(server)
           .post('/phoneNumbers/purchase')
+          .set('Token', api.authToken)
           .send({ areaCode })
 
         expect(purchaseStub.getCall(0).args[0].areaCode).to.eql(areaCode)
@@ -91,6 +98,7 @@ describe('phone number routes', () => {
       it('responds with a a success status', async () => {
         await request(server)
           .post('/phoneNumbers/purchase')
+          .set('Token', api.authToken)
           .send({ areaCode })
           .expect(200, purchasedStatus)
       })
@@ -102,6 +110,7 @@ describe('phone number routes', () => {
       it('responds with an error status', async () => {
         await request(server)
           .post('/phoneNumbers/purchase')
+          .set('Token', api.authToken)
           .send({ areaCode })
           .expect(500, errorStatus)
       })
@@ -119,6 +128,7 @@ describe('phone number routes', () => {
       it('attempts to register a phone number parsed from the request', async () => {
         await request(server)
           .post('/phoneNumbers/register')
+          .set('Token', api.authToken)
           .send({ phoneNumber })
 
         const arg = registerStub.getCall(0).args[0]
@@ -132,6 +142,7 @@ describe('phone number routes', () => {
       it('responds with a success status', async () => {
         await request(server)
           .post('/phoneNumbers/register')
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(200, verifiedStatus)
       })
@@ -143,6 +154,7 @@ describe('phone number routes', () => {
       it('responds with an error status', async () => {
         await request(server)
           .post('/phoneNumbers/register')
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(500, errorStatus)
       })
@@ -160,6 +172,7 @@ describe('phone number routes', () => {
       it('attempts to verify a phone number with a verification code parsed from the request', async () => {
         await request(server)
           .post('/twilioSms')
+          .set('Token', api.authToken)
           .send({ To: phoneNumber, Body: verificationMessage })
         const arg = verifyStub.getCall(0).args[0]
 
@@ -177,6 +190,7 @@ describe('phone number routes', () => {
       it('responds with a success code', async () => {
         await request(server)
           .post('/twilioSms')
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(200)
       })
@@ -188,6 +202,7 @@ describe('phone number routes', () => {
       it('responds with an error code', async () => {
         await request(server)
           .post('/twilioSms')
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(500)
       })
