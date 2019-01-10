@@ -1,14 +1,20 @@
 const { statuses } = require('../../db/models/phoneNumber')
 const { errors } = require('./common')
-const { register, verify } = require('./register')
-const { purchase } = require('./purchase')
+const { provisionN } = require('./provision')
+const { register, registerAll, verify } = require('./register')
+const { purchase, purchaseN } = require('./purchase')
 
 // EXPORTS
 
 module.exports = {
-  statuses,
+  /*strings*/
   errors,
-  register,
+  statuses,
+  /*functions*/
+  provisionN,
   purchase,
+  purchaseN,
+  register,
+  registerAll,
   verify,
 }
