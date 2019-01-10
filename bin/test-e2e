@@ -2,7 +2,6 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-cd ../test
 
 export NODE_ENV=test
 
@@ -11,7 +10,15 @@ if [ -z $DATABASE_URL ];then
   export DATABASE_URL="postgres://localhost:5432/signal_boost_test"
 fi
 
-echo "----- running unit tests..."
-find ./unit -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+echo "----- starting app..."
+cd ../
+node app/index.js &
+
+echo "----- running e2e tests..."
+cd test/e2e
+find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+
+echo "----- shutting down app..."
+pkill -f 'app/index.js'
 
 popd # return to original dir

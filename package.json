@@ -16,8 +16,9 @@
     "db:setup": "./bin/db-setup",
     "db:unseed": "./bin/db-unseed",
     "db:unseed:prod": "./bin/db-unseed-prod",
-    "test": "yarn test:unit",
+    "test": "./bin/test-unit && ./bin/test-e2e",
     "test:unit": "./bin/test-unit",
+    "test:e2e": "./bin/test-e2e",
     "dev": "nf start",
     "start": "NODE_ENV=production node app"
   },

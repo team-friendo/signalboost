@@ -8,10 +8,10 @@ import {
   messages,
   parseCommand,
   execute,
-} from '../../app/service/dispatch/command'
-import channelRepository from '../../app/service/repository/channel'
-import { subscriptionFactory } from '../support/factories/subscription'
-import { genPhoneNumber } from '../support/factories/phoneNumber'
+} from '../../../app/service/dispatch/command'
+import channelRepository from '../../../app/service/repository/channel'
+import { subscriptionFactory } from '../../support/factories/subscription'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
 
 describe('command service', () => {
   describe('parsing commands', () => {

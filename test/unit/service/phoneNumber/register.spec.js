@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import util from '../../../app/service/util'
+import util from '../../../../app/service/util'
 import { EventEmitter } from 'events'
 import { times } from 'lodash'
 import {
@@ -9,9 +9,9 @@ import {
   register,
   verify,
   parseVerificationCode,
-} from '../../../app/service/phoneNumber/register'
-import { statuses, errors } from '../../../app/service/phoneNumber/index'
-import { genPhoneNumber } from '../../support/factories/phoneNumber'
+} from '../../../../app/service/phoneNumber/register'
+import { statuses, errors } from '../../../../app/service/phoneNumber/index'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('phone number service -- registration module', () => {
   const phoneNumber = genPhoneNumber()

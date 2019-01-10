@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import { describe, it, test, before, after } from 'mocha'
 import { keys } from 'lodash'
-import { initDb } from '../../../app/db'
-import { phoneNumberFactory } from '../../support/factories/phoneNumber'
-import { statuses } from '../../../app/db/models/phoneNumber'
+import { initDb } from '../../../../app/db/index'
+import { phoneNumberFactory } from '../../../support/factories/phoneNumber'
+import { statuses } from '../../../../app/db/models/phoneNumber'
 
 describe('phoneNumber model', () => {
   let db, phoneNumber

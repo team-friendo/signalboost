@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { describe, it, test, before, after, afterEach } from 'mocha'
 import { keys } from 'lodash'
-import { initDb } from '../../../app/db'
-import { channelFactory } from '../../support/factories/channel'
-import { subscriptionFactory } from '../../support/factories/subscription'
-import { administrationFactory } from '../../support/factories/administration'
+import { initDb } from '../../../../app/db/index'
+import { channelFactory } from '../../../support/factories/channel'
+import { subscriptionFactory } from '../../../support/factories/subscription'
+import { administrationFactory } from '../../../support/factories/administration'
 
 describe('channel model', () => {
   let db, channel

@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { run } from '../../../app/service/api'
-import { api } from '../../../app/config'
+import { run } from '../../../../app/service/api/index'
+import { api } from '../../../../app/config/index'
 
 describe('authentication middleware', () => {
   let server

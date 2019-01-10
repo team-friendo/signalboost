@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../app/service/repository/channel'
-import signalInterfaceService from '../../app/service/signalInterface'
-import { messages, maybeBroadcast, send } from '../../app/service/dispatch/message'
+import channelRepository from '../../../app/service/repository/channel'
+import signalInterfaceService from '../../../app/service/signalInterface/index'
+import { messages, maybeBroadcast, send } from '../../../app/service/dispatch/message'
 
 describe('messages service', () => {
   const sender = '+10000000000'
