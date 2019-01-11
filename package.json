@@ -19,7 +19,7 @@
     "test": "./bin/test-unit && ./bin/test-e2e",
     "test:unit": "./bin/test-unit",
     "test:e2e": "./bin/test-e2e",
-    "dev": "nf start",
+    "dev": "NODE_ENV=development nf start",
     "start": "NODE_ENV=production node app"
   },
   "dependencies": {
