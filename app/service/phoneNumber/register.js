@@ -9,7 +9,7 @@ const {
 
 const registerAll = async ({ db, emitter }) =>
   db.phoneNumber
-    .find({ where: { status: statuses.PURCHASED } })
+    .findAll({ where: { status: statuses.PURCHASED } })
     .then(phoneNumbers =>
       Promise.all(phoneNumbers.map(({ phoneNumber }) => register({ db, emitter, phoneNumber }))),
     )

@@ -26,20 +26,20 @@ describe('phone number service -- registration module', () => {
   const timeoutStatus = { status: statuses.ERROR, phoneNumber, error: errors.verificationTimeout }
   const verificationMessage = 'Your Signal verification code: 809-842 for +14322239406'
   const emitOffset = 10
-  const db = { phoneNumber: { update: () => {}, find: () => {} } }
+  const db = { phoneNumber: { update: () => {}, findAll: () => {} } }
 
-  let execStub, updateStub, findStub
+  let execStub, updateStub, findAllStub
 
   beforeEach(() => {
     execStub = sinon.stub(util, 'exec')
     updateStub = sinon.stub(db.phoneNumber, 'update')
-    findStub = sinon.stub(db.phoneNumber, 'find')
+    findAllStub = sinon.stub(db.phoneNumber, 'findAll')
   })
 
   afterEach(() => {
     execStub.restore()
     updateStub.restore()
-    findStub.restore()
+    findAllStub.restore()
   })
 
   describe('registering all purchased numbers with signal', () => {
@@ -48,7 +48,7 @@ describe('phone number service -- registration module', () => {
 
     describe('when all registrations succeed', () => {
       beforeEach(() => {
-        findStub.returns(Promise.resolve(purchasedNumbers))
+        findAllStub.returns(Promise.resolve(purchasedNumbers))
         execStub.returns(Promise.resolve())
         updateStub.callsFake(({ status }, { where: { phoneNumber } }) =>
           Promise.resolve([1, [{ status, phoneNumber }]]),
@@ -78,7 +78,7 @@ describe('phone number service -- registration module', () => {
 
     describe('when one registration fails', () => {
       beforeEach(() => {
-        findStub.returns(Promise.resolve(purchasedNumbers))
+        findAllStub.returns(Promise.resolve(purchasedNumbers))
         execStub.onCall(0).returns(Promise.reject('boom!'))
         execStub.onCall(1).returns(Promise.resolve())
         execStub.onCall(2).returns(Promise.resolve())
