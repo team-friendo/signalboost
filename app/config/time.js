@@ -3,7 +3,7 @@ const defaults = {
 }
 
 const test = {
-  verificationTimeout: 20, // 100 millis
+  verificationTimeout: 20, // 20 millis
 }
 
 module.exports = {

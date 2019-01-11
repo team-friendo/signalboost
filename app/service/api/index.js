@@ -41,6 +41,7 @@ const configureRoutes = (app, db) => {
   phoneNumberRoutes(router, db, emitter)
 
   app.use(router.routes())
+  app.use(router.allowedMethods())
 }
 
 module.exports = { run }

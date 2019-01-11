@@ -6,7 +6,7 @@ const defaults = {
 
 const production = {
   ...defaults,
-  host: process.env.HOST_IP,
+  host: process.env.SIGNAL_BOOST_HOST_IP,
 }
 
 module.exports = {
