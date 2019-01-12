@@ -4,11 +4,19 @@ This is a program to allow for subscribable/moderatable text loops overlayed on 
 
 # Design
 
-More forthcoming, but the basic idea is this:
+Data flow through the applicatoin looks like this:
 
-1. a `signal-relay` service that relays any message to a given set of recipients (received as JSON) from ...
-2. a `signal-dispatch` service, that allows admins to create open/closed channels and users to request to be added to a given channel on a given dispatch server (where each dispatch server has a phone number that controls an authorized signal account)
-3. a socket between the services that allows users to send messages to the dispatch service that (if authorized) are forwarded to the relay service and fanned out to all intended recipients on a given channel)
+* there is an application that controls several signal numbers, each of which acts as a "channel"
+* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
+* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
+* unlike with signal groups: (1) the message appears to the subscribers as coming from the phone number associated with the channel (not the admin). (2) subscribers may not see each others' phone numbers, (3) subscribers may not respond to messages
+* unlike with text blast services: (1) messages are encrypted between admins and the application and between the application and subscribers (they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk), (2) admins may send attachments
+
+The application has the following components:
+
+* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
+* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
+* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
 
 # Hacking
 
@@ -52,6 +60,8 @@ $ ngrok http 80
 ```
 
 Now let's set up `signal-cli`:
+
+(NOTE: this flow is about to be DEPRECATED in favor of the process described in `# Provision New Twilio/Signal Numbers` below!)
 
 ```
 $ ./bin/install-signal-cli
@@ -301,3 +311,17 @@ $ tmux attach
 <Ctrl-C>
 $ sudo -u signal-booster yarn start
 ```
+# Provision New Twilio/Signal Numbers
+
+You can provision 10 phone numbers in area code 510 on the development server with:
+ 
+ ```shell
+ $ ./bin/provision-numbers -n 10 -a 510 -u signalboost.ngrok.io
+ ```
+ 
+ Omitting all arguments will default to 1 phone number in the 929 area code on prod:
+ 
+ ```shell
+  $ ./bin/provision-numbers
+ ```
+ 
