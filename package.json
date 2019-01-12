@@ -16,9 +16,10 @@
     "db:setup": "./bin/db-setup",
     "db:unseed": "./bin/db-unseed",
     "db:unseed:prod": "./bin/db-unseed-prod",
-    "test": "yarn test:unit",
+    "test": "./bin/test-unit && ./bin/test-e2e",
     "test:unit": "./bin/test-unit",
-    "dev": "NODE_ENV=development nodemon app",
+    "test:e2e": "./bin/test-e2e",
+    "dev": "NODE_ENV=development nf start",
     "start": "NODE_ENV=production node app"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "eslint": "^5.9.0",
     "eslint-config-prettier": "^3.3.0",
     "eslint-plugin-prettier": "^3.0.0",
+    "foreman": "^3.0.1",
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
@@ -39,6 +41,7 @@
     "pg-native": "^3.0.0",
     "sequelize": "^4.41.2",
     "sequelize-cli": "^5.3.0",
+    "twilio": "^3.26.0",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
@@ -53,7 +56,8 @@
     "eslint-config-last": "^0.0.5",
     "mocha": "^5.2.0",
     "prettier": "^1.15.2",
-    "sinon": "^7.2.2"
+    "sinon": "^7.2.2",
+    "supertest": "^3.3.0"
   },
   "babel": {
     "presets": [

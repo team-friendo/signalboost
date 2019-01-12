@@ -1,16 +1,24 @@
-const Router = require('koa-router')
 const Koa = require('koa')
 const bodyParser = require('koa-bodyparser')
+const logger = require('koa-logger')
+const { EventEmitter } = require('events')
+const Router = require('koa-router')
+const { configureAuthenticator } = require('./middleware/authenticator')
+const phoneNumberRoutes = require('./routes/phoneNumber')
 
 const run = async (db, port) => {
   const app = new Koa()
 
+  configureLogger(app)
   configureBodyParser(app)
-  configureRoutes(app)
+  configureAuthenticator(app)
+  configureRoutes(app, db)
 
   const server = await app.listen(port).on('error', console.error)
   return Promise.resolve({ app, server })
 }
+
+const configureLogger = app => process.env.NODE_ENV !== 'test' && app.use(logger())
 
 const configureBodyParser = app => {
   app.use(
@@ -22,14 +30,18 @@ const configureBodyParser = app => {
   )
 }
 
-const configureRoutes = app => {
+const configureRoutes = (app, db) => {
   const router = new Router()
+  const emitter = new EventEmitter()
 
-  router.post('/hello', async ctx => {
-    ctx.body = { status: 200, msg: 'hello world' }
+  router.get('/hello', async ctx => {
+    ctx.body = { msg: 'hello world' }
   })
 
+  phoneNumberRoutes(router, db, emitter)
+
   app.use(router.routes())
+  app.use(router.allowedMethods())
 }
 
 module.exports = { run }

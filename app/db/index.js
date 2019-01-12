@@ -3,6 +3,7 @@ const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
 const { administrationOf } = require('./models/administration')
 const { channelOf } = require('./models/channel')
+const { phoneNumberOf } = require('./models/phoneNumber')
 const { subscriptionOf } = require('./models/subscription')
 
 const initDb = () => {
@@ -13,6 +14,7 @@ const initDb = () => {
   const db = {
     administration: administrationOf(sequelize, Sequelize),
     channel: channelOf(sequelize, Sequelize),
+    phoneNumber: phoneNumberOf(sequelize, Sequelize),
     subscription: subscriptionOf(sequelize, Sequelize),
   }
 

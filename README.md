@@ -4,31 +4,64 @@ This is a program to allow for subscribable/moderatable text loops overlayed on 
 
 # Design
 
-More forthcoming, but the basic idea is this:
+Data flow through the applicatoin looks like this:
 
-1. a `signal-relay` service that relays any message to a given set of recipients (received as JSON) from ...
-2. a `signal-dispatch` service, that allows admins to create open/closed channels and users to request to be added to a given channel on a given dispatch server (where each dispatch server has a phone number that controls an authorized signal account)
-3. a socket between the services that allows users to send messages to the dispatch service that (if authorized) are forwarded to the relay service and fanned out to all intended recipients on a given channel)
+* there is an application that controls several signal numbers, each of which acts as a "channel"
+* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
+* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
+* unlike with signal groups: (1) the message appears to the subscribers as coming from the phone number associated with the channel (not the admin). (2) subscribers may not see each others' phone numbers, (3) subscribers may not respond to messages
+* unlike with text blast services: (1) messages are encrypted between admins and the application and between the application and subscribers (they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk), (2) admins may send attachments
+
+The application has the following components:
+
+* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
+* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
+* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
 
 # Hacking
 
 ## Getting Started
 
-### Install System Dependencies
+### System Dependencies
 
-*NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtim. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
+*NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtime. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
 
-Install blackbox, following [these instructions](https://github.com/StackExchange/blackbox#installation-instructions).
+We use `blackbox` to keep secrets under encrypted version control. (See [this link](https://github.com/StackExchange/blackbox) for docs and configurations not covered below.)
 
-Use it to decrypt secrets with:
+Upon cloning the repo, use blackbox to decrypt secrets and export them into your environment:
 
 ```
+$ git clone git@0xacab.org:team-friendo/signal-boost
+$ cd signal-boost
 $ ./bin/blackbox_decrypt_all_files
+$ source .env
 ```
 
-Perhaps you want a different $CHANNEL_PHONE_NUMBER. Change it now in `.env`. (Using `blackbox_edit .env`.)
+You might want to change a few of the secrets, most notably:
+
+* You want a different $CHANNEL_PHONE_NUMBER. You can change it with `./bin/blackbox_edit .env`.
+* You might want to change the admins in the seed file. Change it with `./bin/blackbox_edit app /db/seeders/20181219230951-tj-channel-and-admins.js`
+
+We use `ngrok` to provide an external URL for twilio sms webhook endpoints in dev mode. To install on debian-like linux, run:
+
+``` shell
+$ wget wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+$ unzip ngrok-stable-linux-amd64.zip
+$ sudo mv ngrok /usr/local/bin/
+$ source .env
+$ ngrok authtoken $NGROK_AUTH_TOKEN
+```
+
+If you want to test that `ngrok` is working run:
+
+``` shell
+$ ngrok help
+$ ngrok http 80
+```
 
 Now let's set up `signal-cli`:
+
+(NOTE: this flow is about to be DEPRECATED in favor of the process described in `# Provision New Twilio/Signal Numbers` below!)
 
 ```
 $ ./bin/install-signal-cli
@@ -37,7 +70,7 @@ $ su signal-cli
 $ ./bin/register
 ```
 
-Get the verification code sent to your $CHANNEL_PHONE_NUMBER. Set the value of $VERIFICATION_CODE (in `.env`) to this value. And continue...
+This will cause Signal to send a verification code to your $CHANNEL_PHONE_NUMBER (which you must control and which must be able to receive SMS messages). Set the value of $VERIFICATION_CODE (in `.env`) to the value of this code. Then continue...
 
 ```
 $ ./bin/verify
@@ -46,28 +79,46 @@ $ ./bin/configure-dbus
 
 Voila! (NOTE: It's important to register/verify as the `signal-cli` user or else you won't be able to run `signal-cli` as a systemd service.)
 
+## JDK Versioning
+
+Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
+
+The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
+
 ### Run App
+
+(For first runs), create and seed the database with :
+
+``` shell
+$ yarn db:setup
+```
+
+Run the app with:
 
 ``` shell
 $ systemctl start signal-cli
 $ yarn start
 ```
 
-### Test App
-
-With the app running, you can send messages with the following `curl`:
+### Run Tests
 
 ``` shell
-curl -i -H 'Content-type: application/json'  \
-  -d '{ "message": "this is a test", "recipients": ["+15555555555", "+13333333333"] }' \
-  localhost:3000/relay
+$ yarn test
 ```
 
-## JDK Versioning
+### Use App
 
-Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
+With the app running...
 
-The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
+Any human should be able to:
+
+* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
+* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
+
+Any admin should be able to:
+
+* Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
+* Receive all messages broadcast to the channel
 
 # Deployment
 
@@ -260,3 +311,17 @@ $ tmux attach
 <Ctrl-C>
 $ sudo -u signal-booster yarn start
 ```
+# Provision New Twilio/Signal Numbers
+
+You can provision 10 phone numbers in area code 510 on the development server with:
+ 
+ ```shell
+ $ ./bin/provision-numbers -n 10 -a 510 -u signalboost.ngrok.io
+ ```
+ 
+ Omitting all arguments will default to 1 phone number in the 929 area code on prod:
+ 
+ ```shell
+  $ ./bin/provision-numbers
+ ```
+ 

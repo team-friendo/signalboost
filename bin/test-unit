@@ -12,6 +12,6 @@ if [ -z $DATABASE_URL ];then
 fi
 
 echo "----- running unit tests..."
-find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+find ./unit -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
 
 popd # return to original dir

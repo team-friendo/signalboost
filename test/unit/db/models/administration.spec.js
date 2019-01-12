@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { describe, it, test, before, after } from 'mocha'
 import { keys } from 'lodash'
-import { initDb } from '../../../app/db'
-import { administrationFactory } from '../../support/factories/administration'
-import { channelFactory } from '../../support/factories/channel'
-import { phoneNumberFactory } from '../../support/factories/phoneNumber'
+import { initDb } from '../../../../app/db/index'
+import { administrationFactory } from '../../../support/factories/administration'
+import { channelFactory } from '../../../support/factories/channel'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('administration model', () => {
   let db, administration
@@ -33,7 +33,7 @@ describe('administration model', () => {
     before(async () => {
       const channel = await db.channel.create(channelFactory())
       administration = await db.administration.create({
-        humanPhoneNumber: phoneNumberFactory(),
+        humanPhoneNumber: genPhoneNumber(),
         channelPhoneNumber: channel.phoneNumber,
       })
     })
