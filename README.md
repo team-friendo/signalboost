@@ -1,6 +1,11 @@
-# Signal Blaster JS
+# Signal Boost
 
-This is a program to allow for subscribable/moderatable text loops overlayed on top of the Signal Secure Messaging service.
+This program provides provides free, subscribable, encrypted mass text blasts over the [signal messaging service](https://www.signal.org/). 
+
+It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in times of emergency. 
+
+The stack is a fun mix of nodejs apps, just-in-time docker containers, dbus interfaces, and (as needed) upstream modifications to the lovely [signal-cli](https://github.com/AsamK/signal-cli) java app.
+
 
 # Design
 
