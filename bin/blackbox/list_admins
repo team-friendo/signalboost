@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+#
+# list_admins -- List authorized admins
+#
+set -e
+source "${0%/*}/_common.sh"
+cat "$BB_ADMINS"

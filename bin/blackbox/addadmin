@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_addadmin -- Add an admin to the system
+# addadmin -- Add an admin to the system
 #
 
 # Example:
-#    blackbox_addadmin tal@example.com
+#    addadmin tal@example.com
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 fail_if_not_in_repo
 

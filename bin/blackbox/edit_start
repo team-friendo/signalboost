@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_edit_start -- Decrypt a file for editing.
+# edit_start -- Decrypt a file for editing.
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 if [ $# -eq 0 ]; then
   echo >&2 "Please provide at least one file to start editing"

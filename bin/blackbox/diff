@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_diff -- Show all differences.
+# diff -- Show all differences.
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 gpg_agent_notice
 prepare_keychain
@@ -42,5 +42,5 @@ fi
 
 echo 'Likely next steps:'
 for f in "${modified_files[@]}" ; do
-  echo "    blackbox_edit_end" '"'$f'"'
+  echo "    edit_end" '"'$f'"'
 done

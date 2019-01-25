@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_edit -- Decrypt a file temporarily for edition, then re-encrypts it again
+# edit -- Decrypt a file temporarily for edition, then re-encrypts it again
 #
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 for param in "$@" ; do
 
@@ -18,7 +18,7 @@ for param in "$@" ; do
     read -r -p "Encrypt file $param? (y/n) " ans
     case "$ans" in
       y* | Y*)
-        "${BLACKBOX_HOME}/blackbox_register_new_file" "$unencrypted_file"
+        "${0%/*}/register_new_file" "$unencrypted_file"
         ;;
       *)
         echo >&2 'Skipping...'
@@ -26,8 +26,8 @@ for param in "$@" ; do
         ;;
     esac
   fi
-  "${BLACKBOX_HOME}/blackbox_edit_start" "$unencrypted_file"
+  "${0%/*}/edit_start" "$unencrypted_file"
   $EDITOR "$(get_unencrypted_filename "$unencrypted_file")"
-  "${BLACKBOX_HOME}/blackbox_edit_end" "$unencrypted_file"
+  "${0%/*}/edit_end" "$unencrypted_file"
 
 done

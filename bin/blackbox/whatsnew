@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_whatsnew - show what has changed in the last commit for a given file
+# whatsnew - show what has changed in the last commit for a given file
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 if [[ $# -ne 1 ]]
 then
@@ -33,7 +33,7 @@ cat_commit()
   git checkout $COMMIT $FILE
   echo "[$COMMIT] $FILE"
   echo "---------------------"
-  "${BLACKBOX_HOME}/blackbox_cat" $FILE | sed '/========== PLAINFILE/,/========== EXTRACTING/d'
+  "${HOME}/cat" $FILE | sed '/========== PLAINFILE/,/========== EXTRACTING/d'
 }
 
 CURR_CONTENT=`cat_commit $CURR_COMMIT`

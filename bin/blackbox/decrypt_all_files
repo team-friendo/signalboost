@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_decrypt_all_files -- Decrypt all blackbox files (INTERACTIVE).
+# decrypt_all_files -- Decrypt all blackbox files (INTERACTIVE).
 #
 
 # Usage:
-#   blackbox_decrypt_all_files [GROUP]
+#   decrypt_all_files [GROUP]
 #       GROUP is optional.  If supplied, the resulting files
 #       are chgrp'ed to that group.
 
@@ -14,7 +14,7 @@
 export PATH=/usr/bin:/bin:"$PATH"
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 gpg_agent_notice
-exec './bin/blackbox_postdeploy' "$@"
+exec './bin/blackbox/postdeploy' "$@"

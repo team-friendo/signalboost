@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_edit_end -- Re-encrypt file after edits.
+# edit_end -- Re-encrypt file after edits.
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 next_steps=()
 

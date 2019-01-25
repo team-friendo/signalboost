@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_removeadmin -- Remove an admin to the system
+# removeadmin -- Remove an admin to the system
 #  NOTE: Does not remove admin from the keyring.
 #
 
 # Example:
-#    blackbox_removeadmin tal@example.com
+#    removeadmin tal@example.com
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 fail_if_not_in_repo
 

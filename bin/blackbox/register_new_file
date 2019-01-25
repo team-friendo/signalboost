@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_register_new_file -- Enroll new file(s) in the blackbox system.
+# register_new_file -- Enroll new file(s) in the blackbox system.
 #
 # Takes previously unencrypted file(s) and enrolls them into the blackbox
 # system.  Each file will be kept in the repo as an encrypted file.  On deployment
 # to systems that need the plaintext (unencrypted) versions, run
-# blackbox_postdeploy.sh to decrypt all the files.
+# postdeploy.sh to decrypt all the files.
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 function register_new_file() {
   unencrypted_file=$(get_unencrypted_filename "$1")

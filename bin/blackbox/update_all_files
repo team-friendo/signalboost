@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_update_all_files -- Decrypt then re-encrypt all files. Useful after keys are changed.
+# update_all_files -- Decrypt then re-encrypt all files. Useful after keys are changed.
 #
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 gpg_agent_notice
 disclose_admins

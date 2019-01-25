@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 #
-# Common constants and functions used by the blackbox_* utilities.
+# Common constants and functions used by the * utilities.
 #
 
 # Usage:
 #
 #   set -e
-#   source "${0%/*}/_blackbox_common.sh"
+#   source "${0%/*}/_common.sh"
 
 # Load additional useful functions
 source "${0%/*}"/_stack_lib.sh
 
 # Where are we?
-: "${BLACKBOX_HOME:="$(cd "${0%/*}" ; pwd)"}" ;
+: "${HOME:="$(cd "${0%/*}" ; pwd)"}" ;
 
 # What are the candidates for the blackbox data directory?
 #
@@ -68,9 +68,9 @@ export REPOBASE=$(physical_directory_of "$REPOBASE")
 # FIXME: Verify this function by checking for .hg or .git
 # after determining what we believe to be the answer.
 
-if [[ -n "$BLACKBOX_REPOBASE" ]]; then
-	echo "Using custom repobase: $BLACKBOX_REPOBASE" >&2
-	export REPOBASE="$BLACKBOX_REPOBASE"
+if [[ -n "$REPOBASE" ]]; then
+	echo "Using custom repobase: $REPOBASE" >&2
+	export REPOBASE="$REPOBASE"
 fi
 
 if [ -z "$BLACKBOXDATA" ] ; then
@@ -94,7 +94,7 @@ SECRING="${KEYRINGDIR}/secring.gpg"
 
 # Checks if $1 is 0 bytes, and if $1/keyrings
 # is a directory
-function is_blackbox_repo() {
+function is_repo() {
   if [[ -n "$1" ]] && [[ -d "$1/keyrings" ]]; then
     return 0 # Yep, its a repo
   else
@@ -351,15 +351,15 @@ function change_to_vcs_root() {
 
 # $1 is a string pointing to a directory.  Outputs a
 # list of  valid blackbox repos,relative to $1
-function enumerate_blackbox_repos() {
+function enumerate_repos() {
   if [[ -z "$1" ]]; then
-    echo "enumerate_blackbox_repos: ERROR: No Repo provided to Enumerate"
+    echo "enumerate_repos: ERROR: No Repo provided to Enumerate"
     exit 1
   fi
 
   # https://github.com/koalaman/shellcheck/wiki/Sc2045
   for dir in $1*/; do
-    if is_blackbox_repo "$dir"; then
+    if is_repo "$dir"; then
       echo "$dir"
     fi
   done

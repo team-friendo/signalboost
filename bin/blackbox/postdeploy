@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# blackbox_postdeploy -- Decrypt all blackbox files.
+# postdeploy -- Decrypt all blackbox files.
 #
 
 # Usage:
-#   blackbox_postdeploy.sh [GROUP]
+#   postdeploy.sh [GROUP]
 #       GROUP is optional.  If supplied, the resulting files
 #       are chgrp'ed to that group.
 
@@ -14,7 +14,7 @@
 export PATH=/usr/bin:/bin:"$PATH"
 
 set -e
-source "${0%/*}/_blackbox_common.sh"
+source "${0%/*}/_common.sh"
 
 if [[ "$1" == "" ]]; then
   FILE_GROUP=""
