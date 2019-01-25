@@ -20,12 +20,6 @@ if [ -z $TWILIO_AUTH_TOKEN ];then
   exit 1
 fi
 
-if [ -z $TWILIO_AUTH_TOKEN ];then
-  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ source .env\`"
-  exit 1
-fi
-
-
 # assign arguments
 
 base_url="signalboost.ngrok.io"

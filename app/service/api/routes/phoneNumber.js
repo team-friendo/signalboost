@@ -1,4 +1,5 @@
 const phoneNumberService = require('../../phoneNumber')
+const { find } = require('lodash')
 const {
   twilio: { smsEndpoint },
 } = require('../../../config')
@@ -8,7 +9,9 @@ const phoneNumberRoutes = (router, db, emitter) => {
     const { num, areaCode } = ctx.request.body
     const n = parseInt(num) || 1
 
-    ctx.body = await phoneNumberService.provisionN({ db, emitter, areaCode, n })
+    const phoneNumberStatuses = await phoneNumberService.provisionN({ db, emitter, areaCode, n })
+    ctx.status = httpStatusOfMany(phoneNumberStatuses)
+    ctx.body = phoneNumberStatuses
   })
 
   router.post('/phoneNumbers/purchase', async ctx => {
@@ -27,6 +30,12 @@ const phoneNumberRoutes = (router, db, emitter) => {
     ctx.body = { status, phoneNumber, ...(error ? { error } : {}) }
   })
 
+  router.post('/phoneNumbers/register/all', async ctx => {
+    const phoneNumberStatuses = await phoneNumberService.registerAll({ db, emitter })
+    ctx.status = httpStatusOfMany(phoneNumberStatuses)
+    ctx.body = phoneNumberStatuses
+  })
+
   router.post(`/${smsEndpoint}`, async ctx => {
     const { To: phoneNumber, Body: verificationMessage } = ctx.request.body
     await phoneNumberService
@@ -37,5 +46,7 @@ const phoneNumberRoutes = (router, db, emitter) => {
 }
 
 const httpStatusOf = status => (status === phoneNumberService.statuses.ERROR ? 500 : 200)
+const httpStatusOfMany = pnStatuses =>
+  find(pnStatuses, pns => pns.status === phoneNumberService.statuses.ERROR) ? 500 : 200
 
 module.exports = phoneNumberRoutes

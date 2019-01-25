@@ -13,19 +13,23 @@ describe('phone number routes', () => {
   const phoneNumber = genPhoneNumber()
   const verificationMessage = 'Your Signal verification code: 890-428 for +14322239406'
   const purchasedStatus = { status: statuses.PURCHASED, phoneNumber }
-  const verifiedStatus = { status: statuses.PURCHASED, phoneNumber }
+  const verifiedStatus = { status: statuses.VERIFIED, phoneNumber }
   const errorStatus = { status: statuses.ERROR, phoneNumber, error: 'oh noes!' }
-
+  const verifiedStatuses = times(3, () => ({
+    status: statuses.VERIFIED,
+    phoneNumber: genPhoneNumber(),
+  }))
+  const errorStatuses = times(3, () => ({
+    status: statuses.ERROR,
+    phoneNumber: genPhoneNumber(),
+    error: 'oh noes!',
+  }))
+  
   let server
   before(async () => (server = (await run()).server))
   after(() => server.close())
 
   describe('POST to /phoneNumbers/provision', () => {
-    const verifiedStatuses = times(3, () => ({
-      status: statuses.VERIFIED,
-      phoneNumber: genPhoneNumber(),
-    }))
-
     let provisionNStub
     beforeEach(() => (provisionNStub = sinon.stub(phoneNumberService, 'provisionN')))
     afterEach(() => provisionNStub.restore())
@@ -71,6 +75,18 @@ describe('phone number routes', () => {
           .set('Token', api.authToken)
           .send({ num: 3 })
           .expect(200, verifiedStatuses)
+      })
+    })
+
+    describe('when provisioning fails', () => {
+      beforeEach(() => provisionNStub.returns(Promise.resolve(errorStatuses)))
+
+      it('returns success statuses', async () => {
+        await request(server)
+          .post('/phoneNumbers/provision')
+          .set('Token', api.authToken)
+          .send({ num: 3 })
+          .expect(500, errorStatuses)
       })
     })
   })
@@ -157,6 +173,40 @@ describe('phone number routes', () => {
           .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(500, errorStatus)
+      })
+    })
+  })
+
+  describe('POST to /phoneNumbers/register/all', () => {
+    const verifiedStatuses = times(3, () => ({
+      status: statuses.VERIFIED,
+      phoneNumber: genPhoneNumber(),
+    }))
+    let registerAllStub
+    beforeEach(() => (registerAllStub = sinon.stub(phoneNumberService, 'registerAll')))
+    afterEach(() => registerAllStub.restore())
+
+    describe('when registration succeeds', () => {
+      beforeEach(() => registerAllStub.returns(Promise.resolve(verifiedStatuses)))
+
+      it('responds with a success status', async () => {
+        await request(server)
+          .post('/phoneNumbers/register/all')
+          .set('Token', api.authToken)
+          .send({ phoneNumber })
+          .expect(200, verifiedStatuses)
+      })
+    })
+
+    describe('when registration fails', () => {
+      beforeEach(() => registerAllStub.returns(Promise.resolve(errorStatuses)))
+
+      it('responds with an error status', async () => {
+        await request(server)
+          .post('/phoneNumbers/register/all')
+          .set('Token', api.authToken)
+          .send({ phoneNumber })
+          .expect(500, errorStatuses)
       })
     })
   })

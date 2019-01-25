@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]];then
+  echo "this script reads all numbers purchased from twilio but unverified with signal and verifies them"
+  echo "USAGE:"
+  echo "./bin/pnums/register-all https://signalboost.ngrok.io"
+  exit 1
+fi
+
+if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
+
+echo "--- checking environment..."
+
+url=$1
+
+if [ -z $SIGNAL_BOOST_API_TOKEN ];then
+  echo "--- ERROR: no SIGNAL_BOOST_API_TOKEN found. try \`\$ source .env\`"
+  exit 1
+fi
+
+if [ -z $TWILIO_AUTH_TOKEN ];then
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ source .env\`"
+  exit 1
+fi
+
+if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
+
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
+     http://${url}/phoneNumbers/register/all

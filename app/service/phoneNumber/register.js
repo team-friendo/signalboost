@@ -5,15 +5,26 @@ const {
   time: { verificationTimeout },
 } = require('../../config')
 
+/**
+ * type PhoneNumberStatus = {
+ *   phoneNumber: string,
+ *   status: 'PURCHASED' | 'REGISTERED' | 'VERIFIED' | 'ACTIVE'
+ * }
+ */
+
 // PUBLIC FUNCTIONS
 
+// ({Database, Emitter}) => Promise<Array<PhoneNumberStatus>>
 const registerAll = async ({ db, emitter }) =>
   db.phoneNumber
     .findAll({ where: { status: statuses.PURCHASED } })
-    .then(phoneNumbers =>
-      Promise.all(phoneNumbers.map(({ phoneNumber }) => register({ db, emitter, phoneNumber }))),
+    .then(phoneNumberStatuses =>
+      Promise.all(
+        phoneNumberStatuses.map(({ phoneNumber }) => register({ db, emitter, phoneNumber })),
+      ),
     )
 
+// ({Database, Emitter, string}) => Promise<PhoneNumberStatus>
 const register = ({ db, emitter, phoneNumber }) =>
   util
     .exec(`signal-cli -u ${phoneNumber} register`)
@@ -21,6 +32,7 @@ const register = ({ db, emitter, phoneNumber }) =>
     .catch(err => errorStatus(errors.registrationFailed(err), phoneNumber))
     .then(maybeListenForVerification({ emitter, phoneNumber }))
 
+// ({Database, Emitter, string, string}) => Promise<PhoneNumberStatus>
 const verify = ({ db, emitter, phoneNumber, verificationMessage }) =>
   util
     .exec(`signal-cli -u ${phoneNumber} verify ${parseVerificationCode(verificationMessage)}`)
