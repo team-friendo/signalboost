@@ -2,7 +2,7 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-cd ../test
+cd ../../test
 
 export NODE_ENV=test
 

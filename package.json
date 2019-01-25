@@ -18,9 +18,9 @@
     "db:setup-prod": "./bin/db/setup-dev",
     "db:unseed": "./bin/db/unseed-dev",
     "db:unseed:prod": "./bin/db/unseed-prod",
-    "test": "./bin/test-unit && ./bin/test-e2e",
-    "test:unit": "./bin/test-unit",
-    "test:e2e": "./bin/test-e2e",
+    "test": "./bin/test/unit && ./bin/test/e2e",
+    "test:unit": "./bin/test/unit",
+    "test:e2e": "./bin/test/e2e",
     "ngrok": "ngrok http -subdomain=signalboost 3000",
     "dev": "NODE_ENV=development nf start",
     "start": "NODE_ENV=production node app"

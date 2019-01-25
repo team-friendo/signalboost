@@ -31,7 +31,7 @@ echo "--- shutting down running app instances"
 kill-app
 
 echo "----- starting app..."
-cd ../
+cd ../../
 nf start &
 
 echo "----- running e2e tests..."
