@@ -1,6 +1,7 @@
 .env
 app/config/db.json
 app/db/seeders/20181219230951-tj-channel-and-admins.js
+app/db/seeders/20190125203925-testing-channels.js
 data/people.js
 keys/id_signal_booster_deploy
 keys/id_signal_booster_deploy.pub

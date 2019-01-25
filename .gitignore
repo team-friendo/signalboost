@@ -27,3 +27,4 @@
 /keys/id_signal_booster_deploy.pub
 /keys/signal-booster-privkey.asc
 /app/config/db.json
+/app/db/seeders/20190125203925-testing-channels.js

@@ -2,10 +2,10 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-cd ..
+cd ../..
 
 if [ "$NODE_ENV" = "production" ];then
-  echo '---- ERROR: not permissible to run ./bin/db-migrate-dev on prod!'
+  echo '---- ERROR: not permissible to run ./bin/db/setup-dev on prod!'
   exit 1
 fi
 
