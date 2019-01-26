@@ -1,0 +1,21 @@
+# usage: supervisord -c supervisord.conf -d
+
+[inet_http_server]
+port=127.0.0.1:9001
+
+[program:signal-cli]
+command = ./bin/signal-cli/run
+stdout_logfile = ./logs/signal-cli.log
+stderr_logfile = ./logs/signal-cli.errors
+environment = CHANNEL_PHONE_NUMBER="+15122707190" 
+stopasgroup = true
+
+[program:signalboost]
+command = ./bin/signal-boost/run
+stdout_logfile = ./logs/signal-boost.log
+stderr_logfile = ./logs/signal-boost.errors
+environment = NODE_ENV="development",CHANNEL_PHONE_NUMBER="+15122707190" 
+stopasgroup = true
+
+[program:ngrok]
+command = ngrok http -subdomain=signalboost 3000

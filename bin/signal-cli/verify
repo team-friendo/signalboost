@@ -2,7 +2,7 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-cd ..
+cd ../..
 
 
 if [ -z $CHANNEL_PHONE_NUMBER ];then

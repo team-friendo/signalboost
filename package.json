@@ -22,7 +22,10 @@
     "test:unit": "./bin/test/unit",
     "test:e2e": "./bin/test/e2e",
     "ngrok": "ngrok http -subdomain=signalboost 3000",
-    "dev": "NODE_ENV=development nf start",
+    "dev": "supervisord -c supervisord.conf.dev -d",
+    "status": "supervisord ctl status",
+    "shutdown": "supervisord ctl shutdown",
+    "stop": "supervisord ctl stop all",
     "start": "NODE_ENV=production node app"
   },
   "dependencies": {

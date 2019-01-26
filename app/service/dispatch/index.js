@@ -26,8 +26,10 @@ const { statuses } = commandService
 const run = db =>
   signal.onReceivedMessage(payload => dispatch({ db, channelPhoneNumber, ...payload }))
 
-const dispatch = async dispatchable =>
-  processMessages(await processCommands(dispatchable), dispatchable)
+const dispatch = async dispatchable => {
+  console.log(`[${new Date().toISOString()}] Dispatching message on channel: ${channelPhoneNumber}`)
+  return processMessages(await processCommands(dispatchable), dispatchable)
+}
 
 // HELPERS
 

@@ -2,8 +2,15 @@
 
 cd `dirname "$0"` # cd to script path
 
-./check-env SIGNAL_CLI_VERSION $SIGNAL_CLI_VERSION || exit $?
-./check-env CHANNEL_PHONE_NUMBER $CHANNEL_PHONE_NUMBER || exit $?
+if [ -z $SIGNAL_CLI_VERSION ];then
+  echo "--- ERROR: no SIGNAL_CLI_VERSION found. try \`\$ source .env\`"
+  exit 1
+fi
+
+if [ -z $CHANNEL_PHONE_NUMBER ];then
+  echo "--- ERROR: no CHANNEL_PHONE_NUMBER found. try \`\$ source .env\`"
+  exit 1
+fi
 
 echo "--- installing system dependencies"
 

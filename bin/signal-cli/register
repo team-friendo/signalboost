@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 cd `dirname "$0"` # cd to script path
-cd ..
+cd ../..
 
 if [ -z $CHANNEL_PHONE_NUMBER ];then
   echo "--- ERROR: no CHANNEL_PHONE_NUMBER found. try \`\$ source .env\`"

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# NOTE: must be run from project root
+
+dependencies_met=false
+
+while [ $dependencies_met == false ];do
+  echo "> Checking for running instance of signal-cli..."
+  if [ `ps aux | grep signal-cli | grep jar | sed -n 1p | awk '{print $2}'` ];then
+    echo "> Found running instance of signal-cli. Starting up!"
+    dependencies_met=true
+  else
+    echo "> Did not find running instance of signal-cli. Trying again in 10ms..."
+    sleep .01
+  fi
+done
+
+###################################################
+###################################################
+# TODO: DEFINITELY DEFINITELY DON'T LEAVE THIS IN!!
+###################################################
+###################################################
+sleep 2
+###################################################
+###################################################
+# THE BETTER FIX IS TO RETRY THE CONNECTION TO DBUS CONNECTION
+# IN SIGNAL INTERFACE MODULE
+###################################################
+###################################################
+node app
+

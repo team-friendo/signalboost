@@ -29,7 +29,11 @@ The application has the following components:
 
 ### System Dependencies
 
+#### JDK
+
 *NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtime. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
+
+#### Secrets
 
 We use `blackbox` to keep secrets under encrypted version control. (See [this link](https://github.com/StackExchange/blackbox) for docs and configurations not covered below.)
 
@@ -38,14 +42,16 @@ Upon cloning the repo, use blackbox to decrypt secrets and export them into your
 ```
 $ git clone git@0xacab.org:team-friendo/signal-boost
 $ cd signal-boost
-$ ./bin/blackbox_decrypt_all_files
+$ ./bin/blackbox/decrypt_all_files
 $ source .env
 ```
 
 You might want to change a few of the secrets, most notably:
 
 * You want a different $CHANNEL_PHONE_NUMBER. You can change it with `./bin/blackbox_edit .env`.
-* You might want to change the admins in the seed file. Change it with `./bin/blackbox_edit app /db/seeders/20181219230951-tj-channel-and-admins.js`
+* You might want to change the admin in the db seeds. Change it with `./bin/blackbox_edit app /db/20190125203925-testing-channels.js`
+
+#### Ngrok
 
 We use `ngrok` to provide an external URL for twilio sms webhook endpoints in dev mode. To install on debian-like linux, run:
 
@@ -64,31 +70,26 @@ $ ngrok help
 $ ngrok http 80
 ```
 
-Now let's set up `signal-cli`:
+#### Signal-Cli
 
-(NOTE: this flow is about to be DEPRECATED in favor of the process described in `# Provision New Twilio/Signal Numbers` below!)
+Now let's set up `signal-cli`:
 
 ```
 $ ./bin/install-signal-cli
-$ useradd signal-cli
-$ su signal-cli
-$ ./bin/register
+$ ./bin/configure-signal-cli
 ```
-
-This will cause Signal to send a verification code to your $CHANNEL_PHONE_NUMBER (which you must control and which must be able to receive SMS messages). Set the value of $VERIFICATION_CODE (in `.env`) to the value of this code. Then continue...
-
-```
-$ ./bin/verify
-$ ./bin/configure-dbus
-```
-
-Voila! (NOTE: It's important to register/verify as the `signal-cli` user or else you won't be able to run `signal-cli` as a systemd service.)
 
 ## JDK Versioning
 
 Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
 
 The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
+
+### Run Tests
+
+``` shell
+$ yarn test
+```
 
 ### Run App
 
@@ -98,18 +99,28 @@ The issue above has okay instructions on how to downgrade your jdk version on de
 $ yarn db:setup
 ```
 
-Run the app with:
+Run the app in dev mode with:
 
 ``` shell
-$ systemctl start signal-cli
-$ yarn start
+$ yarn dev
 ```
 
-### Run Tests
+Register testing channel phone numbers with Signal:
 
 ``` shell
-$ yarn test
+$ ./bin/pnums/register-all localhost:3000
 ```
+
+We use `supervisord` to run all the processes involved in running the app.
+
+To check on the status of the app's various processes, stop them, or shutdown `supervisord`, you can use the following commands (respectively):
+
+``` shell
+$ yarn status
+$ yarn stop
+$ yarn shutdown
+```
+
 
 ### Use App
 
@@ -126,6 +137,8 @@ Any admin should be able to:
 * Receive all messages broadcast to the channel
 
 # Deployment
+
+NOTE: ALL OF THIS WILL VERY SHORTLY BE DEPRECATED AS SOON AS [TICKET #32](https://0xacab.org/team-friendo/signal-boost/issues/32) LANDS.
 
 ## First Time
 
@@ -319,14 +332,13 @@ $ sudo -u signal-booster yarn start
 # Provision New Twilio/Signal Numbers
 
 You can provision 10 phone numbers in area code 510 on the development server with:
- 
+
  ```shell
  $ ./bin/provision-numbers -n 10 -a 510 -u signalboost.ngrok.io
  ```
- 
+
  Omitting all arguments will default to 1 phone number in the 929 area code on prod:
- 
+
  ```shell
   $ ./bin/provision-numbers
  ```
- 

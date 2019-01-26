@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+cd `dirname "$0"` # cd to script path
+
+###############
+# USAGE NOTE: #
+###############
+# for this config script to work, you must have first:
+# - created a `signal-cli` user
+# - ran `./bin/register` and `./bin/verify` as `signal-cli`
+
+echo "--- checking dependencies"
+
+if [ ${USER} != 'root' ]
+then
+  echo "--- ERROR: you need to run this script as root. try running 'sudo su' then running again!"
+  exit 1
+fi
+
+if [ -z ${CURRENT_USER} ]
+then
+  echo "--- ERROR: you need to provide CURRENT_USER=<your_username> when running this script!"
+  exit 1
+fi
+
+if [ -z $SIGNAL_CLI_PATH ];then
+  echo "--- ERROR: no SIGNAL_CLI_PATH found. try \`\$ source .env\`"
+  exit 1
+fi
+
+if [ -z $CHANNEL_PHONE_NUMBER ];then
+  echo "--- ERROR: no CHANNEL_PHONE_NUMBER found. try \`\$ source .env\`"
+  exit 1
+fi
+
+echo "--- configuring services"
+
+cd ./config
+
+cp org.asamk.Signal.conf /etc/dbus-1/system.d/
+sed -i -e "s|%USER%|$CURRENT_USER|" /etc/dbus-1/system.d/org.asamk.Signal.conf
+
+cp org.asamk.Signal.service /usr/share/dbus-1/system-services/
+
+echo "--- starting services"
+
+systemctl daemon-reload
+systemctl reload dbus.service
+
+echo "--- SUCCESS!"

@@ -12,9 +12,13 @@
 *.DS_STORE
 .idea/*
 .env
-*npm-debug.log*
-*yarn-debug.log*
-*yarn-error.log*
+
+# logs
+logs/
+*.log*
+
+# pids
+*.pid
 
 # blackbox
 /keyrings/live/pubring.gpg~
