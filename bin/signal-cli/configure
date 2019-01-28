@@ -35,7 +35,7 @@ fi
 
 echo "--- configuring services"
 
-cd ./config
+cd ../../conf/
 
 cp org.asamk.Signal.conf /etc/dbus-1/system.d/
 sed -i -e "s|%USER%|$CURRENT_USER|" /etc/dbus-1/system.d/org.asamk.Signal.conf
