@@ -28,6 +28,9 @@
     "stop": "supervisord ctl stop all",
     "start": "NODE_ENV=production node app"
   },
+  "engines": {
+    "node": "8.15.0"
+  },
   "dependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "dbus": "^1.0.3",
@@ -38,6 +41,7 @@
     "foreman": "^3.0.1",
     "koa": "^2.5.3",
     "koa-bodyparser": "^4.2.1",
+    "koa-logger": "^3.2.0",
     "koa-router": "^7.4.0",
     "lodash": "^4.17.11",
     "moment": "^2.22.2",
