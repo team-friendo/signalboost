@@ -20,6 +20,7 @@ const path = '/org/asamk/Signal'
 const getInterface = () =>
   new Promise((resolve, reject) =>
     systemBus.getInterface(dest, path, interfaceName, (err, iface) => {
+      // TODO: add retry logic here (for startup)
       if (err) reject(err)
       else resolve(iface)
     }),
