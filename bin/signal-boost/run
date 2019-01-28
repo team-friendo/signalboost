@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NOTE: must be run from project root
+cd /
 
 dependencies_met=false
 
@@ -20,7 +20,7 @@ done
 # TODO: DEFINITELY DEFINITELY DON'T LEAVE THIS IN!!
 ###################################################
 ###################################################
-sleep 5
+sleep 8
 ###################################################
 ###################################################
 # THE BETTER FIX IS TO RETRY THE CONNECTION TO DBUS CONNECTION
