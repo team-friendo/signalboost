@@ -102,9 +102,10 @@ RUN mkdir /logs; \
     touch /logs/signal-boost.errors;
 
 # for debugging...
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    emacs
+# RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+#     emacs
 
+CMD ["/bin/bash"]
 
 # ------------------------------------------------------
 # --- Run!!

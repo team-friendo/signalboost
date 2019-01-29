@@ -1,0 +1,26 @@
+{
+  "development": {
+    "database": "signalboost_development",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null
+  },
+  "test": {
+    "database": "signalboost_test",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null
+},
+  "production": {
+    "database": "signalboost",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null
+  }
+}
