@@ -5,7 +5,23 @@ services:
     image: postgres
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
-  dispatcher:
+  dispatcher0:
+    build:
+      context: .
+      dockerfile: dispatcher.dockerfile
+    env_file: .env
+    environment:
+      NODE_ENV: "${NODE_ENV:-production}"
+      CHANNEL_PHONE_NUMBER: "+15129910157"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./app:/app
+      - ./package.json:/package.json
+      - ./node_modules:/node_modules
+      - ./yarn.lock:/yarn.lock
+      - ./.sequelizerc:/.sequelizerc
+  dispatcher1:
     build:
       context: .
       dockerfile: dispatcher.dockerfile
@@ -13,8 +29,6 @@ services:
     environment:
       NODE_ENV: "${NODE_ENV:-production}"
       CHANNEL_PHONE_NUMBER: "+15122707190"
-    ports:
-      - "3000:3000"
     stdin_open: true
     tty: true
     volumes:
@@ -26,4 +40,4 @@ services:
 
 # TODO: share signal conf dir across services with something like...
 # volumes:
-#   signal_conf: ./tmp/signalconf:/root/.conf/signal/
+#   - ./tmp/signalconf:/root/.conf/signal/
