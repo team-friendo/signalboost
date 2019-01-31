@@ -1,10 +1,13 @@
 version: '3'
 
+volumes:
+  postgres_data:
+
 services:
   db:
     image: postgres
     volumes:
-      - ./tmp/db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
   dispatcher0:
     build:
       context: .
