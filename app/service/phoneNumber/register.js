@@ -32,7 +32,7 @@ const register = ({ db, emitter, phoneNumber }) =>
     .catch(err => errorStatus(errors.registrationFailed(err), phoneNumber))
     .then(maybeListenForVerification({ emitter, phoneNumber }))
 
-// ({Database, Emitter, string, string}) => Promise<PhoneNumberStatus>
+// ({Database, Emitter, string, string}) => Promise<Boolean>
 const verify = ({ db, emitter, phoneNumber, verificationMessage }) =>
   util
     .exec(`signal-cli -u ${phoneNumber} verify ${parseVerificationCode(verificationMessage)}`)

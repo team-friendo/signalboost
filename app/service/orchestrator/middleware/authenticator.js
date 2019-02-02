@@ -1,5 +1,5 @@
 const {
-  api: { authToken },
+  orchestrator: { authToken },
   twilio: { smsEndpoint },
 } = require('../../../config')
 

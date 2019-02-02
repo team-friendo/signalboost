@@ -27,5 +27,5 @@ sleep 8
 # IN SIGNAL INTERFACE MODULE
 ###################################################
 ###################################################
-node app
+node app/service/dispatcher/run
 
