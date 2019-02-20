@@ -2,9 +2,14 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-cd ../../test
+cd ../..
 
 export NODE_ENV=test
+
+set -a
+source .env
+set +a
+
 
 if [ -z $DATABASE_URL ];then
   # for local tests
@@ -12,6 +17,7 @@ if [ -z $DATABASE_URL ];then
 fi
 
 echo "----- running unit tests..."
+cd test
 find ./unit -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
 
 popd # return to original dir
