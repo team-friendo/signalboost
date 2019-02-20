@@ -30,3 +30,4 @@ logs/
 /keys/id_signal_booster_deploy.pub
 /keys/signal-booster-privkey.asc
 /app/db/seeders/20190125203925-testing-channels.js
+/.vscode/settings.json
