@@ -1,9 +1,9 @@
-const util = require('../util')
+const util = require('../../util')
 const { get } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
 const {
   time: { verificationTimeout },
-} = require('../../config')
+} = require('../../../config/index')
 
 /**
  * type PhoneNumberStatus = {

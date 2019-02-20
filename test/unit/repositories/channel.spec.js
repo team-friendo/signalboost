@@ -2,19 +2,19 @@ import chai, { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
 import { pick } from 'lodash'
-import { channelFactory } from '../../../support/factories/channel'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { initDb } from '../../../../app/db/index'
+import { channelFactory } from '../../support/factories/channel'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
+import { initDb } from '../../../app/db/index'
 import {
   addSubscriber,
   getSubscriberNumbers,
   isAdmin,
   removeSubscriber,
-} from '../../../../app/service/repository/channel'
-import { subscriptionFactory } from '../../../support/factories/subscription'
-import { administrationFactory } from '../../../support/factories/administration'
+} from '../../../app/db/repositories/channel'
+import { subscriptionFactory } from '../../support/factories/subscription'
+import { administrationFactory } from '../../support/factories/administration'
 
-describe('channel db interface service', () => {
+describe('channel db interface services', () => {
   chai.use(chaiAsPromised)
 
   const chPNum = genPhoneNumber()

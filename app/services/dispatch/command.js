@@ -1,4 +1,4 @@
-const channelRepository = require('../repository/channel')
+const channelRepository = require('../../db/repositories/channel')
 
 // CONSTANTS
 

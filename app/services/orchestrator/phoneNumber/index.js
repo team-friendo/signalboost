@@ -1,4 +1,4 @@
-const { statuses } = require('../../db/models/phoneNumber')
+const { statuses } = require('../../../db/models/phoneNumber')
 const { errors } = require('./common')
 const { provisionN } = require('./provision')
 const { register, registerAll, verify } = require('./register')

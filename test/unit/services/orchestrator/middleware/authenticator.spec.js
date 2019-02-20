@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { run } from '../../../../app/service/orchestrator/index'
-import { api } from '../../../../app/config/index'
+import { run } from '../../../../../app/services/orchestrator/index'
+import { orchestrator } from '../../../../../app/config/index'
 
 describe('authentication middleware', () => {
   let server
@@ -11,14 +11,14 @@ describe('authentication middleware', () => {
   it('allows a request that contains auth token in the header', async () => {
     await request(server)
       .get('/hello')
-      .set('Token', api.authToken)
+      .set('Token', orchestrator.authToken)
       .expect(200, { msg: 'hello world' })
   })
 
-  it('allows a request regardless of capitalization in header', async () => {
+  it('allows a request regardless of corchestratortalization in header', async () => {
     await request(server)
       .get('/hello')
-      .set('ToKeN', api.authToken)
+      .set('ToKeN', orchestrator.authToken)
       .expect(200, { msg: 'hello world' })
   })
 
@@ -38,7 +38,7 @@ describe('authentication middleware', () => {
   it('blocks a request that contains the right auth token in the wrong header', async () => {
     await request(server)
       .get('/hello')
-      .set('FooBar', api.authToken)
+      .set('FooBar', orchestrator.authToken)
       .expect(401, { error: 'Not Authorized' })
   })
 })

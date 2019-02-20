@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../app/service/repository/channel'
-import signalInterfaceService from '../../../app/service/signalInterface/index'
-import { messages, maybeBroadcast, send } from '../../../app/service/dispatch/message'
+import channelRepository from '../../../../app/db/repositories/channel'
+import signalInterfaceService from '../../../../app/services/dispatch/signalInterface'
+import { messages, maybeBroadcast, send } from '../../../../app/services/dispatch/message'
 
-describe('messages service', () => {
+describe('messages services', () => {
   const sender = '+10000000000'
   const subscriberNumbers = ['+11111111111', '+12222222222']
   const channelPhoneNumber = '+13333333333'

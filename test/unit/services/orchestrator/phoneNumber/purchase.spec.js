@@ -7,11 +7,14 @@ import {
   availableTwilioNumbers,
   purchase,
   purchaseN,
-} from '../../../../app/service/phoneNumber/purchase'
-import { errors, statuses } from '../../../../app/service/phoneNumber/common'
-import { genPhoneNumber, twilioNumberCreationResponse } from '../../../support/factories/phoneNumber'
+} from '../../../../../app/services/orchestrator/phoneNumber/purchase'
+import { errors, statuses } from '../../../../../app/services/orchestrator/phoneNumber/common'
+import {
+  genPhoneNumber,
+  twilioNumberCreationResponse,
+} from '../../../../support/factories/phoneNumber'
 
-describe('phone number service - purchase module', () => {
+describe('phone number services - purchase module', () => {
   const fakePhoneNumber = genPhoneNumber()
   let db, twilioListStub, twilioCreateStub
 

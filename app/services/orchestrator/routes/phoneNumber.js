@@ -1,4 +1,4 @@
-const phoneNumberService = require('../../phoneNumber')
+const phoneNumberService = require('../phoneNumber')
 const { find } = require('lodash')
 const {
   twilio: { smsEndpoint },

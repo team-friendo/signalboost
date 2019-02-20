@@ -3,10 +3,10 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
 import { times, keys, pick } from 'lodash'
-import { run } from '../../../../app/service/orchestrator/index'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import phoneNumberService, { statuses } from '../../../../app/service/phoneNumber/index'
-import { orchestrator } from '../../../../app/config/index'
+import { run } from '../../../../../app/services/orchestrator/index'
+import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
+import phoneNumberService, { statuses } from '../../../../../app/services/orchestrator/phoneNumber/index'
+import { orchestrator } from '../../../../../app/config/index'
 
 describe('phone number routes', () => {
   const areaCode = '718'
@@ -24,7 +24,7 @@ describe('phone number routes', () => {
     phoneNumber: genPhoneNumber(),
     error: 'oh noes!',
   }))
-  
+
   let server
   before(async () => (server = (await run()).server))
   after(() => server.close())

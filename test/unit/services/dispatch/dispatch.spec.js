@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { dispatch } from '../../../app/service/dispatch/index'
-import commandService, { statuses, messages } from '../../../app/service/dispatch/command'
-import messageService from '../../../app/service/dispatch/message'
+import { dispatch } from '../../../../app/services/dispatch/index'
+import commandService, { statuses, messages } from '../../../../app/services/dispatch/command'
+import messageService from '../../../../app/services/dispatch/message'
 
-describe('dispatch service', () => {
+describe('dispatch services', () => {
   const sender = '+10000000000'
   const channelPhoneNumber = '+13333333333'
 

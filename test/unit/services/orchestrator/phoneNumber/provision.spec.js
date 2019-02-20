@@ -2,12 +2,12 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { provisionN, statuses, errors } from '../../../../app/service/phoneNumber/index'
-import purchase from '../../../../app/service/phoneNumber/purchase'
-import register from '../../../../app/service/phoneNumber/register'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { provisionN, statuses, errors } from '../../../../../app/services/orchestrator/phoneNumber/index'
+import purchase from '../../../../../app/services/orchestrator/phoneNumber/purchase'
+import register from '../../../../../app/services/orchestrator/phoneNumber/register'
+import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 
-describe('phone number service -- provision module', () => {
+describe('phone number services -- provision module', () => {
   let purchaseNStub, registerAllStub
   beforeEach(() => {
     purchaseNStub = sinon.stub(purchase, 'purchaseN')
