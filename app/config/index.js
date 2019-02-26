@@ -1,3 +1,4 @@
+// TODO: elminate call to 'dotenv' once tests are dockerized...
 require('dotenv').config()
 const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')
@@ -8,9 +9,10 @@ const timeConfigsByEnv = require('./time')
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
 
 module.exports = {
+  projectRoot: process.env.PROJECT_ROOT,
+  channelPhoneNumber: process.env.CHANNEL_PHONE_NUMBER,
   db: getConfig(dbConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
   orchestrator: getConfig(orchestratorConfigsByEnv),
-  channelPhoneNumber: process.env.CHANNEL_PHONE_NUMBER,
   time: getConfig(timeConfigsByEnv),
 }

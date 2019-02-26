@@ -8,7 +8,7 @@ import {
   messages,
   parseCommand,
   execute,
-} from '../../../../app/services/dispatch/command'
+} from '../../../../app/services/dispatcher/command'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'

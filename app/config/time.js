@@ -1,9 +1,9 @@
 const defaults = {
-  verificationTimeout: 10000, // 10 sec
+  verificationTimeout: 30000, // 30 seconds
 }
 
 const test = {
-  verificationTimeout: 20, // 20 millis
+  verificationTimeout: 30, // 30 millis
 }
 
 module.exports = {

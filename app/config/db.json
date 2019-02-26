@@ -9,6 +9,7 @@
   },
   "test": {
     "database": "signalboost_test",
+    "host": "db",
     "dialect": "postgres",
     "logging": false,
     "username": "postgres",
