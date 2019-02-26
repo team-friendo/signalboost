@@ -4,12 +4,12 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../..
 
+echo "--- changed directories to $(pwd)"
+
 if [ "$NODE_ENV" = "production" ];then
   echo '---- ERROR: not permissible to run ./bin/db/setup-dev on prod!'
   exit 1
 fi
-
-export DATABASE_URL="postgres://localhost:5432/signal_boost_test"
 
 echo "----- creating dev database..."
 npx sequelize db:create --env development

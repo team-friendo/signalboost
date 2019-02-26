@@ -4,14 +4,20 @@ pushd `pwd` # save cwd
 cd `dirname "$0"` # cd to script path
 cd ..
 
-./bin/blackbox/decrypt_all_files
-
-if [ $1 == "--dev" ];then
-  echo "--- running signal-boost in DEVELOPMENT mode"
-  NODE_ENV=development docker-compose -f docker-compose-dev.yml up
+if [ -z "$NODE_ENV" ];then
+  echo '---- ERROR: please supply a NODE_ENV. :)'
+  exit 1
 else
-  echo "--- running signal-boost in PRODUCTION mode"
-  docker-compose up
+  echo "--- running signalboost in [$NODE_ENV] environment"
 fi
+
+docker-compose up
+
+# TODO: what to do about test env...?
+# if [ $NODE_ENV == "development" ];then
+#   docker-compose -f docker-compose-dev.yml up
+# else
+#   docker-compose up
+# fi
 
 popd # return to original cwd

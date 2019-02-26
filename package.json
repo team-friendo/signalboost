@@ -18,6 +18,7 @@
     "db:setup-prod": "./bin/db/setup-dev",
     "db:unseed": "./bin/db/unseed-dev",
     "db:unseed:prod": "./bin/db/unseed-prod",
+    "deploy": "./bin/deploy",
     "test": "./bin/test/unit && ./bin/test/e2e",
     "test:unit": "./bin/test/unit",
     "test:e2e": "./bin/test/e2e",
