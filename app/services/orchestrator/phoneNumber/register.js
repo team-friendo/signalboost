@@ -1,6 +1,7 @@
 const util = require('../../util')
 const { get } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
+const phoneNumbers = require('../../../db/repositories/phoneNumber')
 const {
   time: { verificationTimeout },
 } = require('../../../config/index')
@@ -79,9 +80,7 @@ const listenForVerification = ({ emitter, phoneNumber }) =>
   })
 
 const recordStatusChange = (db, phoneNumber, status) =>
-  db.phoneNumber
-    .update({ status }, { where: { phoneNumber }, returning: true })
-    .then(([_, [pNumInstance]]) => extractStatus(pNumInstance))
+  phoneNumbers.update(db, phoneNumber, { status }).then(extractStatus)
 
 const parseVerificationCode = verificationMessage =>
   verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
