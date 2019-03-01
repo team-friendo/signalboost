@@ -6,6 +6,7 @@ import commandService, { statuses, messages } from '../../../../app/services/dis
 import messageService from '../../../../app/services/dispatcher/message'
 
 describe('dispatcher services', () => {
+  const iface = {}
   const sender = '+10000000000'
   const channelPhoneNumber = '+13333333333'
 
@@ -29,11 +30,11 @@ describe('dispatcher services', () => {
         executeStub.returns(
           Promise.resolve({ status: statuses.SUCCESS, message: messages.JOIN_SUCCESS }),
         )
-        await dispatch({ channelPhoneNumber, sender, message: 'JOIN' })
+        await dispatch({ iface, channelPhoneNumber, sender, message: 'JOIN' })
       })
 
       it('responds to the sender of the command', () => {
-        expect(sendStub.getCall(0).args).to.have.members([messages.JOIN_SUCCESS, sender])
+        expect(sendStub.getCall(0).args).to.have.members([iface, messages.JOIN_SUCCESS, sender])
       })
 
       it('does not attempt to broadcast a message', () => {
@@ -44,7 +45,7 @@ describe('dispatcher services', () => {
     describe('when message does not contain a command', () => {
       beforeEach(async () => {
         executeStub.returns(Promise.resolve({ status: statuses.NOOP, message: messages.NOOP }))
-        await dispatch({ channelPhoneNumber, sender, message: 'foobar' })
+        await dispatch({ iface, channelPhoneNumber, sender, message: 'foobar' })
       })
 
       it('does not respond to the sender', () => {
@@ -53,7 +54,7 @@ describe('dispatcher services', () => {
 
       it('attempts to broadcast the message', () => {
         expect(maybeBroadcastStub.getCall(0).args).to.have.deep.members([
-          { channelPhoneNumber, sender, message: 'foobar' },
+          { iface, channelPhoneNumber, sender, message: 'foobar' },
         ])
       })
     })

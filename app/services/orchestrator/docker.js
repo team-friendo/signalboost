@@ -1,16 +1,16 @@
 const Docker = require('dockerode')
 const dockerClient = new Docker()
 const imageName = 'signalboost_dispatcher'
-const { projectRoot } = require('../../config')
 
-// TODO: use named volumes for logs (instead of copying directories in
+// TODO: use named volumes for logs?
 
 // string -> Promise<Container>
 const runContainer = phoneNumber =>
   dockerClient
     .createContainer({
       name: containerNameOf(phoneNumber),
-      Image: imageName,
+      Image: 'signalboost',
+      Entrypoint: '/signalboost/bin/entrypoint/dispatcher',
       Env: [
         `CHANNEL_PHONE_NUMBER=${phoneNumber}`,
         `NODE_ENV=${process.env.NODE_ENV}`,

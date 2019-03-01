@@ -6,6 +6,7 @@ import signalInterfaceService from '../../../../app/services/dispatcher/signalIn
 import { messages, maybeBroadcast, send } from '../../../../app/services/dispatcher/message'
 
 describe('messages services', () => {
+  const iface = {}
   const sender = '+10000000000'
   const subscriberNumbers = ['+11111111111', '+12222222222']
   const channelPhoneNumber = '+13333333333'
@@ -32,13 +33,19 @@ describe('messages services', () => {
       it('relays the message to all channel subscribers', async () => {
         await maybeBroadcast({
           db: {},
+          iface,
           channelPhoneNumber,
           message: 'hello',
           sender,
           attachments: ['fake'],
         })
 
-        expect(sendMessageStub.getCall(0).args).to.eql(['hello', subscriberNumbers, ['fake']])
+        expect(sendMessageStub.getCall(0).args).to.eql([
+          iface,
+          'hello',
+          subscriberNumbers,
+          ['fake'],
+        ])
       })
     })
 
@@ -48,21 +55,27 @@ describe('messages services', () => {
       it('sends a NOT_ADMIN message to the sender', async () => {
         await maybeBroadcast({
           db: {},
+          iface,
           channelPhoneNumber: '',
           message: 'hello',
           sender,
           attachments: ['fake'],
         })
 
-        expect(sendMessageStub.getCall(0).args).to.have.deep.members([messages.NOT_ADMIN, [sender]])
+        expect(sendMessageStub.getCall(0).args).to.have.deep.members([
+          iface,
+          messages.NOT_ADMIN,
+          [sender],
+        ])
       })
     })
   })
 
   describe('sending a message', () => {
     it('sends a message through the signal interface', async () => {
-      await send('hello', subscriberNumbers[0])
+      await send(iface, 'hello', subscriberNumbers[0])
       expect(sendMessageStub.getCall(0).args).to.have.deep.members([
+        iface,
         'hello',
         [subscriberNumbers[0]],
       ])

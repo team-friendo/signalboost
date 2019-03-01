@@ -3,7 +3,7 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
 import { times, keys, pick } from 'lodash'
-import { run } from '../../../../../app/services/orchestrator/index'
+import { startApiServer } from '../../../../../app/services/orchestrator/index'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 import phoneNumberService, { statuses } from '../../../../../app/services/orchestrator/phoneNumber/index'
 import { orchestrator } from '../../../../../app/config/index'
@@ -26,7 +26,7 @@ describe('phone number routes', () => {
   }))
 
   let server
-  before(async () => (server = (await run()).server))
+  before(async () => (server = (await startApiServer()).server))
   after(() => server.close())
 
   describe('POST to /phoneNumbers/provision', () => {

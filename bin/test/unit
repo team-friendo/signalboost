@@ -4,20 +4,18 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../..
 
-export NODE_ENV=test
+sed -i -e "s|localhost|db|" ./app/config/db.json
 
-set -a
-source .env
-set +a
+echo "--- running tests..."
 
+docker-compose \
+  -f docker-compose-test.yml \
+  run test_runner \
+  /signalboost/bin/entrypoint/test-unit
 
-if [ -z $DATABASE_URL ];then
-  # for local tests
-  export DATABASE_URL="postgres://localhost:5432/signal_boost_test"
-fi
+echo "--- spinning down environment..."
 
-echo "----- running unit tests..."
-cd test
-find ./unit -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+docker-compose -f docker-compose-test.yml rm -f db
+docker-compose -f docker-compose-test.yml rm -f test_runner
 
 popd # return to original dir

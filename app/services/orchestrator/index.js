@@ -6,8 +6,11 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const phoneNumberRoutes = require('./routes/phoneNumber')
 const docker = require('./docker')
 const phoneNumberService = require('./phoneNumber')
+const {
+  orchestrator: { port },
+} = require('../../config')
 
-const run = async (port, db, emitter) => {
+const run = async (db, emitter) => {
 
   console.log('> listening on port', port)
   await startApiServer(port, db, emitter)
@@ -16,17 +19,6 @@ const run = async (port, db, emitter) => {
   await initializePhoneNumbers(db, emitter)
   console.log('> intialized phone numbers. running...')
 }
-
-// TODO: generalize this!
-const phoneNumber = '+15129910157'
-
-const initializePhoneNumbers = (db, emitter) =>
-  phoneNumberService
-    .register({ db, emitter, phoneNumber })
-    .then(console.log)
-    .then(() => docker.runContainer(phoneNumber))
-    .then(() => console.log(`> Channel ${phoneNumber} active!`))
-    .catch(console.error)
 
 const startApiServer = async (port, db, emitter) => {
   const app = new Koa()
@@ -65,4 +57,15 @@ const configureRoutes = (app, db, emitter) => {
   app.use(router.allowedMethods())
 }
 
-module.exports = { run }
+// TODO: generalize this!
+const phoneNumber = '+15129910157'
+
+const initializePhoneNumbers = (db, emitter) =>
+  phoneNumberService
+    .register({ db, emitter, phoneNumber })
+    .then(console.log)
+    .then(() => docker.runContainer(phoneNumber))
+    .then(() => console.log(`> Channel ${phoneNumber} active!`))
+    .catch(console.error)
+
+module.exports = { run, startApiServer }

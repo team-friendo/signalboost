@@ -1,11 +1,11 @@
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { run } from '../../../../../app/services/orchestrator/index'
+import { startApiServer } from '../../../../../app/services/orchestrator/index'
 import { orchestrator } from '../../../../../app/config/index'
 
 describe('authentication middleware', () => {
   let server
-  before(async () => (server = (await run()).server))
+  before(async () => (server = (await startApiServer()).server))
   after(() => server.close())
 
   it('allows a request that contains auth token in the header', async () => {
