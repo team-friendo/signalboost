@@ -7,6 +7,7 @@ const { statuses } = commandService
 /**
  * type Dispatchable = {
  *   db: SequelizeDatabaseConnection,
+ *   iface: DbusInterface,
  *   channelPhoneNumber: string,
  *   message: string,
  *   sender: string,
@@ -23,8 +24,12 @@ const { statuses } = commandService
 
 // MAIN FUNCTIONS
 
-const run = db =>
-  signal.onReceivedMessage(payload => dispatch({ db, channelPhoneNumber, ...payload }))
+const run = async db => {
+  const iface = await signal.getDbusInterface()
+  signal.onReceivedMessage(iface)(payload =>
+    dispatch({ db, iface, channelPhoneNumber, ...payload }),
+  )
+}
 
 const dispatch = async dispatchable => {
   console.log(`[${new Date().toISOString()}] Dispatching message on channel: ${channelPhoneNumber}`)
@@ -40,7 +45,7 @@ const processCommands = dispatchable =>
 // CommandResult -> Promise<void>
 const processMessages = (commandResult, dispatchable) => {
   return commandResult.status !== statuses.NOOP
-    ? messageService.send(commandResult.message, dispatchable.sender)
+    ? messageService.send(dispatchable.iface, commandResult.message, dispatchable.sender)
     : messageService.maybeBroadcast(dispatchable)
 }
 

@@ -1,5 +1,7 @@
 const { promisifyCallback, wait } = require('../util.js')
-const { dbus } = require('../../config')
+const {
+  dbus: { getBus, connectionInterval, maxConnectionAttempts },
+} = require('../../config')
 
 /*****************************************
   For documentation on interface for org.asamk.Signal:
@@ -12,45 +14,51 @@ const { dbus } = require('../../config')
    ```
 *****************************************/
 
-const bus = dbus.getBus()
 const dest = 'org.asamk.Signal'
 const interfaceName = dest
 const path = '/org/asamk/Signal'
+const bus = getBus()
 
-const getInterface = async () => {
-  return new Promise((resolve, reject) =>
-    bus.getInterface(dest, path, interfaceName, (err, iface) => {
-      // TODO: add retry logic here (for startup)?
-      if (err) reject(err)
-      else resolve(iface)
-    }),
-  )
+// () => Promise<void>
+const getDbusInterface = () =>
+  new Promise((resolve, reject) => attemptConnection(resolve, reject, 1, null))
+
+// (fn, fn, number) => void
+const attemptConnection = (resolve, reject, attempts) => {
+  bus.getInterface(dest, path, interfaceName, (err, iface) => {
+    if (err) {
+      console.log(`> failed to connect to dbus after ${attempts} attempts.`)
+      if (attempts > maxConnectionAttempts) {
+        console.log('> max dbus connection attempts reached. aborting')
+        process.exit(1)
+      } else {
+        console.log(`> trying again in ${connectionInterval} millis...`)
+        wait(connectionInterval).then(() => attemptConnection(resolve, reject, attempts + 1))
+      }
+    } else {
+      console.log('> connected to dbus.')
+      resolve(iface)
+    }
+  })
 }
 
-// Function[Dispatchable => Promise<any>] => void
-const onReceivedMessage = handleMessage =>
-  getInterface()
-    .then(iface =>
-      iface.on('MessageReceived', (timestamp, sender, _, message, attachments) =>
-        handleMessage({ message, sender, timestamp, attachments }),
-      ),
-    )
-    .catch(err => console.error(`> Handling message failed: ${err}`))
+// (DbusInterface, Dispatchable => Promise<any>) -> void
+const onReceivedMessage = iface => handleMessage =>
+  iface.on('MessageReceived', (timestamp, sender, _, message, attachments) =>
+    handleMessage({ message, sender, timestamp, attachments }),
+  )
 
-const sendMessage = (msg, recipients, attachments = []) =>
+// (DbusInterface, string, Array<string>, Array<string>) => Promise<void>
+const sendMessage = (iface, msg, recipients, attachments = []) =>
   // NOTE: we *must* send message to each recipient individually
-  // or else the dbus stream is closed when trying to send attachments
-  getInterface()
-    .then(iface =>
-      Promise.all(
-        recipients.map(
-          recipient =>
-            new Promise((resolve, reject) =>
-              iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject)),
-            ),
+  // else the dbus stream is closed when trying to send attachments
+  Promise.all(
+    recipients.map(
+      recipient =>
+        new Promise((resolve, reject) =>
+          iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject)),
         ),
-      ),
-    )
-    .catch(err => console.error(`> Sending message failed: ${err}`))
+    ),
+  ).catch(err => console.error(`> Sending message failed: ${err}`))
 
-module.exports = { sendMessage, onReceivedMessage }
+module.exports = { getDbusInterface, sendMessage, onReceivedMessage }
