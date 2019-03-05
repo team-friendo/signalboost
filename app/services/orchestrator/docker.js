@@ -4,8 +4,8 @@ const imageName = 'signalboost_dispatcher'
 
 // TODO: use named volumes for logs?
 
-// string -> Promise<Container>
-const runContainer = phoneNumber =>
+// string -> Promise<String>
+const runContainer = (phoneNumber, channelName) =>
   dockerClient
     .createContainer({
       name: containerNameOf(phoneNumber),
@@ -13,6 +13,7 @@ const runContainer = phoneNumber =>
       Entrypoint: '/signalboost/bin/entrypoint/dispatcher',
       Env: [
         `CHANNEL_PHONE_NUMBER=${phoneNumber}`,
+        `CHANNEL_NAME=${channelName}`,
         `NODE_ENV=${process.env.NODE_ENV}`,
         `TWILIO_ACCOUNT_SID=${process.env.TWILIO_ACCOUNT_SID}`,
         `TWILIO_AUTH_TOKEN=${process.env.TWILIO_AUTH_TOKEN}`,
@@ -24,6 +25,7 @@ const runContainer = phoneNumber =>
       },
     })
     .then(c => c.start())
+    .then(c => c.id)
 
 // string -> Promise<Container>
 const stopContainer = id => dockerClient.getContainer(id).stop()
@@ -31,4 +33,4 @@ const stopContainer = id => dockerClient.getContainer(id).stop()
 // string -> string
 const containerNameOf = phoneNumber => `${imageName}_${phoneNumber.slice(1)}`
 
-module.exports = { runContainer, stopContainer }
+module.exports = { dockerClient, runContainer, stopContainer, containerNameOf }
