@@ -7,6 +7,7 @@ import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db/index'
 import {
   addSubscriber,
+  create,
   getSubscriberNumbers,
   isAdmin,
   removeSubscriber,
@@ -31,6 +32,14 @@ describe('channel db interface services', () => {
     ])
   })
   after(() => db.sequelize.close())
+
+  describe('#create', () => {
+    it('creates a new channel', async () => {
+      const count = await db.channel.count()
+      await create(db, chPNum, '#blackops')
+      expect(await db.channel.count()).to.eql(count + 1)
+    })
+  })
 
   describe('#addSubscriber', () => {
     describe('when given the pNum of an existing channel and a new human', () => {

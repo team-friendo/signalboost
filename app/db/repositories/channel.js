@@ -1,4 +1,6 @@
 // PUBLIC FUNCTIONS
+const create = async (db, phoneNumber, name) => db.channel.create({ phoneNumber, name })
+
 const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     db.subscription.create({ channelPhoneNumber, humanPhoneNumber }),
@@ -31,6 +33,7 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
+  create,
   addSubscriber,
   removeSubscriber,
   getSubscriberNumbers,
