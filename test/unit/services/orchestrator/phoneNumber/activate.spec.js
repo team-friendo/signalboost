@@ -4,7 +4,8 @@ import sinon from 'sinon'
 import channelRepository from '../../../../../app/db/repositories/channel'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import docker from '../../../../../app/services/orchestrator/docker'
-import { activate } from '../../../../../app/services/orchestrator/phoneNumber/activate'
+import { activate, activateMany } from '../../../../../app/services/orchestrator/phoneNumber/activate'
+import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 
 describe('phoneNumber activation module', () => {
   const db = {}
@@ -12,11 +13,11 @@ describe('phoneNumber activation module', () => {
   const channelName = '#blackops'
   const containerId = 'acabdeadbeef'
 
-  describe('activating a phone number', () => {
-    let runContainerStub = sinon.stub(docker, 'runContainer')
-    let createChannelStub = sinon.stub(channelRepository, 'create')
-    let updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
+  let runContainerStub = sinon.stub(docker, 'runContainer')
+  let createChannelStub = sinon.stub(channelRepository, 'create')
+  let updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
 
+  describe('activating a phone number', () => {
     before(async () => {
       runContainerStub.returns(Promise.resolve(containerId))
       createChannelStub.returns(
@@ -46,6 +47,29 @@ describe('phoneNumber activation module', () => {
 
     it('it sets phone number status to ACTIVE', () => {
       expect(updatePhoneNumberStub.getCall(0).args).to.eql([db, phoneNumber, { status: 'ACTIVE' }])
+    })
+  })
+
+  describe('activating 3 phone numbers', () => {
+    let channelAttrs = [
+      { phoneNumber: genPhoneNumber(), name: 'foo1' },
+      { phoneNumber: genPhoneNumber(), name: 'foo2' },
+      { phoneNumber: genPhoneNumber(), name: 'foo3' },
+    ]
+
+    before(async () => {
+      await activateMany(db, channelAttrs)
+    })
+
+    it('starts 3 docker containers', () => {
+      expect(runContainerStub.callCount).to.eql(3)
+    })
+    it('creates 3 new channel resources in db', () => {
+      expect(createChannelStub.callCount).to.eql(3)
+    })
+
+    it('sets 3 phone number statuses to active', () => {
+      expect(updatePhoneNumberStub.callCount).to.eql(3)
     })
   })
 })

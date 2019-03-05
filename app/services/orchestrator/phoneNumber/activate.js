@@ -3,6 +3,11 @@ const channelRepository = require('../../../db/repositories/channel')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const { statuses } = require('../../../db/models/phoneNumber')
 
+const activateMany = (db, channelAttrs) =>
+  Promise.all(
+    channelAttrs.map(({ phoneNumber, name }) => activate({ db, phoneNumber, channelName: name })),
+  )
+
 const activate = async ({ db, phoneNumber, channelName }) => {
   const containerId = await docker.runContainer(phoneNumber, channelName)
   return Promise.all([
@@ -11,4 +16,4 @@ const activate = async ({ db, phoneNumber, channelName }) => {
   ])
 }
 
-module.exports = { activate }
+module.exports = { activate, activateMany }
