@@ -5,6 +5,7 @@ import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { administrationFactory } from '../../../support/factories/administration'
+import { statuses } from '../../../../app/db/models/channel'
 
 describe('channel model', () => {
   let db, channel
@@ -46,7 +47,13 @@ describe('channel model', () => {
   test('fields', async () => {
     channel = await db.channel.create(channelFactory())
 
-    expect(keys(channel.get())).to.have.members(['phoneNumber', 'name', 'createdAt', 'updatedAt'])
+    expect(keys(channel.get())).to.have.members([
+      'phoneNumber',
+      'name',
+      'containerId',
+      'createdAt',
+      'updatedAt',
+    ])
   })
 
   describe('validations', () => {

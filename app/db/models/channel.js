@@ -12,6 +12,10 @@ const channelOf = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING,
     },
+    containerId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   })
 
   channel.associate = db => {
@@ -28,4 +32,4 @@ const channelOf = (sequelize, DataTypes) => {
   return channel
 }
 
-module.exports = { channelOf }
+module.exports = { channelOf, statuses }
