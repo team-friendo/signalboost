@@ -1,4 +1,5 @@
 const channelRepository = require('../../db/repositories/channel')
+const { channelName } = require('../../config')
 
 // CONSTANTS
 
@@ -16,12 +17,12 @@ const commands = {
 
 const messages = {
   INVALID: "Whoops! That's not a command!",
-  JOIN_SUCCESS: "You've been added to the channel! Yay!",
-  JOIN_FAILURE: 'Whoops! There was an error adding you to the channel. Please try again!',
-  JOIN_NOOP: 'Whoops! You are already a member of that channel!',
-  LEAVE_SUCCESS: "You've been removed from the channel! Bye!",
-  LEAVE_FAILURE: 'Whoops! There was an error removing you from the channel. Please try again!',
-  LEAVE_NOOP: 'Whoops! You are not subscribed to that channel. How ya gonna leave it?',
+  JOIN_SUCCESS: `You've been added to the "${channelName}" signalboost channel! Yay!`,
+  JOIN_FAILURE: `Whoops! There was an error adding you to the "${channelName}" signalboost channel. Please try again!`,
+  JOIN_NOOP: 'Whoops! You are already a member of that signalboost channel!',
+  LEAVE_SUCCESS: `You've been removed from the "${channelName}" signalboost channel! Bye!`,
+  LEAVE_FAILURE: `Whoops! There was an error removing you from the "${channelName}" signalboost channel. Please try again!`,
+  LEAVE_NOOP: 'Whoops! You are not subscribed to that signalboost channel. How ya gonna leave it?',
 }
 
 // PUBLIC FUNCTIONS
