@@ -1,4 +1,5 @@
 const { promisifyCallback, wait } = require('../util.js')
+const logger = require('./logger')
 const {
   dbus: { getBus, connectionInterval, maxConnectionAttempts },
 } = require('../../config')
@@ -27,16 +28,16 @@ const getDbusInterface = () =>
 const attemptConnection = (resolve, reject, attempts) => {
   bus.getInterface(dest, path, interfaceName, (err, iface) => {
     if (err) {
-      console.log(`> failed to connect to dbus after ${attempts} attempts.`)
+      logger.log(`> failed to connect to dbus after ${attempts} attempts.`)
       if (attempts > maxConnectionAttempts) {
-        console.log('> max dbus connection attempts reached. aborting')
+        logger.log('> max dbus connection attempts reached. aborting')
         process.exit(1)
       } else {
-        console.log(`> trying again in ${connectionInterval} millis...`)
+        logger.log(`> trying again in ${connectionInterval} millis...`)
         wait(connectionInterval).then(() => attemptConnection(resolve, reject, attempts + 1))
       }
     } else {
-      console.log('> connected to dbus.')
+      logger.log('> connected to dbus.')
       resolve(iface)
     }
   })
@@ -59,6 +60,6 @@ const sendMessage = (iface, msg, recipients, attachments = []) =>
           iface.sendMessage(msg, attachments, [recipient], promisifyCallback(resolve, reject)),
         ),
     ),
-  ).catch(err => console.error(`> Sending message failed: ${err}`))
+  ).catch(err => logger.error(`> Sending message failed: ${err}`))
 
 module.exports = { getDbusInterface, sendMessage, onReceivedMessage }

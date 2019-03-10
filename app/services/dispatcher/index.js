@@ -1,8 +1,9 @@
-const { channelPhoneNumber } = require('../../config/index')
 const signal = require('./signalInterface')
 const commandService = require('./command')
 const messageService = require('./message')
+const logger = require('./logger')
 const { statuses } = commandService
+const { channelPhoneNumber } = require('../../config')
 
 /**
  * type Dispatchable = {
@@ -29,10 +30,11 @@ const run = async db => {
   signal.onReceivedMessage(iface)(payload =>
     dispatch({ db, iface, channelPhoneNumber, ...payload }),
   )
+  logger.log(`Dispatcher listening on channel: ${channelPhoneNumber}...`)
 }
 
 const dispatch = async dispatchable => {
-  console.log(`[${new Date().toISOString()}] Dispatching message on channel: ${channelPhoneNumber}`)
+  logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
   return processMessages(await processCommands(dispatchable), dispatchable)
 }
 
