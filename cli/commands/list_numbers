@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "This command retrieves active phone numbers and their sids via a call to the twilio API."
+  echo ""
+  echo "You may find it useful to run this command to retrieve sids for use in either of the following:"
+  echo ""
+  echo "  boost release_number <sid>"
+  echo "  boost release_numbers <path/to/file_with_list_of_sids>"
+  echo ""
+  echo "NOTE: you must have run yarn install (or ./bin/deploy) for this command to work!"
+  exit 1
+fi
+
+echo "--- checking environment..."
+
+if [ -z $SIGNAL_BOOST_API_TOKEN ];then
+  echo "--- ERROR: no SIGNAL_BOOST_API_TOKEN found. try \`\$ source .env\`"
+  exit 1
+fi
+
+while getopts ":p:n:a:u:" opt; do
+  case "$opt" in
+    p)
+      phone_number="$OPTARG"
+      ;;
+    n)
+      name="$OPTARG"
+      ;;
+    a)
+      admins="$OPTARG"
+      ;;
+    u)
+      url="$OPTARG"
+      ;;
+  esac
+done
+
+if [[ ! $phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
+  echo "> ERROR: -p must be a 10 digit phone number prefixed by a country code (+1 or +52)"
+  exit 1
+fi
+
+if [ -z $name ];then
+  echo "> ERROR: -n (channel name) may not be empty"
+  exit 1;
+fi
+
+if [ -z $admin_numbers ]
+then
+  admin_numbers="[]"
+elif [[ ! $admin_numbers =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
+  echo "> ERROR: -a must be a  comman-delimited list of 10 digit phone numbers prefixed by a country code"
+  exit 1
+else
+  # convert comma-delimited list of numbers
+  # into string representation of array of string representations of numbers
+  admin_numbers="[\"$(echo $admin_numbers | sed -rn "s/,/\", \"/p")\"]"
+fi
+
+if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
+
+echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
+
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
+     http://${url}/channels | jq

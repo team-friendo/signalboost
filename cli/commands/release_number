@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ $1 == "-h" ]];then
-  echo "this script releases phone numbers. usage:"
-  echo "./bin/release-number <phone_number_sid>";
+  echo "this command releases phone numbers. usage:"
+  echo ""
+  echo "boost release_number <phone_number_sid>";
   exit 1
 fi
 

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]];then
+  echo "This command releases phone numbers with sids listed in a text file. usage:"
+  echo ""
+  echo "  boost release_numbers <path_to_phone_number_sids>"
+  echo ""
+  echo "You might want to retrieve sids first with boost list_numbers"
+  exit 1
+fi
+
+path_to_number_sids=$1
+
+if [ -z $path_to_number_sids ];then
+  echo "--- ERROR: no path to phone number sids text file provided";
+  echo "--- USAGE: boost release_numbers <path_to_phone_number_sids>";
+  exit 1
+fi
+
+while read sid; do
+  echo "--- releasing number with sid $sid ..."
+  ./release_number $sid
+done < $path_to_number_sids
+
+popd # return to original dir

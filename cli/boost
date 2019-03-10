@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+
+command=$1
+echo ""
+
+print_usage(){
+  echo "Whoops! You invoked \`boost\` without a valid command!"
+  echo ""
+  echo "Valid commands include:"
+  echo ""
+  echo "  help"
+  echo "  new_channel"
+  echo "  new_numbers"
+  echo "  list_numbers"
+  echo "  release_number"
+  echo "  release_numbers"
+  echo ""
+  echo "To learn what these commands do, run:"
+  echo ""
+  echo "  boost help"
+  echo ""
+}
+
+if [[ $command != "help" ]] &&
+     [[ $command != "new_channel" ]] &&
+     [[ $command != "new_numbers" ]] &&
+     [[ $command != "list_numbers" ]] &&
+     [[ $command != "release_number" ]] &&
+     [[ $command != "release_numbers" ]]
+then
+  print_usage
+  exit 1
+else
+  ./commands/${command} "${@:2}"
+fi
+
+popd > /dev/null # return to original dir

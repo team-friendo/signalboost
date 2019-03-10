@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+echo "\
+boost cli supports the following commands:
+
+  help
+    - shows this dialogue
+
+  new_channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
+    - activates a channel with provied phone number, name, and admins via api at provided url
+
+  new_numbers -a <area_code> -n <numbers_desired> -u <api_url>
+    - purchases n new twilio numbers and registers them w/ signal via api at provided url
+
+  list_numbers
+    - lists all numbers purchased from twilio (no channel info included)
+
+  release_number <sid>
+    - releases a twilio number with the given sid
+
+  release_numbers <path>
+    - releases all twilio numbers with sids listed at given path
+
+for more detailed instructions on any command, run:
+
+  boost <command> -h
+"

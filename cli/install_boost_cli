@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+pushd `pwd` > /dev/null # store current dir
+curr_dir=`dirname "$0"` # cd to script path
+
+cd $curr_dir
+
+echo "--- Adding '$PWD' to your \$PATH"
+
+echo "export PATH=\$PATH:${PWD}" >> ~/.bashrc
+. ~/.bashrc
+
+echo "--- Done!"
+
+popd > /dev/null

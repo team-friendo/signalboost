@@ -6,4 +6,3 @@ client
   .incomingPhoneNumbers
   .each(x => console.log(x.phoneNumber, ':', x.sid))
 
-
