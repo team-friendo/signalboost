@@ -1,5 +1,33 @@
 // PUBLIC FUNCTIONS
-const create = async (db, phoneNumber, name) => db.channel.create({ phoneNumber, name })
+
+// CHANNEL QUERIES
+const updateOrCreate = async (db, phoneNumber, name, containerId) => {
+  const channel = await findByPhoneNumber(db, phoneNumber)
+  return channel
+    ? channel.update({ name, containerId })
+    : db.channel.create({ phoneNumber, name, containerId })
+}
+
+const findAll = db => db.channel.findAll()
+const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
+
+// CHANNEL ASSOCIATION QUERIES
+
+const addAdmins = (db, channelPhoneNumber, adminNumbers) =>
+  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
+    Promise.all(
+      adminNumbers.map(humanPhoneNumber =>
+        Promise.all([
+          db.administration
+            .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+            .spread(x => x),
+          db.subscription
+            .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+            .spread(x => x),
+        ]).then(writes => writes[0]),
+      ),
+    ),
+  )
 
 const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
@@ -33,10 +61,12 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
-  create,
+  addAdmins,
   addSubscriber,
-  removeSubscriber,
+  updateOrCreate,
+  findAll,
   getSubscriberNumbers,
   isAdmin,
   isSubscriber,
+  removeSubscriber,
 }

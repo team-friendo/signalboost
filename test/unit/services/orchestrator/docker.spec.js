@@ -63,8 +63,14 @@ describe('docker module', () => {
   })
 
   describe('#containerNameOf', () => {
-    it('parses a container name from a phone number', () => {
-      expect(containerNameOf('+15555555555')).to.eql('signalboost_dispatcher_15555555555')
+    it('constructs a container name from an image name and a phone number', () => {
+      expect(containerNameOf('signalboost_dispatcher', '+15555555555')).to.eql(
+        'signalboost_dispatcher_15555555555',
+      )
+    })
+
+    it('constructs a container name when no phone number is provided', () => {
+      expect(containerNameOf('signalboost_dispatcher')).to.eql('signalboost_dispatcher')
     })
   })
 })

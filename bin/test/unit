@@ -15,7 +15,8 @@ docker-compose \
 
 echo "--- spinning down environment..."
 
-docker-compose -f docker-compose-test.yml rm -f db
 docker-compose -f docker-compose-test.yml rm -f test_runner
+docker-compose -f docker-compose-test.yml stop db
+docker-compose -f docker-compose-test.yml rm -f db
 
 popd # return to original dir

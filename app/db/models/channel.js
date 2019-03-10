@@ -32,4 +32,4 @@ const channelOf = (sequelize, DataTypes) => {
   return channel
 }
 
-module.exports = { channelOf, statuses }
+module.exports = { channelOf }

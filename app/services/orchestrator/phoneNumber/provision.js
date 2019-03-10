@@ -11,6 +11,6 @@ const provisionN = ({ db, emitter, areaCode, n }) =>
 const maybeRegisterAll = ({ db, emitter, purchaseStatuses }) =>
   find(purchaseStatuses, ({ status }) => status === statuses.ERROR)
     ? purchaseStatuses
-    : register.registerAll({ db, emitter })
+    : register.registerAll({ db, emitter, filter: { status: statuses.PURCHASED } })
 
 module.exports = { provisionN }

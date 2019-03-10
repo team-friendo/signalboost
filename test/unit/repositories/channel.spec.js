@@ -5,9 +5,11 @@ import { pick } from 'lodash'
 import { channelFactory } from '../../support/factories/channel'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db/index'
+import { omit } from 'lodash'
 import {
+  addAdmins,
   addSubscriber,
-  create,
+  updateOrCreate,
   getSubscriberNumbers,
   isAdmin,
   removeSubscriber,
@@ -21,7 +23,7 @@ describe('channel db interface services', () => {
   const chPNum = genPhoneNumber()
   const subPNums = [genPhoneNumber(), genPhoneNumber()]
   const adminPNums = [genPhoneNumber(), genPhoneNumber()]
-  let db, channel, sub, subCount
+  let db, channel, sub, subCount, adminCount, admins
 
   before(() => (db = initDb()))
   afterEach(() => {
@@ -33,11 +35,128 @@ describe('channel db interface services', () => {
   })
   after(() => db.sequelize.close())
 
-  describe('#create', () => {
-    it('creates a new channel', async () => {
-      const count = await db.channel.count()
-      await create(db, chPNum, '#blackops')
-      expect(await db.channel.count()).to.eql(count + 1)
+  describe('#updateOrCreate', () => {
+    let count, channel
+
+    describe('when given phone number for a non-existent channel', () => {
+      before(async () => {
+        count = await db.channel.count()
+        channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+      })
+
+      it('creates a new channel', async () => {
+        expect(await db.channel.count()).to.eql(count + 1)
+      })
+
+      it('returns the channel record', () => {
+        expect(omit(channel.get(), ['createdAt', 'updatedAt'])).to.eql({
+          phoneNumber: chPNum,
+          name: '#blackops',
+          containerId: 'acabdeadbeef',
+        })
+      })
+    })
+
+    describe('when given phone number for a already-existing channel', () => {
+      before(async () => {
+        await updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
+        count = await db.channel.count()
+        channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+      })
+
+      it('does not create a new channel', async () => {
+        expect(await db.channel.count()).to.eql(count)
+      })
+
+      it('updates the channel record and returns it', () => {
+        expect(omit(channel.get(), ['createdAt', 'updatedAt'])).to.eql({
+          phoneNumber: chPNum,
+          name: '#blackops',
+          containerId: 'acabdeadbeef',
+        })
+      })
+    })
+  })
+
+  describe('#addAdmins', () => {
+    describe('when given the pNum of an existing channel and a new human', () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+        admins = await addAdmins(db, channel.phoneNumber, adminPNums)
+      })
+
+      it('creates 2 new administrations', async () => {
+        expect(await db.administration.count()).to.eql(adminCount + 2)
+      })
+
+      it('associates the administrations with the channel', async () => {
+        const fetchedAdmins = await channel.getAdministrations()
+        expect(fetchedAdmins.map(a => a.get())).to.have.deep.members(admins.map(a => a.get()))
+      })
+
+      it('creates 2 new subscriptions', async () => {
+        expect(await db.subscription.count()).to.eql(subCount + 2)
+      })
+
+      it('associates the subscriptions with the channel', async () => {
+        const fetchedSubs = await channel.getSubscriptions()
+        expect(fetchedSubs.map(s => s.humanPhoneNumber)).to.have.deep.members(adminPNums)
+      })
+
+      it('returns an administration joining the channel to the human', () => {
+        admins.forEach((admin, i) => {
+          expect(pick(admin, ['channelPhoneNumber', 'humanPhoneNumber'])).to.eql({
+            channelPhoneNumber: channel.phoneNumber,
+            humanPhoneNumber: adminPNums[i],
+          })
+        })
+      })
+    })
+
+    describe('when given the pNum of an already-existing admin', () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+        await addAdmins(db, channel.phoneNumber, adminPNums)
+      })
+
+      it('only creates one new administration', async () => {
+        expect(await db.administration.count()).to.eql(adminCount + 1)
+      })
+
+      it('only creates one new subscription', async () => {
+        expect(await db.subscription.count()).to.eql(subCount + 1)
+      })
+    })
+
+    describe('when given an empty array of admin numbers', () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+        await addAdmins(db, channel.phoneNumber, [])
+      })
+
+      it('creates no new administrations', async () => {
+        expect(await db.administration.count()).to.eql(adminCount)
+      })
+
+      it('creates no new subscriptions', async () => {
+        expect(await db.subscription.count()).to.eql(subCount)
+      })
+    })
+
+    describe('when given the pNum of a non-existent channel', () => {
+      it('rejects a Promise with an error', async () => {
+        expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
+          'cannot subscribe human to non-existent channel',
+        )
+      })
     })
   })
 

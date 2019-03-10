@@ -3,8 +3,8 @@ const bodyParser = require('koa-bodyparser')
 const requestLogger = require('koa-logger')
 const Router = require('koa-router')
 const { configureAuthenticator } = require('./middleware/authenticator')
-const phoneNumberRoutes = require('./routes/phoneNumber')
-const phoneNumberService = require('./phoneNumber')
+const routesOf = require('./routes')
+const channelService = require('./channel')
 const logger = require('./logger')
 const docker = require('./docker')
 const { wait } = require('../util')
@@ -56,21 +56,18 @@ const configureRoutes = (app, db, emitter) => {
     ctx.body = { msg: 'hello world' }
   })
 
-  phoneNumberRoutes(router, db, emitter)
+  routesOf(router, db, emitter)
 
   app.use(router.routes())
   app.use(router.allowedMethods())
 }
 
-// TODO: generalize this!
-const phoneNumber = '+15129910157'
-
 const initializeChannels = (db, emitter) =>
-  phoneNumberService
-    .register({ db, emitter, phoneNumber })
-    .then(console.log)
-    .then(() => docker.runContainer(phoneNumber))
-    .then(() => console.log(`> Channel ${phoneNumber} active!`))
+  channelService
+    .initialize({ db, emitter })
+    .then(({ registered, activated }) =>
+      logger.log(`registered ${registered} numbers, activated ${activated} channels`),
+    )
     .catch(console.error)
 
 module.exports = { run, startApiServer }

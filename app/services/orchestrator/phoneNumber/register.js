@@ -16,9 +16,9 @@ const {
 // PUBLIC FUNCTIONS
 
 // ({Database, Emitter}) => Promise<Array<PhoneNumberStatus>>
-const registerAll = async ({ db, emitter }) =>
+const registerAll = async ({ db, emitter, filter }) =>
   db.phoneNumber
-    .findAll({ where: { status: statuses.PURCHASED } })
+    .findAll({ where: filter })
     .then(phoneNumberStatuses =>
       Promise.all(
         phoneNumberStatuses.map(({ phoneNumber }) => register({ db, emitter, phoneNumber })),

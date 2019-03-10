@@ -43,6 +43,7 @@ describe('phone number services -- registration module', () => {
   })
 
   describe('registering all purchased numbers with signal', () => {
+    const filter = { status: 'PURCHASED' }
     // NOTE(aguestuser): we focus on happy path in this bracket b/c
     // sad paths are tested exhaustively in `registering a number with signal ` bracket (below)
 
@@ -59,7 +60,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('returns an array of success statuses', async () => {
-        expect(await registerAll({ db, emitter })).to.eql([
+        expect(await registerAll({ db, emitter, filter })).to.eql([
           {
             status: statuses.VERIFIED,
             phoneNumber: purchasedNumbers[0].phoneNumber,
@@ -91,7 +92,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('returns an array of success AND error statuses', async () => {
-        expect(await registerAll({ db, emitter })).to.eql([
+        expect(await registerAll({ db, emitter, filter })).to.eql([
           {
             status: statuses.ERROR,
             phoneNumber: purchasedNumbers[0].phoneNumber,

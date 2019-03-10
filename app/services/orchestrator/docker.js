@@ -1,6 +1,6 @@
 const Docker = require('dockerode')
 const dockerClient = new Docker()
-const imageName = 'signalboost_dispatcher'
+const { projectRoot } = require('../../config')
 
 // TODO: use named volumes for logs?
 
@@ -8,7 +8,7 @@ const imageName = 'signalboost_dispatcher'
 const runContainer = (phoneNumber, channelName) =>
   dockerClient
     .createContainer({
-      name: containerNameOf(phoneNumber),
+      name: containerNameOf('signalboost_dispatcher', phoneNumber),
       Image: 'signalboost',
       Entrypoint: '/signalboost/bin/entrypoint/dispatcher',
       Env: [
@@ -31,6 +31,10 @@ const runContainer = (phoneNumber, channelName) =>
 const stopContainer = id => dockerClient.getContainer(id).stop()
 
 // string -> string
-const containerNameOf = phoneNumber => `${imageName}_${phoneNumber.slice(1)}`
+const containerNameOf = (imageName, phoneNumber) =>
+  `${imageName}${phoneNumber ? '_' + phoneNumber.slice(1) : ''}`
 
-module.exports = { dockerClient, runContainer, stopContainer, containerNameOf }
+// string -> string
+const configPathOf = phoneNumber => `${projectRoot}/signal_data/${phoneNumber.slice(1)}`
+
+module.exports = { dockerClient, runContainer, stopContainer, containerNameOf, configPathOf }
