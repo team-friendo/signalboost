@@ -1,89 +1,120 @@
-# Signal Boost
+# Signal Blaster JS
 
-This program provides provides free, subscribable, encrypted mass text blasts over the [signal messaging service](https://www.signal.org/). 
+Hello! This is a program to allow for subscribable/moderatable text loops overlayed on top of the Signal Secure Messaging service.
 
-It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in times of emergency. 
+You could usefully think of it as "text blasts over signal." Or... "Textmob 2020."
 
-The stack is a fun mix of nodejs apps, just-in-time docker containers, dbus interfaces, and (as needed) upstream modifications to the lovely [signal-cli](https://github.com/AsamK/signal-cli) java app.
+If you found us on github, note that all bug/issue-tracking takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
 
+If you are a social justice group that would like to acquire and use signalboost channel(s) for your work, please write us at `team-friendo [AT] riseup [DOT] net`. (Signal(boost) number for inquiries and PGP key for the above address forthcoming! :))
 
-# Design
+# Table Of Contents:
 
-Data flow through the applicatoin looks like this:
+* [Administering](#administering)
+* [Contributing](#contributing)
+* [Application Design](#design)
 
-* there is an application that controls several signal numbers, each of which acts as a "channel"
-* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
-* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
-* unlike with signal groups: (1) the message appears to the subscribers as coming from the phone number associated with the channel (not the admin). (2) subscribers may not see each others' phone numbers, (3) subscribers may not respond to messages
-* unlike with text blast services: (1) messages are encrypted between admins and the application and between the application and subscribers (they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk), (2) admins may send attachments
+# Administering <a name="administering"></a>
 
-The application has the following components:
+## Deploying a new SignalBoost instance
 
-* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
-* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
-* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
+*(TK-TODO: lots of ansible goodness forthcoming!)*
 
-# Hacking
+## Managing an existing SignalBoost instance
+
+### Install the CLI
+
+Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
+
+Install it with:
+
+``` shell
+$ ./cli/install_boost_cli
+```
+
+*(NOTE: This will add a path to the `./cli` directory to your $PATH. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`)*
+
+### Use the CLI
+
+You can administer any running signalboost instance with:
+
+``` shell
+$ boost <command> <options>
+```
+
+Where `<command>` is one of the following:
+
+``` shell
+  help
+    - shows this dialogue
+
+  new_channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
+    - activates a channel with provied phone number, name, and admins via api at provided url
+
+  new_numbers -a <area_code> -n <numbers_desired> -u <api_url>
+    - purchases n new twilio numbers and registers them w/ signal via api at provided url
+
+  list_numbers
+    - lists all numbers purchased from twilio (no channel info included)
+
+  release_number <sid>
+    - releases a twilio number with the given sid
+
+  release_numbers <path>
+    - releases all twilio numbers with sids listed at given path
+```
+
+For more detailed instructions on any of the commands, run:
+
+``` shell
+$ boost <command> -h
+```
+
+# Contributing <a name="contributing"></a>
 
 ## Getting Started
 
-### System Dependencies
+### Secrets
 
-#### JDK
+Upon cloning the repo, do either of the following to provide missing env vars needed to run signalboost:
 
-*NOTE: for attachment relaying to work, your dev machine will need to be running an outdated version of OpenJDK at runtime. See `JDK Versioning` below for details. (TODO: containerize the app so devs don't have to worry about this!)*
+#### Team-Friendo Members
 
-#### Secrets
+We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
-We use `blackbox` to keep secrets under encrypted version control. (See [this link](https://github.com/StackExchange/blackbox) for docs and configurations not covered below.)
-
-Upon cloning the repo, use blackbox to decrypt secrets and export them into your environment:
+Use it to decrypt secrets and source them with:
 
 ```
 $ git clone git@0xacab.org:team-friendo/signal-boost
 $ cd signal-boost
 $ ./bin/blackbox/decrypt_all_files
-$ source .env
+$ set +a && source .env && set -a
 ```
+#### Friendos of Team-Friendo
 
-You might want to change a few of the secrets, most notably:
+If you are not on Team-Friendo, you will need to provide your own values for credentials listed in `.env`.
 
-* You want a different $CHANNEL_PHONE_NUMBER. You can change it with `./bin/blackbox_edit .env`.
-* You might want to change the admin in the db seeds. Change it with `./bin/blackbox_edit app /db/20190125203925-testing-channels.js`
-
-#### Ngrok
-
-We use `ngrok` to provide an external URL for twilio sms webhook endpoints in dev mode. To install on debian-like linux, run:
+A sample of the values needed is listed in `.env.example`:
 
 ``` shell
-$ wget wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-$ unzip ngrok-stable-linux-amd64.zip
-$ sudo mv ngrok /usr/local/bin/
-$ source .env
-$ ngrok authtoken $NGROK_AUTH_TOKEN
+SIGNAL_BOOST_HOST_IP=%IP_ADDRESS_OF_PROD_SERVER%
+SIGNAL_BOOST_API_TOKEN=%SOME_RANDOM_64_BYTE_HEX_STRING%
+SIGNAL_CLI_VERSION=0.6.2
+SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
+SIGNAL_CLI_PASSWORD=%SOME_STRONG_PASSWORD%
+TWILIO_ACCOUNT_SID=%34_BYTE_HEX_STRING%
+TWILIO_AUTH_TOKEN=%32_BYTE_HEX_STRING%
+NGROK_AUTH_TOKEN=%43_BYTE_HEX_STRING%
 ```
+You should replace all values in `%TEMPLATE_STRINGS` with your own values.
 
-If you want to test that `ngrok` is working run:
+Yes! We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
+
+### Setup
 
 ``` shell
-$ ngrok help
-$ ngrok http 80
+$ yarn setup
 ```
-
-#### Signal-Cli
-
-Now let's set up `signal-cli`:
-
-```
-$ ./bin/install-signal-cli
-$ ./bin/configure-signal-cli
-```
-
-## JDK Versioning
-
-Due to [this known issue](https://github.com/AsamK/signal-cli/issues/143#issuecomment-425360737), you must use JDK 1.8.0 in order for attachment sending to work.
-
-The issue above has okay instructions on how to downgrade your jdk version on debian. For more detailed instructions see [here](https://www.mkyong.com/linux/debian-change-default-java-version/j).
 
 ### Run Tests
 
@@ -91,36 +122,23 @@ The issue above has okay instructions on how to downgrade your jdk version on de
 $ yarn test
 ```
 
-### Run App
-
-(For first runs), create and seed the database with :
+If you want, you can run unit and e2e tests separately:
 
 ``` shell
-$ yarn db:setup
+$ yarn test:unit
 ```
+
+``` shell
+$ yarn test:e2e
+```
+
+### Run App
 
 Run the app in dev mode with:
 
 ``` shell
 $ yarn dev
 ```
-
-Register testing channel phone numbers with Signal:
-
-``` shell
-$ ./bin/pnums/register-all localhost:3000
-```
-
-We use `supervisord` to run all the processes involved in running the app.
-
-To check on the status of the app's various processes, stop them, or shutdown `supervisord`, you can use the following commands (respectively):
-
-``` shell
-$ yarn status
-$ yarn stop
-$ yarn shutdown
-```
-
 
 ### Use App
 
@@ -136,209 +154,59 @@ Any admin should be able to:
 * Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
 * Receive all messages broadcast to the channel
 
-# Deployment
+### Check logs
 
-NOTE: ALL OF THIS WILL VERY SHORTLY BE DEPRECATED AS SOON AS [TICKET #32](https://0xacab.org/team-friendo/signal-boost/issues/32) LANDS.
-
-## First Time
-
-Export these for convenience below
+You can check the logs with:
 
 ``` shell
-export SB_HOSTNAME=<name of signal-booster prod server in your ssh config file>
-export SB_USERNAME=<your username on the signal-booster box>
+$ cat ./logs/<service>.log.0
+$ cat ./logs/<service>.err.0
 ```
 
-### Make GPG Deploy Key
+Where `<service>` is one of:
 
-Create the key:
+* `dbus`
+* `dispatcher`
+* `orchestrator`
+* `signal-cli`
+
+### Check status of sub-services
+
+You can check the status of a any sub-service of the dispatcher service with:
 
 ``` shell
-$ mkdir ~/tmp/sbkeys
-$ cd ~/tmp/sbkeys
-$ gpg --homedir . --gen-key
-
-Your selection?
-   (1) RSA and RSA (default)
-What keysize do you want? (3092) DEFAULT
-Key is valid for? (0) DEFAULT
-
-# Real name: signal-booster
-# Email address: signal-booster@signal-booster-<var>
+$ docker-compose exec signalboost_dispatcher "supvervisord ctl status"
 ```
 
-Make it passwordless:
+Where the monitored subservices include:
 
-``` shell
-$ gpg --homedir . --edit-key signal-booster
-gpg> addkey
-(enter passphrase)
-  Please select what kind of key you want:
-   (3) DSA (sign only)
-   (4) RSA (sign only)
-   (5) Elgamal (encrypt only)
-   (6) RSA (encrypt only)
-Your selection? 6
-What keysize do you want? (3092)
-Key is valid for? (0)
-Command> key 2
-(the new subkey has a "*" next to it)
-Command> passwd
-(enter the main key's passphrase)
-(enter an empty passphrase for the subkey... confirm you want to do this)
-Command> save
-```
+* `dbus`
+* `dispatcher`
+* `signal-cli`
 
-Export the public key and re-encrypt secrets to it:
+# Application Design <a name="design"></a>
 
-``` shell
-$ gpg --homedir . --export -a signal-booster > ./signal-booster-pubkey.asc
-$ gpg import ./signal-booster-pubkey.asc
-$ cd /path/to/signal-booster/repo
-$ sudo -u signal-booster ./bin/blackbox_shred_all_files
-$ sudo -u signal-booster ./bin/blackbox_update_all_files
-```
+## Data Flow
 
-Export the secret key and scp it to the production box:
+Data flows through the application in (roughly) the following manner:
 
-``` shell
+* there is an application that controls several signal numbers, each of which acts as a "channel"
+* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
+* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
+* unlike with signal groups:
+  * the message appears to the subscribers as coming from the phone number associated with the channel (not the admin).
+  * subscribers may not see each others' phone numbers
+  * subscribers may not respond to messages
+* unlike with text blast services:
+  * messages are free to send! (thanks m0xie!)
+  * messages are encrypted between admins and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
+  * admins may send attachments to subscribers
 
-$ cd ~/tmp/sbkeys
-$ gpg --homedir . --export-secret-keys -a signal-booster > ./signal-booster-privkey.asc
-$ scp ./signal-booster-privkey.asc ${SB_HOSTNAME}:/home/${SB_USERNAME}/
-```
+## Architecture
 
-Import the deploy key into the production box's keystore:
+The application has the following components:
 
-``` shell
-$ ssh ${SB_HOSTNAME}
-$ cd
-$ sudo -u signal-booster gpg import signal-booster-privkey.asc
-```
-
-Delete unprotected private key material from your local machine:
-
-``` shell
-$ rm signal-booster-privkey.asc
-$ exit
-(back on your local machine...)
-$ cd ~/tmp
-$ rm -rf sbkeys
-```
-
-### Make SSH Deploy key
-
-Make a deploy ssh key on your local machine:
-
-``` shell
-$ ssh-keygen -t ed25519 -o -a 100 -f ~/.ssh/id_signal_booster_deploy -C "sb@$SB_HOSTNAME"
-```
-
-Place it on prod:
-
-``` shell
-$ scp ~/.ssh/id_signal_booster_deploy ${SB_HOSTNAME}:/home/${SB_USERNAME}/
-$ scp ~/.ssh/id_signal_booster_deploy.pub ${SB_HOSTNAME}:/home/${SB_USERNAME}/
-```
-
-Import it into your ssh agent:
-
-``` shell
-$ ssh $SB_HOSTNAME
-$ cd
-$ mkdir /home/signal-booster/.ssh
-$ mv ./id_signal_booster_deploy* /home/signal-booster/.ssh/
-$ sudo chown -R signal-booster:signal-booster /home/signal-booster/.ssh
-$ eval `ssh-agent`
-$ ssh-add ./id_signal_booster_deploy
-```
-
-Remove key material from your local machine:
-
-``` shell
-$ exit
-(back on your local machine...)
-$ rm ~/.ssh/id_signal_booster_deploy*
-```
-
-### Create PostGres DB and DB user
-
-``` shell
-$ psql -u postgres
-
-postgres# CREATE USER signal_booster WITH
-NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN
-PASSWORD '<INSERT_PASSWORD_HERE>'
-
-postgres# CREATE DATABASE signal_booster_production;
-
-postgres# ALTER DATABASE signal_booster_production owner to signal_booster;
-```
-
-### Initial Deploy
-
-Pull changes down to prod:
-
-``` shell
-$ ssh $SB_HOSTNAME
-$ ssh-eval `ssh-agent`
-$ ssh-add /home/signal-booster/.ssh/id_signal_booster_deploy
-$ cd /home/signal-booster
-$ sudo -u signal-booster git clone git@0xacab.org:team-friendo/signal-boost
-$ sudo -u signal-booster ./bin/blackbox_postdeploy
-$ sudo -u signal-booster yarn install
-$ sudo -u postgres yarn db:migrate:prod
-$ sudo -u postgres yarn db:seed:prod
-```
-
-Restart app:
-
-``` shell
-$ tmux attach
-<Ctrl-C>
-$ sudo -u signal-booster yarn start
-```
-
-## Subsequent Deploys
-
-Get shell and configure ssh for session:
-
-``` shell
-$ ssh $SB_HOSTNAME
-$ ssh-eval `ssh-agent`
-$ ssh-add /home/signal-booster/.ssh/id_signal_booster_deploy
-$ export GIT_SSH_COMMAND="ssh -i /home/signal-booster/.ssh/id_signal_booster_deploy"
-```
-
-Pull changes:
-
-``` shell
-$ cd /home/signal-booster/signal-booster
-$ sudo -u signal-booster ./bin/blackbox_shred_all_files
-$ sudo -u signal-booster git pull
-$ sudo -u signal-booster ./bin/blackbox_postdeploy
-$ sudo -u signal-booster yarn install
-$ sudo -u postgres yarn db:migrate:prod
-$ sudo -u postgres yarn db:seed:prod
-```
-
-Restart app:
-
-``` shell
-$ tmux attach
-<Ctrl-C>
-$ sudo -u signal-booster yarn start
-```
-# Provision New Twilio/Signal Numbers
-
-You can provision 10 phone numbers in area code 510 on the development server with:
-
- ```shell
- $ ./bin/provision-numbers -n 10 -a 510 -u signalboost.ngrok.io
- ```
-
- Omitting all arguments will default to 1 phone number in the 929 area code on prod:
-
- ```shell
-  $ ./bin/provision-numbers
- ```
+* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
+* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
+* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
+* an `orchestrator` service that handles the provision of new `dispatch` services as new channels are created
