@@ -14,12 +14,14 @@ describe('channel activation module', () => {
   const name = '#blackops'
   const containerId = 'acabdeadbeef'
   const admins = ['+12222222222', '+13333333333']
-  let runContainerStub, createChannelStub, addAdminsStub, updatePhoneNumberStub
+  let createContainerStub, createChannelStub, addAdminsStub, updatePhoneNumberStub
 
   describe('activating a channel', () => {
     let result
     before(async () => {
-      runContainerStub = sinon.stub(docker, 'runContainer').returns(Promise.resolve(containerId))
+      createContainerStub = sinon
+        .stub(docker, 'getOrCreateContainer')
+        .returns(Promise.resolve({ Id: containerId }))
       createChannelStub = sinon.stub(channelRepository, 'updateOrCreate').returns(
         Promise.resolve({
           phoneNumber,
@@ -42,14 +44,14 @@ describe('channel activation module', () => {
     })
 
     after(() => {
-      runContainerStub.restore()
+      createContainerStub.restore()
       createChannelStub.restore()
       addAdminsStub.restore()
       updatePhoneNumberStub.restore()
     })
 
     it('starts docker container containing channel for the phone number', () => {
-      expect(runContainerStub.getCall(0).args[0]).to.eql(phoneNumber, name)
+      expect(createContainerStub.getCall(0).args[0]).to.eql(phoneNumber, name)
     })
 
     it('records channel number and name in db', () => {
@@ -83,7 +85,9 @@ describe('channel activation module', () => {
     let result
 
     before(async () => {
-      runContainerStub = sinon.stub(docker, 'runContainer')
+      createContainerStub = sinon
+        .stub(docker, 'getOrCreateContainer')
+        .returns(Promise.resolve({ Id: containerId }))
       createChannelStub = sinon.stub(channelRepository, 'updateOrCreate')
       addAdminsStub = sinon.stub(channelRepository, 'addAdmins')
       updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
@@ -91,14 +95,14 @@ describe('channel activation module', () => {
     })
 
     after(() => {
-      runContainerStub.restore()
+      createContainerStub.restore()
       createChannelStub.restore()
       addAdminsStub.restore()
       updatePhoneNumberStub.restore()
     })
 
     it('starts 3 docker containers', () => {
-      expect(runContainerStub.callCount).to.eql(3)
+      expect(createContainerStub.callCount).to.eql(3)
     })
 
     it('creates 3 new channel resources in db', () => {

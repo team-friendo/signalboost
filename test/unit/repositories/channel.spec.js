@@ -17,7 +17,7 @@ import {
 import { subscriptionFactory } from '../../support/factories/subscription'
 import { administrationFactory } from '../../support/factories/administration'
 
-describe('channel db interface services', () => {
+describe('channel repository', () => {
   chai.use(chaiAsPromised)
 
   const chPNum = genPhoneNumber()

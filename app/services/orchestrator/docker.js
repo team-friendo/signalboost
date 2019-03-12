@@ -1,11 +1,30 @@
 const Docker = require('dockerode')
 const dockerClient = new Docker()
 const { projectRoot } = require('../../config')
+const { get } = require('lodash')
 
-// TODO: use named volumes for logs?
+// string -> Promise<?Container>
+const getContainer = phoneNumber =>
+  dockerClient
+    .listContainers({
+      filters: { name: [containerNameOf('signalboost_dispatcher', phoneNumber)] },
+    })
+    .then(cs => cs[0] || null)
 
-// string -> Promise<String>
-const runContainer = (phoneNumber, channelName) =>
+// (string, string) -> Promise<Container>
+const getOrCreateContainer = async (phoneNumber, channelName) => {
+  const container = await getContainer(phoneNumber)
+  return container ? container : createContainer(phoneNumber, channelName)
+}
+
+// string -> Promise<Container>
+const stopContainer = async phoneNumber =>
+  getContainer(phoneNumber).then(container => container && stopContainerById(container.Id))
+
+// HELPERS
+
+// string -> Promise<Container>
+const createContainer = (phoneNumber, channelName) =>
   dockerClient
     .createContainer({
       name: containerNameOf('signalboost_dispatcher', phoneNumber),
@@ -25,10 +44,10 @@ const runContainer = (phoneNumber, channelName) =>
       },
     })
     .then(c => c.start())
-    .then(c => c.id)
+    .then(c => ({ ...c, Id: c.id })) // yes... this upstream inconsistency is SUPER ANNOYING!
 
 // string -> Promise<Container>
-const stopContainer = id => dockerClient.getContainer(id).stop()
+const stopContainerById = id => dockerClient.getContainer(id).stop()
 
 // string -> string
 const containerNameOf = (imageName, phoneNumber) =>
@@ -37,4 +56,11 @@ const containerNameOf = (imageName, phoneNumber) =>
 // string -> string
 const configPathOf = phoneNumber => `${projectRoot}/signal_data/${phoneNumber.slice(1)}`
 
-module.exports = { dockerClient, runContainer, stopContainer, containerNameOf, configPathOf }
+module.exports = {
+  dockerClient,
+  getContainer,
+  getOrCreateContainer,
+  stopContainer,
+  containerNameOf,
+  configPathOf,
+}
