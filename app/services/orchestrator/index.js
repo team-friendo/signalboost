@@ -6,18 +6,20 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const channelService = require('./channel')
 const logger = require('./logger')
-const docker = require('./docker')
-const { wait } = require('../util')
+const { getConnection } = require('../../db')
 const {
   orchestrator: { port },
 } = require('../../config')
 
 const run = async (db, emitter) => {
-  // TODO: this wait is to avoid hitting db before it's ready... put a db retry loop here instead...
-  await wait(2000)
+  logger.log('getting database connection...')
+  await getConnection(db)
+    .then(logger.log)
+    .catch(logger.error)
 
-  logger.log(`listening on port ${port}`)
+  logger.log(`staring api server...`)
   await startApiServer(port, db, emitter)
+  logger.log(`api server listening on port ${port}`)
 
   logger.log('intializing channels...')
   await initializeChannels(db, emitter)
