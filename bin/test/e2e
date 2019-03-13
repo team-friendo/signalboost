@@ -8,16 +8,18 @@ export NODE_ENV=development
 
 echo "----- starting app..."
 cd ../../
-# TODO: change this once we have a docker-compose-dev file (or even a docker-compose-e2e test? file?
-docker-compose up -d
 
 echo "----- running e2e tests..."
-cd test/e2e
-find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+docker-compose \
+  -f docker-compose-test.yml \
+  run test_runner \
+  /signalboost/bin/entrypoint/test-e2e
 
-echo "----- shutting down app..."
-# TODO: change this once we have a docker-compose-dev file (or even a docker-compose-e2e test? file?
-docker-compose down
-docker rm -f signalboost_dispatcher_15555555555
+#cd test/e2e
+#find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+
+echo "----- shutting down / cleaning up..."
+docker-compose -f docker-compose-test.yml down
+docker ps --filter name=signalboost_dispatcher* -aq | xargs docker rm -f
 
 popd # return to original dir

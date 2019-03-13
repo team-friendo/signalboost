@@ -65,6 +65,7 @@ module.exports = {
   addSubscriber,
   updateOrCreate,
   findAll,
+  findByPhoneNumber,
   getSubscriberNumbers,
   isAdmin,
   isSubscriber,
