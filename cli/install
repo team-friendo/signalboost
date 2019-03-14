@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+if [ ${USER} != 'root' ]
+then
+  echo "[OOPS]: you need to run this script as root. try running 'sudo ./install_boost_cli ' isntead!"
+  exit 1
+fi
+
+pushd `pwd` > /dev/null # store current dir
+cli_dir=`dirname "$0"` # cd to script path
+
+echo "Adding '$PWD' to your \$PATH..."
+
+cd /usr/bin/
+ln -s ${cli_dir}/boost boost
+
+# echo "export PATH=\"\$PATH:${PWD}\"" >> ~/.bashrc
+# . ~/.bashrcq
+
+echo "Done!"
+echo ""
+echo "For instructions run:"
+echo ""
+echo "  boost --help"
+echo ""
+
+popd > /dev/null
