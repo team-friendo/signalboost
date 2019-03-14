@@ -15,11 +15,13 @@ describe('activating a channel', () => {
   before(async () => {
     db = initDb()
 
-    await stopContainer(phoneNumber)
-
-    await db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } })
-    await db.channel.destroy({ where: { phoneNumber } })
-    await db.phoneNumber.findOrCreate({ where: { phoneNumber }, defaults: { status: 'VERIFIED' } })
+    await Promise.all([
+      stopContainer(phoneNumber),
+      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.channel.destroy({ where: { phoneNumber } }),
+      db.phoneNumber.findOrCreate({ where: { phoneNumber }, defaults: { status: 'VERIFIED' } }),
+    ])
 
     channelCount = await db.channel.count()
     adminCount = await db.administration.count()
@@ -34,10 +36,15 @@ describe('activating a channel', () => {
 
   after(async function() {
     this.timeout(30000)
-    await db.channel.destroy({ where: { phoneNumber } })
-    await db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } })
+
+    await Promise.all([
+      stopContainer(phoneNumber),
+      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.channel.destroy({ where: { phoneNumber } }),
+    ])
+
     await db.sequelize.close()
-    await stopContainer(phoneNumber)
   })
 
   it("runs a docker container for the channel's dispatcher", async () => {

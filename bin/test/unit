@@ -4,19 +4,16 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../..
 
+# in case we changed db.json to run isolated unit tests on local dev machine
 sed -i -e "s|localhost|db|" ./app/config/db.json
 
-echo "--- running tests..."
+echo "--- running unit tests..."
 
-docker-compose \
-  -f docker-compose-test.yml \
-  run test_runner \
-  /signalboost/bin/entrypoint/test-unit
+docker-compose -f docker-compose-test-unit.yml run test_runner
 
 echo "--- spinning down environment..."
 
-docker-compose -f docker-compose-test.yml rm -f test_runner
-docker-compose -f docker-compose-test.yml stop db
-docker-compose -f docker-compose-test.yml rm -f db
+docker-compose -f docker-compose-test-unit.yml down
+docker ps --filter name=signalboost_dispatcher* -aq | xargs docker rm -f
 
 popd # return to original dir

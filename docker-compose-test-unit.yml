@@ -13,6 +13,7 @@ services:
   test_runner:
     image: signalboost
     container_name: signalboost_test_runner
+    entrypoint: /signalboost/bin/entrypoint/test-unit
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"

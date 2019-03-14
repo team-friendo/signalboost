@@ -2,20 +2,26 @@ const phoneNumberService = require('../phoneNumber')
 const activate = require('./activate')
 const channelRepository = require('../../../db/repositories/channel')
 const logger = require('../logger')
+const { find } = require('lodash')
 const { prettyPrint } = require('../../util')
 
 const initialize = async ({ db, emitter }) => {
-  const phStatuses = await phoneNumberService.registerAll({ db, emitter, filter: {} })
-  logger.log(`registered phone numbers: ${prettyPrint(phStatuses)}`)
+  logger.log('registering phone numbers...')
+  const registrationResults = await phoneNumberService.registerAll({ db, emitter, filter: {} })
+  logResults('registering phone numbers', registrationResults)
 
   const channels = await channelRepository.findAll(db)
-  logger.log(`activating channels: ${channels.map(ch => ch.phoneNumber)}`)
 
-  // TODO: inspect for errors here?
-  const activeChannels = await activate.activateMany(db, channels)
-  logger.log(`activated channels: ${activeChannels.map(ch => ch.phoneNumber)}`)
+  logger.log('activating channels....')
+  const activationResults = await activate.activateMany(db, channels)
+  logResults('activating channels', activationResults)
 
-  return { registered: phStatuses.length, activated: activeChannels.length }
+  return { registered: registrationResults.length, activated: activationResults.length }
 }
+
+const logResults = (prefix, results) =>
+  find(results, r => r.error)
+    ? logger.log(`${prefix} failed: \n ${prettyPrint(results)}`)
+    : logger.log(`${prefix} succeeded for: ${results.map(r => r.phoneNumber)}`)
 
 module.exports = { initialize }

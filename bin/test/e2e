@@ -2,24 +2,14 @@
 
 pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
-
-echo "----- setting up environment for e2e tests..."
-export NODE_ENV=development
-
-echo "----- starting app..."
 cd ../../
 
 echo "----- running e2e tests..."
-docker-compose \
-  -f docker-compose-test.yml \
-  run test_runner \
-  /signalboost/bin/entrypoint/test-e2e
+docker-compose -f docker-compose-test-e2e.yml run test_runner
 
-#cd test/e2e
-#find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
 
 echo "----- shutting down / cleaning up..."
-docker-compose -f docker-compose-test.yml down
+docker-compose -f docker-compose-test-e2e.yml down
 docker ps --filter name=signalboost_dispatcher* -aq | xargs docker rm -f
 
 popd # return to original dir

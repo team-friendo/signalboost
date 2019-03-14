@@ -38,7 +38,7 @@ describe('channel activation module', () => {
         )
       updatePhoneNumberStub = sinon
         .stub(phoneNumberRepository, 'update')
-        .returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
+        .returns(Promise.resolve({ dataValues: { phoneNumber, status: 'ACTIVE' } }))
 
       result = await activate({ db, phoneNumber, name, admins })
     })

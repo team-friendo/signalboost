@@ -24,7 +24,9 @@ const activate = async ({ db, phoneNumber, name, admins }) => {
     await channelRepository.updateOrCreate(db, phoneNumber, name, containerId)
     await channelRepository.addAdmins(db, phoneNumber, admins)
     return {
-      ...(await phoneNumberRepository.update(db, phoneNumber, { status: statuses.ACTIVE })),
+      ...(await phoneNumberRepository
+        .update(db, phoneNumber, { status: statuses.ACTIVE })
+        .then(x => x.dataValues)),
       name,
       admins,
     }

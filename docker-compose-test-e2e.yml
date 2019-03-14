@@ -1,0 +1,70 @@
+version: '3'
+
+volumes:
+  postgres_data:
+  logs:
+
+services:
+  db:
+    image: postgres
+    container_name: signalboost_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  orchestrator:
+    image: signalboost
+    container_name: signalboost_orchestrator
+    depends_on:
+      - db
+    entrypoint: /signalboost/bin/entrypoint/orchestrator
+    env_file: .env
+    environment:
+      PROJECT_ROOT: "$PWD"
+      NODE_ENV: "${NODE_ENV:-development}"
+    ports:
+      - 3000:3000
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./conf:/signalboost/conf
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./logs:/signalboost/logs
+      - ./signal_data:/root/.config/signal/data
+      - ./yarn.lock:/signalboost/yarn.lock
+      - /var/run/docker.sock:/var/run/docker.sock
+  ngrok:
+    container_name: ngrok
+    ports:
+      - 0.0.0.0:4040:4040
+    image: wernight/ngrok
+    links:
+      - orchestrator
+    env_file: .env
+    environment:
+      - NGROK_AUTH=$NGROK_AUTH_TOKEN
+      - NGROK_SUBDOMAIN=signalboost
+      - NGROK_PORT=orchestrator:3000
+  test_runner:
+    image: signalboost
+    container_name: signalboost_test_runner
+    entrypoint: /signalboost/bin/entrypoint/test-e2e
+    env_file: .env
+    environment:
+      PROJECT_ROOT: "$PWD"
+      NODE_ENV: "${NODE_ENV:-development}"
+    depends_on:
+      - db
+      - orchestrator
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./conf:/signalboost/conf
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./logs:/signalboost/logs
+      - ./signal_data:/root/.config/signal/data
+      - ./test:/signalboost/test
+      - ./yarn.lock:/signalboost/yarn.lock
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -13,7 +13,7 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 
 // CHANNEL ASSOCIATION QUERIES
 
-const addAdmins = (db, channelPhoneNumber, adminNumbers) =>
+const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     Promise.all(
       adminNumbers.map(humanPhoneNumber =>
