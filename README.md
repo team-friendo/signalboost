@@ -34,7 +34,7 @@ Signalboost ships with a cli tool for adding phone numbers, channels, and admins
 Install it with:
 
 ``` shell
-$ ./cli/install_boost_cli
+$ sudo ./cli/install
 ```
 
 *(NOTE: This will add a path to the `./cli` directory to your $PATH. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`)*
