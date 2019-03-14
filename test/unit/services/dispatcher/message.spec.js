@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../../../app/db/repositories/channel'
-import signalInterfaceService from '../../../../app/services/dispatcher/signalInterface'
+import signalInterfaceService from '../../../../app/services/dispatcher/signal'
 import { messages, maybeBroadcast, send } from '../../../../app/services/dispatcher/message'
 
 describe('messages services', () => {

@@ -1,4 +1,4 @@
-const signal = require('./signalInterface')
+const signal = require('./signal')
 const commandService = require('./command')
 const messageService = require('./message')
 const logger = require('./logger')
