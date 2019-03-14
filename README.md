@@ -1,18 +1,23 @@
-# Signal Blaster JS
+# Signalboost
 
-Hello! This is a program to allow for subscribable/moderatable text loops overlayed on top of the Signal Secure Messaging service.
+## Table Of Contents:
 
-You could usefully think of it as "text blasts over signal." Or... "Textmob 2020."
-
-If you found us on github, note that all bug/issue-tracking takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
-
-If you are a social justice group that would like to acquire and use signalboost channel(s) for your work, please write us at `team-friendo [AT] riseup [DOT] net`. (Signal(boost) number for inquiries and PGP key for the above address forthcoming! :))
-
-# Table Of Contents:
-
+* [Overview](#overview)
 * [Administering](#administering)
 * [Contributing](#contributing)
 * [Application Design](#design)
+
+# Overview <a name="overview"></a>
+
+Signalboost provides provides free, subscribable, encrypted mass text blasts over the [signal messaging service](https://www.signal.org/). (If you are a child of the anarchist 90's, you might usefully think of it as "TextMob 2020." ;))
+
+It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in emergency situations.
+
+The stack is a fun mix of node services, dynamically-allocated docker containers, dbus interfaces, and calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for more details.
+
+If you found us on github, note that all **issue-tracking** takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
+
+If you are a social justice group and **want to use signalboost for your work**, please write us at `team-friendo [AT] riseup [DOT] net`. (Signal number and PGP key for inquiries forthcoming! :))
 
 # Administering <a name="administering"></a>
 
