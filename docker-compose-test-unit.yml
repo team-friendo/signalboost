@@ -1,0 +1,36 @@
+version: '3'
+
+volumes:
+  postgres_data:
+  logs:
+
+services:
+  db:
+    image: postgres
+    container_name: signalboost_test_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  test_runner:
+    image: signalboost
+    container_name: signalboost_test_runner
+    entrypoint: /signalboost/bin/entrypoint/test-unit
+    env_file: .env
+    environment:
+      PROJECT_ROOT: "$PWD"
+      NODE_ENV: "test"
+    depends_on:
+      - db
+    ports:
+      - 3000:3000
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./supervisord_conf:/signalboost/supervisord_conf
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./logs:/signalboost/logs
+      - ./signal_data:/root/.config/signal/data
+      - ./test:/signalboost/test
+      - ./yarn.lock:/signalboost/yarn.lock
+      - /var/run/docker.sock:/var/run/docker.sock

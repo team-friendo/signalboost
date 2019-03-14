@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../../
+
+echo "----- running e2e tests..."
+docker-compose -f docker-compose-test-e2e.yml run test_runner
+
+
+echo "----- shutting down / cleaning up..."
+docker-compose -f docker-compose-test-e2e.yml down
+docker ps --filter name=signalboost_dispatcher* -aq | xargs docker rm -f
+
+popd # return to original dir

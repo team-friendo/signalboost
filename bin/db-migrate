@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-pushd `pwd` # store current dir
-cd `dirname "$0"` # cd to script path
-
-./db-migrate-dev
-./db-migrate-prod
-
-popd # return to original dir

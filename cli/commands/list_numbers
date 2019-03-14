@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "This command retrieves active phone numbers and their sids via a call to the twilio API."
+  echo ""
+  echo "You may find it useful to run this command to retrieve sids for use in either of the following:"
+  echo ""
+  echo "  boost release_number <sid>"
+  echo "  boost release_numbers <path/to/file_with_list_of_sids>"
+  echo ""
+  echo "NOTE: you must have run yarn install (or ./bin/deploy) for this command to work!"
+  echo ""
+  popd > /dev/null
+  exit 1
+fi
+
+echo "--- checking environment..."
+
+if [ -z $TWILIO_ACCOUNT_SID ];then
+  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. try \`\$ set -a && source .env && set +a\`"
+  exit 1
+fi
+
+if [ -z $TWILIO_AUTH_TOKEN ];then
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ set -a && source .env && set +a\`"
+  exit 1
+fi
+
+echo "--- fetching numbers..."
+
+pushd `pwd` > /dev/null # store current dir
+curr_dir=`dirname "$0"` # cd to script path
+
+node commands/listNumbers.js 
+
+popd > /dev/null

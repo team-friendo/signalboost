@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+pushd `pwd` > /dev/null # store current dir
+curr_dir=`dirname "$0"` # cd to script path
+
+cd $curr_dir
+
+echo "Adding '$PWD' to your \$PATH..."
+
+echo "export PATH=\"\$PATH:${PWD}\"" >> ~/.bashrc
+. ~/.bashrc
+
+echo "Done!"
+echo ""
+echo "For instructions run:"
+echo ""
+echo "  boost --help"
+echo ""
+
+popd > /dev/null

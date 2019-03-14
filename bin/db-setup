@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-pushd `pwd` # store current dir
-cd `dirname "$0"` # cd to script path
-
-./db-setup-dev
-./db-setup-prod
-
-popd # return to original dir

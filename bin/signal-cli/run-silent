@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [ -z $CHANNEL_PHONE_NUMBER ];then
+  echo "--- ERROR: no CHANNEL_PHONE_NUMBER found."
+  exit 1
+fi
+
+signal-cli -u $CHANNEL_PHONE_NUMBER daemon --system 2>&1 > /dev/null

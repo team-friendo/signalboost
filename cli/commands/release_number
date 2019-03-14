@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]];then
+  echo "this command releases phone numbers. usage:"
+  echo ""
+  echo "  boost release_number <phone_number_sid>";
+  echo ""
+  exit 1
+fi
+
+
+echo "--- checking environment..."
+
+phone_number_sid=$1
+
+if [ -z $phone_number_sid ];then
+  echo "--- ERROR: no phone number sid provided"
+  echo "--- USAGE: `./bin/release-number <phone_number_sid>`";
+  exit 1
+fi
+
+
+if [ -z $TWILIO_ACCOUNT_SID ];then
+  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. try \`\$ source .env\`"
+  exit 1
+fi
+
+if [ -z $TWILIO_AUTH_TOKEN ];then
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ source .env\`"
+  exit 1
+fi
+
+echo "--- releasing number with sid $sid..."
+
+curl -X DELETE \
+  -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
+  https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${phone_number_sid}.json
+

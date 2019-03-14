@@ -12,18 +12,25 @@
 *.DS_STORE
 .idea/*
 .env
-*npm-debug.log*
-*yarn-debug.log*
-*yarn-error.log*
+
+# logs
+logs/
+*.log*
+
+# pids
+*.pid
+
+# docker volumes
+/logs/*
+/signal_data/*
 
 # blackbox
 /keyrings/live/pubring.gpg~
 /keyrings/live/pubring.kbx~
 /keyrings/live/secring.gpg
 /.env
-/data/people.js
-/app/db/seeders/20181219230951-tj-channel-and-admins.js
 /keys/id_signal_booster_deploy
 /keys/id_signal_booster_deploy.pub
 /keys/signal-booster-privkey.asc
-/app/config/db.json
+/app/db/seeders/20190125203925-testing-channels.js
+/.vscode/settings.json

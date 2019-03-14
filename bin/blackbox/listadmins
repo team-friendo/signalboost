@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+#
+# listadmins -- List active admins for keyring
+#
+
+# Example:
+#    listadmins
+#
+
+set -e
+source "${0%/*}/_common.sh"
+
+fail_if_not_in_repo
+
+
+# simply display the contents of the admins file
+cat "$BB_ADMINS"
