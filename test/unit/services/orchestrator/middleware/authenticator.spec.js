@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { startApiServer } from '../../../../../app/services/orchestrator/index'
+import { startApiServer } from '../../../../../app/services/orchestrator/run'
 import { orchestrator } from '../../../../../app/config/index'
 
 describe('authentication middleware', () => {

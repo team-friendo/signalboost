@@ -26,7 +26,7 @@ services:
       - ./.sequelizerc:/signalboost/.sequelizerc
       - ./app:/signalboost/app
       - ./bin:/signalboost/bin
-      - ./conf:/signalboost/conf
+      - ./superviserd-conf:/signalboost/superviserd-conf
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - ./logs:/signalboost/logs
@@ -60,7 +60,7 @@ services:
       - ./.sequelizerc:/signalboost/.sequelizerc
       - ./app:/signalboost/app
       - ./bin:/signalboost/bin
-      - ./conf:/signalboost/conf
+      - ./supervisord_conf:/signalboost/supervisord_conf
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - ./logs:/signalboost/logs

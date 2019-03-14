@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { dispatch } from '../../../../app/services/dispatcher/index'
+import { dispatch } from '../../../../app/services/dispatcher/run'
 import commandService, { statuses, messages } from '../../../../app/services/dispatcher/command'
 import messageService from '../../../../app/services/dispatcher/message'
 

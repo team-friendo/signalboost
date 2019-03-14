@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-cd /signalboost
-
-node app/services/dispatcher/run

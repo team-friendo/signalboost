@@ -3,13 +3,13 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
 import { times, keys, pick } from 'lodash'
-import { startApiServer } from '../../../../app/services/orchestrator/index'
+import { startApiServer } from '../../../../app/services/orchestrator/run'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/orchestrator/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/orchestrator/phoneNumber'
 import { orchestrator } from '../../../../app/config/index'
 
-describe('api routes', () => {
+describe('routes', () => {
   const phoneNumber = genPhoneNumber()
   const verificationMessage = 'Your Signal verification code: 890-428 for +14322239406'
   const verifiedStatuses = times(3, () => ({
