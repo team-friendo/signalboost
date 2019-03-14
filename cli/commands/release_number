@@ -3,7 +3,8 @@
 if [[ $1 == "-h" ]];then
   echo "this command releases phone numbers. usage:"
   echo ""
-  echo "boost release_number <phone_number_sid>";
+  echo "  boost release_number <phone_number_sid>";
+  echo ""
   exit 1
 fi
 

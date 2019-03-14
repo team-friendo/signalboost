@@ -5,11 +5,16 @@ curr_dir=`dirname "$0"` # cd to script path
 
 cd $curr_dir
 
-echo "--- Adding '$PWD' to your \$PATH"
+echo "Adding '$PWD' to your \$PATH..."
 
-echo "export PATH=\$PATH:${PWD}" >> ~/.bashrc
+echo "export PATH=\"\$PATH:${PWD}\"" >> ~/.bashrc
 . ~/.bashrc
 
-echo "--- Done!"
+echo "Done!"
+echo ""
+echo "For instructions run:"
+echo ""
+echo "  boost --help"
+echo ""
 
 popd > /dev/null

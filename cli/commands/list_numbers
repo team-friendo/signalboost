@@ -9,61 +9,28 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "  boost release_numbers <path/to/file_with_list_of_sids>"
   echo ""
   echo "NOTE: you must have run yarn install (or ./bin/deploy) for this command to work!"
+  echo ""
+  popd > /dev/null
   exit 1
 fi
 
 echo "--- checking environment..."
 
-if [ -z $SIGNAL_BOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNAL_BOOST_API_TOKEN found. try \`\$ source .env\`"
+if [ -z $TWILIO_ACCOUNT_SID ];then
+  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. try \`\$ set -a && source .env && set +a\`"
   exit 1
 fi
 
-while getopts ":p:n:a:u:" opt; do
-  case "$opt" in
-    p)
-      phone_number="$OPTARG"
-      ;;
-    n)
-      name="$OPTARG"
-      ;;
-    a)
-      admins="$OPTARG"
-      ;;
-    u)
-      url="$OPTARG"
-      ;;
-  esac
-done
-
-if [[ ! $phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
-  echo "> ERROR: -p must be a 10 digit phone number prefixed by a country code (+1 or +52)"
+if [ -z $TWILIO_AUTH_TOKEN ];then
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ set -a && source .env && set +a\`"
   exit 1
 fi
 
-if [ -z $name ];then
-  echo "> ERROR: -n (channel name) may not be empty"
-  exit 1;
-fi
+echo "--- fetching numbers..."
 
-if [ -z $admin_numbers ]
-then
-  admin_numbers="[]"
-elif [[ ! $admin_numbers =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
-  echo "> ERROR: -a must be a  comman-delimited list of 10 digit phone numbers prefixed by a country code"
-  exit 1
-else
-  # convert comma-delimited list of numbers
-  # into string representation of array of string representations of numbers
-  admin_numbers="[\"$(echo $admin_numbers | sed -rn "s/,/\", \"/p")\"]"
-fi
+pushd `pwd` > /dev/null # store current dir
+curr_dir=`dirname "$0"` # cd to script path
 
-if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
+node commands/listNumbers.js 
 
-echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
-
-curl -X POST \
-     -H "Content-Type: application/json" \
-     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
-     http://${url}/channels | jq
+popd > /dev/null

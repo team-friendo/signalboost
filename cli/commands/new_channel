@@ -7,10 +7,11 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "-n : name to give to the channel once it is activated";
   echo "-a : comma-delimited list of admin phone numbers (optional)";
   echo "-u : url to target (in dev, use signalboost.ngrok.io)";
+  echo ""
   exit 1
 fi
 
-echo "--- checking environment..."
+echo "--- checking environment and args..."
 
 if [ -z $SIGNAL_BOOST_API_TOKEN ];then
   echo "--- ERROR: no SIGNAL_BOOST_API_TOKEN found. try \`\$ source .env\`"
@@ -39,21 +40,21 @@ if [[ ! $phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
   exit 1
 fi
 
-if [ -z $name ];then
+if [ -z "$name" ];then
   echo "> ERROR: -n (channel name) may not be empty"
   exit 1;
 fi
 
-if [ -z $admin_numbers ]
+if [ -z "$admins" ]
 then
-  admin_numbers="[]"
-elif [[ ! $admin_numbers =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
-  echo "> ERROR: -a must be a  comman-delimited list of 10 digit phone numbers prefixed by a country code"
+  admins="[]"
+elif [[ ! $admins =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
+  echo "> ERROR: -a must be a  comma-delimited list of 10 digit phone numbers prefixed by a country code"
   exit 1
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  admin_numbers="[\"$(echo $admin_numbers | sed -rn "s/,/\", \"/p")\"]"
+  admins="[\"$(echo $admins | sed -rn "s/,/\", \"/p")\"]"
 fi
 
 if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
