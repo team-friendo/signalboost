@@ -20,7 +20,7 @@ describe('channel initialization module', () => {
   describe('initializing all channels', () => {
     let result
     before(async () => {
-      registerAllStub = sinon.stub(phoneNumberService, 'registerAll').returns(
+      registerAllStub = sinon.stub(phoneNumberService, 'registerAllUnregistered').returns(
         Promise.resolve([
           {
             phoneNumber: genPhoneNumber(),
@@ -47,7 +47,7 @@ describe('channel initialization module', () => {
     })
 
     it('registers all phone numbers', () => {
-      expect(registerAllStub.getCall(0).args[0]).to.eql({ db, emitter, filter: {} })
+      expect(registerAllStub.getCall(0).args[0]).to.eql({ db, emitter })
     })
 
     it('activates all channels', () => {

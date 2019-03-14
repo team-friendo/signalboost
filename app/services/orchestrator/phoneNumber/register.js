@@ -1,11 +1,10 @@
-import { prettyPrint } from '../../util'
-
-const util = require('../../util')
-const { get } = require('lodash')
+const fs = require('fs-extra')
+const { get, without } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
+const util = require('../../util')
 const phoneNumbers = require('../../../db/repositories/phoneNumber')
 const {
-  time: { verificationTimeout },
+  signal: { verificationTimeout, keystorePath },
 } = require('../../../config/index')
 
 /**
@@ -17,15 +16,24 @@ const {
 
 // PUBLIC FUNCTIONS
 
-// ({Database, Emitter}) => Promise<Array<PhoneNumberStatus>>
-const registerAll = async ({ db, emitter, filter }) =>
-  db.phoneNumber
-    .findAll({ where: filter })
-    .then(phoneNumberStatuses =>
-      Promise.all(
-        phoneNumberStatuses.map(({ phoneNumber }) => register({ db, emitter, phoneNumber })),
-      ),
-    )
+// ({Database, Emitter, object}) => Promise<Array<PhoneNumberStatus>>
+const registerAll = async ({ db, emitter, filter }) => {
+  const phoneNumberStatuses = await db.phoneNumber.findAll({ where: filter })
+  return Promise.all(
+    phoneNumberStatuses.map(({ phoneNumber }) => register({ db, emitter, phoneNumber })),
+  )
+}
+
+// ({Database, Emitter, object }) => Promise<Array<PhoneNumberStatus>>
+const registerAllUnregistered = async ({ db, emitter }) => {
+  const phoneNumberStatuses = await db.phoneNumber.findAll()
+  const results = await Promise.all(
+    phoneNumberStatuses.map(async ({ phoneNumber }) =>
+      (await isRegistered(phoneNumber)) ? null : register({ db, emitter, phoneNumber }),
+    ),
+  )
+  return without(results, null)
+}
 
 // ({Database, Emitter, string}) => Promise<PhoneNumberStatus>
 const register = ({ db, emitter, phoneNumber }) =>
@@ -87,6 +95,8 @@ const recordStatusChange = (db, phoneNumber, status) =>
 const parseVerificationCode = verificationMessage =>
   verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
 
+const isRegistered = phoneNumber => fs.pathExists(`${keystorePath}/${phoneNumber}`)
+
 // EXPORTS
 
-module.exports = { registerAll, register, verify, parseVerificationCode }
+module.exports = { registerAllUnregistered, registerAll, register, verify, parseVerificationCode }

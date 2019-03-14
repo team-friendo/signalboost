@@ -1,17 +1,22 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach } from 'mocha'
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
+import fs from 'fs-extra'
 import util from '../../../../../app/services/util'
 import { EventEmitter } from 'events'
 import { times } from 'lodash'
 import {
-  registerAll,
   register,
+  registerAll,
+  registerAllUnregistered,
   verify,
   parseVerificationCode,
 } from '../../../../../app/services/orchestrator/phoneNumber/register'
 import { statuses, errors } from '../../../../../app/services/orchestrator/phoneNumber/index'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
+const {
+  signal: { keystorePath },
+} = require('../../../../../app/config')
 
 describe('phone number services -- registration module', () => {
   const phoneNumber = genPhoneNumber()
@@ -44,10 +49,9 @@ describe('phone number services -- registration module', () => {
 
   describe('registering all purchased numbers with signal', () => {
     const filter = { status: 'PURCHASED' }
-    // NOTE(aguestuser): we focus on happy path in this bracket b/c
-    // sad paths are tested exhaustively in `registering a number with signal ` bracket (below)
-
     describe('when all registrations succeed', () => {
+      // NOTE: we focus on happy path tests b/c sad path tests are covered exhaustively below
+      // (in `registering a number with signal ` bracket)
       beforeEach(() => {
         findAllStub.returns(Promise.resolve(purchasedNumbers))
         execStub.returns(Promise.resolve())
@@ -107,6 +111,50 @@ describe('phone number services -- registration module', () => {
             phoneNumber: purchasedNumbers[2].phoneNumber,
           },
         ])
+      })
+    })
+  })
+
+  describe('registering all unregistered numbers with signal', () => {
+    let pathExistsStub
+    beforeEach(() => {
+      // stub to act like keystore for first purchased number already exists
+      pathExistsStub = sinon
+        .stub(fs, 'pathExists')
+        .callsFake(path =>
+          Promise.resolve(path === `${keystorePath}/${purchasedNumbers[0].phoneNumber}`),
+        )
+      findAllStub.returns(Promise.resolve(purchasedNumbers))
+      execStub.returns(Promise.resolve())
+      updateStub.callsFake(({ status }, { where: { phoneNumber } }) =>
+        Promise.resolve([1, [{ status, phoneNumber }]]),
+      )
+      purchasedNumbers.forEach(({ phoneNumber }) => {
+        setTimeout(() => emitter.emit('verified', { ...verifiedStatus, phoneNumber }), emitOffset)
+      })
+    })
+
+    afterEach(() => {
+      pathExistsStub.restore()
+    })
+
+    describe('when all registerations succeed', () => {
+      // NOTE: we omit sad path tests b/c those are covered exhaustively above and below
+      it('returns an array of success statuses', async () => {
+        expect(await registerAllUnregistered({ db, emitter })).to.eql([
+          {
+            status: statuses.VERIFIED,
+            phoneNumber: purchasedNumbers[1].phoneNumber,
+          },
+          {
+            status: statuses.VERIFIED,
+            phoneNumber: purchasedNumbers[2].phoneNumber,
+          },
+        ])
+      })
+      it('only attempts to register unregistered phone numbers', async () => {
+        await registerAllUnregistered({ db, emitter })
+        expect(execStub.callCount).to.eql(2)
       })
     })
   })

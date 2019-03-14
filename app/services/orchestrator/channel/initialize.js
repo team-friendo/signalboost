@@ -7,7 +7,7 @@ const { prettyPrint } = require('../../util')
 
 const initialize = async ({ db, emitter }) => {
   logger.log('registering phone numbers...')
-  const registrationResults = await phoneNumberService.registerAll({ db, emitter, filter: {} })
+  const registrationResults = await phoneNumberService.registerAllUnregistered({ db, emitter })
   logResults('registering phone numbers', registrationResults)
 
   const channels = await channelRepository.findAll(db)

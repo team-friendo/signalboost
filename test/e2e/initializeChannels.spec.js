@@ -1,11 +1,16 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import fs from 'fs-extra'
+import sinon from 'sinon'
 import { initDb } from '../../app/db'
 import { EventEmitter } from 'events'
 import channelRepository from '../../app/db/repositories/channel'
 import docker from '../../app/services/orchestrator/docker'
 import channelService from '../../app/services/orchestrator/channel'
+import logger from '../../app/services/orchestrator/logger'
+const {
+  signal: { keystorePath },
+} = require('../../app/config')
 
 describe('initializing channels', () => {
   const phoneNumbers = [
@@ -14,13 +19,13 @@ describe('initializing channels', () => {
   ]
   const staleContainerId = 'acabdeadbeef'
   const timeout = 60000
-  const keystorePath = '/root/.config/signal/data'
-  let db, emitter
+  let db, emitter, loggerSpy
 
   before(async function() {
     this.timeout(timeout)
     db = initDb()
     emitter = new EventEmitter()
+    loggerSpy = sinon.spy(logger, 'log')
 
     await Promise.all(phoneNumbers.map((phoneNumber, idx) => setupNumber(db, phoneNumber, idx)))
     await channelService.initialize({ db, emitter })
@@ -31,11 +36,12 @@ describe('initializing channels', () => {
       // ensure that initialize runs against both PURCHASED and VERIFIED phone numbers
       db.phoneNumber.findOrCreate({
         where: { phoneNumber },
-        defaults: { status: idx === 0 ? 'PURCHASED' : 'VERIFIED' },
+        defaults: { status: idx === 0 ? 'VERIFIED' : 'REGISTERED' },
       }),
       // hide any traces of having been previously registered
-      maybeMove(`${keystorePath}/${phoneNumber}`, `${keystorePath}/${phoneNumber}.bk`),
-      maybeMove(`${keystorePath}/${phoneNumber}.d`, `${keystorePath}/${phoneNumber}.d.bk`),
+      // TODO: leaving one to register costs $$$ (via twilio fees), consider omitting
+      idx !== 0 && maybeMove(`${keystorePath}/${phoneNumber}`, `${keystorePath}/${phoneNumber}.bk`),
+      idx !== 0 && maybeMove(`${keystorePath}/${phoneNumber}.d`, `${keystorePath}/${phoneNumber}.d.bk`),
       // make sure that channels exist, but give them obsolete containerIds (to simulate re-deploying from db state)
       db.channel.findOrCreate({
         where: { phoneNumber },
@@ -61,7 +67,16 @@ describe('initializing channels', () => {
 
   const maybeMove = async (src, dst) => {
     const [srcExists, dstExists] = await Promise.all([fs.pathExists(src), fs.pathExists(dst)])
-    return srcExists && !dstExists && fs.move(src, dst)
+    if (srcExists) {
+      if (!dstExists) {
+        return fs.move(src, dst)
+      } else {
+        await fs.remove(dst)
+        return fs.move(src, dst)
+      }
+    } else {
+      return Promise.resolve()
+    }
   }
 
   describe('for each phone number', () => {
@@ -84,5 +99,10 @@ describe('initializing channels', () => {
         expect(pNum.status).to.eql('ACTIVE')
       })
     })
+  })
+
+  it('only attempts to register unregistered numbers', () => {
+    expect(loggerSpy.getCall(1).args[0]).not.to.include(phoneNumbers[0])
+    expect(loggerSpy.getCall(1).args[0]).to.include(phoneNumbers[1])
   })
 })
