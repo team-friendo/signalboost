@@ -1,5 +1,7 @@
 .env
+ansible/files/deploy_keys/signalboost_gpg_privkey.asc
+ansible/files/deploy_keys/signalboost_ssh_key
+ansible/files/deploy_keys/signalboost_ssh_key.pub
+ansible/inventory.tmpl
 app/db/seeders/20190125203925-testing-channels.js
-keys/id_signal_booster_deploy
-keys/id_signal_booster_deploy.pub
-keys/signal-booster-privkey.asc
+bin/get-machine
