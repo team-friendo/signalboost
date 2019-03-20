@@ -109,9 +109,6 @@ RUN wget https://github.com/AsamK/signal-cli/releases/download/v"${SIGNAL_CLI_VE
     ln -sf /opt/signal-cli-"${SIGNAL_CLI_VERSION}"/bin/signal-cli /usr/local/bin; \
     rm -rf signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz;
 
-# Declare permissions for access to the signal-cli message bus
-COPY conf/org.asamk.Signal.conf /etc/dbus-1/system.d/
-
 # ------------------------------------------------------
 # --- Install and Configure DBus
 # ------------------------------------------------------
@@ -123,4 +120,23 @@ dbus --fix-missing;
 RUN mkdir -p /var/run/dbus
 
 # Declare permissions for access to the signal-cli message bus
-COPY conf/org.asamk.Signal.conf /etc/dbus-1/system.d/
+RUN echo -e '\
+<?xml version="1.0"?> <!--*-nxml-*-->\n\
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"\n\
+          "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">\n\
+\n\
+<busconfig>\n\
+\n\
+  <policy user="root">\n\
+    <allow own="org.asamk.Signal"/>\n\
+    <allow send_destination="org.asamk.Signal"/>\n\
+    <allow receive_sender="org.asamk.Signal"/>\n\
+  </policy>\n\
+\n\
+  <policy context="default">\n\
+    <allow send_destination="org.asamk.Signal"/>\n\
+    <allow receive_sender="org.asamk.Signal"/>\n\
+  </policy>\n\
+\n\
+</busconfig>'\
+>> /etc/dbus-1/system.d/org.asamk.Signal.conf
