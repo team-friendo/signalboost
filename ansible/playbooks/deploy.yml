@@ -1,0 +1,82 @@
+---
+- name: Deploy Signalboost
+  become: true
+  hosts: signalboost
+
+  environment:
+    NODE_ENV: production
+
+  vars:
+    homedir: /srv/signalboost
+
+  tasks:
+
+  #########
+  # CLONE #
+  #########
+
+  - name: Pull signalboost repository from 0xacab
+    git:
+      repo: https://0xacab.org/team-friendo/signalboost
+      dest: "{{ homedir }}"
+      force: true
+      version: "{{ branch | default('master') }}"
+    tags: clone
+
+  - name: Decrypt secrets
+    command: ./bin/blackbox/postdeploy
+    args:
+      chdir: "{{ homedir }}"
+    tags: clone
+
+  ########
+  # STOP #
+  ########
+
+  - name: Stop app
+    command: ./bin/shutdown
+    args:
+      chdir: "{{ homedir }}"
+    tags: stop
+
+  ###########
+  # PREPARE #
+  ###########
+
+  - name: Install node packages
+    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' orchestrator"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Stop container used for install
+    command: "docker-compose down"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Setup database, run migrations
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup-prod orchestrator"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Stop containers used for db setup
+    command: "docker-compose down"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  #########
+  # START #
+  #########
+
+  - name: Start app
+    docker_service:
+      project_src: "{{ homedir }}"
+      state: present
+    register: docker_up_result
+
+
+  - debug:
+      var: docker_up_result

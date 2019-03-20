@@ -11,6 +11,10 @@ const routesOf = (router, db, emitter) => {
   // router.get('/phoneNumbers')
   // router.get('/channels')
 
+  router.get('/hello', async ctx => {
+    ctx.body = { msg: 'hello world' }
+  })
+
   router.post('/channels', async ctx => {
     const { phoneNumber, name, admins } = ctx.request.body
 

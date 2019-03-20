@@ -65,4 +65,9 @@ curl -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNAL_BOOST_API_TOKEN" \
      -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
-     http://${url}/channels | jq
+     https://${url}/channels | jq
+
+
+curl -H "Content-Type: application/json" \
+     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
+     https://signalboost.info/hello | jq

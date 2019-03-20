@@ -1,26 +1,18 @@
 version: '3'
 
-networks:
-  proxy-tier:
-
 volumes:
-  certs:
-  html:
   postgres_data:
-  nextcloud:
-  vhost.d:
+  logs:
 
 services:
-
   db:
     image: postgres
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
   orchestrator:
     image: signalboost
+    build: .
     container_name: signalboost_orchestrator
     depends_on:
       - db
@@ -28,10 +20,7 @@ services:
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"
-      NODE_ENV: production
-    networks:
-      - proxy-tier
-      - default
+      NODE_ENV: "${NODE_ENV:-development}"
     ports:
       - 3000:3000
     volumes:
@@ -46,35 +35,15 @@ services:
       - ./signal_data:/root/.config/signal/data
       - ./yarn.lock:/signalboost/yarn.lock
       - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-
-  proxy:
-    image: jwilder/nginx-proxy:alpine
-    container_name: proxy
+  ngrok:
+    container_name: ngrok
     ports:
-      - 80:80
-      - 443:443
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-    volumes:
-      - certs:/etc/nginx/certs:ro
-      - vhost.d:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - proxy-tier
-    restart: unless-stopped
-
-  letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    container_name: letsencrypt
-    restart: unless-stopped
-    volumes:
-      - certs:/etc/nginx/certs
-      - vhost.d:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy-tier
-    depends_on:
-      - proxy
+      - 0.0.0.0:4040:4040
+    image: wernight/ngrok
+    links:
+      - orchestrator
+    env_file: .env
+    environment:
+      - NGROK_AUTH=$NGROK_AUTH_TOKEN
+      - NGROK_SUBDOMAIN=signalboost
+      - NGROK_PORT=orchestrator:3000

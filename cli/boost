@@ -4,6 +4,11 @@ pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 
 command=$1
+
+if [[ $command == "-h" ]] || [[ $command == "--help" ]];then
+  command=help
+fi  
+
 echo ""
 
 print_usage(){
@@ -34,7 +39,7 @@ then
   print_usage
   exit 1
 else
-  ./commands/${command} "${@:2}"
+  ./boost_commands/${command} "${@:2}"
 fi
 
 popd > /dev/null # return to original dir
