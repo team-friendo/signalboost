@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+if [ -z $SIGNALBOOST_API_TOKEN ];then
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ set -a && source .env && set +a\`"
+  exit 1
+fi
+
+if [ -z $SIGNALBOOST_HOST_URL ];then
+  echo "--- ERROR: no SIGNALBOOST_HOST_URL found. try \`\$ set -a && source .env && set +a\`"
+  exit 1
+fi
+
+echo "--- checking if nextcloud instance available..."
+
+check-until-available(){
+  echo "--- check #$1"
+  count=$1
+  if [ ${count} -gt 300 ];then
+    echo  "--- instance not available after 5 minutes. exiting"
+    exit 0
+  else
+    status=$(curl -s -H "Token: $SIGNALBOOST_API_TOKEN" \
+                     -I https://${SIGNALBOOST_HOST_URL}/hello \
+                     | sed -n 1p | awk '{print $2}')
+    if [ ${status} != "200" ] && [ ${status} != "302" ];then
+      echo  "--- instance not available. checking again in 5sec..."
+      let new_count=$count+1
+      sleep 5
+      check-until-available $new_count
+    else
+      echo  "--- instance available! continuing."
+    fi
+  fi
+}
+
+check-until-available 0
