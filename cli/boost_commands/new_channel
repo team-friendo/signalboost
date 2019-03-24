@@ -13,8 +13,8 @@ fi
 
 echo "--- checking environment and args..."
 
-if [ -z $SIGNAL_BOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNAL_BOOST_API_TOKEN found. try \`\$ source .env\`"
+if [ -z $SIGNALBOOST_API_TOKEN ];then
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ source .env\`"
   exit 1
 fi
 
@@ -54,20 +54,15 @@ elif [[ ! $admins =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  admins="[\"$(echo $admins | sed -rn "s/,/\", \"/p")\"]"
+  admins="[\"$(echo $admins | sed -re "s/,/\", \"/")\"]"
 fi
 
-if [ -z $url ];then url=${SIGNAL_BOOST_HOST_IP}; fi
+if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
 echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
 
 curl -X POST \
      -H "Content-Type: application/json" \
-     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
+     -H "Token: $SIGNALBOOST_API_TOKEN" \
      -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
      https://${url}/channels | jq
-
-
-curl -H "Content-Type: application/json" \
-     -H "Token: $SIGNAL_BOOST_API_TOKEN" \
-     https://signalboost.info/hello | jq

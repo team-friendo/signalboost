@@ -19,6 +19,7 @@ print_usage(){
   echo "  help"
   echo "  new_channel"
   echo "  new_numbers"
+  echo "  register_numbers"
   echo "  list_numbers"
   echo "  release_number"
   echo "  release_numbers"
@@ -32,6 +33,7 @@ print_usage(){
 if [[ $command != "help" ]] &&
      [[ $command != "new_channel" ]] &&
      [[ $command != "new_numbers" ]] &&
+     [[ $command != "register_numbers" ]] &&
      [[ $command != "list_numbers" ]] &&
      [[ $command != "release_number" ]] &&
      [[ $command != "release_numbers" ]]
