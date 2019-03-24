@@ -30,6 +30,14 @@
     args:
       chdir: "{{ homedir }}"
     tags: clone
+    when: friend_mode != "on"
+
+  - name: Load secrets
+    copy:
+      src: files/.env
+      dest: "{{ homedir }}/.env"
+    tags: clone
+    when: friend_mode == "on"
 
   ########
   # STOP #
@@ -94,6 +102,3 @@
     changed_when: false
     failed_when: health_check_output.rc != 0
     tags: health_check
-
-  - debug:
-      var: health_check_output
