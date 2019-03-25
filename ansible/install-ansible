@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+if [ -z `which ansible` ];then
+  sudo apt-add-repository --yes --update ppa:ansible/ansible
+  sudo apt install ansible
+fi
+
+ansible-galaxy install geerlingguy.docker
+ansible-galaxy install geerlingguy.pip

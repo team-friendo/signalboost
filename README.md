@@ -13,7 +13,7 @@ Signalboost provides provides free, subscribable, encrypted mass text blasts ove
 
 It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in emergency situations.
 
-The stack is a fun mix of node services, dynamically-allocated docker containers, dbus interfaces, and calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for more details.
+The stack is a mix of node services, dynamically-allocated docker containers, and DBus IPC calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for more details.
 
 If you found us on github, note that all **issue-tracking** takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
 
@@ -21,11 +21,163 @@ If you are a social justice group and **want to use signalboost for your work**,
 
 # Administering <a name="administering"></a>
 
-## Deploying a new SignalBoost instance
+## Deploying SignalBoost
 
-*(TK-TODO: lots of ansible goodness forthcoming!)*
+### Members of Team Friendo
 
-## Managing an existing SignalBoost instance
+If you are one of the people maintaining this repo, do the following to provision and deploy signalboost...
+
+#### Initial Deployment
+
+**(1) Load secrets:**
+
+``` shell
+$ ./bin/blackbox/decrypt_all_files
+$ set -a && source .env && set +a
+```
+
+**(2) Obtain a server:**
+
+``` shell
+$ ./bin/get-machine
+```
+
+**(3) Install ansible dependencies (if needed):**
+
+``` shell
+$ ./ansible/install-ansible
+```
+
+**(4) Provision and deploy signalboost:**
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/main.yml
+```
+
+The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps:
+
+**(5) Install the `boost` cli tool:**
+
+``` shell
+$ cd ..
+$ ./cli/install
+```
+
+**(6) Provision new twilio phone numbers:**
+
+The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
+
+``` shell
+$ boost new_numbers -n 2 -a 510
+```
+
+**(7) Provision new signalboost channels:**
+
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+
+``` shell
+$ cd boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+```
+
+For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
+
+#### Subsequent Deployments
+
+**(8) Deploy updates to signalboost:**
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/deploy.yml
+```
+
+### Friendos of Team Friendo
+
+If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
+
+We've designed our deploy process so that you should be able to use it with your own credentials and infrastructure with some minor modifications. You should be able to follow all the steps outlined for `Members of Team Friendo` above, substituting the below sections below for their corresponding counterparts above, and get the same results.
+
+(If any of these steps don't work, please don't hesitate to post an issue so we can fix it!)
+
+**(1) Load secrets:**
+
+Create an .env file like the one provided in `.env.example`, but fill in all the values surrounded by `%` marks with actual values:
+
+``` shell
+# signal boost api service
+
+SIGNALBOOST_HOST_IP=%IP ADDRESS OF PROD SERVER%
+SIGNALBOOST_HOST_URL=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+SIGNALBOOST_API_TOKEN=%HEX STRING%
+
+# letsencrypt/nginx proxy configs
+
+VIRTUAL_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+LETSENCRYPT_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
+
+# signal-cli
+
+SIGNAL_CLI_VERSION=0.6.2
+SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
+SIGNAL_CLI_PASSWORD=%SOME STRONG PASSWORD%
+
+# twilio
+
+TWILIO_ACCOUNT_SID=%HEX STRING%
+TWILIO_AUTH_TOKEN=%HEX STRING%
+
+
+# ngrok
+
+NGROK_AUTH_TOKEN=%HEX_STRING%
+NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
+
+```
+
+To generate a decently random 32-byte hex string for your `SIGNALBOOST_API_TOKEN`, you could do the following:
+
+``` shell
+$ shuf -i 0-9999999999999999999 -n 1 | sha256sum
+```
+
+To get twilio credentials, sign up for a twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page.
+
+You only need an `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN` if you want to run `signalboost` in a local development environment. (To get an ngrok account, visit [here](https://dashboard.ngrok.com/user/signup). See [here](https://dashboard.ngrok.com/reserved) for setting up reserved custom subdomains.)
+
+**(2) Obtain a server:**
+
+To host signalboost, you need a server with a static IP address and a top-level domain with an A record pointing to your IP address.
+
+If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
+
+- [Njalla](https://njal.la)
+- [Mayfirst](https://mayfirst.org)
+- [1984](https://1984.is)
+- [Greenhost](https://greenhost.nl)
+
+For domain name registration, we think that [Njal.la](https://njal.la) is hands down the best option.
+
+...
+
+**(4) Provision and deploy signalboost:**
+
+Add the `-e "friend_mode=on"` to the normal deploy flow:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/main.yml -e "friend_mode=on"
+```
+...
+
+Add the `-e "friend_mode=on"` to the normal deploy flow:
+
+**(8) Deploy updates to signalboost:**
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/deploy.yml -e "friend_mode=on"
+```
 
 ### Install the CLI
 
@@ -97,23 +249,9 @@ $ set +a && source .env && set -a
 ```
 #### Friendos of Team-Friendo
 
-If you are not on Team-Friendo, you will need to provide your own values for credentials listed in `.env`.
+If you are not on Team-Friendo, you will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
 
-A sample of the values needed is listed in `.env.example`:
-
-``` shell
-SIGNAL_BOOST_HOST_IP=%IP_ADDRESS_OF_PROD_SERVER%
-SIGNAL_BOOST_API_TOKEN=%SOME_RANDOM_64_BYTE_HEX_STRING%
-SIGNAL_CLI_VERSION=0.6.2
-SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
-SIGNAL_CLI_PASSWORD=%SOME_STRONG_PASSWORD%
-TWILIO_ACCOUNT_SID=%34_BYTE_HEX_STRING%
-TWILIO_AUTH_TOKEN=%32_BYTE_HEX_STRING%
-NGROK_AUTH_TOKEN=%43_BYTE_HEX_STRING%
-```
-You should replace all values in `%TEMPLATE_STRINGS` with your own values.
-
-Yes! We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
+We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
 
 ### Setup
 

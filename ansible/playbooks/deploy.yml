@@ -1,0 +1,104 @@
+---
+- name: Deploy Signalboost
+  become: true
+  hosts: signalboost
+
+  environment:
+    NODE_ENV: production
+
+  vars:
+    homedir: /srv/signalboost
+    host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
+    api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
+
+  tasks:
+
+  #########
+  # CLONE #
+  #########
+
+  - name: Pull signalboost repository from 0xacab
+    git:
+      repo: https://0xacab.org/team-friendo/signalboost
+      dest: "{{ homedir }}"
+      force: true
+      version: "{{ branch | default('master') }}"
+    tags: clone
+
+  - name: Decrypt secrets
+    command: ./bin/blackbox/postdeploy
+    args:
+      chdir: "{{ homedir }}"
+    tags: clone
+    when: friend_mode != "on"
+
+  - name: Load secrets
+    copy:
+      src: files/.env
+      dest: "{{ homedir }}/.env"
+    tags: clone
+    when: friend_mode == "on"
+
+  ########
+  # STOP #
+  ########
+
+  - name: Stop app
+    command: ./bin/shutdown
+    args:
+      chdir: "{{ homedir }}"
+    tags: stop
+
+  ###########
+  # PREPARE #
+  ###########
+
+  - name: Install node packages
+    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' orchestrator"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Stop container used for install
+    command: "docker-compose down"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Setup database, run migrations
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup-prod orchestrator"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Stop containers used for db setup
+    command: "docker-compose down"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  #########
+  # START #
+  #########
+
+  - name: Start app
+    docker_service:
+      project_src: "{{ homedir }}"
+      state: present
+    register: docker_up_result
+
+  # - debug:
+  #     var: docker_up_result
+
+  ######################
+  # AVAILABILITY CHECK #
+  ######################
+
+  - name: Ping nextcloud instance until it is available
+    shell: SIGNALBOOST_API_TOKEN="{{ api_token }}" SIGNALBOOST_HOST_URL="{{ host_url }}" ./bin/check-availability
+    args:
+      chdir: "{{ homedir }}"
+    register: health_check_output
+    changed_when: false
+    failed_when: health_check_output.rc != 0
+    tags: health_check

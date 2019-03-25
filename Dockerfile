@@ -9,19 +9,23 @@ LABEL Description="Image for running a signal-boost service overlaid on top of s
 
 ENV ARCH "x64"
 
+RUN mkdir -p /usr/share/man/man1
 RUN apt-get update -qq
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     apt-transport-https \
+    build-essential \
     curl \
     git \
     gnupg \
     procps \
+    pkg-config \
+    python \
     xz-utils \
     wget
 
 # ------------------------------------------------------
 # --- Install, Configure Supervisord (Golang version)
-
+# ------------------------------------------------------
 # see: https://github.com/ochinchina/supervisord
 
 # Copy supervisord binary from Dockerhub
@@ -29,6 +33,7 @@ COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/
 
 # ------------------------------------------------------
 # --- Install Node.js
+# ------------------------------------------------------
 
 ENV NODE_VERSION 8.15.0
 ENV YARN_VERSION 1.12.3
@@ -81,14 +86,12 @@ RUN set -ex \
     && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg \
     && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
 
-# Need this to hold the /var/run/dbus/system_bus_socket file descriptor
-RUN mkdir -p /var/run/dbus
-
 # ------------------------------------------------------
 # --- Install and Configure JVM
+# ------------------------------------------------------
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-openjdk-8-jdk-headless
+    openjdk-8-jdk-headless
 
 ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
 
@@ -109,18 +112,13 @@ RUN wget https://github.com/AsamK/signal-cli/releases/download/v"${SIGNAL_CLI_VE
     ln -sf /opt/signal-cli-"${SIGNAL_CLI_VERSION}"/bin/signal-cli /usr/local/bin; \
     rm -rf signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz;
 
-# Declare permissions for access to the signal-cli message bus
-COPY conf/org.asamk.Signal.conf /etc/dbus-1/system.d/
-
 # ------------------------------------------------------
 # --- Install and Configure DBus
 # ------------------------------------------------------
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-dbus --fix-missing; 
+    libdbus-1-dev \
+    dbus --fix-missing
 
 # Need this to hold the /var/run/dbus/system_bus_socket file descriptor
 RUN mkdir -p /var/run/dbus
-
-# Declare permissions for access to the signal-cli message bus
-COPY conf/org.asamk.Signal.conf /etc/dbus-1/system.d/

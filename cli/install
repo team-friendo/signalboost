@@ -2,17 +2,19 @@
 
 if [ ${USER} != 'root' ]
 then
-  echo "[OOPS]: you need to run this script as root. try running 'sudo ./install_boost_cli ' isntead!"
+  echo "[OOPS]: you need to run this script as root. try running 'sudo ./cli/installw_boost_cli ' isntead!"
   exit 1
 fi
 
 pushd `pwd` > /dev/null # store current dir
-cli_dir=`dirname "$0"` # cd to script path
+cd `dirname "$0"` # cd to script path
+cli_dir=`pwd`
 
-echo "Adding '$PWD' to your \$PATH..."
+echo "Adding '$cli_dir' to your \$PATH..."
 
 cd /usr/bin/
 ln -s ${cli_dir}/boost boost
+ln -s ${cli_dir}/boost_commands boost_commands
 
 # echo "export PATH=\"\$PATH:${PWD}\"" >> ~/.bashrc
 # . ~/.bashrcq
@@ -21,7 +23,7 @@ echo "Done!"
 echo ""
 echo "For instructions run:"
 echo ""
-echo "  boost --help"
+echo "  boost help"
 echo ""
 
 popd > /dev/null

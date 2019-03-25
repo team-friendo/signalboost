@@ -54,10 +54,6 @@ const configureBodyParser = app => {
 const configureRoutes = (app, db, emitter) => {
   const router = new Router()
 
-  router.get('/hello', async ctx => {
-    ctx.body = { msg: 'hello world' }
-  })
-
   routesOf(router, db, emitter)
 
   app.use(router.routes())

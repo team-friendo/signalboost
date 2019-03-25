@@ -62,7 +62,7 @@ Import the deploy key into the production box's keystore:
 ``` shell
 $ ssh ${SB_HOSTNAME}
 $ cd
-$ sudo -u signal-booster gpg import signal-booster-privkey.asc
+$ sudo -u signal-booster gpg --import signal-booster-privkey.asc
 ```
 
 Delete unprotected private key material from your local machine:

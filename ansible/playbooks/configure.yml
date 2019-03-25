@@ -1,0 +1,47 @@
+---
+- name: Configure Signalboost
+  become: true
+  hosts: signalboost
+
+  vars:
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose
+
+  # install docker dependencies
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+
+  tasks:
+
+    ########
+    # KEYS #
+    ########
+
+    - name: Load Deploy Key(s)
+      copy:
+        src: files/deploy_keys/
+        dest: /keys/
+      tags: keys
+
+    - name: Import GPG deploy key to keystore
+      command: gpg --import signalboost_gpg_privkey.asc
+      args:
+        chdir: /keys
+      tags: keys
+
+    ################
+    # DOCKER IMAGE #
+    ################
+
+    - name: Load base Dockerfile
+      copy:
+        src: files/Dockerfile
+        dest: /srv/Dockerfile
+      tags: docker
+
+    - name: Build base docker image
+      command: docker build -t signalboost:latest /srv/
+      register: build_output
+      tags: docker

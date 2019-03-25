@@ -1,40 +1,10 @@
 #!/usr/bin/env bash
 
-pushd `pwd` # store current dir
+pushd `pwd`> /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
-cd .. # cd to project root
 
-if [ -z "$NODE_ENV" ];then
-  echo '---- ERROR: please supply a NODE_ENV. :)'
-  exit 1
-else
-  echo "--- deploying signalboost in [$NODE_ENV[] environment"
-fi
+ansible-playbook \
+  -i ansible/inventory \
+  ansible/playbooks/deploy.yml
 
-echo "--- decrypting secrets..."
-
-./bin/blackbox/decrypt_all_files
-
-echo "--- installing dependencies..."
-
-docker-compose run --entrypoint 'yarn install' orchestrator
-
-echo "--- setting up database..."
-
-setup(){
-  docker-compose run --entrypoint /signalboost/bin/db/setup-${1} orchestrator
-}
-
-if [ "$NODE_ENV" = "production" ];then
-  setup prod
-else
-  setup dev
-fi
-
-echo "--- removing db container..."
-
-docker rm -f signalboost_db
-
-echo "--- DONE!"
-
-popd
+pushd > /dev/null

@@ -13,7 +13,7 @@
     "test": "./bin/test/unit && ./bin/test/e2e",
     "test:unit": "./bin/test/unit",
     "test:e2e": "./bin/test/e2e",
-    "dev": "docker-compose up -d",
+    "dev": "docker-compose -f docker-compose-dev.yml up -d",
     "start": "docker-compose up -d",
     "stop": "docker-compose  down"
   },

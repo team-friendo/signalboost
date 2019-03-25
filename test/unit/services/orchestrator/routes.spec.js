@@ -147,6 +147,40 @@ describe('routes', () => {
     })
   })
 
+  describe('POST to /phoneNumbers/register', () => {
+    const verifiedStatuses = times(3, () => ({
+      status: statuses.VERIFIED,
+      phoneNumber: genPhoneNumber(),
+    }))
+    let registerAllStub
+    beforeEach(() => (registerAllStub = sinon.stub(phoneNumberService, 'registerAll')))
+    afterEach(() => registerAllStub.restore())
+
+    describe('when registration succeeds', () => {
+      beforeEach(() => registerAllStub.returns(Promise.resolve(verifiedStatuses)))
+
+      it('responds with a success status', async () => {
+        await request(server)
+          .post('/phoneNumbers/register')
+          .set('Token', orchestrator.authToken)
+          .send({ phoneNumber })
+          .expect(200, verifiedStatuses)
+      })
+    })
+
+    describe('when registration fails', () => {
+      beforeEach(() => registerAllStub.returns(Promise.resolve(errorStatuses)))
+
+      it('responds with an error status', async () => {
+        await request(server)
+          .post('/phoneNumbers/register')
+          .set('Token', orchestrator.authToken)
+          .send({ phoneNumber })
+          .expect(500, errorStatuses)
+      })
+    })
+  })
+
   describe('POST to /twilioSms', () => {
     let verifyStub
     beforeEach(() => (verifyStub = sinon.stub(phoneNumberService, 'verify')))

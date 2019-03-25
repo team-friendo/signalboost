@@ -31,6 +31,6 @@ echo "--- fetching numbers..."
 pushd `pwd` > /dev/null # store current dir
 curr_dir=`dirname "$0"` # cd to script path
 
-node commands/listNumbers.js 
+node boost_commands/listNumbers.js
 
 popd > /dev/null

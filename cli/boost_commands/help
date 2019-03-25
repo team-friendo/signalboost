@@ -12,6 +12,9 @@ boost cli supports the following commands:
   new_numbers -a <area_code> -n <numbers_desired> -u <api_url>
     - purchases n new twilio numbers and registers them w/ signal via api at provided url
 
+  register_numbers -u <api_url>
+    - registers all purchased twilio numbers with signal
+
   list_numbers
     - lists all numbers purchased from twilio (no channel info included)
 

@@ -10,12 +10,10 @@
 
 # misc
 *.DS_STORE
-.idea/*
-.env
 
 # logs
-logs/
 *.log*
+*.err*
 
 # pids
 *.pid
@@ -24,13 +22,22 @@ logs/
 /logs/*
 /signal_data/*
 
+# ansible
+*retry
+*/inventory
+
+# text editors
+.idea/*
+/.vscode/settings.json
+
 # blackbox
 /keyrings/live/pubring.gpg~
 /keyrings/live/pubring.kbx~
 /keyrings/live/secring.gpg
 /.env
-/keys/id_signal_booster_deploy
-/keys/id_signal_booster_deploy.pub
-/keys/signal-booster-privkey.asc
 /app/db/seeders/20190125203925-testing-channels.js
-/.vscode/settings.json
+/bin/get-machine
+/ansible/files/deploy_keys/signalboost_gpg_privkey.asc
+/ansible/files/deploy_keys/signalboost_ssh_key
+/ansible/files/deploy_keys/signalboost_ssh_key.pub
+/ansible/inventory.tmpl

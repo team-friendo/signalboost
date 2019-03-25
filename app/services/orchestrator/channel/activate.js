@@ -31,7 +31,7 @@ const activate = async ({ db, phoneNumber, name, admins }) => {
       admins,
     }
   } catch (error) {
-    return { status: statuses.ERROR, error }
+    return { status: statuses.ERROR, error, request: { phoneNumber, name, admins } }
   }
 }
 
