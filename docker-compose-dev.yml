@@ -45,5 +45,5 @@ services:
     env_file: .env
     environment:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
-      - NGROK_SUBDOMAIN=signalboost
+      - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
       - NGROK_PORT=orchestrator:3000
