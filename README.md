@@ -9,15 +9,15 @@
 
 # Overview <a name="overview"></a>
 
-Signalboost provides provides free, subscribable, encrypted mass text blasts over the [signal messaging service](https://www.signal.org/). (If you are a child of the anarchist 90's, you might usefully think of it as "TextMob 2020." ;))
+Signalboost is a free, subscribable, encrypted text message blaster built on [Signal messaging service](https://www.signal.org/). _If you are a child of the anarchist 90's, think "modern TextMob 2020" ;)_  
 
-It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in emergency situations.
+Developed by and for frontline activists, Signalboost enables secure and rapid communication among friend networks.  Uses include safety alerts, urgent one-way notifications and group mobilisation in emergency situations.
 
-The stack is a mix of node services, dynamically-allocated docker containers, and DBus IPC calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for more details.
+The stack combines node services, docker containers and [https://github.com/freedesktop/dbus](DBus IPC) calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for a detailed overview.
 
-If you found us on github, note that all **issue-tracking** takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
+Note to github users: **issue tracking** and related requests belong in our [https://0xacab.org/team-friendo/signalboost](gitlab repo) (https://0xacab.org/team-friendo/signalboost), our master repository.
 
-If you are a social justice group and **want to use signalboost for your work**, please write us at `team-friendo [AT] riseup [DOT] net`. (Signal number and PGP key for inquiries forthcoming! :))
+**Want to use signalboost for social justifce work?**  Write us at `team-friendo [AT] riseup [DOT] net`. (Signal number and PGP key for inquiries forthcoming! :))
 
 # Administering <a name="administering"></a>
 
