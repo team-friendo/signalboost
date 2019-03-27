@@ -32,7 +32,7 @@ fi
 
 echo "--- releasing number with sid $sid..."
 
-curl -X DELETE \
+curl -s -X DELETE \
   -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
   https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${phone_number_sid}.json
 
