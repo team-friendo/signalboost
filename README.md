@@ -3,21 +3,46 @@
 ## Table Of Contents:
 
 * [Overview](#overview)
+* [Application Design](#design)
 * [Administering](#administering)
 * [Contributing](#contributing)
-* [Application Design](#design)
 
 # Overview <a name="overview"></a>
 
-Signalboost provides provides free, subscribable, encrypted mass text blasts over the [signal messaging service](https://www.signal.org/). (If you are a child of the anarchist 90's, you might usefully think of it as "TextMob 2020." ;))
+**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for frontline activists, Signalboost seeks to empower informal networks to communicate securely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates.
 
-It is being made for and in consultation with frontline activists to help them quickly and safely alert friends to mobilize in emergency situations.
+**The stack*** consists of node services in dynamically-allocated docker containers calling out to the calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
 
-The stack is a mix of node services, dynamically-allocated docker containers, and DBus IPC calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app. See [Application Design](#design) for more details.
+**Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-If you found us on github, note that all **issue-tracking** takes place via gitlab at [https://0xacab.org/team-friendo/signalboost](https://0xacab.org/team-friendo/signalboost).
+**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net`.
 
-If you are a social justice group and **want to use signalboost for your work**, please write us at `team-friendo [AT] riseup [DOT] net`. (Signal number and PGP key for inquiries forthcoming! :))
+# Application Design <a name="design"></a>
+
+## Data Flow
+
+Data flows through the application in (roughly) the following manner:
+
+* an application server controls several signal numbers, each of which acts as a "channel"
+* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
+* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
+* unlike with signal groups:
+  * the message appears to the subscribers as coming from the phone number associated with the channel (not the admin).
+  * subscribers may not see each others' phone numbers
+  * subscribers may not respond to messages
+* unlike with text blast services:
+  * messages are free to send! (thanks m0xie!)
+  * messages are encrypted between admins and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
+  * admins may send attachments to subscribers
+
+## Architecture
+
+The application has the following components:
+
+* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
+* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
+* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
+* an `orchestrator` service that handles the provision of new `dispatch` services as new channels are created
 
 # Administering <a name="administering"></a>
 
@@ -77,7 +102,7 @@ $ boost new_numbers -n 2 -a 510
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
-$ cd boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+$ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
@@ -326,30 +351,3 @@ Where the monitored subservices include:
 * `dbus`
 * `dispatcher`
 * `signal-cli`
-
-# Application Design <a name="design"></a>
-
-## Data Flow
-
-Data flows through the application in (roughly) the following manner:
-
-* there is an application that controls several signal numbers, each of which acts as a "channel"
-* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
-* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
-* unlike with signal groups:
-  * the message appears to the subscribers as coming from the phone number associated with the channel (not the admin).
-  * subscribers may not see each others' phone numbers
-  * subscribers may not respond to messages
-* unlike with text blast services:
-  * messages are free to send! (thanks m0xie!)
-  * messages are encrypted between admins and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
-  * admins may send attachments to subscribers
-
-## Architecture
-
-The application has the following components:
-
-* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
-* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
-* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
-* an `orchestrator` service that handles the provision of new `dispatch` services as new channels are created
