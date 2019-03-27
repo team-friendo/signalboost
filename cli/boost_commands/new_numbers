@@ -38,18 +38,23 @@ if [[ ! $num =~ ^[0-9]*$ ]];then
 fi
 
 
-if [ -z $area_code ];then area_code=929; fi
-if [[ ! $area_code =~ ^[0-9]{3}$ ]];then
+if [ -z $area_code ]
+then
+  area_code_kv="\"areaCode\": null"
+  area_code="(unspecified)"
+elif [[ ! $area_code =~ ^[0-9]{3}$ ]];then
   echo "> ERROR: -a must be a 3 digit number"
   exit 1
+else
+  area_code_kv="\"areaCode\": \"$area_code\""
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
 echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
 
-curl -X POST \
+curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"areaCode\": \"$area_code\", \"num\": $num }" \
+     -d "{ $area_code_kv, \"num\": $num }" \
      https://${url}/phoneNumbers | jq

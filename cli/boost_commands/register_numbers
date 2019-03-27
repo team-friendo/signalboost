@@ -27,7 +27,7 @@ if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
 echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
 
-curl -X POST \
+curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
      https://${url}/phoneNumbers/register | jq
