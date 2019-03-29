@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- decrypting secrets..."
+
+./bin/blackbox/decrypt_all_files
+
+echo "--- building docker image..."
+
+docker build -t "signalboost:latest" .
+
+echo "--- installing dependencies..."
+
+docker-compose -f docker-compose-dev.yml \
+               run --entrypoint 'yarn install' \
+               orchestrator
+
+echo "--- setting up database..."
+
+docker-compose -f docker-compose-dev.yml \
+               run --entrypoint /signalboost/bin/db/setup \
+               orchestrator
+
+echo "--- removing db container..."
+
+docker rm -f signalboost_db
+
+echo "--- DONE!"
+
+popd
