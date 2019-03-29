@@ -19,7 +19,8 @@ const errorStatus = (error, phoneNumber) => ({
   error,
 })
 
-const extractStatus = phoneNumberInstance => pick(phoneNumberInstance, ['status', 'phoneNumber'])
+const extractStatus = phoneNumberInstance =>
+  pick(phoneNumberInstance, ['status', 'phoneNumber', 'twilioSid'])
 
 module.exports = {
   errors,
