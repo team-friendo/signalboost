@@ -1,5 +1,6 @@
 const { statuses } = require('../../../db/models/phoneNumber')
 const { errors } = require('./common')
+const { list } = require('./present')
 const { provisionN } = require('./provision')
 const { register, registerAll, registerAllUnregistered, verify } = require('./register')
 const { purchase, purchaseN } = require('./purchase')
@@ -11,6 +12,7 @@ module.exports = {
   errors,
   statuses,
   /*functions*/
+  list,
   provisionN,
   purchase,
   purchaseN,
