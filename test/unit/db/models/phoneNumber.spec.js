@@ -22,6 +22,7 @@ describe('phoneNumber model', () => {
     expect(keys(phoneNumber.get())).to.have.members([
       'phoneNumber',
       'status',
+      'twilioSid',
       'createdAt',
       'updatedAt',
     ])

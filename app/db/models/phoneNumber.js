@@ -23,6 +23,10 @@ const phoneNumberOf = (sequelize, DataTypes) => {
         type: DataTypes.ENUM,
         values: Object.values(statuses),
       },
+      twilioSid: {
+        type: DataTypes.STRING,
+        unique: true,
+      },
     },
     {},
   )
