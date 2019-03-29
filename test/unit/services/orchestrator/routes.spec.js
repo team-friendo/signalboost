@@ -4,9 +4,10 @@ import sinon from 'sinon'
 import request from 'supertest'
 import { times, keys, pick } from 'lodash'
 import { startApiServer } from '../../../../app/services/orchestrator/run'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/orchestrator/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/orchestrator/phoneNumber'
+
 import { orchestrator } from '../../../../app/config/index'
 
 describe('routes', () => {
@@ -80,6 +81,36 @@ describe('routes', () => {
           .post('/channels')
           .set('Token', orchestrator.authToken)
           .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'admins']))
+          .expect(500, errorStatus)
+      })
+    })
+  })
+
+  describe('GET to /phoneNumber', () => {
+    let listStub
+    beforeEach(() => (listStub = sinon.stub(phoneNumberService, 'list')))
+    afterEach(() => listStub.restore())
+
+    describe('when phone number service returns list of phone numbers', () => {
+      const list = { count: 3, status: 'SUCCESS', phoneNumbers: times(3, phoneNumberFactory) }
+      beforeEach(() => listStub.returns(Promise.resolve(list)))
+
+      it('returns a list of phone numbers', async () => {
+        await request(server)
+          .get('/phoneNumbers')
+          .set('Token', orchestrator.authToken)
+          .expect(200, list)
+      })
+    })
+
+    describe('when phone number service returns an error status', () => {
+      const errorStatus = { status: 'ERROR', error: 'oh noes!' }
+      beforeEach(() => listStub.returns(Promise.resolve(errorStatus)))
+
+      it('returns a list of phone numbers', async () => {
+        await request(server)
+          .get('/phoneNumbers')
+          .set('Token', orchestrator.authToken)
           .expect(500, errorStatus)
       })
     })

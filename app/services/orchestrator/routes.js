@@ -8,7 +8,6 @@ const {
 
 const routesOf = (router, db, emitter) => {
   // TODO: implement these...
-  // router.post('/admins')
   // router.get('/phoneNumbers')
   // router.get('/channels')
 
@@ -22,6 +21,12 @@ const routesOf = (router, db, emitter) => {
     const result = await channelService.activate({ db, phoneNumber, name, admins })
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
+  })
+
+  router.get('/phoneNumbers', async ctx => {
+    const phoneNumberList = await phoneNumberService.list(db)
+    ctx.status = httpStatusOf(phoneNumberList.status)
+    ctx.body = phoneNumberList
   })
 
   router.post('/phoneNumbers', async ctx => {
