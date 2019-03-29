@@ -15,7 +15,7 @@ boost cli supports the following commands:
   register_numbers -u <api_url>
     - registers all purchased twilio numbers with signal
 
-  list_numbers
+  list_numbers -u <api_url>
     - lists all numbers purchased from twilio (no channel info included)
 
   release_number <sid>
