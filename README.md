@@ -267,8 +267,8 @@ We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets und
 Use it to decrypt secrets and source them with:
 
 ```
-$ git clone git@0xacab.org:team-friendo/signal-boost
-$ cd signal-boost
+$ git clone git@0xacab.org:team-friendo/signalboost
+$ cd signalboost
 $ ./bin/blackbox/decrypt_all_files
 $ set +a && source .env && set -a
 ```
@@ -321,6 +321,34 @@ Any admin should be able to:
 
 * Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
 * Receive all messages broadcast to the channel
+
+### Database scripts
+
+There are a few scripts to do things with the db:
+
+Get a psql shell:
+
+``` shell
+$ yarn db:psql
+```
+
+Run migrations:
+
+``` shell
+$ yarn db:migrate
+```
+
+Seed db:
+
+``` shell
+$ yarn db:seed
+```
+
+Unseed db:
+
+``` shell
+$ yarn db:unseed
+```
 
 ### Check logs
 

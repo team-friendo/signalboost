@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../..
+
+sleep 2
+
+if [ "$NODE_ENV" = "development" ]
+then
+  echo "----- unseeding development db..."
+  npx sequelize db:seed:undo:all --env development
+else
+  echo "----- unseeding production db..."
+  npx sequelize db:seed:undo:all --env production
+fi
+
+popd # return to original dir

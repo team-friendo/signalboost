@@ -66,7 +66,7 @@
     tags: prepare
 
   - name: Setup database, run migrations
-    command: "docker-compose run --entrypoint /signalboost/bin/db/setup-prod orchestrator"
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup orchestrator"
     args:
       chdir: "{{ homedir }}"
     tags: prepare

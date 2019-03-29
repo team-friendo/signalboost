@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../..
+
+sleep 2
+
+if [ "$NODE_ENV" = "development" ]
+then
+  echo "----- creating dev database..."
+  npx sequelize db:create --env development
+
+  echo "----- creating test database..."
+  npx sequelize db:create --env test
+else
+  echo "----- creating prod database..."
+  npx sequelize db:create --env production
+fi
+
+./bin/db/migrate
+./bin/db/seed
+
+popd # return to original dir

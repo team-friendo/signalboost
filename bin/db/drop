@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../..
+
+sleep 2
+
+if [ "$NODE_ENV" = "development" ];
+then
+  echo "----- dropping development database..."
+  npx sequelize db:drop --env development
+
+  echo "----- dropping test database..."
+  npx sequelize db:drop --env test
+else
+  echo "----- dropping production database..."
+  npx sequelize db:drop --env production
+fi
+
+popd # return to original dir
