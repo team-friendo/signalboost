@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { api } from '../../app/config/index'
+import { orchestrator } from '../../app/config/index'
 import { initDb } from '../../app/db'
 
 describe.skip('provisioning 2 phone numbers', () => {
@@ -21,7 +21,7 @@ describe.skip('provisioning 2 phone numbers', () => {
     count = await db.phoneNumber.count({ where: { status: 'VERIFIED' } })
     results = await request('http://localhost:3000')
       .post('/phoneNumbers/provision')
-      .set('token', api.authToken)
+      .set('token', orchestrator.authToken)
       .send({ areaCode: 929, num: 2 })
   })
 

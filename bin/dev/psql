@@ -8,12 +8,13 @@ echo "--- running db container..."
 
 docker-compose -f docker-compose-dev.yml run -d db
 
-sleep 2
+sleep 4
 
 echo "--- running psql..."
 
 docker exec -it \
        $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}') \
-       psql -U postgres -d signalboost_development
+       psql -U postgres -d \
+       signalboost_development
 
 popd

@@ -54,12 +54,11 @@ const create = phoneNumber =>
       smsUrl,
       friendlyName: `signal-boost number ${uuid()}`,
     })
-    .then(twilioPhoneNumber => twilioPhoneNumber.phoneNumber)
     .catch(err => Promise.reject(errorStatus(errors.purchaseFailed(err), phoneNumber)))
 
-const recordPurchase = db => phoneNumber =>
+const recordPurchase = db => ({ phoneNumber, sid }) =>
   db.phoneNumber
-    .create({ phoneNumber, status: statuses.PURCHASED })
+    .create({ phoneNumber, twilioSid: sid, status: statuses.PURCHASED })
     .then(extractStatus)
     .catch(err => Promise.reject(errorStatus(errors.dbWriteFailed(err), phoneNumber)))
 

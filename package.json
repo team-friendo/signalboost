@@ -11,7 +11,7 @@
     "deploy": "./bin/deploy",
     "setup": "./bin/dev/setup",
     "db:drop": "./bin/dev/drop",
-    "db:psql": "./bin/dev/pqsl",
+    "db:psql": "./bin/dev/psql",
     "db:seed": "./bin/dev/seed",
     "db:unseed": "./bin/dev/unseed",
     "db:migrate": "./bin/dev/migrate",

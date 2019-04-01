@@ -57,6 +57,7 @@ services:
     depends_on:
       - db
       - orchestrator
+      - ngrok
     volumes:
       - ./.sequelizerc:/signalboost/.sequelizerc
       - ./app:/signalboost/app

@@ -14,8 +14,8 @@ const {
 
 describe('initializing channels', () => {
   const phoneNumbers = [
-    '+15122707190', // twilioSid: PNe16c14ae9942b36482d2c06bf5c0b4bf
-    '+15129910157', // twilioSid: PNb25f527e5eb6f7cfcd02b695369ddac1,
+    '+15106812439',
+    '+15103984905',
   ]
   const staleContainerId = 'acabdeadbeef'
   const timeout = 60000

@@ -11,11 +11,13 @@ import {
 import { errors, statuses } from '../../../../../app/services/orchestrator/phoneNumber/common'
 import {
   genPhoneNumber,
+  genSid,
   twilioNumberCreationResponse,
 } from '../../../../support/factories/phoneNumber'
 
 describe('phone number services - purchase module', () => {
   const fakePhoneNumber = genPhoneNumber()
+  const twilioSid = genSid()
   let db, twilioListStub, twilioCreateStub
 
   beforeEach(() => {
@@ -30,12 +32,15 @@ describe('phone number services - purchase module', () => {
 
   describe('purchasing many phone numbers', () => {
     const fakeNumbers = times(3, genPhoneNumber)
+    const sids = times(3, genSid())
     // NOTE(aguestuser): we focus on happy path here, b/c sad paths are exhaustively tested below
 
     describe('when all searches, payments, and db writes succeed', () => {
       beforeEach(() => {
         fakeNumbers.forEach((number, i) =>
-          twilioListStub.onCall(i).returns(Promise.resolve([{ phoneNumber: number }])),
+          twilioListStub
+            .onCall(i)
+            .returns(Promise.resolve([{ phoneNumber: number, twilioSid: sids[i] }])),
         )
         twilioCreateStub.callsFake(x => Promise.resolve(x))
         db = { phoneNumber: { create: x => Promise.resolve(x) } }
@@ -46,14 +51,17 @@ describe('phone number services - purchase module', () => {
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[0],
+            twilioSid: sids[0],
           },
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[1],
+            twilioSid: sids[1],
           },
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[2],
+            twilioSid: sids[2],
           },
         ])
       })
@@ -62,7 +70,9 @@ describe('phone number services - purchase module', () => {
     describe('when one payment (twilio number creation) fails', () => {
       beforeEach(() => {
         fakeNumbers.forEach((number, i) =>
-          twilioListStub.onCall(i).returns(Promise.resolve([{ phoneNumber: number }])),
+          twilioListStub
+            .onCall(i)
+            .returns(Promise.resolve([{ phoneNumber: number, twilioSid: sids[i] }])),
         )
         twilioCreateStub.onCall(0).callsFake(() => Promise.reject('boom!'))
         twilioCreateStub.onCall(1).callsFake(x => Promise.resolve(x))
@@ -80,10 +90,12 @@ describe('phone number services - purchase module', () => {
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[1],
+            twilioSid: sids[1],
           },
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[2],
+            twilioSid: sids[2],
           },
         ])
       })
@@ -92,7 +104,9 @@ describe('phone number services - purchase module', () => {
 
   describe('purchasing a phone number', () => {
     describe('when twilio number search succeeds', () => {
-      beforeEach(() => twilioListStub.returns(Promise.resolve([{ phoneNumber: fakePhoneNumber }])))
+      beforeEach(() =>
+        twilioListStub.returns(Promise.resolve([{ phoneNumber: fakePhoneNumber }])),
+      )
 
       it('attempts to register the number returned by search with twilio', async () => {
         await purchase({ db })
@@ -102,7 +116,7 @@ describe('phone number services - purchase module', () => {
       describe('when twilio number registration succeeds', () => {
         beforeEach(() =>
           twilioCreateStub.returns(
-            Promise.resolve({ ...twilioNumberCreationResponse, phoneNumber: fakePhoneNumber }),
+            Promise.resolve({ ...twilioNumberCreationResponse, phoneNumber: fakePhoneNumber, sid: twilioSid }),
           ),
         )
 
@@ -110,11 +124,7 @@ describe('phone number services - purchase module', () => {
           beforeEach(() => {
             db = {
               phoneNumber: {
-                create: () =>
-                  Promise.resolve({
-                    phoneNumber: fakePhoneNumber,
-                    status: statuses.PURCHASED,
-                  }),
+                create: x => Promise.resolve(x),
               },
             }
           })
@@ -123,6 +133,7 @@ describe('phone number services - purchase module', () => {
             expect(await purchase({ db })).to.eql({
               status: statuses.PURCHASED,
               phoneNumber: fakePhoneNumber,
+              twilioSid,
             })
           })
         })
