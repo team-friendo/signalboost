@@ -10,6 +10,7 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
+    friend_mode: off
 
   tasks:
 
