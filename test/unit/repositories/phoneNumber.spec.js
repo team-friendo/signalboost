@@ -1,11 +1,14 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, afterEach, after } from 'mocha'
-import { reverse, pick } from 'lodash'
+import { pick } from 'lodash'
 import { initDb } from '../../../app/db'
 import { genPhoneNumber, phoneNumberFactory } from '../../support/factories/phoneNumber'
 import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
 
 describe('phone number repository', () => {
+  const {
+    filters: { ACTIVE, INACTIVE },
+  } = phoneNumberRepository
   let db
 
   before(() => (db = initDb()))
@@ -40,11 +43,31 @@ describe('phone number repository', () => {
       await Promise.all(phoneNumberAttrs.map(pn => db.phoneNumber.create(pn)))
     })
 
-    it('retrieves a list of phone numbers, sorted by status (in descreasing order of activation level)', async () => {
-      const pNumList = await phoneNumberRepository.list(db)
-      expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
-        reverse(phoneNumberAttrs),
-      )
+    describe('when given no filters', () => {
+      it('retrieves a list of all phone numbers, sorted by activation level', async () => {
+        const pNumList = await phoneNumberRepository.list(db)
+        expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
+          phoneNumberAttrs.slice().reverse(),
+        )
+      })
+    })
+
+    describe('when given ACTIVE filter', () => {
+      it('retrieves a list of ACTIVE phone numbers', async () => {
+        const pNumList = await phoneNumberRepository.list(db, ACTIVE)
+        expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
+          phoneNumberAttrs.slice(-1),
+        )
+      })
+    })
+
+    describe('when given INACTIVE filter', () => {
+      it('retrieves a list of PURCHASED, REGISTERD, and VERIFIED phone numbers', async () => {
+        const pNumList = await phoneNumberRepository.list(db, INACTIVE)
+        expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
+          phoneNumberAttrs.slice(0, -1).reverse(),
+        )
+      })
     })
   })
 })
