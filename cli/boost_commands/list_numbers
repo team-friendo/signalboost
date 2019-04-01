@@ -10,6 +10,7 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo ""
   echo "--active : filter for active phone numbers"
   echo "--inactive : filter for inactive phone numbers"
+  echo "--len : only show phone number list lenght (omit list itself)"
   echo "-u : url to target (in dev, use signalboost.ngrok.io)";
   echo ""
   exit 1
@@ -23,20 +24,24 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
 fi
 
 
-while getopts ":u:" opt; do
+while getopts ":url:" opt; do
   case "$opt" in
-    u)
+    url)
       url="$OPTARG"
       ;;
   esac
 done
 
-if [[ $1 == "--active" ]];then
+if [[ $1 == "--active" ]] || [[ $2 == "--active" ]];then
   filter="ACTIVE"
 fi
 
-if [[ $1 == "--inactive" ]];then
+if [[ $1 == "--inactive" ]] || [[ $2 == "--inactive" ]];then
   filter="INACTIVE"
+fi
+
+if [[ $1 == "--len" ]] || [[ $2 == "--len" ]];then
+  selector='.count'
 fi
 
 if [ -z $filter ]
@@ -53,4 +58,4 @@ echo "--- fetching numbers..."
 curl -s \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/phoneNumbers${query_string} | jq
+     https://${url}/phoneNumbers${query_string} | jq ${selector}
