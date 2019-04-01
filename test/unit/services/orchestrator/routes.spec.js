@@ -114,6 +114,28 @@ describe('routes', () => {
           .expect(500, errorStatus)
       })
     })
+
+    describe('filter params', () => {
+      beforeEach(() =>
+        listStub.returns(Promise.resolve({ count: 0, status: 'SUCCESS', phoneNumbers: [] })),
+      )
+      describe('when passed a valid filter', () => {
+        it('passes filter to phone number service', async () => {
+          await request(server)
+            .get('/phoneNumbers?filter=ACTIVE')
+            .set('Token', orchestrator.authToken)
+          expect(listStub.getCall(0).args[1]).to.eql('ACTIVE')
+        })
+      })
+      describe('when passed an invalid filter', () => {
+        it('does not pass filter to phone number service', async () => {
+          await request(server)
+            .get('/phoneNumbers?filter=DROP%20TABLE;')
+            .set('Token', orchestrator.authToken)
+          expect(listStub.getCall(0).args[1]).to.eql(null)
+        })
+      })
+    })
   })
 
   describe('POST to /phoneNumbers', () => {
