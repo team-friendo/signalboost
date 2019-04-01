@@ -3,8 +3,10 @@
 pushd `pwd`> /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 
+cd ../ansible
+
 ansible-playbook \
-  -i ansible/inventory \
-  ansible/playbooks/deploy.yml
+  -i inventory \
+  playbooks/deploy.yml
 
 pushd > /dev/null
