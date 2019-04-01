@@ -14,6 +14,15 @@ describe('phone number presenters', () => {
     beforeEach(() => (dbListStub = sinon.stub(phoneNumberRepository, 'list')))
     afterEach(() => dbListStub.restore())
 
+    describe('in all cases', () => {
+      beforeEach(() => dbListStub.returns(Promise.resolve()))
+
+      it('passes filter to repository query', async () => {
+        await phoneNumberService.list({}, 'ACTIVE')
+        expect(dbListStub.getCall(0).args[1]).to.eql('ACTIVE')
+      })
+    })
+
     describe('when db fetch succeeds', () => {
       beforeEach(() => dbListStub.returns(Promise.resolve(phoneNumbers)))
 

@@ -1,8 +1,8 @@
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 
-const list = db =>
+const list = (db, filter) =>
   phoneNumberRepository
-    .list(db)
+    .list(db, filter)
     .then(phoneNumbers => ({
       status: 'SUCCESS',
       count: phoneNumbers.length,
