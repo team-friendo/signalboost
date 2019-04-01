@@ -8,8 +8,8 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo ""
   echo "valid options are:"
   echo ""
-#  echo "-active: will return only active phone numbers (used in channels)"
-#  echo "-inactive: will return only active phone numbers (used in channels)"
+  echo "--active : filter for active phone numbers"
+  echo "--inactive : filter for inactive phone numbers"
   echo "-u : url to target (in dev, use signalboost.ngrok.io)";
   echo ""
   exit 1
@@ -18,9 +18,10 @@ fi
 echo "--- checking environment..."
 
 if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ source .env\`"
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`set -a && source .env && set +a\`"
   exit 1
 fi
+
 
 while getopts ":u:" opt; do
   case "$opt" in
@@ -30,6 +31,21 @@ while getopts ":u:" opt; do
   esac
 done
 
+if [[ $1 == "--active" ]];then
+  filter="ACTIVE"
+fi
+
+if [[ $1 == "--inactive" ]];then
+  filter="INACTIVE"
+fi
+
+if [ -z $filter ]
+then
+  query_string=""
+else
+  query_string="?filter=$filter"
+fi
+
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
 echo "--- fetching numbers..."
@@ -37,6 +53,4 @@ echo "--- fetching numbers..."
 curl -s \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/phoneNumbers | jq
-
-popd > /dev/null
+     https://${url}/phoneNumbers${query_string} | jq
