@@ -5,7 +5,7 @@ export const genPhoneNumber = () => '+1' + times(10, () => random(0, 9).toString
 export const genSid = () =>
   times(34, () =>
     sample(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']),
-  ).join()
+  ).join('')
 
 export const phoneNumberFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
