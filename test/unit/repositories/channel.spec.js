@@ -7,7 +7,9 @@ import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db/index'
 import { omit } from 'lodash'
 import {
+  addAdmin,
   addAdmins,
+  removeAdmin,
   addSubscriber,
   updateOrCreate,
   getSubscriberNumbers,
@@ -156,6 +158,56 @@ describe('channel repository', () => {
         expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
           'cannot subscribe human to non-existent channel',
         )
+      })
+    })
+  })
+
+  describe('#removeAdmin', () => {
+    describe('when given the number of an existing admin', () => {
+      let result
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+
+        result = await removeAdmin(db, channel.phoneNumber, adminPNums)
+      })
+
+      it('deletes an administration record', async () => {
+        expect(await db.administration.count()).to.eql(adminCount - 1)
+      })
+
+      it('deletes an subscription record', async () => {
+        expect(await db.subscription.count()).to.eql(subCount - 1)
+      })
+
+      it('returns the tuple [1,1]', () => {
+        expect(result).to.eql([1, 1])
+      })
+    })
+
+    describe('when given the number of a non-existent admin', () => {
+      let result
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+
+        result = await removeAdmin(db, channel.phoneNumber, '+11111111111')
+      })
+
+      it('deletes an administration record', async () => {
+        expect(await db.administration.count()).to.eql(adminCount)
+      })
+
+      it('deletes an subscription record', async () => {
+        expect(await db.subscription.count()).to.eql(subCount)
+      })
+
+      it('returns the tuple [0, 0]', () => {
+        expect(result).to.eql([0, 0])
       })
     })
   })

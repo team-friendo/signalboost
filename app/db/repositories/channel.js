@@ -28,6 +28,12 @@ const addAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
       .spread(x => x),
   ]).then(writes => writes[0])
 
+const removeAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
+  Promise.all([
+    db.administration.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+    db.subscription.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+  ])
+
 const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     db.subscription.create({ channelPhoneNumber, humanPhoneNumber }),
@@ -60,12 +66,13 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
-  addAdmin,
-  addAdmins,
-  addSubscriber,
   updateOrCreate,
   findAll,
   findByPhoneNumber,
+  addAdmin,
+  addAdmins,
+  removeAdmin,
+  addSubscriber,
   getSubscriberNumbers,
   isAdmin,
   isSubscriber,
