@@ -13,34 +13,53 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
-describe('command services', () => {
+describe('command service', () => {
   describe('parsing commands', () => {
+    it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
+      expect(parseCommand('ADD ADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+      expect(parseCommand('add admin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+      expect(parseCommand(' add admin ')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+      expect(parseCommand('ADDADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+      expect(parseCommand('addadmin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+    })
+
+    it('parses the payload from an ADD ADMIN command', () => {
+      expect(parseCommand('ADD ADMIN foo')).to.eql({ command: commands.ADD_ADMIN, payload: 'foo' })
+    })
+
+    it('does not parse ADD ADMIN command if string starts with characters other than `add admin`', () => {
+      expect(parseCommand('do ADD ADMIN')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
+    })
+
     it('parses an JOIN command (regardless of case or whitespace)', () => {
-      expect(parseCommand('JOIN')).to.eql(commands.JOIN)
-      expect(parseCommand('join')).to.eql(commands.JOIN)
-      expect(parseCommand(' join ')).to.eql(commands.JOIN)
+      expect(parseCommand('JOIN')).to.eql({ command: commands.JOIN })
+      expect(parseCommand('join')).to.eql({ command: commands.JOIN })
+      expect(parseCommand(' join ')).to.eql({ command: commands.JOIN })
     })
 
     it('does not parse an JOIN command when string contains characters other than `add`', () => {
-      expect(parseCommand('i wanna join ')).to.eql(commands.NOOP)
-      expect(parseCommand('join it!')).to.eql(commands.NOOP)
-      expect(parseCommand('foobar')).to.eql(commands.NOOP)
+      expect(parseCommand('i wanna join ')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('join it!')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
     })
 
     it('parses a LEAVE command regardless of case or whitespace', () => {
-      expect(parseCommand('LEAVE')).to.eql(commands.LEAVE)
-      expect(parseCommand('leave')).to.eql(commands.LEAVE)
-      expect(parseCommand(' leave ')).to.eql(commands.LEAVE)
+      expect(parseCommand('LEAVE')).to.eql({ command: commands.LEAVE })
+      expect(parseCommand('leave')).to.eql({ command: commands.LEAVE })
+      expect(parseCommand(' leave ')).to.eql({ command: commands.LEAVE })
     })
+
     it('does not parse a LEAVE command when string contains characters other than `leave`', () => {
-      expect(parseCommand('i wanna leave ')).to.eql(commands.NOOP)
-      expect(parseCommand('leave now!')).to.eql(commands.NOOP)
-      expect(parseCommand('foobar')).to.eql(commands.NOOP)
+      expect(parseCommand('i wanna leave ')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('leave now!')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
     })
   })
 
   describe('executing commands', () => {
     describe('JOIN command', () => {
+      const command = commands.JOIN
       let isSubscriberStub, addSubscriberStub
 
       beforeEach(() => {
@@ -64,7 +83,7 @@ describe('command services', () => {
           })
 
           it('returns SUCCESS status/message', async () => {
-            expect(await execute(commands.JOIN, {})).to.eql({
+            expect(await execute({ command })).to.eql({
               status: statuses.SUCCESS,
               message: messages.JOIN_SUCCESS,
             })
@@ -77,7 +96,7 @@ describe('command services', () => {
           })
 
           it('returns FAILURE status/message', async () => {
-            expect(await execute(commands.JOIN, {})).to.eql({
+            expect(await execute({ command })).to.eql({
               status: statuses.FAILURE,
               message: messages.JOIN_FAILURE,
             })
@@ -89,7 +108,7 @@ describe('command services', () => {
         let result
         beforeEach(async () => {
           isSubscriberStub.returns(Promise.resolve(true))
-          result = await execute(commands.JOIN, {})
+          result = await execute({ command })
         })
         it('does not try to add subscriber', () => {
           expect(addSubscriberStub.callCount).to.eql(0)
@@ -104,6 +123,7 @@ describe('command services', () => {
     })
 
     describe('LEAVE command', () => {
+      const command = commands.LEAVE
       const db = {}
       const [channelPhoneNumber, sender] = times(2, genPhoneNumber)
       let isSubscriberStub, removeSubscriberStub
@@ -120,7 +140,7 @@ describe('command services', () => {
 
       describe('in all cases', () => {
         it('checks to see if sender is subscribed to channel', async () => {
-          await execute(commands.LEAVE, { db, channelPhoneNumber, sender })
+          await execute({ command, db, channelPhoneNumber, sender })
           expect(isSubscriberStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
         })
       })
@@ -132,7 +152,7 @@ describe('command services', () => {
         })
 
         it('attempts to remove subscriber', async () => {
-          await execute(commands.LEAVE, { db, channelPhoneNumber, sender })
+          await execute({ command, db, channelPhoneNumber, sender })
           expect(removeSubscriberStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
         })
 
@@ -140,7 +160,7 @@ describe('command services', () => {
           beforeEach(() => removeSubscriberStub.returns(Promise.resolve(1)))
 
           it('returns SUCCESS status/message', async () => {
-            expect(await execute(commands.LEAVE, {})).to.eql({
+            expect(await execute({ command })).to.eql({
               status: statuses.SUCCESS,
               message: messages.LEAVE_SUCCESS,
             })
@@ -150,7 +170,7 @@ describe('command services', () => {
           beforeEach(() => removeSubscriberStub.callsFake(() => Promise.reject('boom!')))
 
           it('returns FAILURE status/message', async () => {
-            expect(await execute(commands.LEAVE, {})).to.eql({
+            expect(await execute({ command })).to.eql({
               status: statuses.FAILURE,
               message: messages.LEAVE_FAILURE,
             })
@@ -162,12 +182,13 @@ describe('command services', () => {
         let result
         beforeEach(async () => {
           isSubscriberStub.returns(Promise.resolve(false))
-          result = await execute(commands.LEAVE, {})
+          result = await execute({ command })
         })
 
         it('does not try to remove subscriber', () => {
           expect(removeSubscriberStub.callCount).to.eql(0)
         })
+
         it('returns SUCCESS status / NOOP message', () => {
           expect(result).to.eql({
             status: statuses.SUCCESS,
@@ -177,9 +198,111 @@ describe('command services', () => {
       })
     })
 
+    describe('ADD ADMIN command', () => {
+      const command = commands.ADD_ADMIN
+      const db = {}
+      const [channelPhoneNumber, sender, newAdmin] = times(4, genPhoneNumber)
+      let isAdminStub, addAdminStub
+
+      beforeEach(() => {
+        isAdminStub = sinon.stub(channelRepository, 'isAdmin')
+        addAdminStub = sinon.stub(channelRepository, 'addAdmin')
+      })
+
+      afterEach(() => {
+        isAdminStub.restore()
+        addAdminStub.restore()
+      })
+
+      describe('in all cases', () => {
+        it('checks to see if sender is an admin', async () => {
+          await execute({ command, payload: newAdmin, db, channelPhoneNumber, sender })
+          expect(isAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        })
+      })
+
+      describe('when sender is an admin', () => {
+        beforeEach(() => {
+          isAdminStub.returns(Promise.resolve(true))
+          addAdminStub.returns(Promise.resolve())
+        })
+
+        describe('when payload is a valid phone number', () => {
+          it("attempts to add the human to the chanel's admins", async () => {
+            await execute({ command, payload: newAdmin, db, channelPhoneNumber, sender })
+            expect(addAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, newAdmin])
+          })
+
+          describe('when adding the admin succeeds', () => {
+            beforeEach(() =>
+              addAdminStub.returns(
+                Promise.resolve([{ channelPhoneNumber, humanPhoneNumber: newAdmin }]),
+              ),
+            )
+
+            it('returns a SUCCESS status and message', async () => {
+              expect(await execute({ command: commands.ADD_ADMIN, payload: newAdmin })).to.eql({
+                status: statuses.SUCCESS,
+                message: messages.ADD_ADMIN_SUCCESS(newAdmin),
+              })
+            })
+          })
+
+          describe('when adding the admin fails', () => {
+            beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
+
+            it('returns an FAILURE status and message', async () => {
+              expect(await execute({ command: commands.ADD_ADMIN, payload: newAdmin })).to.eql({
+                status: statuses.FAILURE,
+                message: messages.ADD_ADMIN_FAILURE(newAdmin),
+              })
+            })
+          })
+        })
+
+        describe('when payload is not a valid phone number', async () => {
+          let result
+          beforeEach(
+            async () =>
+              (result = await execute({ command: commands.ADD_ADMIN, payload: 'foobar' })),
+          )
+
+          it('does not attempt to add admin', () => {
+            expect(addAdminStub.callCount).to.eql(0)
+          })
+
+          it('returns a SUCCESS status / INVALID_NUMBER message', () => {
+            expect(result).to.eql({
+              status: statuses.SUCCESS,
+              message: messages.ADD_ADMIN_NOOP_INVALID_NUMBER('foobar'),
+            })
+          })
+        })
+      })
+
+      describe('when sender is not an admin', () => {
+        let result
+        beforeEach(async () => {
+          isAdminStub.returns(Promise.resolve(false))
+          result = await execute({ command: commands.ADD_ADMIN })
+        })
+
+        it('does not attempt to add admin', () => {
+          expect(addAdminStub.callCount).to.eql(0)
+        })
+
+        it('returns an SUCCESS status / NOT_ADMIN_NOOP message', () => {
+          expect(result).to.eql({
+            status: statuses.SUCCESS,
+            message: messages.ADD_ADMIN_NOOP_NOT_ADMIN,
+          })
+        })
+      })
+    })
+
     describe('invalid command', () => {
       it('returns NOOP status/message', async () => {
-        expect(await execute('foobar', {})).to.eql({
+        expect(await execute({ command: 'foobar' })).to.eql({
           status: statuses.NOOP,
           message: messages.INVALID,
         })

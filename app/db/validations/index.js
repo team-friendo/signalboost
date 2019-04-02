@@ -7,4 +7,7 @@ const isPhoneNumber = {
   },
 }
 
-module.exports = { isPhoneNumber, phoneNumberPattern }
+// string -> boolean
+const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(phoneNumberPattern))
+
+module.exports = { isPhoneNumber, phoneNumberPattern, validatePhoneNumber }

@@ -5,24 +5,49 @@ import { dispatch } from '../../../../app/services/dispatcher/run'
 import commandService, { statuses, messages } from '../../../../app/services/dispatcher/command'
 import messageService from '../../../../app/services/dispatcher/message'
 
-describe('dispatcher services', () => {
+describe('dispatcher service', () => {
   const iface = {}
   const sender = '+10000000000'
   const channelPhoneNumber = '+13333333333'
 
   describe('handling a message', () => {
-    let executeStub, sendStub, maybeBroadcastStub
+    let parseCommandStub, executeStub, sendStub, maybeBroadcastStub
 
     beforeEach(() => {
+      parseCommandStub = sinon.stub(commandService, 'parseCommand')
       executeStub = sinon.stub(commandService, 'execute')
       sendStub = sinon.stub(messageService, 'send')
       maybeBroadcastStub = sinon.stub(messageService, 'maybeBroadcast')
     })
 
     afterEach(() => {
+      parseCommandStub.restore()
       executeStub.restore()
       sendStub.restore()
       maybeBroadcastStub.restore()
+    })
+
+    describe('in all cases', () => {
+      beforeEach(async () => {
+        parseCommandStub.returns({ command: 'foo', payload: 'bar' })
+        executeStub.returns(Promise.resolve('baz'))
+        await dispatch({ iface, channelPhoneNumber, sender, message: 'foobar' })
+      })
+
+      it('attempts to parse a command from the message', () => {
+        expect(parseCommandStub.getCall(0).args[0]).to.eql('foobar')
+      })
+
+      it('executes the parsed command', () => {
+        expect(executeStub.getCall(0).args[0]).to.eql({
+          command: 'foo',
+          payload: 'bar',
+          iface,
+          channelPhoneNumber,
+          sender,
+          message: 'foobar',
+        })
+      })
     })
 
     describe('when message contains a command that is executed', () => {

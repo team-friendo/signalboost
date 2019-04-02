@@ -26,20 +26,20 @@ describe('channel repository', () => {
   let db, channel, sub, subCount, adminCount, admins
 
   before(() => (db = initDb()))
-  afterEach(() => {
-    Promise.all([
+  afterEach(async () => {
+    await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
     ])
   })
-  after(() => db.sequelize.close())
+  after(async () => await db.sequelize.close())
 
   describe('#updateOrCreate', () => {
     let count, channel
 
     describe('when given phone number for a non-existent channel', () => {
-      before(async () => {
+      beforeEach(async () => {
         count = await db.channel.count()
         channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
@@ -58,7 +58,7 @@ describe('channel repository', () => {
     })
 
     describe('when given phone number for a already-existing channel', () => {
-      before(async () => {
+      beforeEach(async () => {
         await updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
         count = await db.channel.count()
         channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
