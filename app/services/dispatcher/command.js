@@ -37,7 +37,7 @@ const parseCommand = msg => {
 const execute = (command, { db, channelPhoneNumber, sender }) => {
   switch (command) {
     case commands.JOIN:
-      return maybeAdd(db, channelPhoneNumber, sender)
+      return maybeAddSubscriber(db, channelPhoneNumber, sender)
     case commands.LEAVE:
       return maybeRemove(db, channelPhoneNumber, sender)
     default:
@@ -47,14 +47,14 @@ const execute = (command, { db, channelPhoneNumber, sender }) => {
 
 // PRIVATE FUNCTIONS
 
-const maybeAdd = async (db, channelPhoneNumber, sender) => {
+const maybeAddSubscriber = async (db, channelPhoneNumber, sender) => {
   const shouldAbort = await channelRepository.isSubscriber(db, channelPhoneNumber, sender)
   return shouldAbort
     ? Promise.resolve({ status: statuses.SUCCESS, message: messages.JOIN_NOOP })
-    : add(db, channelPhoneNumber, sender)
+    : addSubscriber(db, channelPhoneNumber, sender)
 }
 
-const add = (db, channelPhoneNumber, sender) =>
+const addSubscriber = (db, channelPhoneNumber, sender) =>
   channelRepository
     .addSubscriber(db, channelPhoneNumber, sender)
     .then(() => ({ status: statuses.SUCCESS, message: messages.JOIN_SUCCESS }))
@@ -66,11 +66,11 @@ const add = (db, channelPhoneNumber, sender) =>
 const maybeRemove = async (db, channelPhoneNumber, sender) => {
   const shouldContinue = await channelRepository.isSubscriber(db, channelPhoneNumber, sender)
   return shouldContinue
-    ? remove(db, channelPhoneNumber, sender)
+    ? removeSubscriber(db, channelPhoneNumber, sender)
     : Promise.resolve({ status: statuses.SUCCESS, message: messages.LEAVE_NOOP })
 }
 
-const remove = (db, channelPhoneNumber, sender) =>
+const removeSubscriber = (db, channelPhoneNumber, sender) =>
   channelRepository
     .removeSubscriber(db, channelPhoneNumber, sender)
     .then(() => ({ status: statuses.SUCCESS, message: messages.LEAVE_SUCCESS }))
