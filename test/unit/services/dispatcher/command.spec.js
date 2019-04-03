@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach } from 'mocha'
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import {
@@ -10,10 +10,14 @@ import {
   execute,
 } from '../../../../app/services/dispatcher/command'
 import channelRepository from '../../../../app/db/repositories/channel'
+import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('command service', () => {
+  before(() => (process.env.CHANNEL_NAME = 'test channel'))
+  after(() => (process.env.CHANNEL_NAME = undefined))
+
   describe('parsing commands', () => {
     it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
       expect(parseCommand('ADD ADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
@@ -29,6 +33,26 @@ describe('command service', () => {
 
     it('does not parse ADD ADMIN command if string starts with characters other than `add admin`', () => {
       expect(parseCommand('do ADD ADMIN')).to.eql({ command: commands.NOOP })
+      expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
+    })
+
+    it('parses an REMOVE ADMIN command (regardless of case or whitespace)', () => {
+      expect(parseCommand('REMOVE ADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+      expect(parseCommand('remove admin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+      expect(parseCommand(' remove admin ')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+      expect(parseCommand('REMOVEADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+      expect(parseCommand('removeadmin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+    })
+
+    it('parses the payload from an REMOVE ADMIN command', () => {
+      expect(parseCommand('REMOVE ADMIN foo')).to.eql({
+        command: commands.REMOVE_ADMIN,
+        payload: 'foo',
+      })
+    })
+
+    it('does not parse REMOVE ADMIN command if string starts with characters other than `add admin`', () => {
+      expect(parseCommand('do REMOVE ADMIN')).to.eql({ command: commands.NOOP })
       expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
     })
 
@@ -284,7 +308,7 @@ describe('command service', () => {
         let result
         beforeEach(async () => {
           isAdminStub.returns(Promise.resolve(false))
-          result = await execute({ command: commands.ADD_ADMIN })
+          result = await execute({ command: commands.ADD_ADMIN, payload: '' })
         })
 
         it('does not attempt to add admin', () => {
@@ -295,6 +319,146 @@ describe('command service', () => {
           expect(result).to.eql({
             status: statuses.SUCCESS,
             message: messages.ADD_ADMIN_NOOP_NOT_ADMIN,
+          })
+        })
+      })
+    })
+
+    describe('REMOVE ADMIN command', () => {
+      const command = commands.REMOVE_ADMIN
+      const db = {}
+      const [channelPhoneNumber, sender, newAdmin] = times(4, genPhoneNumber)
+      let isAdminStub, validateStub, removeAdminStub
+
+      beforeEach(() => {
+        isAdminStub = sinon.stub(channelRepository, 'isAdmin')
+        validateStub = sinon.stub(validator, 'validatePhoneNumber')
+        removeAdminStub = sinon.stub(channelRepository, 'removeAdmin')
+      })
+
+      afterEach(() => {
+        isAdminStub.restore()
+        validateStub.restore()
+        removeAdminStub.restore()
+      })
+
+      describe('in all cases', () => {
+        beforeEach(async () => {
+          isAdminStub.returns(Promise.resolve())
+          validateStub.returns(null)
+          removeAdminStub.returns(Promise.resolve())
+
+          await execute({ command, payload: newAdmin, db, channelPhoneNumber, sender })
+        })
+
+        it('checks to see if sender is an admin', async () => {
+          expect(isAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        })
+
+        it('it validates removal target phone number', () => {
+          expect(validateStub.getCall(0).args).to.eql([newAdmin])
+        })
+
+        it('checks to see if removal target is an admin', () => {
+          expect(isAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        })
+      })
+
+      describe('when sender is an admin', () => {
+        beforeEach(() => {
+          isAdminStub.onCall(0).returns(Promise.resolve(true))
+          removeAdminStub.returns(Promise.resolve())
+        })
+
+        describe('when payload is a valid phone number', () => {
+          beforeEach(() => validateStub.returns(true))
+
+          describe('when removal target is an admin', () => {
+            beforeEach(() => isAdminStub.onCall(1).returns(Promise.resolve(true)))
+
+            it("attempts to remove the human from the chanel's admins", async () => {
+              await execute({ command, payload: newAdmin, db, channelPhoneNumber, sender })
+              expect(removeAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, newAdmin])
+            })
+
+            describe('when removing the admin succeeds', () => {
+              beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
+
+              it('returns a SUCCESS status and message', async () => {
+                expect(await execute({ command: commands.REMOVE_ADMIN, payload: newAdmin })).to.eql(
+                  {
+                    status: statuses.SUCCESS,
+                    message: messages.REMOVE_ADMIN_SUCCESS(newAdmin),
+                  },
+                )
+              })
+            })
+
+            describe('when removing the admin fails', () => {
+              beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
+
+              it('returns an FAILURE status and message', async () => {
+                expect(await execute({ command: commands.REMOVE_ADMIN, payload: newAdmin })).to.eql(
+                  {
+                    status: statuses.FAILURE,
+                    message: messages.REMOVE_ADMIN_FAILURE(newAdmin),
+                  },
+                )
+              })
+            })
+          })
+
+          describe('when removal target is not an admin', () => {
+            beforeEach(() => isAdminStub.onCall(1).returns(Promise.resolve(false)))
+
+            it('does not attempt to remove admin', () => {
+              expect(removeAdminStub.callCount).to.eql(0)
+            })
+
+            it('returns a SUCCESS status / NOOP message', async () => {
+              expect(await execute({ command: commands.REMOVE_ADMIN, payload: newAdmin })).to.eql({
+                status: statuses.SUCCESS,
+                message: messages.REMOVE_ADMIN_NOOP_TARGET_NOT_ADMIN(newAdmin),
+              })
+            })
+          })
+        })
+
+        describe('when payload is not a valid phone number', async () => {
+          let result
+          beforeEach(async () => {
+            validateStub.returns(false)
+            result = await execute({ command: commands.REMOVE_ADMIN, payload: 'foobar' })
+          })
+
+          it('does not attempt to remove admin', () => {
+            expect(removeAdminStub.callCount).to.eql(0)
+          })
+
+          it('returns a SUCCESS status / NOOP message', () => {
+            expect(result).to.eql({
+              status: statuses.SUCCESS,
+              message: messages.REMOVE_ADMIN_NOOP_INVALID_NUMBER('foobar'),
+            })
+          })
+        })
+      })
+
+      describe('when sender is not an admin', () => {
+        let result
+        beforeEach(async () => {
+          isAdminStub.returns(Promise.resolve(false))
+          result = await execute({ command: commands.REMOVE_ADMIN, payload: '' })
+        })
+
+        it('does not attempt to add admin', () => {
+          expect(removeAdminStub.callCount).to.eql(0)
+        })
+
+        it('returns an SUCCESS status / NOT_ADMIN_NOOP message', () => {
+          expect(result).to.eql({
+            status: statuses.SUCCESS,
+            message: messages.REMOVE_ADMIN_NOOP_SENDER_NOT_ADMIN,
           })
         })
       })

@@ -11,8 +11,8 @@ const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
 
 module.exports = {
   projectRoot: process.env.PROJECT_ROOT,
-  channelPhoneNumber: process.env.CHANNEL_PHONE_NUMBER,
-  channelName: process.env.CHANNEL_NAME,
+  channelPhoneNumber: process.env.CHANNEL_PHONE_NUMBER || '+12223334444',
+  channelName: process.env.CHANNEL_NAME || 'this channel',
   db: getConfig(dbConfigsByEnv),
   dbus: getConfig(dbusConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
