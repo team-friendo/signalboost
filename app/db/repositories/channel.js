@@ -15,19 +15,24 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 
 const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(
-      adminNumbers.map(humanPhoneNumber =>
-        Promise.all([
-          db.administration
-            .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
-            .spread(x => x),
-          db.subscription
-            .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
-            .spread(x => x),
-        ]).then(writes => writes[0]),
-      ),
-    ),
+    Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
   )
+
+const addAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
+  Promise.all([
+    db.administration
+      .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+      .spread(x => x),
+    db.subscription
+      .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+      .spread(x => x),
+  ]).then(writes => writes[0])
+
+const removeAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
+  Promise.all([
+    db.administration.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+    db.subscription.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+  ])
 
 const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
@@ -61,11 +66,13 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
-  addAdmins,
-  addSubscriber,
   updateOrCreate,
   findAll,
   findByPhoneNumber,
+  addAdmin,
+  addAdmins,
+  removeAdmin,
+  addSubscriber,
   getSubscriberNumbers,
   isAdmin,
   isSubscriber,

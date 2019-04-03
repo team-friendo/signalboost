@@ -24,9 +24,9 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
 fi
 
 
-while getopts ":url:" opt; do
+while getopts ":u:" opt; do
   case "$opt" in
-    url)
+    u)
       url="$OPTARG"
       ;;
   esac

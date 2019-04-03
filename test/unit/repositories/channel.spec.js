@@ -7,7 +7,9 @@ import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { initDb } from '../../../app/db/index'
 import { omit } from 'lodash'
 import {
+  addAdmin,
   addAdmins,
+  removeAdmin,
   addSubscriber,
   updateOrCreate,
   getSubscriberNumbers,
@@ -26,20 +28,20 @@ describe('channel repository', () => {
   let db, channel, sub, subCount, adminCount, admins
 
   before(() => (db = initDb()))
-  afterEach(() => {
-    Promise.all([
+  afterEach(async () => {
+    await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
     ])
   })
-  after(() => db.sequelize.close())
+  after(async () => await db.sequelize.close())
 
   describe('#updateOrCreate', () => {
     let count, channel
 
     describe('when given phone number for a non-existent channel', () => {
-      before(async () => {
+      beforeEach(async () => {
         count = await db.channel.count()
         channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
@@ -58,7 +60,7 @@ describe('channel repository', () => {
     })
 
     describe('when given phone number for a already-existing channel', () => {
-      before(async () => {
+      beforeEach(async () => {
         await updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
         count = await db.channel.count()
         channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
@@ -156,6 +158,56 @@ describe('channel repository', () => {
         expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
           'cannot subscribe human to non-existent channel',
         )
+      })
+    })
+  })
+
+  describe('#removeAdmin', () => {
+    describe('when given the number of an existing admin', () => {
+      let result
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+
+        result = await removeAdmin(db, channel.phoneNumber, adminPNums)
+      })
+
+      it('deletes an administration record', async () => {
+        expect(await db.administration.count()).to.eql(adminCount - 1)
+      })
+
+      it('deletes an subscription record', async () => {
+        expect(await db.subscription.count()).to.eql(subCount - 1)
+      })
+
+      it('returns the tuple [1,1]', () => {
+        expect(result).to.eql([1, 1])
+      })
+    })
+
+    describe('when given the number of a non-existent admin', () => {
+      let result
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        subCount = await db.subscription.count()
+        adminCount = await db.administration.count()
+
+        result = await removeAdmin(db, channel.phoneNumber, '+11111111111')
+      })
+
+      it('deletes an administration record', async () => {
+        expect(await db.administration.count()).to.eql(adminCount)
+      })
+
+      it('deletes an subscription record', async () => {
+        expect(await db.subscription.count()).to.eql(subCount)
+      })
+
+      it('returns the tuple [0, 0]', () => {
+        expect(result).to.eql([0, 0])
       })
     })
   })

@@ -42,7 +42,7 @@ const dispatch = async dispatchable => {
 
 // Dispatchable -> Promise<CommandResult>
 const processCommands = dispatchable =>
-  commandService.execute(commandService.parseCommand(dispatchable.message), dispatchable)
+  commandService.execute({ ...commandService.parseCommand(dispatchable.message), ...dispatchable })
 
 // CommandResult -> Promise<void>
 const processMessages = (commandResult, dispatchable) => {
