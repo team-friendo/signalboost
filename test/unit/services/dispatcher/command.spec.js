@@ -13,71 +13,100 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { administrationFactory } from '../../../support/factories/administration'
 
 describe('command service', () => {
   before(() => (process.env.CHANNEL_NAME = 'test channel'))
   after(() => (process.env.CHANNEL_NAME = undefined))
 
   describe('parsing commands', () => {
-    it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
-      expect(parseCommand('ADD ADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-      expect(parseCommand('add admin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-      expect(parseCommand(' add admin ')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-      expect(parseCommand('ADDADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-      expect(parseCommand('addadmin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-    })
+    describe('ADD ADMIN command', () => {
+      it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
+        expect(parseCommand('ADD ADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+        expect(parseCommand('add admin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+        expect(parseCommand(' add admin ')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+        expect(parseCommand('ADDADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+        expect(parseCommand('addadmin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+      })
 
-    it('parses the payload from an ADD ADMIN command', () => {
-      expect(parseCommand('ADD ADMIN foo')).to.eql({ command: commands.ADD_ADMIN, payload: 'foo' })
-    })
+      it('parses the payload from an ADD ADMIN command', () => {
+        expect(parseCommand('ADD ADMIN foo')).to.eql({
+          command: commands.ADD_ADMIN,
+          payload: 'foo',
+        })
+      })
 
-    it('does not parse ADD ADMIN command if string starts with characters other than `add admin`', () => {
-      expect(parseCommand('do ADD ADMIN')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
-    })
-
-    it('parses an REMOVE ADMIN command (regardless of case or whitespace)', () => {
-      expect(parseCommand('REMOVE ADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-      expect(parseCommand('remove admin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-      expect(parseCommand(' remove admin ')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-      expect(parseCommand('REMOVEADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-      expect(parseCommand('removeadmin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-    })
-
-    it('parses the payload from an REMOVE ADMIN command', () => {
-      expect(parseCommand('REMOVE ADMIN foo')).to.eql({
-        command: commands.REMOVE_ADMIN,
-        payload: 'foo',
+      it('does not parse ADD ADMIN command if string starts with chars other than `add admin`', () => {
+        expect(parseCommand('do ADD ADMIN')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
     })
 
-    it('does not parse REMOVE ADMIN command if string starts with characters other than `add admin`', () => {
-      expect(parseCommand('do REMOVE ADMIN')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
+    describe('REMOVE ADMIN command', () => {
+      it('parses an REMOVE ADMIN command (regardless of case or whitespace)', () => {
+        expect(parseCommand('REMOVE ADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+        expect(parseCommand('remove admin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+        expect(parseCommand(' remove admin ')).to.eql({
+          command: commands.REMOVE_ADMIN,
+          payload: '',
+        })
+        expect(parseCommand('REMOVEADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+        expect(parseCommand('removeadmin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+      })
+
+      it('parses the payload from an REMOVE ADMIN command', () => {
+        expect(parseCommand('REMOVE ADMIN foo')).to.eql({
+          command: commands.REMOVE_ADMIN,
+          payload: 'foo',
+        })
+      })
+
+      it('does not parse REMOVE ADMIN command if string starts with chars other than `add admin`', () => {
+        expect(parseCommand('do REMOVE ADMIN')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
+      })
     })
 
-    it('parses an JOIN command (regardless of case or whitespace)', () => {
-      expect(parseCommand('JOIN')).to.eql({ command: commands.JOIN })
-      expect(parseCommand('join')).to.eql({ command: commands.JOIN })
-      expect(parseCommand(' join ')).to.eql({ command: commands.JOIN })
+    describe('INFO command', () => {
+      it('parses an INFO command (regardless of case or whitespace)', () => {
+        expect(parseCommand('INFO')).to.eql({ command: commands.INFO })
+        expect(parseCommand('info')).to.eql({ command: commands.INFO })
+        expect(parseCommand(' info ')).to.eql({ command: commands.INFO })
+      })
+
+      it('does not parse an INFO command when string contains characters other than `info`', () => {
+        expect(parseCommand('i want info ')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('info me!')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+      })
     })
 
-    it('does not parse an JOIN command when string contains characters other than `add`', () => {
-      expect(parseCommand('i wanna join ')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('join it!')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+    describe('JOIN command', () => {
+      it('parses an JOIN command (regardless of case or whitespace)', () => {
+        expect(parseCommand('JOIN')).to.eql({ command: commands.JOIN })
+        expect(parseCommand('join')).to.eql({ command: commands.JOIN })
+        expect(parseCommand(' join ')).to.eql({ command: commands.JOIN })
+      })
+
+      it('does not parse an JOIN command when string contains characters other than `join`', () => {
+        expect(parseCommand('i wanna join ')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('join it!')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+      })
     })
 
-    it('parses a LEAVE command regardless of case or whitespace', () => {
-      expect(parseCommand('LEAVE')).to.eql({ command: commands.LEAVE })
-      expect(parseCommand('leave')).to.eql({ command: commands.LEAVE })
-      expect(parseCommand(' leave ')).to.eql({ command: commands.LEAVE })
-    })
+    describe('LEAVE command', () => {
+      it('parses a LEAVE command regardless of case or whitespace', () => {
+        expect(parseCommand('LEAVE')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand('leave')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand(' leave ')).to.eql({ command: commands.LEAVE })
+      })
 
-    it('does not parse a LEAVE command when string contains characters other than `leave`', () => {
-      expect(parseCommand('i wanna leave ')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('leave now!')).to.eql({ command: commands.NOOP })
-      expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+      it('does not parse a LEAVE command when string contains characters other than `leave`', () => {
+        expect(parseCommand('i wanna leave ')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('leave now!')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+      })
     })
   })
 
@@ -459,6 +488,91 @@ describe('command service', () => {
           expect(result).to.eql({
             status: statuses.SUCCESS,
             message: messages.REMOVE_ADMIN_NOOP_SENDER_NOT_ADMIN,
+          })
+        })
+      })
+    })
+
+    describe('INFO command', () => {
+      const command = commands.INFO
+      const [channelPhoneNumber, sender] = times(2, genPhoneNumber)
+      const administrations = times(2, administrationFactory())
+      const subscriptions = times(4, subscriptionFactory())
+      const db = {
+        administration: { findAll: () => Promise.resolve(administrations) },
+        subscription: { findAll: () => Promise.resolve(subscriptions) },
+      }
+      let isAdminStub, isSubscriberStub
+
+      beforeEach(() => {
+        isAdminStub = sinon.stub(channelRepository, 'isAdmin')
+        isSubscriberStub = sinon.stub(channelRepository, 'isSubscriber')
+      })
+
+      afterEach(() => {
+        isAdminStub.restore()
+        isSubscriberStub.restore()
+      })
+
+      describe('in all cases', () => {
+        beforeEach(() => {
+          isAdminStub.returns(Promise.resolve())
+          isSubscriberStub.returns(Promise.resolve())
+        })
+
+        it('checks to see if sender is admin of channel', async () => {
+          await execute({ command, db, channelPhoneNumber, sender })
+          expect(isAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        })
+
+        it('checks to see if sender is subscribed to channel', async () => {
+          await execute({ command, db, channelPhoneNumber, sender })
+          expect(isSubscriberStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        })
+      })
+
+      describe('when sender is an admin', () => {
+        beforeEach(() => {
+          isAdminStub.returns(Promise.resolve(true))
+          isSubscriberStub.returns(Promise.resolve(true))
+        })
+
+        it('sends an info message with more information', async () => {
+          expect(await execute({ command, db, channelPhoneNumber, sender })).to.eql({
+            status: statuses.SUCCESS,
+            message: messages.INFO(
+              channelPhoneNumber,
+              administrations.map(a => a.humanPhoneNumber),
+              4,
+            ),
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        beforeEach(() => {
+          isAdminStub.returns(Promise.resolve(false))
+          isSubscriberStub.returns(Promise.resolve(true))
+        })
+
+        it('sends an info message with less information', async () => {
+          expect(await execute({ command, db, channelPhoneNumber, sender })).to.eql({
+            status: statuses.SUCCESS,
+            message: messages.INFO(channelPhoneNumber, 2, 4),
+          })
+        })
+      })
+
+      describe('when sender is neither admin nor subscriber', () => {
+        beforeEach(() => {
+          isAdminStub.returns(Promise.resolve(false))
+          isSubscriberStub.returns(Promise.resolve(false))
+        })
+
+        it('sends an error message', async () => {
+          expect(await execute({ command, db, channelPhoneNumber, sender })).to.eql({
+            status: statuses.SUCCESS,
+            message: messages.INFO_NOOP,
           })
         })
       })
