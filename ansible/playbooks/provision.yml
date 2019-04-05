@@ -58,6 +58,8 @@
   - name: Allocate 2GB to /swapfile
     command: dd if=/dev/zero of=/swapfile bs=1M count=2048
     register: write_swapfile
+    args:
+      creates: /swapfile
 
   - name: Set swapfile permissions
     file: path=/swapfile mode=600
