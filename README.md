@@ -185,23 +185,30 @@ For domain name registration, we think that [Njal.la](https://njal.la) is hands 
 
 ...
 
-**(4) Provision and deploy signalboost:**
+**(3) Provision and deploy signalboost:**
 
-Add the `-e "friend_mode=on"` to the normal deploy flow:
+Signalboost is configured through environment variables. Those values are read from the file ".env". There are two ways you can deploy those values using the ansible playbook. You can use either have blackbox install the encrypted version of .env that's bundled with this repo or you can use your own local file.
+
+Add the `-e "deploy_method=blackbox"` flag to instruct ansible to run `bin/blackbox/postdeplogy` on the remote server.
 
 ``` shell
 $ cd ansible
-$ ansible-playbook -i inventory playbooks/main.yml -e "friend_mode=on"
+$ ansible-playbook -i inventory -e "deploy_method=blackbox" playbooks/main.yml
 ```
 ...
 
-Add the `-e "friend_mode=on"` to the normal deploy flow:
+Add the `-e "deploy_method=copy"` flag to copy a local file containing the environment variables. By default "[REPO-ROOT]/.env" is copied, but that can be configured by setting the ansible variable _deploy_file_.
 
-**(8) Deploy updates to signalboost:**
+For example, this will use different environment file:
 
 ``` shell
 $ cd ansible
-$ ansible-playbook -i inventory playbooks/deploy.yml -e "friend_mode=on"
+$ ansible-playbook -i inventory -e "deploy_method=copy" -e "deploy_file=/path/to/development.env" playbooks/main.yml
+
+```
+
+**(4) Deploy updates to signalboost:**
+
 ```
 
 ### Install the CLI

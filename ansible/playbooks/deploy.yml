@@ -10,7 +10,8 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-    friend_mode: off
+    deploy_method: blackbox
+    deploy_file: "files/.env"
 
   tasks:
 
@@ -26,19 +27,19 @@
       version: "{{ branch | default('master') }}"
     tags: clone
 
-  - name: Decrypt secrets
+  - name: Deploy environment file using blackbox
     command: ./bin/blackbox/postdeploy
     args:
       chdir: "{{ homedir }}"
     tags: clone
-    when: friend_mode != "on"
+    when: deploy_method == "blackbox"
 
-  - name: Load secrets
+  - name: Deploy environment file by copying local file
     copy:
-      src: files/.env
+      src: "{{ deploy_file }}"
       dest: "{{ homedir }}/.env"
     tags: clone
-    when: friend_mode == "on"
+    when: deploy_method == "copy"
 
   ########
   # STOP #
