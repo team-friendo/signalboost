@@ -10,7 +10,7 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-    deploy_method: copy
+    deploy_method: blackbox
     deploy_file: "files/.env"
 
   tasks:

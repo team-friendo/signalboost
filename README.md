@@ -77,7 +77,7 @@ $ ./ansible/install-ansible
 
 ``` shell
 $ cd ansible
-$ ansible-playbook -i inventory -e "deploy_method=blackbox" playbooks/main.yml
+$ ansible-playbook -i inventory playbooks/main.yml
 ```
 
 The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps:
@@ -113,7 +113,7 @@ For more commands supported by the `boost` cli tool see the [Administering](#adm
 
 ``` shell
 $ cd ansible
-$ ansible-playbook -i inventory -e "deploy_method=blackbox" playbooks/deploy.yml
+$ ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
 ### Friendos of Team Friendo
@@ -189,7 +189,7 @@ For domain name registration, we think that [Njal.la](https://njal.la) is hands 
 
 Signalboost is configured through environment variables. Those values are read from the file ".env". There are two ways you can deploy those values using the ansible playbook. You can use either have blackbox install the encrypted version of .env that's bundled with this repo or you can use your own local file.
 
-Add the `-e "deploy_method=blackbox"` flag to instruct ansible to run `bin/blackbox/postdeploy` on the remote server.
+Add the `-e "deploy_method=blackbox"` flag to instruct ansible to run `bin/blackbox/postdeplogy` on the remote server.
 
 ``` shell
 $ cd ansible

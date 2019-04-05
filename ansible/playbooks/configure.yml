@@ -7,6 +7,7 @@
     pip_install_packages:
       - name: docker
       - name: docker-compose
+    deploy_method: blackbox
 
   # install docker dependencies
   roles:
@@ -24,14 +25,14 @@
         src: files/deploy_keys/
         dest: /keys/
       tags: keys
-      when: deploy_method is defined and deploy_method == 'blackbox'
+      when: deploy_method == 'blackbox'
 
     - name: Import GPG deploy key to keystore
       command: gpg --import signalboost_gpg_privkey.asc
       args:
         chdir: /keys
       tags: keys
-      when: deploy_method is defined and deploy_method == 'blackbox'
+      when: deploy_method == 'blackbox'
 
     ################
     # DOCKER IMAGE #
