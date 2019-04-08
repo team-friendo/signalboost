@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, afterEach, after } from 'mocha'
 import { pick } from 'lodash'
-import { initDb } from '../../../app/db'
-import { genPhoneNumber, phoneNumberFactory } from '../../support/factories/phoneNumber'
-import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
+import { initDb } from '../../../../app/db/index'
+import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 
 describe('phone number repository', () => {
   const {
