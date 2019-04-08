@@ -23,14 +23,14 @@ const commandResponses = {
   },
   // INFO
   info: {
-    admin: (channel, administrations, subscriptions) =>
+    admin: channel =>
       `\n- phone number: ${channel.phoneNumber}\n- subscribers: ${
-        subscriptions.length
-      }\n- admins: ${administrations.map(a => a.humanPhoneNumber).join(', ')}`,
-    subscriber: (channel, admins, subscriptions) =>
+        channel.subscriptions.length
+      }\n- admins: ${channel.administrations.map(a => a.humanPhoneNumber).join(', ')}`,
+    subscriber: channel =>
       `\n- phone number: ${channel.phoneNumber}\n- subscribers: ${
-        subscriptions.length
-      }\n- admins: ${admins.length}`,
+        channel.subscriptions.length
+      }\n- admins: ${channel.administrations.length}`,
     noop: `[NOPREFIX]Whoops! You cannot retrieve info for a channel you do not belong to.`,
   },
   // RENAME

@@ -109,17 +109,10 @@ const maybeShowInfo = async (db, channel, sender) => {
     : { status: statuses.SUCCESS, message: cr.noop }
 }
 
-const showInfo = async (db, channel, sender, cr) => {
-  const channelPhoneNumber = channel.phoneNumber
-  const admins = await db.administration.findAll({ where: { channelPhoneNumber } })
-  const subs = await db.subscription.findAll({ where: { channelPhoneNumber } })
-  return {
-    status: statuses.SUCCESS,
-    message: sender.isAdmin
-      ? cr.admin(channel, admins, subs)
-      : cr.subscriber(channel, admins, subs),
-  }
-}
+const showInfo = async (db, channel, sender, cr) => ({
+  status: statuses.SUCCESS,
+  message: sender.isAdmin ? cr.admin(channel) : cr.subscriber(channel),
+})
 
 // RENAME
 

@@ -126,7 +126,12 @@ describe('executor service', () => {
 
   describe('executing commands', () => {
     const db = {}
-    const channel = { name: 'foobar', phoneNumber: '+13333333333' }
+    const channel = {
+      name: 'foobar',
+      phoneNumber: '+13333333333',
+      administrations: times(2, administrationFactory({ channelPhoneNumber: '+13333333333' })),
+      subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
+    }
     const admin = {
       phoneNumber: '+11111111111',
       isAdmin: true,
@@ -467,19 +472,12 @@ describe('executor service', () => {
     })
 
     describe('INFO command', () => {
-      const administrations = times(2, administrationFactory())
-      const subscriptions = times(4, subscriptionFactory())
-      const db = {
-        administration: { findAll: () => Promise.resolve(administrations) },
-        subscription: { findAll: () => Promise.resolve(subscriptions) },
-      }
-
       describe('when sender is an admin', () => {
         const sender = admin
         it('sends an info message with more information', async () => {
           expect(await execute({ command: commands.INFO, db, channel, sender })).to.eql({
             status: statuses.SUCCESS,
-            message: CR.info.admin(channel, administrations, subscriptions),
+            message: CR.info.admin(channel),
           })
         })
       })
@@ -489,7 +487,7 @@ describe('executor service', () => {
         it('sends an info message with less information', async () => {
           expect(await execute({ command: commands.INFO, db, channel, sender })).to.eql({
             status: statuses.SUCCESS,
-            message: CR.info.subscriber(channel, administrations, subscriptions),
+            message: CR.info.subscriber(channel),
           })
         })
       })
