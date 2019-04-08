@@ -49,11 +49,14 @@ const run = async db => {
 }
 
 const handleMessage = async (db, iface, payload) => {
-  const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
-  const sender = await authenticateSender(db, channelPhoneNumber, payload.sender)
-  const dispatchable = { ...payload, db, iface, channel, sender }
-
   logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
+  const [channel, sender] = await Promise.all([
+    channelRepository.findDeep(db, channelPhoneNumber),
+    authenticateSender(db, channelPhoneNumber, payload.sender),
+  ])
+  // TODO: refactor this to avoid stuttering:
+  // processCommand should return and dispach should consume obj w/ commandResult/dispatchable tuple
+  const dispatchable = { ...payload, db, iface, channel, sender }
   return messenger.dispatch(await executor.processCommand(dispatchable), dispatchable)
 }
 
