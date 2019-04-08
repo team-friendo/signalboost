@@ -60,9 +60,8 @@ describe('initializing channels', () => {
   const teardownNumber = (db, phoneNumber) =>
     Promise.all([
       docker.stopContainer(phoneNumber),
-      db.channel.destroy({ where: { phoneNumber } }),
       maybeMove(`${keystorePath}/${phoneNumber}.bk`, `${keystorePath}/${phoneNumber}`),
-      maybeMove(`${keystorePath}/${phoneNumber}.d.bk`, `${keystorePath}/${phoneNumber}`),
+      maybeMove(`${keystorePath}/${phoneNumber}.d.bk`, `${keystorePath}/${phoneNumber}.d`),
     ])
 
   const maybeMove = async (src, dst) => {
