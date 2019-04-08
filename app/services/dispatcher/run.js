@@ -1,18 +1,34 @@
 const signal = require('./signal')
-const commandService = require('./command')
-const messageService = require('./message')
+const channelRepository = require('./../../db/repositories/channel')
+const executor = require('./executor')
+const messenger = require('./messenger')
 const logger = require('./logger')
-const { statuses } = commandService
 const { channelPhoneNumber } = require('../../config')
 
 /**
  * type Dispatchable = {
  *   db: SequelizeDatabaseConnection,
  *   iface: DbusInterface,
- *   channelPhoneNumber: string,
+ *   channel: Channel,
+ *   sender: Sender,
  *   message: string,
- *   sender: string,
  *   attachments: string,
+ * }
+ */
+
+/**
+ * type Channel = {
+ *   phoneNumber: string,
+ *   name: string,
+ *   (containerId: string,)
+ * }
+ */
+
+/**
+ * type Sender = {
+ *   phoneNumber: string,
+ *   isAdmin: boolean,
+ *   isSubscriber: boolean,
  * }
  */
 
@@ -27,30 +43,26 @@ const { channelPhoneNumber } = require('../../config')
 
 const run = async db => {
   const iface = await signal.getDbusInterface()
-  signal.onReceivedMessage(iface)(payload =>
-    dispatch({ db, iface, channelPhoneNumber, ...payload }),
-  )
+
   logger.log(`Dispatcher listening on channel: ${channelPhoneNumber}...`)
+  signal.onReceivedMessage(iface)(payload => handleMessage(db, iface, payload).catch(logger.error))
 }
 
-const dispatch = async dispatchable => {
+const handleMessage = async (db, iface, payload) => {
+  const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
+  const sender = await authenticateSender(db, channelPhoneNumber, payload.sender)
+  const dispatchable = { ...payload, db, iface, channel, sender }
+
   logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
-  return processMessages(await processCommands(dispatchable), dispatchable)
+  return messenger.dispatch(await executor.processCommand(dispatchable), dispatchable)
 }
 
-// HELPERS
-
-// Dispatchable -> Promise<CommandResult>
-const processCommands = dispatchable =>
-  commandService.execute({ ...commandService.parseCommand(dispatchable.message), ...dispatchable })
-
-// CommandResult -> Promise<void>
-const processMessages = (commandResult, dispatchable) => {
-  return commandResult.status !== statuses.NOOP
-    ? messageService.send(dispatchable.iface, commandResult.message, dispatchable.sender)
-    : messageService.maybeBroadcast(dispatchable)
-}
+const authenticateSender = async (db, channelPhoneNumber, sender) => ({
+  phoneNumber: sender,
+  isAdmin: await channelRepository.isAdmin(db, channelPhoneNumber, sender),
+  isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
+})
 
 // EXPORTS
 
-module.exports = { run, dispatch }
+module.exports = run

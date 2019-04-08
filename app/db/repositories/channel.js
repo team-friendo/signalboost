@@ -1,3 +1,5 @@
+const { get } = require('lodash')
+
 // PUBLIC FUNCTIONS
 
 // CHANNEL QUERIES
@@ -7,6 +9,11 @@ const updateOrCreate = async (db, phoneNumber, name, containerId) => {
     ? channel.update({ name, containerId })
     : db.channel.create({ phoneNumber, name, containerId })
 }
+
+const update = (db, phoneNumber, attrs) =>
+  db.channel
+    .update({ ...attrs }, { where: { phoneNumber }, returning: true })
+    .then(([_, [pNumInstance]]) => pNumInstance)
 
 const findAll = db => db.channel.findAll()
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
@@ -66,6 +73,7 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
+  update,
   updateOrCreate,
   findAll,
   findByPhoneNumber,
