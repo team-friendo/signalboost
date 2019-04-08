@@ -19,8 +19,8 @@
 
 __________________
 
-<a name="txtmob_joke">
-[1] If you are a child of the (anarchist) 90's, you might usefully think of signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."
+<a name="txtmob_joke"></a>
+[1] *If you are a child of the (anarchist) 90's, you might usefully think of signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."*
 
 # Application Design <a name="design"></a>
 
