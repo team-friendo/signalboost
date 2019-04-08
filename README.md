@@ -9,13 +9,15 @@
 
 # Overview <a name="overview"></a>
 
-**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for activists, Signalboost seeks to empower informal networks to communicate safely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates. [1](#txtmob_joke)
+**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for activists, Signalboost seeks to empower informal networks to communicate safely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates. [[1](#txtmob_joke)]
 
-**The stack** consists of node services in dynamically-allocated docker containers calling out to the calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
+**The stack** consists of node services calling out to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
 **Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net`.
+
+__________________
 
 <a name="txtmob_joke">
 [1] If you are a child of the (anarchist) 90's, you might usefully think of signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."
