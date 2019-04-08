@@ -9,13 +9,16 @@
 
 # Overview <a name="overview"></a>
 
-**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for frontline activists, Signalboost seeks to empower informal networks to communicate securely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates.
+**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for activists, Signalboost seeks to empower informal networks to communicate safely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates. [1](#txtmob_joke)
 
-**The stack*** consists of node services in dynamically-allocated docker containers calling out to the calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
+**The stack** consists of node services in dynamically-allocated docker containers calling out to the calls to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
 **Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net`.
+
+<a name="txtmob_joke">
+[1] If you are a child of the (anarchist) 90's, you might usefully think of signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."
 
 # Application Design <a name="design"></a>
 
@@ -43,6 +46,14 @@ The application has the following components:
 * a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
 * a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
 * an `orchestrator` service that handles the provision of new `dispatch` services as new channels are created
+
+## A Quirky Thing About the Design
+
+Due to upstream constraints imposed by signal-cli's design, one may not run multiple instances of signal-cli with different phone numbers in daemon mode without creating contention over the underlying dbus interface used to listen to and send messages over signal. (This constraint arises from the fact that the dbus path is hard-coded in the upstream code).
+
+As a temporary workaround to this solution, the `orchestrator` service spins up a docker container containing (1) an instance of the dispatch service, (2) an instance of dbus, and (3) an instance of signal-cli coordinated by supervisord. This eliminates contention over the dbus interface but introduces [memory bloat](https://0xacab.org/team-friendo/signalboost/issues/56) (as 2 JVM's are spun up for each channel.)
+
+It's a less-than ideal fix, but it works for now, and we should soon have an [upstream fix](https://github.com/AsamK/signal-cli/issues/200) in place that makes a more memory-efficient solution possible. :)
 
 # Administering <a name="administering"></a>
 
