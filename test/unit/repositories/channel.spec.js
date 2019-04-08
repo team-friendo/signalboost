@@ -11,6 +11,7 @@ import {
   addAdmins,
   removeAdmin,
   addSubscriber,
+  update,
   updateOrCreate,
   getSubscriberNumbers,
   isAdmin,
@@ -77,6 +78,23 @@ describe('channel repository', () => {
           containerId: 'acabdeadbeef',
         })
       })
+    })
+  })
+
+  describe('#update', () => {
+    let updatedChannel
+    beforeEach(async () => {
+      await db.channel.create({ phoneNumber: chPNum, name: 'foo' })
+      updatedChannel = await update(db, chPNum, { name: 'bar' })
+    })
+
+    it("updates a channel's name", async () => {
+      const newName = await db.channel.findOne({ phoneNumber: chPNum}).then(ch => ch.name)
+      expect(newName).to.eql('bar')
+    })
+
+    it('returns a channel resources with updated values', () => {
+      expect(updatedChannel.name).to.eql('bar')
     })
   })
 
