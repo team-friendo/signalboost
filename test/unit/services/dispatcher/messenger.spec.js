@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../../app/db/repositories/channel'
-import signal from '../../../../app/services/dispatcher/signal'
-import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { times } from 'lodash'
+import signal from '../../../../app/services/dispatcher/signal'
+import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import messenger from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages'
+import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('messenger service', () => {
@@ -35,22 +35,30 @@ describe('messenger service', () => {
     isAdmin: false,
     isSubscriber: true,
   }
-  let broadcastSpy, respondSpy, sendMessageStub, getSubscriberNumbersStub
+  let broadcastSpy,
+    respondSpy,
+    sendMessageStub,
+    incrementCommandCountStub,
+    incrementBroadcastCountStub
 
   beforeEach(() => {
     broadcastSpy = sinon.spy(messenger, 'broadcast')
     respondSpy = sinon.spy(messenger, 'respond')
     sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
-    getSubscriberNumbersStub = sinon
-      .stub(channelRepository, 'getSubscriberNumbers')
-      .returns(Promise.resolve(subscriberNumbers))
+    incrementCommandCountStub = sinon
+      .stub(messageCountRepository, 'incrementCommandCount')
+      .returns(Promise.resolve())
+    incrementBroadcastCountStub = sinon
+      .stub(messageCountRepository, 'incrementBroadcastCount')
+      .returns(Promise.resolve())
   })
 
   afterEach(() => {
     broadcastSpy.restore()
     respondSpy.restore()
     sendMessageStub.restore()
-    getSubscriberNumbersStub.restore()
+    incrementCommandCountStub.restore()
+    incrementBroadcastCountStub.restore()
   })
 
   describe('dispatching a message', () => {
@@ -66,12 +74,20 @@ describe('messenger service', () => {
         expect(broadcastSpy.callCount).to.eql(0)
       })
 
+      it('does not increment the broadcast count', () => {
+        expect(incrementBroadcastCountStub.callCount).to.eql(0)
+      })
+
       it('sends a command result to the message sender', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
           iface,
           '[foobar]\nyay you joined!',
           [adminSender.phoneNumber],
         ])
+      })
+
+      it('increments the command count for the channel', () => {
+        expect(incrementCommandCountStub.getCall(0).args).to.eql([db, channel.phoneNumber])
       })
     })
 
@@ -88,6 +104,10 @@ describe('messenger service', () => {
           expect(respondSpy.callCount).to.eql(0)
         })
 
+        it('does not imcrement the command count for the channel', () => {
+          expect(incrementCommandCountStub.callCount).to.eql(0)
+        })
+
         it('broadcasts the message to all channel subscribers', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             iface,
@@ -95,6 +115,10 @@ describe('messenger service', () => {
             subscriberNumbers,
             'some/path',
           ])
+        })
+
+        it('it increments the command count for the channel', () => {
+          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 2])
         })
       })
 
