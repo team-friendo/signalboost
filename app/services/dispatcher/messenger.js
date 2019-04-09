@@ -1,4 +1,3 @@
-const channelRepository = require('../../db/repositories/channel')
 const signal = require('./signal')
 const messages = require('./messages')
 const { statuses } = require('./executor')
@@ -14,11 +13,11 @@ const dispatch = async (commandResult, dispatchable) => {
 }
 
 // Dispatchable -> Promise<voic>
-const broadcast = async ({ db, iface, channel, message, attachments }) =>
+const broadcast = async ({ iface, channel, message, attachments }) =>
   signal.sendMessage(
     iface,
     prefix(channel, message),
-    await channelRepository.getSubscriberNumbers(db, channel.phoneNumber),
+    channel.subscriptions.map(s => s.humanPhoneNumber),
     attachments,
   )
 
@@ -26,6 +25,7 @@ const broadcast = async ({ db, iface, channel, message, attachments }) =>
 const respond = ({ iface, channel, message, sender }) =>
   signal.sendMessage(iface, prefix(channel, message), [sender.phoneNumber])
 
+// TODO: return command from command result, don't prefix if `RENAME` to avoid this `[NOPREFIX]` hack
 // string -> string
 const prefix = (channel, message) =>
   message.match(/^\[NOPREFIX\]/)

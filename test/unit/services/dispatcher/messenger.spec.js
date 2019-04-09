@@ -4,22 +4,34 @@ import sinon from 'sinon'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/dispatcher/signal'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
+import { times } from 'lodash'
 import messenger from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('messenger service', () => {
   const [db, iface] = [{}, {}]
-  const channel = { name: 'foobar', phoneNumber: '+13333333333' }
-  const subscriberNumbers = ['+11111111111', '+12222222222']
+  const channelPhoneNumber = genPhoneNumber()
+  const subscriberNumbers = times(2, genPhoneNumber)
+  const adminNumber = genPhoneNumber()
+  const channel = {
+    name: 'foobar',
+    phoneNumber: channelPhoneNumber,
+    administrations: [{ channelPhoneNumber, humanPhoneNumber: adminNumber }],
+    subscriptions: [
+      { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[0] },
+      { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[1] },
+    ],
+  }
   const attachments = 'some/path'
   const message = 'please help!'
   const adminSender = {
-    phoneNumber: '+10000000000',
+    phoneNumber: adminNumber,
     isAdmin: true,
     isSubscriber: true,
   }
   const subscriberSender = {
-    phoneNumber: '+20000000000',
+    phoneNumber: subscriberNumbers[0],
     isAdmin: false,
     isSubscriber: true,
   }
