@@ -54,10 +54,9 @@ const handleMessage = async (db, iface, payload) => {
     channelRepository.findDeep(db, channelPhoneNumber),
     authenticateSender(db, channelPhoneNumber, payload.sender),
   ])
-  // TODO: refactor this to avoid stuttering:
-  // processCommand should return and dispach should consume obj w/ commandResult/dispatchable tuple
-  const dispatchable = { ...payload, db, iface, channel, sender }
-  return messenger.dispatch(await executor.processCommand(dispatchable), dispatchable)
+  return messenger.dispatch(
+    await executor.processCommand({ ...payload, db, iface, channel, sender }),
+  )
 }
 
 const authenticateSender = async (db, channelPhoneNumber, sender) => ({

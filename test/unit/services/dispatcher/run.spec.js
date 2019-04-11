@@ -15,6 +15,12 @@ describe('dispatcher service', () => {
     const [db, iface] = [{}, {}]
     const channel = { ...channelFactory(), administrations: [], subscriptions: [] }
     const sender = genPhoneNumber()
+    const authenticatedSender = {
+      phoneNumber: sender,
+      isAdmin: true,
+      isSubscriber: true,
+    }
+
     let getDbusStub,
       onReceivedMessageStub,
       findDeepStub,
@@ -28,7 +34,7 @@ describe('dispatcher service', () => {
 
       onReceivedMessageStub = sinon
         .stub(signal, 'onReceivedMessage')
-        .callsFake(() => fn => fn({ sender }))
+        .callsFake(() => fn => fn({ sender, message: 'foo' }))
 
       findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
 
@@ -38,9 +44,12 @@ describe('dispatcher service', () => {
         .stub(channelRepository, 'isSubscriber')
         .returns(Promise.resolve(true))
 
-      processCommandStub = sinon
-        .stub(executor, 'processCommand')
-        .returns(Promise.resolve({ status: 'SUCCESS', message: 'NOOP' }))
+      processCommandStub = sinon.stub(executor, 'processCommand').returns(
+        Promise.resolve({
+          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+          dispatchable: { db, iface, channel, sender: authenticatedSender, message: 'foo' },
+        }),
+      )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
 
@@ -76,20 +85,16 @@ describe('dispatcher service', () => {
           db,
           iface,
           channel,
-          sender: { phoneNumber: sender, isAdmin: true, isSubscriber: true },
+          message: 'foo',
+          sender: authenticatedSender,
         })
       })
 
       it('passes the command result and original message to messenger for dispatch', () => {
-        expect(dispatchStub.getCall(0).args).to.eql([
-          { status: 'SUCCESS', message: 'NOOP' },
-          {
-            db,
-            iface,
-            channel,
-            sender: { phoneNumber: sender, isAdmin: true, isSubscriber: true },
-          },
-        ])
+        expect(dispatchStub.getCall(0).args[0]).to.eql({
+          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+          dispatchable: { db, iface, channel, message: 'foo', sender: authenticatedSender },
+        })
       })
     })
   })
