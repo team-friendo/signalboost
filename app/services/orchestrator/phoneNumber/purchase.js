@@ -54,7 +54,10 @@ const create = phoneNumber =>
       smsUrl,
       friendlyName: `signal-boost number ${uuid()}`,
     })
-    .catch(err => Promise.reject(errorStatus(errors.purchaseFailed(err), phoneNumber)))
+    .catch(err => {
+      // TODO(@zig): add prometheus error count here (counter: twilio_purchase_error)
+      return Promise.reject(errorStatus(errors.purchaseFailed(err), phoneNumber))
+    })
 
 const recordPurchase = db => ({ phoneNumber, sid }) =>
   db.phoneNumber

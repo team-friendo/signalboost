@@ -156,6 +156,7 @@ const noop = () =>
   })
 
 const logAndReturn = (err, statusTuple) => {
+  // TODO(@zig): add prometheus error count here (counter: db_error)
   logger.error(err)
   return statusTuple
 }
