@@ -15,8 +15,9 @@
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net`.
+**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net**.
 
+**NOTE: this project is not officially affiliated with the Signal App or Foundatoin.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and Open Whisper Systems for maintaining a generous free/open ecosystem in which we can do so. <@3
 __________________
 
 <a name="txtmob_joke"></a>
