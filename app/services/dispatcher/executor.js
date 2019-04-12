@@ -13,12 +13,12 @@ const statuses = {
 }
 
 const commands = {
-  ADD_ADMIN: 'ADD_ADMIN',
+  ADD: 'ADD',
   INFO: 'INFO',
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
   NOOP: 'NOOP',
-  REMOVE_ADMIN: 'REMOVE_ADMIN',
+  REMOVE: 'REMOVE',
   RENAME: 'RENAME',
 }
 
@@ -30,13 +30,13 @@ const processCommand = dispatchable =>
 
 const parseCommand = msg => {
   const _msg = msg.trim()
-  if (_msg.match(/^add\s?admin/i))
-    return { command: commands.ADD_ADMIN, payload: _msg.match(/^add\s?admin\s?(.*)/i)[1] }
+  if (_msg.match(/^add/i))
+    return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
   else if (_msg.match(/^info$/i)) return { command: commands.INFO }
   else if (_msg.match(/^join$/i)) return { command: commands.JOIN }
   else if (_msg.match(/^leave$/i)) return { command: commands.LEAVE }
-  else if (_msg.match(/^remove\s?admin/i))
-    return { command: commands.REMOVE_ADMIN, payload: _msg.match(/^remove\s?admin\s?(.*)$/i)[1] }
+  else if (_msg.match(/^remove/i))
+    return { command: commands.REMOVE, payload: _msg.match(/^remove\s?(.*)$/i)[1] }
   else if (_msg.match(/^rename/i))
     return { command: commands.RENAME, payload: _msg.match(/^rename\s?(.*)$/i)[1] }
   else return { command: commands.NOOP }
@@ -45,12 +45,12 @@ const parseCommand = msg => {
 const execute = async dispatchable => {
   const { command, payload, db, channel, sender } = dispatchable
   const result = await ({
-    [commands.ADD_ADMIN]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
     [commands.LEAVE]: () => maybeRemoveSubscriber(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE_ADMIN]: () => maybeRemoveAdmin(db, channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
   }[command] || noop)()
   return { commandResult: { ...result, command }, dispatchable }
 }

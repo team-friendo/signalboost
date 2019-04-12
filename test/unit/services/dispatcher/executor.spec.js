@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import {
@@ -19,22 +19,17 @@ describe('executor service', () => {
   describe('parsing commands', () => {
     describe('ADD ADMIN command', () => {
       it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
-        expect(parseCommand('ADD ADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-        expect(parseCommand('add admin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-        expect(parseCommand(' add admin ')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-        expect(parseCommand('ADDADMIN')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
-        expect(parseCommand('addadmin')).to.eql({ command: commands.ADD_ADMIN, payload: '' })
+        expect(parseCommand('ADD')).to.eql({ command: commands.ADD, payload: '' })
+        expect(parseCommand('add')).to.eql({ command: commands.ADD, payload: '' })
+        expect(parseCommand(' add ')).to.eql({ command: commands.ADD, payload: '' })
       })
 
       it('parses the payload from an ADD ADMIN command', () => {
-        expect(parseCommand('ADD ADMIN foo')).to.eql({
-          command: commands.ADD_ADMIN,
-          payload: 'foo',
-        })
+        expect(parseCommand('ADD foo')).to.eql({ command: commands.ADD, payload: 'foo' })
       })
 
       it('does not parse ADD ADMIN command if string starts with chars other than `add admin`', () => {
-        expect(parseCommand('do ADD ADMIN')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('do ADD')).to.eql({ command: commands.NOOP })
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
     })
@@ -83,25 +78,17 @@ describe('executor service', () => {
 
     describe('REMOVE ADMIN command', () => {
       it('parses an REMOVE ADMIN command (regardless of case or whitespace)', () => {
-        expect(parseCommand('REMOVE ADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-        expect(parseCommand('remove admin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-        expect(parseCommand(' remove admin ')).to.eql({
-          command: commands.REMOVE_ADMIN,
-          payload: '',
-        })
-        expect(parseCommand('REMOVEADMIN')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
-        expect(parseCommand('removeadmin')).to.eql({ command: commands.REMOVE_ADMIN, payload: '' })
+        expect(parseCommand('REMOVE')).to.eql({ command: commands.REMOVE, payload: '' })
+        expect(parseCommand('remove')).to.eql({ command: commands.REMOVE, payload: '' })
+        expect(parseCommand(' remove ')).to.eql({ command: commands.REMOVE, payload: '' })
       })
 
       it('parses the payload from an REMOVE ADMIN command', () => {
-        expect(parseCommand('REMOVE ADMIN foo')).to.eql({
-          command: commands.REMOVE_ADMIN,
-          payload: 'foo',
-        })
+        expect(parseCommand('REMOVE foo')).to.eql({ command: commands.REMOVE, payload: 'foo' })
       })
 
       it('does not parse REMOVE ADMIN command if string starts with chars other than `add admin`', () => {
-        expect(parseCommand('do REMOVE ADMIN')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('do REMOVE foo')).to.eql({ command: commands.NOOP })
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
     })
@@ -326,7 +313,7 @@ describe('executor service', () => {
             beforeEach(() => addAdminStub.returns(Promise.resolve()))
 
             it("attempts to add the human to the chanel's admins", async () => {
-              await execute({ command: commands.ADD_ADMIN, payload, db, channel, sender })
+              await execute({ command: commands.ADD, payload, db, channel, sender })
               expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
             })
 
@@ -340,10 +327,10 @@ describe('executor service', () => {
               )
 
               it('returns a SUCCESS status and message', async () => {
-                const dispatchable = { command: commands.ADD_ADMIN, payload, db, channel, sender }
+                const dispatchable = { command: commands.ADD, payload, db, channel, sender }
                 expect(await execute(dispatchable)).to.eql({
                   commandResult: {
-                    command: commands.ADD_ADMIN,
+                    command: commands.ADD,
                     status: statuses.SUCCESS,
                     message: CR.admin.add.success(payload),
                   },
@@ -356,10 +343,10 @@ describe('executor service', () => {
               beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
 
               it('returns an ERROR status and message', async () => {
-                const dispatchable = { command: commands.ADD_ADMIN, payload, db, channel, sender }
+                const dispatchable = { command: commands.ADD, payload, db, channel, sender }
                 expect(await execute(dispatchable)).to.eql({
                   commandResult: {
-                    command: commands.ADD_ADMIN,
+                    command: commands.ADD,
                     status: statuses.ERROR,
                     message: CR.admin.add.dbError(payload),
                   },
@@ -370,7 +357,7 @@ describe('executor service', () => {
           })
 
           describe('when payload is not a valid phone number', async () => {
-            const dispatchable = { command: commands.ADD_ADMIN, payload: 'foo', channel, sender }
+            const dispatchable = { command: commands.ADD, payload: 'foo', channel, sender }
             let result
             beforeEach(async () => (result = await execute(dispatchable)))
 
@@ -381,7 +368,7 @@ describe('executor service', () => {
             it('returns a ERROR status/message', () => {
               expect(result).to.eql({
                 commandResult: {
-                  command: commands.ADD_ADMIN,
+                  command: commands.ADD,
                   status: statuses.ERROR,
                   message: CR.admin.add.invalidNumber('foo'),
                 },
@@ -393,7 +380,7 @@ describe('executor service', () => {
 
         describe('when sender is not an admin', () => {
           const dispatchable = {
-            command: commands.ADD_ADMIN,
+            command: commands.ADD,
             payload: 'foo',
             channel,
             sender: subscriber,
@@ -408,7 +395,7 @@ describe('executor service', () => {
           it('returns an UNAUTHORIZED status/message', () => {
             expect(result).to.eql({
               commandResult: {
-                command: commands.ADD_ADMIN,
+                command: commands.ADD,
                 status: statuses.UNAUTHORIZED,
                 message: CR.admin.add.unauthorized,
               },
@@ -445,7 +432,7 @@ describe('executor service', () => {
               beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
 
               it("attempts to remove the human from the chanel's admins", async () => {
-                await execute({ command: commands.REMOVE_ADMIN, payload, db, channel, sender })
+                await execute({ command: commands.REMOVE, payload, db, channel, sender })
                 expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
               })
 
@@ -453,10 +440,10 @@ describe('executor service', () => {
                 beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
 
                 it('returns a SUCCESS status and message', async () => {
-                  const dispatchable = { command: commands.REMOVE_ADMIN, payload, channel, sender }
+                  const dispatchable = { command: commands.REMOVE, payload, channel, sender }
                   expect(await execute(dispatchable)).to.eql({
                     commandResult: {
-                      command: commands.REMOVE_ADMIN,
+                      command: commands.REMOVE,
                       status: statuses.SUCCESS,
                       message: CR.admin.remove.success(payload),
                     },
@@ -469,10 +456,10 @@ describe('executor service', () => {
                 beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
 
                 it('returns an ERROR status/message', async () => {
-                  const dispatchable = { command: commands.REMOVE_ADMIN, payload, channel, sender }
+                  const dispatchable = { command: commands.REMOVE, payload, channel, sender }
                   expect(await execute(dispatchable)).to.eql({
                     commandResult: {
-                      command: commands.REMOVE_ADMIN,
+                      command: commands.REMOVE,
                       status: statuses.ERROR,
                       message: CR.admin.remove.dbError(payload),
                     },
@@ -490,10 +477,10 @@ describe('executor service', () => {
               })
 
               it('returns a SUCCESS status / NOOP message', async () => {
-                const dispatchable = { command: commands.REMOVE_ADMIN, payload, channel, sender }
+                const dispatchable = { command: commands.REMOVE, payload, channel, sender }
                 expect(await execute(dispatchable)).to.eql({
                   commandResult: {
-                    command: commands.REMOVE_ADMIN,
+                    command: commands.REMOVE,
                     status: statuses.ERROR,
                     message: CR.admin.remove.targetNotAdmin(payload),
                   },
@@ -504,7 +491,7 @@ describe('executor service', () => {
           })
 
           describe('when payload is not a valid phone number', async () => {
-            const dispatchable = { command: commands.REMOVE_ADMIN, payload: 'foo', channel, sender }
+            const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
             let result
             beforeEach(async () => (result = await execute(dispatchable)))
 
@@ -515,7 +502,7 @@ describe('executor service', () => {
             it('returns a SUCCESS status / NOOP message', () => {
               expect(result).to.eql({
                 commandResult: {
-                  command: commands.REMOVE_ADMIN,
+                  command: commands.REMOVE,
                   status: statuses.ERROR,
                   message: CR.admin.remove.invalidNumber('foo'),
                 },
@@ -527,7 +514,7 @@ describe('executor service', () => {
 
         describe('when sender is not an admin', () => {
           const sender = randomPerson
-          const dispatchable = { command: commands.REMOVE_ADMIN, payload: 'foo', channel, sender }
+          const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
           let result
 
           beforeEach(async () => (result = await execute(dispatchable)))
@@ -536,10 +523,10 @@ describe('executor service', () => {
             expect(removeAdminStub.callCount).to.eql(0)
           })
 
-          it('returns an SUCCESS status / NOT_ADMIN_NOOP message', () => {
+          it('returns an SUCCESS status / NOT_NOOP message', () => {
             expect(result).to.eql({
               commandResult: {
-                command: commands.REMOVE_ADMIN,
+                command: commands.REMOVE,
                 status: statuses.UNAUTHORIZED,
                 message: CR.admin.remove.unauthorized,
               },
