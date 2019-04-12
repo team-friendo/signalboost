@@ -9,6 +9,7 @@ const statuses = {
   NOOP: 'NOOP',
   SUCCESS: 'SUCCESS',
   ERROR: 'ERROR',
+  UNAUTHORIZED: 'UNAUTHORIZED',
 }
 
 const commands = {
@@ -41,23 +42,17 @@ const parseCommand = msg => {
   else return { command: commands.NOOP }
 }
 
-const execute = ({ command, payload, db, channel, sender }) => {
-  switch (command) {
-    case commands.ADD_ADMIN:
-      return maybeAddAdmin(db, channel, sender, payload)
-    case commands.INFO:
-      return maybeShowInfo(db, channel, sender)
-    case commands.JOIN:
-      return maybeAddSubscriber(db, channel, sender)
-    case commands.LEAVE:
-      return maybeRemoveSubscriber(db, channel, sender)
-    case commands.RENAME:
-      return maybeRenameChannel(db, channel, sender, payload)
-    case commands.REMOVE_ADMIN:
-      return maybeRemoveAdmin(db, channel, sender, payload)
-    default:
-      return noop()
-  }
+const execute = async dispatchable => {
+  const { command, payload, db, channel, sender } = dispatchable
+  const result = await ({
+    [commands.ADD_ADMIN]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.INFO]: () => maybeShowInfo(db, channel, sender),
+    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
+    [commands.LEAVE]: () => maybeRemoveSubscriber(db, channel, sender),
+    [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
+    [commands.REMOVE_ADMIN]: () => maybeRemoveAdmin(db, channel, sender, payload),
+  }[command] || noop)()
+  return { commandResult: { ...result, command }, dispatchable }
 }
 
 // PRIVATE FUNCTIONS
@@ -66,12 +61,9 @@ const execute = ({ command, payload, db, channel, sender }) => {
 
 const maybeAddAdmin = async (db, channel, sender, newAdminNumber) => {
   const cr = commandResponses.admin.add
-  if (!sender.isAdmin) return { status: statuses.SUCCESS, message: cr.noop.notAdmin }
+  if (!sender.isAdmin) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
   if (!validator.validatePhoneNumber(newAdminNumber))
-    return {
-      status: statuses.SUCCESS,
-      message: cr.noop.invalidNumber(newAdminNumber),
-    }
+    return { status: statuses.ERROR, message: cr.invalidNumber(newAdminNumber) }
   return addAdmin(db, channel, sender, newAdminNumber, cr)
 }
 
@@ -79,18 +71,15 @@ const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
   channelRepository
     .addAdmin(db, channel.phoneNumber, newAdminNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(newAdminNumber) }))
-    .catch(() => ({
-      status: statuses.ERROR,
-      message: cr.error(newAdminNumber),
-    }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
 
 const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
   const cr = commandResponses.admin.remove
-  if (!sender.isAdmin) return { status: statuses.SUCCESS, message: cr.noop.senderNotAdmin }
+  if (!sender.isAdmin) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
   if (!validator.validatePhoneNumber(adminNumber))
-    return { status: statuses.SUCCESS, message: cr.noop.invalidNumber(adminNumber) }
+    return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
   if (!(await channelRepository.isAdmin(db, channel.phoneNumber, adminNumber)))
-    return { status: statuses.SUCCESS, message: cr.noop.targetNotAdmin(adminNumber) }
+    return { status: statuses.ERROR, message: cr.targetNotAdmin(adminNumber) }
   return removeAdmin(db, channel, adminNumber, cr)
 }
 
@@ -98,7 +87,7 @@ const removeAdmin = async (db, channel, adminNumber, cr) =>
   channelRepository
     .removeAdmin(db, channel.phoneNumber, adminNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.error(adminNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
 
 // INFO
 
@@ -106,20 +95,13 @@ const maybeShowInfo = async (db, channel, sender) => {
   const cr = commandResponses.info
   return sender.isAdmin || sender.isSubscriber
     ? showInfo(db, channel, sender, cr)
-    : { status: statuses.SUCCESS, message: cr.noop }
+    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
 }
 
-const showInfo = async (db, channel, sender, cr) => {
-  const channelPhoneNumber = channel.phoneNumber
-  const admins = await db.administration.findAll({ where: { channelPhoneNumber } })
-  const subs = await db.subscription.findAll({ where: { channelPhoneNumber } })
-  return {
-    status: statuses.SUCCESS,
-    message: sender.isAdmin
-      ? cr.admin(channel, admins, subs)
-      : cr.subscriber(channel, admins, subs),
-  }
-}
+const showInfo = async (db, channel, sender, cr) => ({
+  status: statuses.SUCCESS,
+  message: sender.isAdmin ? cr.admin(channel) : cr.subscriber(channel),
+})
 
 // RENAME
 
@@ -127,7 +109,7 @@ const maybeRenameChannel = async (db, channel, sender, newName) => {
   const cr = commandResponses.rename
   return sender.isAdmin
     ? renameChannel(db, channel, newName, cr)
-    : Promise.resolve({ status: statuses.SUCCESS, message: cr.noop })
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
 const renameChannel = (db, channel, newName, cr) =>
@@ -143,7 +125,7 @@ const renameChannel = (db, channel, newName, cr) =>
 const maybeAddSubscriber = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.add
   return sender.isSubscriber
-    ? Promise.resolve({ status: statuses.SUCCESS, message: cr.noop })
+    ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
     : addSubscriber(db, channel, sender, cr)
 }
 
@@ -157,7 +139,7 @@ const maybeRemoveSubscriber = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.remove
   return sender.isSubscriber
     ? removeSubscriber(db, channel, sender.phoneNumber, cr)
-    : Promise.resolve({ status: statuses.SUCCESS, message: cr.noop })
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
 const removeSubscriber = (db, channel, sender, cr) =>
@@ -174,6 +156,7 @@ const noop = () =>
   })
 
 const logAndReturn = (err, statusTuple) => {
+  // TODO(@zig): add prometheus error count here (counter: db_error)
   logger.error(err)
   return statusTuple
 }

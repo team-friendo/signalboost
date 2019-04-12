@@ -13,11 +13,17 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 describe('dispatcher service', () => {
   describe('running the service', () => {
     const [db, iface] = [{}, {}]
-    const channel = channelFactory()
+    const channel = { ...channelFactory(), administrations: [], subscriptions: [] }
     const sender = genPhoneNumber()
+    const authenticatedSender = {
+      phoneNumber: sender,
+      isAdmin: true,
+      isSubscriber: true,
+    }
+
     let getDbusStub,
       onReceivedMessageStub,
-      findByPhoneNumberStub,
+      findDeepStub,
       isAdminStub,
       isSubscriberStub,
       processCommandStub,
@@ -28,11 +34,9 @@ describe('dispatcher service', () => {
 
       onReceivedMessageStub = sinon
         .stub(signal, 'onReceivedMessage')
-        .callsFake(() => fn => fn({ sender }))
+        .callsFake(() => fn => fn({ sender, message: 'foo' }))
 
-      findByPhoneNumberStub = sinon
-        .stub(channelRepository, 'findByPhoneNumber')
-        .returns(Promise.resolve(channel))
+      findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
 
       isAdminStub = sinon.stub(channelRepository, 'isAdmin').returns(Promise.resolve(true))
 
@@ -40,9 +44,12 @@ describe('dispatcher service', () => {
         .stub(channelRepository, 'isSubscriber')
         .returns(Promise.resolve(true))
 
-      processCommandStub = sinon
-        .stub(executor, 'processCommand')
-        .returns(Promise.resolve({ status: 'SUCCESS', message: 'NOOP' }))
+      processCommandStub = sinon.stub(executor, 'processCommand').returns(
+        Promise.resolve({
+          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+          dispatchable: { db, iface, channel, sender: authenticatedSender, message: 'foo' },
+        }),
+      )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
 
@@ -52,7 +59,7 @@ describe('dispatcher service', () => {
     afterEach(() => {
       getDbusStub.restore()
       onReceivedMessageStub.restore()
-      findByPhoneNumberStub.restore()
+      findDeepStub.restore()
       isAdminStub.restore()
       isSubscriberStub.restore()
       processCommandStub.restore()
@@ -65,7 +72,7 @@ describe('dispatcher service', () => {
 
     describe('for each incoming message', () => {
       it('retrieves a channel record', () => {
-        expect(findByPhoneNumberStub.getCall(0).args).to.eql([db, channelPhoneNumber])
+        expect(findDeepStub.getCall(0).args).to.eql([db, channelPhoneNumber])
       })
 
       it('retrieves permissions for the message sender', () => {
@@ -78,20 +85,16 @@ describe('dispatcher service', () => {
           db,
           iface,
           channel,
-          sender: { phoneNumber: sender, isAdmin: true, isSubscriber: true },
+          message: 'foo',
+          sender: authenticatedSender,
         })
       })
 
       it('passes the command result and original message to messenger for dispatch', () => {
-        expect(dispatchStub.getCall(0).args).to.eql([
-          { status: 'SUCCESS', message: 'NOOP' },
-          {
-            db,
-            iface,
-            channel,
-            sender: { phoneNumber: sender, isAdmin: true, isSubscriber: true },
-          },
-        ])
+        expect(dispatchStub.getCall(0).args[0]).to.eql({
+          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+          dispatchable: { db, iface, channel, message: 'foo', sender: authenticatedSender },
+        })
       })
     })
   })

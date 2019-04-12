@@ -4,6 +4,7 @@ const { forEach, values } = require('lodash')
 const { administrationOf } = require('./models/administration')
 const { channelOf } = require('./models/channel')
 const { phoneNumberOf } = require('./models/phoneNumber')
+const { messageCountOf } = require('./models/messageCount')
 const { subscriptionOf } = require('./models/subscription')
 const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
@@ -17,6 +18,7 @@ const initDb = () => {
   const db = {
     administration: administrationOf(sequelize, Sequelize),
     channel: channelOf(sequelize, Sequelize),
+    messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
     subscription: subscriptionOf(sequelize, Sequelize),
   }

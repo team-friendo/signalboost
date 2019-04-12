@@ -2,23 +2,13 @@ import chai, { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
 import { pick } from 'lodash'
-import { channelFactory } from '../../support/factories/channel'
-import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { initDb } from '../../../app/db/index'
+import { channelFactory } from '../../../support/factories/channel'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { initDb } from '../../../../app/db/index'
 import { omit } from 'lodash'
-import {
-  addAdmin,
-  addAdmins,
-  removeAdmin,
-  addSubscriber,
-  update,
-  updateOrCreate,
-  getSubscriberNumbers,
-  isAdmin,
-  removeSubscriber,
-} from '../../../app/db/repositories/channel'
-import { subscriptionFactory } from '../../support/factories/subscription'
-import { administrationFactory } from '../../support/factories/administration'
+import channelRepository from '../../../../app/db/repositories/channel'
+import { subscriptionFactory } from '../../../support/factories/subscription'
+import { administrationFactory } from '../../../support/factories/administration'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -44,7 +34,7 @@ describe('channel repository', () => {
     describe('when given phone number for a non-existent channel', () => {
       beforeEach(async () => {
         count = await db.channel.count()
-        channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+        channel = await channelRepository.updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
 
       it('creates a new channel', async () => {
@@ -62,9 +52,9 @@ describe('channel repository', () => {
 
     describe('when given phone number for a already-existing channel', () => {
       beforeEach(async () => {
-        await updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
+        await channelRepository.updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
         count = await db.channel.count()
-        channel = await updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+        channel = await channelRepository.updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
 
       it('does not create a new channel', async () => {
@@ -85,11 +75,11 @@ describe('channel repository', () => {
     let updatedChannel
     beforeEach(async () => {
       await db.channel.create({ phoneNumber: chPNum, name: 'foo' })
-      updatedChannel = await update(db, chPNum, { name: 'bar' })
+      updatedChannel = await channelRepository.update(db, chPNum, { name: 'bar' })
     })
 
     it("updates a channel's name", async () => {
-      const newName = await db.channel.findOne({ phoneNumber: chPNum}).then(ch => ch.name)
+      const newName = await db.channel.findOne({ phoneNumber: chPNum }).then(ch => ch.name)
       expect(newName).to.eql('bar')
     })
 
@@ -104,7 +94,7 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.subscription.count()
         adminCount = await db.administration.count()
-        admins = await addAdmins(db, channel.phoneNumber, adminPNums)
+        admins = await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
       })
 
       it('creates 2 new administrations', async () => {
@@ -138,10 +128,10 @@ describe('channel repository', () => {
     describe('when given the pNum of an already-existing admin', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
         subCount = await db.subscription.count()
         adminCount = await db.administration.count()
-        await addAdmins(db, channel.phoneNumber, adminPNums)
+        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
       })
 
       it('only creates one new administration', async () => {
@@ -156,10 +146,10 @@ describe('channel repository', () => {
     describe('when given an empty array of admin numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
         subCount = await db.subscription.count()
         adminCount = await db.administration.count()
-        await addAdmins(db, channel.phoneNumber, [])
+        await channelRepository.addAdmins(db, channel.phoneNumber, [])
       })
 
       it('creates no new administrations', async () => {
@@ -173,10 +163,53 @@ describe('channel repository', () => {
 
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
-        expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
-          'cannot subscribe human to non-existent channel',
-        )
+        expect(
+          await channelRepository.addSubscriber(db, genPhoneNumber(), null).catch(e => e),
+        ).to.contain('cannot subscribe human to non-existent channel')
       })
+    })
+  })
+
+  describe('#findDeep', () => {
+    const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
+    const subscriberNumbers = [genPhoneNumber(), genPhoneNumber()]
+    let result
+
+    beforeEach(async () => {
+      channel = await db.channel.create(
+        {
+          ...channelFactory(),
+          subscriptions: subscriberNumbers.map(num => ({ humanPhoneNumber: num })),
+          administrations: adminNumbers.map(num => ({ humanPhoneNumber: num })),
+        },
+        {
+          include: [{ model: db.subscription }, { model: db.administration }],
+        },
+      )
+      result = await channelRepository.findDeep(db, channel.phoneNumber)
+    })
+
+    it('retrieves a channel', () => {
+      expect(result.phoneNumber).to.eql(channel.phoneNumber)
+      expect(result.name).to.eql(channel.name)
+    })
+
+    it("retrieves the channel's administrations", () => {
+      expect(
+        result.administrations.map(a => pick(a.get(), ['channelPhoneNumber', 'humanPhoneNumber'])),
+      ).to.have.deep.members([
+        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: adminNumbers[0] },
+        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: adminNumbers[1] },
+      ])
+    })
+
+    it("retrieves the channel's subscriptions", () => {
+      expect(
+        result.subscriptions.map(a => pick(a.get(), ['channelPhoneNumber', 'humanPhoneNumber'])),
+      ).to.have.deep.members([
+        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: subscriberNumbers[0] },
+        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: subscriberNumbers[1] },
+      ])
     })
   })
 
@@ -185,11 +218,11 @@ describe('channel repository', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
         subCount = await db.subscription.count()
         adminCount = await db.administration.count()
 
-        result = await removeAdmin(db, channel.phoneNumber, adminPNums)
+        result = await channelRepository.removeAdmin(db, channel.phoneNumber, adminPNums)
       })
 
       it('deletes an administration record', async () => {
@@ -209,11 +242,11 @@ describe('channel repository', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await addAdmin(db, channel.phoneNumber, adminPNums[0])
+        await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
         subCount = await db.subscription.count()
         adminCount = await db.administration.count()
 
-        result = await removeAdmin(db, channel.phoneNumber, '+11111111111')
+        result = await channelRepository.removeAdmin(db, channel.phoneNumber, '+11111111111')
       })
 
       it('deletes an administration record', async () => {
@@ -236,7 +269,7 @@ describe('channel repository', () => {
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
-        sub = await addSubscriber(db, channel.phoneNumber, subscriberPhone)
+        sub = await channelRepository.addSubscriber(db, channel.phoneNumber, subscriberPhone)
       })
 
       it('creates a new subscription', async () => {
@@ -258,9 +291,9 @@ describe('channel repository', () => {
 
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
-        expect(await addSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
-          'cannot subscribe human to non-existent channel',
-        )
+        expect(
+          await channelRepository.addSubscriber(db, genPhoneNumber(), null).catch(e => e),
+        ).to.contain('cannot subscribe human to non-existent channel')
       })
     })
   })
@@ -270,7 +303,7 @@ describe('channel repository', () => {
 
     beforeEach(async () => {
       channel = await db.channel.create(channelFactory())
-      sub = await addSubscriber(db, channel.phoneNumber, subscriberPhone)
+      sub = await channelRepository.addSubscriber(db, channel.phoneNumber, subscriberPhone)
       subCount = await db.subscription.count()
     })
 
@@ -278,7 +311,11 @@ describe('channel repository', () => {
       describe('when asked to remove a number that is subscribed to the channel', () => {
         let result
         beforeEach(async () => {
-          result = await removeSubscriber(db, channel.phoneNumber, subscriberPhone)
+          result = await channelRepository.removeSubscriber(
+            db,
+            channel.phoneNumber,
+            subscriberPhone,
+          )
         })
         it('deletes the subscription', async () => {
           expect(await db.subscription.count()).to.eql(subCount - 1)
@@ -290,16 +327,18 @@ describe('channel repository', () => {
       })
       describe('when asked to remove a number that is not subscribed to the channel', () => {
         it('resolves with a deletion count of 0', async () => {
-          expect(await removeSubscriber(db, channel.phoneNumber, unsubscribedPhone)).to.eql(0)
+          expect(
+            await channelRepository.removeSubscriber(db, channel.phoneNumber, unsubscribedPhone),
+          ).to.eql(0)
         })
       })
     })
 
     describe('when given the phone number of a non-existent channel', () => {
       it('it rejects with an error', async () => {
-        expect(await removeSubscriber(db, genPhoneNumber(), null).catch(e => e)).to.contain(
-          'cannot unsubscribe human from non-existent channel',
-        )
+        expect(
+          await channelRepository.removeSubscriber(db, genPhoneNumber(), null).catch(e => e),
+        ).to.contain('cannot unsubscribe human from non-existent channel')
       })
     })
   })
@@ -322,7 +361,7 @@ describe('channel repository', () => {
       })
 
       it('returns the subscriber phone numbers', async () => {
-        expect(await getSubscriberNumbers(db, chPNum)).to.have.members(subPNums)
+        expect(await channelRepository.getSubscriberNumbers(db, chPNum)).to.have.members(subPNums)
       })
     })
 
@@ -332,13 +371,13 @@ describe('channel repository', () => {
       })
 
       it('returns an empty array', async () => {
-        expect(await getSubscriberNumbers(db, chPNum)).to.eql([])
+        expect(await channelRepository.getSubscriberNumbers(db, chPNum)).to.eql([])
       })
     })
 
     describe('when channel does not exist', () => {
       it('rejects a promise with an error', async () => {
-        expect(await getSubscriberNumbers(db, genPhoneNumber()).catch(e => e)).to.contain(
+        expect(await channelRepository.getSubscriberNumbers(db, genPhoneNumber()).catch(e => e)).to.contain(
           'cannot retrieve subscriptions to non-existent channel',
         )
       })
@@ -362,15 +401,15 @@ describe('channel repository', () => {
     })
 
     it("returns true when given a channel admin's phone number", async () => {
-      expect(await isAdmin(db, chPNum, adminPNums[0])).to.eql(true)
+      expect(await channelRepository.isAdmin(db, chPNum, adminPNums[0])).to.eql(true)
     })
 
     it("it returns false when given a non-admin's phone number", async () => {
-      expect(await isAdmin(db, chPNum, subPNums[0])).to.eql(false)
+      expect(await channelRepository.isAdmin(db, chPNum, subPNums[0])).to.eql(false)
     })
 
     it('returns false when asked to check a non existent channel', async () => {
-      expect(await isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+      expect(await channelRepository.isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
     })
   })
 })
