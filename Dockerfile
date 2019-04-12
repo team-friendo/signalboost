@@ -122,3 +122,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 # Need this to hold the /var/run/dbus/system_bus_socket file descriptor
 RUN mkdir -p /var/run/dbus
+
+# ------------------------------------------------------
+# --- Configure Environment
+# ------------------------------------------------------
+
+WORKDIR /signalboost
