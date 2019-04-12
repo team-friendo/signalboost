@@ -280,6 +280,37 @@ describe('executor service', () => {
             })
           })
         })
+
+        describe('when human is an admin', () => {
+          let result, removeAdminStub
+          const dispatchable = { command: commands.LEAVE, db, channel, sender: admin }
+
+          beforeEach(async () => {
+            removeAdminStub = sinon
+              .stub(channelRepository, 'removeAdmin')
+              .returns(Promise.resolve([1, 1]))
+            result = await execute(dispatchable)
+          })
+          afterEach(() => removeAdminStub.restore())
+
+          it('removes human as admin of channel', () => {
+            expect(removeAdminStub.getCall(0).args).to.eql([
+              db,
+              channel.phoneNumber,
+              admin.phoneNumber,
+            ])
+          })
+          it('returns SUCCESS status/message', () => {
+            expect(result).to.eql({
+              commandResult: {
+                command: commands.LEAVE,
+                status: statuses.SUCCESS,
+                message: CR.subscriber.remove.success,
+              },
+              dispatchable,
+            })
+          })
+        })
       })
 
       describe('ADD ADMIN command', () => {
