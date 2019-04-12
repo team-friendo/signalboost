@@ -138,15 +138,16 @@ const addSubscriber = (db, channel, sender, cr) =>
 const maybeRemoveSubscriber = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.remove
   return sender.isSubscriber
-    ? removeSubscriber(db, channel, sender.phoneNumber, cr)
+    ? removeSubscriber(db, channel, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
-const removeSubscriber = (db, channel, sender, cr) =>
-  channelRepository
-    .removeSubscriber(db, channel.phoneNumber, sender)
+const removeSubscriber = (db, channel, sender, cr) => {
+  const remove = sender.isAdmin ? channelRepository.removeAdmin : channelRepository.removeSubscriber
+  return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
+}
 
 // NOOP
 const noop = () =>
