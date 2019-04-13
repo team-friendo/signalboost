@@ -19,6 +19,90 @@ const commandResponses = {
       targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
     },
   },
+  // HELP
+  help: {
+    admin: `
+-----------------------------------
+ADMIN COMMANDS:
+-----------------------------------
+
+You can send these commands to do these things:
+
+HELP
+- shows this message
+
+ADD +15555555555
+- makes the person with phone number +1 (555) 555-5555 an admin of the channel -- they can now broadcast messages on it
+
+REMOVE +15555555555
+- removes the person with phone number +1 (555) 555-5555 as an admin of the channel -- they can no longer broadcast messages on it
+
+LEAVE
+- removes you as both an admin and subscriber of the channel -- you can no longer broadcast or receive messages on it
+
+RENAME new name
+- renames the channel to "new name"
+
+INFO
+- shows basic stats about the channel
+
+-------------------------------------------
+NON-ADMIN COMMANDS:
+-------------------------------------------
+
+Anyone can send these commands to do these things:
+
+JOIN
+- subscribes a person to the channel -- they will receive all messages admins send to it
+
+LEAVE
+- will unsubscribe a person from the channel --  they stop receiving messages sent on it
+
+HELP / INFO
+- same as above
+
+--------------------------------------------------------
+SOURCE CODE / ISSUE-TRACKING
+--------------------------------------------------------
+
+You can view the source code that runs signalboost here:
+- https://0xacab.org/team-friendo/signalboost
+
+You can submit bugs or request new features here:
+- https://0xacab.org/team-friendo/signalboost/issues
+`,
+    subscriber: `
+------------------------------------------------------------------------------------
+COMMANDS:
+------------------------------------------------------------------------------------
+
+You can send the following commands to this number to cause the following things to happen:
+
+HELP
+- shows this message
+
+JOIN
+- subscribes you to the channel -- you will receive all messages admins send to it
+
+LEAVE
+- will unsubscribe a person from the channel --  you will stop receiving messages sent on it
+
+INFO
+- shows basic stats about the channel
+
+------------------------------------------------------------------------------------
+SOURCE CODE / ISSUE-TRACKING
+------------------------------------------------------------------------------------
+
+You can view the source code that runs signalboost here:
+- https://0xacab.org/team-friendo/signalboost
+
+You can submit bugs or request new features here:
+- https://0xacab.org/team-friendo/signalboost/issues
+`,
+    unauthorized,
+  },
+
   // INFO
   info: {
     admin: channel =>
