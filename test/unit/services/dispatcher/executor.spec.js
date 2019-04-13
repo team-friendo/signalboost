@@ -34,6 +34,20 @@ describe('executor service', () => {
       })
     })
 
+    describe('HELP command', () => {
+      it('parses an HELP command (regardless of case or whitespace)', () => {
+        expect(parseCommand('HELP')).to.eql({ command: commands.HELP })
+        expect(parseCommand('help')).to.eql({ command: commands.HELP })
+        expect(parseCommand(' help ')).to.eql({ command: commands.HELP })
+      })
+
+      it('does not parse a HELP command when string contains characters other than `info`', () => {
+        expect(parseCommand('i want help ')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('help me!')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
+      })
+    })
+
     describe('INFO command', () => {
       it('parses an INFO command (regardless of case or whitespace)', () => {
         expect(parseCommand('INFO')).to.eql({ command: commands.INFO })
@@ -135,6 +149,205 @@ describe('executor service', () => {
       isSubscriber: false,
     }
 
+    describe('ADD command', () => {
+      let addAdminStub
+      beforeEach(() => (addAdminStub = sinon.stub(channelRepository, 'addAdmin')))
+      afterEach(() => addAdminStub.restore())
+
+      describe('when sender is an admin', () => {
+        const sender = admin
+
+        describe('when payload is a valid phone number', () => {
+          const payload = genPhoneNumber()
+          beforeEach(() => addAdminStub.returns(Promise.resolve()))
+
+          it("attempts to add the human to the chanel's admins", async () => {
+            await execute({ command: commands.ADD, payload, db, channel, sender })
+            expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+          })
+
+          describe('when adding the admin succeeds', () => {
+            beforeEach(() =>
+              addAdminStub.returns(
+                Promise.resolve([
+                  { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: payload },
+                ]),
+              ),
+            )
+
+            it('returns a SUCCESS status and message', async () => {
+              const dispatchable = { command: commands.ADD, payload, db, channel, sender }
+              expect(await execute(dispatchable)).to.eql({
+                commandResult: {
+                  command: commands.ADD,
+                  status: statuses.SUCCESS,
+                  message: CR.admin.add.success(payload),
+                },
+                dispatchable,
+              })
+            })
+          })
+
+          describe('when adding the admin fails', () => {
+            beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
+
+            it('returns an ERROR status and message', async () => {
+              const dispatchable = { command: commands.ADD, payload, db, channel, sender }
+              expect(await execute(dispatchable)).to.eql({
+                commandResult: {
+                  command: commands.ADD,
+                  status: statuses.ERROR,
+                  message: CR.admin.add.dbError(payload),
+                },
+                dispatchable,
+              })
+            })
+          })
+        })
+
+        describe('when payload is not a valid phone number', async () => {
+          const dispatchable = { command: commands.ADD, payload: 'foo', channel, sender }
+          let result
+          beforeEach(async () => (result = await execute(dispatchable)))
+
+          it('does not attempt to add admin', () => {
+            expect(addAdminStub.callCount).to.eql(0)
+          })
+
+          it('returns a ERROR status/message', () => {
+            expect(result).to.eql({
+              commandResult: {
+                command: commands.ADD,
+                status: statuses.ERROR,
+                message: CR.admin.add.invalidNumber('foo'),
+              },
+              dispatchable,
+            })
+          })
+        })
+      })
+
+      describe('when sender is not an admin', () => {
+        const dispatchable = {
+          command: commands.ADD,
+          payload: 'foo',
+          channel,
+          sender: subscriber,
+        }
+        let result
+        beforeEach(async () => (result = await execute(dispatchable)))
+
+        it('does not attempt to add admin', () => {
+          expect(addAdminStub.callCount).to.eql(0)
+        })
+
+        it('returns an UNAUTHORIZED status/message', () => {
+          expect(result).to.eql({
+            commandResult: {
+              command: commands.ADD,
+              status: statuses.UNAUTHORIZED,
+              message: CR.admin.add.unauthorized,
+            },
+            dispatchable,
+          })
+        })
+      })
+    })
+
+    describe('HELP command', () => {
+      describe('when sender is an admin', () => {
+        const sender = admin
+        it('sends a help message to sender', async () => {
+          const dispatchable = { command: commands.HELP, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.HELP,
+              status: statuses.SUCCESS,
+              message: CR.help.admin,
+            },
+            dispatchable,
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const sender = subscriber
+        it('sends a help message to sender', async () => {
+          const dispatchable = { command: commands.HELP, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.HELP,
+              status: statuses.SUCCESS,
+              message: CR.help.subscriber,
+            },
+            dispatchable,
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const sender = randomPerson
+        it('sends an UNAUTHORIZED message', async () => {
+          const dispatchable = { command: commands.HELP, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.HELP,
+              status: statuses.UNAUTHORIZED,
+              message: CR.help.unauthorized,
+            },
+            dispatchable,
+          })
+        })
+      })
+    })
+
+    describe('INFO command', () => {
+      describe('when sender is an admin', () => {
+        const sender = admin
+        it('sends an info message with more information', async () => {
+          const dispatchable = { command: commands.INFO, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.INFO,
+              status: statuses.SUCCESS,
+              message: CR.info.admin(channel),
+            },
+            dispatchable,
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const sender = subscriber
+        it('sends an info message with less information', async () => {
+          const dispatchable = { command: commands.INFO, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.INFO,
+              status: statuses.SUCCESS,
+              message: CR.info.subscriber(channel),
+            },
+            dispatchable,
+          })
+        })
+      })
+
+      describe('when sender is neither admin nor subscriber', () => {
+        const sender = randomPerson
+        it('sends an UNAUTHORIZED message', async () => {
+          const dispatchable = { command: commands.INFO, db, channel, sender }
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.INFO,
+              status: statuses.UNAUTHORIZED,
+              message: CR.info.unauthorized,
+            },
+            dispatchable,
+          })
+        })
+      })
+    })
+
     describe('JOIN command', () => {
       let addSubscriberStub
       beforeEach(() => (addSubscriberStub = sinon.stub(channelRepository, 'addSubscriber')))
@@ -196,99 +409,32 @@ describe('executor service', () => {
           })
         })
       })
+    })
 
-      describe('LEAVE command', () => {
-        let removeSubscriberStub
-        beforeEach(() => (removeSubscriberStub = sinon.stub(channelRepository, 'removeSubscriber')))
-        afterEach(() => removeSubscriberStub.restore())
+    describe('LEAVE command', () => {
+      let removeSubscriberStub
+      beforeEach(() => (removeSubscriberStub = sinon.stub(channelRepository, 'removeSubscriber')))
+      afterEach(() => removeSubscriberStub.restore())
 
-        describe('when sender is subscribed to channel', () => {
-          beforeEach(() => removeSubscriberStub.returns(Promise.resolve()))
+      describe('when sender is subscribed to channel', () => {
+        beforeEach(() => removeSubscriberStub.returns(Promise.resolve()))
 
-          it('attempts to remove subscriber', async () => {
-            const dispatchable = { command: commands.LEAVE, db, channel, sender: subscriber }
-            await execute(dispatchable)
-            expect(removeSubscriberStub.getCall(0).args).to.eql([
-              db,
-              channel.phoneNumber,
-              subscriber.phoneNumber,
-            ])
-          })
-
-          describe('when removing subscriber succeeds', () => {
-            beforeEach(() => removeSubscriberStub.returns(Promise.resolve(1)))
-
-            it('returns SUCCESS status/message', async () => {
-              const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
-              expect(await execute(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.LEAVE,
-                  status: statuses.SUCCESS,
-                  message: CR.subscriber.remove.success,
-                },
-                dispatchable,
-              })
-            })
-          })
-          describe('when removing subscriber fails', () => {
-            beforeEach(() => removeSubscriberStub.callsFake(() => Promise.reject('boom!')))
-
-            it('returns ERROR status/message', async () => {
-              const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
-              expect(await execute(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.LEAVE,
-                  status: statuses.ERROR,
-                  message: CR.subscriber.remove.error,
-                },
-                dispatchable,
-              })
-            })
-          })
+        it('attempts to remove subscriber', async () => {
+          const dispatchable = { command: commands.LEAVE, db, channel, sender: subscriber }
+          await execute(dispatchable)
+          expect(removeSubscriberStub.getCall(0).args).to.eql([
+            db,
+            channel.phoneNumber,
+            subscriber.phoneNumber,
+          ])
         })
 
-        describe('when human is not subscribed to channel', () => {
-          const dispatchable = { command: commands.LEAVE, channel, sender: randomPerson }
-          let result
-          beforeEach(async () => (result = await execute(dispatchable)))
+        describe('when removing subscriber succeeds', () => {
+          beforeEach(() => removeSubscriberStub.returns(Promise.resolve(1)))
 
-          it('does not try to remove subscriber', () => {
-            expect(removeSubscriberStub.callCount).to.eql(0)
-          })
-
-          it('returns UNAUTHORIZED status/message', () => {
-            expect(result).to.eql({
-              commandResult: {
-                command: commands.LEAVE,
-                status: statuses.UNAUTHORIZED,
-                message: CR.subscriber.remove.unauthorized,
-              },
-              dispatchable,
-            })
-          })
-        })
-
-        describe('when human is an admin', () => {
-          let result, removeAdminStub
-          const dispatchable = { command: commands.LEAVE, db, channel, sender: admin }
-
-          beforeEach(async () => {
-            removeAdminStub = sinon
-              .stub(channelRepository, 'removeAdmin')
-              .returns(Promise.resolve([1, 1]))
-            result = await execute(dispatchable)
-          })
-          afterEach(() => removeAdminStub.restore())
-
-          it('removes human as admin of channel', () => {
-            expect(removeAdminStub.getCall(0).args).to.eql([
-              db,
-              channel.phoneNumber,
-              admin.phoneNumber,
-            ])
-          })
-          it('returns SUCCESS status/message', () => {
-            expect(result).to.eql({
+          it('returns SUCCESS status/message', async () => {
+            const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
+            expect(await execute(dispatchable)).to.eql({
               commandResult: {
                 command: commands.LEAVE,
                 status: statuses.SUCCESS,
@@ -298,106 +444,16 @@ describe('executor service', () => {
             })
           })
         })
-      })
+        describe('when removing subscriber fails', () => {
+          beforeEach(() => removeSubscriberStub.callsFake(() => Promise.reject('boom!')))
 
-      describe('ADD ADMIN command', () => {
-        let addAdminStub
-        beforeEach(() => (addAdminStub = sinon.stub(channelRepository, 'addAdmin')))
-        afterEach(() => addAdminStub.restore())
-
-        describe('when sender is an admin', () => {
-          const sender = admin
-
-          describe('when payload is a valid phone number', () => {
-            const payload = genPhoneNumber()
-            beforeEach(() => addAdminStub.returns(Promise.resolve()))
-
-            it("attempts to add the human to the chanel's admins", async () => {
-              await execute({ command: commands.ADD, payload, db, channel, sender })
-              expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
-            })
-
-            describe('when adding the admin succeeds', () => {
-              beforeEach(() =>
-                addAdminStub.returns(
-                  Promise.resolve([
-                    { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: payload },
-                  ]),
-                ),
-              )
-
-              it('returns a SUCCESS status and message', async () => {
-                const dispatchable = { command: commands.ADD, payload, db, channel, sender }
-                expect(await execute(dispatchable)).to.eql({
-                  commandResult: {
-                    command: commands.ADD,
-                    status: statuses.SUCCESS,
-                    message: CR.admin.add.success(payload),
-                  },
-                  dispatchable,
-                })
-              })
-            })
-
-            describe('when adding the admin fails', () => {
-              beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
-
-              it('returns an ERROR status and message', async () => {
-                const dispatchable = { command: commands.ADD, payload, db, channel, sender }
-                expect(await execute(dispatchable)).to.eql({
-                  commandResult: {
-                    command: commands.ADD,
-                    status: statuses.ERROR,
-                    message: CR.admin.add.dbError(payload),
-                  },
-                  dispatchable,
-                })
-              })
-            })
-          })
-
-          describe('when payload is not a valid phone number', async () => {
-            const dispatchable = { command: commands.ADD, payload: 'foo', channel, sender }
-            let result
-            beforeEach(async () => (result = await execute(dispatchable)))
-
-            it('does not attempt to add admin', () => {
-              expect(addAdminStub.callCount).to.eql(0)
-            })
-
-            it('returns a ERROR status/message', () => {
-              expect(result).to.eql({
-                commandResult: {
-                  command: commands.ADD,
-                  status: statuses.ERROR,
-                  message: CR.admin.add.invalidNumber('foo'),
-                },
-                dispatchable,
-              })
-            })
-          })
-        })
-
-        describe('when sender is not an admin', () => {
-          const dispatchable = {
-            command: commands.ADD,
-            payload: 'foo',
-            channel,
-            sender: subscriber,
-          }
-          let result
-          beforeEach(async () => (result = await execute(dispatchable)))
-
-          it('does not attempt to add admin', () => {
-            expect(addAdminStub.callCount).to.eql(0)
-          })
-
-          it('returns an UNAUTHORIZED status/message', () => {
-            expect(result).to.eql({
+          it('returns ERROR status/message', async () => {
+            const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
+            expect(await execute(dispatchable)).to.eql({
               commandResult: {
-                command: commands.ADD,
-                status: statuses.UNAUTHORIZED,
-                message: CR.admin.add.unauthorized,
+                command: commands.LEAVE,
+                status: statuses.ERROR,
+                message: CR.subscriber.remove.error,
               },
               dispatchable,
             })
@@ -405,84 +461,116 @@ describe('executor service', () => {
         })
       })
 
-      describe('REMOVE ADMIN command', () => {
-        let validateStub, isAdminStub, removeAdminStub
+      describe('when human is not subscribed to channel', () => {
+        const dispatchable = { command: commands.LEAVE, channel, sender: randomPerson }
+        let result
+        beforeEach(async () => (result = await execute(dispatchable)))
 
-        beforeEach(() => {
-          validateStub = sinon.stub(validator, 'validatePhoneNumber')
-          isAdminStub = sinon.stub(channelRepository, 'isAdmin')
-          removeAdminStub = sinon.stub(channelRepository, 'removeAdmin')
+        it('does not try to remove subscriber', () => {
+          expect(removeSubscriberStub.callCount).to.eql(0)
         })
 
-        afterEach(() => {
-          validateStub.restore()
-          isAdminStub.restore()
-          removeAdminStub.restore()
+        it('returns UNAUTHORIZED status/message', () => {
+          expect(result).to.eql({
+            commandResult: {
+              command: commands.LEAVE,
+              status: statuses.UNAUTHORIZED,
+              message: CR.subscriber.remove.unauthorized,
+            },
+            dispatchable,
+          })
         })
+      })
 
-        describe('when sender is an admin', () => {
-          const sender = admin
-          beforeEach(() => removeAdminStub.returns(Promise.resolve()))
+      describe('when human is an admin', () => {
+        let result, removeAdminStub
+        const dispatchable = { command: commands.LEAVE, db, channel, sender: admin }
 
-          describe('when payload is a valid phone number', () => {
-            const payload = genPhoneNumber()
-            beforeEach(() => validateStub.returns(true))
+        beforeEach(async () => {
+          removeAdminStub = sinon
+            .stub(channelRepository, 'removeAdmin')
+            .returns(Promise.resolve([1, 1]))
+          result = await execute(dispatchable)
+        })
+        afterEach(() => removeAdminStub.restore())
 
-            describe('when removal target is an admin', () => {
-              beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
+        it('removes human as admin of channel', () => {
+          expect(removeAdminStub.getCall(0).args).to.eql([
+            db,
+            channel.phoneNumber,
+            admin.phoneNumber,
+          ])
+        })
+        it('returns SUCCESS status/message', () => {
+          expect(result).to.eql({
+            commandResult: {
+              command: commands.LEAVE,
+              status: statuses.SUCCESS,
+              message: CR.subscriber.remove.success,
+            },
+            dispatchable,
+          })
+        })
+      })
+    })
 
-              it("attempts to remove the human from the chanel's admins", async () => {
-                await execute({ command: commands.REMOVE, payload, db, channel, sender })
-                expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
-              })
+    describe('REMOVE command', () => {
+      let validateStub, isAdminStub, removeAdminStub
 
-              describe('when removing the admin succeeds', () => {
-                beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
+      beforeEach(() => {
+        validateStub = sinon.stub(validator, 'validatePhoneNumber')
+        isAdminStub = sinon.stub(channelRepository, 'isAdmin')
+        removeAdminStub = sinon.stub(channelRepository, 'removeAdmin')
+      })
 
-                it('returns a SUCCESS status and message', async () => {
-                  const dispatchable = { command: commands.REMOVE, payload, channel, sender }
-                  expect(await execute(dispatchable)).to.eql({
-                    commandResult: {
-                      command: commands.REMOVE,
-                      status: statuses.SUCCESS,
-                      message: CR.admin.remove.success(payload),
-                    },
-                    dispatchable,
-                  })
-                })
-              })
+      afterEach(() => {
+        validateStub.restore()
+        isAdminStub.restore()
+        removeAdminStub.restore()
+      })
 
-              describe('when removing the admin fails', () => {
-                beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
+      describe('when sender is an admin', () => {
+        const sender = admin
+        beforeEach(() => removeAdminStub.returns(Promise.resolve()))
 
-                it('returns an ERROR status/message', async () => {
-                  const dispatchable = { command: commands.REMOVE, payload, channel, sender }
-                  expect(await execute(dispatchable)).to.eql({
-                    commandResult: {
-                      command: commands.REMOVE,
-                      status: statuses.ERROR,
-                      message: CR.admin.remove.dbError(payload),
-                    },
-                    dispatchable,
-                  })
+        describe('when payload is a valid phone number', () => {
+          const payload = genPhoneNumber()
+          beforeEach(() => validateStub.returns(true))
+
+          describe('when removal target is an admin', () => {
+            beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
+
+            it("attempts to remove the human from the chanel's admins", async () => {
+              await execute({ command: commands.REMOVE, payload, db, channel, sender })
+              expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+            })
+
+            describe('when removing the admin succeeds', () => {
+              beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
+
+              it('returns a SUCCESS status and message', async () => {
+                const dispatchable = { command: commands.REMOVE, payload, channel, sender }
+                expect(await execute(dispatchable)).to.eql({
+                  commandResult: {
+                    command: commands.REMOVE,
+                    status: statuses.SUCCESS,
+                    message: CR.admin.remove.success(payload),
+                  },
+                  dispatchable,
                 })
               })
             })
 
-            describe('when removal target is not an admin', () => {
-              beforeEach(() => isAdminStub.returns(Promise.resolve(false)))
+            describe('when removing the admin fails', () => {
+              beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
 
-              it('does not attempt to remove admin', () => {
-                expect(removeAdminStub.callCount).to.eql(0)
-              })
-
-              it('returns a SUCCESS status / NOOP message', async () => {
+              it('returns an ERROR status/message', async () => {
                 const dispatchable = { command: commands.REMOVE, payload, channel, sender }
                 expect(await execute(dispatchable)).to.eql({
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.ERROR,
-                    message: CR.admin.remove.targetNotAdmin(payload),
+                    message: CR.admin.remove.dbError(payload),
                   },
                   dispatchable,
                 })
@@ -490,21 +578,20 @@ describe('executor service', () => {
             })
           })
 
-          describe('when payload is not a valid phone number', async () => {
-            const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
-            let result
-            beforeEach(async () => (result = await execute(dispatchable)))
+          describe('when removal target is not an admin', () => {
+            beforeEach(() => isAdminStub.returns(Promise.resolve(false)))
 
             it('does not attempt to remove admin', () => {
               expect(removeAdminStub.callCount).to.eql(0)
             })
 
-            it('returns a SUCCESS status / NOOP message', () => {
-              expect(result).to.eql({
+            it('returns a SUCCESS status / NOOP message', async () => {
+              const dispatchable = { command: commands.REMOVE, payload, channel, sender }
+              expect(await execute(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.REMOVE,
                   status: statuses.ERROR,
-                  message: CR.admin.remove.invalidNumber('foo'),
+                  message: CR.admin.remove.targetNotAdmin(payload),
                 },
                 dispatchable,
               })
@@ -512,23 +599,21 @@ describe('executor service', () => {
           })
         })
 
-        describe('when sender is not an admin', () => {
-          const sender = randomPerson
+        describe('when payload is not a valid phone number', async () => {
           const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
           let result
-
           beforeEach(async () => (result = await execute(dispatchable)))
 
-          it('does not attempt to add admin', () => {
+          it('does not attempt to remove admin', () => {
             expect(removeAdminStub.callCount).to.eql(0)
           })
 
-          it('returns an SUCCESS status / NOT_NOOP message', () => {
+          it('returns a SUCCESS status / NOOP message', () => {
             expect(result).to.eql({
               commandResult: {
                 command: commands.REMOVE,
-                status: statuses.UNAUTHORIZED,
-                message: CR.admin.remove.unauthorized,
+                status: statuses.ERROR,
+                message: CR.admin.remove.invalidNumber('foo'),
               },
               dispatchable,
             })
@@ -536,64 +621,117 @@ describe('executor service', () => {
         })
       })
 
-      describe('INFO command', () => {
-        describe('when sender is an admin', () => {
-          const sender = admin
-          it('sends an info message with more information', async () => {
-            const dispatchable = { command: commands.INFO, db, channel, sender }
-            expect(await execute(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.INFO,
-                status: statuses.SUCCESS,
-                message: CR.info.admin(channel),
-              },
-              dispatchable,
-            })
-          })
+      describe('when sender is not an admin', () => {
+        const sender = randomPerson
+        const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
+        let result
+
+        beforeEach(async () => (result = await execute(dispatchable)))
+
+        it('does not attempt to add admin', () => {
+          expect(removeAdminStub.callCount).to.eql(0)
         })
 
-        describe('when sender is a subscriber', () => {
-          const sender = subscriber
-          it('sends an info message with less information', async () => {
-            const dispatchable = { command: commands.INFO, db, channel, sender }
-            expect(await execute(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.INFO,
-                status: statuses.SUCCESS,
-                message: CR.info.subscriber(channel),
-              },
-              dispatchable,
-            })
-          })
-        })
-
-        describe('when sender is neither admin nor subscriber', () => {
-          const sender = randomPerson
-          it('sends an UNAUTHORIZED message', async () => {
-            const dispatchable = { command: commands.INFO, db, channel, sender }
-            expect(await execute(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.INFO,
-                status: statuses.UNAUTHORIZED,
-                message: CR.info.unauthorized,
-              },
-              dispatchable,
-            })
-          })
-        })
-      })
-
-      describe('invalid command', () => {
-        it('returns NOOP status/message', async () => {
-          const dispatchable = { command: 'foobar' }
-          expect(await execute(dispatchable)).to.eql({
+        it('returns an SUCCESS status / NOT_NOOP message', () => {
+          expect(result).to.eql({
             commandResult: {
-              command: 'foobar',
-              status: statuses.NOOP,
-              message: CR.noop,
+              command: commands.REMOVE,
+              status: statuses.UNAUTHORIZED,
+              message: CR.admin.remove.unauthorized,
             },
             dispatchable,
           })
+        })
+      })
+    })
+
+    describe('RENAME command', () => {
+      let updateStub
+      beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
+      afterEach(() => updateStub.restore())
+
+      describe('when sender is an admin', () => {
+        const sender = admin
+        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+        let result
+
+        describe('when renaming succeeds', () => {
+          beforeEach(async () => {
+            updateStub.returns(Promise.resolve({ ...channel, name: 'newname' }))
+            result = await execute(dispatchable)
+          })
+
+          it('returns SUCCESS status / message', () => {
+            expect(result).to.eql({
+              commandResult: {
+                command: commands.RENAME,
+                status: statuses.SUCCESS,
+                message: CR.rename.success(channel.name, 'newname'),
+              },
+              dispatchable,
+            })
+          })
+        })
+        describe('when renaming fails', () => {
+          beforeEach(async () => {
+            updateStub.callsFake(() => Promise.reject('oh noes!'))
+            result = await execute(dispatchable)
+          })
+
+          it('returns ERROR status / message', () => {
+            expect(result).to.eql({
+              commandResult: {
+                command: commands.RENAME,
+                status: statuses.ERROR,
+                message: CR.rename.dbError(channel.name, 'newname'),
+              },
+              dispatchable,
+            })
+          })
+        })
+      })
+      describe('when sender is a subscriber', () => {
+        const sender = subscriber
+        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+
+        it('returns UNAUTHORIZED status / message', async () => {
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.RENAME,
+              status: statuses.UNAUTHORIZED,
+              message: CR.rename.unauthorized,
+            },
+            dispatchable,
+          })
+        })
+      })
+      describe('when sender is a random person', () => {
+        const sender = randomPerson
+        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+
+        it('returns UNAUTHORIZED status / message', async () => {
+          expect(await execute(dispatchable)).to.eql({
+            commandResult: {
+              command: commands.RENAME,
+              status: statuses.UNAUTHORIZED,
+              message: CR.rename.unauthorized,
+            },
+            dispatchable,
+          })
+        })
+      })
+    })
+
+    describe('invalid command', () => {
+      it('returns NOOP status/message', async () => {
+        const dispatchable = { command: 'foobar' }
+        expect(await execute(dispatchable)).to.eql({
+          commandResult: {
+            command: 'foobar',
+            status: statuses.NOOP,
+            message: CR.noop,
+          },
+          dispatchable,
         })
       })
     })

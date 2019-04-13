@@ -14,6 +14,7 @@ const statuses = {
 
 const commands = {
   ADD: 'ADD',
+  HELP: 'HELP',
   INFO: 'INFO',
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
@@ -30,8 +31,8 @@ const processCommand = dispatchable =>
 
 const parseCommand = msg => {
   const _msg = msg.trim()
-  if (_msg.match(/^add/i))
-    return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
+  if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
+  else if (_msg.match(/^help$/i)) return { command: commands.HELP }
   else if (_msg.match(/^info$/i)) return { command: commands.INFO }
   else if (_msg.match(/^join$/i)) return { command: commands.JOIN }
   else if (_msg.match(/^leave$/i)) return { command: commands.LEAVE }
@@ -46,6 +47,7 @@ const execute = async dispatchable => {
   const { command, payload, db, channel, sender } = dispatchable
   const result = await ({
     [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
     [commands.LEAVE]: () => maybeRemoveSubscriber(db, channel, sender),
@@ -57,7 +59,7 @@ const execute = async dispatchable => {
 
 // PRIVATE FUNCTIONS
 
-// ADMIN ACTIONS
+// ADD
 
 const maybeAddAdmin = async (db, channel, sender, newAdminNumber) => {
   const cr = commandResponses.admin.add
@@ -72,6 +74,67 @@ const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
     .addAdmin(db, channel.phoneNumber, newAdminNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(newAdminNumber) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
+
+// HELP
+
+const maybeShowHelp = async (db, channel, sender) => {
+  const cr = commandResponses.help
+  return sender.isAdmin || sender.isSubscriber
+    ? showHelp(db, channel, sender, cr)
+    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+}
+
+const showHelp = async (db, channel, sender, cr) => ({
+  status: statuses.SUCCESS,
+  message: sender.isAdmin ? cr.admin : cr.subscriber,
+})
+
+// INFO
+
+const maybeShowInfo = async (db, channel, sender) => {
+  const cr = commandResponses.info
+  return sender.isAdmin || sender.isSubscriber
+    ? showInfo(db, channel, sender, cr)
+    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+}
+
+const showInfo = async (db, channel, sender, cr) => ({
+  status: statuses.SUCCESS,
+  message: sender.isAdmin ? cr.admin(channel) : cr.subscriber(channel),
+})
+
+// JOIN
+
+const maybeAddSubscriber = async (db, channel, sender) => {
+  const cr = commandResponses.subscriber.add
+  return sender.isSubscriber
+    ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
+    : addSubscriber(db, channel, sender, cr)
+}
+
+const addSubscriber = (db, channel, sender, cr) =>
+  channelRepository
+    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
+
+// LEAVE
+
+const maybeRemoveSubscriber = async (db, channel, sender) => {
+  const cr = commandResponses.subscriber.remove
+  return sender.isSubscriber
+    ? removeSubscriber(db, channel, sender, cr)
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+}
+
+const removeSubscriber = (db, channel, sender, cr) => {
+  const remove = sender.isAdmin ? channelRepository.removeAdmin : channelRepository.removeSubscriber
+  return remove(db, channel.phoneNumber, sender.phoneNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
+}
+
+// REMOVE
 
 const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
   const cr = commandResponses.admin.remove
@@ -89,20 +152,6 @@ const removeAdmin = async (db, channel, adminNumber, cr) =>
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
 
-// INFO
-
-const maybeShowInfo = async (db, channel, sender) => {
-  const cr = commandResponses.info
-  return sender.isAdmin || sender.isSubscriber
-    ? showInfo(db, channel, sender, cr)
-    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-}
-
-const showInfo = async (db, channel, sender, cr) => ({
-  status: statuses.SUCCESS,
-  message: sender.isAdmin ? cr.admin(channel) : cr.subscriber(channel),
-})
-
 // RENAME
 
 const maybeRenameChannel = async (db, channel, sender, newName) => {
@@ -117,37 +166,8 @@ const renameChannel = (db, channel, newName, cr) =>
     .update(db, channel.phoneNumber, { name: newName })
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.name, newName) }))
     .catch(err =>
-      logAndReturn(err, { status: statuses.ERROR, message: cr.error(channel.name, newName) }),
+      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
-
-// SUBSCRIBER ACTIONS
-
-const maybeAddSubscriber = async (db, channel, sender) => {
-  const cr = commandResponses.subscriber.add
-  return sender.isSubscriber
-    ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
-    : addSubscriber(db, channel, sender, cr)
-}
-
-const addSubscriber = (db, channel, sender, cr) =>
-  channelRepository
-    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
-
-const maybeRemoveSubscriber = async (db, channel, sender) => {
-  const cr = commandResponses.subscriber.remove
-  return sender.isSubscriber
-    ? removeSubscriber(db, channel, sender, cr)
-    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
-}
-
-const removeSubscriber = (db, channel, sender, cr) => {
-  const remove = sender.isAdmin ? channelRepository.removeAdmin : channelRepository.removeSubscriber
-  return remove(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
-}
 
 // NOOP
 const noop = () =>
