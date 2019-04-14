@@ -1,10 +1,10 @@
 const { isPhoneNumber } = require('../validations')
 
 const messageCountOf = (sequelize, DataTypes) => {
-  return sequelize.define(
+  const messageCount = sequelize.define(
     'messageCount',
     {
-      phoneNumber: {
+      channelPhoneNumber: {
         type: DataTypes.STRING,
         primaryKey: true,
         allowNull: false,
@@ -34,6 +34,12 @@ const messageCountOf = (sequelize, DataTypes) => {
     },
     {},
   )
+
+  messageCount.associate = db => {
+    messageCount.belongsTo(db.channel)
+  }
+
+  return messageCount
 }
 
 module.exports = { messageCountOf }

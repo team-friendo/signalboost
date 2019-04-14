@@ -27,6 +27,10 @@ const channelOf = (sequelize, DataTypes) => {
       hooks: true,
       onDelete: 'cascade',
     })
+    channel.hasOne(db.messageCount, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
   }
 
   return channel
