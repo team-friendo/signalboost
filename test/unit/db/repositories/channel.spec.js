@@ -24,41 +24,56 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
+      db.messageCount.destroy({ where: {}, force: true })
     ])
   })
   after(async () => await db.sequelize.close())
 
-  describe('#updateOrCreate', () => {
-    let count, channel
+  describe('#activate', () => {
+    let channel, channelCount, messageCountCount
 
     describe('when given phone number for a non-existent channel', () => {
       beforeEach(async () => {
-        count = await db.channel.count()
-        channel = await channelRepository.updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+        channelCount = await db.channel.count()
+        messageCountCount = await db.messageCount.count()
+        channel = await channelRepository.activate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
 
       it('creates a new channel', async () => {
-        expect(await db.channel.count()).to.eql(count + 1)
+        expect(await db.channel.count()).to.eql(channelCount + 1)
+      })
+
+      it('creates an empty messageCount record for the channel', async () => {
+        expect(await db.messageCount.count()).to.eql(messageCountCount + 1)
+        expect(
+          await db.messageCount.findOne({ where: { channelPhoneNumber: channel.phoneNumber } }),
+        ).to.be.an('object')
       })
 
       it('returns the channel record', () => {
-        expect(omit(channel.get(), ['createdAt', 'updatedAt'])).to.eql({
+        expect(omit(channel.toJSON(), ['createdAt', 'updatedAt', 'messageCount'])).to.eql({
           phoneNumber: chPNum,
           name: '#blackops',
           containerId: 'acabdeadbeef',
         })
+        expect(omit(channel.messageCount)).to.be.an('object')
       })
     })
 
     describe('when given phone number for a already-existing channel', () => {
       beforeEach(async () => {
-        await channelRepository.updateOrCreate(db, chPNum, '#foursquare', 'deadbeefacab')
-        count = await db.channel.count()
-        channel = await channelRepository.updateOrCreate(db, chPNum, '#blackops', 'acabdeadbeef')
+        await channelRepository.activate(db, chPNum, '#foursquare', 'deadbeefacab')
+        channelCount = await db.channel.count()
+        messageCountCount = await db.messageCount.count()
+        channel = await channelRepository.activate(db, chPNum, '#blackops', 'acabdeadbeef')
       })
 
       it('does not create a new channel', async () => {
-        expect(await db.channel.count()).to.eql(count)
+        expect(await db.channel.count()).to.eql(channelCount)
+      })
+
+      it('does not create a new messageCount record', async () => {
+        expect(await db.messageCount.count()).to.eql(messageCountCount)
       })
 
       it('updates the channel record and returns it', () => {
@@ -377,9 +392,9 @@ describe('channel repository', () => {
 
     describe('when channel does not exist', () => {
       it('rejects a promise with an error', async () => {
-        expect(await channelRepository.getSubscriberNumbers(db, genPhoneNumber()).catch(e => e)).to.contain(
-          'cannot retrieve subscriptions to non-existent channel',
-        )
+        expect(
+          await channelRepository.getSubscriberNumbers(db, genPhoneNumber()).catch(e => e),
+        ).to.contain('cannot retrieve subscriptions to non-existent channel')
       })
     })
   })
