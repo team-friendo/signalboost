@@ -9,7 +9,7 @@ import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
 
 describe('message count repository', () => {
-  const phoneNumber = genPhoneNumber()
+  const channelPhoneNumber = genPhoneNumber()
   let db, countBefore, countAfter
 
   before(() => (db = initDb()))
@@ -26,8 +26,8 @@ describe('message count repository', () => {
         { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
         { include: [{ model: db.subscription }] },
       )
-      countBefore = await db.messageCount.create(messageCountFactory({ phoneNumber }))
-      countAfter = await messageCountRepository.incrementBroadcastCount(db, phoneNumber, 4)
+      countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
+      countAfter = await messageCountRepository.incrementBroadcastCount(db, channelPhoneNumber, 4)
     })
 
     it('updates the broadcastIn count by 1', () => {
@@ -45,8 +45,8 @@ describe('message count repository', () => {
         { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
         { include: [{ model: db.subscription }] },
       )
-      countBefore = await db.messageCount.create(messageCountFactory({ phoneNumber }))
-      countAfter = await messageCountRepository.incrementCommandCount(db, phoneNumber)
+      countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
+      countAfter = await messageCountRepository.incrementCommandCount(db, channelPhoneNumber)
     })
 
     it('updates the commandIn count by 1', () => {

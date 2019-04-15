@@ -1,11 +1,10 @@
 import { expect } from 'chai'
-import { describe, it, test, before, after, afterEach } from 'mocha'
-import { keys } from 'lodash'
+import { describe, it, test, before, beforeEach, after, afterEach } from 'mocha'
+import { keys, times } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { administrationFactory } from '../../../support/factories/administration'
-import { statuses } from '../../../../app/db/models/channel'
 
 describe('channel model', () => {
   let db, channel
@@ -29,18 +28,29 @@ describe('channel model', () => {
         include: [{ model: db.administration }],
       },
     )
+  const createChannelWithMessageCount = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        messageCount: {},
+      },
+      {
+        include: [{ model: db.messageCount }],
+      },
+    )
 
   before(async () => {
     db = initDb()
   })
 
   afterEach(() => {
-    db.channel.destroy({ where: {}, force: true })
+    db.administration.destroy({ where: {}, force: true })
+    db.messageCount.destroy({ where: {}, force: true })
     db.subscription.destroy({ where: {}, force: true })
+    db.channel.destroy({ where: {}, force: true })
   })
 
   after(async () => {
-    await db.channel.destroy({ where: {} })
     await db.sequelize.close()
   })
 
@@ -70,32 +80,75 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    it('has many subscriptions', async () => {
-      channel = await createChannelWithSubscriptions()
-      expect(await channel.getSubscriptions()).to.have.length(2)
+    let channel, subscriptions, administrations, messageCount
+
+    describe('subscriptions', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithSubscriptions()
+        subscriptions = await channel.getSubscriptions()
+      })
+
+      it('has many subscriptions', async () => {
+        expect(subscriptions).to.have.length(2)
+      })
+
+      it('sets the channel phone number as the foreign key in each subscription', () => {
+        expect(subscriptions.map(s => s.channelPhoneNumber)).to.eql(
+          times(2, () => channel.phoneNumber),
+        )
+      })
+
+      it('deletes subscriptions when it deletes channel', async () => {
+        const subCount = await db.subscription.count()
+        await channel.destroy()
+
+        expect(await db.channel.count()).to.eql(0)
+        expect(await db.subscription.count()).to.eql(subCount - 2)
+      })
     })
 
-    it('deletes subscriptions when it deletes channel', async () => {
-      channel = await createChannelWithSubscriptions()
-      const subCount = await db.subscription.count()
-      await channel.destroy()
+    describe('administrations', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithAdministrations()
+        administrations = await channel.getAdministrations()
+      })
 
-      expect(await db.channel.count()).to.eql(0)
-      expect(await db.subscription.count()).to.eql(subCount - 2)
+      it('has many administrations', async () => {
+        expect(administrations).to.have.length(2)
+      })
+
+      it('sets channel phone number as the foreign key in each administration', () => {
+        expect(administrations.map(s => s.channelPhoneNumber)).to.eql(
+          times(2, () => channel.phoneNumber),
+        )
+      })
+
+      it('deletes administrations when it deletes channel', async () => {
+        const subCount = await db.administration.count()
+        await channel.destroy()
+
+        expect(await db.channel.count()).to.eql(0)
+        expect(await db.administration.count()).to.eql(subCount - 2)
+      })
     })
 
-    it('has many administrations', async () => {
-      channel = await createChannelWithAdministrations()
-      expect(await channel.getAdministrations()).to.have.length(2)
-    })
+    describe('message count', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithMessageCount()
+        messageCount = await channel.getMessageCount()
+      })
 
-    it('deletes administrations when it deletes channel', async () => {
-      channel = await createChannelWithAdministrations()
-      const subCount = await db.administration.count()
-      await channel.destroy()
+      it('has one message count', async () => {
+        expect(messageCount).to.exist
+      })
 
-      expect(await db.channel.count()).to.eql(0)
-      expect(await db.administration.count()).to.eql(subCount - 2)
+      it('sets the channel phone number as foreign key on the message count', () => {
+        expect(messageCount.channelPhoneNumber).to.eql(channel.phoneNumber)
+      })
+
+      it('sets default counts when creating empty message count', () => {
+        expect(messageCount.broadcastOut).to.eql(0)
+      })
     })
   })
 })
