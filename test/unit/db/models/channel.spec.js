@@ -5,9 +5,11 @@ import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { administrationFactory } from '../../../support/factories/administration'
+import { welcomeFactory } from '../../../support/factories/welcome'
 
 describe('channel model', () => {
   let db, channel
+
   const createChannelWithSubscriptions = () =>
     db.channel.create(
       {
@@ -18,6 +20,7 @@ describe('channel model', () => {
         include: [{ model: db.subscription }],
       },
     )
+
   const createChannelWithAdministrations = () =>
     db.channel.create(
       {
@@ -28,6 +31,7 @@ describe('channel model', () => {
         include: [{ model: db.administration }],
       },
     )
+
   const createChannelWithMessageCount = () =>
     db.channel.create(
       {
@@ -39,6 +43,17 @@ describe('channel model', () => {
       },
     )
 
+  const createChannelWithWelcomes = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        welcomes: [welcomeFactory(), welcomeFactory()],
+      },
+      {
+        include: [{ model: db.welcome }],
+      },
+    )
+
   before(async () => {
     db = initDb()
   })
@@ -47,6 +62,7 @@ describe('channel model', () => {
     db.administration.destroy({ where: {}, force: true })
     db.messageCount.destroy({ where: {}, force: true })
     db.subscription.destroy({ where: {}, force: true })
+    db.welcome.destroy({ where: {}, force: true })
     db.channel.destroy({ where: {}, force: true })
   })
 
@@ -80,7 +96,7 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, subscriptions, administrations, messageCount
+    let channel, subscriptions, administrations, messageCount, welcomes
 
     describe('subscriptions', () => {
       beforeEach(async () => {
@@ -101,8 +117,6 @@ describe('channel model', () => {
       it('deletes subscriptions when it deletes channel', async () => {
         const subCount = await db.subscription.count()
         await channel.destroy()
-
-        expect(await db.channel.count()).to.eql(0)
         expect(await db.subscription.count()).to.eql(subCount - 2)
       })
     })
@@ -124,11 +138,9 @@ describe('channel model', () => {
       })
 
       it('deletes administrations when it deletes channel', async () => {
-        const subCount = await db.administration.count()
+        const adminCount = await db.administration.count()
         await channel.destroy()
-
-        expect(await db.channel.count()).to.eql(0)
-        expect(await db.administration.count()).to.eql(subCount - 2)
+        expect(await db.administration.count()).to.eql(adminCount - 2)
       })
     })
 
@@ -139,7 +151,7 @@ describe('channel model', () => {
       })
 
       it('has one message count', async () => {
-        expect(messageCount).to.exist
+        expect(messageCount).to.be.an('object')
       })
 
       it('sets the channel phone number as foreign key on the message count', () => {
@@ -148,6 +160,33 @@ describe('channel model', () => {
 
       it('sets default counts when creating empty message count', () => {
         expect(messageCount.broadcastOut).to.eql(0)
+      })
+
+      it('deletes message count when it deletes channel', async () => {
+        const messageCountCount = await db.messageCount.count()
+        await channel.destroy()
+        expect(await db.messageCount.count()).to.eql(messageCountCount - 1)
+      })
+    })
+
+    describe('welcomes', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithWelcomes()
+        welcomes = await channel.getWelcomes()
+      })
+
+      it('has many welcomes', async () => {
+        expect(welcomes).to.have.length(2)
+      })
+
+      it('sets the channel phone number as foreign key on each welcome', () => {
+        expect(welcomes.map(w => w.channelPhoneNumber)).to.eql(times(2, () => channel.phoneNumber))
+      })
+
+      it('deletes welcomes when it deletes channel', async () => {
+        const welcomeCount = await db.welcome.count()
+        await channel.destroy()
+        expect(await db.welcome.count()).to.eql(welcomeCount - 2)
       })
     })
   })
