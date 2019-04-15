@@ -3,6 +3,13 @@
 pushd `pwd`> /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 
+echo "--- loading secrets..."
+
+./bin/blackbox/decrypt_all_files
+set -a && source .env && set +a
+
+echo "--- deploying..."
+
 cd ../ansible
 
 ansible-playbook \
