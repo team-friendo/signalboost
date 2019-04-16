@@ -73,6 +73,9 @@ const isAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
 const isSubscriber = (db, channelPhoneNumber, humanPhoneNumber) =>
   db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
 
+const createWelcome = async (db, channelPhoneNumber, welcomedPhoneNumber) =>
+  db.welcome.create({ channelPhoneNumber, welcomedPhoneNumber })
+
 // (Database, string) -> Array<string>
 const getUnwelcomedAdmins = async (db, channelPhoneNumber) => {
   const welcomes = await db.welcome.findAll({ where: { channelPhoneNumber } })
@@ -98,6 +101,7 @@ module.exports = {
   addAdmin,
   addAdmins,
   addSubscriber,
+  createWelcome,
   findAll,
   findByPhoneNumber,
   findDeep,

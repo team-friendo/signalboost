@@ -16,7 +16,7 @@ describe('channel repository', () => {
   const chPNum = genPhoneNumber()
   const subPNums = [genPhoneNumber(), genPhoneNumber()]
   const adminPNums = [genPhoneNumber(), genPhoneNumber()]
-  let db, channel, sub, subCount, adminCount, admins
+  let db, channel, sub, subCount, adminCount, admins, welcomeCount
 
   before(() => (db = initDb()))
   afterEach(async () => {
@@ -24,6 +24,7 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
+      db.welcome.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
@@ -425,6 +426,24 @@ describe('channel repository', () => {
 
     it('returns false when asked to check a non existent channel', async () => {
       expect(await channelRepository.isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+    })
+  })
+
+  describe('#createWelcome', () => {
+    let result
+    beforeEach(async () => {
+      welcomeCount = await db.welcome.count()
+      channel = await db.channel.create(channelFactory({ phoneNumber: chPNum }))
+      result = await channelRepository.createWelcome(db, channel.phoneNumber, adminPNums[0])
+    })
+
+    it('creates a new welcome', async () => {
+      expect(await db.welcome.count()).to.eql(welcomeCount + 1)
+    })
+
+    it('associates a welcomed number and a channel number', () => {
+      expect(result.channelPhoneNumber).to.eql(channel.phoneNumber)
+      expect(result.welcomedPhoneNumber).to.eql(adminPNums[0])
     })
   })
 
