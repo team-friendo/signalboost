@@ -4,7 +4,8 @@ import sinon from 'sinon'
 import { times } from 'lodash'
 import signal from '../../../../app/services/dispatcher/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
+import channelRepository from '../../../../app/db/repositories/channel'
+import messenger, { messageTypes, notificationTypes } from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
@@ -38,15 +39,15 @@ describe('messenger service', () => {
 
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
-      expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql(
+      expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql([
         messageTypes.BROADCAST,
-      )
+      ])
     })
 
     it('parses a command response', () => {
-      expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql(
+      expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql([
         messageTypes.RESPONSE,
-      )
+      ])
     })
 
     it('parses an admin welcome message', () => {
@@ -56,7 +57,7 @@ describe('messenger service', () => {
           status: statuses.SUCCESS,
           payload: adminSender.phoneNumber,
         }),
-      ).to.eql(messageTypes.NOTIFICATION)
+      ).to.eql([messageTypes.NOTIFICATION, notificationTypes.NEW_ADMIN])
     })
   })
 
@@ -65,7 +66,8 @@ describe('messenger service', () => {
       respondSpy,
       sendMessageStub,
       incrementCommandCountStub,
-      incrementBroadcastCountStub
+      incrementBroadcastCountStub,
+      createWelcomeStub
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
@@ -77,6 +79,7 @@ describe('messenger service', () => {
       incrementBroadcastCountStub = sinon
         .stub(messageCountRepository, 'incrementBroadcastCount')
         .returns(Promise.resolve())
+      createWelcomeStub = sinon.stub(channelRepository, 'createWelcome').returns(Promise.resolve())
     })
 
     afterEach(() => {
@@ -85,6 +88,7 @@ describe('messenger service', () => {
       sendMessageStub.restore()
       incrementCommandCountStub.restore()
       incrementBroadcastCountStub.restore()
+      createWelcomeStub.restore()
     })
 
     describe('when message is a broadcast message', () => {
@@ -187,6 +191,7 @@ describe('messenger service', () => {
             },
           })
         })
+        afterEach(() => createWelcomeStub.restore())
 
         it('does not broadcast a message', () => {
           expect(broadcastSpy.callCount).to.eql(0)
@@ -210,6 +215,10 @@ describe('messenger service', () => {
             `[${channel.name}]\n${welcome}`,
             [newAdmin],
           ])
+        })
+
+        it('persists a record of the welcome to the db', () => {
+          expect(createWelcomeStub.getCall(0).args).to.eql([db, channel.phoneNumber, newAdmin])
         })
       })
     })

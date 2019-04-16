@@ -3,6 +3,7 @@ const signal = require('./signal')
 const messages = require('./messages')
 const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
+const channelRepository = require('../../db/repositories/channel')
 
 /**
  * type MessageType = 'BROADCAST' | 'RESPONSE' | 'NOTIFICATION'
@@ -14,29 +15,38 @@ const messageTypes = {
   NOTIFICATION: 'NOTIFICATION',
 }
 
+const notificationTypes = {
+  NEW_ADMIN: 'NEW_ADMIN',
+}
+
 /***************
  * DISPATCHING
  ***************/
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult)
+  const [messageType, notificationType] = parseMessageType(commandResult)
   return {
     [messageTypes.BROADCAST]: () => handleBroadcast(dispatchable),
     [messageTypes.RESPONSE]: () => handleResponse({ commandResult, dispatchable }),
-    [messageTypes.NOTIFICATION]: () => handleNotification({ commandResult, dispatchable }),
+    [messageTypes.NOTIFICATION]: () =>
+      handleNotification({ commandResult, dispatchable, notificationType }),
   }[messageType]()
 }
 
-// CommandResult -> MessageType
+// CommandResult -> [MessageType, NotificationType]
 const parseMessageType = commandResult => {
-  if (commandResult.status === statuses.NOOP) return messageTypes.BROADCAST
-  else if (isNotifiable(commandResult)) return messageTypes.NOTIFICATION
-  else return messageTypes.RESPONSE
+  if (commandResult.status === statuses.NOOP) return [messageTypes.BROADCAST]
+  else if (parseNotifiable(commandResult))
+    return [messageTypes.NOTIFICATION, parseNotifiable(commandResult)]
+  else return [messageTypes.RESPONSE]
 }
 
-const isNotifiable = ({ command, status }) =>
-  command === commands.ADD && status === statuses.SUCCESS
+const parseNotifiable = ({ command, status }) =>
+  // TODO: extend to handle other notifiable command results
+  isNewAdmin({ command, status }) ? notificationTypes.NEW_ADMIN : null
+
+const isNewAdmin = ({ command, status }) => command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcast = dispatchable =>
   dispatchable.sender.isAdmin
@@ -48,16 +58,22 @@ const handleResponse = ({ commandResult, dispatchable }) => {
   return respond({ ...dispatchable, message, command, status })
 }
 
-const handleNotification = ({ dispatchable, commandResult }) => {
+const handleNotification = ({ dispatchable, commandResult, notificationType }) =>
+  ({
+    // TODO: extend to handle other notifiable command results
+    [notificationTypes.NEW_ADMIN]: () => handleNewAdmin({ dispatchable, commandResult }),
+  }[notificationType]())
+
+const handleNewAdmin = ({ dispatchable, commandResult }) => {
   const { command, status, message, payload } = commandResult
   const { channel, sender } = dispatchable
+  const notification = messages.notifications.welcome(channel, sender.phoneNumber)
+  const recipients = [payload]
   return Promise.all([
     respond({ ...dispatchable, message, command, status }),
-    notify({
-      ...dispatchable,
-      message: messages.notifications.welcome(channel, sender.phoneNumber),
-      recipients: [payload],
-    }),
+    notify({ ...dispatchable, notification, recipients }).then(() =>
+      channelRepository.createWelcome(dispatchable.db, channel.phoneNumber, payload),
+    ),
   ])
 }
 
@@ -81,9 +97,9 @@ const respond = ({ db, iface, channel, message, sender, command, status }) => {
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = ({ db, iface, channel, message, recipients }) =>
+const notify = ({ db, iface, channel, notification, recipients }) =>
   signal
-    .sendMessage(iface, format(channel, message), recipients)
+    .sendMessage(iface, format(channel, notification), recipients)
     .then(() => countCommand({ db, channel }))
 
 // string -> string
@@ -104,4 +120,12 @@ const countCommand = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here
   messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
-module.exports = { messageTypes, parseMessageType, dispatch, broadcast, respond, format }
+module.exports = {
+  messageTypes,
+  notificationTypes,
+  parseMessageType,
+  dispatch,
+  broadcast,
+  respond,
+  format,
+}
