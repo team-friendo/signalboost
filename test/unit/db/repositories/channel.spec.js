@@ -24,7 +24,7 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
-      db.messageCount.destroy({ where: {}, force: true })
+      db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
   after(async () => await db.sequelize.close())
@@ -425,6 +425,30 @@ describe('channel repository', () => {
 
     it('returns false when asked to check a non existent channel', async () => {
       expect(await channelRepository.isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+    })
+  })
+
+  describe('#getUnwelcomedAdminNumbers', () => {
+    beforeEach(async () => {
+      channel = await db.channel.create(
+        {
+          ...channelFactory({ phoneNumber: chPNum }),
+          administrations: [
+            { humanPhoneNumber: adminPNums[0] },
+            { humanPhoneNumber: adminPNums[1] },
+          ],
+          welcomes: [{ welcomedPhoneNumber: adminPNums[0] }],
+        },
+        {
+          include: [{ model: db.administration }, { model: db.welcome }],
+        },
+      )
+    })
+
+    it('returns an array of unwelcomed admin phone numbers', async () => {
+      expect(await channelRepository.getUnwelcomedAdmins(db, channel.phoneNumber)).to.eql([
+        adminPNums[1],
+      ])
     })
   })
 })
