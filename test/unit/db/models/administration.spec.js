@@ -15,6 +15,7 @@ describe('administration model', () => {
 
   after(async () => {
     await db.administration.destroy({ where: {} })
+    await db.channel.destroy({ where: {} })
     await db.sequelize.close()
   })
 
@@ -39,7 +40,7 @@ describe('administration model', () => {
     })
 
     it('belongs to a channel', async () => {
-      expect(await administration.getChannel()).to.exist
+      expect(await administration.getChannel()).to.be.an('object')
     })
   })
 })

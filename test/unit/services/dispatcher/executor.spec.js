@@ -175,13 +175,14 @@ describe('executor service', () => {
               ),
             )
 
-            it('returns a SUCCESS status and message', async () => {
+            it('returns a SUCCESS status / message and admin number as payload', async () => {
               const dispatchable = { command: commands.ADD, payload, db, channel, sender }
               expect(await execute(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.SUCCESS,
                   message: CR.admin.add.success(payload),
+                  payload,
                 },
                 dispatchable,
               })

@@ -15,6 +15,7 @@ describe('dispatcher service', () => {
     const [db, iface] = [{}, {}]
     const channel = { ...channelFactory(), administrations: [], subscriptions: [] }
     const sender = genPhoneNumber()
+    const unwelcomedAdmins = [genPhoneNumber(), genPhoneNumber()]
     const authenticatedSender = {
       phoneNumber: sender,
       isAdmin: true,
@@ -22,6 +23,8 @@ describe('dispatcher service', () => {
     }
 
     let getDbusStub,
+      getUnwelcomedAdminsStub,
+      welcomeNewAdminStub,
       onReceivedMessageStub,
       findDeepStub,
       isAdminStub,
@@ -30,7 +33,18 @@ describe('dispatcher service', () => {
       dispatchStub
 
     beforeEach(async () => {
+      // main loop stubs --v
       getDbusStub = sinon.stub(signal, 'getDbusInterface').returns(Promise.resolve(iface))
+
+      getUnwelcomedAdminsStub = sinon
+        .stub(channelRepository, 'getUnwelcomedAdmins')
+        .returns(unwelcomedAdmins)
+
+      welcomeNewAdminStub = sinon.stub(messenger, 'welcomeNewAdmin').returns(Promise.resolve())
+
+      // main loop stubs --^
+
+      // onReceivedMessage stubs --v
 
       onReceivedMessageStub = sinon
         .stub(signal, 'onReceivedMessage')
@@ -52,12 +66,15 @@ describe('dispatcher service', () => {
       )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
+      // onReceivedMessage stubs --^
 
       await run(db)
     })
 
     afterEach(() => {
       getDbusStub.restore()
+      getUnwelcomedAdminsStub.restore()
+      welcomeNewAdminStub.restore()
       onReceivedMessageStub.restore()
       findDeepStub.restore()
       isAdminStub.restore()
@@ -68,6 +85,18 @@ describe('dispatcher service', () => {
 
     it('retrieves a dbus interface', () => {
       expect(onReceivedMessageStub.callCount).to.eql(1)
+    })
+
+    it('it sends a welcome message to every unwelcomed admin', () => {
+      unwelcomedAdmins.forEach((newAdmin, i) => {
+        expect(welcomeNewAdminStub.getCall(i).args[0]).to.eql({
+          db,
+          iface,
+          channel,
+          newAdmin,
+          addingAdmin: 'the system administrator',
+        })
+      })
     })
 
     describe('for each incoming message', () => {

@@ -15,6 +15,7 @@ describe('subscription model', () => {
 
   after(async () => {
     await db.subscription.destroy({ where: {} })
+    await db.channel.destroy({ where: {} })
     await db.sequelize.close()
   })
 
@@ -39,7 +40,7 @@ describe('subscription model', () => {
     })
 
     it('belongs to a channel', async () => {
-      expect(await subscription.getChannel()).to.exist
+      expect(await subscription.getChannel()).to.be.an('object')
     })
   })
 })

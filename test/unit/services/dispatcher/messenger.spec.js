@@ -4,7 +4,8 @@ import sinon from 'sinon'
 import { times } from 'lodash'
 import signal from '../../../../app/services/dispatcher/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import messenger from '../../../../app/services/dispatcher/messenger'
+import channelRepository from '../../../../app/db/repositories/channel'
+import messenger, { messageTypes, notificationTypes } from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
@@ -35,60 +36,59 @@ describe('messenger service', () => {
     isAdmin: false,
     isSubscriber: true,
   }
-  let broadcastSpy,
-    respondSpy,
-    sendMessageStub,
-    incrementCommandCountStub,
-    incrementBroadcastCountStub
 
-  beforeEach(() => {
-    broadcastSpy = sinon.spy(messenger, 'broadcast')
-    respondSpy = sinon.spy(messenger, 'respond')
-    sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
-    incrementCommandCountStub = sinon
-      .stub(messageCountRepository, 'incrementCommandCount')
-      .returns(Promise.resolve())
-    incrementBroadcastCountStub = sinon
-      .stub(messageCountRepository, 'incrementBroadcastCount')
-      .returns(Promise.resolve())
-  })
+  describe('parsing a message type from a command result', () => {
+    it('parses a broadcast message', () => {
+      expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql([
+        messageTypes.BROADCAST,
+      ])
+    })
 
-  afterEach(() => {
-    broadcastSpy.restore()
-    respondSpy.restore()
-    sendMessageStub.restore()
-    incrementCommandCountStub.restore()
-    incrementBroadcastCountStub.restore()
+    it('parses a command response', () => {
+      expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql([
+        messageTypes.RESPONSE,
+      ])
+    })
+
+    it('parses an admin welcome message', () => {
+      expect(
+        messenger.parseMessageType({
+          command: 'ADD',
+          status: statuses.SUCCESS,
+          payload: adminSender.phoneNumber,
+        }),
+      ).to.eql([messageTypes.NOTIFICATION, notificationTypes.NEW_ADMIN])
+    })
   })
 
   describe('dispatching a message', () => {
-    describe('when message is a command that was executed', () => {
-      beforeEach(async () => {
-        await messenger.dispatch({
-          dispatchable: { db, iface, channel, sender: adminSender, message: commands.JOIN },
-          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
-        })
-      })
+    let broadcastSpy,
+      respondSpy,
+      sendMessageStub,
+      incrementCommandCountStub,
+      incrementBroadcastCountStub,
+      createWelcomeStub
 
-      it('does not broadcast a message', () => {
-        expect(broadcastSpy.callCount).to.eql(0)
-      })
+    beforeEach(() => {
+      broadcastSpy = sinon.spy(messenger, 'broadcast')
+      respondSpy = sinon.spy(messenger, 'respond')
+      sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
+      incrementCommandCountStub = sinon
+        .stub(messageCountRepository, 'incrementCommandCount')
+        .returns(Promise.resolve())
+      incrementBroadcastCountStub = sinon
+        .stub(messageCountRepository, 'incrementBroadcastCount')
+        .returns(Promise.resolve())
+      createWelcomeStub = sinon.stub(channelRepository, 'createWelcome').returns(Promise.resolve())
+    })
 
-      it('does not increment the broadcast count', () => {
-        expect(incrementBroadcastCountStub.callCount).to.eql(0)
-      })
-
-      it('sends a command result to the message sender', () => {
-        expect(sendMessageStub.getCall(0).args).to.eql([
-          iface,
-          '[foobar]\nyay!',
-          [adminSender.phoneNumber],
-        ])
-      })
-
-      it('increments the command count for the channel', () => {
-        expect(incrementCommandCountStub.getCall(0).args).to.eql([db, channel.phoneNumber])
-      })
+    afterEach(() => {
+      broadcastSpy.restore()
+      respondSpy.restore()
+      sendMessageStub.restore()
+      incrementCommandCountStub.restore()
+      incrementBroadcastCountStub.restore()
+      createWelcomeStub.restore()
     })
 
     describe('when message is a broadcast message', () => {
@@ -140,6 +140,85 @@ describe('messenger service', () => {
             messages.unauthorized,
             [subscriberSender.phoneNumber],
           ])
+        })
+      })
+    })
+
+    describe('when message is a command response', () => {
+      beforeEach(async () => {
+        await messenger.dispatch({
+          dispatchable: { db, iface, channel, sender: adminSender, message: commands.JOIN },
+          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
+        })
+      })
+
+      it('does not broadcast a message', () => {
+        expect(broadcastSpy.callCount).to.eql(0)
+      })
+
+      it('does not increment the broadcast count', () => {
+        expect(incrementBroadcastCountStub.callCount).to.eql(0)
+      })
+
+      it('sends a command result to the message sender', () => {
+        expect(sendMessageStub.getCall(0).args).to.eql([
+          iface,
+          '[foobar]\nyay!',
+          [adminSender.phoneNumber],
+        ])
+      })
+
+      it('increments the command count for the channel', () => {
+        expect(incrementCommandCountStub.getCall(0).args).to.eql([db, channel.phoneNumber])
+      })
+    })
+
+    describe('when message is a command notification', () => {
+      describe('for a newly added admin', () => {
+        const newAdmin = genPhoneNumber()
+        const message = `${commands.ADD} ${newAdmin}`
+        const response = messages.commandResponses.admin.add.success(newAdmin)
+        const welcome = messages.notifications.welcome(channel, adminSender.phoneNumber)
+
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: { db, iface, channel, sender: adminSender, message },
+            commandResult: {
+              command: commands.ADD,
+              status: statuses.SUCCESS,
+              message: response,
+              payload: newAdmin,
+            },
+          })
+        })
+        afterEach(() => createWelcomeStub.restore())
+
+        it('does not broadcast a message', () => {
+          expect(broadcastSpy.callCount).to.eql(0)
+        })
+
+        it('does not increment the broadcast count', () => {
+          expect(incrementBroadcastCountStub.callCount).to.eql(0)
+        })
+
+        it('sends a response to the command sender', () => {
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            iface,
+            `[${channel.name}]\n${response}`,
+            [adminSender.phoneNumber],
+          ])
+        })
+
+        it('sends a welcome notification to the newly added admin', () => {
+          expect(sendMessageStub.getCall(1).args).to.eql([
+            iface,
+            `[${channel.name}]\n${welcome}`,
+            [newAdmin],
+          ])
+        })
+
+        it('persists a record of the welcome to the db', () => {
+          expect(createWelcomeStub.getCall(0).args).to.eql([db, channel.phoneNumber, newAdmin])
         })
       })
     })

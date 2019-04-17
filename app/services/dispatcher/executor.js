@@ -72,7 +72,11 @@ const maybeAddAdmin = async (db, channel, sender, newAdminNumber) => {
 const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
   channelRepository
     .addAdmin(db, channel.phoneNumber, newAdminNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newAdminNumber) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(newAdminNumber),
+      payload: newAdminNumber,
+    }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
 
 // HELP

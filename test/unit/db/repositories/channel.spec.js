@@ -16,7 +16,7 @@ describe('channel repository', () => {
   const chPNum = genPhoneNumber()
   const subPNums = [genPhoneNumber(), genPhoneNumber()]
   const adminPNums = [genPhoneNumber(), genPhoneNumber()]
-  let db, channel, sub, subCount, adminCount, admins
+  let db, channel, sub, subCount, adminCount, admins, welcomeCount
 
   before(() => (db = initDb()))
   afterEach(async () => {
@@ -24,7 +24,8 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.administration.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
-      db.messageCount.destroy({ where: {}, force: true })
+      db.welcome.destroy({ where: {}, force: true }),
+      db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
   after(async () => await db.sequelize.close())
@@ -94,7 +95,9 @@ describe('channel repository', () => {
     })
 
     it("updates a channel's name", async () => {
-      const newName = await db.channel.findOne({ phoneNumber: chPNum }).then(ch => ch.name)
+      const newName = await db.channel
+        .findOne({ where: { phoneNumber: chPNum } })
+        .then(ch => ch.name)
       expect(newName).to.eql('bar')
     })
 
@@ -425,6 +428,48 @@ describe('channel repository', () => {
 
     it('returns false when asked to check a non existent channel', async () => {
       expect(await channelRepository.isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+    })
+  })
+
+  describe('#createWelcome', () => {
+    let result
+    beforeEach(async () => {
+      welcomeCount = await db.welcome.count()
+      channel = await db.channel.create(channelFactory({ phoneNumber: chPNum }))
+      result = await channelRepository.createWelcome(db, channel.phoneNumber, adminPNums[0])
+    })
+
+    it('creates a new welcome', async () => {
+      expect(await db.welcome.count()).to.eql(welcomeCount + 1)
+    })
+
+    it('associates a welcomed number and a channel number', () => {
+      expect(result.channelPhoneNumber).to.eql(channel.phoneNumber)
+      expect(result.welcomedPhoneNumber).to.eql(adminPNums[0])
+    })
+  })
+
+  describe('#getUnwelcomedAdminNumbers', () => {
+    beforeEach(async () => {
+      channel = await db.channel.create(
+        {
+          ...channelFactory({ phoneNumber: chPNum }),
+          administrations: [
+            { humanPhoneNumber: adminPNums[0] },
+            { humanPhoneNumber: adminPNums[1] },
+          ],
+          welcomes: [{ welcomedPhoneNumber: adminPNums[0] }],
+        },
+        {
+          include: [{ model: db.administration }, { model: db.welcome }],
+        },
+      )
+    })
+
+    it('returns an array of unwelcomed admin phone numbers', async () => {
+      expect(await channelRepository.getUnwelcomedAdmins(db, channel.phoneNumber)).to.eql([
+        adminPNums[1],
+      ])
     })
   })
 })

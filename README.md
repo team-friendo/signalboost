@@ -9,15 +9,15 @@
 
 # Overview <a name="overview"></a>
 
-**Signalboost** enables users to send free, encrypted text blasts over the [Signal messaging service](https://www.signal.org/) without revealing their phone number to recipients. Developed by and for activists, Signalboost seeks to empower informal networks to communicate safely and rapidly to mass audiences with emergency alerts, urgent announcements, and mobilization updates. [[1](#txtmob_joke)]
+**Signalboost** is a rapid response tool made by and for activists. It enables you to send free, encrypted, one-way text notifications over the [Signal messaging service](https://www.signal.org/) to mass subscriber lists without revealing your phone number to recipients. You could use it to send emergency alerts, mobilization updates, urgent requests for aid, or other inventive usages we never could have thought of! :) [[1](#txtmob_joke)]
 
 **The stack** consists of node services calling out to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net**.
+**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net** to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust team-friendo with storing your subscriber list(s). :)
 
-**NOTE: this project is not officially affiliated with the Signal App or Foundatoin.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and Open Whisper Systems for maintaining a generous free/open ecosystem in which we can do so. <@3
+**NOTE: this project is not officially affiliated with the Signal App or Foundatoin.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
 
 <a name="txtmob_joke"></a>

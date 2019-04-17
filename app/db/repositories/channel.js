@@ -1,4 +1,5 @@
 const { get } = require('lodash')
+const { Op } = require('sequelize')
 
 // PUBLIC FUNCTIONS
 
@@ -72,6 +73,19 @@ const isAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
 const isSubscriber = (db, channelPhoneNumber, humanPhoneNumber) =>
   db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
 
+const createWelcome = async (db, channelPhoneNumber, welcomedPhoneNumber) =>
+  db.welcome.create({ channelPhoneNumber, welcomedPhoneNumber })
+
+// (Database, string) -> Array<string>
+const getUnwelcomedAdmins = async (db, channelPhoneNumber) => {
+  const welcomes = await db.welcome.findAll({ where: { channelPhoneNumber } })
+  const welcomedNumbers = welcomes.map(w => w.welcomedPhoneNumber)
+  const unwelcomed = await db.administration.findAll({
+    where: { channelPhoneNumber, humanPhoneNumber: { [Op.notIn]: welcomedNumbers } },
+  })
+  return unwelcomed.map(uw => uw.humanPhoneNumber)
+}
+
 // HELPERS
 
 const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, op) => {
@@ -83,17 +97,19 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
-  update,
   activate,
+  addAdmin,
+  addAdmins,
+  addSubscriber,
+  createWelcome,
   findAll,
   findByPhoneNumber,
   findDeep,
-  addAdmin,
-  addAdmins,
-  removeAdmin,
-  addSubscriber,
   getSubscriberNumbers,
+  getUnwelcomedAdmins,
   isAdmin,
   isSubscriber,
+  removeAdmin,
   removeSubscriber,
+  update,
 }
