@@ -25,7 +25,7 @@ done
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
-echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
+echo "--- registering all purchased phone numbers at url ${url}"
 
 curl -s -X POST \
      -H "Content-Type: application/json" \
