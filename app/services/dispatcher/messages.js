@@ -1,21 +1,37 @@
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
 
+const blurb = `Signalboost is a rapid response tool made by and for activists. It enables users to send free, encrypted text blasts over the Signal messaging service to a mass subscriber list without revealing the sender or recipients' phone numbers to each other.`
+
+const support = `
+-----------------
+SUPPORT
+-----------------
+
+You can view the source code that runs signalboost here:
+
+--> https://0xacab.org/team-friendo/signalboost
+
+You can submit bugs or request new features here:
+
+--> https://0xacab.org/team-friendo/signalboost/issues
+
+You can request a new channel or get help from a human by emailing:
+
+--> team-friendo@riseup.net`
+
 const notifications = {
   welcome: (channel, addingAdmin) => {
     const { name, phoneNumber } = channel
     return `
------------------------------------------------------------
+--------------------------------------------------------
 <3 WELCOME TO SIGNALBOOST! <3
------------------------------------------------------------
+--------------------------------------------------------
 
-Signalboost is a rapid response tool made by and for activists. It enables you to send free, encrypted text blasts over the Signal messaging service to a mass subscriber list without revealing your phone number to recipients.
+${blurb}
 
-You were just made an admin of the Signalboost channel [${name}] by ${addingAdmin}.
-
-----------------------------------
-CHANNEL INFO:
-----------------------------------
+You were just made an admin of the [${name}] signalboost channel by ${addingAdmin}.
 ${commandResponses.info.admin(channel)}
+
 --------------------------------------------------
 BROADCASTING MESSAGES:
 --------------------------------------------------
@@ -23,9 +39,7 @@ BROADCASTING MESSAGES:
 Because you are an admin of this channel, when you send a Signal message to ${phoneNumber}, it will be broadcast to everyone who has subscribed to it.
 
 Anyone can subscribe to the channel by sending a message that says "JOIN" to ${phoneNumber}. If they want to unsubscribe later, they can send a message that says "LEAVE" to the same number.
-
-${commandResponses.help.admin}
-`
+${commandResponses.help.admin}`
   },
 }
 
@@ -37,14 +51,14 @@ const commandResponses = {
       unauthorized,
       dbError: num => `Whoops! There was an error adding ${num} as admin. Please try again!`,
       invalidNumber: num =>
-        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces. \n\nFor example: to add (202) 555-4444, write:\n\n "ADD ADMIN +12025554444"`,
+        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces. \n\nFor example: to add (202) 555-4444, write:\n\n "ADD +12025554444"`,
     },
     remove: {
       success: num => `${num} was successfully removed as an admin.`,
       unauthorized,
       dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
       invalidNumber: num =>
-        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces.\n\nFor example: to remove (202) 555-4444, write:\n\n "REMOVE ADMIN +12025554444"`,
+        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces.\n\nFor example: to remove (202) 555-4444, write:\n\n "REMOVE +12025554444"`,
       targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
     },
   },
@@ -90,24 +104,13 @@ LEAVE
 HELP / INFO
 --> same as above
 
---------------------------------------------------------
-SOURCE CODE / ISSUE-TRACKING
---------------------------------------------------------
-
-You can view the source code that runs signalboost here:
-
-https://0xacab.org/team-friendo/signalboost
-
-You can submit bugs or request new features here:
-
-https://0xacab.org/team-friendo/signalboost/issues
-`,
+${support}`,
     subscriber: `
-------------------------------------------------------------------------------------
+---------------------
 COMMANDS:
-------------------------------------------------------------------------------------
+---------------------
 
-You can send the following commands to this number to do the following things:
+Anyone can send the following commands to this phone number to cause the following things to happen:
 
 HELP
 --> shows this message
@@ -120,36 +123,30 @@ LEAVE
 
 INFO
 --> shows basic stats about the channel
-
-------------------------------------------------------------------------------------
-SOURCE CODE / ISSUE-TRACKING
-------------------------------------------------------------------------------------
-
-You can view the source code that runs signalboost here:
-
-https://0xacab.org/team-friendo/signalboost
-
-You can submit bugs or request new features here:
-
-https://0xacab.org/team-friendo/signalboost/issues
-`,
+${support}`,
     unauthorized,
   },
 
   // INFO
   info: {
     admin: channel => `
-- name: ${channel.name}
-- phone number: ${channel.phoneNumber}
-- subscribers: ${channel.subscriptions.length}
-- admins: ${channel.administrations.map(a => a.humanPhoneNumber).join(', ')}
-`,
+----------------------------
+CHANNEL INFO:
+----------------------------
+
+--> name: ${channel.name}
+--> phone number: ${channel.phoneNumber}
+--> subscribers: ${channel.subscriptions.length}
+--> admins: ${channel.administrations.map(a => a.humanPhoneNumber).join(', ')}`,
     subscriber: channel => `
-- name: ${channel.name}
-- phone number: ${channel.phoneNumber}
-- subscribers: ${channel.subscriptions.length}
-- admins: ${channel.administrations.length}
-`,
+----------------------------
+CHANNEL INFO:
+----------------------------
+
+--> name: ${channel.name}
+--> phone number: ${channel.phoneNumber}
+--> subscribers: ${channel.subscriptions.length}
+--> admins: ${channel.administrations.length}`,
     unauthorized,
   },
   // RENAME
@@ -163,7 +160,19 @@ https://0xacab.org/team-friendo/signalboost/issues
   // SUBSCRIBER
   subscriber: {
     add: {
-      success: `You've been added to the channel!`,
+      success: channel => {
+        const { name, phoneNumber } = channel
+        return `
+--------------------------------------------------------
+<3 WELCOME TO SIGNALBOOST! <3
+--------------------------------------------------------
+
+${blurb}
+
+You just subscribed to the [${name}] signalboost channel on ${phoneNumber}. You can unsubscribe by sending a message that says "LEAVE" to this number at any time.
+${commandResponses.info.subscriber(channel)}
+${commandResponses.help.subscriber}`
+      },
       dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
       noop: `Whoops! You are already a member of the channel.`,
     },

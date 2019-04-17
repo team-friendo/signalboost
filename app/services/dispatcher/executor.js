@@ -119,7 +119,7 @@ const maybeAddSubscriber = async (db, channel, sender) => {
 const addSubscriber = (db, channel, sender, cr) =>
   channelRepository
     .addSubscriber(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
 // LEAVE
