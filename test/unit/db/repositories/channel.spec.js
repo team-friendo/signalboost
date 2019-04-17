@@ -95,7 +95,9 @@ describe('channel repository', () => {
     })
 
     it("updates a channel's name", async () => {
-      const newName = await db.channel.findOne({ phoneNumber: chPNum }).then(ch => ch.name)
+      const newName = await db.channel
+        .findOne({ where: { phoneNumber: chPNum } })
+        .then(ch => ch.name)
       expect(newName).to.eql('bar')
     })
 

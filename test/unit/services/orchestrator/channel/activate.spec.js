@@ -22,13 +22,15 @@ describe('channel activation module', () => {
       createContainerStub = sinon
         .stub(docker, 'getOrCreateContainer')
         .returns(Promise.resolve({ Id: containerId }))
-      createChannelStub = sinon.stub(channelRepository, 'updateOrCreate').returns(
+
+      createChannelStub = sinon.stub(channelRepository, 'activate').returns(
         Promise.resolve({
           phoneNumber,
           name,
           status: 'ACTIVE',
         }),
       )
+
       addAdminsStub = sinon
         .stub(channelRepository, 'addAdmins')
         .callsFake((db, channelPhoneNumber, admins) =>
@@ -88,7 +90,7 @@ describe('channel activation module', () => {
       createContainerStub = sinon
         .stub(docker, 'getOrCreateContainer')
         .returns(Promise.resolve({ Id: containerId }))
-      createChannelStub = sinon.stub(channelRepository, 'updateOrCreate')
+      createChannelStub = sinon.stub(channelRepository, 'activate')
       addAdminsStub = sinon.stub(channelRepository, 'addAdmins')
       updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
       result = await activateMany(db, channelAttrs)

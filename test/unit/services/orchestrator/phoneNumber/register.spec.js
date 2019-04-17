@@ -19,6 +19,7 @@ const {
 } = require('../../../../../app/config')
 
 describe('phone number services -- registration module', () => {
+  EventEmitter.defaultMaxListeners = 100
   const phoneNumber = genPhoneNumber()
   const purchasedNumbers = times(3, () => ({
     phoneNumber: genPhoneNumber(),
