@@ -10,7 +10,7 @@ const notifications = {
 
 Signalboost is a rapid response tool made by and for activists. It enables you to send free, encrypted text blasts over the Signal messaging service to a mass subscriber list without revealing your phone number to recipients.
 
-A person with the phone number ${addingAdmin} just made you an admin of the [${name}] signalboost channel.
+You were just made an admin of the Signalboost channel [${name}] by ${addingAdmin}.
 
 ----------------------------------
 CHANNEL INFO:
