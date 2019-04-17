@@ -29,10 +29,13 @@ const nowTimestamp = () => new Date().toISOString()
 
 /**************** Logging ****************/
 
-const loggerOf = prefix => ({
-  log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
-  error: msg => console.error(`[${prefix} | ${nowTimestamp()}] ${msg}`),
-})
+const loggerOf = prefix =>
+  process.env.NODE_ENV === 'test'
+    ? { log: () => null, error: () => null }
+    : {
+        log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        error: msg => console.error(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+      }
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
