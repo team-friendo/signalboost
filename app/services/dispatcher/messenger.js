@@ -1,4 +1,3 @@
-const { isEmpty } = require('lodash')
 const signal = require('./signal')
 const messages = require('./messages')
 const { commands, statuses } = require('./executor')
@@ -58,24 +57,33 @@ const handleResponse = ({ commandResult, dispatchable }) => {
   return respond({ ...dispatchable, message, command, status })
 }
 
-const handleNotification = ({ dispatchable, commandResult, notificationType }) =>
-  ({
-    // TODO: extend to handle other notifiable command results
-    [notificationTypes.NEW_ADMIN]: () => handleNewAdmin({ dispatchable, commandResult }),
-  }[notificationType]())
-
-const handleNewAdmin = ({ dispatchable, commandResult }) => {
-  const { command, status, message, payload } = commandResult
-  const { channel, sender } = dispatchable
-  const notification = messages.notifications.welcome(channel, sender.phoneNumber)
-  const recipients = [payload]
+const handleNotification = ({ commandResult, dispatchable, notificationType }) => {
+  const [cr, d] = [commandResult, dispatchable]
   return Promise.all([
-    respond({ ...dispatchable, message, command, status }),
-    notify({ ...dispatchable, notification, recipients }).then(() =>
-      channelRepository.createWelcome(dispatchable.db, channel.phoneNumber, payload),
-    ),
+    handleResponse({ commandResult, dispatchable }),
+    {
+      // TODO: extend to handle other notifiable command results
+      [notificationTypes.NEW_ADMIN]: () =>
+        welcomeNewAdmin({
+          db: d.db,
+          iface: d.iface,
+          channel: d.channel,
+          newAdmin: cr.payload,
+          addingAdmin: d.sender.phoneNumber,
+        }),
+    }[notificationType](),
   ])
 }
+
+// { Database, Channel, string, string } => Promise<WelcomeInstance>
+const welcomeNewAdmin = ({ db, iface, channel, newAdmin, addingAdmin }) =>
+  notify({
+    db,
+    iface,
+    channel,
+    notification: messages.notifications.welcome(channel, addingAdmin),
+    recipients: [newAdmin],
+  }).then(() => channelRepository.createWelcome(db, channel.phoneNumber, newAdmin))
 
 /************
  * SENDING
@@ -123,9 +131,11 @@ const countCommand = ({ db, channel }) =>
 module.exports = {
   messageTypes,
   notificationTypes,
-  parseMessageType,
-  dispatch,
+  /**********/
   broadcast,
-  respond,
+  dispatch,
   format,
+  parseMessageType,
+  respond,
+  welcomeNewAdmin,
 }
