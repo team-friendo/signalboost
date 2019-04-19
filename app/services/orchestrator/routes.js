@@ -9,11 +9,14 @@ const {
 } = require('../../config/index')
 
 const routesOf = (router, db, emitter) => {
-  // TODO: implement these...
-  // router.get('/channels')
-
   router.get('/hello', async ctx => {
     ctx.body = { msg: 'hello world' }
+  })
+
+  router.get('/channels', async ctx => {
+    const result = await channelService.list(db)
+    ctx.status = httpStatusOf(get(result, 'status'))
+    ctx.body = result.data
   })
 
   router.post('/channels', async ctx => {
@@ -35,7 +38,12 @@ const routesOf = (router, db, emitter) => {
     const { num, areaCode } = ctx.request.body
     const n = parseInt(num) || 1
 
-    const phoneNumberStatuses = await phoneNumberService.provisionN({ db, emitter, areaCode, n })
+    const phoneNumberStatuses = await phoneNumberService.provisionN({
+      db,
+      emitter,
+      areaCode,
+      n,
+    })
     ctx.status = httpStatusOfMany(phoneNumberStatuses)
     ctx.body = phoneNumberStatuses
   })
