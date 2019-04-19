@@ -6,9 +6,7 @@ import { times, keys, pick } from 'lodash'
 import { startApiServer } from '../../../../app/services/orchestrator/run'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/orchestrator/channel'
-import phoneNumberService, {
-  statuses,
-} from '../../../../app/services/orchestrator/phoneNumber'
+import phoneNumberService, { statuses } from '../../../../app/services/orchestrator/phoneNumber'
 
 import { orchestrator } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
@@ -92,9 +90,7 @@ describe('routes', () => {
           .set('Token', orchestrator.authToken)
           .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'admins']))
 
-        expect(
-          pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'admins']),
-        ).to.eql({
+        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'admins'])).to.eql({
           phoneNumber,
           name: 'foo channel',
           admins,
@@ -133,26 +129,29 @@ describe('routes', () => {
     afterEach(() => listStub.restore())
 
     describe('when phone number service returns list of phone numbers', () => {
-      const list = { count: 3, status: 'SUCCESS', phoneNumbers: times(3, phoneNumberFactory) }
+      const list = {
+        status: 'SUCCESS',
+        data: { count: 3, phoneNumbers: times(3, phoneNumberFactory) },
+      }
       beforeEach(() => listStub.returns(Promise.resolve(list)))
 
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
           .set('Token', orchestrator.authToken)
-          .expect(200, list)
+          .expect(200, list.data)
       })
     })
 
     describe('when phone number service returns an error status', () => {
-      const errorStatus = { status: 'ERROR', error: 'oh noes!' }
+      const errorStatus = { status: 'ERROR', data: { error: 'oh noes!' } }
       beforeEach(() => listStub.returns(Promise.resolve(errorStatus)))
 
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
           .set('Token', orchestrator.authToken)
-          .expect(500, errorStatus)
+          .expect(500, errorStatus.data)
       })
     })
 
@@ -290,12 +289,7 @@ describe('routes', () => {
           .send({ To: phoneNumber, Body: verificationMessage })
         const arg = verifyStub.getCall(0).args[0]
 
-        expect(keys(arg)).to.have.members([
-          'db',
-          'emitter',
-          'phoneNumber',
-          'verificationMessage',
-        ])
+        expect(keys(arg)).to.have.members(['db', 'emitter', 'phoneNumber', 'verificationMessage'])
         expect(pick(arg, ['phoneNumber', 'verificationMessage'])).to.eql({
           phoneNumber,
           verificationMessage,
