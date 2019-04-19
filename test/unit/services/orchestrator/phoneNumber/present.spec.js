@@ -1,14 +1,27 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { phoneNumberFactory } from '../../../../support/factories/phoneNumber'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import phoneNumberService from '../../../../../app/services/orchestrator/phoneNumber'
-import { times } from 'lodash'
 
 describe('phone number presenters', () => {
   describe('list', () => {
-    const phoneNumbers = times(3, phoneNumberFactory)
+    const phoneNumbers = [
+      {
+        phoneNumber: '+11111111111',
+        status: 'ACTIVE',
+        twilioSid: 'f82305bab07b873ca1788ee1fb689b9071',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        phoneNumber: '+12222222222',
+        status: 'ACTIVE',
+        twilioSid: '48beb86f017ac6a193cb6f8dc9524dbb07',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]
     let dbListStub
 
     beforeEach(() => (dbListStub = sinon.stub(phoneNumberRepository, 'list')))
@@ -26,11 +39,24 @@ describe('phone number presenters', () => {
     describe('when db fetch succeeds', () => {
       beforeEach(() => dbListStub.returns(Promise.resolve(phoneNumbers)))
 
-      it('presents a list of phone numbers and a count', async () => {
+      it('presents a list of formatted phone numbers and a count', async () => {
         expect(await phoneNumberService.list({})).to.eql({
           status: 'SUCCESS',
-          count: 3,
-          phoneNumbers,
+          data: {
+            count: 2,
+            phoneNumbers: [
+              {
+                phoneNumber: '+11111111111',
+                status: 'ACTIVE',
+                twilioSid: 'f82305bab07b873ca1788ee1fb689b9071',
+              },
+              {
+                phoneNumber: '+12222222222',
+                status: 'ACTIVE',
+                twilioSid: '48beb86f017ac6a193cb6f8dc9524dbb07',
+              },
+            ],
+          },
         })
       })
     })
@@ -41,7 +67,9 @@ describe('phone number presenters', () => {
       it('presents a list of phone numbers and a count', async () => {
         expect(await phoneNumberService.list({})).to.eql({
           status: 'ERROR',
-          error: 'oh noes!',
+          data: {
+            error: 'oh noes!',
+          },
         })
       })
     })

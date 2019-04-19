@@ -31,7 +31,7 @@ const routesOf = (router, db, emitter) => {
     const filter = phoneNumberService.filters[ctx.query.filter] || null
     const phoneNumberList = await phoneNumberService.list(db, filter)
     ctx.status = httpStatusOf(phoneNumberList.status)
-    ctx.body = phoneNumberList
+    ctx.body = phoneNumberList.data
   })
 
   router.post('/phoneNumbers', async ctx => {
