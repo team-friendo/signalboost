@@ -35,7 +35,6 @@
 /keyrings/live/pubring.kbx~
 /keyrings/live/secring.gpg
 /.env
-/app/db/seeders/20190125203925-testing-channels.js
 /bin/get-machine
 /ansible/files/deploy_keys/signalboost_gpg_privkey.asc
 /ansible/files/deploy_keys/signalboost_ssh_key
