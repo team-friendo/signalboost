@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
+import { keys } from 'lodash'
 import { initDb } from '../../app/db'
 import { orchestrator } from '../../app/config/index'
 import { statuses } from '../../app/db/models/phoneNumber'
 import { genPhoneNumber, genSid } from '../support/factories/phoneNumber'
-import { keys, first, last, findIndex } from 'lodash'
+import { first, last, findIndex } from 'lodash'
 import { deepChannelAttrs } from '../support/factories/channel'
 
 describe('retrieving metrics', () => {
@@ -39,10 +40,11 @@ describe('retrieving metrics', () => {
         ),
       )
       count = await db.channel.count()
-      /*******************/
+      /**********************************************************/
       response = await request('https://signalboost.ngrok.io')
         .get('/channels')
         .set('Token', orchestrator.authToken)
+      /**********************************************************/
     })
     after(async () => await Promise.all(channels.map(ch => ch.destroy())))
 
@@ -100,13 +102,11 @@ describe('retrieving metrics', () => {
     })
 
     it('includes the phone number, twilio sid, and created dates for each number', () => {
-      expect(
-        response.body.phoneNumbers.forEach(pn => {
-          expect(keys(pn)).to.include('phoneNumber')
-          expect(keys(pn)).to.include('twilioSid')
-          expect(keys(pn)).to.include('createdAt')
-        }),
-      )
+      response.body.phoneNumbers.forEach(pn => {
+        expect(pn.phoneNumber).to.be.a('string')
+        expect(pn.status).to.be.a('string')
+        expect(keys(pn)).to.include('twilioSid')
+      })
     })
   })
 })
