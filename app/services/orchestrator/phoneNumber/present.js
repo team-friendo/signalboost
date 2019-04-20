@@ -1,3 +1,4 @@
+const { pick } = require('lodash')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 
 const list = (db, filter) =>
@@ -5,12 +6,16 @@ const list = (db, filter) =>
     .list(db, filter)
     .then(phoneNumbers => ({
       status: 'SUCCESS',
-      count: phoneNumbers.length,
-      phoneNumbers,
+      data: {
+        count: phoneNumbers.length,
+        phoneNumbers: phoneNumbers.map(formatForList),
+      },
     }))
     .catch(error => ({
       status: 'ERROR',
-      error,
+      data: { error },
     }))
+
+const formatForList = phoneNumber => pick(phoneNumber, ['phoneNumber', 'status', 'twilioSid'])
 
 module.exports = { list }

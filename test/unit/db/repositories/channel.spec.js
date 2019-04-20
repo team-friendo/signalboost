@@ -5,10 +5,11 @@ import { pick } from 'lodash'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { initDb } from '../../../../app/db/index'
-import { omit } from 'lodash'
+import { omit, keys } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { administrationFactory } from '../../../support/factories/administration'
+import { deepChannelAttrs } from '../../../support/factories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -47,7 +48,9 @@ describe('channel repository', () => {
       it('creates an empty messageCount record for the channel', async () => {
         expect(await db.messageCount.count()).to.eql(messageCountCount + 1)
         expect(
-          await db.messageCount.findOne({ where: { channelPhoneNumber: channel.phoneNumber } }),
+          await db.messageCount.findOne({
+            where: { channelPhoneNumber: channel.phoneNumber },
+          }),
         ).to.be.an('object')
       })
 
@@ -225,9 +228,60 @@ describe('channel repository', () => {
       expect(
         result.subscriptions.map(a => pick(a.get(), ['channelPhoneNumber', 'humanPhoneNumber'])),
       ).to.have.deep.members([
-        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: subscriberNumbers[0] },
-        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: subscriberNumbers[1] },
+        {
+          channelPhoneNumber: channel.phoneNumber,
+          humanPhoneNumber: subscriberNumbers[0],
+        },
+        {
+          channelPhoneNumber: channel.phoneNumber,
+          humanPhoneNumber: subscriberNumbers[1],
+        },
       ])
+    })
+  })
+
+  describe('#findAllDeep', () => {
+    let channels
+    beforeEach(async () => {
+      await Promise.all(
+        deepChannelAttrs.map(ch =>
+          db.channel.create(
+            { ...ch, phoneNumber: genPhoneNumber() },
+            {
+              include: [
+                { model: db.subscription },
+                { model: db.administration },
+                { model: db.messageCount },
+                { model: db.welcome },
+              ],
+            },
+          ),
+        ),
+      )
+      channels = await channelRepository.findAllDeep(db)
+    })
+
+    it('fetches all channels', () => {
+      expect(channels.length).to.eql(deepChannelAttrs.length)
+    })
+
+    it('fetches all attributes and nested resources for each channel', () => {
+      channels.forEach(ch => {
+        expect(keys(ch.toJSON())).to.eql([
+          'phoneNumber',
+          'name',
+          'containerId',
+          'createdAt',
+          'updatedAt',
+          'subscriptions',
+          'administrations',
+          'messageCount',
+        ])
+      })
+    })
+
+    it('orders channels by broadcast out message count (descending)', () => {
+      expect(channels[0].messageCount.broadcastOut).to.eql(100)
     })
   })
 

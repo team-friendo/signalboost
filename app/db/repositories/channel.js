@@ -20,9 +20,13 @@ const update = (db, phoneNumber, attrs) =>
     .then(([_, [pNumInstance]]) => pNumInstance)
 
 const findAll = db => db.channel.findAll()
+const findAllDeep = db =>
+  db.channel.findAll({
+    order: [[db.messageCount, 'broadcastOut', 'DESC']],
+    include: [{ model: db.subscription }, { model: db.administration }, { model: db.messageCount }],
+  })
 
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
-
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
@@ -103,6 +107,7 @@ module.exports = {
   addSubscriber,
   createWelcome,
   findAll,
+  findAllDeep,
   findByPhoneNumber,
   findDeep,
   getSubscriberNumbers,

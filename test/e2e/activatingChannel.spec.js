@@ -1,18 +1,22 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
-import { pick } from 'lodash'
+import { pick, omit } from 'lodash'
+import request from 'supertest'
 import { initDb } from '../../app/db'
+import { orchestrator } from '../../app/config/index'
 import channelRepository from '../../app/db/repositories/channel'
 import { getContainer, stopContainer } from '../../app/services/orchestrator/docker'
-import { activate } from '../../app/services/orchestrator/channel/activate'
+import { genPhoneNumber } from '../support/factories/phoneNumber'
 
 describe('activating a channel', () => {
-  const phoneNumber = '+15122707190' // twilioSid: PNe16c14ae9942b36482d2c06bf5c0b4bf
+  const timeout = 20000
+  const phoneNumber = genPhoneNumber()
   const name = 'foo'
   const admins = ['+12223334444', '+13334445555']
-  let db, container, channel, channelCount, adminCount
+  let db, container, channel, channelCount, adminCount, response
 
-  before(async () => {
+  before(async function() {
+    this.timeout(timeout)
     db = initDb()
 
     await Promise.all([
@@ -27,7 +31,10 @@ describe('activating a channel', () => {
     adminCount = await db.administration.count()
 
     /***********************************************/
-    await activate({ db, phoneNumber, name, admins })
+    response = await request('https://signalboost.ngrok.io')
+      .post('/channels')
+      .set('Token', orchestrator.authToken)
+      .send({ phoneNumber, name, admins })
     /***********************************************/
 
     container = await getContainer(phoneNumber)
@@ -35,13 +42,14 @@ describe('activating a channel', () => {
   })
 
   after(async function() {
-    this.timeout(30000)
+    this.timeout(timeout)
 
     await Promise.all([
       stopContainer(phoneNumber),
       db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.channel.destroy({ where: { phoneNumber } }),
+      db.phoneNumber.destroy({ where: { phoneNumber } }),
     ])
 
     await db.sequelize.close()
@@ -81,5 +89,17 @@ describe('activating a channel', () => {
       'status',
       'ACTIVE',
     )
+  })
+
+  it('returns a success status JSON blob', () => {
+    expect(omit(response.body, ['createdAt', 'updatedAt'])).to.eql({
+      status: 'ACTIVE',
+      name: 'foo',
+      phoneNumber,
+      twilioSid: null,
+      admins: ['+12223334444', '+13334445555'],
+    })
+    expect(response.body.createdAt).to.be.a('string')
+    expect(response.body.updatedAt).to.be.a('string')
   })
 })

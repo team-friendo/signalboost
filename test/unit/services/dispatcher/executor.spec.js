@@ -365,7 +365,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.JOIN,
                 status: statuses.SUCCESS,
-                message: CR.subscriber.add.success,
+                message: CR.subscriber.add.success(channel),
               },
               dispatchable,
             })

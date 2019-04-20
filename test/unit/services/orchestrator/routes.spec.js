@@ -9,6 +9,7 @@ import channelService from '../../../../app/services/orchestrator/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/orchestrator/phoneNumber'
 
 import { orchestrator } from '../../../../app/config/index'
+import { deepChannelFactory } from '../../../support/factories/channel'
 
 describe('routes', () => {
   const phoneNumber = genPhoneNumber()
@@ -38,6 +39,42 @@ describe('routes', () => {
   let server
   before(async () => (server = (await startApiServer()).server))
   after(() => server.close())
+
+  describe('GET to /channels', () => {
+    let listStub
+    beforeEach(() => (listStub = sinon.stub(channelService, 'list')))
+    afterEach(() => listStub.restore())
+
+    describe('when channel service returns list of channels', () => {
+      const channels = {
+        status: 'SUCCESS',
+        data: {
+          count: 3,
+          channels: times(3, deepChannelFactory),
+        },
+      }
+      beforeEach(() => listStub.returns(Promise.resolve(channels)))
+
+      it('returns a list of channels', async () => {
+        await request(server)
+          .get('/channels')
+          .set('Token', orchestrator.authToken)
+          .expect(200, channels.data)
+      })
+    })
+
+    describe('when phone number service returns an error status', () => {
+      const errorStatus = { status: 'ERROR', data: { error: 'oh noes!' } }
+      beforeEach(() => listStub.returns(Promise.resolve(errorStatus)))
+
+      it('returns an error status message', async () => {
+        await request(server)
+          .get('/channels')
+          .set('Token', orchestrator.authToken)
+          .expect(500, errorStatus.data)
+      })
+    })
+  })
 
   describe('POST to /channels', () => {
     let activateStub
@@ -86,32 +123,35 @@ describe('routes', () => {
     })
   })
 
-  describe('GET to /phoneNumber', () => {
+  describe('GET to /phoneNumbers', () => {
     let listStub
     beforeEach(() => (listStub = sinon.stub(phoneNumberService, 'list')))
     afterEach(() => listStub.restore())
 
     describe('when phone number service returns list of phone numbers', () => {
-      const list = { count: 3, status: 'SUCCESS', phoneNumbers: times(3, phoneNumberFactory) }
+      const list = {
+        status: 'SUCCESS',
+        data: { count: 3, phoneNumbers: times(3, phoneNumberFactory) },
+      }
       beforeEach(() => listStub.returns(Promise.resolve(list)))
 
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
           .set('Token', orchestrator.authToken)
-          .expect(200, list)
+          .expect(200, list.data)
       })
     })
 
     describe('when phone number service returns an error status', () => {
-      const errorStatus = { status: 'ERROR', error: 'oh noes!' }
+      const errorStatus = { status: 'ERROR', data: { error: 'oh noes!' } }
       beforeEach(() => listStub.returns(Promise.resolve(errorStatus)))
 
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
           .set('Token', orchestrator.authToken)
-          .expect(500, errorStatus)
+          .expect(500, errorStatus.data)
       })
     })
 

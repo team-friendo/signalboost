@@ -1,14 +1,16 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
+import { keys } from 'lodash'
 import { initDb } from '../../app/db'
 import { orchestrator } from '../../app/config/index'
 import { statuses } from '../../app/db/models/phoneNumber'
 import { genPhoneNumber, genSid } from '../support/factories/phoneNumber'
-import { keys, first, last, findIndex } from 'lodash'
+import { first, last, findIndex } from 'lodash'
+import { deepChannelAttrs } from '../support/factories/channel'
 
 describe('retrieving metrics', () => {
-  let db, count, phoneNumberRecords, response
+  let db, count, channels, phoneNumbers, response
   const phoneNumberAttributes = [
     { phoneNumber: genPhoneNumber(), twilioSid: genSid(), status: statuses.PURCHASED },
     { phoneNumber: genPhoneNumber(), twilioSid: genSid(), status: statuses.REGISTERED },
@@ -19,10 +21,57 @@ describe('retrieving metrics', () => {
   before(async () => (db = initDb()))
   after(async () => await db.sequelize.close())
 
-  describe('listing phone numbers', () => {
+  describe('listing channels', () => {
     before(async function() {
       this.timeout(5000)
-      phoneNumberRecords = await db.phoneNumber.bulkCreate(phoneNumberAttributes, {
+      channels = await Promise.all(
+        deepChannelAttrs.map(ch =>
+          db.channel.create(
+            { ...ch, phoneNumber: genPhoneNumber() },
+            {
+              include: [
+                { model: db.subscription },
+                { model: db.administration },
+                { model: db.messageCount },
+                { model: db.welcome },
+              ],
+            },
+          ),
+        ),
+      )
+      count = await db.channel.count()
+      /**********************************************************/
+      response = await request('https://signalboost.ngrok.io')
+        .get('/channels')
+        .set('Token', orchestrator.authToken)
+      /**********************************************************/
+    })
+    after(async () => await Promise.all(channels.map(ch => ch.destroy())))
+
+    it('provides a count of channels', () => {
+      expect(response.body.count).to.eql(count)
+    })
+
+    it('lists all channels', () => {
+      expect(response.body.channels.length).to.eql(count)
+    })
+
+    it('formats channel records correctly', () => {
+      response.body.channels.forEach(ch => {
+        expect(ch.phoneNumber).to.be.a('string')
+        expect(ch.name).to.be.a('string')
+        expect(ch.admins).to.be.a('number')
+        expect(ch.subscribers).to.be.a('number')
+        expect(ch.messageCount.broadcastOut).to.be.a('number')
+        expect(ch.messageCount.commandIn).to.be.a('number')
+      })
+    })
+  })
+
+  describe('listing phone numbers', () => {
+    before(async function() {
+      this.timeout(10000)
+      phoneNumbers = await db.phoneNumber.bulkCreate(phoneNumberAttributes, {
         returning: true,
       })
       count = await db.phoneNumber.count()
@@ -30,7 +79,7 @@ describe('retrieving metrics', () => {
         .get('/phoneNumbers')
         .set('Token', orchestrator.authToken)
     })
-    after(async () => await Promise.all(phoneNumberRecords.map(r => r.destroy())))
+    after(async () => await Promise.all(phoneNumbers.map(r => r.destroy())))
 
     it('provides a count of phone numbers', () => {
       expect(response.body.count).to.eql(count)
@@ -53,13 +102,11 @@ describe('retrieving metrics', () => {
     })
 
     it('includes the phone number, twilio sid, and created dates for each number', () => {
-      expect(
-        response.body.phoneNumbers.forEach(pn => {
-          expect(keys(pn)).to.include('phoneNumber')
-          expect(keys(pn)).to.include('twilioSid')
-          expect(keys(pn)).to.include('createdAt')
-        }),
-      )
+      response.body.phoneNumbers.forEach(pn => {
+        expect(pn.phoneNumber).to.be.a('string')
+        expect(pn.status).to.be.a('string')
+        expect(keys(pn)).to.include('twilioSid')
+      })
     })
   })
 })

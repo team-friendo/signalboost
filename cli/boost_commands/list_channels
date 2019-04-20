@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "This command retrieves active channels. Valid options are:"
+  echo ""
+  echo "-u : url to target (in dev, use signalboost.ngrok.io)";
+  echo ""
+  exit 1
+fi
+
+echo "--- checking environment..."
+
+if [ -z $SIGNALBOOST_API_TOKEN ];then
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`set -a && source .env && set +a\`"
+  exit 1
+fi
+
+
+while getopts ":u:" opt; do
+  case "$opt" in
+    u)
+      url="$OPTARG"
+      ;;
+  esac
+done
+
+if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
+
+echo "--- fetching numbers..."
+
+curl -s \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNALBOOST_API_TOKEN" \
+     https://${url}/channels | jq
