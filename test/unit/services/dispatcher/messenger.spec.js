@@ -5,7 +5,10 @@ import { times } from 'lodash'
 import signal from '../../../../app/services/dispatcher/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import channelRepository from '../../../../app/db/repositories/channel'
-import messenger, { messageTypes, notificationTypes } from '../../../../app/services/dispatcher/messenger'
+import messenger, {
+  messageTypes,
+  notificationTypes,
+} from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
@@ -23,6 +26,7 @@ describe('messenger service', () => {
       { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[0] },
       { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[1] },
     ],
+    messageCount: { broadcastIn: 42 },
   }
   const attachments = 'some/path'
   const message = 'please help!'

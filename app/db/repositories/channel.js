@@ -30,7 +30,7 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
-    include: [{ model: db.subscription }, { model: db.administration }],
+    include: [{ model: db.subscription }, { model: db.administration }, { model: db.messageCount }],
   })
 
 // CHANNEL ASSOCIATION QUERIES
