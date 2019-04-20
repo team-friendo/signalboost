@@ -137,6 +137,7 @@ CHANNEL INFO:
 --> name: ${channel.name}
 --> phone number: ${channel.phoneNumber}
 --> subscribers: ${channel.subscriptions.length}
+--> messages sent: ${channel.messageCount.broadcastIn}
 --> admins: ${channel.administrations.map(a => a.humanPhoneNumber).join(', ')}`,
     subscriber: channel => `
 ----------------------------

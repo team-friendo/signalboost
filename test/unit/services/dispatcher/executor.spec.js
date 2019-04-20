@@ -132,6 +132,7 @@ describe('executor service', () => {
       phoneNumber: '+13333333333',
       administrations: times(2, administrationFactory({ channelPhoneNumber: '+13333333333' })),
       subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
+      messageCount: { broadcastIn: 42 },
     }
     const admin = {
       phoneNumber: '+11111111111',
