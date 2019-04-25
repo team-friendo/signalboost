@@ -18,7 +18,7 @@
     "password": null,
     "connectionInterval": 10,
     "maxConnectionAttempts": 10
-},
+  },
   "production": {
     "database": "signalboost",
     "host": "db",
