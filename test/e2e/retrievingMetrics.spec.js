@@ -31,7 +31,7 @@ describe('retrieving metrics', () => {
             {
               include: [
                 { model: db.subscription },
-                { model: db.administration },
+                { model: db.publication },
                 { model: db.messageCount },
                 { model: db.welcome },
               ],

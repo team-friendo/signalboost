@@ -21,10 +21,10 @@ describe('messenger service', () => {
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
-    administrations: [{ channelPhoneNumber, humanPhoneNumber: adminNumber }],
+    publications: [{ channelPhoneNumber, publisherPhoneNumber: adminNumber }],
     subscriptions: [
-      { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[0] },
-      { channelPhoneNumber, humanPhoneNumber: subscriberNumbers[1] },
+      { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[0] },
+      { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[1] },
     ],
     messageCount: { broadcastIn: 42 },
   }

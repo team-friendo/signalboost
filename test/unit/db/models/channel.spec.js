@@ -4,7 +4,7 @@ import { keys, times } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
-import { administrationFactory } from '../../../support/factories/administration'
+import { publicationFactory } from '../../../support/factories/publication'
 import { welcomeFactory } from '../../../support/factories/welcome'
 
 describe('channel model', () => {
@@ -21,14 +21,14 @@ describe('channel model', () => {
       },
     )
 
-  const createChannelWithAdministrations = () =>
+  const createChannelWithPublications = () =>
     db.channel.create(
       {
         ...channelFactory(),
-        administrations: [administrationFactory(), administrationFactory()],
+        publications: [publicationFactory(), publicationFactory()],
       },
       {
-        include: [{ model: db.administration }],
+        include: [{ model: db.publication }],
       },
     )
 
@@ -59,7 +59,7 @@ describe('channel model', () => {
   })
 
   afterEach(() => {
-    db.administration.destroy({ where: {}, force: true })
+    db.publication.destroy({ where: {}, force: true })
     db.messageCount.destroy({ where: {}, force: true })
     db.subscription.destroy({ where: {}, force: true })
     db.welcome.destroy({ where: {}, force: true })
@@ -96,7 +96,7 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, subscriptions, administrations, messageCount, welcomes
+    let channel, subscriptions, publications, messageCount, welcomes
 
     describe('subscriptions', () => {
       beforeEach(async () => {
@@ -121,26 +121,26 @@ describe('channel model', () => {
       })
     })
 
-    describe('administrations', () => {
+    describe('publications', () => {
       beforeEach(async () => {
-        channel = await createChannelWithAdministrations()
-        administrations = await channel.getAdministrations()
+        channel = await createChannelWithPublications()
+        publications = await channel.getPublications()
       })
 
-      it('has many administrations', async () => {
-        expect(administrations).to.have.length(2)
+      it('has many publications', async () => {
+        expect(publications).to.have.length(2)
       })
 
-      it('sets channel phone number as the foreign key in each administration', () => {
-        expect(administrations.map(s => s.channelPhoneNumber)).to.eql(
+      it('sets channel phone number as the foreign key in each publication', () => {
+        expect(publications.map(s => s.channelPhoneNumber)).to.eql(
           times(2, () => channel.phoneNumber),
         )
       })
 
-      it('deletes administrations when it deletes channel', async () => {
-        const adminCount = await db.administration.count()
+      it('deletes publications when it deletes channel', async () => {
+        const adminCount = await db.publication.count()
         await channel.destroy()
-        expect(await db.administration.count()).to.eql(adminCount - 2)
+        expect(await db.publication.count()).to.eql(adminCount - 2)
       })
     })
 

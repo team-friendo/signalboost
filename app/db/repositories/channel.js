@@ -23,14 +23,14 @@ const findAll = db => db.channel.findAll()
 const findAllDeep = db =>
   db.channel.findAll({
     order: [[db.messageCount, 'broadcastOut', 'DESC']],
-    include: [{ model: db.subscription }, { model: db.administration }, { model: db.messageCount }],
+    include: [{ model: db.subscription }, { model: db.publication }, { model: db.messageCount }],
   })
 
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
-    include: [{ model: db.subscription }, { model: db.administration }, { model: db.messageCount }],
+    include: [{ model: db.subscription }, { model: db.publication }, { model: db.messageCount }],
   })
 
 // CHANNEL ASSOCIATION QUERIES
@@ -40,42 +40,44 @@ const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
     Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
   )
 
-const addAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
+const addAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
   Promise.all([
-    db.administration
-      .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+    db.publication
+      .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
       .spread(x => x),
     db.subscription
-      .findOrCreate({ where: { channelPhoneNumber, humanPhoneNumber } })
+      .findOrCreate({ where: { channelPhoneNumber, subscriberPhoneNumber: publisherPhoneNumber } })
       .spread(x => x),
   ]).then(writes => writes[0])
 
-const removeAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
+const removeAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
   Promise.all([
-    db.administration.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
-    db.subscription.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+    db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } }),
+    db.subscription.destroy({
+      where: { channelPhoneNumber, subscriberPhoneNumber: publisherPhoneNumber },
+    }),
   ])
 
-const addSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
+const addSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    db.subscription.create({ channelPhoneNumber, humanPhoneNumber }),
+    db.subscription.create({ channelPhoneNumber, subscriberPhoneNumber }),
   )
 
-const removeSubscriber = async (db, channelPhoneNumber, humanPhoneNumber) =>
+const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () =>
-    db.subscription.destroy({ where: { channelPhoneNumber, humanPhoneNumber } }),
+    db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
 const getSubscriberNumbers = (db, channelPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'retrieve subscriptions to', async ch =>
-    ch.subscriptions.map(s => s.humanPhoneNumber),
+    ch.subscriptions.map(s => s.subscriberPhoneNumber),
   )
 
-const isAdmin = (db, channelPhoneNumber, humanPhoneNumber) =>
-  db.administration.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
+const isAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
+  db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }).then(Boolean)
 
-const isSubscriber = (db, channelPhoneNumber, humanPhoneNumber) =>
-  db.subscription.findOne({ where: { channelPhoneNumber, humanPhoneNumber } }).then(Boolean)
+const isSubscriber = (db, channelPhoneNumber, subscriberPhoneNumber) =>
+  db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }).then(Boolean)
 
 const createWelcome = async (db, channelPhoneNumber, welcomedPhoneNumber) =>
   db.welcome.create({ channelPhoneNumber, welcomedPhoneNumber })
@@ -84,10 +86,10 @@ const createWelcome = async (db, channelPhoneNumber, welcomedPhoneNumber) =>
 const getUnwelcomedAdmins = async (db, channelPhoneNumber) => {
   const welcomes = await db.welcome.findAll({ where: { channelPhoneNumber } })
   const welcomedNumbers = welcomes.map(w => w.welcomedPhoneNumber)
-  const unwelcomed = await db.administration.findAll({
-    where: { channelPhoneNumber, humanPhoneNumber: { [Op.notIn]: welcomedNumbers } },
+  const unwelcomed = await db.publication.findAll({
+    where: { channelPhoneNumber, publisherPhoneNumber: { [Op.notIn]: welcomedNumbers } },
   })
-  return unwelcomed.map(uw => uw.humanPhoneNumber)
+  return unwelcomed.map(uw => uw.publisherPhoneNumber)
 }
 
 // HELPERS

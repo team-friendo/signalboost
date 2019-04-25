@@ -91,7 +91,7 @@ const welcomeNewAdmin = ({ db, iface, channel, newAdmin, addingAdmin }) =>
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, iface, channel, message, attachments }) => {
-  const recipients = channel.subscriptions.map(s => s.humanPhoneNumber)
+  const recipients = channel.subscriptions.map(s => s.subscriberPhoneNumber)
   return signal
     .sendMessage(iface, format(channel, message), recipients, attachments)
     .then(() => countBroacast({ db, channel }))

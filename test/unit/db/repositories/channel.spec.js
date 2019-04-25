@@ -8,7 +8,7 @@ import { initDb } from '../../../../app/db/index'
 import { omit, keys } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
-import { administrationFactory } from '../../../support/factories/administration'
+import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 
 describe('channel repository', () => {
@@ -23,7 +23,7 @@ describe('channel repository', () => {
   afterEach(async () => {
     await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
-      db.administration.destroy({ where: {}, force: true }),
+      db.publication.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
       db.welcome.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
@@ -114,16 +114,16 @@ describe('channel repository', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.subscription.count()
-        adminCount = await db.administration.count()
+        adminCount = await db.publication.count()
         admins = await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
       })
 
-      it('creates 2 new administrations', async () => {
-        expect(await db.administration.count()).to.eql(adminCount + 2)
+      it('creates 2 new publications', async () => {
+        expect(await db.publication.count()).to.eql(adminCount + 2)
       })
 
-      it('associates the administrations with the channel', async () => {
-        const fetchedAdmins = await channel.getAdministrations()
+      it('associates the publications with the channel', async () => {
+        const fetchedAdmins = await channel.getPublications()
         expect(fetchedAdmins.map(a => a.get())).to.have.deep.members(admins.map(a => a.get()))
       })
 
@@ -133,14 +133,14 @@ describe('channel repository', () => {
 
       it('associates the subscriptions with the channel', async () => {
         const fetchedSubs = await channel.getSubscriptions()
-        expect(fetchedSubs.map(s => s.humanPhoneNumber)).to.have.deep.members(adminPNums)
+        expect(fetchedSubs.map(s => s.subscriberPhoneNumber)).to.have.deep.members(adminPNums)
       })
 
-      it('returns an administration joining the channel to the human', () => {
+      it('returns an publication joining the channel to the human', () => {
         admins.forEach((admin, i) => {
-          expect(pick(admin, ['channelPhoneNumber', 'humanPhoneNumber'])).to.eql({
+          expect(pick(admin, ['channelPhoneNumber', 'publisherPhoneNumber'])).to.eql({
             channelPhoneNumber: channel.phoneNumber,
-            humanPhoneNumber: adminPNums[i],
+            publisherPhoneNumber: adminPNums[i],
           })
         })
       })
@@ -151,12 +151,12 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
         subCount = await db.subscription.count()
-        adminCount = await db.administration.count()
+        adminCount = await db.publication.count()
         await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
       })
 
-      it('only creates one new administration', async () => {
-        expect(await db.administration.count()).to.eql(adminCount + 1)
+      it('only creates one new publication', async () => {
+        expect(await db.publication.count()).to.eql(adminCount + 1)
       })
 
       it('only creates one new subscription', async () => {
@@ -169,12 +169,12 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
         subCount = await db.subscription.count()
-        adminCount = await db.administration.count()
+        adminCount = await db.publication.count()
         await channelRepository.addAdmins(db, channel.phoneNumber, [])
       })
 
-      it('creates no new administrations', async () => {
-        expect(await db.administration.count()).to.eql(adminCount)
+      it('creates no new publications', async () => {
+        expect(await db.publication.count()).to.eql(adminCount)
       })
 
       it('creates no new subscriptions', async () => {
@@ -200,11 +200,11 @@ describe('channel repository', () => {
       channel = await db.channel.create(
         {
           ...channelFactory(),
-          subscriptions: subscriberNumbers.map(num => ({ humanPhoneNumber: num })),
-          administrations: adminNumbers.map(num => ({ humanPhoneNumber: num })),
+          subscriptions: subscriberNumbers.map(num => ({ subscriberPhoneNumber: num })),
+          publications: adminNumbers.map(num => ({ publisherPhoneNumber: num })),
         },
         {
-          include: [{ model: db.subscription }, { model: db.administration }],
+          include: [{ model: db.subscription }, { model: db.publication }],
         },
       )
       result = await channelRepository.findDeep(db, channel.phoneNumber)
@@ -215,26 +215,26 @@ describe('channel repository', () => {
       expect(result.name).to.eql(channel.name)
     })
 
-    it("retrieves the channel's administrations", () => {
+    it("retrieves the channel's publications", () => {
       expect(
-        result.administrations.map(a => pick(a.get(), ['channelPhoneNumber', 'humanPhoneNumber'])),
+        result.publications.map(a => pick(a.get(), ['channelPhoneNumber', 'publisherPhoneNumber'])),
       ).to.have.deep.members([
-        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: adminNumbers[0] },
-        { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: adminNumbers[1] },
+        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: adminNumbers[0] },
+        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: adminNumbers[1] },
       ])
     })
 
     it("retrieves the channel's subscriptions", () => {
       expect(
-        result.subscriptions.map(a => pick(a.get(), ['channelPhoneNumber', 'humanPhoneNumber'])),
+        result.subscriptions.map(a => pick(a.get(), ['channelPhoneNumber', 'subscriberPhoneNumber'])),
       ).to.have.deep.members([
         {
           channelPhoneNumber: channel.phoneNumber,
-          humanPhoneNumber: subscriberNumbers[0],
+          subscriberPhoneNumber: subscriberNumbers[0],
         },
         {
           channelPhoneNumber: channel.phoneNumber,
-          humanPhoneNumber: subscriberNumbers[1],
+          subscriberPhoneNumber: subscriberNumbers[1],
         },
       ])
     })
@@ -250,7 +250,7 @@ describe('channel repository', () => {
             {
               include: [
                 { model: db.subscription },
-                { model: db.administration },
+                { model: db.publication },
                 { model: db.messageCount },
                 { model: db.welcome },
               ],
@@ -274,7 +274,7 @@ describe('channel repository', () => {
           'createdAt',
           'updatedAt',
           'subscriptions',
-          'administrations',
+          'publications',
           'messageCount',
         ])
       })
@@ -292,13 +292,13 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
         subCount = await db.subscription.count()
-        adminCount = await db.administration.count()
+        adminCount = await db.publication.count()
 
         result = await channelRepository.removeAdmin(db, channel.phoneNumber, adminPNums)
       })
 
-      it('deletes an administration record', async () => {
-        expect(await db.administration.count()).to.eql(adminCount - 1)
+      it('deletes a publication record', async () => {
+        expect(await db.publication.count()).to.eql(adminCount - 1)
       })
 
       it('deletes an subscription record', async () => {
@@ -316,13 +316,13 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
         subCount = await db.subscription.count()
-        adminCount = await db.administration.count()
+        adminCount = await db.publication.count()
 
         result = await channelRepository.removeAdmin(db, channel.phoneNumber, '+11111111111')
       })
 
-      it('deletes an administration record', async () => {
-        expect(await db.administration.count()).to.eql(adminCount)
+      it('deletes an publication record', async () => {
+        expect(await db.publication.count()).to.eql(adminCount)
       })
 
       it('deletes an subscription record', async () => {
@@ -354,9 +354,9 @@ describe('channel repository', () => {
       })
 
       it('returns a subscription joining the channel to the human', () => {
-        expect(pick(sub, ['channelPhoneNumber', 'humanPhoneNumber'])).to.eql({
+        expect(pick(sub, ['channelPhoneNumber', 'subscriberPhoneNumber'])).to.eql({
           channelPhoneNumber: channel.phoneNumber,
-          humanPhoneNumber: subscriberPhone,
+          subscriberPhoneNumber: subscriberPhone,
         })
       })
     })
@@ -422,8 +422,8 @@ describe('channel repository', () => {
           {
             ...channelFactory({ phoneNumber: chPNum }),
             subscriptions: [
-              subscriptionFactory({ humanPhoneNumber: subPNums[0] }),
-              subscriptionFactory({ humanPhoneNumber: subPNums[1] }),
+              subscriptionFactory({ subscriberPhoneNumber: subPNums[0] }),
+              subscriptionFactory({ subscriberPhoneNumber: subPNums[1] }),
             ],
           },
           {
@@ -461,13 +461,13 @@ describe('channel repository', () => {
       channel = await db.channel.create(
         {
           ...channelFactory({ phoneNumber: chPNum }),
-          administrations: [
-            administrationFactory({ humanPhoneNumber: adminPNums[0] }),
-            administrationFactory({ humanPhoneNumber: adminPNums[1] }),
+          publications: [
+            publicationFactory({ publisherPhoneNumber: adminPNums[0] }),
+            publicationFactory({ publisherPhoneNumber: adminPNums[1] }),
           ],
         },
         {
-          include: [{ model: db.administration }],
+          include: [{ model: db.publication }],
         },
       )
     })
@@ -508,14 +508,14 @@ describe('channel repository', () => {
       channel = await db.channel.create(
         {
           ...channelFactory({ phoneNumber: chPNum }),
-          administrations: [
-            { humanPhoneNumber: adminPNums[0] },
-            { humanPhoneNumber: adminPNums[1] },
+          publications: [
+            { publisherPhoneNumber: adminPNums[0] },
+            { publisherPhoneNumber: adminPNums[1] },
           ],
           welcomes: [{ welcomedPhoneNumber: adminPNums[0] }],
         },
         {
-          include: [{ model: db.administration }, { model: db.welcome }],
+          include: [{ model: db.publication }, { model: db.welcome }],
         },
       )
     })

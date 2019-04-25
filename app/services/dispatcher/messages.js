@@ -138,7 +138,7 @@ CHANNEL INFO:
 --> phone number: ${channel.phoneNumber}
 --> subscribers: ${channel.subscriptions.length}
 --> messages sent: ${channel.messageCount.broadcastIn}
---> admins: ${channel.administrations.map(a => a.humanPhoneNumber).join(', ')}`,
+--> admins: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}`,
     subscriber: channel => `
 ----------------------------
 CHANNEL INFO:
@@ -147,7 +147,7 @@ CHANNEL INFO:
 --> name: ${channel.name}
 --> phone number: ${channel.phoneNumber}
 --> subscribers: ${channel.subscriptions.length}
---> admins: ${channel.administrations.length}`,
+--> admins: ${channel.publications.length}`,
     unauthorized,
   },
   // RENAME

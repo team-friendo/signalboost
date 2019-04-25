@@ -13,7 +13,7 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { administrationFactory } from '../../../support/factories/administration'
+import { publicationFactory } from '../../../support/factories/publication'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -130,7 +130,7 @@ describe('executor service', () => {
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
-      administrations: times(2, administrationFactory({ channelPhoneNumber: '+13333333333' })),
+      publications: times(2, publicationFactory({ channelPhoneNumber: '+13333333333' })),
       subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
       messageCount: { broadcastIn: 42 },
     }
@@ -171,7 +171,7 @@ describe('executor service', () => {
             beforeEach(() =>
               addAdminStub.returns(
                 Promise.resolve([
-                  { channelPhoneNumber: channel.phoneNumber, humanPhoneNumber: payload },
+                  { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: payload },
                 ]),
               ),
             )

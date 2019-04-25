@@ -1,8 +1,8 @@
 const { isPhoneNumber } = require('../validations')
 
-const administrationOf = (sequelize, DataTypes) => {
-  const administration = sequelize.define(
-    'administration',
+const publicationOf = (sequelize, DataTypes) => {
+  const publication = sequelize.define(
+    'publication',
     {
       id: {
         allowNull: false,
@@ -10,7 +10,7 @@ const administrationOf = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      humanPhoneNumber: {
+      publisherPhoneNumber: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: isPhoneNumber,
@@ -24,11 +24,11 @@ const administrationOf = (sequelize, DataTypes) => {
     {},
   )
 
-  administration.associate = db => {
-    administration.belongsTo(db.channel)
+  publication.associate = db => {
+    publication.belongsTo(db.channel)
   }
 
-  return administration
+  return publication
 }
 
-module.exports = { administrationOf }
+module.exports = { publicationOf }

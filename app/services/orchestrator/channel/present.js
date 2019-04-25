@@ -16,7 +16,7 @@ const list = db =>
 
 const formatForList = ch => ({
   ...pick(ch, ['name', 'phoneNumber']),
-  admins: ch.administrations.length,
+  admins: ch.publications.length,
   subscribers: ch.subscriptions.length,
   messageCount: pick(ch.messageCount, ['broadcastOut', 'commandIn']),
 })

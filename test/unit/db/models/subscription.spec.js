@@ -24,7 +24,7 @@ describe('subscription model', () => {
     expect(keys(subscription.get())).to.have.members([
       'id',
       'channelPhoneNumber',
-      'humanPhoneNumber',
+      'subscriberPhoneNumber',
       'createdAt',
       'updatedAt',
     ])
@@ -34,7 +34,7 @@ describe('subscription model', () => {
     before(async () => {
       const channel = await db.channel.create(channelFactory())
       subscription = await db.subscription.create({
-        humanPhoneNumber: genPhoneNumber(),
+        subscriberPhoneNumber: genPhoneNumber(),
         channelPhoneNumber: channel.phoneNumber,
       })
     })

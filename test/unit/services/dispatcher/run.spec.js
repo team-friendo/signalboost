@@ -13,7 +13,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 describe('dispatcher service', () => {
   describe('running the service', () => {
     const [db, iface] = [{}, {}]
-    const channel = { ...channelFactory(), administrations: [], subscriptions: [] }
+    const channel = { ...channelFactory(), publications: [], subscriptions: [] }
     const sender = genPhoneNumber()
     const unwelcomedAdmins = [genPhoneNumber(), genPhoneNumber()]
     const authenticatedSender = {

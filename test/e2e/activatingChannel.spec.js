@@ -21,14 +21,14 @@ describe('activating a channel', () => {
 
     await Promise.all([
       stopContainer(phoneNumber),
-      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.publication.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.channel.destroy({ where: { phoneNumber } }),
       db.phoneNumber.findOrCreate({ where: { phoneNumber }, defaults: { status: 'VERIFIED' } }),
     ])
 
     channelCount = await db.channel.count()
-    adminCount = await db.administration.count()
+    adminCount = await db.publication.count()
 
     /***********************************************/
     response = await request('https://signalboost.ngrok.io')
@@ -46,7 +46,7 @@ describe('activating a channel', () => {
 
     await Promise.all([
       stopContainer(phoneNumber),
-      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.publication.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.channel.destroy({ where: { phoneNumber } }),
       db.phoneNumber.destroy({ where: { phoneNumber } }),
@@ -72,15 +72,15 @@ describe('activating a channel', () => {
   })
 
   it('creates db records for the admins', async () => {
-    expect(await db.administration.count()).to.eql(adminCount + 2)
+    expect(await db.publication.count()).to.eql(adminCount + 2)
   })
 
   it('stores the admin and channel phone numbers in the admin records', async () => {
-    const administrations = await channel.getAdministrations()
+    const publications = await channel.getPublications()
     expect(
-      administrations.map(a => pick(a, ['channelPhoneNumber', 'humanPhoneNumber'])),
+      publications.map(a => pick(a, ['channelPhoneNumber', 'publisherPhoneNumber'])),
     ).to.have.deep.members(
-      admins.map(a => ({ channelPhoneNumber: phoneNumber, humanPhoneNumber: a })),
+      admins.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
     )
   })
 

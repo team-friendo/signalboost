@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import messages from '../../../../app/services/dispatcher/messages'
 
-import { administrationFactory } from '../../../support/factories/administration'
+import { publicationFactory } from '../../../support/factories/publication'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
 
@@ -12,7 +12,7 @@ describe('messages', () => {
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
-      administrations: times(2, administrationFactory({ channelPhoneNumber: '+13333333333' })),
+      publications: times(2, publicationFactory({ channelPhoneNumber: '+13333333333' })),
       subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
       messageCount: { broadcastIn: 42 },
     }
@@ -22,7 +22,7 @@ describe('messages', () => {
         it('shows admin phone numbers and subscriber count', () => {
           const msg = cr.info.admin(channel)
           expect(msg).to.include(
-            `admins: ${channel.administrations.map(a => a.channelPhoneNumber).join(', ')}`,
+            `admins: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
           )
           expect(msg).to.include('subscribers: 2')
         })

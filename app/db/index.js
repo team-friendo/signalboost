@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize')
 const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
-const { administrationOf } = require('./models/administration')
+const { publicationOf } = require('./models/publication')
 const { channelOf } = require('./models/channel')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { messageCountOf } = require('./models/messageCount')
@@ -17,7 +17,7 @@ const initDb = () => {
     : new Sequelize(config.database, config.username, config.password, config)
 
   const db = {
-    administration: administrationOf(sequelize, Sequelize),
+    publication: publicationOf(sequelize, Sequelize),
     channel: channelOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),

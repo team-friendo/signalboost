@@ -35,7 +35,7 @@ describe('channel activation module', () => {
         .stub(channelRepository, 'addAdmins')
         .callsFake((db, channelPhoneNumber, admins) =>
           Promise.resolve(
-            admins.map(a => ({ channelPhoneNumber: phoneNumber, humanPhoneNumber: a })),
+            admins.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
           ),
         )
       updatePhoneNumberStub = sinon
