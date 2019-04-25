@@ -4,9 +4,7 @@ const db = initDb()
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const numbersWithCounts = await db.messageCount
-      .findAll()
-      .map(mc => mc.channelPhoneNumber)
+    const numbersWithCounts = await db.messageCount.findAll().map(mc => mc.channelPhoneNumber)
 
     const numbersWithoutCounts = await db.channel
       .findAll({
@@ -18,17 +16,21 @@ module.exports = {
       })
       .map(ch => ch.phoneNumber)
 
-    console.log(`creating message counts for ${numbersWithoutCounts}...`)
+    if (numbersWithoutCounts.length !== 0) {
+      console.log(`creating message counts for ${numbersWithoutCounts}...`)
 
-    await db.messageCount.bulkCreate(
-      numbersWithoutCounts.map(channelPhoneNumber => ({
-        channelPhoneNumber,
-        broadcastIn: 0,
-        broadcastOut: 0,
-        commandIn: 0,
-        commandOut: 0,
-      })),
-    )
-    console.log(`created message counts!`)
+      await db.messageCount.bulkCreate(
+        numbersWithoutCounts.map(channelPhoneNumber => ({
+          channelPhoneNumber,
+          broadcastIn: 0,
+          broadcastOut: 0,
+          commandIn: 0,
+          commandOut: 0,
+        })),
+      )
+      console.log(`created message counts!`)
+    } else {
+      console.log('no message counts needed or created.')
+    }
   },
 }
