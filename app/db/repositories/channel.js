@@ -41,22 +41,12 @@ const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
   )
 
 const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
-  Promise.all([
-    db.publication
-      .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
-      .spread(x => x),
-    db.subscription
-      .findOrCreate({ where: { channelPhoneNumber, subscriberPhoneNumber: publisherPhoneNumber } })
-      .spread(x => x),
-  ]).then(writes => writes[0])
+  db.publication
+    .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
+    .spread(x => x)
 
 const removePublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
-  Promise.all([
-    db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } }),
-    db.subscription.destroy({
-      where: { channelPhoneNumber, subscriberPhoneNumber: publisherPhoneNumber },
-    }),
-  ])
+  db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } })
 
 const addSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
@@ -68,7 +58,7 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
     db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
-const getSubscriberNumbers = (db, channelPhoneNumber) =>
+const getSubscribers = (db, channelPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'retrieve subscriptions to', async ch =>
     ch.subscriptions.map(s => s.subscriberPhoneNumber),
   )
@@ -112,7 +102,7 @@ module.exports = {
   findAllDeep,
   findByPhoneNumber,
   findDeep,
-  getSubscriberNumbers,
+  getSubscribers,
   getUnwelcomedPublishers,
   isPublisher,
   isSubscriber,

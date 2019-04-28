@@ -45,7 +45,8 @@ const parseNotifiable = ({ command, status }) =>
   // TODO: extend to handle other notifiable command results
   isNewPublisher({ command, status }) ? notificationTypes.NEW_PUBLISHER : null
 
-const isNewPublisher = ({ command, status }) => command === commands.ADD && status === statuses.SUCCESS
+const isNewPublisher = ({ command, status }) =>
+  command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcast = dispatchable =>
   dispatchable.sender.isPublisher
@@ -91,7 +92,10 @@ const welcomeNewPublisher = ({ db, iface, channel, newPublisher, addingPublisher
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, iface, channel, message, attachments }) => {
-  const recipients = channel.subscriptions.map(s => s.subscriberPhoneNumber)
+  const recipients = [
+    ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
+    ...channel.publications.map(p => p.publisherPhoneNumber),
+  ]
   return signal
     .sendMessage(iface, format(channel, message), recipients, attachments)
     .then(() => countBroacast({ db, channel }))

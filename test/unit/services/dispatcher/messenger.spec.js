@@ -17,11 +17,14 @@ describe('messenger service', () => {
   const [db, iface] = [{}, {}]
   const channelPhoneNumber = genPhoneNumber()
   const subscriberNumbers = times(2, genPhoneNumber)
-  const publisherNumber = genPhoneNumber()
+  const publisherNumbers = [genPhoneNumber(), genPhoneNumber()]
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
-    publications: [{ channelPhoneNumber, publisherPhoneNumber: publisherNumber }],
+    publications: [
+      { channelPhoneNumber, publisherPhoneNumber: publisherNumbers[0] },
+      { channelPhoneNumber, publisherPhoneNumber: publisherNumbers[1] },
+    ],
     subscriptions: [
       { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[0] },
       { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[1] },
@@ -31,7 +34,7 @@ describe('messenger service', () => {
   const attachments = 'some/path'
   const message = 'please help!'
   const publisherSender = {
-    phoneNumber: publisherNumber,
+    phoneNumber: publisherNumbers[0],
     isPublisher: true,
     isSubscriber: true,
   }
@@ -112,11 +115,11 @@ describe('messenger service', () => {
           expect(incrementCommandCountStub.callCount).to.eql(0)
         })
 
-        it('broadcasts the message to all channel subscribers', () => {
+        it('broadcasts the message to all channel subscribers and publishers', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             iface,
             '[foobar]\nplease help!',
-            subscriberNumbers,
+            [...subscriberNumbers, ...publisherNumbers],
             'some/path',
           ])
         })

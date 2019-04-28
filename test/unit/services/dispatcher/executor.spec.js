@@ -137,7 +137,7 @@ describe('executor service', () => {
     const publisher = {
       phoneNumber: '+11111111111',
       isPublisher: true,
-      isSubscriber: true,
+      isSubscriber: false,
     }
     const subscriber = {
       phoneNumber: '+12222222222',
@@ -162,7 +162,7 @@ describe('executor service', () => {
           const payload = genPhoneNumber()
           beforeEach(() => addPublisherStub.returns(Promise.resolve()))
 
-          it("attempts to add the human to the chanel's publishers", async () => {
+          it("attempts to add payload number to the chanel's publishers", async () => {
             await execute({ command: commands.ADD, payload, db, channel, sender })
             expect(addPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
           })
@@ -463,7 +463,7 @@ describe('executor service', () => {
         })
       })
 
-      describe('when human is not subscribed to channel', () => {
+      describe('when sender is not subscribed to channel', () => {
         const dispatchable = { command: commands.LEAVE, channel, sender: randomPerson }
         let result
         beforeEach(async () => (result = await execute(dispatchable)))
@@ -484,7 +484,7 @@ describe('executor service', () => {
         })
       })
 
-      describe('when human is a publisher', () => {
+      describe('when sender is a publisher', () => {
         let result, removePublisherStub
         const dispatchable = { command: commands.LEAVE, db, channel, sender: publisher }
 
@@ -496,7 +496,7 @@ describe('executor service', () => {
         })
         afterEach(() => removePublisherStub.restore())
 
-        it('removes human as publisher of channel', () => {
+        it('removes sender as publisher of channel', () => {
           expect(removePublisherStub.getCall(0).args).to.eql([
             db,
             channel.phoneNumber,

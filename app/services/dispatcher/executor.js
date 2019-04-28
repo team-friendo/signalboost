@@ -50,7 +50,7 @@ const execute = async dispatchable => {
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
-    [commands.LEAVE]: () => maybeRemoveSubscriber(db, channel, sender),
+    [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
   }[command] || noop)()
@@ -124,14 +124,14 @@ const addSubscriber = (db, channel, sender, cr) =>
 
 // LEAVE
 
-const maybeRemoveSubscriber = async (db, channel, sender) => {
+const maybeRemoveSender = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.remove
-  return sender.isSubscriber
-    ? removeSubscriber(db, channel, sender, cr)
+  return (sender.isSubscriber || sender.isPublisher)
+    ? removeSender(db, channel, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
-const removeSubscriber = (db, channel, sender, cr) => {
+const removeSender = (db, channel, sender, cr) => {
   const remove = sender.isPublisher ? channelRepository.removePublisher : channelRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))

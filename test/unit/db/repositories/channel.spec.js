@@ -124,16 +124,13 @@ describe('channel repository', () => {
 
       it('associates the publications with the channel', async () => {
         const fetchedPublishers = await channel.getPublications()
-        expect(fetchedPublishers.map(a => a.get())).to.have.deep.members(publishers.map(a => a.get()))
+        expect(fetchedPublishers.map(a => a.get())).to.have.deep.members(
+          publishers.map(a => a.get()),
+        )
       })
 
-      it('creates 2 new subscriptions', async () => {
-        expect(await db.subscription.count()).to.eql(subCount + 2)
-      })
-
-      it('associates the subscriptions with the channel', async () => {
-        const fetchedSubs = await channel.getSubscriptions()
-        expect(fetchedSubs.map(s => s.subscriberPhoneNumber)).to.have.deep.members(publisherPNums)
+      it('creates no new subscriptions', async () => {
+        expect(await db.subscription.count()).to.eql(subCount)
       })
 
       it('returns an publication joining the channel to the human', () => {
@@ -150,7 +147,6 @@ describe('channel repository', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
-        subCount = await db.subscription.count()
         publisherCount = await db.publication.count()
         await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums)
       })
@@ -158,27 +154,18 @@ describe('channel repository', () => {
       it('only creates one new publication', async () => {
         expect(await db.publication.count()).to.eql(publisherCount + 1)
       })
-
-      it('only creates one new subscription', async () => {
-        expect(await db.subscription.count()).to.eql(subCount + 1)
-      })
     })
 
     describe('when given an empty array of publisher numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
-        subCount = await db.subscription.count()
         publisherCount = await db.publication.count()
         await channelRepository.addPublishers(db, channel.phoneNumber, [])
       })
 
       it('creates no new publications', async () => {
         expect(await db.publication.count()).to.eql(publisherCount)
-      })
-
-      it('creates no new subscriptions', async () => {
-        expect(await db.subscription.count()).to.eql(subCount)
       })
     })
 
@@ -226,7 +213,9 @@ describe('channel repository', () => {
 
     it("retrieves the channel's subscriptions", () => {
       expect(
-        result.subscriptions.map(a => pick(a.get(), ['channelPhoneNumber', 'subscriberPhoneNumber'])),
+        result.subscriptions.map(a =>
+          pick(a.get(), ['channelPhoneNumber', 'subscriberPhoneNumber']),
+        ),
       ).to.have.deep.members([
         {
           channelPhoneNumber: channel.phoneNumber,
@@ -301,12 +290,8 @@ describe('channel repository', () => {
         expect(await db.publication.count()).to.eql(publisherCount - 1)
       })
 
-      it('deletes an subscription record', async () => {
-        expect(await db.subscription.count()).to.eql(subCount - 1)
-      })
-
-      it('returns the tuple [1,1]', () => {
-        expect(result).to.eql([1, 1])
+      it('returns 1', () => {
+        expect(result).to.eql(1)
       })
     })
 
@@ -315,7 +300,6 @@ describe('channel repository', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         await channelRepository.addPublisher(db, channel.phoneNumber, publisherPNums[0])
-        subCount = await db.subscription.count()
         publisherCount = await db.publication.count()
 
         result = await channelRepository.removePublisher(db, channel.phoneNumber, '+11111111111')
@@ -325,12 +309,8 @@ describe('channel repository', () => {
         expect(await db.publication.count()).to.eql(publisherCount)
       })
 
-      it('deletes an subscription record', async () => {
-        expect(await db.subscription.count()).to.eql(subCount)
-      })
-
-      it('returns the tuple [0, 0]', () => {
-        expect(result).to.eql([0, 0])
+      it('returns 0', () => {
+        expect(result).to.eql(0)
       })
     })
   })
@@ -433,7 +413,7 @@ describe('channel repository', () => {
       })
 
       it('returns the subscriber phone numbers', async () => {
-        expect(await channelRepository.getSubscriberNumbers(db, chPNum)).to.have.members(subPNums)
+        expect(await channelRepository.getSubscribers(db, chPNum)).to.have.members(subPNums)
       })
     })
 
@@ -443,14 +423,14 @@ describe('channel repository', () => {
       })
 
       it('returns an empty array', async () => {
-        expect(await channelRepository.getSubscriberNumbers(db, chPNum)).to.eql([])
+        expect(await channelRepository.getSubscribers(db, chPNum)).to.eql([])
       })
     })
 
     describe('when channel does not exist', () => {
       it('rejects a promise with an error', async () => {
         expect(
-          await channelRepository.getSubscriberNumbers(db, genPhoneNumber()).catch(e => e),
+          await channelRepository.getSubscribers(db, genPhoneNumber()).catch(e => e),
         ).to.contain('cannot retrieve subscriptions to non-existent channel')
       })
     })
