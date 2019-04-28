@@ -9,36 +9,36 @@ SUPPORT
 
 You can view the source code that runs signalboost here:
 
---> https://0xacab.org/team-friendo/signalboost
+https://0xacab.org/team-friendo/signalboost
 
 You can submit bugs or request new features here:
 
---> https://0xacab.org/team-friendo/signalboost/issues
+https://0xacab.org/team-friendo/signalboost/issues
 
 You can request a new channel or get help from a human by emailing:
 
---> team-friendo@riseup.net`
+team-friendo@riseup.net`
 
 const notifications = {
   welcome: (channel, addingPublisher) => {
     const { name, phoneNumber } = channel
     return `
---------------------------------------------------------
-<3 WELCOME TO SIGNALBOOST! <3
---------------------------------------------------------
+-----------------------------------------------------
+WELCOME TO SIGNALBOOST! <3
+-----------------------------------------------------
 
 ${blurb}
 
-You were just made a publisher of the [${name}] signalboost channel by ${addingPublisher}.
+You were just made a publisher on the [${name}] signalboost channel by ${addingPublisher}.
 ${commandResponses.info.publisher(channel)}
 
---------------------------------------------------
+-----------------------------------------------
 BROADCASTING MESSAGES:
---------------------------------------------------
+-----------------------------------------------
 
-Because you are a publisher of this channel, when you send a Signal message to ${phoneNumber}, it will be broadcast to everyone who has subscribed to it.
+Because you are a publisher on this channel, when you send a Signal message to ${phoneNumber}, it will be broadcast to everyone who has subscribed to it.
 
-Anyone can subscribe to the channel by sending a message that says "JOIN" to ${phoneNumber}. If they want to unsubscribe later, they can send a message that says "LEAVE" to the same number.
+Anyone can subscribe to the channel by sending a message that says "JOIN" to ${phoneNumber}. They can unsubscribe later by sending a message that says "LEAVE" to the same number.
 ${commandResponses.help.publisher}`
   },
 }
@@ -65,23 +65,23 @@ const commandResponses = {
   // HELP
   help: {
     publisher: `
------------------------------------
+-----------------------------------------
 PUBLISHER COMMANDS:
------------------------------------
+-----------------------------------------
 
-You can send the following commands to do the following things:
+You can send the following commands to this number:
 
 HELP
 --> shows this message
 
 ADD +15555555555
---> makes the person with phone number +1 (555) 555-5555 a publisher of the channel -- they can now broadcast messages on it
+--> makes +1 (555) 555-5555 a publisher
 
 REMOVE +15555555555
---> removes the person with phone number +1 (555) 555-5555 as a publisher of the channel -- they can no longer broadcast messages on it
+--> removes +1 (555) 555-5555 as a publisher
 
 LEAVE
---> removes you as both a publisher and subscriber of the channel -- you can no longer broadcast or receive messages on it
+--> removes you from the channel
 
 RENAME new name
 --> renames the channel to "new name"
@@ -90,20 +90,19 @@ INFO
 --> shows basic stats about the channel
 
 -------------------------------------------
-NON-PUBLISHER COMMANDS:
+SUBSCRIBER COMMANDS:
 -------------------------------------------
 
 Anyone can send the following commands:
 
 JOIN
---> subscribes a person to the channel -- they will receive all messages publishers send to it
+--> subscribes a person to the channel
 
 LEAVE
---> will unsubscribe a person from the channel --  they stop receiving messages sent on it
+--> unsubscribes a person from the channel
 
 HELP / INFO
 --> same as above
-
 ${support}`,
     subscriber: `
 ---------------------
@@ -116,10 +115,10 @@ HELP
 --> shows this message
 
 JOIN
---> subscribes you to the channel -- you will receive all messages publishers send to it
+--> subscribes a person to the channel
 
 LEAVE
---> will unsubscribe a person from the channel --  you will stop receiving messages sent on it
+--> unsubscribes a person from the channel
 
 INFO
 --> shows basic stats about the channel
@@ -130,24 +129,24 @@ ${support}`,
   // INFO
   info: {
     publisher: channel => `
-----------------------------
+---------------------------
 CHANNEL INFO:
-----------------------------
+---------------------------
 
---> name: ${channel.name}
---> phone number: ${channel.phoneNumber}
---> subscribers: ${channel.subscriptions.length}
---> messages sent: ${channel.messageCount.broadcastIn}
---> publishers: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}`,
+name: ${channel.name}
+phone number: ${channel.phoneNumber}
+messages sent: ${channel.messageCount.broadcastIn}
+subscribers: ${channel.subscriptions.length}
+publishers: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}`,
     subscriber: channel => `
-----------------------------
+---------------------------
 CHANNEL INFO:
-----------------------------
+---------------------------
 
---> name: ${channel.name}
---> phone number: ${channel.phoneNumber}
---> subscribers: ${channel.subscriptions.length}
---> publishers: ${channel.publications.length}`,
+name: ${channel.name}
+phone number: ${channel.phoneNumber}
+subscribers: ${channel.subscriptions.length}
+publishers: ${channel.publications.length}`,
     unauthorized,
   },
   // RENAME
