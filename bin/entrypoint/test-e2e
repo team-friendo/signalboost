@@ -2,4 +2,4 @@
 
 cd /signalboost/test/e2e
 
-find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --exit
+find . -name '*.spec.js' | xargs npx mocha -R spec -r babel-register --reporter dot --exit
