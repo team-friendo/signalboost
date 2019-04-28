@@ -58,11 +58,6 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
     db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
-const getSubscribers = (db, channelPhoneNumber) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'retrieve subscriptions to', async ch =>
-    ch.subscriptions.map(s => s.subscriberPhoneNumber),
-  )
-
 const isPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }).then(Boolean)
 
@@ -102,7 +97,6 @@ module.exports = {
   findAllDeep,
   findByPhoneNumber,
   findDeep,
-  getSubscribers,
   getUnwelcomedPublishers,
   isPublisher,
   isSubscriber,

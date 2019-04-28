@@ -395,47 +395,6 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#getSubscribers', () => {
-    describe('when a channel has subscribers', () => {
-      beforeEach(async () => {
-        await db.channel.create(
-          {
-            ...channelFactory({ phoneNumber: chPNum }),
-            subscriptions: [
-              subscriptionFactory({ subscriberPhoneNumber: subPNums[0] }),
-              subscriptionFactory({ subscriberPhoneNumber: subPNums[1] }),
-            ],
-          },
-          {
-            include: [{ model: db.subscription }],
-          },
-        )
-      })
-
-      it('returns the subscriber phone numbers', async () => {
-        expect(await channelRepository.getSubscribers(db, chPNum)).to.have.members(subPNums)
-      })
-    })
-
-    describe('when channel has no subscribers', () => {
-      beforeEach(async () => {
-        await db.channel.create(channelFactory({ phoneNumber: chPNum }))
-      })
-
-      it('returns an empty array', async () => {
-        expect(await channelRepository.getSubscribers(db, chPNum)).to.eql([])
-      })
-    })
-
-    describe('when channel does not exist', () => {
-      it('rejects a promise with an error', async () => {
-        expect(
-          await channelRepository.getSubscribers(db, genPhoneNumber()).catch(e => e),
-        ).to.contain('cannot retrieve subscriptions to non-existent channel')
-      })
-    })
-  })
-
   describe('#isPublisher', () => {
     beforeEach(async () => {
       channel = await db.channel.create(
