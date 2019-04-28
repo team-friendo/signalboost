@@ -20,7 +20,8 @@
     "test:e2e": "./bin/test/e2e",
     "dev": "docker-compose -f docker-compose-dev.yml up -d",
     "start": "docker-compose up -d",
-    "stop": "docker-compose  down"
+    "stop": "docker-compose  down",
+    "update": "./bin/dev/update"
   },
   "engines": {
     "node": "8.15.0"
@@ -59,6 +60,7 @@
     "babel-register": "^6.26.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "env-test": "^1.0.0",
     "eslint-config-last": "^0.0.5",
     "mocha": "^5.2.0",
     "prettier": "^1.15.2",

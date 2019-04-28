@@ -1,0 +1,2 @@
+-r babel-register
+-r env-test
