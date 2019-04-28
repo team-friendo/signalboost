@@ -17,11 +17,11 @@ describe('messenger service', () => {
   const [db, iface] = [{}, {}]
   const channelPhoneNumber = genPhoneNumber()
   const subscriberNumbers = times(2, genPhoneNumber)
-  const adminNumber = genPhoneNumber()
+  const publisherNumber = genPhoneNumber()
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
-    publications: [{ channelPhoneNumber, publisherPhoneNumber: adminNumber }],
+    publications: [{ channelPhoneNumber, publisherPhoneNumber: publisherNumber }],
     subscriptions: [
       { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[0] },
       { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[1] },
@@ -30,14 +30,14 @@ describe('messenger service', () => {
   }
   const attachments = 'some/path'
   const message = 'please help!'
-  const adminSender = {
-    phoneNumber: adminNumber,
-    isAdmin: true,
+  const publisherSender = {
+    phoneNumber: publisherNumber,
+    isPublisher: true,
     isSubscriber: true,
   }
   const subscriberSender = {
     phoneNumber: subscriberNumbers[0],
-    isAdmin: false,
+    isPublisher: false,
     isSubscriber: true,
   }
 
@@ -54,14 +54,14 @@ describe('messenger service', () => {
       ])
     })
 
-    it('parses an admin welcome message', () => {
+    it('parses a publisher welcome message', () => {
       expect(
         messenger.parseMessageType({
           command: 'ADD',
           status: statuses.SUCCESS,
-          payload: adminSender.phoneNumber,
+          payload: publisherSender.phoneNumber,
         }),
-      ).to.eql([messageTypes.NOTIFICATION, notificationTypes.NEW_ADMIN])
+      ).to.eql([messageTypes.NOTIFICATION, notificationTypes.NEW_PUBLISHER])
     })
   })
 
@@ -96,12 +96,12 @@ describe('messenger service', () => {
     })
 
     describe('when message is a broadcast message', () => {
-      describe('when sender is an admin', () => {
+      describe('when sender is a publisher', () => {
         beforeEach(
           async () =>
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, message: messages.noop },
-              dispatchable: { db, iface, channel, sender: adminSender, message, attachments },
+              dispatchable: { db, iface, channel, sender: publisherSender, message, attachments },
             }),
         )
         it('does not respond to the sender', () => {
@@ -126,7 +126,7 @@ describe('messenger service', () => {
         })
       })
 
-      describe('when sender is not an admin', () => {
+      describe('when sender is not a publisher', () => {
         beforeEach(async () => {
           await messenger.dispatch({
             commandResult: { status: statuses.NOOP, message: messages.noop },
@@ -151,7 +151,7 @@ describe('messenger service', () => {
     describe('when message is a command response', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { db, iface, channel, sender: adminSender, message: commands.JOIN },
+          dispatchable: { db, iface, channel, sender: publisherSender, message: commands.JOIN },
           commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
         })
       })
@@ -168,7 +168,7 @@ describe('messenger service', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
           iface,
           '[foobar]\nyay!',
-          [adminSender.phoneNumber],
+          [publisherSender.phoneNumber],
         ])
       })
 
@@ -178,20 +178,20 @@ describe('messenger service', () => {
     })
 
     describe('when message is a command notification', () => {
-      describe('for a newly added admin', () => {
-        const newAdmin = genPhoneNumber()
-        const message = `${commands.ADD} ${newAdmin}`
-        const response = messages.commandResponses.admin.add.success(newAdmin)
-        const welcome = messages.notifications.welcome(channel, adminSender.phoneNumber)
+      describe('for a newly added publisher', () => {
+        const newPublisher = genPhoneNumber()
+        const message = `${commands.ADD} ${newPublisher}`
+        const response = messages.commandResponses.publisher.add.success(newPublisher)
+        const welcome = messages.notifications.welcome(channel, publisherSender.phoneNumber)
 
         beforeEach(async () => {
           await messenger.dispatch({
-            dispatchable: { db, iface, channel, sender: adminSender, message },
+            dispatchable: { db, iface, channel, sender: publisherSender, message },
             commandResult: {
               command: commands.ADD,
               status: statuses.SUCCESS,
               message: response,
-              payload: newAdmin,
+              payload: newPublisher,
             },
           })
         })
@@ -209,20 +209,20 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             iface,
             `[${channel.name}]\n${response}`,
-            [adminSender.phoneNumber],
+            [publisherSender.phoneNumber],
           ])
         })
 
-        it('sends a welcome notification to the newly added admin', () => {
+        it('sends a welcome notification to the newly added publisher', () => {
           expect(sendMessageStub.getCall(1).args).to.eql([
             iface,
             `[${channel.name}]\n${welcome}`,
-            [newAdmin],
+            [newPublisher],
           ])
         })
 
         it('persists a record of the welcome to the db', () => {
-          expect(createWelcomeStub.getCall(0).args).to.eql([db, channel.phoneNumber, newAdmin])
+          expect(createWelcomeStub.getCall(0).args).to.eql([db, channel.phoneNumber, newPublisher])
         })
       })
     })

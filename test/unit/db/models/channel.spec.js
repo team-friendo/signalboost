@@ -138,9 +138,9 @@ describe('channel model', () => {
       })
 
       it('deletes publications when it deletes channel', async () => {
-        const adminCount = await db.publication.count()
+        const publisherCount = await db.publication.count()
         await channel.destroy()
-        expect(await db.publication.count()).to.eql(adminCount - 2)
+        expect(await db.publication.count()).to.eql(publisherCount - 2)
       })
     })
 

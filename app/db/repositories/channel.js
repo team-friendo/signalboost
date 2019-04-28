@@ -35,12 +35,12 @@ const findDeep = (db, phoneNumber) =>
 
 // CHANNEL ASSOCIATION QUERIES
 
-const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
+const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
+    Promise.all(publisherNumbers.map(num => addPublisher(db, channelPhoneNumber, num))),
   )
 
-const addAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
+const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   Promise.all([
     db.publication
       .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
@@ -50,7 +50,7 @@ const addAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
       .spread(x => x),
   ]).then(writes => writes[0])
 
-const removeAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
+const removePublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   Promise.all([
     db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } }),
     db.subscription.destroy({
@@ -73,7 +73,7 @@ const getSubscriberNumbers = (db, channelPhoneNumber) =>
     ch.subscriptions.map(s => s.subscriberPhoneNumber),
   )
 
-const isAdmin = (db, channelPhoneNumber, publisherPhoneNumber) =>
+const isPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }).then(Boolean)
 
 const isSubscriber = (db, channelPhoneNumber, subscriberPhoneNumber) =>
@@ -83,7 +83,7 @@ const createWelcome = async (db, channelPhoneNumber, welcomedPhoneNumber) =>
   db.welcome.create({ channelPhoneNumber, welcomedPhoneNumber })
 
 // (Database, string) -> Array<string>
-const getUnwelcomedAdmins = async (db, channelPhoneNumber) => {
+const getUnwelcomedPublishers = async (db, channelPhoneNumber) => {
   const welcomes = await db.welcome.findAll({ where: { channelPhoneNumber } })
   const welcomedNumbers = welcomes.map(w => w.welcomedPhoneNumber)
   const unwelcomed = await db.publication.findAll({
@@ -104,8 +104,8 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 
 module.exports = {
   activate,
-  addAdmin,
-  addAdmins,
+  addPublisher,
+  addPublishers,
   addSubscriber,
   createWelcome,
   findAll,
@@ -113,10 +113,10 @@ module.exports = {
   findByPhoneNumber,
   findDeep,
   getSubscriberNumbers,
-  getUnwelcomedAdmins,
-  isAdmin,
+  getUnwelcomedPublishers,
+  isPublisher,
   isSubscriber,
-  removeAdmin,
+  removePublisher,
   removeSubscriber,
   update,
 }

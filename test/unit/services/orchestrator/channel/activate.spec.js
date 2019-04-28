@@ -13,8 +13,8 @@ describe('channel activation module', () => {
   const phoneNumber = '+15555555555'
   const name = '#blackops'
   const containerId = 'acabdeadbeef'
-  const admins = ['+12222222222', '+13333333333']
-  let createContainerStub, createChannelStub, addAdminsStub, updatePhoneNumberStub
+  const publishers = ['+12222222222', '+13333333333']
+  let createContainerStub, createChannelStub, addPublishersStub, updatePhoneNumberStub
 
   describe('activating a channel', () => {
     let result
@@ -31,24 +31,24 @@ describe('channel activation module', () => {
         }),
       )
 
-      addAdminsStub = sinon
-        .stub(channelRepository, 'addAdmins')
-        .callsFake((db, channelPhoneNumber, admins) =>
+      addPublishersStub = sinon
+        .stub(channelRepository, 'addPublishers')
+        .callsFake((db, channelPhoneNumber, publishers) =>
           Promise.resolve(
-            admins.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
+            publishers.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
           ),
         )
       updatePhoneNumberStub = sinon
         .stub(phoneNumberRepository, 'update')
         .returns(Promise.resolve({ dataValues: { phoneNumber, status: 'ACTIVE' } }))
 
-      result = await activate({ db, phoneNumber, name, admins })
+      result = await activate({ db, phoneNumber, name, publishers })
     })
 
     after(() => {
       createContainerStub.restore()
       createChannelStub.restore()
-      addAdminsStub.restore()
+      addPublishersStub.restore()
       updatePhoneNumberStub.restore()
     })
 
@@ -60,8 +60,8 @@ describe('channel activation module', () => {
       expect(createChannelStub.getCall(0).args).to.eql([db, phoneNumber, name, containerId])
     })
 
-    it('adds admins to channel', () => {
-      expect(addAdminsStub.getCall(0).args).to.eql([db, phoneNumber, admins])
+    it('adds publishers to channel', () => {
+      expect(addPublishersStub.getCall(0).args).to.eql([db, phoneNumber, publishers])
     })
 
     it('it sets phone number status to ACTIVE', () => {
@@ -73,7 +73,7 @@ describe('channel activation module', () => {
         name,
         status: statuses.ACTIVE,
         phoneNumber,
-        admins,
+        publishers,
       })
     })
   })
@@ -91,7 +91,7 @@ describe('channel activation module', () => {
         .stub(docker, 'getOrCreateContainer')
         .returns(Promise.resolve({ Id: containerId }))
       createChannelStub = sinon.stub(channelRepository, 'activate')
-      addAdminsStub = sinon.stub(channelRepository, 'addAdmins')
+      addPublishersStub = sinon.stub(channelRepository, 'addPublishers')
       updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
       result = await activateMany(db, channelAttrs)
     })
@@ -99,7 +99,7 @@ describe('channel activation module', () => {
     after(() => {
       createContainerStub.restore()
       createChannelStub.restore()
-      addAdminsStub.restore()
+      addPublishersStub.restore()
       updatePhoneNumberStub.restore()
     })
 

@@ -12,8 +12,8 @@ describe('activating a channel', () => {
   const timeout = 20000
   const phoneNumber = genPhoneNumber()
   const name = 'foo'
-  const admins = ['+12223334444', '+13334445555']
-  let db, container, channel, channelCount, adminCount, response
+  const publishers = ['+12223334444', '+13334445555']
+  let db, container, channel, channelCount, publisherCount, response
 
   before(async function() {
     this.timeout(timeout)
@@ -28,13 +28,13 @@ describe('activating a channel', () => {
     ])
 
     channelCount = await db.channel.count()
-    adminCount = await db.publication.count()
+    publisherCount = await db.publication.count()
 
     /***********************************************/
     response = await request('https://signalboost.ngrok.io')
       .post('/channels')
       .set('Token', orchestrator.authToken)
-      .send({ phoneNumber, name, admins })
+      .send({ phoneNumber, name, publishers })
     /***********************************************/
 
     container = await getContainer(phoneNumber)
@@ -71,16 +71,16 @@ describe('activating a channel', () => {
     })
   })
 
-  it('creates db records for the admins', async () => {
-    expect(await db.publication.count()).to.eql(adminCount + 2)
+  it('creates db records for the publishers', async () => {
+    expect(await db.publication.count()).to.eql(publisherCount + 2)
   })
 
-  it('stores the admin and channel phone numbers in the admin records', async () => {
+  it('stores the publisher and channel phone numbers in the publisher records', async () => {
     const publications = await channel.getPublications()
     expect(
       publications.map(a => pick(a, ['channelPhoneNumber', 'publisherPhoneNumber'])),
     ).to.have.deep.members(
-      admins.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
+      publishers.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
     )
   })
 
@@ -97,7 +97,7 @@ describe('activating a channel', () => {
       name: 'foo',
       phoneNumber,
       twilioSid: null,
-      admins: ['+12223334444', '+13334445555'],
+      publishers: ['+12223334444', '+13334445555'],
     })
     expect(response.body.createdAt).to.be.a('string')
     expect(response.body.updatedAt).to.be.a('string')

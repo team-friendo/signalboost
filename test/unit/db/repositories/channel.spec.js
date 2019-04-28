@@ -16,8 +16,8 @@ describe('channel repository', () => {
 
   const chPNum = genPhoneNumber()
   const subPNums = [genPhoneNumber(), genPhoneNumber()]
-  const adminPNums = [genPhoneNumber(), genPhoneNumber()]
-  let db, channel, sub, subCount, adminCount, admins, welcomeCount
+  const publisherPNums = [genPhoneNumber(), genPhoneNumber()]
+  let db, channel, sub, subCount, publisherCount, publishers, welcomeCount
 
   before(() => (db = initDb()))
   afterEach(async () => {
@@ -109,22 +109,22 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#addAdmins', () => {
+  describe('#addPublishers', () => {
     describe('when given the pNum of an existing channel and a new human', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.subscription.count()
-        adminCount = await db.publication.count()
-        admins = await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
+        publisherCount = await db.publication.count()
+        publishers = await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums)
       })
 
       it('creates 2 new publications', async () => {
-        expect(await db.publication.count()).to.eql(adminCount + 2)
+        expect(await db.publication.count()).to.eql(publisherCount + 2)
       })
 
       it('associates the publications with the channel', async () => {
-        const fetchedAdmins = await channel.getPublications()
-        expect(fetchedAdmins.map(a => a.get())).to.have.deep.members(admins.map(a => a.get()))
+        const fetchedPublishers = await channel.getPublications()
+        expect(fetchedPublishers.map(a => a.get())).to.have.deep.members(publishers.map(a => a.get()))
       })
 
       it('creates 2 new subscriptions', async () => {
@@ -133,30 +133,30 @@ describe('channel repository', () => {
 
       it('associates the subscriptions with the channel', async () => {
         const fetchedSubs = await channel.getSubscriptions()
-        expect(fetchedSubs.map(s => s.subscriberPhoneNumber)).to.have.deep.members(adminPNums)
+        expect(fetchedSubs.map(s => s.subscriberPhoneNumber)).to.have.deep.members(publisherPNums)
       })
 
       it('returns an publication joining the channel to the human', () => {
-        admins.forEach((admin, i) => {
-          expect(pick(admin, ['channelPhoneNumber', 'publisherPhoneNumber'])).to.eql({
+        publishers.forEach((publisher, i) => {
+          expect(pick(publisher, ['channelPhoneNumber', 'publisherPhoneNumber'])).to.eql({
             channelPhoneNumber: channel.phoneNumber,
-            publisherPhoneNumber: adminPNums[i],
+            publisherPhoneNumber: publisherPNums[i],
           })
         })
       })
     })
 
-    describe('when given the pNum of an already-existing admin', () => {
+    describe('when given the pNum of an already-existing publisher', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
         subCount = await db.subscription.count()
-        adminCount = await db.publication.count()
-        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums)
+        publisherCount = await db.publication.count()
+        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums)
       })
 
       it('only creates one new publication', async () => {
-        expect(await db.publication.count()).to.eql(adminCount + 1)
+        expect(await db.publication.count()).to.eql(publisherCount + 1)
       })
 
       it('only creates one new subscription', async () => {
@@ -164,17 +164,17 @@ describe('channel repository', () => {
       })
     })
 
-    describe('when given an empty array of admin numbers', () => {
+    describe('when given an empty array of publisher numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addAdmins(db, channel.phoneNumber, adminPNums.slice(1))
+        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
         subCount = await db.subscription.count()
-        adminCount = await db.publication.count()
-        await channelRepository.addAdmins(db, channel.phoneNumber, [])
+        publisherCount = await db.publication.count()
+        await channelRepository.addPublishers(db, channel.phoneNumber, [])
       })
 
       it('creates no new publications', async () => {
-        expect(await db.publication.count()).to.eql(adminCount)
+        expect(await db.publication.count()).to.eql(publisherCount)
       })
 
       it('creates no new subscriptions', async () => {
@@ -192,7 +192,7 @@ describe('channel repository', () => {
   })
 
   describe('#findDeep', () => {
-    const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
+    const publisherNumbers = [genPhoneNumber(), genPhoneNumber()]
     const subscriberNumbers = [genPhoneNumber(), genPhoneNumber()]
     let result
 
@@ -201,7 +201,7 @@ describe('channel repository', () => {
         {
           ...channelFactory(),
           subscriptions: subscriberNumbers.map(num => ({ subscriberPhoneNumber: num })),
-          publications: adminNumbers.map(num => ({ publisherPhoneNumber: num })),
+          publications: publisherNumbers.map(num => ({ publisherPhoneNumber: num })),
         },
         {
           include: [{ model: db.subscription }, { model: db.publication }],
@@ -219,8 +219,8 @@ describe('channel repository', () => {
       expect(
         result.publications.map(a => pick(a.get(), ['channelPhoneNumber', 'publisherPhoneNumber'])),
       ).to.have.deep.members([
-        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: adminNumbers[0] },
-        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: adminNumbers[1] },
+        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: publisherNumbers[0] },
+        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: publisherNumbers[1] },
       ])
     })
 
@@ -285,20 +285,20 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#removeAdmin', () => {
-    describe('when given the number of an existing admin', () => {
+  describe('#removePublisher', () => {
+    describe('when given the number of an existing publisher', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
+        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPNums[0])
         subCount = await db.subscription.count()
-        adminCount = await db.publication.count()
+        publisherCount = await db.publication.count()
 
-        result = await channelRepository.removeAdmin(db, channel.phoneNumber, adminPNums)
+        result = await channelRepository.removePublisher(db, channel.phoneNumber, publisherPNums)
       })
 
       it('deletes a publication record', async () => {
-        expect(await db.publication.count()).to.eql(adminCount - 1)
+        expect(await db.publication.count()).to.eql(publisherCount - 1)
       })
 
       it('deletes an subscription record', async () => {
@@ -310,19 +310,19 @@ describe('channel repository', () => {
       })
     })
 
-    describe('when given the number of a non-existent admin', () => {
+    describe('when given the number of a non-existent publisher', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addAdmin(db, channel.phoneNumber, adminPNums[0])
+        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPNums[0])
         subCount = await db.subscription.count()
-        adminCount = await db.publication.count()
+        publisherCount = await db.publication.count()
 
-        result = await channelRepository.removeAdmin(db, channel.phoneNumber, '+11111111111')
+        result = await channelRepository.removePublisher(db, channel.phoneNumber, '+11111111111')
       })
 
       it('deletes an publication record', async () => {
-        expect(await db.publication.count()).to.eql(adminCount)
+        expect(await db.publication.count()).to.eql(publisherCount)
       })
 
       it('deletes an subscription record', async () => {
@@ -456,14 +456,14 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#isAdmin', () => {
+  describe('#isPublisher', () => {
     beforeEach(async () => {
       channel = await db.channel.create(
         {
           ...channelFactory({ phoneNumber: chPNum }),
           publications: [
-            publicationFactory({ publisherPhoneNumber: adminPNums[0] }),
-            publicationFactory({ publisherPhoneNumber: adminPNums[1] }),
+            publicationFactory({ publisherPhoneNumber: publisherPNums[0] }),
+            publicationFactory({ publisherPhoneNumber: publisherPNums[1] }),
           ],
         },
         {
@@ -472,16 +472,16 @@ describe('channel repository', () => {
       )
     })
 
-    it("returns true when given a channel admin's phone number", async () => {
-      expect(await channelRepository.isAdmin(db, chPNum, adminPNums[0])).to.eql(true)
+    it("returns true when given a channel publisher's phone number", async () => {
+      expect(await channelRepository.isPublisher(db, chPNum, publisherPNums[0])).to.eql(true)
     })
 
-    it("it returns false when given a non-admin's phone number", async () => {
-      expect(await channelRepository.isAdmin(db, chPNum, subPNums[0])).to.eql(false)
+    it("it returns false when given a non-publisher's phone number", async () => {
+      expect(await channelRepository.isPublisher(db, chPNum, subPNums[0])).to.eql(false)
     })
 
     it('returns false when asked to check a non existent channel', async () => {
-      expect(await channelRepository.isAdmin(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+      expect(await channelRepository.isPublisher(db, genPhoneNumber(), subPNums[0])).to.eql(false)
     })
   })
 
@@ -490,7 +490,7 @@ describe('channel repository', () => {
     beforeEach(async () => {
       welcomeCount = await db.welcome.count()
       channel = await db.channel.create(channelFactory({ phoneNumber: chPNum }))
-      result = await channelRepository.createWelcome(db, channel.phoneNumber, adminPNums[0])
+      result = await channelRepository.createWelcome(db, channel.phoneNumber, publisherPNums[0])
     })
 
     it('creates a new welcome', async () => {
@@ -499,20 +499,20 @@ describe('channel repository', () => {
 
     it('associates a welcomed number and a channel number', () => {
       expect(result.channelPhoneNumber).to.eql(channel.phoneNumber)
-      expect(result.welcomedPhoneNumber).to.eql(adminPNums[0])
+      expect(result.welcomedPhoneNumber).to.eql(publisherPNums[0])
     })
   })
 
-  describe('#getUnwelcomedAdminNumbers', () => {
+  describe('#getUnwelcomedPublisherNumbers', () => {
     beforeEach(async () => {
       channel = await db.channel.create(
         {
           ...channelFactory({ phoneNumber: chPNum }),
           publications: [
-            { publisherPhoneNumber: adminPNums[0] },
-            { publisherPhoneNumber: adminPNums[1] },
+            { publisherPhoneNumber: publisherPNums[0] },
+            { publisherPhoneNumber: publisherPNums[1] },
           ],
-          welcomes: [{ welcomedPhoneNumber: adminPNums[0] }],
+          welcomes: [{ welcomedPhoneNumber: publisherPNums[0] }],
         },
         {
           include: [{ model: db.publication }, { model: db.welcome }],
@@ -520,9 +520,9 @@ describe('channel repository', () => {
       )
     })
 
-    it('returns an array of unwelcomed admin phone numbers', async () => {
-      expect(await channelRepository.getUnwelcomedAdmins(db, channel.phoneNumber)).to.eql([
-        adminPNums[1],
+    it('returns an array of unwelcomed publisher phone numbers', async () => {
+      expect(await channelRepository.getUnwelcomedPublishers(db, channel.phoneNumber)).to.eql([
+        publisherPNums[1],
       ])
     })
   })

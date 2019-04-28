@@ -17,18 +17,18 @@ import { publicationFactory } from '../../../support/factories/publication'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
-    describe('ADD ADMIN command', () => {
-      it('parses an ADD ADMIN command (regardless of case or whitespace)', () => {
+    describe('ADD PUBLISHER command', () => {
+      it('parses an ADD PUBLISHER command (regardless of case or whitespace)', () => {
         expect(parseCommand('ADD')).to.eql({ command: commands.ADD, payload: '' })
         expect(parseCommand('add')).to.eql({ command: commands.ADD, payload: '' })
         expect(parseCommand(' add ')).to.eql({ command: commands.ADD, payload: '' })
       })
 
-      it('parses the payload from an ADD ADMIN command', () => {
+      it('parses the payload from an ADD PUBLISHER command', () => {
         expect(parseCommand('ADD foo')).to.eql({ command: commands.ADD, payload: 'foo' })
       })
 
-      it('does not parse ADD ADMIN command if string starts with chars other than `add admin`', () => {
+      it('does not parse ADD PUBLISHER command if string starts with chars other than `add publisher`', () => {
         expect(parseCommand('do ADD')).to.eql({ command: commands.NOOP })
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
@@ -90,18 +90,18 @@ describe('executor service', () => {
       })
     })
 
-    describe('REMOVE ADMIN command', () => {
-      it('parses an REMOVE ADMIN command (regardless of case or whitespace)', () => {
+    describe('REMOVE PUBLISHER command', () => {
+      it('parses an REMOVE PUBLISHER command (regardless of case or whitespace)', () => {
         expect(parseCommand('REMOVE')).to.eql({ command: commands.REMOVE, payload: '' })
         expect(parseCommand('remove')).to.eql({ command: commands.REMOVE, payload: '' })
         expect(parseCommand(' remove ')).to.eql({ command: commands.REMOVE, payload: '' })
       })
 
-      it('parses the payload from an REMOVE ADMIN command', () => {
+      it('parses the payload from an REMOVE PUBLISHER command', () => {
         expect(parseCommand('REMOVE foo')).to.eql({ command: commands.REMOVE, payload: 'foo' })
       })
 
-      it('does not parse REMOVE ADMIN command if string starts with chars other than `add admin`', () => {
+      it('does not parse REMOVE PUBLISHER command if string starts with chars other than `add publisher`', () => {
         expect(parseCommand('do REMOVE foo')).to.eql({ command: commands.NOOP })
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
@@ -118,7 +118,7 @@ describe('executor service', () => {
         expect(parseCommand('RENAME foo')).to.eql({ command: commands.RENAME, payload: 'foo' })
       })
 
-      it('does not parse RENAME command if string starts with chars other than `add admin`', () => {
+      it('does not parse RENAME command if string starts with chars other than `add publisher`', () => {
         expect(parseCommand('do RENAME')).to.eql({ command: commands.NOOP })
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
@@ -134,55 +134,55 @@ describe('executor service', () => {
       subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
       messageCount: { broadcastIn: 42 },
     }
-    const admin = {
+    const publisher = {
       phoneNumber: '+11111111111',
-      isAdmin: true,
+      isPublisher: true,
       isSubscriber: true,
     }
     const subscriber = {
       phoneNumber: '+12222222222',
-      isAdmin: false,
+      isPublisher: false,
       isSubscriber: true,
     }
     const randomPerson = {
       phoneNumber: '+13333333333',
-      isAdmin: false,
+      isPublisher: false,
       isSubscriber: false,
     }
 
     describe('ADD command', () => {
-      let addAdminStub
-      beforeEach(() => (addAdminStub = sinon.stub(channelRepository, 'addAdmin')))
-      afterEach(() => addAdminStub.restore())
+      let addPublisherStub
+      beforeEach(() => (addPublisherStub = sinon.stub(channelRepository, 'addPublisher')))
+      afterEach(() => addPublisherStub.restore())
 
-      describe('when sender is an admin', () => {
-        const sender = admin
+      describe('when sender is a publisher', () => {
+        const sender = publisher
 
         describe('when payload is a valid phone number', () => {
           const payload = genPhoneNumber()
-          beforeEach(() => addAdminStub.returns(Promise.resolve()))
+          beforeEach(() => addPublisherStub.returns(Promise.resolve()))
 
-          it("attempts to add the human to the chanel's admins", async () => {
+          it("attempts to add the human to the chanel's publishers", async () => {
             await execute({ command: commands.ADD, payload, db, channel, sender })
-            expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+            expect(addPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
           })
 
-          describe('when adding the admin succeeds', () => {
+          describe('when adding the publisher succeeds', () => {
             beforeEach(() =>
-              addAdminStub.returns(
+              addPublisherStub.returns(
                 Promise.resolve([
                   { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: payload },
                 ]),
               ),
             )
 
-            it('returns a SUCCESS status / message and admin number as payload', async () => {
+            it('returns a SUCCESS status / message and publisher number as payload', async () => {
               const dispatchable = { command: commands.ADD, payload, db, channel, sender }
               expect(await execute(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.SUCCESS,
-                  message: CR.admin.add.success(payload),
+                  message: CR.publisher.add.success(payload),
                   payload,
                 },
                 dispatchable,
@@ -190,8 +190,8 @@ describe('executor service', () => {
             })
           })
 
-          describe('when adding the admin fails', () => {
-            beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
+          describe('when adding the publisher fails', () => {
+            beforeEach(() => addPublisherStub.callsFake(() => Promise.reject('oh noes!')))
 
             it('returns an ERROR status and message', async () => {
               const dispatchable = { command: commands.ADD, payload, db, channel, sender }
@@ -199,7 +199,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.ERROR,
-                  message: CR.admin.add.dbError(payload),
+                  message: CR.publisher.add.dbError(payload),
                 },
                 dispatchable,
               })
@@ -212,8 +212,8 @@ describe('executor service', () => {
           let result
           beforeEach(async () => (result = await execute(dispatchable)))
 
-          it('does not attempt to add admin', () => {
-            expect(addAdminStub.callCount).to.eql(0)
+          it('does not attempt to add publisher', () => {
+            expect(addPublisherStub.callCount).to.eql(0)
           })
 
           it('returns a ERROR status/message', () => {
@@ -221,7 +221,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.ADD,
                 status: statuses.ERROR,
-                message: CR.admin.add.invalidNumber('foo'),
+                message: CR.publisher.add.invalidNumber('foo'),
               },
               dispatchable,
             })
@@ -229,7 +229,7 @@ describe('executor service', () => {
         })
       })
 
-      describe('when sender is not an admin', () => {
+      describe('when sender is not a publisher', () => {
         const dispatchable = {
           command: commands.ADD,
           payload: 'foo',
@@ -239,8 +239,8 @@ describe('executor service', () => {
         let result
         beforeEach(async () => (result = await execute(dispatchable)))
 
-        it('does not attempt to add admin', () => {
-          expect(addAdminStub.callCount).to.eql(0)
+        it('does not attempt to add publisher', () => {
+          expect(addPublisherStub.callCount).to.eql(0)
         })
 
         it('returns an UNAUTHORIZED status/message', () => {
@@ -248,7 +248,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.ADD,
               status: statuses.UNAUTHORIZED,
-              message: CR.admin.add.unauthorized,
+              message: CR.publisher.add.unauthorized,
             },
             dispatchable,
           })
@@ -257,15 +257,15 @@ describe('executor service', () => {
     })
 
     describe('HELP command', () => {
-      describe('when sender is an admin', () => {
-        const sender = admin
+      describe('when sender is a publisher', () => {
+        const sender = publisher
         it('sends a help message to sender', async () => {
           const dispatchable = { command: commands.HELP, db, channel, sender }
           expect(await execute(dispatchable)).to.eql({
             commandResult: {
               command: commands.HELP,
               status: statuses.SUCCESS,
-              message: CR.help.admin,
+              message: CR.help.publisher,
             },
             dispatchable,
           })
@@ -304,15 +304,15 @@ describe('executor service', () => {
     })
 
     describe('INFO command', () => {
-      describe('when sender is an admin', () => {
-        const sender = admin
+      describe('when sender is a publisher', () => {
+        const sender = publisher
         it('sends an info message with more information', async () => {
           const dispatchable = { command: commands.INFO, db, channel, sender }
           expect(await execute(dispatchable)).to.eql({
             commandResult: {
               command: commands.INFO,
               status: statuses.SUCCESS,
-              message: CR.info.admin(channel),
+              message: CR.info.publisher(channel),
             },
             dispatchable,
           })
@@ -334,7 +334,7 @@ describe('executor service', () => {
         })
       })
 
-      describe('when sender is neither admin nor subscriber', () => {
+      describe('when sender is neither publisher nor subscriber', () => {
         const sender = randomPerson
         it('sends an UNAUTHORIZED message', async () => {
           const dispatchable = { command: commands.INFO, db, channel, sender }
@@ -484,23 +484,23 @@ describe('executor service', () => {
         })
       })
 
-      describe('when human is an admin', () => {
-        let result, removeAdminStub
-        const dispatchable = { command: commands.LEAVE, db, channel, sender: admin }
+      describe('when human is a publisher', () => {
+        let result, removePublisherStub
+        const dispatchable = { command: commands.LEAVE, db, channel, sender: publisher }
 
         beforeEach(async () => {
-          removeAdminStub = sinon
-            .stub(channelRepository, 'removeAdmin')
+          removePublisherStub = sinon
+            .stub(channelRepository, 'removePublisher')
             .returns(Promise.resolve([1, 1]))
           result = await execute(dispatchable)
         })
-        afterEach(() => removeAdminStub.restore())
+        afterEach(() => removePublisherStub.restore())
 
-        it('removes human as admin of channel', () => {
-          expect(removeAdminStub.getCall(0).args).to.eql([
+        it('removes human as publisher of channel', () => {
+          expect(removePublisherStub.getCall(0).args).to.eql([
             db,
             channel.phoneNumber,
-            admin.phoneNumber,
+            publisher.phoneNumber,
           ])
         })
         it('returns SUCCESS status/message', () => {
@@ -517,38 +517,38 @@ describe('executor service', () => {
     })
 
     describe('REMOVE command', () => {
-      let validateStub, isAdminStub, removeAdminStub
+      let validateStub, isPublisherStub, removePublisherStub
 
       beforeEach(() => {
         validateStub = sinon.stub(validator, 'validatePhoneNumber')
-        isAdminStub = sinon.stub(channelRepository, 'isAdmin')
-        removeAdminStub = sinon.stub(channelRepository, 'removeAdmin')
+        isPublisherStub = sinon.stub(channelRepository, 'isPublisher')
+        removePublisherStub = sinon.stub(channelRepository, 'removePublisher')
       })
 
       afterEach(() => {
         validateStub.restore()
-        isAdminStub.restore()
-        removeAdminStub.restore()
+        isPublisherStub.restore()
+        removePublisherStub.restore()
       })
 
-      describe('when sender is an admin', () => {
-        const sender = admin
-        beforeEach(() => removeAdminStub.returns(Promise.resolve()))
+      describe('when sender is a publisher', () => {
+        const sender = publisher
+        beforeEach(() => removePublisherStub.returns(Promise.resolve()))
 
         describe('when payload is a valid phone number', () => {
           const payload = genPhoneNumber()
           beforeEach(() => validateStub.returns(true))
 
-          describe('when removal target is an admin', () => {
-            beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
+          describe('when removal target is a publisher', () => {
+            beforeEach(() => isPublisherStub.returns(Promise.resolve(true)))
 
-            it("attempts to remove the human from the chanel's admins", async () => {
+            it("attempts to remove the human from the chanel's publishers", async () => {
               await execute({ command: commands.REMOVE, payload, db, channel, sender })
-              expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+              expect(removePublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
             })
 
-            describe('when removing the admin succeeds', () => {
-              beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
+            describe('when removing the publisher succeeds', () => {
+              beforeEach(() => removePublisherStub.returns(Promise.resolve([1, 1])))
 
               it('returns a SUCCESS status and message', async () => {
                 const dispatchable = { command: commands.REMOVE, payload, channel, sender }
@@ -556,15 +556,15 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.SUCCESS,
-                    message: CR.admin.remove.success(payload),
+                    message: CR.publisher.remove.success(payload),
                   },
                   dispatchable,
                 })
               })
             })
 
-            describe('when removing the admin fails', () => {
-              beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
+            describe('when removing the publisher fails', () => {
+              beforeEach(() => removePublisherStub.callsFake(() => Promise.reject('oh noes!')))
 
               it('returns an ERROR status/message', async () => {
                 const dispatchable = { command: commands.REMOVE, payload, channel, sender }
@@ -572,7 +572,7 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.ERROR,
-                    message: CR.admin.remove.dbError(payload),
+                    message: CR.publisher.remove.dbError(payload),
                   },
                   dispatchable,
                 })
@@ -580,11 +580,11 @@ describe('executor service', () => {
             })
           })
 
-          describe('when removal target is not an admin', () => {
-            beforeEach(() => isAdminStub.returns(Promise.resolve(false)))
+          describe('when removal target is not a publisher', () => {
+            beforeEach(() => isPublisherStub.returns(Promise.resolve(false)))
 
-            it('does not attempt to remove admin', () => {
-              expect(removeAdminStub.callCount).to.eql(0)
+            it('does not attempt to remove publisher', () => {
+              expect(removePublisherStub.callCount).to.eql(0)
             })
 
             it('returns a SUCCESS status / NOOP message', async () => {
@@ -593,7 +593,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.REMOVE,
                   status: statuses.ERROR,
-                  message: CR.admin.remove.targetNotAdmin(payload),
+                  message: CR.publisher.remove.targetNotPublisher(payload),
                 },
                 dispatchable,
               })
@@ -606,8 +606,8 @@ describe('executor service', () => {
           let result
           beforeEach(async () => (result = await execute(dispatchable)))
 
-          it('does not attempt to remove admin', () => {
-            expect(removeAdminStub.callCount).to.eql(0)
+          it('does not attempt to remove publisher', () => {
+            expect(removePublisherStub.callCount).to.eql(0)
           })
 
           it('returns a SUCCESS status / NOOP message', () => {
@@ -615,7 +615,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.REMOVE,
                 status: statuses.ERROR,
-                message: CR.admin.remove.invalidNumber('foo'),
+                message: CR.publisher.remove.invalidNumber('foo'),
               },
               dispatchable,
             })
@@ -623,15 +623,15 @@ describe('executor service', () => {
         })
       })
 
-      describe('when sender is not an admin', () => {
+      describe('when sender is not a publisher', () => {
         const sender = randomPerson
         const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
         let result
 
         beforeEach(async () => (result = await execute(dispatchable)))
 
-        it('does not attempt to add admin', () => {
-          expect(removeAdminStub.callCount).to.eql(0)
+        it('does not attempt to add publisher', () => {
+          expect(removePublisherStub.callCount).to.eql(0)
         })
 
         it('returns an SUCCESS status / NOT_NOOP message', () => {
@@ -639,7 +639,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.REMOVE,
               status: statuses.UNAUTHORIZED,
-              message: CR.admin.remove.unauthorized,
+              message: CR.publisher.remove.unauthorized,
             },
             dispatchable,
           })
@@ -652,8 +652,8 @@ describe('executor service', () => {
       beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
       afterEach(() => updateStub.restore())
 
-      describe('when sender is an admin', () => {
-        const sender = admin
+      describe('when sender is a publisher', () => {
+        const sender = publisher
         const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
         let result
 

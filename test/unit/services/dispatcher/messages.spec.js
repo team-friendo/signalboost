@@ -18,20 +18,20 @@ describe('messages', () => {
     }
 
     describe('for info command', () => {
-      describe('for admin', () => {
-        it('shows admin phone numbers and subscriber count', () => {
-          const msg = cr.info.admin(channel)
+      describe('for publisher', () => {
+        it('shows publisher phone numbers and subscriber count', () => {
+          const msg = cr.info.publisher(channel)
           expect(msg).to.include(
-            `admins: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
+            `publishers: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
           )
           expect(msg).to.include('subscribers: 2')
         })
       })
 
       describe('for subscriber', () => {
-        it('shows admin count and subscriber count', () => {
+        it('shows publisher count and subscriber count', () => {
           const msg = cr.info.subscriber(channel)
-          expect(msg).to.include('admins: 2')
+          expect(msg).to.include('publishers: 2')
           expect(msg).to.include('subscribers: 2')
         })
       })

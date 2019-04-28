@@ -20,9 +20,9 @@ const routesOf = (router, db, emitter) => {
   })
 
   router.post('/channels', async ctx => {
-    const { phoneNumber, name, admins } = ctx.request.body
+    const { phoneNumber, name, publishers } = ctx.request.body
 
-    const result = await channelService.activate({ db, phoneNumber, name, admins })
+    const result = await channelService.activate({ db, phoneNumber, name, publishers })
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
   })
