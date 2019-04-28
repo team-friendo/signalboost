@@ -28,12 +28,12 @@ describe('routes', () => {
     phoneNumber: genPhoneNumber(),
     error: 'oh noes!',
   }))
-  const admins = [genPhoneNumber(), genPhoneNumber()]
+  const publishers = [genPhoneNumber(), genPhoneNumber()]
   const channelActivatedStatus = {
     name: 'foo channel',
     status: statuses.ACTIVE,
     phoneNumber,
-    admins,
+    publishers,
   }
 
   let server
@@ -88,12 +88,12 @@ describe('routes', () => {
         await request(server)
           .post('/channels')
           .set('Token', orchestrator.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'admins']))
+          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
 
-        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'admins'])).to.eql({
+        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql({
           phoneNumber,
           name: 'foo channel',
-          admins,
+          publishers,
         })
       })
     })
@@ -105,7 +105,7 @@ describe('routes', () => {
         await request(server)
           .post('/channels')
           .set('Token', orchestrator.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'admins']))
+          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(200, channelActivatedStatus)
       })
     })
@@ -117,7 +117,7 @@ describe('routes', () => {
         await request(server)
           .post('/channels')
           .set('Token', orchestrator.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'admins']))
+          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(500, errorStatus)
       })
     })

@@ -15,7 +15,7 @@ const messageTypes = {
 }
 
 const notificationTypes = {
-  NEW_ADMIN: 'NEW_ADMIN',
+  NEW_PUBLISHER: 'NEW_PUBLISHER',
 }
 
 /***************
@@ -43,12 +43,13 @@ const parseMessageType = commandResult => {
 
 const parseNotifiable = ({ command, status }) =>
   // TODO: extend to handle other notifiable command results
-  isNewAdmin({ command, status }) ? notificationTypes.NEW_ADMIN : null
+  isNewPublisher({ command, status }) ? notificationTypes.NEW_PUBLISHER : null
 
-const isNewAdmin = ({ command, status }) => command === commands.ADD && status === statuses.SUCCESS
+const isNewPublisher = ({ command, status }) =>
+  command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcast = dispatchable =>
-  dispatchable.sender.isAdmin
+  dispatchable.sender.isPublisher
     ? broadcast(dispatchable)
     : respond({ ...dispatchable, message: messages.unauthorized, status: statuses.UNAUTHORIZED })
 
@@ -63,27 +64,27 @@ const handleNotification = ({ commandResult, dispatchable, notificationType }) =
     handleResponse({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
-      [notificationTypes.NEW_ADMIN]: () =>
-        welcomeNewAdmin({
+      [notificationTypes.NEW_PUBLISHER]: () =>
+        welcomeNewPublisher({
           db: d.db,
           iface: d.iface,
           channel: d.channel,
-          newAdmin: cr.payload,
-          addingAdmin: d.sender.phoneNumber,
+          newPublisher: cr.payload,
+          addingPublisher: d.sender.phoneNumber,
         }),
     }[notificationType](),
   ])
 }
 
 // { Database, Channel, string, string } => Promise<WelcomeInstance>
-const welcomeNewAdmin = ({ db, iface, channel, newAdmin, addingAdmin }) =>
+const welcomeNewPublisher = ({ db, iface, channel, newPublisher, addingPublisher }) =>
   notify({
     db,
     iface,
     channel,
-    notification: messages.notifications.welcome(channel, addingAdmin),
-    recipients: [newAdmin],
-  }).then(() => channelRepository.createWelcome(db, channel.phoneNumber, newAdmin))
+    notification: messages.notifications.welcome(channel, addingPublisher),
+    recipients: [newPublisher],
+  }).then(() => channelRepository.createWelcome(db, channel.phoneNumber, newPublisher))
 
 /************
  * SENDING
@@ -91,7 +92,10 @@ const welcomeNewAdmin = ({ db, iface, channel, newAdmin, addingAdmin }) =>
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, iface, channel, message, attachments }) => {
-  const recipients = channel.subscriptions.map(s => s.humanPhoneNumber)
+  const recipients = [
+    ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
+    ...channel.publications.map(p => p.publisherPhoneNumber),
+  ]
   return signal
     .sendMessage(iface, format(channel, message), recipients, attachments)
     .then(() => countBroacast({ db, channel }))
@@ -137,5 +141,5 @@ module.exports = {
   format,
   parseMessageType,
   respond,
-  welcomeNewAdmin,
+  welcomeNewPublisher,
 }

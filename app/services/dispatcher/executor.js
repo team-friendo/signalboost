@@ -46,13 +46,13 @@ const parseCommand = msg => {
 const execute = async dispatchable => {
   const { command, payload, db, channel, sender } = dispatchable
   const result = await ({
-    [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
-    [commands.LEAVE]: () => maybeRemoveSubscriber(db, channel, sender),
+    [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
   }[command] || noop)()
   return { commandResult: { ...result, command }, dispatchable }
 }
@@ -61,50 +61,50 @@ const execute = async dispatchable => {
 
 // ADD
 
-const maybeAddAdmin = async (db, channel, sender, newAdminNumber) => {
-  const cr = commandResponses.admin.add
-  if (!sender.isAdmin) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  if (!validator.validatePhoneNumber(newAdminNumber))
-    return { status: statuses.ERROR, message: cr.invalidNumber(newAdminNumber) }
-  return addAdmin(db, channel, sender, newAdminNumber, cr)
+const maybeAddPublisher = async (db, channel, sender, newPublisherNumber) => {
+  const cr = commandResponses.publisher.add
+  if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  if (!validator.validatePhoneNumber(newPublisherNumber))
+    return { status: statuses.ERROR, message: cr.invalidNumber(newPublisherNumber) }
+  return addPublisher(db, channel, sender, newPublisherNumber, cr)
 }
 
-const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
+const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
   channelRepository
-    .addAdmin(db, channel.phoneNumber, newAdminNumber)
+    .addPublisher(db, channel.phoneNumber, newPublisherNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(newAdminNumber),
-      payload: newAdminNumber,
+      message: cr.success(newPublisherNumber),
+      payload: newPublisherNumber,
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newPublisherNumber) }))
 
 // HELP
 
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = commandResponses.help
-  return sender.isAdmin || sender.isSubscriber
+  return sender.isPublisher || sender.isSubscriber
     ? showHelp(db, channel, sender, cr)
     : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
 }
 
 const showHelp = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.isAdmin ? cr.admin : cr.subscriber,
+  message: sender.isPublisher ? cr.publisher : cr.subscriber,
 })
 
 // INFO
 
 const maybeShowInfo = async (db, channel, sender) => {
   const cr = commandResponses.info
-  return sender.isAdmin || sender.isSubscriber
+  return sender.isPublisher || sender.isSubscriber
     ? showInfo(db, channel, sender, cr)
     : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
 }
 
 const showInfo = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.isAdmin ? cr.admin(channel) : cr.subscriber(channel),
+  message: sender.isPublisher ? cr.publisher(channel) : cr.subscriber(channel),
 })
 
 // JOIN
@@ -124,15 +124,15 @@ const addSubscriber = (db, channel, sender, cr) =>
 
 // LEAVE
 
-const maybeRemoveSubscriber = async (db, channel, sender) => {
+const maybeRemoveSender = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.remove
-  return sender.isSubscriber
-    ? removeSubscriber(db, channel, sender, cr)
+  return (sender.isSubscriber || sender.isPublisher)
+    ? removeSender(db, channel, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
-const removeSubscriber = (db, channel, sender, cr) => {
-  const remove = sender.isAdmin ? channelRepository.removeAdmin : channelRepository.removeSubscriber
+const removeSender = (db, channel, sender, cr) => {
+  const remove = sender.isPublisher ? channelRepository.removePublisher : channelRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -140,27 +140,27 @@ const removeSubscriber = (db, channel, sender, cr) => {
 
 // REMOVE
 
-const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
-  const cr = commandResponses.admin.remove
-  if (!sender.isAdmin) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  if (!validator.validatePhoneNumber(adminNumber))
-    return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
-  if (!(await channelRepository.isAdmin(db, channel.phoneNumber, adminNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotAdmin(adminNumber) }
-  return removeAdmin(db, channel, adminNumber, cr)
+const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
+  const cr = commandResponses.publisher.remove
+  if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  if (!validator.validatePhoneNumber(publisherNumber))
+    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, publisherNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotPublisher(publisherNumber) }
+  return removePublisher(db, channel, publisherNumber, cr)
 }
 
-const removeAdmin = async (db, channel, adminNumber, cr) =>
+const removePublisher = async (db, channel, publisherNumber, cr) =>
   channelRepository
-    .removeAdmin(db, channel.phoneNumber, adminNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
+    .removePublisher(db, channel.phoneNumber, publisherNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(publisherNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(publisherNumber) }))
 
 // RENAME
 
 const maybeRenameChannel = async (db, channel, sender, newName) => {
   const cr = commandResponses.rename
-  return sender.isAdmin
+  return sender.isPublisher
     ? renameChannel(db, channel, newName, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }

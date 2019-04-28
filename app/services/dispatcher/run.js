@@ -28,7 +28,7 @@ const { channelPhoneNumber } = require('../../config')
 /**
  * type Sender = {
  *   phoneNumber: string,
- *   isAdmin: boolean,
+ *   isPublisher: boolean,
  *   isSubscriber: boolean,
  * }
  */
@@ -66,26 +66,26 @@ const handleMessage = async (db, iface, payload) => {
 
 const authenticateSender = async (db, channelPhoneNumber, sender) => ({
   phoneNumber: sender,
-  isAdmin: await channelRepository.isAdmin(db, channelPhoneNumber, sender),
+  isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
   isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
 })
 
 const initialize = async (db, iface, channelPhoneNumber) => {
   const channel = await channelRepository.findDeep(db, channelPhoneNumber)
-  return welcomeNewAdmins(db, iface, channel)
+  return welcomeNewPublishers(db, iface, channel)
 }
 
-const welcomeNewAdmins = async (db, iface, channel) => {
-  const unwelcomed = await channelRepository.getUnwelcomedAdmins(db, channelPhoneNumber)
-  const addingAdmin = 'the system administrator'
+const welcomeNewPublishers = async (db, iface, channel) => {
+  const unwelcomed = await channelRepository.getUnwelcomedPublishers(db, channelPhoneNumber)
+  const addingPublisher = 'the system administrator'
 
   isEmpty(unwelcomed)
-    ? logger.log('No new admins to welcome.')
-    : logger.log(`Sending welcome messages to ${unwelcomed.length} new admin(s)...`)
+    ? logger.log('No new publishers to welcome.')
+    : logger.log(`Sending welcome messages to ${unwelcomed.length} new publisher(s)...`)
 
   return Promise.all(
-    unwelcomed.map(newAdmin =>
-      messenger.welcomeNewAdmin({ db, iface, channel, newAdmin, addingAdmin }),
+    unwelcomed.map(newPublisher =>
+      messenger.welcomeNewPublisher({ db, iface, channel, newPublisher, addingPublisher }),
     ),
   )
 }

@@ -13,21 +13,21 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 describe('dispatcher service', () => {
   describe('running the service', () => {
     const [db, iface] = [{}, {}]
-    const channel = { ...channelFactory(), administrations: [], subscriptions: [] }
+    const channel = { ...channelFactory(), publications: [], subscriptions: [] }
     const sender = genPhoneNumber()
-    const unwelcomedAdmins = [genPhoneNumber(), genPhoneNumber()]
+    const unwelcomedPublishers = [genPhoneNumber(), genPhoneNumber()]
     const authenticatedSender = {
       phoneNumber: sender,
-      isAdmin: true,
+      isPublisher: true,
       isSubscriber: true,
     }
 
     let getDbusStub,
-      getUnwelcomedAdminsStub,
-      welcomeNewAdminStub,
+      getUnwelcomedPublishersStub,
+      welcomeNewPublisherStub,
       onReceivedMessageStub,
       findDeepStub,
-      isAdminStub,
+      isPublisherStub,
       isSubscriberStub,
       processCommandStub,
       dispatchStub
@@ -36,11 +36,11 @@ describe('dispatcher service', () => {
       // main loop stubs --v
       getDbusStub = sinon.stub(signal, 'getDbusInterface').returns(Promise.resolve(iface))
 
-      getUnwelcomedAdminsStub = sinon
-        .stub(channelRepository, 'getUnwelcomedAdmins')
-        .returns(unwelcomedAdmins)
+      getUnwelcomedPublishersStub = sinon
+        .stub(channelRepository, 'getUnwelcomedPublishers')
+        .returns(unwelcomedPublishers)
 
-      welcomeNewAdminStub = sinon.stub(messenger, 'welcomeNewAdmin').returns(Promise.resolve())
+      welcomeNewPublisherStub = sinon.stub(messenger, 'welcomeNewPublisher').returns(Promise.resolve())
 
       // main loop stubs --^
 
@@ -52,7 +52,7 @@ describe('dispatcher service', () => {
 
       findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
 
-      isAdminStub = sinon.stub(channelRepository, 'isAdmin').returns(Promise.resolve(true))
+      isPublisherStub = sinon.stub(channelRepository, 'isPublisher').returns(Promise.resolve(true))
 
       isSubscriberStub = sinon
         .stub(channelRepository, 'isSubscriber')
@@ -73,11 +73,11 @@ describe('dispatcher service', () => {
 
     afterEach(() => {
       getDbusStub.restore()
-      getUnwelcomedAdminsStub.restore()
-      welcomeNewAdminStub.restore()
+      getUnwelcomedPublishersStub.restore()
+      welcomeNewPublisherStub.restore()
       onReceivedMessageStub.restore()
       findDeepStub.restore()
-      isAdminStub.restore()
+      isPublisherStub.restore()
       isSubscriberStub.restore()
       processCommandStub.restore()
       dispatchStub.restore()
@@ -87,14 +87,14 @@ describe('dispatcher service', () => {
       expect(onReceivedMessageStub.callCount).to.eql(1)
     })
 
-    it('it sends a welcome message to every unwelcomed admin', () => {
-      unwelcomedAdmins.forEach((newAdmin, i) => {
-        expect(welcomeNewAdminStub.getCall(i).args[0]).to.eql({
+    it('it sends a welcome message to every unwelcomed publisher', () => {
+      unwelcomedPublishers.forEach((newPublisher, i) => {
+        expect(welcomeNewPublisherStub.getCall(i).args[0]).to.eql({
           db,
           iface,
           channel,
-          newAdmin,
-          addingAdmin: 'the system administrator',
+          newPublisher,
+          addingPublisher: 'the system administrator',
         })
       })
     })
@@ -105,7 +105,7 @@ describe('dispatcher service', () => {
       })
 
       it('retrieves permissions for the message sender', () => {
-        expect(isAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
+        expect(isPublisherStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
         expect(isSubscriberStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
       })
 

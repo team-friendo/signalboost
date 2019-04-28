@@ -4,6 +4,16 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
+echo "--- building docker image..."
+
+docker build -t "signalboost:latest" .
+
+echo "--- installing dependencies..."
+
+docker-compose -f docker-compose-dev.yml \
+               run --entrypoint 'yarn install' \
+               orchestrator
+
 echo "--- running migrations..."
 
 docker-compose -f docker-compose-dev.yml \

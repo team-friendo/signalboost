@@ -1,7 +1,7 @@
 import { genPhoneNumber } from './phoneNumber'
 
-export const administrationFactory = attrs => ({
+export const publicationFactory = attrs => ({
   channelPhoneNumber: genPhoneNumber(),
-  humanPhoneNumber: genPhoneNumber(),
+  publisherPhoneNumber: genPhoneNumber(),
   ...attrs,
 })

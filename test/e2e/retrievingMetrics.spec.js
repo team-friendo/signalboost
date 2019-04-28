@@ -31,7 +31,7 @@ describe('retrieving metrics', () => {
             {
               include: [
                 { model: db.subscription },
-                { model: db.administration },
+                { model: db.publication },
                 { model: db.messageCount },
                 { model: db.welcome },
               ],
@@ -60,7 +60,7 @@ describe('retrieving metrics', () => {
       response.body.channels.forEach(ch => {
         expect(ch.phoneNumber).to.be.a('string')
         expect(ch.name).to.be.a('string')
-        expect(ch.admins).to.be.a('number')
+        expect(ch.publishers).to.be.a('number')
         expect(ch.subscribers).to.be.a('number')
         expect(ch.messageCount.broadcastOut).to.be.a('number')
         expect(ch.messageCount.commandIn).to.be.a('number')

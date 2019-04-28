@@ -29,14 +29,14 @@ describe('channel presenters', () => {
               {
                 name: 'foo',
                 phoneNumber: '+11111111111',
-                admins: 2,
+                publishers: 2,
                 subscribers: 2,
                 messageCount: { broadcastOut: 4, commandIn: 5 },
               },
               {
                 name: 'bar',
                 phoneNumber: '+19999999999',
-                admins: 1,
+                publishers: 1,
                 subscribers: 1,
                 messageCount: { broadcastOut: 100, commandIn: 20 },
               },

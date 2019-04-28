@@ -12,8 +12,8 @@ describe('activating a channel', () => {
   const timeout = 20000
   const phoneNumber = genPhoneNumber()
   const name = 'foo'
-  const admins = ['+12223334444', '+13334445555']
-  let db, container, channel, channelCount, adminCount, response
+  const publishers = ['+12223334444', '+13334445555']
+  let db, container, channel, channelCount, publisherCount, response
 
   before(async function() {
     this.timeout(timeout)
@@ -21,20 +21,20 @@ describe('activating a channel', () => {
 
     await Promise.all([
       stopContainer(phoneNumber),
-      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.publication.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.channel.destroy({ where: { phoneNumber } }),
       db.phoneNumber.findOrCreate({ where: { phoneNumber }, defaults: { status: 'VERIFIED' } }),
     ])
 
     channelCount = await db.channel.count()
-    adminCount = await db.administration.count()
+    publisherCount = await db.publication.count()
 
     /***********************************************/
     response = await request('https://signalboost.ngrok.io')
       .post('/channels')
       .set('Token', orchestrator.authToken)
-      .send({ phoneNumber, name, admins })
+      .send({ phoneNumber, name, publishers })
     /***********************************************/
 
     container = await getContainer(phoneNumber)
@@ -46,7 +46,7 @@ describe('activating a channel', () => {
 
     await Promise.all([
       stopContainer(phoneNumber),
-      db.administration.destroy({ where: { channelPhoneNumber: phoneNumber } }),
+      db.publication.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.subscription.destroy({ where: { channelPhoneNumber: phoneNumber } }),
       db.channel.destroy({ where: { phoneNumber } }),
       db.phoneNumber.destroy({ where: { phoneNumber } }),
@@ -71,16 +71,16 @@ describe('activating a channel', () => {
     })
   })
 
-  it('creates db records for the admins', async () => {
-    expect(await db.administration.count()).to.eql(adminCount + 2)
+  it('creates db records for the publishers', async () => {
+    expect(await db.publication.count()).to.eql(publisherCount + 2)
   })
 
-  it('stores the admin and channel phone numbers in the admin records', async () => {
-    const administrations = await channel.getAdministrations()
+  it('stores the publisher and channel phone numbers in the publisher records', async () => {
+    const publications = await channel.getPublications()
     expect(
-      administrations.map(a => pick(a, ['channelPhoneNumber', 'humanPhoneNumber'])),
+      publications.map(a => pick(a, ['channelPhoneNumber', 'publisherPhoneNumber'])),
     ).to.have.deep.members(
-      admins.map(a => ({ channelPhoneNumber: phoneNumber, humanPhoneNumber: a })),
+      publishers.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
     )
   })
 
@@ -97,7 +97,7 @@ describe('activating a channel', () => {
       name: 'foo',
       phoneNumber,
       twilioSid: null,
-      admins: ['+12223334444', '+13334445555'],
+      publishers: ['+12223334444', '+13334445555'],
     })
     expect(response.body.createdAt).to.be.a('string')
     expect(response.body.updatedAt).to.be.a('string')

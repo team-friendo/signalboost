@@ -10,7 +10,7 @@ const subscriptionOf = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      humanPhoneNumber: {
+      subscriberPhoneNumber: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: isPhoneNumber,
