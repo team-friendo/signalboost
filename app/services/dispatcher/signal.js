@@ -4,7 +4,7 @@ const fs = require('fs-extra')
 const { promisifyCallback, wait } = require('../util.js')
 const logger = require('./logger')
 const {
-  dbus: { connectionInterval, maxConnectionAttempts },
+  signal: { connectionInterval, maxConnectionAttempts },
 } = require('../../config')
 
 const getSocket = async (attempts = 0) => {
@@ -44,4 +44,4 @@ const sendMessage = (sock, username, messageBody, recipients, attachments = []) 
     ),
   )
 
-module.exports = { getSocket, sendMessage, onReceivedMessage }
+module.exports = { getSocket, sendMessage }
