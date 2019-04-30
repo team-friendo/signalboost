@@ -21,8 +21,8 @@ const run = async (db, emitter) => {
   await startApiServer(port, db, emitter)
   logger.log(`api server listening on port ${port}`)
 
-  logger.log('intializing channels...')
-  await initializeChannels(db, emitter)
+  // logger.log('intializing channels...')
+  // await initializeChannels(db, emitter)
 
   logger.log('RUNNING! :)')
 }

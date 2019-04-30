@@ -2,7 +2,8 @@ version: '3'
 
 volumes:
   postgres_data:
-  logs:
+  signal_sock:
+  signal_data:
 
 services:
   db:
@@ -10,12 +11,24 @@ services:
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+  signald:
+    image: signald
+    # build: ./docker/signald.dockerfile
+    container_name: signald
+    networks:
+      - default
+    volumes:
+      - ./bin:/signalboost/bin
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
   orchestrator:
     image: signalboost
-    build: .
+    # build: ./docker/signalboost.dockerfile
     container_name: signalboost_orchestrator
     depends_on:
       - db
+      - signald
     entrypoint: /signalboost/bin/entrypoint/orchestrator
     env_file: .env
     environment:
@@ -23,18 +36,42 @@ services:
       NODE_ENV: "${NODE_ENV:-development}"
     ports:
       - 3000:3000
+    networks:
+      - default
     volumes:
       - ./.sequelizerc:/signalboost/.sequelizerc
       - ./app:/signalboost/app
       - ./bin:/signalboost/bin
-      - ./conf/supervisord:/signalboost/supervisord_conf
-      - ./conf/dbus/org.asamk.Signal.conf:/etc/dbus-1/system.d/org.asamk.Signal.conf
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      - ./logs:/signalboost/logs
-      - ./signal_data:/root/.config/signal/data
+      # TODO: replace this with named volume...
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
-      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+  dispatcher:
+    image: signalboost
+    # build: ./docker/signalboost.dockerfile
+    container_name: signalboost_dispatcher
+    depends_on:
+      - db
+      - signald
+      - orchestrator
+    entrypoint: /signalboost/bin/entrypoint/dispatcher
+    env_file: .env
+    environment:
+      PROJECT_ROOT: "$PWD"
+      NODE_ENV: "${NODE_ENV:-development}"
+    networks:
+      - default
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+    restart: unless-stopped
   ngrok:
     container_name: ngrok
     ports:
@@ -47,3 +84,4 @@ services:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
       - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
       - NGROK_PORT=orchestrator:3000
+    restart: unless-stopped

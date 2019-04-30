@@ -42,20 +42,30 @@ const { channelPhoneNumber } = require('../../config')
 
 // MAIN FUNCTIONS
 
+// const oldRun = async db => {
+//   const iface = await signal.getDbusInterface()
+//
+//   logger.log(`Dispatcher listening on channel: ${channelPhoneNumber}...`)
+//   signal.onReceivedMessage(iface)(payload => handleMessage(db, iface, payload).catch(logger.error))
+//
+//   logger.log(`Initializing Dispatcher...`)
+//   await initialize(db, iface, channelPhoneNumber).catch(e =>
+//     logger.error(`Error Initializing Dispatcher: ${e}`),
+//   )
+//   logger.log(`Dispatcher initialized!`)
+// }
+
 const run = async db => {
-  const iface = await signal.getDbusInterface()
-
-  logger.log(`Dispatcher listening on channel: ${channelPhoneNumber}...`)
-  signal.onReceivedMessage(iface)(payload => handleMessage(db, iface, payload).catch(logger.error))
-
-  logger.log(`Initializing Dispatcher...`)
-  await initialize(db, iface, channelPhoneNumber).catch(e =>
-    logger.error(`Error Initializing Dispatcher: ${e}`),
-  )
-  logger.log(`Dispatcher initialized!`)
+  const sock = await signal.getSocket()
+  sock.on('connect', () => {
+    signal
+      .sendMessage(sock, '+14049486063', 'hello world!', ['+18319176400'])
+      .then(() => logger.log('>>>>>>>>> sent message!'))
+      .catch(logger.error)
+  })
 }
 
-const handleMessage = async (db, iface, payload) => {
+const handleMessage = (db, sock) => async payload => {
   logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
   const [channel, sender] = await Promise.all([
     channelRepository.findDeep(db, channelPhoneNumber),

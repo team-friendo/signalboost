@@ -17,19 +17,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     curl \
     git \
     gnupg \
+    libpq-dev \
     procps \
     pkg-config \
     python \
     xz-utils \
     wget
-
-# ------------------------------------------------------
-# --- Install, Configure Supervisord (Golang version)
-# ------------------------------------------------------
-# see: https://github.com/ochinchina/supervisord
-
-# Copy supervisord binary from Dockerhub
-COPY --from=ochinchina/supervisord:latest /usr/local/bin/supervisord /usr/local/bin/supervisord
 
 # ------------------------------------------------------
 # --- Install Node.js
@@ -85,43 +78,6 @@ RUN set -ex \
     && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn \
     && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg \
     && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz
-
-# ------------------------------------------------------
-# --- Install and Configure JVM
-# ------------------------------------------------------
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    openjdk-8-jdk-headless
-
-ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
-
-# ------------------------------------------------------
-# --- Install and Configure Signal-Cli
-# ------------------------------------------------------
-
-ENV SIGNAL_CLI_VERSION "0.6.2"
-
-# Dependencies
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libpq-dev \
-    libunixsocket-java
-
-# Install from repo
-RUN wget https://github.com/AsamK/signal-cli/releases/download/v"${SIGNAL_CLI_VERSION}"/signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz; \
-    tar xf signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz -C /opt; \
-    ln -sf /opt/signal-cli-"${SIGNAL_CLI_VERSION}"/bin/signal-cli /usr/local/bin; \
-    rm -rf signal-cli-"${SIGNAL_CLI_VERSION}".tar.gz;
-
-# ------------------------------------------------------
-# --- Install and Configure DBus
-# ------------------------------------------------------
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    libdbus-1-dev \
-    dbus --fix-missing
-
-# Need this to hold the /var/run/dbus/system_bus_socket file descriptor
-RUN mkdir -p /var/run/dbus
 
 # ------------------------------------------------------
 # --- Configure Environment
