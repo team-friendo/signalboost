@@ -2,6 +2,7 @@ const docker = require('../docker')
 const channelRepository = require('../../../db/repositories/channel')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const { statuses } = require('../../../db/models/phoneNumber')
+const logger = require('../logger')
 
 // (Database, Array<ChannelAttributes>) -> Promise<Array<ChannelStatus>>
 const activateMany = (db, channelAttrs) =>
@@ -21,6 +22,7 @@ const activate = async ({ db, phoneNumber, name, publishers }) => {
       publishers,
     }
   } catch (error) {
+    logger.error('Error Activating Channel: ', error);
     return { status: statuses.ERROR, error, request: { phoneNumber, name, publishers } }
   }
 }

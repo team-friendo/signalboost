@@ -5,7 +5,7 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo ""
   echo "-p : phone number of channel to activate";
   echo "-n : name to give to the channel once it is activated";
-  echo "-a : comma-delimited list of admin phone numbers (optional)";
+  echo "-b : comma-delimited list of publisher phone numbers";
   echo "-u : url to target (in dev, use signalboost.ngrok.io)";
   echo ""
   exit 1
@@ -18,7 +18,7 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
   exit 1
 fi
 
-while getopts ":p:n:a:u:" opt; do
+while getopts ":p:n:b:u:" opt; do
   case "$opt" in
     p)
       phone_number="$OPTARG"
@@ -26,8 +26,8 @@ while getopts ":p:n:a:u:" opt; do
     n)
       name="$OPTARG"
       ;;
-    a)
-      admins="$OPTARG"
+    b)
+      publishers="$OPTARG"
       ;;
     u)
       url="$OPTARG"
@@ -45,16 +45,17 @@ if [ -z "$name" ];then
   exit 1;
 fi
 
-if [ -z "$admins" ]
+if [ -z "$publishers" ]
 then
-  admins="[]"
-elif [[ ! $admins =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
+  echo "> ERROR: you must provide at least one publisher after the -b flag to create a channel"
+  exit 1
+elif [[ ! $publishers =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
   echo "> ERROR: -a must be a  comma-delimited list of 10 digit phone numbers prefixed by a country code"
   exit 1
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  admins="[\"$(echo $admins | sed -re "s/,/\", \"/")\"]"
+  publishers="[\"$(echo $publishers | sed -re "s/,/\", \"/")\"]"
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
@@ -64,5 +65,5 @@ echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"publishers\":$publishers }" \
      https://${url}/channels | jq
