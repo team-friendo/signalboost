@@ -49,7 +49,9 @@ const run = async db => {
   signal.onReceivedMessage(iface)(payload => handleMessage(db, iface, payload).catch(logger.error))
 
   logger.log(`Initializing Dispatcher...`)
-  await initialize(db, iface, channelPhoneNumber)
+  await initialize(db, iface, channelPhoneNumber).catch(e =>
+    logger.error(`Error Initializing Dispatcher: ${e}`),
+  )
   logger.log(`Dispatcher initialized!`)
 }
 
