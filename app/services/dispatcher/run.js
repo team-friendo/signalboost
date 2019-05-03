@@ -9,11 +9,10 @@ const { channelPhoneNumber } = require('../../config')
 /**
  * type Dispatchable = {
  *   db: SequelizeDatabaseConnection,
- *   iface: DbusInterface,
+ *   sock: Socket,
  *   channel: Channel,
  *   sender: Sender,
- *   message: string,
- *   attachments: string,
+ *   message: OutMessage,
  * }
  */
 
@@ -57,37 +56,48 @@ const { channelPhoneNumber } = require('../../config')
 
 const run = async db => {
   const sock = await signal.getSocket()
-  sock.on('connect', () => {
-    signal
-      .sendMessage(sock, '+14049486063', 'hello world!', ['+18319176400'])
-      .then(() => logger.log('>>>>>>>>> sent message!'))
-      .catch(logger.error)
+  sock.setEncoding('utf8')
+  sock.on('connect', async () => {
+    // sock.on('data', msg =>
+    //   console.log(`++++++\n ${JSON.stringify(JSON.parse(msg), null, ' ')}++++++`),
+    // )
+    // this is how to register verify...
+    // await signal.register(sock, '+14049486063')
+    // await signal.verify(sock, '+14049486063', '433-880')
+    await signal.subscribe(sock, '+14049486063')
+    signal.onReceivedMessage(sock, handleMessage(db, sock))
   })
 }
 
-const handleMessage = (db, sock) => async payload => {
-  logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
-  const [channel, sender] = await Promise.all([
-    channelRepository.findDeep(db, channelPhoneNumber),
-    authenticateSender(db, channelPhoneNumber, payload.sender),
-  ])
-  return messenger.dispatch(
-    await executor.processCommand({ ...payload, db, iface, channel, sender }),
-  )
+const handleMessage = (db, sock) => async inMessage => {
+  if (signal.shouldRelay(inMessage)) {
+    const channelPhoneNumber = inMessage.data.username
+
+    const [channel, sender] = await Promise.all([
+      channelRepository.findDeep(db, channelPhoneNumber),
+      classifySender(db, channelPhoneNumber, inMessage.data.source),
+    ]).catch(console.error)
+
+    // TODO: rename 'message' -> 'envelope'
+    const message = signal.parseOutMessage(inMessage)
+    return messenger
+      .dispatch(await executor.processCommand({ db, sock, channel, sender, message }))
+      .catch(logger.error)
+  }
 }
 
-const authenticateSender = async (db, channelPhoneNumber, sender) => ({
+const classifySender = async (db, channelPhoneNumber, sender) => ({
   phoneNumber: sender,
   isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
   isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
 })
 
-const initialize = async (db, iface, channelPhoneNumber) => {
+const initialize = async (db, sock, channelPhoneNumber) => {
   const channel = await channelRepository.findDeep(db, channelPhoneNumber)
-  return welcomeNewPublishers(db, iface, channel)
+  return welcomeNewPublishers(db, sock, channel)
 }
 
-const welcomeNewPublishers = async (db, iface, channel) => {
+const welcomeNewPublishers = async (db, sock, channel) => {
   const unwelcomed = await channelRepository.getUnwelcomedPublishers(db, channelPhoneNumber)
   const addingPublisher = 'the system administrator'
 
@@ -97,7 +107,7 @@ const welcomeNewPublishers = async (db, iface, channel) => {
 
   return Promise.all(
     unwelcomed.map(newPublisher =>
-      messenger.welcomeNewPublisher({ db, iface, channel, newPublisher, addingPublisher }),
+      messenger.welcomeNewPublisher({ db, sock, channel, newPublisher, addingPublisher }),
     ),
   )
 }
