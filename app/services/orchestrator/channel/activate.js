@@ -11,8 +11,8 @@ const activateMany = (db, channelAttrs) =>
 // ({ Database, String, String }) -> Promise<ChannelStatus>
 const activate = async ({ db, phoneNumber, name, publishers }) => {
   try {
-    const { Id: containerId } = await docker.getOrCreateContainer(phoneNumber, name)
-    await channelRepository.activate(db, phoneNumber, name, containerId)
+    // const { Id: containerId } = await docker.getOrCreateContainer(phoneNumber, name)
+    await channelRepository.activate(db, phoneNumber, name)
     await channelRepository.addPublishers(db, phoneNumber, publishers)
     return {
       ...(await phoneNumberRepository
@@ -22,7 +22,7 @@ const activate = async ({ db, phoneNumber, name, publishers }) => {
       publishers,
     }
   } catch (error) {
-    logger.error('Error Activating Channel: ', error);
+    logger.log('Error Activating Channel: ', error)
     return { status: statuses.ERROR, error, request: { phoneNumber, name, publishers } }
   }
 }

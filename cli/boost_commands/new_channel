@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
-  echo "this command activates channels. valid options are:"
+  echo "this command creates channels from verified phone numbers. valid options are:"
   echo ""
   echo "-p : phone number of channel to activate";
   echo "-n : name to give to the channel once it is activated";
@@ -14,7 +14,7 @@ fi
 echo "--- checking environment and args..."
 
 if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ source .env\`"
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ set -a && source .env && set +a\`"
   exit 1
 fi
 
@@ -60,7 +60,7 @@ fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
-echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
+echo "--- provisioning new channel [${name}] on phone number ${phone_number} at url ${url}"
 
 curl -s -X POST \
      -H "Content-Type: application/json" \

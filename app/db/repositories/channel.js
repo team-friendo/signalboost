@@ -1,15 +1,18 @@
 const { get } = require('lodash')
 const { Op } = require('sequelize')
+const logger = require('../../services/orchestrator/logger')
 
 // PUBLIC FUNCTIONS
 
 // CHANNEL QUERIES
-const activate = async (db, phoneNumber, name, containerId) => {
-  const channel = await findByPhoneNumber(db, phoneNumber)
+const activate = async (db, phoneNumber, name) => {
+  const channel = await findByPhoneNumber(db, phoneNumber).catch(() =>
+    logger.error('ERROR: no channel exists with phone number: ', phoneNumber),
+  )
   return channel
-    ? channel.update({ name, containerId })
+    ? channel.update({ name })
     : db.channel.create(
-        { phoneNumber, name, containerId, messageCount: {} },
+        { phoneNumber, name, messageCount: {} },
         { include: [{ model: db.messageCount }] },
       )
 }
