@@ -38,13 +38,18 @@
     # DOCKER IMAGE #
     ################
 
-    - name: Load base Dockerfile
+    - name: Load base dockerfiles
       copy:
-        src: files/Dockerfile
-        dest: /srv/Dockerfile
+        src: files/docker/
+        dest: /srv/signalboost/docker/
       tags: docker
 
-    - name: Build base docker image
-      command: docker build -t signalboost:latest /srv/
+    - name: Build signalboost container
+      command: docker build -f /srv/signalboost/docker/signalboost.dockerfile -t signalboost:latest /srv/signalboost
+      register: build_output
+      tags: docker
+
+    - name: Build signald container
+      command: docker build -f /srv/signalboost/docker/signald.dockerfile -t signald:latest /srv/signalboost
       register: build_output
       tags: docker

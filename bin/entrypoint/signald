@@ -2,4 +2,3 @@
 
 rm /var/run/signald/signald.sock
 signald -d /var/lib/signald
-# while true; do sleep 86400; done

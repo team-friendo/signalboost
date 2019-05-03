@@ -2,4 +2,3 @@
 
 echo "--- running orchestrator..."
 node /signalboost/app/services/orchestrator
-# while true; do sleep 86400; done

@@ -49,10 +49,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y signald
 
 # create file descriptor for socket
 RUN mkdir -p /var/run/signald
-RUN chown signald:signald /var/run/signald
 
 # create data directory for keystore
-# RUN mkdir -p /var/lib/signald/data
+RUN mkdir -p /var/lib/signald/data
 
 # ------------------------------------------------------
 # --- Configure Environment

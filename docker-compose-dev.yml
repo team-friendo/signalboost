@@ -14,7 +14,6 @@ services:
     restart: unless-stopped
   signald:
     image: signald
-    # build: ./docker/signald.dockerfile
     container_name: signald
     networks:
       - default
@@ -24,7 +23,6 @@ services:
       - signal_sock:/var/run/signald/
   orchestrator:
     image: signalboost
-    # build: ./docker/signalboost.dockerfile
     container_name: signalboost_orchestrator
     depends_on:
       - db
@@ -44,14 +42,12 @@ services:
       - ./bin:/signalboost/bin
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      # TODO: replace this with named volume...
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
   dispatcher:
     image: signalboost
-    # build: ./docker/signalboost.dockerfile
     container_name: signalboost_dispatcher
     depends_on:
       - db

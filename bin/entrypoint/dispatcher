@@ -2,4 +2,3 @@
 
 echo "--- running dispatcher..."
 node /signalboost/app/services/dispatcher
-# while true; do sleep 86400; done
