@@ -1,5 +1,6 @@
 const signal = require('./signal')
 const messages = require('./messages')
+const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const channelRepository = require('../../db/repositories/channel')
@@ -11,11 +12,7 @@ const channelRepository = require('../../db/repositories/channel')
 const messageTypes = {
   BROADCAST: 'BROADCAST',
   RESPONSE: 'RESPONSE',
-  NOTIFICATION: 'NOTIFICATION',
-}
-
-const notificationTypes = {
-  NEW_PUBLISHER: 'NEW_PUBLISHER',
+  NOTIFY_NEW_PUBLISHER: 'NEW_PUBLISHER',
 }
 
 /***************
@@ -24,27 +21,25 @@ const notificationTypes = {
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  // TODO: parseMessageType should only parse a messageType. because... right?
-  const [messageType, notificationType] = parseMessageType(commandResult)
-  return {
-    [messageTypes.BROADCAST]: () => handleBroadcast(dispatchable),
-    [messageTypes.RESPONSE]: () => handleResponse({ commandResult, dispatchable }),
-    [messageTypes.NOTIFICATION]: () =>
-      handleNotification({ commandResult, dispatchable, notificationType }),
-  }[messageType]()
+  const messageType = parseMessageType(commandResult)
+  switch (messageType) {
+    case messageTypes.BROADCAST:
+      return handleBroadcast(dispatchable)
+    case messageTypes.RESPONSE:
+      return handleResponse({ commandResult, dispatchable })
+    case messageTypes.NOTIFY_NEW_PUBLISHER:
+      return handleNotification({ commandResult, dispatchable, messageType })
+    default:
+      return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
+  }
 }
 
 // CommandResult -> [MessageType, NotificationType]
 const parseMessageType = commandResult => {
-  if (commandResult.status === statuses.NOOP) return [messageTypes.BROADCAST]
-  else if (parseNotifiable(commandResult))
-    return [messageTypes.NOTIFICATION, parseNotifiable(commandResult)]
-  else return [messageTypes.RESPONSE]
+  if (commandResult.status === statuses.NOOP) return messageTypes.BROADCAST
+  else if (isNewPublisher(commandResult)) return messageTypes.NOTIFY_NEW_PUBLISHER
+  else return messageTypes.RESPONSE
 }
-
-const parseNotifiable = ({ command, status }) =>
-  // TODO: extend to handle other notifiable command results
-  isNewPublisher({ command, status }) ? notificationTypes.NEW_PUBLISHER : null
 
 const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
@@ -60,13 +55,13 @@ const handleResponse = ({ commandResult, dispatchable }) => {
 }
 
 // TODO: move notification type parsing to here
-const handleNotification = ({ commandResult, dispatchable, notificationType }) => {
+const handleNotification = ({ commandResult, dispatchable, messageType }) => {
   const [cr, d] = [commandResult, dispatchable]
   return Promise.all([
     handleResponse({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
-      [notificationTypes.NEW_PUBLISHER]: () =>
+      [messageTypes.NOTIFY_NEW_PUBLISHER]: () =>
         welcomeNewPublisher({
           db: d.db,
           sock: d.sock,
@@ -74,7 +69,7 @@ const handleNotification = ({ commandResult, dispatchable, notificationType }) =
           newPublisher: cr.payload,
           addingPublisher: d.sender.phoneNumber,
         }),
-    }[notificationType](),
+    }[messageType](),
   ])
 }
 
@@ -157,7 +152,6 @@ const parseNotificationMessage = (channel, notification) => ({
 
 module.exports = {
   messageTypes,
-  notificationTypes,
   /**********/
   broadcast,
   dispatch,
