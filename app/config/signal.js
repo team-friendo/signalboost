@@ -7,6 +7,8 @@ const defaults = {
 
 const test = {
   verificationTimeout: 30, // 30 millis
+  connectionInterval: 10, // 10 milli
+  maxConnectionAttempts: 10,
 }
 
 module.exports = {

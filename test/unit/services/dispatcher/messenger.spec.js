@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import signal from '../../../../app/services/dispatcher/signal'
+import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import channelRepository from '../../../../app/db/repositories/channel'
 import messenger, {

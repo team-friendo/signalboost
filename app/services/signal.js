@@ -1,11 +1,11 @@
 const net = require('net')
-const { get, pick } = require('lodash')
+const { pick } = require('lodash')
 const fs = require('fs-extra')
-const { promisifyCallback, wait } = require('../util.js')
-const logger = require('./logger')
+const { promisifyCallback, wait } = require('./util.js')
+const logger = require('./dispatcher/logger')
 const {
   signal: { connectionInterval, maxConnectionAttempts },
-} = require('../../config')
+} = require('../config/index')
 
 /*
  * type InboundSignaldMessage = {
@@ -67,7 +67,7 @@ const messageTypes = {
   VERIFY: 'verify',
 }
 
-// PUBLIC FUNCTIONS
+// UNIX SOCKET FUNCTIONS
 
 const getSocket = async (attempts = 0) => {
   logger.log(`connecting to signald...`)
@@ -84,6 +84,11 @@ const getSocket = async (attempts = 0) => {
   }
 }
 
+const write = (sock, data) =>
+  new Promise((resolve, reject) =>
+    sock.write(JSON.stringify(data) + '\n', promisifyCallback(resolve, reject)),
+  )
+
 // SIGNALD COMMANDS
 
 const register = (sock, channelPhoneNumber) =>
@@ -96,56 +101,42 @@ const verify = (sock, channelPhoneNumber, code) =>
 const subscribe = (sock, channelPhoneNumber) =>
   write(sock, { type: messageTypes.SUBSCRIBE, username: channelPhoneNumber })
 
-const sendMessage = (sock, outMessage) => write(sock, outMessage)
+const sendMessage = (sock, outboundMessage) => write(sock, outboundMessage)
 
-const onReceivedMessage = (sock, handleMessage) =>
-  sock.on('data', data => handleMessage(JSON.parse(data)))
+// (Socket, Array<string>, OutMessage) -> Promise<void>
+const broadcastMessage = (sock, recipients, outboundMessage) =>
+  Promise.all(
+    recipients.map(recipientNumber => sendMessage(sock, { ...outboundMessage, recipientNumber })),
+  )
 
-// DISPATCHER INTERFACE
-
-const shouldRelay = sdMsg => sdMsg.type === messageTypes.MESSAGE && get(sdMsg, 'data.dataMessage')
+// MESSAGE PARSING
 
 // InboundMessage -> OutboundMessage
-const parseOutboundEnvelope = inboundEnvelope => {
+const parseOutboundSdMessage = inboundSdMessage => {
   const {
     data: { username, dataMessage },
-  } = inboundEnvelope
+  } = inboundSdMessage
   return {
     type: messageTypes.SEND,
     username,
     recipientNumber: null,
     messageBody: dataMessage.message,
-    attachments: dataMessage.attachments.map(parseOutAttachment),
+    attachments: dataMessage.attachments.map(parseOutboundAttachment),
   }
 }
 
-const parseOutAttachment = inAttachment => ({
+const parseOutboundAttachment = inAttachment => ({
   filename: inAttachment.storedFilename,
   ...pick(inAttachment, ['width', 'height', 'voiceNote']),
 })
-
-// (Socket, Array<string>, OutMessage) -> Promise<void>
-const broadcastMessage = (sock, recipients, outMessage) =>
-  Promise.all(
-    recipients.map(recipientNumber => sendMessage(sock, { ...outMessage, recipientNumber })),
-  )
-
-// HELPER FUNCTIONS
-
-const write = (sock, data) =>
-  new Promise((resolve, reject) =>
-    sock.write(JSON.stringify(data) + '\n', promisifyCallback(resolve, reject)),
-  )
 
 module.exports = {
   messageTypes,
   getSocket,
   subscribe,
-  onReceivedMessage,
   broadcastMessage,
   register,
   sendMessage,
-  shouldRelay,
-  parseOutboundEnvelope,
+  parseOutboundSdMessage,
   verify,
 }
