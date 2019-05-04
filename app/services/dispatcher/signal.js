@@ -8,7 +8,7 @@ const {
 } = require('../../config')
 
 /*
- * type InMessage = {
+ * type InboundSignaldMessage = {
  *   type: "message",
  *   data: {
  *     username: string,
@@ -21,7 +21,7 @@ const {
  *   }
  * }
  *
- * type InAttachment = {
+ * type InboundAttachment = {
  *   contentType: string,
  *   id: number,
  *   size: number,
@@ -34,7 +34,7 @@ const {
  *   digest: string, (base64)
  * }
  *
- * type OutMessage = {
+ * type OutboundSignaldMessage = {
  *   type: "send",
  *   username: string,
  *   recipientNumber, ?string, (must include either recipientId or recipientGroupId)
@@ -44,7 +44,7 @@ const {
  *   quote: ?QuoteObject, (ingoring)
  * }
  *
- * type OutAttachment = {
+ * type OutboundAttachment = {
  *   filename: string (The filename of the attachment) == `storedFilename`
  *   caption: string (An optional caption) == ../../dataMessage.message
  *   width: int (The width of the image) == width
@@ -103,14 +103,13 @@ const onReceivedMessage = (sock, handleMessage) =>
 
 // DISPATCHER INTERFACE
 
-const shouldRelay = message =>
-  message.type === messageTypes.MESSAGE && get(message, 'data.dataMessage')
+const shouldRelay = sdMsg => sdMsg.type === messageTypes.MESSAGE && get(sdMsg, 'data.dataMessage')
 
-// InMessage -> OutMessage
-const parseOutMessage = inMessage => {
+// InboundMessage -> OutboundMessage
+const parseOutboundEnvelope = inboundEnvelope => {
   const {
     data: { username, dataMessage },
-  } = inMessage
+  } = inboundEnvelope
   return {
     type: messageTypes.SEND,
     username,
@@ -147,6 +146,6 @@ module.exports = {
   register,
   sendMessage,
   shouldRelay,
-  parseOutMessage,
+  parseOutboundEnvelope,
   verify,
 }

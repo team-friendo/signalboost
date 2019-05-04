@@ -10,9 +10,9 @@ const { channelPhoneNumber } = require('../../config')
  * type Dispatchable = {
  *   db: SequelizeDatabaseConnection,
  *   sock: Socket,
- *   channel: Channel,
+ *   channel: models.Channel,
  *   sender: Sender,
- *   message: OutMessage,
+ *   sdMsg: signal.OutBoundSignaldMessage,,
  * }
  */
 
@@ -65,23 +65,22 @@ const run = async db => {
     // await signal.register(sock, '+14049486063')
     // await signal.verify(sock, '+14049486063', '433-880')
     await signal.subscribe(sock, '+14049486063')
-    signal.onReceivedMessage(sock, handleMessage(db, sock))
+    signal.onReceivedMessage(sock, handleSignaldMessage(db, sock))
   })
 }
 
-const handleMessage = (db, sock) => async inMessage => {
-  if (signal.shouldRelay(inMessage)) {
-    const channelPhoneNumber = inMessage.data.username
+const handleSignaldMessage = (db, sock) => async inboundMsg => {
+  if (signal.shouldRelay(inboundMsg)) {
+    const channelPhoneNumber = inboundMsg.data.username
 
     const [channel, sender] = await Promise.all([
       channelRepository.findDeep(db, channelPhoneNumber),
-      classifySender(db, channelPhoneNumber, inMessage.data.source),
+      classifySender(db, channelPhoneNumber, inboundMsg.data.source),
     ]).catch(console.error)
 
-    // TODO: rename 'message' -> 'envelope'
-    const message = signal.parseOutMessage(inMessage)
+    const sdMsg = signal.parseOutboundEnvelope(inboundMsg)
     return messenger
-      .dispatch(await executor.processCommand({ db, sock, channel, sender, message }))
+      .dispatch(await executor.processCommand({ db, sock, channel, sender, sdMsg }))
       .catch(logger.error)
   }
 }

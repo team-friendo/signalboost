@@ -88,13 +88,13 @@ const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher 
  ************/
 
 // Dispatchable -> Promise<void>
-const broadcast = async ({ db, sock, channel, message }) => {
+const broadcast = async ({ db, sock, channel, sdMsg }) => {
   const recipients = [
     ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
     ...channel.publications.map(p => p.publisherPhoneNumber),
   ]
   return signal
-    .broadcastMessage(sock, recipients, format(channel, message))
+    .broadcastMessage(sock, recipients, format(channel, sdMsg))
     .then(() => countBroacast({ db, channel }))
 }
 
