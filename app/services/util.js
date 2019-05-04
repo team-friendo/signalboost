@@ -34,7 +34,7 @@ const loggerOf = prefix =>
     ? { log: () => null, error: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
-        error: msg => console.error(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`),
       }
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
