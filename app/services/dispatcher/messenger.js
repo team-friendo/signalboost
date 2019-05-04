@@ -1,4 +1,4 @@
-const signal = require('./signal')
+const signal = require('../signal')
 const messages = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
@@ -88,13 +88,13 @@ const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher 
  ************/
 
 // Dispatchable -> Promise<void>
-const broadcast = async ({ db, sock, channel, sdMsg }) => {
+const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = [
     ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
     ...channel.publications.map(p => p.publisherPhoneNumber),
   ]
   return signal
-    .broadcastMessage(sock, recipients, format(channel, sdMsg))
+    .broadcastMessage(sock, recipients, format(channel, sdMessage))
     .then(() => countBroacast({ db, channel }))
 }
 

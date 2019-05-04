@@ -34,7 +34,7 @@ const commands = {
 
 // Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const processCommand = dispatchable =>
-  execute({ ...parseCommand(dispatchable.sdMsg.messageBody), ...dispatchable })
+  execute({ ...parseCommand(dispatchable.sdMessage.messageBody), ...dispatchable })
 
 // string -> Executable
 const parseCommand = msg => {

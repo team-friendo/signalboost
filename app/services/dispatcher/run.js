@@ -1,9 +1,10 @@
-const { isEmpty } = require('lodash')
-const signal = require('./signal')
+const { get, isEmpty } = require('lodash')
+const signal = require('../signal')
 const channelRepository = require('./../../db/repositories/channel')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
+
 const { channelPhoneNumber } = require('../../config')
 
 /**
@@ -12,7 +13,7 @@ const { channelPhoneNumber } = require('../../config')
  *   sock: Socket,
  *   channel: models.Channel,
  *   sender: Sender,
- *   sdMsg: signal.OutBoundSignaldMessage,,
+ *   sdMessage: signal.OutBoundSignaldMessage,,
  * }
  */
 
@@ -58,42 +59,21 @@ const run = async db => {
   const sock = await signal.getSocket()
   sock.setEncoding('utf8')
   sock.on('connect', async () => {
-    // sock.on('data', msg =>
-    //   console.log(`++++++\n ${JSON.stringify(JSON.parse(msg), null, ' ')}++++++`),
-    // )
-    // this is how to register verify...
+    // this is how to register/verify/activate...
     // await signal.register(sock, '+14049486063')
     // await signal.verify(sock, '+14049486063', '433-880')
-    await signal.subscribe(sock, '+14049486063')
-    signal.onReceivedMessage(sock, handleSignaldMessage(db, sock))
+    // await signal.subscribe(sock, '+14049486063')
+
+    await initialize(db, sock)
+    sock.on('data', inboundMsg => dispatch(db, sock, JSON.parse(inboundMsg)))
   })
 }
 
-const handleSignaldMessage = (db, sock) => async inboundMsg => {
-  if (signal.shouldRelay(inboundMsg)) {
-    const channelPhoneNumber = inboundMsg.data.username
+// INITIALIZATION
 
-    const [channel, sender] = await Promise.all([
-      channelRepository.findDeep(db, channelPhoneNumber),
-      classifySender(db, channelPhoneNumber, inboundMsg.data.source),
-    ]).catch(console.error)
-
-    const sdMsg = signal.parseOutboundEnvelope(inboundMsg)
-    return messenger
-      .dispatch(await executor.processCommand({ db, sock, channel, sender, sdMsg }))
-      .catch(logger.error)
-  }
-}
-
-const classifySender = async (db, channelPhoneNumber, sender) => ({
-  phoneNumber: sender,
-  isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
-  isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
-})
-
-const initialize = async (db, sock, channelPhoneNumber) => {
-  const channel = await channelRepository.findDeep(db, channelPhoneNumber)
-  return welcomeNewPublishers(db, sock, channel)
+const initialize = async (db, sock) => {
+  const channels = await channelRepository.findAllDeep(db)
+  return Promise.all(channels.map(ch => welcomeNewPublishers(db, sock, ch)))
 }
 
 const welcomeNewPublishers = async (db, sock, channel) => {
@@ -110,6 +90,34 @@ const welcomeNewPublishers = async (db, sock, channel) => {
     ),
   )
 }
+
+// MESSAGE DISPATCH
+
+const dispatch = async (db, sock, inboundMsg) => {
+  if (shouldRelay(inboundMsg)) {
+    const channelPhoneNumber = inboundMsg.data.username
+
+    const [channel, sender] = await Promise.all([
+      channelRepository.findDeep(db, channelPhoneNumber),
+      classifySender(db, channelPhoneNumber, inboundMsg.data.source),
+    ]).catch(logger.error)
+
+    const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
+
+    return messenger
+      .dispatch(await executor.processCommand({ db, sock, channel, sender, sdMessage }))
+      .catch(logger.error)
+  }
+}
+
+const shouldRelay = sdMessage =>
+  sdMessage.type === signal.messageTypes.MESSAGE && get(sdMessage, 'data.dataMessage')
+
+const classifySender = async (db, channelPhoneNumber, sender) => ({
+  phoneNumber: sender,
+  isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
+  isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
+})
 
 // EXPORTS
 
