@@ -182,7 +182,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.SUCCESS,
-                  message: CR.publisher.add.success(payload),
+                  messageBody: CR.publisher.add.success(payload),
                   payload,
                 },
                 dispatchable,
@@ -199,7 +199,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.ERROR,
-                  message: CR.publisher.add.dbError(payload),
+                  messageBody: CR.publisher.add.dbError(payload),
                 },
                 dispatchable,
               })
@@ -221,7 +221,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.ADD,
                 status: statuses.ERROR,
-                message: CR.publisher.add.invalidNumber('foo'),
+                messageBody: CR.publisher.add.invalidNumber('foo'),
               },
               dispatchable,
             })
@@ -248,7 +248,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.ADD,
               status: statuses.UNAUTHORIZED,
-              message: CR.publisher.add.unauthorized,
+              messageBody: CR.publisher.add.unauthorized,
             },
             dispatchable,
           })
@@ -265,7 +265,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.HELP,
               status: statuses.SUCCESS,
-              message: CR.help.publisher,
+              messageBody: CR.help.publisher,
             },
             dispatchable,
           })
@@ -280,7 +280,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.HELP,
               status: statuses.SUCCESS,
-              message: CR.help.subscriber,
+              messageBody: CR.help.subscriber,
             },
             dispatchable,
           })
@@ -295,7 +295,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.HELP,
               status: statuses.UNAUTHORIZED,
-              message: CR.help.unauthorized,
+              messageBody: CR.help.unauthorized,
             },
             dispatchable,
           })
@@ -312,7 +312,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.INFO,
               status: statuses.SUCCESS,
-              message: CR.info.publisher(channel),
+              messageBody: CR.info.publisher(channel),
             },
             dispatchable,
           })
@@ -327,7 +327,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.INFO,
               status: statuses.SUCCESS,
-              message: CR.info.subscriber(channel),
+              messageBody: CR.info.subscriber(channel),
             },
             dispatchable,
           })
@@ -342,7 +342,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.INFO,
               status: statuses.UNAUTHORIZED,
-              message: CR.info.unauthorized,
+              messageBody: CR.info.unauthorized,
             },
             dispatchable,
           })
@@ -366,7 +366,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.JOIN,
                 status: statuses.SUCCESS,
-                message: CR.subscriber.add.success(channel),
+                messageBody: CR.subscriber.add.success(channel),
               },
               dispatchable,
             })
@@ -382,7 +382,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.JOIN,
                 status: statuses.ERROR,
-                message: CR.subscriber.add.error,
+                messageBody: CR.subscriber.add.error,
               },
               dispatchable,
             })
@@ -405,7 +405,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.JOIN,
               status: statuses.NOOP,
-              message: CR.subscriber.add.noop,
+              messageBody: CR.subscriber.add.noop,
             },
             dispatchable,
           })
@@ -440,7 +440,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.LEAVE,
                 status: statuses.SUCCESS,
-                message: CR.subscriber.remove.success,
+                messageBody: CR.subscriber.remove.success,
               },
               dispatchable,
             })
@@ -455,7 +455,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.LEAVE,
                 status: statuses.ERROR,
-                message: CR.subscriber.remove.error,
+                messageBody: CR.subscriber.remove.error,
               },
               dispatchable,
             })
@@ -477,7 +477,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.LEAVE,
               status: statuses.UNAUTHORIZED,
-              message: CR.subscriber.remove.unauthorized,
+              messageBody: CR.subscriber.remove.unauthorized,
             },
             dispatchable,
           })
@@ -508,7 +508,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.LEAVE,
               status: statuses.SUCCESS,
-              message: CR.subscriber.remove.success,
+              messageBody: CR.subscriber.remove.success,
             },
             dispatchable,
           })
@@ -556,7 +556,7 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.SUCCESS,
-                    message: CR.publisher.remove.success(payload),
+                    messageBody: CR.publisher.remove.success(payload),
                   },
                   dispatchable,
                 })
@@ -572,7 +572,7 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.ERROR,
-                    message: CR.publisher.remove.dbError(payload),
+                    messageBody: CR.publisher.remove.dbError(payload),
                   },
                   dispatchable,
                 })
@@ -593,7 +593,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.REMOVE,
                   status: statuses.ERROR,
-                  message: CR.publisher.remove.targetNotPublisher(payload),
+                  messageBody: CR.publisher.remove.targetNotPublisher(payload),
                 },
                 dispatchable,
               })
@@ -615,7 +615,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.REMOVE,
                 status: statuses.ERROR,
-                message: CR.publisher.remove.invalidNumber('foo'),
+                messageBody: CR.publisher.remove.invalidNumber('foo'),
               },
               dispatchable,
             })
@@ -639,7 +639,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.REMOVE,
               status: statuses.UNAUTHORIZED,
-              message: CR.publisher.remove.unauthorized,
+              messageBody: CR.publisher.remove.unauthorized,
             },
             dispatchable,
           })
@@ -668,7 +668,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.RENAME,
                 status: statuses.SUCCESS,
-                message: CR.rename.success(channel.name, 'newname'),
+                messageBody: CR.rename.success(channel.name, 'newname'),
               },
               dispatchable,
             })
@@ -685,7 +685,7 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.RENAME,
                 status: statuses.ERROR,
-                message: CR.rename.dbError(channel.name, 'newname'),
+                messageBody: CR.rename.dbError(channel.name, 'newname'),
               },
               dispatchable,
             })
@@ -701,7 +701,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.RENAME,
               status: statuses.UNAUTHORIZED,
-              message: CR.rename.unauthorized,
+              messageBody: CR.rename.unauthorized,
             },
             dispatchable,
           })
@@ -716,7 +716,7 @@ describe('executor service', () => {
             commandResult: {
               command: commands.RENAME,
               status: statuses.UNAUTHORIZED,
-              message: CR.rename.unauthorized,
+              messageBody: CR.rename.unauthorized,
             },
             dispatchable,
           })
@@ -731,7 +731,7 @@ describe('executor service', () => {
           commandResult: {
             command: 'foobar',
             status: statuses.NOOP,
-            message: CR.noop,
+            messageBody: CR.noop,
           },
           dispatchable,
         })
