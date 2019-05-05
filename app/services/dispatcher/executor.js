@@ -3,11 +3,18 @@ const validator = require('../../db/validations')
 const logger = require('./logger')
 const { commandResponses } = require('./messages')
 
-/*
+/**
  * type Executable = {
  *   command: string,
  *   payload: ?string,
  * }
+ *
+ * type CommandResult = {
+ *   status: string,
+ *   command: string,
+ *   message: string,
+ * }
+ *
  * */
 
 /*************
@@ -38,7 +45,7 @@ const commands = {
 
 // Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const processCommand = dispatchable =>
-  execute({ ...parseCommand(dispatchable.sdMessage.messageBody), ...dispatchable })
+  execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
 
 // string -> Executable
 const parseCommand = msg => {
@@ -55,9 +62,10 @@ const parseCommand = msg => {
   else return { command: commands.NOOP }
 }
 
-// Distpathcable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
-const execute = async dispatchable => {
-  const { command, payload, db, channel, sender } = dispatchable
+// (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
+const execute = async (executable, dispatchable) => {
+  const { command, payload } = executable
+  const { db, channel, sender } = dispatchable
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
