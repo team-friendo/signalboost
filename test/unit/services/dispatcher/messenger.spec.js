@@ -161,7 +161,7 @@ describe('messenger service', () => {
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: publisherSender, sdMessage: commands.JOIN },
-          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, messageBody: 'yay!' },
+          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
         })
       })
 
@@ -199,7 +199,7 @@ describe('messenger service', () => {
             commandResult: {
               command: commands.ADD,
               status: statuses.SUCCESS,
-              messageBody: response,
+              message: response,
               payload: newPublisher,
             },
           })

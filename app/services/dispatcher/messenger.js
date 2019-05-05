@@ -49,13 +49,13 @@ const handleBroadcast = dispatchable =>
     ? broadcast(dispatchable)
     : respond({
         ...dispatchable,
-        messageBody: messages.unauthorized,
+        message: messages.unauthorized,
         status: statuses.UNAUTHORIZED,
       })
 
 const handleResponse = ({ commandResult, dispatchable }) => {
-  const { messageBody, command, status } = commandResult
-  return respond({ ...dispatchable, messageBody, command, status })
+  const { message, command, status } = commandResult
+  return respond({ ...dispatchable, message, command, status })
 }
 
 const handleNotification = ({ commandResult, dispatchable, messageType }) => {
@@ -102,22 +102,24 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 }
 
 // (DbusInterface, string, Sender) -> Promise<void>
-const respond = ({ db, sock, channel, messageBody, sender, command, status }) => {
-  const message = format(channel, sdMessageOf(channel, messageBody), command, status)
+const respond = ({ db, sock, channel, message, sender, command, status }) => {
+  const sdMessage = format(channel, sdMessageOf(channel, message), command, status)
   return signal
-    .sendMessage(sock, sender.phoneNumber, message)
+    .sendMessage(sock, sender.phoneNumber, sdMessage)
     .then(() => countCommand({ db, channel }))
 }
 
 const notify = ({ db, sock, channel, notification, recipients }) => {
-  const message = format(channel, sdMessageOf(channel, notification))
+  const sdMessage = format(channel, sdMessageOf(channel, notification))
   return signal
-    .broadcastMessage(sock, recipients, message)
+    .broadcastMessage(sock, recipients, sdMessage)
     .then(() => countCommand({ db, channel }))
 }
 
 // string -> string
 const format = (channel, message, command, status) =>
+  // (1) Don't leak the channel name to non-subscribers
+  // (2) RENAME messages must provide their own header (b/c the channel name changed since it was queried)
   status === statuses.UNAUTHORIZED || command === commands.RENAME
     ? message
     : { ...message, messageBody: `[${channel.name}]\n${message.messageBody}` }
