@@ -2,7 +2,6 @@ const net = require('net')
 const { pick } = require('lodash')
 const fs = require('fs-extra')
 const { promisifyCallback, wait } = require('./util.js')
-const logger = require('./dispatcher/logger')
 const {
   signal: { connectionInterval, maxConnectionAttempts },
 } = require('../config/index')
@@ -12,6 +11,7 @@ const {
  *   type: "message",
  *   data: {
  *     username: string,
+ *     source: string,
  *     dataMessage: ?{
  *       timestamp: number,
  *       message: string,
@@ -70,17 +70,24 @@ const messageTypes = {
 // UNIX SOCKET FUNCTIONS
 
 const getSocket = async (attempts = 0) => {
-  logger.log(`connecting to signald...`)
   if (!(await fs.pathExists(signaldSocketPath))) {
     if (attempts > maxConnectionAttempts) {
-      logger.log('maximum signald connection attempts exceeded. aborting.')
-      process.exit(1)
+      return Promise.reject(new Error('maximum signald connection attempts exceeded. aborting.'))
     } else {
       return wait(connectionInterval).then(() => getSocket(attempts + 1))
     }
   } else {
-    logger.log(`connected to signald!`)
-    return net.createConnection(signaldSocketPath)
+    return connect()
+  }
+}
+
+const connect = () => {
+  try {
+    const sock = net.createConnection(signaldSocketPath)
+    sock.setEncoding('utf8')
+    return new Promise(resolve => sock.on('connect', () => resolve(sock)))
+  } catch (e) {
+    return Promise.reject('failed to connect to signald socket')
   }
 }
 

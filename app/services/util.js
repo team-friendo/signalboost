@@ -31,10 +31,15 @@ const nowTimestamp = () => new Date().toISOString()
 
 const loggerOf = prefix =>
   process.env.NODE_ENV === 'test'
-    ? { log: () => null, error: () => null }
+    ? { log: () => null, error: () => null, fatalError: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
         error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`),
+        fatalError: e => {
+          console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
+          console.error('ABORTING.')
+          process.exit(1)
+        },
       }
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
