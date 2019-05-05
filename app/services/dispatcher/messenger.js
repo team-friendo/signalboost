@@ -47,14 +47,17 @@ const isNewPublisher = ({ command, status }) =>
 const handleBroadcast = dispatchable =>
   dispatchable.sender.isPublisher
     ? broadcast(dispatchable)
-    : respond({ ...dispatchable, message: messages.unauthorized, status: statuses.UNAUTHORIZED })
+    : respond({
+        ...dispatchable,
+        messageBody: messages.unauthorized,
+        status: statuses.UNAUTHORIZED,
+      })
 
 const handleResponse = ({ commandResult, dispatchable }) => {
   const { messageBody, command, status } = commandResult
   return respond({ ...dispatchable, messageBody, command, status })
 }
 
-// TODO: move notification type parsing to here
 const handleNotification = ({ commandResult, dispatchable, messageType }) => {
   const [cr, d] = [commandResult, dispatchable]
   return Promise.all([
@@ -100,22 +103,16 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 
 // (DbusInterface, string, Sender) -> Promise<void>
 const respond = ({ db, sock, channel, messageBody, sender, command, status }) => {
-  const message = format(
-    channel,
-    parseResponseMessage(channel, sender, messageBody),
-    command,
-    status,
-  )
-  return signal.sendMessage(sock, message).then(() => countCommand({ db, channel }))
+  const message = format(channel, sdMessageOf(channel, messageBody), command, status)
+  return signal
+    .sendMessage(sock, sender.phoneNumber, message)
+    .then(() => countCommand({ db, channel }))
 }
 
 const notify = ({ db, sock, channel, notification, recipients }) => {
+  const message = format(channel, sdMessageOf(channel, notification))
   return signal
-    .broadcastMessage(
-      sock,
-      recipients,
-      format(channel, parseNotificationMessage(channel, notification)),
-    )
+    .broadcastMessage(sock, recipients, message)
     .then(() => countCommand({ db, channel }))
 }
 
@@ -137,17 +134,10 @@ const countCommand = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here
   messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
-const parseResponseMessage = (channel, sender, messageBody) => ({
+const sdMessageOf = (channel, messageBody) => ({
   type: signal.messageTypes.SEND,
   username: channel.phoneNumber,
-  recipientNumber: sender.phoneNumber,
   messageBody,
-})
-
-const parseNotificationMessage = (channel, notification) => ({
-  type: signal.messageTypes.SEND,
-  username: channel.phoneNumber,
-  messageBody: notification,
 })
 
 module.exports = {
@@ -158,5 +148,6 @@ module.exports = {
   format,
   parseMessageType,
   respond,
+  sdMessageOf,
   welcomeNewPublisher,
 }

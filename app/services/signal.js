@@ -101,12 +101,13 @@ const verify = (sock, channelPhoneNumber, code) =>
 const subscribe = (sock, channelPhoneNumber) =>
   write(sock, { type: messageTypes.SUBSCRIBE, username: channelPhoneNumber })
 
-const sendMessage = (sock, outboundMessage) => write(sock, outboundMessage)
+const sendMessage = (sock, recipientNumber, outboundMessage) =>
+  write(sock, { ...outboundMessage, recipientNumber })
 
 // (Socket, Array<string>, OutMessage) -> Promise<void>
-const broadcastMessage = (sock, recipients, outboundMessage) =>
+const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
   Promise.all(
-    recipients.map(recipientNumber => sendMessage(sock, { ...outboundMessage, recipientNumber })),
+    recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
   )
 
 // MESSAGE PARSING

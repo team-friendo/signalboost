@@ -82,11 +82,11 @@ describe('signal module', () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: '+12223334444',
+        recipientNumber: null,
         messageBody: 'hello world!',
         attachments: [],
       }
-      signal.sendMessage(sock, sdMessage)
+      signal.sendMessage(sock, '+12223334444', sdMessage)
 
       expect(sock.write.getCall(0).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+12223334444","messageBody":"hello world!","attachments":[]}\n`,
