@@ -6,25 +6,24 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const channelService = require('./channel')
 const logger = require('./logger')
-const { getConnection } = require('../../db')
+const { getDbConnection } = require('../../db')
 const {
   orchestrator: { port },
 } = require('../../config')
 
 const run = async (db, emitter) => {
-  logger.log('getting database connection...')
-  await getConnection(db)
-    .then(logger.log)
-    .catch(logger.error)
+  logger.log('Getting database connection...')
+  await getDbConnection(db).catch(logger.fatalError)
+  logger.log('Got database connection!')
 
-  logger.log(`staring api server...`)
+  logger.log(`Staring api server...`)
   await startApiServer(port, db, emitter)
-  logger.log(`api server listening on port ${port}`)
+  logger.log(`Api server listening on port ${port}`)
 
   // logger.log('intializing channels...')
   // await initializeChannels(db, emitter)
 
-  logger.log('RUNNING! :)')
+  logger.log('Orchestrator running! :)')
 }
 
 const startApiServer = async (port, db, emitter) => {

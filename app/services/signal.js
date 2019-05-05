@@ -6,7 +6,7 @@ const {
   signal: { connectionInterval, maxConnectionAttempts },
 } = require('../config/index')
 
-/*
+/**
  * type InboundSignaldMessage = {
  *   type: "message",
  *   data: {
