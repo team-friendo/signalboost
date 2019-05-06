@@ -44,7 +44,8 @@ const run = async db => {
   // await signal.subscribe(sock, '+13125842388')
   // await signal.subscribe(sock, '+14049486063')
 
-  await initialize(db, sock)
+  logger.log('Dispatcher initializing...')
+  await initialize(db, sock).catch(logger.error)
   logger.log(`Dispatcher running!`)
 
   // this is how to register/verify/activate...
@@ -60,19 +61,18 @@ const initialize = async (db, sock) => {
 
   // TODO: registerAllUnregistered phone numbers here
 
-  logger.log(`Activating ${channels.length} channels...`)
-  const activated = await channelService.activateMany({ db, sock, channels })
-  logger.log(`Activated ${activated.length} channels!`)
+  logger.log(`--- Subscribing to ${channels.length} channels...`)
+  const listening = await listenForInboundMessages(db, sock, channels)
+  logger.log(`--- Subscribed to ${listening.length} channels!`)
 
-  // await welcomeNewChannels(db, sock, channels)
-  return listenForInboundMessages(db, sock, channels)
-}
-
-const listenForInboundMessages = (db, sock, channels) => {
-  logger.log(`Dispatcher listening for messages on ${channels.length} channels...`)
-  sock.on('data', inboundMsg => dispatch(db, sock, JSON.parse(inboundMsg)))
   return Promise.resolve()
 }
+
+const listenForInboundMessages = async (db, sock, channels) =>
+  Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
+    sock.on('data', inboundMsg => dispatch(db, sock, JSON.parse(inboundMsg)))
+    return listening
+  })
 
 // MESSAGE DISPATCH
 
