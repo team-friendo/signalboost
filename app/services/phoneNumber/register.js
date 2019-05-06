@@ -1,11 +1,11 @@
 const fs = require('fs-extra')
 const { get, without } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
-const util = require('../../util')
-const phoneNumbers = require('../../../db/repositories/phoneNumber')
+const util = require('../util')
+const phoneNumbers = require('../../db/repositories/phoneNumber')
 const {
   signal: { verificationTimeout, keystorePath },
-} = require('../../../config/index')
+} = require('../../config/index')
 
 /**
  * type PhoneNumberStatus = {
@@ -15,7 +15,9 @@ const {
  */
 
 // PUBLIC FUNCTIONS
-
+// TODO:
+// - must require sock as arg here
+// - :. both dispatcher and api must initialize a sock to be ready to pass as arg
 // ({Database, Emitter, object}) => Promise<Array<PhoneNumberStatus>>
 const registerAll = async ({ db, emitter, filter }) => {
   const phoneNumberStatuses = await db.phoneNumber.findAll({ where: filter })
@@ -36,6 +38,9 @@ const registerAllUnregistered = async ({ db, emitter }) => {
 }
 
 // ({Database, Emitter, string}) => Promise<PhoneNumberStatus>
+// TODO:
+// - pass sock as arg here
+// - use it to send register message
 const register = ({ db, emitter, phoneNumber }) =>
   util
     .exec(`signal-cli -u ${phoneNumber} register`)

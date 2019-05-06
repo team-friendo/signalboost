@@ -11,8 +11,8 @@ import {
   registerAllUnregistered,
   verify,
   parseVerificationCode,
-} from '../../../../../app/services/orchestrator/phoneNumber/register'
-import { statuses, errors } from '../../../../../app/services/orchestrator/phoneNumber/index'
+} from '../../../../../app/services/phoneNumber/register'
+import { statuses, errors } from '../../../../../app/services/phoneNumber/index'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 const {
   signal: { keystorePath },

@@ -5,10 +5,10 @@ import {
   getContainer,
   getOrCreateContainer,
   stopContainer,
-} from '../../app/services/orchestrator/docker'
+} from '../../app/services/api/docker'
 
 /************************************************************************
- * NOTE: orchestrator container must be running for these tests to pass!
+ * NOTE: api container must be running for these tests to pass!
  ************************************************************************/
 
 describe('using the docker client api', () => {

@@ -7,7 +7,7 @@ import {
   getOrCreateContainer,
   stopContainer,
   containerNameOf,
-} from '../../../../app/services/orchestrator/docker'
+} from '../../../../app/services/api/docker'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('docker module', () => {

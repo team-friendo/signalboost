@@ -1,10 +1,12 @@
-const phoneNumberService = require('../phoneNumber')
+const phoneNumberService = require('../phoneNumber/index')
 const activate = require('./activate')
-const channelRepository = require('../../../db/repositories/channel')
-const logger = require('../logger')
+const channelRepository = require('../../db/repositories/channel')
+const logger = require('../api/logger')
 const { find } = require('lodash')
-const { prettyPrint } = require('../../util')
+const { prettyPrint } = require('../util')
 
+// TODO:
+// - this should be called from dispatcher/run  (in fact we should just move this code there)
 const initialize = async ({ db, emitter }) => {
   logger.log('registering phone numbers...')
   const registrationResults = await phoneNumberService.registerAllUnregistered({ db, emitter })

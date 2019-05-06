@@ -3,9 +3,9 @@ import { describe, it, before, after } from 'mocha'
 import sinon from 'sinon'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 import channelRepository from '../../../../../app/db/repositories/channel'
-import phoneNumberService from '../../../../../app/services/orchestrator/phoneNumber'
-import activateModule from '../../../../../app/services/orchestrator/channel/activate'
-import { initialize } from '../../../../../app/services/orchestrator/channel/initialize'
+import phoneNumberService from '../../../../../app/services/phoneNumber'
+import activateModule from '../../../../../app/services/channel/activate'
+import { initialize } from '../../../../../app/services/channel/initialize'
 
 describe('channel initialization module', () => {
   const channelAttrs = [

@@ -5,9 +5,9 @@ import sinon from 'sinon'
 import { initDb } from '../../app/db'
 import { EventEmitter } from 'events'
 import channelRepository from '../../app/db/repositories/channel'
-import docker from '../../app/services/orchestrator/docker'
-import channelService from '../../app/services/orchestrator/channel'
-import logger from '../../app/services/orchestrator/logger'
+import docker from '../../app/services/api/docker'
+import channelService from '../../app/services/channel'
+import logger from '../../app/services/api/logger'
 const {
   signal: { keystorePath },
 } = require('../../app/config')

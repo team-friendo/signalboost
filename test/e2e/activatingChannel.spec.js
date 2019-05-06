@@ -5,7 +5,7 @@ import request from 'supertest'
 import { initDb } from '../../app/db'
 import { orchestrator } from '../../app/config/index'
 import channelRepository from '../../app/db/repositories/channel'
-import { getContainer, stopContainer } from '../../app/services/orchestrator/docker'
+import { getContainer, stopContainer } from '../../app/services/api/docker'
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 
 describe('activating a channel', () => {

@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../../../../app/db/repositories/channel'
-import channelService from '../../../../../app/services/orchestrator/channel'
+import channelService from '../../../../../app/services/channel'
 import { deepChannelAttrs } from '../../../../support/factories/channel'
 
 describe('channel presenters', () => {

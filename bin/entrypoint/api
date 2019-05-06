@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "--- running api..."
+node /signalboost/app/services/api

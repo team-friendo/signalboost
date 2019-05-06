@@ -4,11 +4,11 @@ const requestLogger = require('koa-logger')
 const Router = require('koa-router')
 const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
-const channelService = require('./channel')
+const channelService = require('../channel')
 const logger = require('./logger')
 const { getDbConnection } = require('../../db')
 const {
-  orchestrator: { port },
+  api: { port },
 } = require('../../config')
 
 const run = async (db, emitter) => {
@@ -23,7 +23,7 @@ const run = async (db, emitter) => {
   // logger.log('intializing channels...')
   // await initializeChannels(db, emitter)
 
-  logger.log('Orchestrator running! :)')
+  logger.log('Api running! :)')
 }
 
 const startApiServer = async (port, db, emitter) => {

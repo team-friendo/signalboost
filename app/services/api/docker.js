@@ -39,7 +39,7 @@ const createContainer = (phoneNumber, channelName) =>
       ],
       HostConfig: {
         AutoRemove: true,
-        VolumesFrom: ['signalboost_orchestrator'],
+        VolumesFrom: ['signalboost_api'],
         NetworkMode: 'signalboost_default',
       },
     })

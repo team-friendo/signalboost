@@ -1,5 +1,5 @@
-const phoneNumberService = require('./phoneNumber/index')
-const channelService = require('./channel/index')
+const phoneNumberService = require('../phoneNumber/index')
+const channelService = require('../channel/index')
 const { get, find } = require('lodash')
 const {
   statuses: { PURCHASED },

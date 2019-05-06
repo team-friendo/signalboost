@@ -21,13 +21,13 @@ services:
       - ./bin:/signalboost/bin
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
-  orchestrator:
+  api:
     image: signalboost
-    container_name: signalboost_orchestrator
+    container_name: signalboost_api
     depends_on:
       - db
       - signald
-    entrypoint: /signalboost/bin/entrypoint/orchestrator
+    entrypoint: /signalboost/bin/entrypoint/api
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"
@@ -52,7 +52,7 @@ services:
     depends_on:
       - db
       - signald
-      - orchestrator
+      - api
     entrypoint: /signalboost/bin/entrypoint/dispatcher
     env_file: .env
     environment:
@@ -74,10 +74,10 @@ services:
       - 0.0.0.0:4040:4040
     image: wernight/ngrok
     links:
-      - orchestrator
+      - api
     env_file: .env
     environment:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
       - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
-      - NGROK_PORT=orchestrator:3000
+      - NGROK_PORT=api:3000
     restart: unless-stopped

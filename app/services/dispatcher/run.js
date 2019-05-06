@@ -2,6 +2,7 @@ const { get, isEmpty } = require('lodash')
 const signal = require('../signal')
 const dbWrapper = require('../../db')
 const channelRepository = require('./../../db/repositories/channel')
+const channelService = require('./../channel')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
@@ -14,27 +15,16 @@ const logger = require('./logger')
  *   sender: Sender,
  *   sdMessage: signal.OutBoundSignaldMessage,,
  * }
- */
-
-/**
- * type Channel = {
- *   phoneNumber: string,
- *   name: string,
- *   (containerId: string,)
- * }
- */
-
-/**
+ *
  * type Sender = {
  *   phoneNumber: string,
  *   isPublisher: boolean,
  *   isSubscriber: boolean,
  * }
- */
-
-/**
+ *
  * type CommandResult = {
- *   status: string
+ *   status: string,
+ *   command: string,
  *   message: string,
  * }
  */
@@ -50,7 +40,7 @@ const run = async db => {
   const sock = await signal.getSocket().catch(logger.fatalError)
   logger.log('Connected to signald socket!')
 
-  // TODO: remove this (and decommission numbers) once orchestrator#initialize is implemented!
+  // TODO: remove this (and decommission numbers) once api#initialize is implemented!
   // await signal.subscribe(sock, '+13125842388')
   // await signal.subscribe(sock, '+14049486063')
 
@@ -67,24 +57,15 @@ const run = async db => {
 
 const initialize = async (db, sock) => {
   const channels = await channelRepository.findAllDeep(db)
-  await welcomeNewChannels(db, sock, channels)
+
+  // TODO: registerAllUnregistered phone numbers here
+
+  logger.log(`Activating ${channels.length} channels...`)
+  const activated = await channelService.activateMany({ db, sock, channels })
+  logger.log(`Activated ${activated.length} channels!`)
+
+  // await welcomeNewChannels(db, sock, channels)
   return listenForInboundMessages(db, sock, channels)
-}
-
-const welcomeNewChannels = (db, sock, channels) =>
-  Promise.all(channels.map(ch => welcomeNewChannel(db, sock, ch)))
-
-const welcomeNewChannel = async (db, sock, channel) => {
-  const unwelcomed = await channelRepository.getUnwelcomedPublishers(db, channel.phoneNumber)
-  const addingPublisher = 'the system administrator'
-
-  !isEmpty(unwelcomed) &&
-    logger.log(`Welcoming ${unwelcomed.length} new publisher(s) on ${channel.name}...`)
-  return Promise.all(
-    unwelcomed.map(newPublisher =>
-      messenger.welcomeNewPublisher({ db, sock, channel, newPublisher, addingPublisher }),
-    ),
-  )
 }
 
 const listenForInboundMessages = (db, sock, channels) => {

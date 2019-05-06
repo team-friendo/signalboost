@@ -10,12 +10,12 @@ services:
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  orchestrator:
+  api:
     image: signalboost
-    container_name: signalboost_orchestrator
+    container_name: signalboost_api
     depends_on:
       - db
-    entrypoint: /signalboost/bin/entrypoint/orchestrator
+    entrypoint: /signalboost/bin/entrypoint/api
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"
@@ -40,12 +40,12 @@ services:
       - 0.0.0.0:4040:4040
     image: wernight/ngrok
     links:
-      - orchestrator
+      - api
     env_file: .env
     environment:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
       - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
-      - NGROK_PORT=orchestrator:3000
+      - NGROK_PORT=api:3000
   test_runner:
     image: signalboost
     container_name: signalboost_test_runner
@@ -56,7 +56,7 @@ services:
       NODE_ENV: "${NODE_ENV:-development}"
     depends_on:
       - db
-      - orchestrator
+      - api
       - ngrok
     volumes:
       - ./.sequelizerc:/signalboost/.sequelizerc

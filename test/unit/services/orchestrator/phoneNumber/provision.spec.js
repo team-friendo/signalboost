@@ -2,9 +2,9 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { provisionN, statuses, errors } from '../../../../../app/services/orchestrator/phoneNumber/index'
-import purchase from '../../../../../app/services/orchestrator/phoneNumber/purchase'
-import register from '../../../../../app/services/orchestrator/phoneNumber/register'
+import { provisionN, statuses, errors } from '../../../../../app/services/phoneNumber/index'
+import purchase from '../../../../../app/services/phoneNumber/purchase'
+import register from '../../../../../app/services/phoneNumber/register'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 
 describe('phone number services -- provision module', () => {

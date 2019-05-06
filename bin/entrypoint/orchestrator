@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "--- running orchestrator..."
-node /signalboost/app/services/orchestrator

@@ -19,12 +19,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
-  orchestrator:
+  api:
     image: signalboost
-    container_name: signalboost_orchestrator
+    container_name: signalboost_api
     depends_on:
       - db
-    entrypoint: /signalboost/bin/entrypoint/orchestrator
+    entrypoint: /signalboost/bin/entrypoint/api
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"

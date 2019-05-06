@@ -14,13 +14,13 @@ echo "--- installing dependencies..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \
-               orchestrator
+               api
 
 echo "--- running migrations..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/migrate \
-               orchestrator
+               api
 
 echo "--- removing db container..."
 
