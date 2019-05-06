@@ -5,9 +5,8 @@ import { pick } from 'lodash'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { initDb } from '../../../../app/db/index'
-import { omit, keys } from 'lodash'
+import { omit, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
-import { subscriptionFactory } from '../../../support/factories/subscription'
 import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 
@@ -32,13 +31,14 @@ describe('channel repository', () => {
   after(async () => await db.sequelize.close())
 
   describe('#activate', () => {
-    let channel, channelCount, messageCountCount
+    let channel, channelCount, messageCountCount, publicationCount
 
-    describe('when given phone number for a non-existent channel', () => {
+    describe('when given phone number for a non-existent channel and two publishers', () => {
       beforeEach(async () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
-        channel = await channelRepository.activate(db, chPNum, '#blackops', 'acabdeadbeef')
+        publicationCount = await db.publication.count()
+        channel = await channelRepository.activate(db, chPNum, '#blackops', publisherPNums)
       })
 
       it('creates a new channel', async () => {
@@ -54,22 +54,36 @@ describe('channel repository', () => {
         ).to.be.an('object')
       })
 
+      it('creates two publication records', async () => {
+        expect(await db.publication.count()).to.eql(publicationCount + 2)
+      })
+
       it('returns the channel record', () => {
-        expect(omit(channel.toJSON(), ['createdAt', 'updatedAt', 'messageCount'])).to.eql({
+        expect(
+          omit(channel.get(), [
+            'createdAt',
+            'updatedAt',
+            'messageCount',
+            'containerId', // TODO: drop containerId from schema!
+            'publications',
+          ]),
+        ).to.eql({
           phoneNumber: chPNum,
           name: '#blackops',
-          containerId: 'acabdeadbeef',
         })
-        expect(omit(channel.messageCount)).to.be.an('object')
+        expect(channel.publications.map(p => p.publisherPhoneNumber)).to.eql(publisherPNums)
+        expect(channel.messageCount).to.be.an('object')
       })
     })
 
     describe('when given phone number for a already-existing channel', () => {
+      let newPublisherPNums = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.activate(db, chPNum, '#foursquare', 'deadbeefacab')
+        await channelRepository.activate(db, chPNum, '#foursquare', newPublisherPNums)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
-        channel = await channelRepository.activate(db, chPNum, '#blackops', 'acabdeadbeef')
+        publicationCount = await db.publication.count()
+        channel = await channelRepository.activate(db, chPNum, '#blackops', newPublisherPNums)
       })
 
       it('does not create a new channel', async () => {
@@ -80,12 +94,22 @@ describe('channel repository', () => {
         expect(await db.messageCount.count()).to.eql(messageCountCount)
       })
 
-      it('updates the channel record and returns it', () => {
-        expect(omit(channel.get(), ['createdAt', 'updatedAt'])).to.eql({
+      it('updates the channel record and returns it', async () => {
+        expect(
+          omit(channel.get(), [
+            'createdAt',
+            'updatedAt',
+            'messageCount',
+            'containerId', // TODO: drop containerId from schema!
+            'publications',
+          ]),
+        ).to.eql({
           phoneNumber: chPNum,
           name: '#blackops',
-          containerId: 'acabdeadbeef',
         })
+        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.eql(
+          newPublisherPNums,
+        )
       })
     })
   })
