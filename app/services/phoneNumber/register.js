@@ -1,10 +1,12 @@
 const fs = require('fs-extra')
-const { get, without } = require('lodash')
+const { without } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
-const util = require('../util')
 const phoneNumbers = require('../../db/repositories/phoneNumber')
+const signal = require('../signal')
+const { loggerOf } = require('../util')
+const logger = loggerOf('FIXME')
 const {
-  signal: { verificationTimeout, keystorePath },
+  signal: { keystorePath },
 } = require('../../config/index')
 
 /**
@@ -15,97 +17,60 @@ const {
  */
 
 // PUBLIC FUNCTIONS
-// TODO:
-// - must require sock as arg here
-// - :. both dispatcher and api must initialize a sock to be ready to pass as arg
-// ({Database, Emitter, object}) => Promise<Array<PhoneNumberStatus>>
-const registerAll = async ({ db, emitter, filter }) => {
+
+// ({Database, Socket, object}) => Promise<Array<PhoneNumberStatus>>
+const registerAll = async ({ db, sock, filter }) => {
   const phoneNumberStatuses = await db.phoneNumber.findAll({ where: filter })
   return Promise.all(
-    phoneNumberStatuses.map(({ phoneNumber }) => register({ db, emitter, phoneNumber })),
+    phoneNumberStatuses.map(({ phoneNumber }) => register({ db, sock, phoneNumber })),
   )
 }
 
 // ({Database, Emitter, object }) => Promise<Array<PhoneNumberStatus>>
-const registerAllUnregistered = async ({ db, emitter }) => {
+const registerAllUnregistered = async ({ db, sock }) => {
   const phoneNumberStatuses = await db.phoneNumber.findAll()
+  // TODO: space registrations by 1 second to avoid rate limiting
   const results = await Promise.all(
-    phoneNumberStatuses.map(async ({ phoneNumber }) =>
-      (await isRegistered(phoneNumber)) ? null : register({ db, emitter, phoneNumber }),
+    phoneNumberStatuses.map(async phoneNumberStatus =>
+      (await isRegistered(phoneNumberStatus))
+        ? null
+        : register({ db, sock, phoneNumber: phoneNumberStatus.phoneNumber }),
     ),
   )
   return without(results, null)
 }
 
-// ({Database, Emitter, string}) => Promise<PhoneNumberStatus>
-// TODO:
-// - pass sock as arg here
-// - use it to send register message
-const register = ({ db, emitter, phoneNumber }) =>
-  util
-    .exec(`signal-cli -u ${phoneNumber} register`)
-    .then(() => recordStatusChange(db, phoneNumber, statuses.REGISTERED))
+// ({Database, Socket, string}) => Promise<PhoneNumberStatus>
+const register = ({ db, sock, phoneNumber }) =>
+  signal
+    .register(sock, phoneNumber)
+    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+    .then(() => recordStatusChange(db, phoneNumber, statuses.VERIFIED))
     .catch(err => {
       // TODO(@zig): add prometheus error count here (counter: signal_register_error)
-      return errorStatus(errors.registrationFailed(err), phoneNumber)
-    })
-    .then(maybeListenForVerification({ emitter, phoneNumber }))
-
-// ({Database, Emitter, string, string}) => Promise<Boolean>
-const verify = ({ db, emitter, phoneNumber, verificationMessage }) =>
-  util
-    .exec(`signal-cli -u ${phoneNumber} verify ${parseVerificationCode(verificationMessage)}`)
-    .then(() => recordStatusChange(db, phoneNumber, statuses.VERIFIED))
-    .then(phoneNumberStatus => Promise.resolve(emitter.emit('verified', phoneNumberStatus)))
-    .catch(err => {
-      // TODO(@zig): add promethues error count here (counter: signal_verify_error)
-      return Promise.reject(
-        emitter.emit(
-          'verificationFailed',
-          errorStatus(errors.verificationFailed(err), phoneNumber),
-        ),
+      // we record (partial) registration *after* verification failure
+      // to avoid missing verification success sock msg while performing db write
+      logger.error(err)
+      recordStatusChange(db, phoneNumber, statuses.REGISTERED).then(() =>
+        errorStatus(errors.registrationFailed(err), phoneNumber),
       )
     })
 
+// ({Database, Emitter, string, string}) => Promise<Boolean>
+const verify = ({ sock, phoneNumber, verificationMessage }) =>
+  signal
+    .verify(sock, phoneNumber, signal.parseVerificationCode(verificationMessage))
+    .then(() => signal.awaitVerificationResult(phoneNumber))
+
 // HELPERS
-
-const maybeListenForVerification = ({ emitter, phoneNumber }) => registrationStatus =>
-  registrationStatus.status === statuses.ERROR
-    ? Promise.resolve(registrationStatus)
-    : listenForVerification({ emitter, phoneNumber })
-
-const listenForVerification = ({ emitter, phoneNumber }) =>
-  new Promise(resolve => {
-    // resolve when a verification success/error event is fired, OR timeout interval elapses
-
-    emitter.on('verified', function handle(phoneNumberStatus) {
-      if (get(phoneNumberStatus, 'phoneNumber') === phoneNumber) {
-        emitter.removeListener('verified', handle)
-        resolve(phoneNumberStatus)
-      }
-    })
-
-    emitter.on('verificationFailed', function handle(phoneNumberStatus) {
-      if (get(phoneNumberStatus, 'phoneNumber') === phoneNumber) {
-        emitter.removeListener('verificationFailed', handle)
-        resolve(phoneNumberStatus)
-      }
-    })
-
-    setTimeout(
-      () => resolve({ status: statuses.ERROR, phoneNumber, error: errors.verificationTimeout }),
-      verificationTimeout,
-    )
-  })
 
 const recordStatusChange = (db, phoneNumber, status) =>
   phoneNumbers.update(db, phoneNumber, { status }).then(extractStatus)
 
-const parseVerificationCode = verificationMessage =>
-  verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
-
-const isRegistered = phoneNumber => fs.pathExists(`${keystorePath}/${phoneNumber}`)
+const isRegistered = async phoneNumberStatus =>
+  phoneNumberStatus.status === statuses.VERIFIED &&
+  (await fs.pathExists(`${keystorePath}/${phoneNumberStatus.phoneNumber}`))
 
 // EXPORTS
 
-module.exports = { registerAllUnregistered, registerAll, register, verify, parseVerificationCode }
+module.exports = { registerAllUnregistered, registerAll, register, verify }

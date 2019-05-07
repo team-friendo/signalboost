@@ -34,14 +34,24 @@ const loggerOf = prefix =>
     ? { log: () => null, error: () => null, fatalError: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
-        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`),
+        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
         fatalError: e => {
-          console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
+          console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`)
           console.error('ABORTING.')
           process.exit(1)
         },
       }
 
+const logger = loggerOf('signalboost')
+
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
-module.exports = { exec, promisifyCallback, wait, repeatUntilTimeout, prettyPrint, loggerOf }
+module.exports = {
+  exec,
+  loggerOf,
+  logger,
+  prettyPrint,
+  promisifyCallback,
+  repeatUntilTimeout,
+  wait,
+}

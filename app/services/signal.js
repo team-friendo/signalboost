@@ -1,9 +1,9 @@
 const net = require('net')
-const { pick } = require('lodash')
+const { pick, get } = require('lodash')
 const fs = require('fs-extra')
 const { promisifyCallback, wait } = require('./util.js')
 const {
-  signal: { connectionInterval, maxConnectionAttempts },
+  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout },
 } = require('../config/index')
 
 /**
@@ -60,14 +60,26 @@ const {
 const signaldSocketPath = '/var/run/signald/signald.sock'
 
 const messageTypes = {
+  ERROR: 'unexpected_error',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
   SUBSCRIBE: 'subscribe',
   VERIFY: 'verify',
+  VERIFICATION_SUCCESS: 'verification_succeeded',
+  VERIFICATION_ERROR: 'verification_error',
+  VERIFICATION_REQUIRED: 'verification_required',
 }
 
-// UNIX SOCKET FUNCTIONS
+const errorMessages = {
+  verificationFailure: (phoneNumber, reason) =>
+    `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
+  verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
+}
+
+/**************************
+ * UNIX SOCKET MANAGEMENT
+ **************************/
 
 const getSocket = async (attempts = 0) => {
   if (!(await fs.pathExists(signaldSocketPath))) {
@@ -96,13 +108,43 @@ const write = (sock, data) =>
     sock.write(JSON.stringify(data) + '\n', promisifyCallback(resolve, reject)),
   )
 
-// SIGNALD COMMANDS
+/********************
+ * SIGNALD COMMANDS
+ ********************/
 
 const register = (sock, channelPhoneNumber) =>
   write(sock, { type: messageTypes.REGISTER, username: channelPhoneNumber })
 
 const verify = (sock, channelPhoneNumber, code) =>
   write(sock, { type: messageTypes.VERIFY, username: channelPhoneNumber, code })
+
+const awaitVerificationResult = async (sock, channelPhoneNumber) => {
+  return new Promise((resolve, reject) => {
+    sock.on('data', function handle(msg) {
+      const { type, data } = JSON.parse(msg)
+      if (isVerificationSuccess(type, data, channelPhoneNumber)) {
+        sock.removeListener('data', handle)
+        resolve(data)
+      } else if (isVerificationFailure(type, data, channelPhoneNumber)) {
+        sock.removeListener('data', handle)
+        const reason = get(data, 'message', 'Captcha required: 402')
+        reject(new Error(errorMessages.verificationFailure(channelPhoneNumber, reason)))
+      } else {
+        // on first message (reporting registration) set timeout for listening to subsequent messages
+        wait(verificationTimeout).then(() => {
+          sock.removeListener('data', handle)
+          reject(new Error(errorMessages.verificationTimeout(channelPhoneNumber)))
+        })
+      }
+    })
+  })
+}
+
+const isVerificationSuccess = (type, data, channelPhoneNumber) =>
+  type === messageTypes.VERIFICATION_SUCCESS && get(data, 'username') === channelPhoneNumber
+
+const isVerificationFailure = (type, data, channelPhoneNumber) =>
+  type === messageTypes.ERROR && get(data, 'request.username') === channelPhoneNumber
 
 // (Socket, string) -> Promise<void>
 const subscribe = (sock, channelPhoneNumber) =>
@@ -117,7 +159,9 @@ const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
     recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
   )
 
-// MESSAGE PARSING
+/*******************
+ * MESSAGE PARSING
+ *******************/
 
 // InboundMessage -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
@@ -138,13 +182,18 @@ const parseOutboundAttachment = inAttachment => ({
   ...pick(inAttachment, ['width', 'height', 'voiceNote']),
 })
 
+const parseVerificationCode = verificationMessage =>
+  verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
+
 module.exports = {
   messageTypes,
+  awaitVerificationResult,
   getSocket,
   subscribe,
   broadcastMessage,
   register,
   sendMessage,
   parseOutboundSdMessage,
+  parseVerificationCode,
   verify,
 }

@@ -8,7 +8,7 @@ const {
   twilio: { smsEndpoint },
 } = require('../../config/index')
 
-const routesOf = (router, db, emitter) => {
+const routesOf = (router, db, sock) => {
   router.get('/hello', async ctx => {
     ctx.body = { msg: 'hello world' }
   })
@@ -38,22 +38,14 @@ const routesOf = (router, db, emitter) => {
     const { num, areaCode } = ctx.request.body
     const n = parseInt(num) || 1
 
-    const phoneNumberStatuses = await phoneNumberService.provisionN({
-      db,
-      emitter,
-      areaCode,
-      n,
-    })
+    const phoneNumberStatuses = await phoneNumberService.provisionN({ db, sock, areaCode, n })
     ctx.status = httpStatusOfMany(phoneNumberStatuses)
     ctx.body = phoneNumberStatuses
   })
 
   router.post('/phoneNumbers/register', async ctx => {
-    const phoneNumberStatuses = await phoneNumberService.registerAll({
-      db,
-      emitter,
-      filter: { status: PURCHASED },
-    })
+    const filter = { status: PURCHASED }
+    const phoneNumberStatuses = await phoneNumberService.registerAll({ db, sock, filter })
     ctx.status = httpStatusOfMany(phoneNumberStatuses)
     ctx.body = phoneNumberStatuses
   })
@@ -61,7 +53,7 @@ const routesOf = (router, db, emitter) => {
   router.post(`/${smsEndpoint}`, async ctx => {
     const { To: phoneNumber, Body: verificationMessage } = ctx.request.body
     await phoneNumberService
-      .verify({ db, emitter, phoneNumber, verificationMessage })
+      .verify({ db, sock, phoneNumber, verificationMessage })
       .then(() => (ctx.status = 200))
       .catch(() => (ctx.status = 500))
   })

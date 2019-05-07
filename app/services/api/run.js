@@ -4,35 +4,24 @@ const requestLogger = require('koa-logger')
 const Router = require('koa-router')
 const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
-const channelService = require('../channel')
 const logger = require('./logger')
-const { getDbConnection } = require('../../db')
 const {
   api: { port },
 } = require('../../config')
 
-const run = async (db, emitter) => {
-  logger.log('Getting database connection...')
-  await getDbConnection(db).catch(logger.fatalError)
-  logger.log('Got database connection!')
-
-  logger.log(`Staring api server...`)
-  await startApiServer(port, db, emitter)
-  logger.log(`Api server listening on port ${port}`)
-
-  // logger.log('intializing channels...')
-  // await initializeChannels(db, emitter)
-
-  logger.log('Api running! :)')
+const run = async (db, sock) => {
+  logger.log(`--- Staring api server...`)
+  await startApiServer(port, db, sock).catch(logger.error)
+  logger.log(`--- Api server listening on port ${port}`)
 }
 
-const startApiServer = async (port, db, emitter) => {
+const startApiServer = async (port, db, sock) => {
   const app = new Koa()
 
   configureLogger(app)
   configureBodyParser(app)
   configureAuthenticator(app)
-  configureRoutes(app, db, emitter)
+  configureRoutes(app, db, sock)
 
   const server = await app.listen(port).on('error', logger.error)
   return Promise.resolve({ app, server })
@@ -50,21 +39,11 @@ const configureBodyParser = app => {
   )
 }
 
-const configureRoutes = (app, db, emitter) => {
+const configureRoutes = (app, db, sock) => {
   const router = new Router()
-
-  routesOf(router, db, emitter)
-
+  routesOf(router, db, sock)
   app.use(router.routes())
   app.use(router.allowedMethods())
 }
-
-const initializeChannels = (db, emitter) =>
-  channelService
-    .initialize({ db, emitter })
-    .then(({ registered, activated }) =>
-      logger.log(`registered ${registered} numbers, activated ${activated} channels`),
-    )
-    .catch(console.error)
 
 module.exports = { run, startApiServer }

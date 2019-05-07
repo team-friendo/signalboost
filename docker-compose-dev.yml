@@ -21,13 +21,13 @@ services:
       - ./bin:/signalboost/bin
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
-  api:
+  app:
     image: signalboost
-    container_name: signalboost_api
+    container_name: signalboost_app
     depends_on:
       - db
       - signald
-    entrypoint: /signalboost/bin/entrypoint/api
+    entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"
@@ -46,38 +46,16 @@ services:
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
-  dispatcher:
-    image: signalboost
-    container_name: signalboost_dispatcher
-    depends_on:
-      - db
-      - signald
-      - api
-    entrypoint: /signalboost/bin/entrypoint/dispatcher
-    env_file: .env
-    environment:
-      PROJECT_ROOT: "$PWD"
-      NODE_ENV: "${NODE_ENV:-development}"
-    networks:
-      - default
-    volumes:
-      - ./.sequelizerc:/signalboost/.sequelizerc
-      - ./app:/signalboost/app
-      - ./bin:/signalboost/bin
-      - ./node_modules:/signalboost/node_modules
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-    restart: unless-stopped
   ngrok:
     container_name: ngrok
     ports:
       - 0.0.0.0:4040:4040
     image: wernight/ngrok
     links:
-      - api
+      - app
     env_file: .env
     environment:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
       - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
-      - NGROK_PORT=api:3000
+      - NGROK_PORT=app:3000
     restart: unless-stopped

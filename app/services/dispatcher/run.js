@@ -1,11 +1,12 @@
-const { get, isEmpty } = require('lodash')
+const { get } = require('lodash')
 const signal = require('../signal')
 const dbWrapper = require('../../db')
 const channelRepository = require('./../../db/repositories/channel')
-const channelService = require('./../channel')
+const phoneNumberService = require('./../phoneNumber')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
+const { wait } = require('../util')
 
 /**
  * type Dispatchable = {
@@ -31,42 +32,31 @@ const logger = require('./logger')
 
 // MAIN FUNCTION
 
-const run = async db => {
-  logger.log('Connecting to database...')
-  await dbWrapper.getDbConnection(db).catch(logger.fatalError)
-  logger.log('Connected to database!')
+const run = async (db, sock) => {
+  logger.log('--- Initializing Dispatcher....')
 
-  logger.log('Connecting to signald socket...')
-  const sock = await signal.getSocket().catch(logger.fatalError)
-  logger.log('Connected to signald socket!')
+  // for debugging...
+  // sock.on('data', data => {
+  //   console.log(`+++++++++++\n${data}\n++++++++++\n`)
+  // })
 
-  // TODO: remove this (and decommission numbers) once api#initialize is implemented!
-  // await signal.subscribe(sock, '+13125842388')
-  // await signal.subscribe(sock, '+14049486063')
+  logger.log('Registering phone numbers...')
+  const registrations = await phoneNumberService
+        .registerAllUnregistered({ db, sock })
+        //.then(logger.log)
+        .catch(logger.error)
+  logger.log(`Registered ${registrations.length} phone numbers.`)
 
-  logger.log('Dispatcher initializing...')
-  await initialize(db, sock).catch(logger.error)
-  logger.log(`Dispatcher running!`)
 
-  // this is how to register/verify/activate...
-  // await signal.register(sock, '+14049486063')
-  // await signal.verify(sock, '+14049486063', '523-975')
-  // await signal.subscribe(sock, '+14049486063')
+  logger.log(`Subscribing to channels...`)
+  const channels = await channelRepository.findAllDeep(db).catch(logger.fatalError)
+  const listening = await listenForInboundMessages(db, sock, channels).catch(logger.fatalError)
+  logger.log(`Subscribed to ${listening.length} of ${channels.length} channels!`)
+
+  logger.log(`--- Dispatcher running!`)
 }
 
 // INITIALIZATION
-
-const initialize = async (db, sock) => {
-  const channels = await channelRepository.findAllDeep(db)
-
-  // TODO: registerAllUnregistered phone numbers here
-
-  logger.log(`--- Subscribing to ${channels.length} channels...`)
-  const listening = await listenForInboundMessages(db, sock, channels)
-  logger.log(`--- Subscribed to ${listening.length} channels!`)
-
-  return Promise.resolve()
-}
 
 const listenForInboundMessages = async (db, sock, channels) =>
   Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
@@ -77,8 +67,6 @@ const listenForInboundMessages = async (db, sock, channels) =>
 // MESSAGE DISPATCH
 
 const dispatch = async (db, sock, inboundMsg) => {
-  // for debugging:
-  // console.log(`++++++++\n${JSON.stringify(inboundMsg, null, '  ')}\n+++++++++`)
   if (shouldRelay(inboundMsg)) {
     const channelPhoneNumber = inboundMsg.data.username
     const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
@@ -107,4 +95,4 @@ const classifySender = async (db, channelPhoneNumber, sender) => ({
 
 // EXPORTS
 
-module.exports = run
+module.exports = { run }
