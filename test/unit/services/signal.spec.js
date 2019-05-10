@@ -127,17 +127,77 @@ describe('signal module', () => {
   })
 
   describe('listening for a registration verification event', () => {
+    const phoneNumber = genPhoneNumber()
+    let result
+
     describe('when a verification success message for the listening channel is emitted', () => {
-      it('resolves with the success message')
+      beforeEach(async () => {
+        wait(5).then(() =>
+          sock.emit(
+            'data',
+            JSON.stringify({
+              type: messageTypes.VERIFICATION_SUCCESS,
+              data: { username: phoneNumber },
+            }),
+          ),
+        )
+        result = await signal.awaitVerificationResult(sock, phoneNumber)
+      })
+
+      it('resolves with the success message', async () => {
+        expect(result).to.eql({ username: phoneNumber })
+      })
     })
+
     describe('when a verification failure message for the listening channel is emitted', () => {
-      it('reject with an error message')
+      beforeEach(async () => {
+        wait(5).then(() =>
+          sock.emit(
+            'data',
+            JSON.stringify({
+              type: messageTypes.VERIFICATION_ERROR,
+              data: { username: phoneNumber },
+            }),
+          ),
+        )
+        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+      })
+
+      it('rejects with an error message', async () => {
+        expect(result).to.be.an('Error')
+        expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+      })
     })
+
     describe('when no verification message is emitted before the timeout threshold', () => {
-      it('rejects with an error message')
+      beforeEach(async () => {
+        wait(5).then(() => sock.emit('data', JSON.stringify({ type: 'foo' })))
+        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+      })
+
+      it('rejects with an error message', async () => {
+        expect(result).to.be.an('Error')
+        expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+      })
     })
+
     describe('when a verification success message for another channel is emitted', () => {
-      it('does nothing')
+      beforeEach(async () => {
+        wait(5).then(() =>
+          sock.emit(
+            'data',
+            JSON.stringify({
+              type: messageTypes.VERIFICATION_ERROR,
+              data: { username: genPhoneNumber() },
+            }),
+          ),
+        )
+        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+      })
+
+      it('does nothing', () => {
+        expect(result).to.be.an('Error')
+      })
     })
   })
 
