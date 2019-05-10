@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import { times } from 'lodash'
@@ -12,7 +12,15 @@ import {
 import signal from '../../../../app/services/signal'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import { statuses, errors } from '../../../../app/services/phoneNumber/index'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
+import { wait } from '../../../../app/services/util'
+const {
+  signal: {
+    registrationBatchSize,
+    intervalBetweenRegistrationBatches,
+    intervalBetweenRegistrations,
+  },
+} = require('../../../../app/config/index')
 
 describe('phone number services -- registration module', () => {
   const phoneNumber = genPhoneNumber()
@@ -210,8 +218,32 @@ describe('phone number services -- registration module', () => {
 
   describe('registering all purchased numbers with signal', () => {
     describe('in all cases', () => {
-      it('attempts to register phone numbers in batches')
-      it('waits a set interval between batches and between registrations')
+      const twoBatchesOfPhoneNumbers = times(registrationBatchSize + 1, phoneNumberFactory)
+      beforeEach(() => {
+        findAllPurchasedStub.returns(Promise.resolve(twoBatchesOfPhoneNumbers))
+        registrationSucceeds()
+        verificationSucceeds()
+        updateSucceeds()
+      })
+
+      it('attempts to register phone numbers in batches', async () => {
+        registerAllPurchased({ db, sock })
+        await wait(
+          intervalBetweenRegistrationBatches + registrationBatchSize * intervalBetweenRegistrations,
+        )
+        expect(registerStub.callCount).to.eql(registrationBatchSize)
+        await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
+      })
+
+      it('waits a set interval between batches and between registrations', async () => {
+        const start = new Date().getTime()
+        await registerAllPurchased({ db, sock }).catch(a => a)
+        const elapsed = new Date().getTime() - start
+        expect(elapsed).to.be.above(
+          twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations +
+            intervalBetweenRegistrationBatches,
+        )
+      })
     })
 
     describe('when all registrations succeed', () => {
@@ -282,8 +314,29 @@ describe('phone number services -- registration module', () => {
     })
 
     describe('in all cases', () => {
-      it('attempts to register phone numbers in batches')
-      it('waits a set interval between batches and between registrations')
+      const twoBatchesOfPhoneNumbers = times(registrationBatchSize + 1, phoneNumberFactory)
+      beforeEach(() => {
+        findAllStub.returns(Promise.resolve(twoBatchesOfPhoneNumbers))
+      })
+
+      it('attempts to register phone numbers in batches', async () => {
+        registerAllUnregistered({ db, sock })
+        await wait(
+          intervalBetweenRegistrationBatches + registrationBatchSize * intervalBetweenRegistrations,
+        )
+        expect(registerStub.callCount).to.eql(registrationBatchSize)
+        await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
+      })
+
+      it('waits a set interval between batches and between registrations', async () => {
+        const start = new Date().getTime()
+        await registerAllUnregistered({ db, sock }).catch(a => a)
+        const elapsed = new Date().getTime() - start
+        expect(elapsed).to.be.above(
+          twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations +
+            intervalBetweenRegistrationBatches,
+        )
+      })
     })
 
     describe('when all phone numbers are not registered', () => {
