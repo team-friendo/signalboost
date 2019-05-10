@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import sinon from 'sinon'
-import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
-import channelRepository from '../../../../../app/db/repositories/channel'
-import phoneNumberService from '../../../../../app/services/phoneNumber'
-import activateModule from '../../../../../app/services/channel/activate'
-import { initialize } from '../../../../../app/services/channel/initialize'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import channelRepository from '../../../../app/db/repositories/channel'
+import phoneNumberService from '../../../../app/services/phoneNumber/index'
+import activateModule from '../../../../app/services/channel/activate'
+import { initialize } from '../../../../app/services/channel/initialize'
 
 describe('channel initialization module', () => {
   const channelAttrs = [

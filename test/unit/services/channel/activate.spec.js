@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../../../app/db/repositories/channel'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import docker from '../../../../../app/services/api/docker'
-import { activate, activateMany } from '../../../../../app/services/channel/activate'
-import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
-import { statuses } from '../../../../../app/db/models/phoneNumber'
+import channelRepository from '../../../../app/db/repositories/channel'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
+import docker from '../../../../app/services/api/docker'
+import { activate, activateMany } from '../../../../app/services/channel/activate'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { statuses } from '../../../../app/db/models/phoneNumber'
 
 describe('channel activation module', () => {
   const db = {}

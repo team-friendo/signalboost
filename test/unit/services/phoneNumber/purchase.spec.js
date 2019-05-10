@@ -7,13 +7,13 @@ import {
   availableTwilioNumbers,
   purchase,
   purchaseN,
-} from '../../../../../app/services/phoneNumber/purchase'
-import { errors, statuses } from '../../../../../app/services/phoneNumber/common'
+} from '../../../../app/services/phoneNumber/purchase'
+import { errors, statuses } from '../../../../app/services/phoneNumber/common'
 import {
   genPhoneNumber,
   genSid,
   twilioNumberCreationResponse,
-} from '../../../../support/factories/phoneNumber'
+} from '../../../support/factories/phoneNumber'
 
 describe('phone number services - purchase module', () => {
   const fakePhoneNumber = genPhoneNumber()

@@ -45,7 +45,7 @@ const routesOf = (router, db, sock) => {
 
   router.post('/phoneNumbers/register', async ctx => {
     const filter = { status: PURCHASED }
-    const phoneNumberStatuses = await phoneNumberService.registerAll({ db, sock, filter })
+    const phoneNumberStatuses = await phoneNumberService.registerAllPurchased({ db, sock, filter })
     ctx.status = httpStatusOfMany(phoneNumberStatuses)
     ctx.body = phoneNumberStatuses
   })

@@ -8,7 +8,7 @@ import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/p
 import channelService from '../../../../app/services/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/phoneNumber'
 
-import { orchestrator } from '../../../../app/config/index'
+import { api } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
 
 describe('routes', () => {
@@ -58,7 +58,7 @@ describe('routes', () => {
       it('returns a list of channels', async () => {
         await request(server)
           .get('/channels')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .expect(200, channels.data)
       })
     })
@@ -70,7 +70,7 @@ describe('routes', () => {
       it('returns an error status message', async () => {
         await request(server)
           .get('/channels')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .expect(500, errorStatus.data)
       })
     })
@@ -87,14 +87,16 @@ describe('routes', () => {
       it('attempts to activate channel with values from POST request', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
 
-        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql({
-          phoneNumber,
-          name: 'foo channel',
-          publishers,
-        })
+        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql(
+          {
+            phoneNumber,
+            name: 'foo channel',
+            publishers,
+          },
+        )
       })
     })
 
@@ -104,7 +106,7 @@ describe('routes', () => {
       it('activates channel and returns success status', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(200, channelActivatedStatus)
       })
@@ -116,7 +118,7 @@ describe('routes', () => {
       it('activates returns error status', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(500, errorStatus)
       })
@@ -138,7 +140,7 @@ describe('routes', () => {
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .expect(200, list.data)
       })
     })
@@ -150,7 +152,7 @@ describe('routes', () => {
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .expect(500, errorStatus.data)
       })
     })
@@ -163,7 +165,7 @@ describe('routes', () => {
         it('passes filter to phone number service', async () => {
           await request(server)
             .get('/phoneNumbers?filter=ACTIVE')
-            .set('Token', orchestrator.authToken)
+            .set('Token', api.authToken)
           expect(listStub.getCall(0).args[1]).to.eql('ACTIVE')
         })
       })
@@ -171,7 +173,7 @@ describe('routes', () => {
         it('does not pass filter to phone number service', async () => {
           await request(server)
             .get('/phoneNumbers?filter=DROP%20TABLE;')
-            .set('Token', orchestrator.authToken)
+            .set('Token', api.authToken)
           expect(listStub.getCall(0).args[1]).to.eql(null)
         })
       })
@@ -187,7 +189,7 @@ describe('routes', () => {
       it('attempts to provision `num` phone numbers', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ num: 3 })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(3)
@@ -198,7 +200,7 @@ describe('routes', () => {
       it('attempts to provision 1 phone number', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ num: 'foo' })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
@@ -209,7 +211,7 @@ describe('routes', () => {
       it('attempts to provision 1 phone number', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
       })
@@ -221,7 +223,7 @@ describe('routes', () => {
       it('returns success statuses', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ num: 3 })
           .expect(200, verifiedStatuses)
       })
@@ -233,7 +235,7 @@ describe('routes', () => {
       it('returns success statuses', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ num: 3 })
           .expect(500, errorStatuses)
       })
@@ -246,7 +248,7 @@ describe('routes', () => {
       phoneNumber: genPhoneNumber(),
     }))
     let registerAllStub
-    beforeEach(() => (registerAllStub = sinon.stub(phoneNumberService, 'registerAll')))
+    beforeEach(() => (registerAllStub = sinon.stub(phoneNumberService, 'registerAllPurchased')))
     afterEach(() => registerAllStub.restore())
 
     describe('when registration succeeds', () => {
@@ -255,7 +257,7 @@ describe('routes', () => {
       it('responds with a success status', async () => {
         await request(server)
           .post('/phoneNumbers/register')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(200, verifiedStatuses)
       })
@@ -267,7 +269,7 @@ describe('routes', () => {
       it('responds with an error status', async () => {
         await request(server)
           .post('/phoneNumbers/register')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(500, errorStatuses)
       })
@@ -285,11 +287,11 @@ describe('routes', () => {
       it('attempts to verify a phone number with a verification code parsed from the request', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ To: phoneNumber, Body: verificationMessage })
         const arg = verifyStub.getCall(0).args[0]
 
-        expect(keys(arg)).to.have.members(['db', 'emitter', 'phoneNumber', 'verificationMessage'])
+        expect(keys(arg)).to.have.members(['db', 'sock', 'phoneNumber', 'verificationMessage'])
         expect(pick(arg, ['phoneNumber', 'verificationMessage'])).to.eql({
           phoneNumber,
           verificationMessage,
@@ -303,7 +305,7 @@ describe('routes', () => {
       it('responds with a success code', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(200)
       })
@@ -315,7 +317,7 @@ describe('routes', () => {
       it('responds with an error code', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', orchestrator.authToken)
+          .set('Token', api.authToken)
           .send({ phoneNumber })
           .expect(500)
       })
