@@ -72,6 +72,8 @@ const messageTypes = {
 }
 
 const errorMessages = {
+  socketTimeout: 'maximum signald connection attempts exceeded.',
+  socketConnectError: reason => `failed to connect to signald socket; Reason: ${reason}`,
   verificationFailure: (phoneNumber, reason) =>
     `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
   verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
@@ -84,7 +86,7 @@ const errorMessages = {
 const getSocket = async (attempts = 0) => {
   if (!(await fs.pathExists(signaldSocketPath))) {
     if (attempts > maxConnectionAttempts) {
-      return Promise.reject(new Error('maximum signald connection attempts exceeded. aborting.'))
+      return Promise.reject(new Error(errorMessages.socketTimeout))
     } else {
       return wait(connectionInterval).then(() => getSocket(attempts + 1))
     }
@@ -96,10 +98,11 @@ const getSocket = async (attempts = 0) => {
 const connect = () => {
   try {
     const sock = net.createConnection(signaldSocketPath)
+    console.log()
     sock.setEncoding('utf8')
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
-    return Promise.reject('failed to connect to signald socket')
+    return Promise.reject(new Error(errorMessages.socketConnectError(e.message)))
   }
 }
 
@@ -187,6 +190,7 @@ const parseVerificationCode = verificationMessage =>
 
 module.exports = {
   messageTypes,
+  errorMessages,
   awaitVerificationResult,
   getSocket,
   subscribe,
