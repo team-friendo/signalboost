@@ -3,9 +3,9 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { EventEmitter } from 'events'
-import run from '../../../../app/services/dispatcher/run'
+import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
-import dbWrapper from '../../../../app/db'
+import phoneNumberService from '../../../../app/services/phoneNumber'
 import signal from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/executor'
 import messenger, { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
@@ -16,12 +16,10 @@ import { wait } from '../../../../app/services/util'
 describe('dispatcher service', () => {
   describe('running the service', () => {
     const db = {}
-    // const sock = { ...new EventEmitter(), write: () => {} }
     const sock = new EventEmitter()
     const channels = times(2, () => ({ ...channelFactory(), publications: [], subscriptions: [] }))
     const channel = channels[0]
     const sender = genPhoneNumber()
-    const unwelcomedPublishers = [genPhoneNumber(), genPhoneNumber()]
     const authenticatedSender = {
       phoneNumber: sender,
       isPublisher: true,
@@ -44,31 +42,30 @@ describe('dispatcher service', () => {
 
     let getDbConnectionStub,
       getSocketStub,
-      getUnwelcomedPublishersStub,
-      welcomeNewPublisherStub,
+      registerAllStub,
       findAllDeepStub,
       findDeepStub,
       isPublisherStub,
       isSubscriberStub,
+      subscribeStub,
       processCommandStub,
       dispatchStub
 
     beforeEach(async () => {
       // initialization stubs --v
-      getDbConnectionStub = sinon.stub(dbWrapper, 'getDbConnection').returns(Promise.resolve())
-      getSocketStub = sinon.stub(signal, 'getSocket').returns(Promise.resolve(sock))
+      // TODO: restore these when services are compartmentalized again
+      // getDbConnectionStub = sinon.stub(dbWrapper, 'getDbConnection').returns(Promise.resolve())
+      // getSocketStub = sinon.stub(signal, 'getSocket').returns(Promise.resolve(sock))
+
+      registerAllStub = sinon
+        .stub(phoneNumberService, 'registerAllUnregistered')
+        .returns(Promise.resolve([]))
 
       findAllDeepStub = sinon
         .stub(channelRepository, 'findAllDeep')
         .returns(Promise.resolve(channels))
 
-      getUnwelcomedPublishersStub = sinon
-        .stub(channelRepository, 'getUnwelcomedPublishers')
-        .returns(unwelcomedPublishers)
-
-      welcomeNewPublisherStub = sinon
-        .stub(messenger, 'welcomeNewPublisher')
-        .returns(Promise.resolve())
+      subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
       // main loop stubs --^
 
@@ -92,41 +89,31 @@ describe('dispatcher service', () => {
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
       // onReceivedMessage stubs --^
 
-      await run(db)
-      //sock.emit('data', sdMessageOf('foo'))
+      await run(db, sock)
       sock.emit('data', JSON.stringify(sdMessageOf(channel, 'foo')))
     })
 
     afterEach(() => {
-      getDbConnectionStub.restore()
-      getSocketStub.restore()
-      getUnwelcomedPublishersStub.restore()
-      welcomeNewPublisherStub.restore()
+      // getDbConnectionStub.restore()
+      // getSocketStub.restore()
       findAllDeepStub.restore()
       findDeepStub.restore()
       isPublisherStub.restore()
       isSubscriberStub.restore()
       processCommandStub.restore()
       dispatchStub.restore()
+      registerAllStub.restore()
+      subscribeStub.restore()
     })
 
-    describe('initializing the service', () => {
-      it('gets a signald socket connection', () => {
-        expect(getSocketStub.callCount).to.eql(1)
-      })
-
-      it('it sends a welcome message to every unwelcomed publisher', () => {
-        unwelcomedPublishers.forEach((newPublisher, i) => {
-          expect(welcomeNewPublisherStub.getCall(i).args[0]).to.eql({
-            db,
-            sock,
-            channel,
-            newPublisher,
-            addingPublisher: 'the system administrator',
-          })
-        })
-      })
-    })
+    // describe('initializing the service', () => {
+    //   it('gets a signald socket connection', () => {
+    //     expect(getSocketStub.callCount).to.eql(1)
+    //   })
+    //   it('gets a database connection', () => {
+    //     expect(getDbConnectionStub.callCount).to.eql(1)
+    //   })
+    // })
 
     describe('handling an incoming message', () => {
       describe('when message is not dispatchable', () => {

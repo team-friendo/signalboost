@@ -114,6 +114,21 @@ describe('signal module', () => {
     })
   })
 
+  describe('listening for a registration verification event', () => {
+    describe('when a verification success message for the listening channel is emitted', () => {
+      it('resolves with the success message')
+    })
+    describe('when a verification failure message for the listening channel is emitted', () => {
+      it('reject with an error message')
+    })
+    describe('when no verification message is emitted before the timeout threshold', () => {
+      it('rejects with an error message')
+    })
+    describe('when a verification success message for another channel is emitted', () => {
+      it('does nothing')
+    })
+  })
+
   describe('message parsing', () => {
     it('parses an output signald message from an inbound signald message', () => {
       const inMessage = {

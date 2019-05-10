@@ -36,17 +36,13 @@ const run = async (db, sock) => {
   logger.log('--- Initializing Dispatcher....')
 
   // for debugging...
-  // sock.on('data', data => {
-  //   console.log(`+++++++++++\n${data}\n++++++++++\n`)
-  // })
+  // sock.on('data', data => {console.log(`+++++++++++\n${data}\n++++++++++\n`)})
 
   logger.log('Registering phone numbers...')
   const registrations = await phoneNumberService
-        .registerAllUnregistered({ db, sock })
-        //.then(logger.log)
-        .catch(logger.error)
+    .registerAllUnregistered({ db, sock })
+    .catch(logger.error)
   logger.log(`Registered ${registrations.length} phone numbers.`)
-
 
   logger.log(`Subscribing to channels...`)
   const channels = await channelRepository.findAllDeep(db).catch(logger.fatalError)
@@ -60,7 +56,7 @@ const run = async (db, sock) => {
 
 const listenForInboundMessages = async (db, sock, channels) =>
   Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
-    sock.on('data', inboundMsg => dispatch(db, sock, JSON.parse(inboundMsg)))
+    sock.on('data', inboundMsg => dispatch(db, sock, parseMessage(inboundMsg)))
     return listening
   })
 
@@ -81,6 +77,14 @@ const dispatch = async (db, sock, inboundMsg) => {
     } catch (e) {
       logger.error(e)
     }
+  }
+}
+
+const parseMessage = inboundMsg => {
+  try {
+    return JSON.parse(inboundMsg)
+  } catch (e) {
+    return inboundMsg
   }
 }
 

@@ -6,6 +6,10 @@ const filters = {
   INACTIVE: 'INACTIVE',
 }
 
+const findAll = db => db.phoneNumber.findAll()
+
+const findAllPurchased = db => db.phoneNumber.findAll({ where: { status: statuses.PURCHASED }})
+
 const list = (db, filter) =>
   db.phoneNumber.findAll({ order: [['status', 'DESC']], where: parseQueryFilter(filter) })
 
@@ -25,4 +29,4 @@ const update = (db, phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([_, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, list, update }
+module.exports = { filters, findAll, findAllPurchased, list, update }

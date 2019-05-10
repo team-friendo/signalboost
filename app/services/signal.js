@@ -112,43 +112,43 @@ const write = (sock, data) =>
  * SIGNALD COMMANDS
  ********************/
 
-const register = (sock, channelPhoneNumber) =>
-  write(sock, { type: messageTypes.REGISTER, username: channelPhoneNumber })
+const register = (sock, phoneNumber) =>
+  write(sock, { type: messageTypes.REGISTER, username: phoneNumber })
 
-const verify = (sock, channelPhoneNumber, code) =>
-  write(sock, { type: messageTypes.VERIFY, username: channelPhoneNumber, code })
+const verify = (sock, phoneNumber, code) =>
+  write(sock, { type: messageTypes.VERIFY, username: phoneNumber, code })
 
-const awaitVerificationResult = async (sock, channelPhoneNumber) => {
+const awaitVerificationResult = async (sock, phoneNumber) => {
   return new Promise((resolve, reject) => {
     sock.on('data', function handle(msg) {
       const { type, data } = JSON.parse(msg)
-      if (isVerificationSuccess(type, data, channelPhoneNumber)) {
+      if (isVerificationSuccess(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data)
-      } else if (isVerificationFailure(type, data, channelPhoneNumber)) {
+      } else if (isVerificationFailure(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         const reason = get(data, 'message', 'Captcha required: 402')
-        reject(new Error(errorMessages.verificationFailure(channelPhoneNumber, reason)))
+        reject(new Error(errorMessages.verificationFailure(phoneNumber, reason)))
       } else {
         // on first message (reporting registration) set timeout for listening to subsequent messages
         wait(verificationTimeout).then(() => {
           sock.removeListener('data', handle)
-          reject(new Error(errorMessages.verificationTimeout(channelPhoneNumber)))
+          reject(new Error(errorMessages.verificationTimeout(phoneNumber)))
         })
       }
     })
   })
 }
 
-const isVerificationSuccess = (type, data, channelPhoneNumber) =>
-  type === messageTypes.VERIFICATION_SUCCESS && get(data, 'username') === channelPhoneNumber
+const isVerificationSuccess = (type, data, phoneNumber) =>
+  type === messageTypes.VERIFICATION_SUCCESS && get(data, 'username') === phoneNumber
 
-const isVerificationFailure = (type, data, channelPhoneNumber) =>
-  type === messageTypes.ERROR && get(data, 'request.username') === channelPhoneNumber
+const isVerificationFailure = (type, data, phoneNumber) =>
+  type === messageTypes.ERROR && get(data, 'request.username') === phoneNumber
 
 // (Socket, string) -> Promise<void>
-const subscribe = (sock, channelPhoneNumber) =>
-  write(sock, { type: messageTypes.SUBSCRIBE, username: channelPhoneNumber })
+const subscribe = (sock, phoneNumber) =>
+  write(sock, { type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
 const sendMessage = (sock, recipientNumber, outboundMessage) =>
   write(sock, { ...outboundMessage, recipientNumber })

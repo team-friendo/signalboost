@@ -1,3 +1,5 @@
+const { concat, take, drop, isEmpty } = require('lodash')
+
 /**************** Promises ****************/
 
 const exec = require('util').promisify(require('child_process').exec)
@@ -23,6 +25,20 @@ const repeatUntilTimeout = (fn, interval, timeout) => {
   repeatUntil(fn, interval, () => nowInMillis() > now + timeout)
 }
 
+// (Array<(Any) -> Promise<Any>>, number) -> Promise<Array>
+const sequence = async (asyncFuncs, delay = 0) => {
+  if (asyncFuncs.length === 0) {
+    return []
+  } else {
+    return [await asyncFuncs[0]()].concat(
+      await wait(delay).then(() => sequence(asyncFuncs.slice(1), delay)),
+    )
+  }
+}
+
+const batchesOfN = (arr, n) =>
+  isEmpty(arr) ? [] : concat([take(arr, n)], batchesOfN(drop(arr, n), n))
+
 const nowInMillis = () => new Date().getTime()
 
 const nowTimestamp = () => new Date().toISOString()
@@ -47,11 +63,13 @@ const logger = loggerOf('signalboost')
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
 module.exports = {
+  batchesOfN,
   exec,
   loggerOf,
   logger,
   prettyPrint,
   promisifyCallback,
   repeatUntilTimeout,
+  sequence,
   wait,
 }

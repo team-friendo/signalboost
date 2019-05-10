@@ -1,12 +1,17 @@
 const fs = require('fs-extra')
-const { without } = require('lodash')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
-const phoneNumbers = require('../../db/repositories/phoneNumber')
+const { flatten, without } = require('lodash')
+const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const signal = require('../signal')
-const { loggerOf } = require('../util')
+const { loggerOf, sequence, batchesOfN } = require('../util')
 const logger = loggerOf('FIXME')
 const {
-  signal: { keystorePath },
+  signal: {
+    keystorePath,
+    registrationBatchSize,
+    intervalBetweenRegistrationBatches,
+    intervalBetweenRegistrations,
+  },
 } = require('../../config/index')
 
 /**
@@ -14,63 +19,89 @@ const {
  *   phoneNumber: string,
  *   status: 'PURCHASED' | 'REGISTERED' | 'VERIFIED' | 'ACTIVE'
  * }
+ *
+ * SOME TRICKY BITS:
+ *
+ * to observe rate limiting, we:
+ * - separate phone numbers into batches of 5
+ * - wait 2 seconds between registering each phone number in a batch
+ * - wait 2 minutes between batches
+ *
+ * to avoid unnecessary key rollovers, we:
+ * - don't attempt to register phone numbers that already have key material
  */
 
-// PUBLIC FUNCTIONS
+/********************
+ * PUBLIC FUNCTIONS
+ ********************/
 
 // ({Database, Socket, object}) => Promise<Array<PhoneNumberStatus>>
-const registerAll = async ({ db, sock, filter }) => {
-  const phoneNumberStatuses = await db.phoneNumber.findAll({ where: filter })
-  return Promise.all(
-    phoneNumberStatuses.map(({ phoneNumber }) => register({ db, sock, phoneNumber })),
-  )
+const registerAllPurchased = async ({ db, sock }) => {
+  const phoneNumberStatuses = await phoneNumberRepository.findAllPurchased(db)
+  return registerInBatches({ db, sock, phoneNumberStatuses })
 }
 
 // ({Database, Emitter, object }) => Promise<Array<PhoneNumberStatus>>
 const registerAllUnregistered = async ({ db, sock }) => {
-  const phoneNumberStatuses = await db.phoneNumber.findAll()
-  // TODO: space registrations by 1 second to avoid rate limiting
-  const results = await Promise.all(
-    phoneNumberStatuses.map(async phoneNumberStatus =>
-      (await isRegistered(phoneNumberStatus))
-        ? null
-        : register({ db, sock, phoneNumber: phoneNumberStatus.phoneNumber }),
-    ),
+  const allStatuses = await phoneNumberRepository.findAll(db)
+  // this is awkward but filtering on promises is hard!
+  const unregisteredStatuses = without(
+    await Promise.all(allStatuses.map(async s => ((await isRegistered(s)) ? null : s))),
+    null,
   )
-  return without(results, null)
+  return registerInBatches({ db, sock, phoneNumberStatuses: unregisteredStatuses })
 }
-
-// ({Database, Socket, string}) => Promise<PhoneNumberStatus>
-const register = ({ db, sock, phoneNumber }) =>
-  signal
-    .register(sock, phoneNumber)
-    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
-    .then(() => recordStatusChange(db, phoneNumber, statuses.VERIFIED))
-    .catch(err => {
-      // TODO(@zig): add prometheus error count here (counter: signal_register_error)
-      // we record (partial) registration *after* verification failure
-      // to avoid missing verification success sock msg while performing db write
-      logger.error(err)
-      recordStatusChange(db, phoneNumber, statuses.REGISTERED).then(() =>
-        errorStatus(errors.registrationFailed(err), phoneNumber),
-      )
-    })
 
 // ({Database, Emitter, string, string}) => Promise<Boolean>
 const verify = ({ sock, phoneNumber, verificationMessage }) =>
   signal
     .verify(sock, phoneNumber, signal.parseVerificationCode(verificationMessage))
-    .then(() => signal.awaitVerificationResult(phoneNumber))
+    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
 
-// HELPERS
+/********************
+ * HELPER FUNCTIONS
+ ********************/
+
+const registerInBatches = async ({ db, sock, phoneNumberStatuses }) => {
+  const statusBatches = batchesOfN(phoneNumberStatuses, registrationBatchSize)
+  return flatten(
+    await sequence(
+      statusBatches.map(phoneNumberStatuses => () =>
+        registerBatch({ db, sock, phoneNumberStatuses }),
+      ),
+      intervalBetweenRegistrationBatches,
+    ),
+  )
+}
+
+const registerBatch = async ({ db, sock, phoneNumberStatuses }) =>
+  sequence(
+    phoneNumberStatuses.map(({ phoneNumber }) => () => register({ db, sock, phoneNumber })),
+    intervalBetweenRegistrations,
+  )
+
+// ({Database, Socket, string}) => Promise<PhoneNumberStatus>
+const register = ({ db, sock, phoneNumber }) =>
+  signal
+    .register(sock, phoneNumber)
+    .then(() => recordStatusChange(db, phoneNumber, statuses.REGISTERED))
+    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+    .then(() => recordStatusChange(db, phoneNumber, statuses.VERIFIED))
+    .catch(err => {
+      // TODO(@zig): add prometheus error count here (counter: signal_register_error)
+      logger.error(err)
+      return errorStatus(errors.registrationFailed(err), phoneNumber)
+    })
 
 const recordStatusChange = (db, phoneNumber, status) =>
-  phoneNumbers.update(db, phoneNumber, { status }).then(extractStatus)
+  phoneNumberRepository.update(db, phoneNumber, { status }).then(extractStatus)
 
-const isRegistered = async phoneNumberStatus =>
-  phoneNumberStatus.status === statuses.VERIFIED &&
-  (await fs.pathExists(`${keystorePath}/${phoneNumberStatus.phoneNumber}`))
+const isRegistered = async phoneNumberStatus => {
+  const marked = phoneNumberStatus.status === statuses.VERIFIED
+  const inKeystore = await fs.pathExists(`${keystorePath}/${phoneNumberStatus.phoneNumber}`)
+  return marked && inKeystore
+}
 
 // EXPORTS
 
-module.exports = { registerAllUnregistered, registerAll, register, verify }
+module.exports = { registerAllUnregistered, registerAllPurchased, register, verify }
