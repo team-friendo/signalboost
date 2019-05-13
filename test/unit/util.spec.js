@@ -4,7 +4,7 @@ import util from '../../app/services/util'
 
 describe('utility module', () => {
   describe('#sequence', () => {
-    it('calls an array of async funcs in sequence and returns their results', async () => {
+    it('calls an array of async funcs with a delay in between each call returning their results', async () => {
       const start = new Date().getTime()
       const asyncFuncs = [
         () => Promise.resolve(1),
@@ -15,7 +15,7 @@ describe('utility module', () => {
       const elapsed = new Date().getTime() - start
 
       expect(result).to.eql([1, 2, 3])
-      expect(elapsed).to.be.above(300)
+      expect(elapsed).to.be.above(200)
     })
   })
 

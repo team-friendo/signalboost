@@ -1,19 +1,19 @@
-const { get } = require('lodash')
 const { Op } = require('sequelize')
-const logger = require('../../services/api/logger')
 
 // PUBLIC FUNCTIONS
 
 // CHANNEL QUERIES
-const activate = async (db, phoneNumber, name, publishers) => {
+const create = async (db, phoneNumber, name, publishers) => {
   const publications = publishers.map(p => ({ publisherPhoneNumber: p }))
   const channel = await findByPhoneNumber(db, phoneNumber)
+  const include = [
+    { model: db.messageCount },
+    { model: db.subscription },
+    { model: db.publication },
+  ]
   return !channel
-    ? db.channel.create(
-        { phoneNumber, name, publications, messageCount: {} },
-        { include: [{ model: db.messageCount }, { model: db.publication }] },
-      )
-    : channel.update({ name, publications }, { include: [{ model: db.publication }] })
+    ? db.channel.create({ phoneNumber, name, publications, messageCount: {} }, { include })
+    : channel.update({ name, publications }, { include })
 }
 
 const update = (db, phoneNumber, attrs) =>
@@ -90,7 +90,7 @@ const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, o
 }
 
 module.exports = {
-  activate,
+  create,
   addPublisher,
   addPublishers,
   addSubscriber,

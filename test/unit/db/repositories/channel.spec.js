@@ -30,7 +30,7 @@ describe('channel repository', () => {
   })
   after(async () => await db.sequelize.close())
 
-  describe('#activate', () => {
+  describe('#create', () => {
     let channel, channelCount, messageCountCount, publicationCount
 
     describe('when given phone number for a non-existent channel and two publishers', () => {
@@ -38,7 +38,7 @@ describe('channel repository', () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         publicationCount = await db.publication.count()
-        channel = await channelRepository.activate(db, chPNum, '#blackops', publisherPNums)
+        channel = await channelRepository.create(db, chPNum, '#blackops', publisherPNums)
       })
 
       it('creates a new channel', async () => {
@@ -79,11 +79,11 @@ describe('channel repository', () => {
     describe('when given phone number for a already-existing channel', () => {
       let newPublisherPNums = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.activate(db, chPNum, '#foursquare', newPublisherPNums)
+        await channelRepository.create(db, chPNum, '#foursquare', newPublisherPNums)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         publicationCount = await db.publication.count()
-        channel = await channelRepository.activate(db, chPNum, '#blackops', newPublisherPNums)
+        channel = await channelRepository.create(db, chPNum, '#blackops', newPublisherPNums)
       })
 
       it('does not create a new channel', async () => {
@@ -107,7 +107,7 @@ describe('channel repository', () => {
           phoneNumber: chPNum,
           name: '#blackops',
         })
-        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.eql(
+        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.have.members(
           newPublisherPNums,
         )
       })

@@ -76,7 +76,7 @@ const handleNotification = ({ commandResult, dispatchable, messageType }) => {
   ])
 }
 
-// { Database, Channel, string, string } => Promise<WelcomeInstance>
+// { Database, Channel, string, string } => Promise<void>
 const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher }) =>
   notify({
     db,
@@ -84,7 +84,7 @@ const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher 
     channel,
     notification: messages.notifications.welcome(channel, addingPublisher),
     recipients: [newPublisher],
-  }).then(() => channelRepository.createWelcome(db, channel.phoneNumber, newPublisher))
+  })
 
 /************
  * SENDING

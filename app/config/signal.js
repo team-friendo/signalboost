@@ -1,6 +1,6 @@
 const defaults = {
   verificationTimeout: 30000, // 30 seconds
-  keystorePath: '/root/.config/signal/data', // given by docker-compose file(s)
+  keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
   registrationBatchSize: 5,
@@ -13,8 +13,8 @@ const test = {
   verificationTimeout: 30, // 30 millis
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
-  intervalBetweenRegistrationBatches: 20, // 20 millis
-  intervalBetweenRegistrations: 5, // 5 millis,
+  intervalBetweenRegistrationBatches: 30, // 100 millis
+  intervalBetweenRegistrations: 5, // 10 millis,
 }
 
 module.exports = {

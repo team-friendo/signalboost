@@ -27,13 +27,10 @@ const repeatUntilTimeout = (fn, interval, timeout) => {
 
 // (Array<(Any) -> Promise<Any>>, number) -> Promise<Array>
 const sequence = async (asyncFuncs, delay = 0) => {
-  if (asyncFuncs.length === 0) {
-    return []
-  } else {
-    return [await asyncFuncs[0]()].concat(
-      await wait(delay).then(() => sequence(asyncFuncs.slice(1), delay)),
-    )
-  }
+  const [hd, tl] = [asyncFuncs[0] || (() => []), asyncFuncs.slice(1)]
+  return [await hd()].concat(
+    tl.length === 0 ? [] : await wait(delay).then(() => sequence(asyncFuncs.slice(1), delay)),
+  )
 }
 
 const batchesOfN = (arr, n) =>

@@ -1,10 +1,7 @@
-const { activate, activateMany } = require('./activate')
-const { initialize } = require('./initialize')
+const { create } = require('./create')
 const { list } = require('./present')
 
 module.exports = {
-  activate,
-  activateMany,
-  initialize,
+  create,
   list,
 }

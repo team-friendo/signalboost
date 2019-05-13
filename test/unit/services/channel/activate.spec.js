@@ -1,122 +1,220 @@
 import { expect } from 'chai'
-import { describe, it, before, after } from 'mocha'
+import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../../../app/db/repositories/channel'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import docker from '../../../../app/services/api/docker'
-import { activate, activateMany } from '../../../../app/services/channel/activate'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { statuses } from '../../../../app/db/models/phoneNumber'
+import signal from '../../../../app/services/signal'
+import messenger from '../../../../app/services/dispatcher/messenger'
+import { create } from '../../../../app/services/channel/create'
 
 describe('channel activation module', () => {
   const db = {}
+  const sock = {}
   const phoneNumber = '+15555555555'
   const name = '#blackops'
-  const containerId = 'acabdeadbeef'
   const publishers = ['+12222222222', '+13333333333']
-  let createContainerStub, createChannelStub, addPublishersStub, updatePhoneNumberStub
+  const channelInstance = {
+    dataValues: {
+      phoneNumber,
+      name,
+      publications: [
+        { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] },
+        { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[1] },
+      ],
+    },
+  }
+  const activePhoneNumberInstance = {
+    dataValues: {
+      phoneNumber,
+      status: 'ACTIVE',
+    },
+  }
+  let subscribeStub, createChannelStub, updatePhoneNumberStub, welcomePublisherStub
 
-  describe('activating a channel', () => {
-    let result
-    before(async () => {
-      createContainerStub = sinon
-        .stub(docker, 'getOrCreateContainer')
-        .returns(Promise.resolve({ Id: containerId }))
-
-      createChannelStub = sinon.stub(channelRepository, 'activate').returns(
-        Promise.resolve({
-          phoneNumber,
-          name,
-          status: 'ACTIVE',
-        }),
-      )
-
-      addPublishersStub = sinon
-        .stub(channelRepository, 'addPublishers')
-        .callsFake((db, channelPhoneNumber, publishers) =>
-          Promise.resolve(
-            publishers.map(a => ({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: a })),
-          ),
-        )
-      updatePhoneNumberStub = sinon
-        .stub(phoneNumberRepository, 'update')
-        .returns(Promise.resolve({ dataValues: { phoneNumber, status: 'ACTIVE' } }))
-
-      result = await activate({ db, phoneNumber, name, publishers })
-    })
-
-    after(() => {
-      createContainerStub.restore()
-      createChannelStub.restore()
-      addPublishersStub.restore()
-      updatePhoneNumberStub.restore()
-    })
-
-    it('starts docker container containing channel for the phone number', () => {
-      expect(createContainerStub.getCall(0).args[0]).to.eql(phoneNumber, name)
-    })
-
-    it('records channel number and name in db', () => {
-      expect(createChannelStub.getCall(0).args).to.eql([db, phoneNumber, name, containerId])
-    })
-
-    it('adds publishers to channel', () => {
-      expect(addPublishersStub.getCall(0).args).to.eql([db, phoneNumber, publishers])
-    })
-
-    it('it sets phone number status to ACTIVE', () => {
-      expect(updatePhoneNumberStub.getCall(0).args).to.eql([db, phoneNumber, { status: 'ACTIVE' }])
-    })
-
-    it('returns a channel status with ACTIVE status', () => {
-      expect(result).to.eql({
-        name,
-        status: statuses.ACTIVE,
-        phoneNumber,
-        publishers,
-      })
-    })
+  beforeEach(() => {
+    subscribeStub = sinon.stub(signal, 'subscribe')
+    createChannelStub = sinon.stub(channelRepository, 'create')
+    updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
+    welcomePublisherStub = sinon.stub(messenger, 'welcomeNewPublisher')
   })
 
-  describe('activating 3 channels', () => {
-    let channelAttrs = [
-      { phoneNumber: genPhoneNumber(), name: 'foo1' },
-      { phoneNumber: genPhoneNumber(), name: 'foo2' },
-      { phoneNumber: genPhoneNumber(), name: 'foo3' },
-    ]
-    let result
+  afterEach(() => {
+    subscribeStub.restore()
+    createChannelStub.restore()
+    updatePhoneNumberStub.restore()
+    welcomePublisherStub.restore()
+  })
 
-    before(async () => {
-      createContainerStub = sinon
-        .stub(docker, 'getOrCreateContainer')
-        .returns(Promise.resolve({ Id: containerId }))
-      createChannelStub = sinon.stub(channelRepository, 'activate')
-      addPublishersStub = sinon.stub(channelRepository, 'addPublishers')
-      updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
-      result = await activateMany(db, channelAttrs)
+  describe('creating a channel', () => {
+    beforeEach(() => {
+      updatePhoneNumberStub.returns(
+        Promise.resolve({ dataValues: { phoneNumber, status: 'ACTIVE' } }),
+      )
     })
 
-    after(() => {
-      createContainerStub.restore()
-      createChannelStub.restore()
-      addPublishersStub.restore()
-      updatePhoneNumberStub.restore()
+    describe('when subscribing to signal messages succeeds', () => {
+      beforeEach(() => subscribeStub.returns(Promise.resolve()))
+
+      describe('in all cases', () => {
+        beforeEach(async () => {
+          await create({ db, sock, phoneNumber, name, publishers })
+        })
+
+        it('creates a channel resource', () => {
+          expect(createChannelStub.getCall(0).args).to.eql([db, phoneNumber, name, publishers])
+        })
+
+        it('sets the phone number resource status to active', () => {
+          expect(updatePhoneNumberStub.getCall(0).args).to.eql([
+            db,
+            phoneNumber,
+            { status: 'ACTIVE' },
+          ])
+        })
+      })
+
+      describe('when both db writes succeed', () => {
+        beforeEach(() => {
+          createChannelStub.returns(Promise.resolve(channelInstance))
+          updatePhoneNumberStub.returns(Promise.resolve(activePhoneNumberInstance))
+        })
+
+        it('sends a welcome message to new publishers', async () => {
+          await create({ db, sock, phoneNumber, name, publishers })
+          expect(welcomePublisherStub.callCount).to.eql(publishers.length)
+          expect(welcomePublisherStub.getCall(0).args).to.eql([
+            {
+              db,
+              sock,
+              channel: {
+                phoneNumber,
+                name,
+                subscriptions: [],
+                publications: [
+                  { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] },
+                  { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[1] },
+                ],
+              },
+              newPublisher: publishers[0],
+              addingPublisher: 'the system administrator',
+            },
+          ])
+        })
+
+        describe('when sending welcome messages succeeds', () => {
+          beforeEach(() => {
+            welcomePublisherStub.returns(Promise.resolve())
+          })
+
+          it('returns a success message', async () => {
+            expect(await create({ db, sock, phoneNumber, name, publishers })).to.eql({
+              status: 'ACTIVE',
+              phoneNumber,
+              name,
+              publishers,
+            })
+          })
+        })
+
+        describe('when sending welcome message fails', () => {
+          beforeEach(() => {
+            welcomePublisherStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+          })
+
+          it('returns an error message', async () => {
+            const result = await create({ db, sock, phoneNumber, name, publishers })
+            expect(result).to.eql({
+              status: 'ERROR',
+              error: 'oh noes!',
+              request: {
+                phoneNumber,
+                name,
+                publishers,
+              },
+            })
+          })
+        })
+      })
+
+      describe('when creating channel fails', () => {
+        let result
+        beforeEach(async () => {
+          createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
+          result = await create({ db, sock, phoneNumber, name, publishers })
+        })
+
+        it('does not send welcome messages', () => {
+          expect(welcomePublisherStub.callCount).to.eql(0)
+        })
+
+        it('returns an error message', () => {
+          expect(result).to.eql({
+            status: 'ERROR',
+            error: 'db error!',
+            request: {
+              phoneNumber,
+              name,
+              publishers,
+            },
+          })
+        })
+      })
+
+      describe('when updating phone number fails', () => {
+        let result
+        beforeEach(async () => {
+          createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
+          result = await create({ db, sock, phoneNumber, name, publishers })
+        })
+
+        it('does not send welcome messages', () => {
+          expect(welcomePublisherStub.callCount).to.eql(0)
+        })
+
+        it('returns an error message', () => {
+          expect(result).to.eql({
+            status: 'ERROR',
+            error: 'db error!',
+            request: {
+              phoneNumber,
+              name,
+              publishers,
+            },
+          })
+        })
+      })
     })
 
-    it('starts 3 docker containers', () => {
-      expect(createContainerStub.callCount).to.eql(3)
-    })
+    describe('when subscribing to signal messages fails', () => {
+      let result
+      beforeEach(async () => {
+        subscribeStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+        result = await create({ db, sock, phoneNumber, name, publishers })
+      })
 
-    it('creates 3 new channel resources in db', () => {
-      expect(createChannelStub.callCount).to.eql(3)
-    })
+      it('does not create channel record', () => {
+        expect(createChannelStub.callCount).to.eql(0)
+      })
 
-    it('sets 3 phone number statuses to active', () => {
-      expect(updatePhoneNumberStub.callCount).to.eql(3)
-    })
+      it('does not update phone number record', () => {
+        expect(updatePhoneNumberStub.callCount).to.eql(0)
+      })
 
-    it('returns 3 channel records', () => {
-      expect(result).to.have.length(3)
+      it('does not send welcome messages', () => {
+        expect(welcomePublisherStub.callCount).to.eql(0)
+      })
+
+      it('returns an error message', () => {
+        expect(result).to.eql({
+          status: 'ERROR',
+          error: 'oh noes!',
+          request: {
+            phoneNumber,
+            name,
+            publishers,
+          },
+        })
+      })
     })
   })
 })

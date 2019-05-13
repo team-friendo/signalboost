@@ -29,7 +29,7 @@ describe('routes', () => {
     error: 'oh noes!',
   }))
   const publishers = [genPhoneNumber(), genPhoneNumber()]
-  const channelActivatedStatus = {
+  const channelCreatedStatus = {
     name: 'foo channel',
     status: statuses.ACTIVE,
     phoneNumber,
@@ -77,20 +77,20 @@ describe('routes', () => {
   })
 
   describe('POST to /channels', () => {
-    let activateStub
-    beforeEach(() => (activateStub = sinon.stub(channelService, 'activate')))
-    afterEach(() => activateStub.restore())
+    let createStub
+    beforeEach(() => (createStub = sinon.stub(channelService, 'create')))
+    afterEach(() => createStub.restore())
 
     describe('in all cases', () => {
-      beforeEach(() => activateStub.returns(Promise.resolve()))
+      beforeEach(() => createStub.returns(Promise.resolve()))
 
-      it('attempts to activate channel with values from POST request', async () => {
+      it('attempts to create channel with values from POST request', async () => {
         await request(server)
           .post('/channels')
           .set('Token', api.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
+          .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
 
-        expect(pick(activateStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql(
+        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql(
           {
             phoneNumber,
             name: 'foo channel',
@@ -101,25 +101,25 @@ describe('routes', () => {
     })
 
     describe('when activation succeeds', () => {
-      beforeEach(() => activateStub.returns(Promise.resolve(channelActivatedStatus)))
+      beforeEach(() => createStub.returns(Promise.resolve(channelCreatedStatus)))
 
-      it('activates channel and returns success status', async () => {
+      it('creates channel and returns success status', async () => {
         await request(server)
           .post('/channels')
           .set('Token', api.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
-          .expect(200, channelActivatedStatus)
+          .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
+          .expect(200, channelCreatedStatus)
       })
     })
 
     describe('when activation fails', () => {
-      beforeEach(() => activateStub.returns(Promise.resolve(errorStatus)))
+      beforeEach(() => createStub.returns(Promise.resolve(errorStatus)))
 
-      it('activates returns error status', async () => {
+      it('creates returns error status', async () => {
         await request(server)
           .post('/channels')
           .set('Token', api.authToken)
-          .send(pick(channelActivatedStatus, ['phoneNumber', 'name', 'publishers']))
+          .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(500, errorStatus)
       })
     })

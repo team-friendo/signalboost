@@ -228,9 +228,7 @@ describe('phone number services -- registration module', () => {
 
       it('attempts to register phone numbers in batches', async () => {
         registerAllPurchased({ db, sock })
-        await wait(
-          intervalBetweenRegistrationBatches + registrationBatchSize * intervalBetweenRegistrations,
-        )
+        await wait((registrationBatchSize + 1) * intervalBetweenRegistrations)
         expect(registerStub.callCount).to.eql(registrationBatchSize)
         await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
       })
@@ -240,7 +238,7 @@ describe('phone number services -- registration module', () => {
         await registerAllPurchased({ db, sock }).catch(a => a)
         const elapsed = new Date().getTime() - start
         expect(elapsed).to.be.above(
-          twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations +
+          (twoBatchesOfPhoneNumbers.length - 2) * intervalBetweenRegistrations +
             intervalBetweenRegistrationBatches,
         )
       })
@@ -321,9 +319,7 @@ describe('phone number services -- registration module', () => {
 
       it('attempts to register phone numbers in batches', async () => {
         registerAllUnregistered({ db, sock })
-        await wait(
-          intervalBetweenRegistrationBatches + registrationBatchSize * intervalBetweenRegistrations,
-        )
+        await wait((registrationBatchSize + 1) * intervalBetweenRegistrations)
         expect(registerStub.callCount).to.eql(registrationBatchSize)
         await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
       })
@@ -333,7 +329,7 @@ describe('phone number services -- registration module', () => {
         await registerAllUnregistered({ db, sock }).catch(a => a)
         const elapsed = new Date().getTime() - start
         expect(elapsed).to.be.above(
-          twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations +
+          (twoBatchesOfPhoneNumbers.length - 2) * intervalBetweenRegistrations +
             intervalBetweenRegistrationBatches,
         )
       })

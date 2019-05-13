@@ -36,7 +36,7 @@ const run = async (db, sock) => {
   logger.log('--- Initializing Dispatcher....')
 
   // for debugging...
-  // sock.on('data', data => {console.log(`+++++++++++\n${data}\n++++++++++\n`)})
+  // sock.on('data', data => console.log(`+++++++++\n${data}\n++++++++\n`))
 
   logger.log('Registering phone numbers...')
   const registrations = await phoneNumberService
