@@ -13,13 +13,12 @@ then
 
   echo "----- creating test database..."
   npx sequelize db:create --env test
-
-  ./bin/db/migrate
-  ./bin/db/seed
 else
   echo "----- creating prod database..."
   npx sequelize db:create --env production
-  ./bin/db/migrate
 fi
+
+echo "----- running migrations"
+./bin/db/migrate
 
 popd # return to original dir

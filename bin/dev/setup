@@ -8,21 +8,23 @@ echo "--- decrypting secrets..."
 
 ./bin/blackbox/decrypt_all_files
 
-echo "--- building docker image..."
+echo "--- building docker images..."
 
-docker build -t "signalboost:latest" .
+docker build -f docker/signalboost.dockerfile -t "signalboost:latest" .
+docker build -f docker/signald.dockerfile -t "signald:latest" .
+
 
 echo "--- installing dependencies..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \
-               api
+               app
 
 echo "--- setting up database..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/setup \
-               api
+               app
 
 echo "--- removing db container..."
 
