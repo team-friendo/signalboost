@@ -2,20 +2,24 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { provisionN, statuses, errors } from '../../../../app/services/phoneNumber/index'
+import { provisionN, statuses } from '../../../../app/services/phoneNumber/index'
 import purchase from '../../../../app/services/phoneNumber/purchase'
 import register from '../../../../app/services/phoneNumber/register'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+const {
+  signal: { registrationBatchSize },
+} = require('../../../../app/config')
 
 describe('phone number services -- provision module', () => {
-  let purchaseNStub, registerAllStub
+  const phoneNumbers = times(3, genPhoneNumber)
+  let purchaseNStub, registerManyStub
   beforeEach(() => {
     purchaseNStub = sinon.stub(purchase, 'purchaseN')
-    registerAllStub = sinon.stub(register, 'registerAllPurchased')
+    registerManyStub = sinon.stub(register, 'registerMany')
   })
   afterEach(() => {
     purchaseNStub.restore()
-    registerAllStub.restore()
+    registerManyStub.restore()
   })
 
   describe('provisioning 3 phone numbers', () => {
@@ -28,7 +32,7 @@ describe('phone number services -- provision module', () => {
 
       beforeEach(async () => {
         purchaseNStub.returns(Promise.resolve(times(3, () => ({ status: statuses.PURCHASED }))))
-        registerAllStub.returns(Promise.resolve(verifiedStatuses))
+        registerManyStub.returns(Promise.resolve(verifiedStatuses))
         result = await provisionN({ n: 3 })
       })
 
@@ -37,7 +41,7 @@ describe('phone number services -- provision module', () => {
       })
 
       it('registers purchased numbers', () => {
-        expect(registerAllStub.callCount).to.eql(1)
+        expect(registerManyStub.callCount).to.eql(1)
       })
 
       it('returns an array of 3 success statuses', async () => {
@@ -45,68 +49,72 @@ describe('phone number services -- provision module', () => {
       })
     })
 
-    describe('when a purchase fails', () => {
-      const failedPurchaseStatuses = [
-        {
-          status: statuses.ERROR,
-          phoneNumber: genPhoneNumber(),
-          error: errors.registrationFailed('boom!'),
-        },
-        {
-          status: statuses.VERIFIED,
-          phoneNumber: genPhoneNumber(),
-        },
-        {
-          status: statuses.VERIFIED,
-          phoneNumber: genPhoneNumber(),
-        },
-      ]
+    describe('when a purchase or a registration fails', () => {
       let result
-
       beforeEach(async () => {
-        purchaseNStub.callsFake(() => Promise.resolve(failedPurchaseStatuses))
+        purchaseNStub.callsFake(() =>
+          Promise.resolve([
+            {
+              status: statuses.ERROR,
+              phoneNumber: phoneNumbers[0],
+              error: 'purchase failed!',
+            },
+            {
+              status: statuses.PURCHASED,
+              phoneNumber: phoneNumbers[1],
+            },
+            {
+              status: statuses.PURCHASED,
+              phoneNumber: phoneNumbers[2],
+            },
+          ]),
+        )
+        registerManyStub.callsFake(({ phoneNumbers }) =>
+          Promise.resolve([
+            { phoneNumber: phoneNumbers[0], status: statuses.VERIFIED },
+            {
+              phoneNumber: phoneNumbers[1],
+              status: statuses.ERROR,
+              error: 'registration failed!',
+            },
+          ]),
+        )
         result = await provisionN({})
       })
 
-      it('returns an array of success and error statuses from the purchase step', () => {
-        expect(result).to.eql(failedPurchaseStatuses)
+      it('returns an array of success and error statuses', () => {
+        expect(result).to.eql([
+          { status: 'ERROR', phoneNumber: phoneNumbers[0], error: 'purchase failed!' },
+          { status: 'ERROR', phoneNumber: phoneNumbers[2], error: 'registration failed!' },
+          { status: 'VERIFIED', phoneNumber: phoneNumbers[1] },
+        ])
       })
 
-      it('does not attempt the registration step', () => {
-        expect(registerAllStub.callCount).to.eql(0)
+      it('only attempts to register successfully purchased number', () => {
+        expect(registerManyStub.getCall(0).args[0].phoneNumbers.length).to.eql(2)
       })
     })
-    describe('when all purchases succeed but one registration fails', () => {
-      const failedVerificationStatuses = [
-        {
-          status: statuses.ERROR,
-          phoneNumber: genPhoneNumber(),
-          error: errors.verificationFailed('boom!'),
-        },
-        {
-          status: statuses.VERIFIED,
-          phoneNumber: genPhoneNumber(),
-        },
-        {
-          status: statuses.VERIFIED,
-          phoneNumber: genPhoneNumber(),
-        },
-      ]
-      let result
+  })
 
-      beforeEach(async () => {
-        purchaseNStub.returns(Promise.resolve(times(3, () => ({ status: statuses.PURCHASED }))))
-        registerAllStub.returns(Promise.resolve(failedVerificationStatuses))
-        result = await provisionN({ n: 3 })
-      })
+  describe('trying to provision more phone numbers than registration batch size', () => {
+    let result
+    beforeEach(async () => {
+      result = await provisionN({ n: registrationBatchSize + 1 }).catch(a => a)
+    })
 
-      it('registers the purchased numbers', () => {
-        expect(registerAllStub.callCount).to.eql(1)
+    it('returns an error message', () => {
+      expect(result).to.eql({
+        status: 'ERROR',
+        error: `A maximum of ${registrationBatchSize} phone numbers may be provisioned at a time`,
       })
+    })
 
-      it('returns an array of success and error status from the registration step', () => {
-        expect(result).to.eql(failedVerificationStatuses)
-      })
+    it('does not attempt to purchase any phone numbers', () => {
+      expect(purchaseNStub.callCount).to.eql(0)
+    })
+
+    it('does not attempt to register any phone numbers', () => {
+      expect(registerManyStub.callCount).to.eql(0)
     })
   })
 })

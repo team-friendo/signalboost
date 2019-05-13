@@ -90,13 +90,11 @@ describe('routes', () => {
           .set('Token', api.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
 
-        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql(
-          {
-            phoneNumber,
-            name: 'foo channel',
-            publishers,
-          },
-        )
+        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql({
+          phoneNumber,
+          name: 'foo channel',
+          publishers,
+        })
       })
     })
 
@@ -237,40 +235,6 @@ describe('routes', () => {
           .post('/phoneNumbers')
           .set('Token', api.authToken)
           .send({ num: 3 })
-          .expect(500, errorStatuses)
-      })
-    })
-  })
-
-  describe('POST to /phoneNumbers/register', () => {
-    const verifiedStatuses = times(3, () => ({
-      status: statuses.VERIFIED,
-      phoneNumber: genPhoneNumber(),
-    }))
-    let registerAllStub
-    beforeEach(() => (registerAllStub = sinon.stub(phoneNumberService, 'registerAllPurchased')))
-    afterEach(() => registerAllStub.restore())
-
-    describe('when registration succeeds', () => {
-      beforeEach(() => registerAllStub.returns(Promise.resolve(verifiedStatuses)))
-
-      it('responds with a success status', async () => {
-        await request(server)
-          .post('/phoneNumbers/register')
-          .set('Token', api.authToken)
-          .send({ phoneNumber })
-          .expect(200, verifiedStatuses)
-      })
-    })
-
-    describe('when registration fails', () => {
-      beforeEach(() => registerAllStub.returns(Promise.resolve(errorStatuses)))
-
-      it('responds with an error status', async () => {
-        await request(server)
-          .post('/phoneNumbers/register')
-          .set('Token', api.authToken)
-          .send({ phoneNumber })
           .expect(500, errorStatuses)
       })
     })

@@ -2,9 +2,6 @@ const phoneNumberService = require('../phoneNumber/index')
 const channelService = require('../channel/index')
 const { get, find } = require('lodash')
 const {
-  statuses: { PURCHASED },
-} = phoneNumberService
-const {
   twilio: { smsEndpoint },
 } = require('../../config/index')
 
@@ -39,13 +36,6 @@ const routesOf = (router, db, sock) => {
     const n = parseInt(num) || 1
 
     const phoneNumberStatuses = await phoneNumberService.provisionN({ db, sock, areaCode, n })
-    ctx.status = httpStatusOfMany(phoneNumberStatuses)
-    ctx.body = phoneNumberStatuses
-  })
-
-  router.post('/phoneNumbers/register', async ctx => {
-    const filter = { status: PURCHASED }
-    const phoneNumberStatuses = await phoneNumberService.registerAllPurchased({ db, sock, filter })
     ctx.status = httpStatusOfMany(phoneNumberStatuses)
     ctx.body = phoneNumberStatuses
   })

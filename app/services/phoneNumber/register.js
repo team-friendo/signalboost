@@ -35,50 +35,29 @@ const {
  * PUBLIC FUNCTIONS
  ********************/
 
-// ({Database, Socket, object}) => Promise<Array<PhoneNumberStatus>>
-const registerAllPurchased = async ({ db, sock }) => {
-  const phoneNumberStatuses = await phoneNumberRepository.findAllPurchased(db)
-  return registerInBatches({ db, sock, phoneNumberStatuses })
-}
-
-// ({Database, Emitter, object }) => Promise<Array<PhoneNumberStatus>>
-const registerAllUnregistered = async ({ db, sock }) => {
-  const allStatuses = await phoneNumberRepository.findAll(db)
-  // this is awkward but filtering on promises is hard!
-  const unregisteredStatuses = without(
-    await Promise.all(allStatuses.map(async s => ((await isRegistered(s)) ? null : s))),
-    null,
-  )
-  return registerInBatches({ db, sock, phoneNumberStatuses: unregisteredStatuses })
-}
-
-// ({Database, Emitter, string, string}) => Promise<Boolean>
-const verify = ({ sock, phoneNumber, verificationMessage }) =>
-  signal
-    .verify(sock, phoneNumber, signal.parseVerificationCode(verificationMessage))
-    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
-
-/********************
- * HELPER FUNCTIONS
- ********************/
-
-const registerInBatches = async ({ db, sock, phoneNumberStatuses }) => {
-  const statusBatches = batchesOfN(phoneNumberStatuses, registrationBatchSize)
+// ({Database, Socket, Array<string>}) => Promise<Array<PhoneNumberStatus>>
+const registerMany = async ({ db, sock, phoneNumbers }) => {
+  const phoneNumberBatches = batchesOfN(phoneNumbers, registrationBatchSize)
   return flatten(
     await sequence(
-      statusBatches.map(phoneNumberStatuses => () =>
-        registerBatch({ db, sock, phoneNumberStatuses }),
+      phoneNumberBatches.map(phoneNumberBatch => () =>
+        registerBatch({ db, sock, phoneNumberBatch }),
       ),
       intervalBetweenRegistrationBatches,
     ),
   )
 }
 
-const registerBatch = async ({ db, sock, phoneNumberStatuses }) =>
-  sequence(
-    phoneNumberStatuses.map(({ phoneNumber }) => () => register({ db, sock, phoneNumber })),
-    intervalBetweenRegistrations,
+// ({Database, Socket }) => Promise<Array<PhoneNumberStatus>>
+const registerAllUnregistered = async ({ db, sock }) => {
+  const allStatuses = await phoneNumberRepository.findAll(db)
+  // this is a bit awkward but necessary b/c we can't just map/filter w/ Promises
+  const unregisteredPhoneNumbers = without(
+    await Promise.all(allStatuses.map(async s => ((await isRegistered(s)) ? null : s.phoneNumber))),
+    null,
   )
+  return registerMany({ db, sock, phoneNumbers: unregisteredPhoneNumbers })
+}
 
 // ({Database, Socket, string}) => Promise<PhoneNumberStatus>
 const register = ({ db, sock, phoneNumber }) =>
@@ -93,9 +72,28 @@ const register = ({ db, sock, phoneNumber }) =>
       return errorStatus(errors.registrationFailed(err), phoneNumber)
     })
 
+// ({Database, Emitter, string, string}) => Promise<Boolean>
+const verify = ({ sock, phoneNumber, verificationMessage }) =>
+  signal
+    .verify(sock, phoneNumber, signal.parseVerificationCode(verificationMessage))
+    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+
+/********************
+ * HELPER FUNCTIONS
+ ********************/
+
+// ({ Database, Socket, Array<PhoneNumberStatus> }) => Array<PhoneNumberStatus>
+const registerBatch = async ({ db, sock, phoneNumberBatch }) =>
+  sequence(
+    phoneNumberBatch.map(phoneNumber => () => register({ db, sock, phoneNumber })),
+    intervalBetweenRegistrations,
+  )
+
+// (Database, string, PhoneNumberStatus) -> PhoneNumberStatus
 const recordStatusChange = (db, phoneNumber, status) =>
   phoneNumberRepository.update(db, phoneNumber, { status }).then(extractStatus)
 
+// PhoneNumberStatus -> boolean
 const isRegistered = async phoneNumberStatus => {
   const marked = phoneNumberStatus.status === statuses.VERIFIED
   const inKeystore = await fs.pathExists(`${keystorePath}/${phoneNumberStatus.phoneNumber}`)
@@ -104,4 +102,4 @@ const isRegistered = async phoneNumberStatus => {
 
 // EXPORTS
 
-module.exports = { registerAllUnregistered, registerAllPurchased, register, verify }
+module.exports = { registerMany, registerAllUnregistered, register, verify }

@@ -5,7 +5,7 @@ import fs from 'fs-extra'
 import { times } from 'lodash'
 import {
   register,
-  registerAllPurchased,
+  registerMany,
   registerAllUnregistered,
   verify,
 } from '../../../../app/services/phoneNumber/register'
@@ -24,10 +24,12 @@ const {
 
 describe('phone number services -- registration module', () => {
   const phoneNumber = genPhoneNumber()
-  const phoneNumbers = times(3, () => ({
-    phoneNumber: genPhoneNumber(),
-    status: statuses.PURCHASED,
+  const phoneNumbers = times(3, phoneNumberFactory)
+  const purchasedPhoneNumberStatuses = phoneNumbers.map(phoneNumber => ({
+    status: 'PURCHASED',
+    phoneNumber,
   }))
+  const twoBatchesOfPhoneNumbers = times(registrationBatchSize + 1, phoneNumberFactory)
   const verifiedStatus = { status: statuses.VERIFIED, phoneNumber }
   const sock = {}
   const db = {}
@@ -216,26 +218,24 @@ describe('phone number services -- registration module', () => {
     })
   })
 
-  describe('registering all purchased numbers with signal', () => {
+  describe('registering many numbers with signal', () => {
     describe('in all cases', () => {
-      const twoBatchesOfPhoneNumbers = times(registrationBatchSize + 1, phoneNumberFactory)
       beforeEach(() => {
-        findAllPurchasedStub.returns(Promise.resolve(twoBatchesOfPhoneNumbers))
         registrationSucceeds()
         verificationSucceeds()
         updateSucceeds()
       })
 
       it('attempts to register phone numbers in batches', async () => {
-        registerAllPurchased({ db, sock })
-        await wait((registrationBatchSize + 1) * intervalBetweenRegistrations)
-        expect(registerStub.callCount).to.eql(registrationBatchSize)
-        await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
+        registerMany({ db, sock, phoneNumbers: twoBatchesOfPhoneNumbers })
+        await wait(twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations)
+        expect(registerStub.callCount).to.be.at.most(registrationBatchSize)
+        await wait(intervalBetweenRegistrations * 2) // to avoid side effects on other tests
       })
 
       it('waits a set interval between batches and between registrations', async () => {
         const start = new Date().getTime()
-        await registerAllPurchased({ db, sock }).catch(a => a)
+        await registerMany({ db, sock, phoneNumbers: twoBatchesOfPhoneNumbers }).catch(a => a)
         const elapsed = new Date().getTime() - start
         expect(elapsed).to.be.above(
           (twoBatchesOfPhoneNumbers.length - 2) * intervalBetweenRegistrations +
@@ -247,25 +247,24 @@ describe('phone number services -- registration module', () => {
     describe('when all registrations succeed', () => {
       // NOTE: we focus on happy path b/c sad path is covered exhaustively above
       beforeEach(() => {
-        findAllPurchasedStub.returns(Promise.resolve(phoneNumbers))
         registrationSucceeds()
         verificationSucceeds()
         updateSucceeds()
       })
 
       it('returns an array of success statuses', async () => {
-        expect(await registerAllPurchased({ db, sock })).to.eql([
+        expect(await registerMany({ db, sock, phoneNumbers })).to.eql([
           {
             status: statuses.VERIFIED,
-            phoneNumber: phoneNumbers[0].phoneNumber,
+            phoneNumber: phoneNumbers[0],
           },
           {
             status: statuses.VERIFIED,
-            phoneNumber: phoneNumbers[1].phoneNumber,
+            phoneNumber: phoneNumbers[1],
           },
           {
             status: statuses.VERIFIED,
-            phoneNumber: phoneNumbers[2].phoneNumber,
+            phoneNumber: phoneNumbers[2],
           },
         ])
       })
@@ -273,7 +272,6 @@ describe('phone number services -- registration module', () => {
 
     describe('when one registration fails', () => {
       beforeEach(() => {
-        findAllPurchasedStub.returns(Promise.resolve(phoneNumbers))
         registrationSucceeds()
         updateSucceeds()
         verificationSucceedsOnCall(0)
@@ -284,18 +282,18 @@ describe('phone number services -- registration module', () => {
       })
 
       it('returns an array of success AND error statuses', async () => {
-        expect(await registerAllPurchased({ db, sock })).to.eql([
+        expect(await registerMany({ db, sock, phoneNumbers })).to.eql([
           {
             status: statuses.VERIFIED,
-            phoneNumber: phoneNumbers[0].phoneNumber,
+            phoneNumber: phoneNumbers[0],
           },
           {
             status: statuses.VERIFIED,
-            phoneNumber: phoneNumbers[1].phoneNumber,
+            phoneNumber: phoneNumbers[1],
           },
           {
             status: statuses.ERROR,
-            phoneNumber: phoneNumbers[2].phoneNumber,
+            phoneNumber: phoneNumbers[2],
             error: errors.registrationFailed('Error: verification timed out'),
           },
         ])
@@ -305,7 +303,7 @@ describe('phone number services -- registration module', () => {
 
   describe('registering all unregistered numbers with signal', () => {
     beforeEach(() => {
-      findAllStub.returns(Promise.resolve(phoneNumbers))
+      findAllStub.returns(Promise.resolve(purchasedPhoneNumberStatuses))
       registrationSucceeds()
       verificationSucceeds()
       updateSucceeds()
@@ -319,9 +317,9 @@ describe('phone number services -- registration module', () => {
 
       it('attempts to register phone numbers in batches', async () => {
         registerAllUnregistered({ db, sock })
-        await wait((registrationBatchSize + 1) * intervalBetweenRegistrations)
-        expect(registerStub.callCount).to.eql(registrationBatchSize)
-        await wait(intervalBetweenRegistrations) // to avoid side effects on other tests
+        await wait(twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations)
+        expect(registerStub.callCount).to.be.at.most(registrationBatchSize)
+        await wait(intervalBetweenRegistrations * 2) // to avoid side effects on other tests
       })
 
       it('waits a set interval between batches and between registrations', async () => {
@@ -339,20 +337,20 @@ describe('phone number services -- registration module', () => {
       beforeEach(() => pathExistsStub.returns(Promise.resolve(true)))
 
       describe('when all registrations succeed', () => {
-        // NOTE: we omit sad path tests b/c those are covered exhaustively above and below
+        // NOTE: we omit sad path tests b/c those are covered exhaustively above
         it('returns an array of success statuses', async () => {
           expect(await registerAllUnregistered({ db, sock })).to.eql([
             {
               status: statuses.VERIFIED,
-              phoneNumber: phoneNumbers[0].phoneNumber,
+              phoneNumber: phoneNumbers[0],
             },
             {
               status: statuses.VERIFIED,
-              phoneNumber: phoneNumbers[1].phoneNumber,
+              phoneNumber: phoneNumbers[1],
             },
             {
               status: statuses.VERIFIED,
-              phoneNumber: phoneNumbers[2].phoneNumber,
+              phoneNumber: phoneNumbers[2],
             },
           ])
         })
