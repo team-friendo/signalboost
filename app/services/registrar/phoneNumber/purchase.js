@@ -4,7 +4,7 @@ const { errors, statuses, extractStatus, errorStatus } = require('./common')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
   registrar: { host },
-} = require('../../config/index')
+} = require('../../../config/index')
 
 /**
  * NOTE(aguestuser|Wed 02 Jan 2019):

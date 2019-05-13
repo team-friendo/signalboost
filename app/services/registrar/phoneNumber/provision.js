@@ -1,10 +1,10 @@
 const { partition } = require('lodash')
 const purchase = require('./purchase')
 const register = require('./register')
-const { statuses } = require('../../db/models/phoneNumber')
+const { statuses } = require('../../../db/models/phoneNumber')
 const {
   signal: { registrationBatchSize },
-} = require('../../config')
+} = require('../../../config')
 
 const errorMessages = {
   registrationBatchSizeExceeded: `A maximum of ${registrationBatchSize} phone numbers may be provisioned at a time`,

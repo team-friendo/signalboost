@@ -1,10 +1,9 @@
-const { isEmpty } = require('lodash')
-const channelRepository = require('../../db/repositories/channel')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const signal = require('../signal')
-const messenger = require('../dispatcher/messenger')
-const { statuses } = require('../../db/models/phoneNumber')
-const { loggerOf } = require('../util')
+const channelRepository = require('../../../db/repositories/channel')
+const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
+const signal = require('../../signal')
+const messenger = require('../../dispatcher/messenger')
+const { statuses } = require('../../../db/models/phoneNumber')
+const { loggerOf } = require('../../util')
 const logger = loggerOf()
 
 // ({ Database, Socket, ChannelAttributes }) -> Promise<ChannelStatus>

@@ -1,8 +1,8 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import phoneNumberService from '../../../../app/services/phoneNumber'
+import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
+import phoneNumberService from '../../../../../app/services/registrar/phoneNumber/index'
 
 describe('phone number presenters', () => {
   describe('list', () => {

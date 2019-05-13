@@ -1,5 +1,5 @@
 const { pick } = require('lodash')
-const { statuses } = require('../../db/models/phoneNumber')
+const { statuses } = require('../../../db/models/phoneNumber')
 
 // STRINGS
 

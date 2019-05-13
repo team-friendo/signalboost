@@ -1,10 +1,10 @@
 const fs = require('fs-extra')
 const { errors, statuses, errorStatus, extractStatus } = require('./common')
 const { flatten, without } = require('lodash')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const signal = require('../signal')
-const { loggerOf, sequence, batchesOfN } = require('../util')
-const logger = loggerOf('FIXME')
+const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
+const signal = require('../../signal')
+const { sequence, batchesOfN } = require('../../util')
+const logger = require('../logger')
 const {
   signal: {
     keystorePath,
@@ -12,7 +12,7 @@ const {
     intervalBetweenRegistrationBatches,
     intervalBetweenRegistrations,
   },
-} = require('../../config/index')
+} = require('../../../config')
 
 /**
  * type PhoneNumberStatus = {

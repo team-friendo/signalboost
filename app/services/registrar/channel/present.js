@@ -1,5 +1,5 @@
-const channelRepository = require('../../db/repositories/channel')
-const { statuses } = require('../../constants')
+const channelRepository = require('../../../db/repositories/channel')
+const { statuses } = require('../../../constants')
 const { pick } = require('lodash')
 
 const list = db =>

@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../../app/db/repositories/channel'
-import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import signal from '../../../../app/services/signal'
-import messenger from '../../../../app/services/dispatcher/messenger'
-import { create } from '../../../../app/services/channel/create'
+import channelRepository from '../../../../../app/db/repositories/channel'
+import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
+import signal from '../../../../../app/services/signal'
+import messenger from '../../../../../app/services/dispatcher/messenger'
+import { create } from '../../../../../app/services/registrar/channel/create'
 
 describe('channel activation module', () => {
   const db = {}

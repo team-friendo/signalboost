@@ -1,5 +1,5 @@
-const { statuses } = require('../../db/models/phoneNumber')
-const { filters } = require('../../db/repositories/phoneNumber')
+const { statuses } = require('../../../db/models/phoneNumber')
+const { filters } = require('../../../db/repositories/phoneNumber')
 const { errors } = require('./common')
 const { list } = require('./present')
 const { provisionN } = require('./provision')

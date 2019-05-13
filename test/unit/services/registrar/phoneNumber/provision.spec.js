@@ -2,13 +2,13 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { provisionN, statuses } from '../../../../app/services/phoneNumber/index'
-import purchase from '../../../../app/services/phoneNumber/purchase'
-import register from '../../../../app/services/phoneNumber/register'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { provisionN, statuses } from '../../../../../app/services/registrar/phoneNumber/index'
+import purchase from '../../../../../app/services/registrar/phoneNumber/purchase'
+import register from '../../../../../app/services/registrar/phoneNumber/register'
+import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 const {
   signal: { registrationBatchSize },
-} = require('../../../../app/config')
+} = require('../../../../../app/config/index')
 
 describe('phone number services -- provision module', () => {
   const phoneNumbers = times(3, genPhoneNumber)

@@ -1,5 +1,5 @@
 const { pick } = require('lodash')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
+const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 
 const list = (db, filter) =>
   phoneNumberRepository

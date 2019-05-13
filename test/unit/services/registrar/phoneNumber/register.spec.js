@@ -8,19 +8,19 @@ import {
   registerMany,
   registerAllUnregistered,
   verify,
-} from '../../../../app/services/phoneNumber/register'
-import signal from '../../../../app/services/signal'
-import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import { statuses, errors } from '../../../../app/services/phoneNumber/index'
-import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
-import { wait } from '../../../../app/services/util'
+} from '../../../../../app/services/registrar/phoneNumber/register'
+import signal from '../../../../../app/services/signal'
+import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
+import { statuses, errors } from '../../../../../app/services/registrar/phoneNumber/index'
+import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
+import { wait } from '../../../../../app/services/util'
 const {
   signal: {
     registrationBatchSize,
     intervalBetweenRegistrationBatches,
     intervalBetweenRegistrations,
   },
-} = require('../../../../app/config/index')
+} = require('../../../../../app/config/index')
 
 describe('phone number services -- registration module', () => {
   const phoneNumber = genPhoneNumber()
