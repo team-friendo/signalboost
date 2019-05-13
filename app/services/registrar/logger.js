@@ -1,3 +1,3 @@
 const { loggerOf } = require('../util')
 
-module.exports = loggerOf('api')
+module.exports = loggerOf('registrar')

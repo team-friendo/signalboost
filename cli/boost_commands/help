@@ -7,10 +7,10 @@ boost cli supports the following commands:
     - shows this dialogue
 
   new_channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - activates a channel with provied phone number, name, and admins via api at provided url
+    - activates a channel with provied phone number, name, and admins via registrar at provided url
 
   new_numbers -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via api at provided url
+    - purchases n new twilio numbers and registers them w/ signal via registrar at provided url
 
   register_numbers -u <api_url>
     - registers all purchased twilio numbers with signal

@@ -1,9 +1,9 @@
 const { initDb, getDbConnection } = require('./db')
 const { logger, wait } = require('./services/util')
 const signal = require('./services/signal')
-// TODO: move dispatcher/run, api/run to dispatcher/index, api/index
+// TODO: move dispatcher/run, registrar/run to dispatcher/index, registrar/index
 const dispatcher = require('./services/dispatcher/run')
-const api = require('./services/api/run')
+const registrar = require('./services/registrar/run')
 
 const run = async () => {
   logger.log('----- Initializing Signalboost...')
@@ -18,7 +18,7 @@ const run = async () => {
   logger.log('Connected to signald socket!')
 
   await wait(500)
-  await api.run(db, sock)
+  await registrar.run(db, sock)
   await dispatcher.run(db, sock)
 
   logger.log('----- Signalboost running!')

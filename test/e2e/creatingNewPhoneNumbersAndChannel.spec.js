@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
 import { pick, omit } from 'lodash'
-import { api } from '../../app/config/index'
+import { registrar } from '../../app/config/index'
 import { initDb } from '../../app/db'
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 const {
@@ -30,7 +30,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
     messageCountCount
 
   const releaseNumber = twilioSid =>
-    request('https://api.twilio.com').del(
+    request('https://registrar.twilio.com').del(
       `/2010-04-01'/Accounts/${accountSid}/IncomingPhoneNumbers/${twilioSid}.json`,
     )
 
@@ -64,7 +64,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
       this.timeout(30000)
       phoneNumberResponse = await request('https://signalboost.ngrok.io')
         .post('/phoneNumbers')
-        .set('token', api.authToken)
+        .set('token', registrar.authToken)
         .send({ areaCode: 202, num: 2 })
       console.log(
         '>>>> phoneNumberResponse >>>>>\n',
@@ -101,7 +101,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
 
         channelResponse = await request('https://signalboost.ngrok.io')
           .post('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ phoneNumber, name, publishers })
 
         channel = await db.channel.findOne({ where: { phoneNumber } })
@@ -154,5 +154,5 @@ describe.skip('creating new phone numbers for use in new channels', () => {
  *
  * curl -s -X DELETE \
  * -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
- * https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${phone_number_sid}.json
+ * https://registrar.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${phone_number_sid}.json
  **/

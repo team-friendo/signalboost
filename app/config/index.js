@@ -3,7 +3,7 @@ require('dotenv').config()
 const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')
 const twilioConfigsByEnv = require('./twilio')
-const apiConfigsByEnv = require('./api')
+const registrarConfigsByEnv = require('./registrar')
 const signalConfigsByEnv = require('./signal')
 
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
@@ -14,6 +14,6 @@ module.exports = {
   channelName: process.env.CHANNEL_NAME || 'this channel',
   db: getConfig(dbConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
-  api: getConfig(apiConfigsByEnv),
+  registrar: getConfig(registrarConfigsByEnv),
   signal: getConfig(signalConfigsByEnv),
 }

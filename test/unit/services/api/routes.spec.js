@@ -3,12 +3,12 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
 import { times, keys, pick } from 'lodash'
-import { startApiServer } from '../../../../app/services/api/run'
+import { startServer } from '../../../../app/services/registrar/run'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/phoneNumber'
 
-import { api } from '../../../../app/config/index'
+import { registrar } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
 
 describe('routes', () => {
@@ -37,7 +37,7 @@ describe('routes', () => {
   }
 
   let server
-  before(async () => (server = (await startApiServer()).server))
+  before(async () => (server = (await startServer()).server))
   after(() => server.close())
 
   describe('GET to /channels', () => {
@@ -58,7 +58,7 @@ describe('routes', () => {
       it('returns a list of channels', async () => {
         await request(server)
           .get('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .expect(200, channels.data)
       })
     })
@@ -70,7 +70,7 @@ describe('routes', () => {
       it('returns an error status message', async () => {
         await request(server)
           .get('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .expect(500, errorStatus.data)
       })
     })
@@ -87,7 +87,7 @@ describe('routes', () => {
       it('attempts to create channel with values from POST request', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
 
         expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'name', 'publishers'])).to.eql({
@@ -104,7 +104,7 @@ describe('routes', () => {
       it('creates channel and returns success status', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(200, channelCreatedStatus)
       })
@@ -116,7 +116,7 @@ describe('routes', () => {
       it('creates returns error status', async () => {
         await request(server)
           .post('/channels')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(500, errorStatus)
       })
@@ -138,7 +138,7 @@ describe('routes', () => {
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .expect(200, list.data)
       })
     })
@@ -150,7 +150,7 @@ describe('routes', () => {
       it('returns a list of phone numbers', async () => {
         await request(server)
           .get('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .expect(500, errorStatus.data)
       })
     })
@@ -163,7 +163,7 @@ describe('routes', () => {
         it('passes filter to phone number service', async () => {
           await request(server)
             .get('/phoneNumbers?filter=ACTIVE')
-            .set('Token', api.authToken)
+            .set('Token', registrar.authToken)
           expect(listStub.getCall(0).args[1]).to.eql('ACTIVE')
         })
       })
@@ -171,7 +171,7 @@ describe('routes', () => {
         it('does not pass filter to phone number service', async () => {
           await request(server)
             .get('/phoneNumbers?filter=DROP%20TABLE;')
-            .set('Token', api.authToken)
+            .set('Token', registrar.authToken)
           expect(listStub.getCall(0).args[1]).to.eql(null)
         })
       })
@@ -187,7 +187,7 @@ describe('routes', () => {
       it('attempts to provision `num` phone numbers', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ num: 3 })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(3)
@@ -198,7 +198,7 @@ describe('routes', () => {
       it('attempts to provision 1 phone number', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ num: 'foo' })
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
@@ -209,7 +209,7 @@ describe('routes', () => {
       it('attempts to provision 1 phone number', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
 
         expect(provisionNStub.getCall(0).args[0].n).to.eql(1)
       })
@@ -221,7 +221,7 @@ describe('routes', () => {
       it('returns success statuses', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ num: 3 })
           .expect(200, verifiedStatuses)
       })
@@ -233,7 +233,7 @@ describe('routes', () => {
       it('returns success statuses', async () => {
         await request(server)
           .post('/phoneNumbers')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ num: 3 })
           .expect(500, errorStatuses)
       })
@@ -251,7 +251,7 @@ describe('routes', () => {
       it('attempts to verify a phone number with a verification code parsed from the request', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ To: phoneNumber, Body: verificationMessage })
         const arg = verifyStub.getCall(0).args[0]
 
@@ -269,7 +269,7 @@ describe('routes', () => {
       it('responds with a success code', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ phoneNumber })
           .expect(200)
       })
@@ -281,7 +281,7 @@ describe('routes', () => {
       it('responds with an error code', async () => {
         await request(server)
           .post('/twilioSms')
-          .set('Token', api.authToken)
+          .set('Token', registrar.authToken)
           .send({ phoneNumber })
           .expect(500)
       })

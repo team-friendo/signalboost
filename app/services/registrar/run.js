@@ -6,16 +6,16 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const logger = require('./logger')
 const {
-  api: { port },
+  registrar: { port },
 } = require('../../config')
 
 const run = async (db, sock) => {
-  logger.log(`--- Staring api server...`)
-  await startApiServer(port, db, sock).catch(logger.error)
-  logger.log(`--- Api server listening on port ${port}`)
+  logger.log(`--- Staring registrar server...`)
+  await startServer(port, db, sock).catch(logger.error)
+  logger.log(`--- Registrar server listening on port ${port}`)
 }
 
-const startApiServer = async (port, db, sock) => {
+const startServer = async (port, db, sock) => {
   const app = new Koa()
 
   configureLogger(app)
@@ -46,4 +46,4 @@ const configureRoutes = (app, db, sock) => {
   app.use(router.allowedMethods())
 }
 
-module.exports = { run, startApiServer }
+module.exports = { run, startServer }

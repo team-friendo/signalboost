@@ -1,24 +1,24 @@
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { startApiServer } from '../../../../../app/services/api/run'
-import { api } from '../../../../../app/config/index'
+import { startServer } from '../../../../../app/services/registrar/run'
+import { registrar } from '../../../../../app/config/index'
 
 describe('authentication middleware', () => {
   let server
-  before(async () => (server = (await startApiServer()).server))
+  before(async () => (server = (await startServer()).server))
   after(() => server.close())
 
   it('allows a request that contains auth token in the header', async () => {
     await request(server)
       .get('/hello')
-      .set('Token', api.authToken)
+      .set('Token', registrar.authToken)
       .expect(200, { msg: 'hello world' })
   })
 
-  it('allows a request regardless of capitalization in header', async () => {
+  it('allows a request regardless of cregistrartalization in header', async () => {
     await request(server)
       .get('/hello')
-      .set('ToKeN', api.authToken)
+      .set('ToKeN', registrar.authToken)
       .expect(200, { msg: 'hello world' })
   })
 
@@ -38,7 +38,7 @@ describe('authentication middleware', () => {
   it('blocks a request that contains the right auth token in the wrong header', async () => {
     await request(server)
       .get('/hello')
-      .set('FooBar', api.authToken)
+      .set('FooBar', registrar.authToken)
       .expect(401, { error: 'Not Authorized' })
   })
 })

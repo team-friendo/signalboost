@@ -3,13 +3,13 @@ const { isEmpty, times, identity } = require('lodash')
 const { errors, statuses, extractStatus, errorStatus } = require('./common')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
-  api: { host },
+  registrar: { host },
 } = require('../../config/index')
 
 /**
  * NOTE(aguestuser|Wed 02 Jan 2019):
  * - the second singleton `availableTwilioNumbers` is included as a (somewhat awkward)
- *   testing seam due to the way that the twilio api client is structured
+ *   testing seam due to the way that the twilio registrar client is structured
  *   (you can't just stub `#availablePhoneNumbers` for REASONS (grr...)
  * - instead, we we make a weird singleton so we can stub the entire singleton's call to `list`, which works
  * - if we ever want to paramaterize the country code, we could provide a lookup table of
