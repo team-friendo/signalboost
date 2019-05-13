@@ -1,17 +1,20 @@
 version: '3'
 
 volumes:
+
   postgres_data:
   signal_sock:
   signal_data:
 
 services:
+
   db:
     image: postgres
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+
   signald:
     image: signald
     container_name: signald
@@ -21,6 +24,7 @@ services:
       - ./bin:/signalboost/bin
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
+
   app:
     image: signalboost
     container_name: signalboost_app
@@ -46,6 +50,7 @@ services:
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
+
   ngrok:
     container_name: ngrok
     ports:
