@@ -24,7 +24,6 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.publication.destroy({ where: {}, force: true }),
       db.subscription.destroy({ where: {}, force: true }),
-      db.welcome.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
@@ -265,7 +264,6 @@ describe('channel repository', () => {
                 { model: db.subscription },
                 { model: db.publication },
                 { model: db.messageCount },
-                { model: db.welcome },
               ],
             },
           ),
@@ -283,7 +281,6 @@ describe('channel repository', () => {
         expect(keys(ch.toJSON())).to.eql([
           'phoneNumber',
           'name',
-          'containerId',
           'createdAt',
           'updatedAt',
           'subscriptions',
@@ -445,48 +442,6 @@ describe('channel repository', () => {
 
     it('returns false when asked to check a non existent channel', async () => {
       expect(await channelRepository.isPublisher(db, genPhoneNumber(), subPNums[0])).to.eql(false)
-    })
-  })
-
-  describe('#createWelcome', () => {
-    let result
-    beforeEach(async () => {
-      welcomeCount = await db.welcome.count()
-      channel = await db.channel.create(channelFactory({ phoneNumber: chPNum }))
-      result = await channelRepository.createWelcome(db, channel.phoneNumber, publisherPNums[0])
-    })
-
-    it('creates a new welcome', async () => {
-      expect(await db.welcome.count()).to.eql(welcomeCount + 1)
-    })
-
-    it('associates a welcomed number and a channel number', () => {
-      expect(result.channelPhoneNumber).to.eql(channel.phoneNumber)
-      expect(result.welcomedPhoneNumber).to.eql(publisherPNums[0])
-    })
-  })
-
-  describe('#getUnwelcomedPublisherNumbers', () => {
-    beforeEach(async () => {
-      channel = await db.channel.create(
-        {
-          ...channelFactory({ phoneNumber: chPNum }),
-          publications: [
-            { publisherPhoneNumber: publisherPNums[0] },
-            { publisherPhoneNumber: publisherPNums[1] },
-          ],
-          welcomes: [{ welcomedPhoneNumber: publisherPNums[0] }],
-        },
-        {
-          include: [{ model: db.publication }, { model: db.welcome }],
-        },
-      )
-    })
-
-    it('returns an array of unwelcomed publisher phone numbers', async () => {
-      expect(await channelRepository.getUnwelcomedPublishers(db, channel.phoneNumber)).to.eql([
-        publisherPNums[1],
-      ])
     })
   })
 })

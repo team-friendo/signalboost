@@ -6,7 +6,6 @@ const { channelOf } = require('./models/channel')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { messageCountOf } = require('./models/messageCount')
 const { subscriptionOf } = require('./models/subscription')
-const { welcomeOf } = require('./models/welcome')
 const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
 
@@ -22,7 +21,6 @@ const initDb = () => {
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
     subscription: subscriptionOf(sequelize, Sequelize),
-    welcome: welcomeOf(sequelize, Sequelize),
   }
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))
