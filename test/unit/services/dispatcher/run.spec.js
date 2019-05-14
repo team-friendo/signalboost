@@ -5,7 +5,6 @@ import { times } from 'lodash'
 import { EventEmitter } from 'events'
 import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
-import phoneNumberService from '../../../../app/services/registrar/phoneNumber'
 import signal from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/executor'
 import messenger, { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
@@ -40,10 +39,7 @@ describe('dispatcher service', () => {
     }
     const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
 
-    let getDbConnectionStub,
-      getSocketStub,
-      registerAllStub,
-      findAllDeepStub,
+    let findAllDeepStub,
       findDeepStub,
       isPublisherStub,
       isSubscriberStub,
@@ -53,13 +49,6 @@ describe('dispatcher service', () => {
 
     beforeEach(async () => {
       // initialization stubs --v
-      // TODO: restore these when services are compartmentalized again
-      // getDbConnectionStub = sinon.stub(dbWrapper, 'getDbConnection').returns(Promise.resolve())
-      // getSocketStub = sinon.stub(signal, 'getSocket').returns(Promise.resolve(sock))
-
-      registerAllStub = sinon
-        .stub(phoneNumberService, 'registerAllUnregistered')
-        .returns(Promise.resolve([]))
 
       findAllDeepStub = sinon
         .stub(channelRepository, 'findAllDeep')
@@ -94,26 +83,14 @@ describe('dispatcher service', () => {
     })
 
     afterEach(() => {
-      // getDbConnectionStub.restore()
-      // getSocketStub.restore()
       findAllDeepStub.restore()
       findDeepStub.restore()
       isPublisherStub.restore()
       isSubscriberStub.restore()
       processCommandStub.restore()
       dispatchStub.restore()
-      registerAllStub.restore()
       subscribeStub.restore()
     })
-
-    // describe('initializing the service', () => {
-    //   it('gets a signald socket connection', () => {
-    //     expect(getSocketStub.callCount).to.eql(1)
-    //   })
-    //   it('gets a database connection', () => {
-    //     expect(getDbConnectionStub.callCount).to.eql(1)
-    //   })
-    // })
 
     describe('handling an incoming message', () => {
       describe('when message is not dispatchable', () => {

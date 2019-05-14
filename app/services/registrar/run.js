@@ -1,49 +1,22 @@
-const Koa = require('koa')
-const bodyParser = require('koa-bodyparser')
-const requestLogger = require('koa-logger')
-const Router = require('koa-router')
-const { configureAuthenticator } = require('./middleware/authenticator')
-const routesOf = require('./routes')
 const logger = require('./logger')
+const phoneNumberRegistrar = require('./phoneNumber')
+const api = require('./api')
 const {
   registrar: { port },
 } = require('../../config')
 
 const run = async (db, sock) => {
-  logger.log(`--- Staring registrar server...`)
-  await startServer(port, db, sock).catch(logger.error)
-  logger.log(`--- Registrar server listening on port ${port}`)
+  logger.log('--- Initializing Registrar...')
+
+  logger.log(`----- Staring api server...`)
+  await api.startServer(port, db, sock).catch(logger.error)
+  logger.log(`----- Api server listening on port ${port}`)
+
+  logger.log('----- Registering phone numbers...')
+  const regs = await phoneNumberRegistrar.registerAllUnregistered({ db, sock }).catch(logger.error)
+  logger.log(`----- Registered ${regs.length} phone numbers.`)
+
+  logger.log('--- Registrar running!')
 }
 
-const startServer = async (port, db, sock) => {
-  const app = new Koa()
-
-  configureLogger(app)
-  configureBodyParser(app)
-  configureAuthenticator(app)
-  configureRoutes(app, db, sock)
-
-  const server = await app.listen(port).on('error', logger.error)
-  return Promise.resolve({ app, server })
-}
-
-const configureLogger = app => process.env.NODE_ENV !== 'test' && app.use(requestLogger())
-
-const configureBodyParser = app => {
-  app.use(
-    bodyParser({
-      extendTypes: {
-        json: ['application/x-javascript'],
-      },
-    }),
-  )
-}
-
-const configureRoutes = (app, db, sock) => {
-  const router = new Router()
-  routesOf(router, db, sock)
-  app.use(router.routes())
-  app.use(router.allowedMethods())
-}
-
-module.exports = { run, startServer }
+module.exports = { run }

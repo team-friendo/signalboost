@@ -1,12 +1,9 @@
 const { get } = require('lodash')
 const signal = require('../signal')
-const dbWrapper = require('../../db')
 const channelRepository = require('./../../db/repositories/channel')
-const phoneNumberService = require('../registrar/phoneNumber')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
-const { wait } = require('../util')
 
 /**
  * type Dispatchable = {
@@ -30,7 +27,7 @@ const { wait } = require('../util')
  * }
  */
 
-// MAIN FUNCTION
+// INITIALIZATION
 
 const run = async (db, sock) => {
   logger.log('--- Initializing Dispatcher....')
@@ -38,21 +35,13 @@ const run = async (db, sock) => {
   // for debugging...
   // sock.on('data', data => console.log(`+++++++++\n${data}\n++++++++\n`))
 
-  logger.log('Registering phone numbers...')
-  const registrations = await phoneNumberService
-    .registerAllUnregistered({ db, sock })
-    .catch(logger.error)
-  logger.log(`Registered ${registrations.length} phone numbers.`)
-
-  logger.log(`Subscribing to channels...`)
+  logger.log(`----- Subscribing to channels...`)
   const channels = await channelRepository.findAllDeep(db).catch(logger.fatalError)
   const listening = await listenForInboundMessages(db, sock, channels).catch(logger.fatalError)
-  logger.log(`Subscribed to ${listening.length} of ${channels.length} channels!`)
+  logger.log(`----- Subscribed to ${listening.length} of ${channels.length} channels!`)
 
   logger.log(`--- Dispatcher running!`)
 }
-
-// INITIALIZATION
 
 const listenForInboundMessages = async (db, sock, channels) =>
   Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
