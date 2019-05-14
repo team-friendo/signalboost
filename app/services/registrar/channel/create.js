@@ -6,7 +6,7 @@ const { statuses } = require('../../../db/models/phoneNumber')
 const { loggerOf } = require('../../util')
 const logger = loggerOf()
 
-// ({ Database, Socket, ChannelAttributes }) -> Promise<ChannelStatus>
+// ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
 const create = async ({ db, sock, phoneNumber, name, publishers }) => {
   return signal
     .subscribe(sock, phoneNumber)

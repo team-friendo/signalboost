@@ -6,7 +6,7 @@ const dispatcher = require('./services/dispatcher/run')
 const registrar = require('./services/registrar/run')
 
 const run = async () => {
-  logger.log('----- Initializing Signalboost...')
+  logger.log('> Initializing Signalboost...')
 
   logger.log('Getting database connection...')
   const db = initDb()
@@ -21,7 +21,7 @@ const run = async () => {
   await registrar.run(db, sock)
   await dispatcher.run(db, sock)
 
-  logger.log('----- Signalboost running!')
+  logger.log('> Signalboost running!')
 }
 
 module.exports = { run }
