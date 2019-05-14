@@ -94,9 +94,9 @@ const recordStatusChange = (db, phoneNumber, status) =>
   phoneNumberRepository.update(db, phoneNumber, { status }).then(extractStatus)
 
 // PhoneNumberStatus -> boolean
-const isRegistered = async phoneNumberStatus => {
-  const marked = phoneNumberStatus.status === statuses.VERIFIED
-  const inKeystore = await fs.pathExists(`${keystorePath}/${phoneNumberStatus.phoneNumber}`)
+const isRegistered = async ({ status, phoneNumber }) => {
+  const marked = status === statuses.VERIFIED || status === statuses.ACTIVE
+  const inKeystore = await fs.pathExists(`${keystorePath}/${phoneNumber}`)
   return marked && inKeystore
 }
 
