@@ -128,8 +128,8 @@ To host signalboost, you need a server that:
 If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
 
 - [Njalla](https://njal.la)
-- [1984](https://1984.is)
 - [Greenhost](https://greenhost.nl)
+- [1984](https://1984.is)
 - [Mayfirst](https://mayfirst.org)
 
 For domain name registration, we think that [Njal.la](https://njal.la) is hands down the best option.
@@ -146,10 +146,9 @@ This step uses ansible to provision a server, install signalboost and all of its
 
 It uses four playbooks (all of which can be found in the `ansible/playbooks` directory):
 
-1. `provision.yml` (sets up users and basic system dependencies needed for the rest of the deployment)
-2. `configure.yml` (loads docker files in which program will be built and builds images for them)
-3. `deploy.yml` (installs and runs signalboost inside of its respective docker containers)
-4. `harden.yml` (performs advanced hardening on the server)
+1. `provision.yml` (sets up users and system dependencies, performs basic server hardening)
+1. `deploy.yml` (builds signalboost docker containers, installs and runs signalboost inside of them)
+1. `harden.yml` (performs advanced server hardening -- takes a long time!)
 
 You can run all playbooks with one command:
 

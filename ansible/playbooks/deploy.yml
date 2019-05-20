@@ -10,8 +10,18 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-    secrets_method: copy
     env_file: "files/.env"
+    secrets_method: copy
+    # docker dependencies (pip packages)
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose
+
+  # docker dependencies (ansible roles)
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+
 
   tasks:
 
@@ -40,6 +50,26 @@
       dest: "{{ homedir }}/.env"
     tags: clone
     when: secrets_method == "copy"
+
+  #######################
+  # BUILD DOCKER IMAGES #
+  #######################
+
+  - name: Load base dockerfiles
+    copy:
+      src: files/docker/
+      dest: /srv/signalboost/docker/
+    tags: docker
+
+  - name: Build signalboost container
+    command: docker build -f /srv/signalboost/docker/signalboost.dockerfile -t signalboost:latest /srv/signalboost
+    register: build_output
+    tags: docker
+
+  - name: Build signald container
+    command: docker build -f /srv/signalboost/docker/signald.dockerfile -t signald:latest /srv/signalboost
+    register: build_output
+    tags: docker
 
   ########
   # STOP #
