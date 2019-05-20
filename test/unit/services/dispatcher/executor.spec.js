@@ -6,7 +6,7 @@ import {
   commands,
   statuses,
   parseCommand,
-  execute,
+  processCommand,
 } from '../../../../app/services/dispatcher/executor'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages'
 import channelRepository from '../../../../app/db/repositories/channel'
@@ -14,6 +14,7 @@ import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
+import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -160,10 +161,13 @@ describe('executor service', () => {
 
         describe('when payload is a valid phone number', () => {
           const payload = genPhoneNumber()
+          const sdMessage = sdMessageOf(channel, `ADD ${payload}`)
+          const dispatchable = { db, channel, sender, sdMessage }
+
           beforeEach(() => addPublisherStub.returns(Promise.resolve()))
 
           it("attempts to add payload number to the chanel's publishers", async () => {
-            await execute({ command: commands.ADD, payload, db, channel, sender })
+            await processCommand(dispatchable)
             expect(addPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
           })
 
@@ -177,8 +181,7 @@ describe('executor service', () => {
             )
 
             it('returns a SUCCESS status / message and publisher number as payload', async () => {
-              const dispatchable = { command: commands.ADD, payload, db, channel, sender }
-              expect(await execute(dispatchable)).to.eql({
+              expect(await processCommand(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.SUCCESS,
@@ -194,8 +197,7 @@ describe('executor service', () => {
             beforeEach(() => addPublisherStub.callsFake(() => Promise.reject('oh noes!')))
 
             it('returns an ERROR status and message', async () => {
-              const dispatchable = { command: commands.ADD, payload, db, channel, sender }
-              expect(await execute(dispatchable)).to.eql({
+              expect(await processCommand(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.ERROR,
@@ -208,9 +210,9 @@ describe('executor service', () => {
         })
 
         describe('when payload is not a valid phone number', async () => {
-          const dispatchable = { command: commands.ADD, payload: 'foo', channel, sender }
+          const dispatchable = { db, channel, sender, sdMessage: sdMessageOf(channel, 'ADD foo') }
           let result
-          beforeEach(async () => (result = await execute(dispatchable)))
+          beforeEach(async () => (result = await processCommand(dispatchable)))
 
           it('does not attempt to add publisher', () => {
             expect(addPublisherStub.callCount).to.eql(0)
@@ -231,13 +233,13 @@ describe('executor service', () => {
 
       describe('when sender is not a publisher', () => {
         const dispatchable = {
-          command: commands.ADD,
-          payload: 'foo',
+          db,
           channel,
           sender: subscriber,
+          sdMessage: sdMessageOf(channel, 'ADD me'),
         }
         let result
-        beforeEach(async () => (result = await execute(dispatchable)))
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
         it('does not attempt to add publisher', () => {
           expect(addPublisherStub.callCount).to.eql(0)
@@ -257,11 +259,13 @@ describe('executor service', () => {
     })
 
     describe('HELP command', () => {
+      const sdMessage = sdMessageOf(channel, 'HELP')
+
       describe('when sender is a publisher', () => {
-        const sender = publisher
+        const dispatchable = { db, channel, sender: publisher, sdMessage }
+
         it('sends a help message to sender', async () => {
-          const dispatchable = { command: commands.HELP, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.HELP,
               status: statuses.SUCCESS,
@@ -273,10 +277,10 @@ describe('executor service', () => {
       })
 
       describe('when sender is a subscriber', () => {
-        const sender = subscriber
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
+
         it('sends a help message to sender', async () => {
-          const dispatchable = { command: commands.HELP, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.HELP,
               status: statuses.SUCCESS,
@@ -288,10 +292,10 @@ describe('executor service', () => {
       })
 
       describe('when sender is a random person', () => {
-        const sender = randomPerson
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
+
         it('sends an UNAUTHORIZED message', async () => {
-          const dispatchable = { command: commands.HELP, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.HELP,
               status: statuses.UNAUTHORIZED,
@@ -304,11 +308,13 @@ describe('executor service', () => {
     })
 
     describe('INFO command', () => {
+      const sdMessage = sdMessageOf(channel, 'INFO')
+
       describe('when sender is a publisher', () => {
-        const sender = publisher
+        const dispatchable = { db, channel, sender: publisher, sdMessage }
+
         it('sends an info message with more information', async () => {
-          const dispatchable = { command: commands.INFO, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.INFO,
               status: statuses.SUCCESS,
@@ -320,10 +326,10 @@ describe('executor service', () => {
       })
 
       describe('when sender is a subscriber', () => {
-        const sender = subscriber
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
+
         it('sends an info message with less information', async () => {
-          const dispatchable = { command: commands.INFO, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.INFO,
               status: statuses.SUCCESS,
@@ -335,10 +341,10 @@ describe('executor service', () => {
       })
 
       describe('when sender is neither publisher nor subscriber', () => {
-        const sender = randomPerson
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
+
         it('sends an UNAUTHORIZED message', async () => {
-          const dispatchable = { command: commands.INFO, db, channel, sender }
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.INFO,
               status: statuses.UNAUTHORIZED,
@@ -351,18 +357,20 @@ describe('executor service', () => {
     })
 
     describe('JOIN command', () => {
+      const sdMessage = sdMessageOf(channel, 'JOIN')
       let addSubscriberStub
+
       beforeEach(() => (addSubscriberStub = sinon.stub(channelRepository, 'addSubscriber')))
       afterEach(() => addSubscriberStub.restore())
 
       describe('when number is not subscribed to channel', () => {
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
+
         describe('when adding subscriber succeeds', () => {
           beforeEach(() => addSubscriberStub.returns(Promise.resolve(subscriptionFactory())))
 
           it('returns SUCCESS status/message', async () => {
-            const dispatchable = { command: commands.JOIN, channel, sender: randomPerson }
-
-            expect(await execute(dispatchable)).to.eql({
+            expect(await processCommand(dispatchable)).to.eql({
               commandResult: {
                 command: commands.JOIN,
                 status: statuses.SUCCESS,
@@ -377,8 +385,7 @@ describe('executor service', () => {
           beforeEach(() => addSubscriberStub.callsFake(() => Promise.reject('foo')))
 
           it('returns ERROR status/message', async () => {
-            const dispatchable = { command: commands.JOIN, channel, sender: randomPerson }
-            expect(await execute(dispatchable)).to.eql({
+            expect(await processCommand(dispatchable)).to.eql({
               commandResult: {
                 command: commands.JOIN,
                 status: statuses.ERROR,
@@ -391,10 +398,10 @@ describe('executor service', () => {
       })
 
       describe('when number is subscribed to channel', () => {
-        const dispatchable = { command: commands.JOIN, channel, sender: subscriber }
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
         let result
 
-        beforeEach(async () => (result = await execute(dispatchable)))
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
         it('does not try to add subscriber', () => {
           expect(addSubscriberStub.callCount).to.eql(0)
@@ -414,16 +421,17 @@ describe('executor service', () => {
     })
 
     describe('LEAVE command', () => {
+      const sdMessage = sdMessageOf(channel, 'LEAVE')
       let removeSubscriberStub
       beforeEach(() => (removeSubscriberStub = sinon.stub(channelRepository, 'removeSubscriber')))
       afterEach(() => removeSubscriberStub.restore())
 
       describe('when sender is subscribed to channel', () => {
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
         beforeEach(() => removeSubscriberStub.returns(Promise.resolve()))
 
         it('attempts to remove subscriber', async () => {
-          const dispatchable = { command: commands.LEAVE, db, channel, sender: subscriber }
-          await execute(dispatchable)
+          await processCommand(dispatchable)
           expect(removeSubscriberStub.getCall(0).args).to.eql([
             db,
             channel.phoneNumber,
@@ -435,8 +443,7 @@ describe('executor service', () => {
           beforeEach(() => removeSubscriberStub.returns(Promise.resolve(1)))
 
           it('returns SUCCESS status/message', async () => {
-            const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
-            expect(await execute(dispatchable)).to.eql({
+            expect(await processCommand(dispatchable)).to.eql({
               commandResult: {
                 command: commands.LEAVE,
                 status: statuses.SUCCESS,
@@ -450,8 +457,7 @@ describe('executor service', () => {
           beforeEach(() => removeSubscriberStub.callsFake(() => Promise.reject('boom!')))
 
           it('returns ERROR status/message', async () => {
-            const dispatchable = { command: commands.LEAVE, channel, sender: subscriber }
-            expect(await execute(dispatchable)).to.eql({
+            expect(await processCommand(dispatchable)).to.eql({
               commandResult: {
                 command: commands.LEAVE,
                 status: statuses.ERROR,
@@ -464,9 +470,9 @@ describe('executor service', () => {
       })
 
       describe('when sender is not subscribed to channel', () => {
-        const dispatchable = { command: commands.LEAVE, channel, sender: randomPerson }
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
         let result
-        beforeEach(async () => (result = await execute(dispatchable)))
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
         it('does not try to remove subscriber', () => {
           expect(removeSubscriberStub.callCount).to.eql(0)
@@ -486,13 +492,13 @@ describe('executor service', () => {
 
       describe('when sender is a publisher', () => {
         let result, removePublisherStub
-        const dispatchable = { command: commands.LEAVE, db, channel, sender: publisher }
+        const dispatchable = { db, channel, sender: publisher, sdMessage }
 
         beforeEach(async () => {
           removePublisherStub = sinon
             .stub(channelRepository, 'removePublisher')
             .returns(Promise.resolve([1, 1]))
-          result = await execute(dispatchable)
+          result = await processCommand(dispatchable)
         })
         afterEach(() => removePublisherStub.restore())
 
@@ -503,6 +509,7 @@ describe('executor service', () => {
             publisher.phoneNumber,
           ])
         })
+
         it('returns SUCCESS status/message', () => {
           expect(result).to.eql({
             commandResult: {
@@ -537,13 +544,15 @@ describe('executor service', () => {
 
         describe('when payload is a valid phone number', () => {
           const payload = genPhoneNumber()
+          const sdMessage = sdMessageOf(channel, `REMOVE ${payload}`)
+          const dispatchable = { db, channel, sender, sdMessage }
           beforeEach(() => validateStub.returns(true))
 
           describe('when removal target is a publisher', () => {
             beforeEach(() => isPublisherStub.returns(Promise.resolve(true)))
 
             it("attempts to remove the human from the chanel's publishers", async () => {
-              await execute({ command: commands.REMOVE, payload, db, channel, sender })
+              await processCommand(dispatchable)
               expect(removePublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
             })
 
@@ -551,8 +560,7 @@ describe('executor service', () => {
               beforeEach(() => removePublisherStub.returns(Promise.resolve([1, 1])))
 
               it('returns a SUCCESS status and message', async () => {
-                const dispatchable = { command: commands.REMOVE, payload, channel, sender }
-                expect(await execute(dispatchable)).to.eql({
+                expect(await processCommand(dispatchable)).to.eql({
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.SUCCESS,
@@ -567,8 +575,7 @@ describe('executor service', () => {
               beforeEach(() => removePublisherStub.callsFake(() => Promise.reject('oh noes!')))
 
               it('returns an ERROR status/message', async () => {
-                const dispatchable = { command: commands.REMOVE, payload, channel, sender }
-                expect(await execute(dispatchable)).to.eql({
+                expect(await processCommand(dispatchable)).to.eql({
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.ERROR,
@@ -588,8 +595,7 @@ describe('executor service', () => {
             })
 
             it('returns a SUCCESS status / NOOP message', async () => {
-              const dispatchable = { command: commands.REMOVE, payload, channel, sender }
-              expect(await execute(dispatchable)).to.eql({
+              expect(await processCommand(dispatchable)).to.eql({
                 commandResult: {
                   command: commands.REMOVE,
                   status: statuses.ERROR,
@@ -602,9 +608,10 @@ describe('executor service', () => {
         })
 
         describe('when payload is not a valid phone number', async () => {
-          const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
+          const sdMessage = sdMessageOf(channel, 'REMOVE foo')
+          const dispatchable = { db, channel, sender, sdMessage }
           let result
-          beforeEach(async () => (result = await execute(dispatchable)))
+          beforeEach(async () => (result = await processCommand(dispatchable)))
 
           it('does not attempt to remove publisher', () => {
             expect(removePublisherStub.callCount).to.eql(0)
@@ -624,11 +631,11 @@ describe('executor service', () => {
       })
 
       describe('when sender is not a publisher', () => {
-        const sender = randomPerson
-        const dispatchable = { command: commands.REMOVE, payload: 'foo', channel, sender }
+        const sdMessage = sdMessageOf(channel, `REMOVE ${genPhoneNumber()}`)
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
         let result
 
-        beforeEach(async () => (result = await execute(dispatchable)))
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
         it('does not attempt to add publisher', () => {
           expect(removePublisherStub.callCount).to.eql(0)
@@ -648,19 +655,19 @@ describe('executor service', () => {
     })
 
     describe('RENAME command', () => {
+      const sdMessage = sdMessageOf(channel, 'RENAME foo')
       let updateStub
       beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
       afterEach(() => updateStub.restore())
 
       describe('when sender is a publisher', () => {
-        const sender = publisher
-        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+        const dispatchable = { db, channel, sender: publisher, sdMessage }
         let result
 
         describe('when renaming succeeds', () => {
           beforeEach(async () => {
-            updateStub.returns(Promise.resolve({ ...channel, name: 'newname' }))
-            result = await execute(dispatchable)
+            updateStub.returns(Promise.resolve({ ...channel, name: 'foo' }))
+            result = await processCommand(dispatchable)
           })
 
           it('returns SUCCESS status / message', () => {
@@ -668,16 +675,17 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.RENAME,
                 status: statuses.SUCCESS,
-                message: CR.rename.success(channel.name, 'newname'),
+                message: CR.rename.success(channel.name, 'foo'),
               },
               dispatchable,
             })
           })
         })
+
         describe('when renaming fails', () => {
           beforeEach(async () => {
             updateStub.callsFake(() => Promise.reject('oh noes!'))
-            result = await execute(dispatchable)
+            result = await processCommand(dispatchable)
           })
 
           it('returns ERROR status / message', () => {
@@ -685,19 +693,19 @@ describe('executor service', () => {
               commandResult: {
                 command: commands.RENAME,
                 status: statuses.ERROR,
-                message: CR.rename.dbError(channel.name, 'newname'),
+                message: CR.rename.dbError(channel.name, 'foo'),
               },
               dispatchable,
             })
           })
         })
       })
+
       describe('when sender is a subscriber', () => {
-        const sender = subscriber
-        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
 
         it('returns UNAUTHORIZED status / message', async () => {
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.RENAME,
               status: statuses.UNAUTHORIZED,
@@ -707,12 +715,12 @@ describe('executor service', () => {
           })
         })
       })
+
       describe('when sender is a random person', () => {
-        const sender = randomPerson
-        const dispatchable = { command: commands.RENAME, payload: 'newname', channel, sender }
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
 
         it('returns UNAUTHORIZED status / message', async () => {
-          expect(await execute(dispatchable)).to.eql({
+          expect(await processCommand(dispatchable)).to.eql({
             commandResult: {
               command: commands.RENAME,
               status: statuses.UNAUTHORIZED,
@@ -726,10 +734,15 @@ describe('executor service', () => {
 
     describe('invalid command', () => {
       it('returns NOOP status/message', async () => {
-        const dispatchable = { command: 'foobar' }
-        expect(await execute(dispatchable)).to.eql({
+        const dispatchable = {
+          db,
+          channel,
+          sender: publisher,
+          sdMessage: sdMessageOf(channel, 'foo'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
           commandResult: {
-            command: 'foobar',
+            command: commands.NOOP,
             status: statuses.NOOP,
             message: CR.noop,
           },

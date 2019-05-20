@@ -1,5 +1,0 @@
-#!/bin/bash
-
-echo "--- running dispatcher..."
-supervisord -c /signalboost/supervisord_conf/dispatcher.conf -d
-while true; do sleep 86400; done

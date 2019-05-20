@@ -8,7 +8,7 @@ echo "--- running containers..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/drop \
-               orchestrator
+               app
 
 echo "--- removing db container..."
 

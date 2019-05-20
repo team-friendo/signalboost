@@ -1,97 +1,91 @@
-const { isEmpty } = require('lodash')
-const signal = require('./signal')
+const { get } = require('lodash')
+const signal = require('../signal')
 const channelRepository = require('./../../db/repositories/channel')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
-const { channelPhoneNumber } = require('../../config')
 
 /**
  * type Dispatchable = {
  *   db: SequelizeDatabaseConnection,
- *   iface: DbusInterface,
- *   channel: Channel,
+ *   sock: Socket,
+ *   channel: models.Channel,
  *   sender: Sender,
- *   message: string,
- *   attachments: string,
+ *   sdMessage: signal.OutBoundSignaldMessage,,
  * }
- */
-
-/**
- * type Channel = {
- *   phoneNumber: string,
- *   name: string,
- *   (containerId: string,)
- * }
- */
-
-/**
+ *
  * type Sender = {
  *   phoneNumber: string,
  *   isPublisher: boolean,
  *   isSubscriber: boolean,
  * }
- */
-
-/**
+ *
  * type CommandResult = {
- *   status: string
+ *   status: string,
+ *   command: string,
  *   message: string,
  * }
  */
 
-// MAIN FUNCTIONS
+// INITIALIZATION
 
-const run = async db => {
-  const iface = await signal.getDbusInterface()
+const run = async (db, sock) => {
+  logger.log('--- Initializing Dispatcher....')
 
-  logger.log(`Dispatcher listening on channel: ${channelPhoneNumber}...`)
-  signal.onReceivedMessage(iface)(payload => handleMessage(db, iface, payload).catch(logger.error))
+  // for debugging...
+  // sock.on('data', data => console.log(`+++++++++\n${data}\n++++++++\n`))
 
-  logger.log(`Initializing Dispatcher...`)
-  await initialize(db, iface, channelPhoneNumber).catch(e =>
-    logger.error(`Error Initializing Dispatcher: ${e}`),
-  )
-  logger.log(`Dispatcher initialized!`)
+  logger.log(`----- Subscribing to channels...`)
+  const channels = await channelRepository.findAllDeep(db).catch(logger.fatalError)
+  const listening = await listenForInboundMessages(db, sock, channels).catch(logger.fatalError)
+  logger.log(`----- Subscribed to ${listening.length} of ${channels.length} channels!`)
+
+  logger.log(`--- Dispatcher running!`)
 }
 
-const handleMessage = async (db, iface, payload) => {
-  logger.log(`Dispatching message on channel: ${channelPhoneNumber}`)
-  const [channel, sender] = await Promise.all([
-    channelRepository.findDeep(db, channelPhoneNumber),
-    authenticateSender(db, channelPhoneNumber, payload.sender),
-  ])
-  return messenger.dispatch(
-    await executor.processCommand({ ...payload, db, iface, channel, sender }),
-  )
+const listenForInboundMessages = async (db, sock, channels) =>
+  Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
+    sock.on('data', inboundMsg => dispatch(db, sock, parseMessage(inboundMsg)))
+    return listening
+  })
+
+// MESSAGE DISPATCH
+
+const dispatch = async (db, sock, inboundMsg) => {
+  if (shouldRelay(inboundMsg)) {
+    const channelPhoneNumber = inboundMsg.data.username
+    const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
+    try {
+      const [channel, sender] = await Promise.all([
+        channelRepository.findDeep(db, channelPhoneNumber),
+        classifySender(db, channelPhoneNumber, inboundMsg.data.source),
+      ])
+      return messenger.dispatch(
+        await executor.processCommand({ db, sock, channel, sender, sdMessage }),
+      )
+    } catch (e) {
+      logger.error(e)
+    }
+  }
 }
 
-const authenticateSender = async (db, channelPhoneNumber, sender) => ({
+const parseMessage = inboundMsg => {
+  try {
+    return JSON.parse(inboundMsg)
+  } catch (e) {
+    return inboundMsg
+  }
+}
+
+const shouldRelay = sdMessage =>
+  sdMessage.type === signal.messageTypes.MESSAGE && get(sdMessage, 'data.dataMessage')
+
+const classifySender = async (db, channelPhoneNumber, sender) => ({
   phoneNumber: sender,
   isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
   isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
 })
 
-const initialize = async (db, iface, channelPhoneNumber) => {
-  const channel = await channelRepository.findDeep(db, channelPhoneNumber)
-  return welcomeNewPublishers(db, iface, channel)
-}
-
-const welcomeNewPublishers = async (db, iface, channel) => {
-  const unwelcomed = await channelRepository.getUnwelcomedPublishers(db, channelPhoneNumber)
-  const addingPublisher = 'the system administrator'
-
-  isEmpty(unwelcomed)
-    ? logger.log('No new publishers to welcome.')
-    : logger.log(`Sending welcome messages to ${unwelcomed.length} new publisher(s)...`)
-
-  return Promise.all(
-    unwelcomed.map(newPublisher =>
-      messenger.welcomeNewPublisher({ db, iface, channel, newPublisher, addingPublisher }),
-    ),
-  )
-}
-
 // EXPORTS
 
-module.exports = run
+module.exports = { run }

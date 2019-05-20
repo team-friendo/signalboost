@@ -6,7 +6,6 @@ const { channelOf } = require('./models/channel')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { messageCountOf } = require('./models/messageCount')
 const { subscriptionOf } = require('./models/subscription')
-const { welcomeOf } = require('./models/welcome')
 const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
 
@@ -22,7 +21,6 @@ const initDb = () => {
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
     subscription: subscriptionOf(sequelize, Sequelize),
-    welcome: welcomeOf(sequelize, Sequelize),
   }
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))
@@ -31,14 +29,16 @@ const initDb = () => {
 }
 
 // (Database, number) => Promise<string>
-const getConnection = (db, attempts = 0) =>
+const getDbConnection = (db, attempts = 0) =>
   db.sequelize
     .authenticate()
     .then(() => Promise.resolve('db connected'))
     .catch(() =>
       attempts < maxConnectionAttempts
-        ? wait(connectionInterval).then(() => getConnection(db, attempts + 1))
-        : Promise.reject(`could not connect to db after ${maxConnectionAttempts} attempts`),
+        ? wait(connectionInterval).then(() => getDbConnection(db, attempts + 1))
+        : Promise.reject(
+            new Error(`could not connect to db after ${maxConnectionAttempts} attempts`),
+          ),
     )
 
-module.exports = { initDb, getConnection }
+module.exports = { initDb, getDbConnection }

@@ -8,7 +8,7 @@ echo "--- running migrations..."
 
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/migrate \
-               orchestrator
+               app
 
 echo "--- removing db container..."
 

@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
 import { keys } from 'lodash'
 import { initDb } from '../../app/db'
-import { orchestrator } from '../../app/config/index'
+import { registrar } from '../../app/config/index'
 import { statuses } from '../../app/db/models/phoneNumber'
 import { genPhoneNumber, genSid } from '../support/factories/phoneNumber'
 import { first, last, findIndex } from 'lodash'
@@ -23,7 +23,7 @@ describe('retrieving metrics', () => {
 
   describe('listing channels', () => {
     before(async function() {
-      this.timeout(5000)
+      this.timeout(10000)
       channels = await Promise.all(
         deepChannelAttrs.map(ch =>
           db.channel.create(
@@ -33,7 +33,6 @@ describe('retrieving metrics', () => {
                 { model: db.subscription },
                 { model: db.publication },
                 { model: db.messageCount },
-                { model: db.welcome },
               ],
             },
           ),
@@ -43,7 +42,7 @@ describe('retrieving metrics', () => {
       /**********************************************************/
       response = await request('https://signalboost.ngrok.io')
         .get('/channels')
-        .set('Token', orchestrator.authToken)
+        .set('Token', registrar.authToken)
       /**********************************************************/
     })
     after(async () => await Promise.all(channels.map(ch => ch.destroy())))
@@ -77,7 +76,7 @@ describe('retrieving metrics', () => {
       count = await db.phoneNumber.count()
       response = await request('https://signalboost.ngrok.io')
         .get('/phoneNumbers')
-        .set('Token', orchestrator.authToken)
+        .set('Token', registrar.authToken)
     })
     after(async () => await Promise.all(phoneNumbers.map(r => r.destroy())))
 

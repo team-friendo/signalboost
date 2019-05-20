@@ -30,6 +30,9 @@
 .idea/*
 /.vscode/settings.json
 
+# signal keystore
+signal_data
+
 # blackbox
 /keyrings/live/pubring.gpg~
 /keyrings/live/pubring.kbx~

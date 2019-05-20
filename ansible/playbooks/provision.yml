@@ -5,6 +5,7 @@
 
   vars:
     ansible_user: root
+    secrets_method: copy
 
   handlers:
     - name: restart fail2ban
@@ -112,6 +113,25 @@
         regexp: '^%sudo'
         line: '%sudo ALL=(ALL) NOPASSWD: ALL'
         validate: visudo -cf %s
+
+  ###############
+  # DEPLOY KEYS #
+  ###############
+
+  - name: Load Deploy Key(s)
+    copy:
+      src: files/deploy_keys/
+      dest: /keys/
+    tags: keys
+    when: secrets_method == 'blackbox'
+
+  - name: Import GPG deploy key to keystore
+    command: gpg --import signalboost_gpg_privkey.asc
+    args:
+      chdir: /keys
+    tags: keys
+    when: secrets_method == 'blackbox'
+
 
   ###################
   # BASIC HARDENING #

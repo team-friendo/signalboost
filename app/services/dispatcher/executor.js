@@ -3,7 +3,23 @@ const validator = require('../../db/validations')
 const logger = require('./logger')
 const { commandResponses } = require('./messages')
 
-// CONSTANTS
+/**
+ * type Executable = {
+ *   command: string,
+ *   payload: ?string,
+ * }
+ *
+ * type CommandResult = {
+ *   status: string,
+ *   command: string,
+ *   message: string,
+ * }
+ *
+ * */
+
+/*************
+ * CONSTANTS
+ *************/
 
 const statuses = {
   NOOP: 'NOOP',
@@ -23,12 +39,15 @@ const commands = {
   RENAME: 'RENAME',
 }
 
-// PUBLIC FUNCTIONS
+/******************
+ * INPUT HANDLING
+ ******************/
 
-// Dispatchable -> Promise<CommandResult>
+// Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const processCommand = dispatchable =>
-  execute({ ...parseCommand(dispatchable.message), ...dispatchable })
+  execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
 
+// string -> Executable
 const parseCommand = msg => {
   const _msg = msg.trim()
   if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
@@ -43,8 +62,10 @@ const parseCommand = msg => {
   else return { command: commands.NOOP }
 }
 
-const execute = async dispatchable => {
-  const { command, payload, db, channel, sender } = dispatchable
+// (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
+const execute = async (executable, dispatchable) => {
+  const { command, payload } = executable
+  const { db, channel, sender } = dispatchable
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
@@ -57,7 +78,9 @@ const execute = async dispatchable => {
   return { commandResult: { ...result, command }, dispatchable }
 }
 
-// PRIVATE FUNCTIONS
+/********************
+ * COMMAND EXECUTION
+ ********************/
 
 // ADD
 
@@ -80,6 +103,8 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newPublisherNumber) }))
 
 // HELP
+
+//TODO: extract `executable` from `dispatchable`
 
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = commandResponses.help
@@ -126,13 +151,15 @@ const addSubscriber = (db, channel, sender, cr) =>
 
 const maybeRemoveSender = async (db, channel, sender) => {
   const cr = commandResponses.subscriber.remove
-  return (sender.isSubscriber || sender.isPublisher)
+  return sender.isSubscriber || sender.isPublisher
     ? removeSender(db, channel, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
 
 const removeSender = (db, channel, sender, cr) => {
-  const remove = sender.isPublisher ? channelRepository.removePublisher : channelRepository.removeSubscriber
+  const remove = sender.isPublisher
+    ? channelRepository.removePublisher
+    : channelRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -179,6 +206,10 @@ const noop = () =>
     status: statuses.NOOP,
     message: commandResponses.noop,
   })
+
+/**********
+ * HELPERS
+ **********/
 
 const logAndReturn = (err, statusTuple) => {
   // TODO(@zig): add prometheus error count here (counter: db_error)

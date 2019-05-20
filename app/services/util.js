@@ -1,3 +1,5 @@
+const { concat, take, drop, isEmpty } = require('lodash')
+
 /**************** Promises ****************/
 
 const exec = require('util').promisify(require('child_process').exec)
@@ -23,6 +25,17 @@ const repeatUntilTimeout = (fn, interval, timeout) => {
   repeatUntil(fn, interval, () => nowInMillis() > now + timeout)
 }
 
+// (Array<(Any) -> Promise<Any>>, number) -> Promise<Array>
+const sequence = async (asyncFuncs, delay = 0) => {
+  const [hd, tl] = [asyncFuncs[0] || (() => []), asyncFuncs.slice(1)]
+  return [await hd()].concat(
+    tl.length === 0 ? [] : await wait(delay).then(() => sequence(asyncFuncs.slice(1), delay)),
+  )
+}
+
+const batchesOfN = (arr, n) =>
+  isEmpty(arr) ? [] : concat([take(arr, n)], batchesOfN(drop(arr, n), n))
+
 const nowInMillis = () => new Date().getTime()
 
 const nowTimestamp = () => new Date().toISOString()
@@ -31,12 +44,29 @@ const nowTimestamp = () => new Date().toISOString()
 
 const loggerOf = prefix =>
   process.env.NODE_ENV === 'test'
-    ? { log: () => null, error: () => null }
+    ? { log: () => null, error: () => null, fatalError: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
-        error: msg => console.error(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
+        fatalError: e => {
+          console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`)
+          console.error('ABORTING.')
+          process.exit(1)
+        },
       }
+
+const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
-module.exports = { exec, promisifyCallback, wait, repeatUntilTimeout, prettyPrint, loggerOf }
+module.exports = {
+  batchesOfN,
+  exec,
+  loggerOf,
+  logger,
+  prettyPrint,
+  promisifyCallback,
+  repeatUntilTimeout,
+  sequence,
+  wait,
+}

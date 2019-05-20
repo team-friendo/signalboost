@@ -12,10 +12,6 @@ const channelOf = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING,
     },
-    containerId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
   })
 
   channel.associate = db => {
@@ -30,11 +26,6 @@ const channelOf = (sequelize, DataTypes) => {
     })
 
     channel.hasMany(db.subscription, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasMany(db.welcome, {
       hooks: true,
       onDelete: 'cascade',
     })

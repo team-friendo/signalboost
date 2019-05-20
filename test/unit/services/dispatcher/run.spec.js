@@ -1,56 +1,66 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import run from '../../../../app/services/dispatcher/run'
+import { times } from 'lodash'
+import { EventEmitter } from 'events'
+import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
-import signal from '../../../../app/services/dispatcher/signal'
+import signal from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/executor'
-import messenger from '../../../../app/services/dispatcher/messenger'
+import messenger, { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 import { channelFactory } from '../../../support/factories/channel'
-import { channelPhoneNumber } from '../../../../app/config'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { wait } from '../../../../app/services/util'
 
 describe('dispatcher service', () => {
   describe('running the service', () => {
-    const [db, iface] = [{}, {}]
-    const channel = { ...channelFactory(), publications: [], subscriptions: [] }
+    const db = {}
+    const sock = new EventEmitter()
+    const channels = times(2, () => ({ ...channelFactory(), publications: [], subscriptions: [] }))
+    const channel = channels[0]
     const sender = genPhoneNumber()
-    const unwelcomedPublishers = [genPhoneNumber(), genPhoneNumber()]
     const authenticatedSender = {
       phoneNumber: sender,
       isPublisher: true,
       isSubscriber: true,
     }
+    const sdInMessage = {
+      type: 'message',
+      data: {
+        username: channel.phoneNumber,
+        source: sender,
+        dataMessage: {
+          timestamp: new Date().getTime(),
+          message: 'foo',
+          expiresInSeconds: 0,
+          attachments: [],
+        },
+      },
+    }
+    const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
 
-    let getDbusStub,
-      getUnwelcomedPublishersStub,
-      welcomeNewPublisherStub,
-      onReceivedMessageStub,
+    let findAllDeepStub,
       findDeepStub,
       isPublisherStub,
       isSubscriberStub,
+      subscribeStub,
       processCommandStub,
       dispatchStub
 
     beforeEach(async () => {
-      // main loop stubs --v
-      getDbusStub = sinon.stub(signal, 'getDbusInterface').returns(Promise.resolve(iface))
+      // initialization stubs --v
 
-      getUnwelcomedPublishersStub = sinon
-        .stub(channelRepository, 'getUnwelcomedPublishers')
-        .returns(unwelcomedPublishers)
+      findAllDeepStub = sinon
+        .stub(channelRepository, 'findAllDeep')
+        .returns(Promise.resolve(channels))
 
-      welcomeNewPublisherStub = sinon.stub(messenger, 'welcomeNewPublisher').returns(Promise.resolve())
+      subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
       // main loop stubs --^
 
-      // onReceivedMessage stubs --v
+      // on inboundMessage stubs --v
 
-      onReceivedMessageStub = sinon
-        .stub(signal, 'onReceivedMessage')
-        .callsFake(() => fn => fn({ sender, message: 'foo' }))
-
-      findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
+      findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
       isPublisherStub = sinon.stub(channelRepository, 'isPublisher').returns(Promise.resolve(true))
 
@@ -61,68 +71,78 @@ describe('dispatcher service', () => {
       processCommandStub = sinon.stub(executor, 'processCommand').returns(
         Promise.resolve({
           commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
-          dispatchable: { db, iface, channel, sender: authenticatedSender, message: 'foo' },
+          dispatchable: { db, sock, channel, sender: authenticatedSender, sdMessage: sdOutMessage },
         }),
       )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
       // onReceivedMessage stubs --^
 
-      await run(db)
+      await run(db, sock)
+      sock.emit('data', JSON.stringify(sdMessageOf(channel, 'foo')))
     })
 
     afterEach(() => {
-      getDbusStub.restore()
-      getUnwelcomedPublishersStub.restore()
-      welcomeNewPublisherStub.restore()
-      onReceivedMessageStub.restore()
+      findAllDeepStub.restore()
       findDeepStub.restore()
       isPublisherStub.restore()
       isSubscriberStub.restore()
       processCommandStub.restore()
       dispatchStub.restore()
+      subscribeStub.restore()
     })
 
-    it('retrieves a dbus interface', () => {
-      expect(onReceivedMessageStub.callCount).to.eql(1)
-    })
-
-    it('it sends a welcome message to every unwelcomed publisher', () => {
-      unwelcomedPublishers.forEach((newPublisher, i) => {
-        expect(welcomeNewPublisherStub.getCall(i).args[0]).to.eql({
-          db,
-          iface,
-          channel,
-          newPublisher,
-          addingPublisher: 'the system administrator',
+    describe('handling an incoming message', () => {
+      describe('when message is not dispatchable', () => {
+        beforeEach(() => {
+          sock.emit(
+            'data',
+            JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }),
+          )
         })
-      })
-    })
 
-    describe('for each incoming message', () => {
-      it('retrieves a channel record', () => {
-        expect(findDeepStub.getCall(0).args).to.eql([db, channelPhoneNumber])
-      })
-
-      it('retrieves permissions for the message sender', () => {
-        expect(isPublisherStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
-        expect(isSubscriberStub.getCall(0).args).to.eql([db, channelPhoneNumber, sender])
-      })
-
-      it('processes any commands in the message', () => {
-        expect(processCommandStub.getCall(0).args[0]).to.eql({
-          db,
-          iface,
-          channel,
-          message: 'foo',
-          sender: authenticatedSender,
+        it('ignores the message', () => {
+          expect(processCommandStub.callCount).to.eql(0)
+          expect(dispatchStub.callCount).to.eql(0)
         })
       })
 
-      it('passes the command result and original message to messenger for dispatch', () => {
-        expect(dispatchStub.getCall(0).args[0]).to.eql({
-          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
-          dispatchable: { db, iface, channel, message: 'foo', sender: authenticatedSender },
+      describe('when message is dispatchable', () => {
+        beforeEach(async () => {
+          sock.emit('data', JSON.stringify(sdInMessage))
+          await wait(10)
+        })
+
+        it('retrieves a channel record', () => {
+          expect(findDeepStub.getCall(0).args).to.eql([db, channel.phoneNumber])
+        })
+
+        it('retrieves permissions for the message sender', () => {
+          expect(isPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+          expect(isSubscriberStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+        })
+
+        it('processes any commands in the message', () => {
+          expect(processCommandStub.getCall(0).args[0]).to.eql({
+            db,
+            sock,
+            channel,
+            sender: authenticatedSender,
+            sdMessage: sdOutMessage,
+          })
+        })
+
+        it('passes the command result and original message to messenger for dispatch', () => {
+          expect(dispatchStub.getCall(0).args[0]).to.eql({
+            commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+            dispatchable: {
+              db,
+              sock,
+              channel,
+              sender: authenticatedSender,
+              sdMessage: sdOutMessage,
+            },
+          })
         })
       })
     })

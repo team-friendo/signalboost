@@ -62,7 +62,6 @@ describe('channel model', () => {
     db.publication.destroy({ where: {}, force: true })
     db.messageCount.destroy({ where: {}, force: true })
     db.subscription.destroy({ where: {}, force: true })
-    db.welcome.destroy({ where: {}, force: true })
     db.channel.destroy({ where: {}, force: true })
   })
 
@@ -76,7 +75,6 @@ describe('channel model', () => {
     expect(keys(channel.get())).to.have.members([
       'phoneNumber',
       'name',
-      'containerId',
       'createdAt',
       'updatedAt',
     ])
@@ -166,27 +164,6 @@ describe('channel model', () => {
         const messageCountCount = await db.messageCount.count()
         await channel.destroy()
         expect(await db.messageCount.count()).to.eql(messageCountCount - 1)
-      })
-    })
-
-    describe('welcomes', () => {
-      beforeEach(async () => {
-        channel = await createChannelWithWelcomes()
-        welcomes = await channel.getWelcomes()
-      })
-
-      it('has many welcomes', async () => {
-        expect(welcomes).to.have.length(2)
-      })
-
-      it('sets the channel phone number as foreign key on each welcome', () => {
-        expect(welcomes.map(w => w.channelPhoneNumber)).to.eql(times(2, () => channel.phoneNumber))
-      })
-
-      it('deletes welcomes when it deletes channel', async () => {
-        const welcomeCount = await db.welcome.count()
-        await channel.destroy()
-        expect(await db.welcome.count()).to.eql(welcomeCount - 2)
       })
     })
   })

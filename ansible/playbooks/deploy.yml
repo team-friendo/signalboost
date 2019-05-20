@@ -10,8 +10,18 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-    deploy_method: blackbox
-    deploy_file: "files/.env"
+    env_file: "files/.env"
+    secrets_method: copy
+    # docker dependencies (pip packages)
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose
+
+  # docker dependencies (ansible roles)
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+
 
   tasks:
 
@@ -32,14 +42,34 @@
     args:
       chdir: "{{ homedir }}"
     tags: clone
-    when: deploy_method == "blackbox"
+    when: secrets_method == "blackbox"
 
   - name: Deploy environment file by copying local file
     copy:
-      src: "{{ deploy_file }}"
+      src: "{{ env_file }}"
       dest: "{{ homedir }}/.env"
     tags: clone
-    when: deploy_method == "copy"
+    when: secrets_method == "copy"
+
+  #######################
+  # BUILD DOCKER IMAGES #
+  #######################
+
+  - name: Load base dockerfiles
+    copy:
+      src: files/docker/
+      dest: /srv/signalboost/docker/
+    tags: docker
+
+  - name: Build signalboost container
+    command: docker build -f /srv/signalboost/docker/signalboost.dockerfile -t signalboost:latest /srv/signalboost
+    register: build_output
+    tags: docker
+
+  - name: Build signald container
+    command: docker build -f /srv/signalboost/docker/signald.dockerfile -t signald:latest /srv/signalboost
+    register: build_output
+    tags: docker
 
   ########
   # STOP #
@@ -56,7 +86,7 @@
   ###########
 
   - name: Install node packages
-    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' orchestrator"
+    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' registrar"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
@@ -68,7 +98,7 @@
     tags: prepare
 
   - name: Setup database, run migrations
-    command: "docker-compose run --entrypoint /signalboost/bin/db/setup orchestrator"
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup registrar"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
