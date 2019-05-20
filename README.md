@@ -4,7 +4,10 @@
 
 * [Overview](#overview)
 * [Application Design](#design)
-* [Administering](#administering)
+* [Deploying A Signalboost Instance](#deploy)
+  * [Deploy Instructions for General Public](#deploy-public)
+  * [Deploy Instructions for Maintainers](#deploy-maintainers)
+* [Using the Signalboost CLI Tool](#cli)
 * [Contributing](#contributing)
 
 # Overview <a name="overview"></a>
@@ -45,24 +48,165 @@ Data flows through the application in (roughly) the following manner:
 
 The application has the following components:
 
-* a `channelRepository` service that keeps track of what channels exist, what admins may send to them, and what humans are subscribed to them
-* a `message` service that controls a set of signal numbers and can send and receive signal messages as those numbers via the dbus interface exposed by `signal-cli` (running in daemon mode as a systemd service).
-* a `dispatch` service that reads incoming messages and either forwards them to the `message` services, or to the `commmand` service based on the message content and a set of permissions defined by queries to the `channelRespository` (where permissions, etc. are encoded)
-* an `orchestrator` service that handles the provision of new `dispatch` services as new channels are created
+1. a `db` layer with:
+  * a `phoneNumbersRepository`: tracks what twilio phone numbers have been purchased, whether they have been registered with signal, and whether they are being used for a channel
+  * a `channelsRepository`: keeps track of what channels exist on what phone numbers, and who is publishing or subscribed to any given channel
+1. a `registrar` service that:
+  * searches for and purchases twilio phone numbers
+  * registers twilio phone numbers with signal
+  * sends verification codes to signal server (after receiving verification codes sent as sms messages from signal server to twilio, relayed to the app at an incoming `/twilioSms` webhook)
+  * creates channels and adds/removes phone numbers, publishers, and subscribers to/from them
+1. a `dispatcher` service that reads incoming messages on every channel via unix socket connection to `signald`, then processes each message with both:
+   * the `executor` subservice parses message for a command (e.g, `ADD` a publisher to a channels). if it finds one,
+ it executes the command and returns response message.
+   * the `messenger` subservice handles the output from the executor. if it sees a command response it sends it to the command issuer. else it broadcasts incoming messages to channel subscribers if access control rules so permit.
 
-## A Quirky Thing About the Design
+# Deploying A SignalBoost Instance <a name="deploy"></a>
 
-Due to upstream constraints imposed by signal-cli's design, one may not run multiple instances of signal-cli with different phone numbers in daemon mode without creating contention over the underlying dbus interface used to listen to and send messages over signal. (This constraint arises from the fact that the dbus path is hard-coded in the upstream code).
+## Deploy Instructions for General Public <a name="deploy-public"></a>
 
-As a temporary workaround to this solution, the `orchestrator` service spins up a docker container containing (1) an instance of the dispatch service, (2) an instance of dbus, and (3) an instance of signal-cli coordinated by supervisord. This eliminates contention over the dbus interface but introduces [memory bloat](https://0xacab.org/team-friendo/signalboost/issues/56) (as 2 JVM's are spun up for each channel.)
+If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
 
-It's a less-than ideal fix, but it works for now, and we should soon have an [upstream fix](https://github.com/AsamK/signal-cli/issues/200) in place that makes a more memory-efficient solution possible. :)
+We've designed our deploy process so that you should be able to use it with your own credentials and infrastructure with some minor modifications. (If any of these steps don't work, please don't hesitate to post an issue so we can fix it!)
 
-# Administering <a name="administering"></a>
+**(1) Load secrets:**
 
-## Deploying SignalBoost
+Create an .env file like the one provided in `.env.example`, but fill in all the values surrounded by `%` marks with actual values:
 
-### Members of Team Friendo
+``` shell
+# signal boost api service
+
+SIGNALBOOST_HOST_IP=%IP ADDRESS OF PROD SERVER%
+SIGNALBOOST_HOST_URL=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+SIGNALBOOST_API_TOKEN=%HEX STRING%
+
+# letsencrypt/nginx proxy configs
+
+VIRTUAL_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+LETSENCRYPT_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
+
+# signal-cli
+
+SIGNAL_CLI_VERSION=0.6.2
+SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
+SIGNAL_CLI_PASSWORD=%SOME STRONG PASSWORD%
+
+# twilio
+
+TWILIO_ACCOUNT_SID=%HEX STRING%
+TWILIO_AUTH_TOKEN=%HEX STRING%
+
+
+# ngrok (only needed to run on a local dev machine, skip if you just want to run in prod)
+
+NGROK_AUTH_TOKEN=%HEX_STRING%
+NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
+
+```
+
+To generate a decently random 32-byte hex string for your `SIGNALBOOST_API_TOKEN`, you could do the following:
+
+``` shell
+$ python
+>>> import secrets
+>>> secrets.token_hex(32)
+```
+
+To get twilio credentials, sign up for a twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page.
+
+You only need an `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN` if you want to run `signalboost` in a local development environment. (To get an ngrok account, visit [here](https://dashboard.ngrok.com/user/signup). See [here](https://dashboard.ngrok.com/reserved) for setting up reserved custom subdomains.)
+
+**(2) Obtain a server:**
+
+To host signalboost, you need a server that:
+
+* is running either the Debian or Ubuntu GNU/Linux distributions
+* has a static IP address assigned to it
+* has a top-level domain with an A record pointing to that static IP address
+
+If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
+
+- [Njalla](https://njal.la)
+- [1984](https://1984.is)
+- [Greenhost](https://greenhost.nl)
+- [Mayfirst](https://mayfirst.org)
+
+For domain name registration, we think that [Njal.la](https://njal.la) is hands down the best option.
+
+**(3) Install ansible dependencies:**
+
+``` shell
+$ ./ansible/install-ansible
+```
+
+**(4) Provision and deploy signalboost:**
+
+This step uses ansible to provision a server, install signalboost and all of its dependencies, then deploy and run signalboost.
+
+It uses four playbooks (all of which can be found in the `ansible/playbooks` directory):
+
+1. `provision.yml` (sets up users and basic system dependencies needed for the rest of the deployment)
+2. `configure.yml` (loads docker files in which program will be built and builds images for them)
+3. `deploy.yml` (installs and runs signalboost inside of its respective docker containers)
+4. `harden.yml` (performs advanced hardening on the server)
+
+You can run all playbooks with one command:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/main.yml
+```
+
+*Variation:*
+
+By default the secrets needed to run signalboost (including ip addresses and hostnames) are read from `<PROJECT_ROOT>/.env>` If you would like to provide an alternate set of secrets (for example, for a staging server), you can configure the location where ansible will look for the `.env` file by setting the `env_file` ansible variable (specified with an `-e env_file=<some_path>` flag). For example, to read secrets from `/path/to/staging.env`, you would issue the following command:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -e "env_file=/path/to/staging.env" playbooks/main.yml
+```
+
+**(5) Install the `boost` CLI tool:**
+
+Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
+
+Install it with:
+
+``` shell
+$ sudo ./cli/install
+```
+
+*(NOTE: This will add a symlink to `./cli` directory to your `/usr/bin` directory. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`, but you must take care to always be in the `<PROJECT_ROOT>` directory when/if you do that.)*
+
+**(6) Provision new twilio phone numbers:**
+
+The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
+
+``` shell
+$ boost new_numbers -n 2 -a 510
+```
+
+**(7) Provision new signalboost channels:**
+
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+
+``` shell
+$ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+```
+
+For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
+
+**(8) Deploy updates to signalboost:**
+
+On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/deploy.yml
+```
+
+## Deploy Instructions for Maintainers <a name="deploy-maintainers"></a>
 
 If you are one of the people maintaining this repo, do the following to provision and deploy signalboost...
 
@@ -94,7 +238,21 @@ $ cd ansible
 $ ansible-playbook -i inventory playbooks/main.yml
 ```
 
-The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps:
+*Variation 1:* The above will deploy secrets by copying them from `<PROJECT_ROOT>/.env` on your local machine. If you would like to copy them from elsewhere, provide alternate path to the `deploy_file` ansible variable (specified with an `-e deploy_file=<...>` flag). For example, to copy environment variables from `/path/to/development.env`, run:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/main.yml -e env_file /path/to/development.env
+```
+
+*Variation 2:*: If you would like to deploy secrets by decrypting the copy of `.env.gpg` under version control (and thus more likely to be up-to-date), add the `-e "deploy_method=blackbox"` flag. For example:
+
+``` shell
+$ cd ansible
+$ ansible-playbook -i inventory playbooks/main.yml -e deploy
+```
+
+*Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps...
 
 **(5) Install the `boost` cli tool:**
 
@@ -121,123 +279,23 @@ $ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
 
-#### Subsequent Deployments
-
 **(8) Deploy updates to signalboost:**
+
+On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
 ``` shell
 $ cd ansible
 $ ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
-### Friendos of Team Friendo
-
-If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
-
-We've designed our deploy process so that you should be able to use it with your own credentials and infrastructure with some minor modifications. You should be able to follow all the steps outlined for `Members of Team Friendo` above, substituting the below sections below for their corresponding counterparts above, and get the same results.
-
-(If any of these steps don't work, please don't hesitate to post an issue so we can fix it!)
-
-**(1) Load secrets:**
-
-Create an .env file like the one provided in `.env.example`, but fill in all the values surrounded by `%` marks with actual values:
+If you would like an easier way to do this (and are okay with the `env_file` location being set to `<PROJECT_ROOT>/.env` and the `secrets_mode` set to `copy`), you can simply run:
 
 ``` shell
-# signal boost api service
-
-SIGNALBOOST_HOST_IP=%IP ADDRESS OF PROD SERVER%
-SIGNALBOOST_HOST_URL=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
-SIGNALBOOST_API_TOKEN=%HEX STRING%
-
-# letsencrypt/nginx proxy configs
-
-VIRTUAL_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
-LETSENCRYPT_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
-LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
-
-# signal-cli
-
-SIGNAL_CLI_VERSION=0.6.2
-SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
-SIGNAL_CLI_PASSWORD=%SOME STRONG PASSWORD%
-
-# twilio
-
-TWILIO_ACCOUNT_SID=%HEX STRING%
-TWILIO_AUTH_TOKEN=%HEX STRING%
-
-
-# ngrok
-
-NGROK_AUTH_TOKEN=%HEX_STRING%
-NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
-
+$ cd <PROJECT_ROOT>
+$ ./bin/deploy
 ```
 
-To generate a decently random 32-byte hex string for your `SIGNALBOOST_API_TOKEN`, you could do the following:
-
-``` shell
-$ shuf -i 0-9999999999999999999 -n 1 | sha256sum
-```
-
-To get twilio credentials, sign up for a twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page.
-
-You only need an `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN` if you want to run `signalboost` in a local development environment. (To get an ngrok account, visit [here](https://dashboard.ngrok.com/user/signup). See [here](https://dashboard.ngrok.com/reserved) for setting up reserved custom subdomains.)
-
-**(2) Obtain a server:**
-
-To host signalboost, you need a server with a static IP address and a top-level domain with an A record pointing to your IP address.
-
-If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
-
-- [Njalla](https://njal.la)
-- [Mayfirst](https://mayfirst.org)
-- [1984](https://1984.is)
-- [Greenhost](https://greenhost.nl)
-
-For domain name registration, we think that [Njal.la](https://njal.la) is hands down the best option.
-
-...
-
-**(3) Provision and deploy signalboost:**
-
-Signalboost is configured through environment variables. Those values are read from the file ".env". There are two ways you can deploy those values using the ansible playbook. You can use either have blackbox install the encrypted version of .env that's bundled with this repo or you can use your own local file.
-
-Add the `-e "deploy_method=blackbox"` flag to instruct ansible to run `bin/blackbox/postdeplogy` on the remote server.
-
-``` shell
-$ cd ansible
-$ ansible-playbook -i inventory -e "deploy_method=blackbox" playbooks/main.yml
-```
-...
-
-Add the `-e "deploy_method=copy"` flag to copy a local file containing the environment variables. By default "[REPO-ROOT]/.env" is copied, but that can be configured by setting the ansible variable _deploy_file_.
-
-For example, this will use different environment file:
-
-``` shell
-$ cd ansible
-$ ansible-playbook -i inventory -e "deploy_method=copy" -e "deploy_file=/path/to/development.env" playbooks/main.yml
-
-```
-
-**(4) Deploy updates to signalboost:**
-
-```
-
-### Install the CLI
-
-Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
-
-Install it with:
-
-``` shell
-$ sudo ./cli/install
-```
-
-*(NOTE: This will add a path to the `./cli` directory to your $PATH. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`)*
-
-### Use the CLI
+# Use the CLI <a name="cli"></a>
 
 You can administer any running signalboost instance with:
 
@@ -281,7 +339,13 @@ $ boost <command> -h
 
 Upon cloning the repo, do either of the following to provide missing env vars needed to run signalboost:
 
-#### Team-Friendo Members
+#### Secrets for General Public
+
+You will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
+
+We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
+
+#### Secrets for Maintainers
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
@@ -293,12 +357,6 @@ $ cd signalboost
 $ ./bin/blackbox/decrypt_all_files
 $ set +a && source .env && set -a
 ```
-#### Friendos of Team-Friendo
-
-If you are not on Team-Friendo, you will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
-
-We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
-
 ### Setup
 
 ``` shell
@@ -347,12 +405,6 @@ Any admin should be able to:
 
 There are a few scripts to do things with the db:
 
-Get a psql shell:
-
-``` shell
-$ yarn db:psql
-```
-
 Run migrations:
 
 ``` shell
@@ -371,32 +423,8 @@ Unseed db:
 $ yarn db:unseed
 ```
 
-### Check logs
-
-You can check the logs with:
+Get a psql shell:
 
 ``` shell
-$ cat ./logs/<service>.log.0
-$ cat ./logs/<service>.err.0
+$ yarn db:psql
 ```
-
-Where `<service>` is one of:
-
-* `dbus`
-* `dispatcher`
-* `orchestrator`
-* `signal-cli`
-
-### Check status of sub-services
-
-You can check the status of a any sub-service of the dispatcher service with:
-
-``` shell
-$ docker-compose exec signalboost_dispatcher "supvervisord ctl status"
-```
-
-Where the monitored subservices include:
-
-* `dbus`
-* `dispatcher`
-* `signal-cli`

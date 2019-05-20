@@ -10,8 +10,8 @@
     homedir: /srv/signalboost
     host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-    deploy_method: blackbox
-    deploy_file: "files/.env"
+    secrets_method: copy
+    env_file: "files/.env"
 
   tasks:
 
@@ -32,14 +32,14 @@
     args:
       chdir: "{{ homedir }}"
     tags: clone
-    when: deploy_method == "blackbox"
+    when: secrets_method == "blackbox"
 
   - name: Deploy environment file by copying local file
     copy:
-      src: "{{ deploy_file }}"
+      src: "{{ env_file }}"
       dest: "{{ homedir }}/.env"
     tags: clone
-    when: deploy_method == "copy"
+    when: secrets_method == "copy"
 
   ########
   # STOP #
