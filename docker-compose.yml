@@ -6,8 +6,10 @@ networks:
 volumes:
   certs:
   html:
-  postgres_data:
   nextcloud:
+  postgres_data:
+  signal_sock:
+  signal_data:
   vhost.d:
 
 services:
