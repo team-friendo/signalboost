@@ -1,4 +1,4 @@
-const { isPhoneNumber } = require('../validations')
+const { isPhoneNumber } = require('../validations/phoneNumber')
 
 const channelOf = (sequelize, DataTypes) => {
   const channel = sequelize.define('channel', {

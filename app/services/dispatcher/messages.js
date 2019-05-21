@@ -51,14 +51,14 @@ const commandResponses = {
       unauthorized,
       dbError: num => `Whoops! There was an error adding ${num} as publisher. Please try again!`,
       invalidNumber: num =>
-        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces. \n\nFor example: to add (202) 555-4444, write:\n\n "ADD +12025554444"`,
+        `Whoops! Failed to add "${num}". Phone numbers must include country codes prefixed by a '+'`,
     },
     remove: {
       success: num => `${num} was successfully removed as a publisher.`,
       unauthorized,
       dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
       invalidNumber: num =>
-        `Whoops! Signalboost could not understand "${num}." Phone numbers must include country codes but omit commas, dashes, parentheses, and spaces.\n\nFor example: to remove (202) 555-4444, write:\n\n "REMOVE +12025554444"`,
+        `Whoops! Failed to remove "${num}". Phone numbers must include country codes prefixed by a '+'`,
       targetNotPublisher: num => `Whoops! ${num} is not a publisher. Can't remove them.`,
     },
   },

@@ -40,9 +40,9 @@ describe('phoneNumber model', () => {
       expect(err.errors[0].message).to.eql('phoneNumber must be unique')
     })
 
-    it('requires valid US phone number', async () => {
+    it('requires valid international phone number', async () => {
       const err = await db.phoneNumber.create({ phoneNumber: '111' }).catch(e => e)
-      expect(err.message).to.include('must be 10 digit phone number')
+      expect(err.message).to.include('must be 9-15 digit phone number with country code prefix')
     })
 
     it('allows white-listed set of statuses', () => {

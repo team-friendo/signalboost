@@ -1,4 +1,4 @@
-const { isPhoneNumber } = require('../validations')
+const { isPhoneNumber } = require('../validations/phoneNumber')
 
 const messageCountOf = (sequelize, DataTypes) => {
   const messageCount = sequelize.define(

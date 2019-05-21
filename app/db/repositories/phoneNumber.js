@@ -1,5 +1,6 @@
 const { Op } = require('sequelize')
-const { statuses } = require('../../db/models/phoneNumber')
+const { statuses } = require('../models/phoneNumber')
+const validations = require('../validations/phoneNumber')
 
 const filters = {
   ACTIVE: 'ACTIVE',
@@ -8,7 +9,7 @@ const filters = {
 
 const findAll = db => db.phoneNumber.findAll()
 
-const findAllPurchased = db => db.phoneNumber.findAll({ where: { status: statuses.PURCHASED }})
+const findAllPurchased = db => db.phoneNumber.findAll({ where: { status: statuses.PURCHASED } })
 
 const list = (db, filter) =>
   db.phoneNumber.findAll({ order: [['status', 'DESC']], where: parseQueryFilter(filter) })
