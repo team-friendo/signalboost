@@ -12,16 +12,6 @@
     api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
     env_file: "files/.env"
     secrets_method: copy
-    # docker dependencies (pip packages)
-    pip_install_packages:
-      - name: docker
-      - name: docker-compose
-
-  # docker dependencies (ansible roles)
-  roles:
-    - geerlingguy.pip
-    - geerlingguy.docker
-
 
   tasks:
 
