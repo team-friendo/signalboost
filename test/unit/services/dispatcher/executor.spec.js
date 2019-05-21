@@ -10,7 +10,7 @@ import {
 } from '../../../../app/services/dispatcher/executor'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages'
 import channelRepository from '../../../../app/db/repositories/channel'
-import validator from '../../../../app/db/validations'
+import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'

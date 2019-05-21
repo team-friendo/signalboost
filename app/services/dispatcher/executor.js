@@ -1,5 +1,5 @@
 const channelRepository = require('../../db/repositories/channel')
-const validator = require('../../db/validations')
+const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
 const { commandResponses } = require('./messages')
 
@@ -84,12 +84,12 @@ const execute = async (executable, dispatchable) => {
 
 // ADD
 
-const maybeAddPublisher = async (db, channel, sender, newPublisherNumber) => {
+const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
   const cr = commandResponses.publisher.add
   if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  if (!validator.validatePhoneNumber(newPublisherNumber))
-    return { status: statuses.ERROR, message: cr.invalidNumber(newPublisherNumber) }
-  return addPublisher(db, channel, sender, newPublisherNumber, cr)
+  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
+  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
+  return addPublisher(db, channel, sender, phoneNumber, cr)
 }
 
 const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
