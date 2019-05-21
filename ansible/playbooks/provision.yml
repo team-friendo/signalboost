@@ -6,6 +6,15 @@
   vars:
     ansible_user: root
     secrets_method: copy
+    # docker dependencies (pip packages)
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose
+
+  # docker dependencies (ansible roles)
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
 
   handlers:
     - name: restart fail2ban
