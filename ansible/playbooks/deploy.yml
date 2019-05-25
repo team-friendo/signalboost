@@ -76,7 +76,7 @@
   ###########
 
   - name: Install node packages
-    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' registrar"
+    command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' app"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
@@ -88,7 +88,7 @@
     tags: prepare
 
   - name: Setup database, run migrations
-    command: "docker-compose run --entrypoint /signalboost/bin/db/setup registrar"
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup app"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
