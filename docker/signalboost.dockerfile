@@ -29,8 +29,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # --- Install Node.js
 # ------------------------------------------------------
 
-ENV NODE_VERSION 8.15.0
-ENV YARN_VERSION 1.12.3
+ENV NODE_VERSION 10.15.3
+ENV YARN_VERSION 1.16.0
 
 RUN groupadd --gid 1000 node \
   && useradd --uid 1000 --gid node --shell /bin/bash --create-home node

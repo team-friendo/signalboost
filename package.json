@@ -24,7 +24,7 @@
     "update": "./bin/dev/update"
   },
   "engines": {
-    "node": "8.15.0"
+    "node": "10.15.3"
   },
   "dependencies": {
     "babel-core": "^6.26.3",
