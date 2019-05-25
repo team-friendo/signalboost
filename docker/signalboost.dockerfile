@@ -22,7 +22,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     pkg-config \
     python \
     xz-utils \
-    wget
+    wget \
+   --fix-missing
 
 # ------------------------------------------------------
 # --- Install Node.js
