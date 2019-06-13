@@ -14,7 +14,7 @@
 
 **Signalboost** is a rapid response tool made by and for activists. It enables you to send free, encrypted, one-way text notifications over the [Signal messaging service](https://www.signal.org/) to mass subscriber lists without revealing your phone number to recipients. You could use it to send emergency alerts, mobilization updates, urgent requests for aid, or other inventive usages we never could have thought of! :) [[1](#txtmob_joke)]
 
-**The stack** consists of node services calling out to the [signal-cli](https://github.com/AsamK/signal-cli) Java app over [DBus](https://github.com/freedesktop/dbus). See [Application Design](#design) for a detailed overview.
+**The stack** consists of node services calling out to the [signald](https://git.callpipe.com/finn/signald) Java app over unix sockets. See [Application Design](#design) for a detailed overview.
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
@@ -33,16 +33,19 @@ __________________
 Data flows through the application in (roughly) the following manner:
 
 * an application server controls several signal numbers, each of which acts as a "channel"
-* admins and other humans can interact with the channel by sending it commands in the form of signal messages. for example: humans may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). admins can add other admins my sending a message that says "ADD +15555555555", etc.
-* when an admin sends a non-command message to a channel, the message is broadcast to all humans subscribed to that channel
+* publishers and subscribers can interact with the channel by sending it commands in the form of signal messages. for example: people may subscribe and unsubscribe from a channel by sending a signal message to it that says "JOIN" or "LEAVE" (respectively). publishers can add other publishers by sending a message that says "ADD +1-555-555-5555", etc.
+* when a publisher sends a non-command message to a channel, the message is broadcast to all subscriber on that channel
 * unlike with signal groups:
-  * the message appears to the subscribers as coming from the phone number associated with the channel (not the admin).
+  * the message appears to the subscribers as coming from the phone number associated with the channel (not the publisher).
   * subscribers may not see each others' phone numbers
   * subscribers may not respond to messages
 * unlike with text blast services:
   * messages are free to send! (thanks m0xie!)
-  * messages are encrypted between admins and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
-  * admins may send attachments to subscribers
+  * messages are encrypted between publishers and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
+  * publishers may send attachments to subscribers
+* notably: the list of subscribers is currently stored on disk on the signalboost server. if this makes you nervous, you can:
+  * host your own instance of signalboost (see docs below)
+  * register your desire for us to implement encrypted subscriber tables in the [issue tracker](https://0xacab.org/team-friendo/signalboost/issues/68)
 
 ## Architecture
 
@@ -51,12 +54,12 @@ The application has the following components:
 1. a `db` layer with:
   * a `phoneNumbersRepository`: tracks what twilio phone numbers have been purchased, whether they have been registered with signal, and whether they are being used for a channel
   * a `channelsRepository`: keeps track of what channels exist on what phone numbers, and who is publishing or subscribed to any given channel
-1. a `registrar` service that:
+2. a `registrar` service that:
   * searches for and purchases twilio phone numbers
   * registers twilio phone numbers with signal
   * sends verification codes to signal server (after receiving verification codes sent as sms messages from signal server to twilio, relayed to the app at an incoming `/twilioSms` webhook)
   * creates channels and adds/removes phone numbers, publishers, and subscribers to/from them
-1. a `dispatcher` service that reads incoming messages on every channel via unix socket connection to `signald`, then processes each message with both:
+3. a `dispatcher` service that reads incoming messages on every channel via unix socket connection to `signald`, then processes each message with both:
    * the `executor` subservice parses message for a command (e.g, `ADD` a publisher to a channels). if it finds one,
  it executes the command and returns response message.
    * the `messenger` subservice handles the output from the executor. if it sees a command response it sends it to the command issuer. else it broadcasts incoming messages to channel subscribers if access control rules so permit.
