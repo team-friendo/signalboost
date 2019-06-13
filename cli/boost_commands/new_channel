@@ -55,7 +55,7 @@ elif [[ ! $publishers =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  publishers="[\"$(echo $publishers | sed -re "s/,/\", \"/")\"]"
+  publishers="[\"$(echo $publishers | sed -re "s/,/\", \"/g")\"]"
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi

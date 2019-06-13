@@ -16,7 +16,13 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
         phoneNumberRepository.update(db, phoneNumber, { status: statuses.ACTIVE }),
       ]),
     )
-    .then(([channel]) => sendWelcomes(db, sock, { ...channel.dataValues, subscriptions: [] }))
+    .then(([channel]) =>
+      sendWelcomes(db, sock, {
+        ...channel.dataValues,
+        publications: channel.publications,
+        subscriptions: [],
+      }),
+    )
     .then(() => ({ status: statuses.ACTIVE, phoneNumber, name, publishers }))
     .catch(e => {
       logger.error(e)
