@@ -12,7 +12,7 @@
 
 # Overview <a name="overview"></a>
 
-**Signalboost** is a rapid response tool made by and for activists. It enables you to send free, encrypted, one-way text notifications over the [Signal messaging service](https://www.signal.org/) to mass subscriber lists without revealing your phone number to recipients. You could use it to send emergency alerts, mobilization updates, urgent requests for aid, or other inventive usages we never could have thought of! :) [[1](#txtmob_joke)]
+**Signalboost** is a rapid response tool made by and for activists. It enables users to send encrypted text alerts over the [Signal messaging service](https://www.signal.org/) to mass subscriber lists without revealing the sender's phone number to recipients or recipients' phone numbers to each other -- for free. You could use it to send emergency alerts, mobilization updates, urgent requests for aid, or other inventive usages we never could have thought of! :) [[1](#txtmob_joke)]
 
 **The stack** consists of node services calling out to the [signald](https://git.callpipe.com/finn/signald) Java app over unix sockets. See [Application Design](#design) for a detailed overview.
 
