@@ -18,9 +18,9 @@
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net** to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust team-friendo with storing your subscriber list(s). :)
+**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust team-friendo with storing your subscriber list(s). :)
 
-**NOTE: this project is not officially affiliated with the Signal App or Foundatoin.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
+**NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
 
 <a name="txtmob_joke"></a>
