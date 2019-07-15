@@ -1,5 +1,6 @@
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
 
+// NOTE: this is currently deprecated. Leaving it in in case we want to bring it back (aguestuser)
 const blurb = `Signalboost is a rapid response tool made by and for activists. It enables users to send free, encrypted text blasts over the Signal messaging service to a mass subscriber list without revealing the sender or recipients' phone numbers to each other.`
 
 const support = `
@@ -27,8 +28,6 @@ const notifications = {
 WELCOME TO SIGNALBOOST! <3
 -----------------------------------------------------
 
-${blurb}
-
 You were just made a publisher on the [${name}] signalboost channel by ${addingPublisher}.
 ${commandResponses.info.publisher(channel)}
 
@@ -36,10 +35,11 @@ ${commandResponses.info.publisher(channel)}
 BROADCASTING MESSAGES:
 -----------------------------------------------
 
-Because you are a publisher on this channel, when you send a Signal message to ${phoneNumber}, it will be broadcast to everyone who has subscribed to it.
+Whenever a publisher sends a Signal message to ${phoneNumber}, it will be broadcast to all channel subscribers (and all publishers).
 
-Anyone can subscribe to the channel by sending a message that says "JOIN" to ${phoneNumber}. They can unsubscribe later by sending a message that says "LEAVE" to the same number.
-${commandResponses.help.publisher}`
+Anyone can become a subscriber by sending a message that says "JOIN" to ${phoneNumber}. They can unsubscribe later by sending a message that says "LEAVE" to the same number.
+${commandResponses.help.publisher}
+`
   },
 }
 
@@ -69,7 +69,7 @@ const commandResponses = {
 PUBLISHER COMMANDS:
 -----------------------------------------
 
-You can send the following commands to this number:
+Publishers can send the following commands to this number:
 
 HELP
 --> shows this message
@@ -93,7 +93,7 @@ INFO
 SUBSCRIBER COMMANDS:
 -------------------------------------------
 
-Anyone can send the following commands:
+Subscribers can send the following commands:
 
 JOIN
 --> subscribes a person to the channel
@@ -109,7 +109,7 @@ ${support}`,
 COMMANDS:
 ---------------------
 
-Anyone can send the following commands to this phone number to cause the following things to happen:
+Sending the following commands to this phone number causes the following things to happen:
 
 HELP
 --> shows this message
@@ -166,8 +166,6 @@ publishers: ${channel.publications.length}`,
 --------------------------------------------------------
 <3 WELCOME TO SIGNALBOOST! <3
 --------------------------------------------------------
-
-${blurb}
 
 You just subscribed to the [${name}] signalboost channel on ${phoneNumber}. You can unsubscribe by sending a message that says "LEAVE" to this number at any time.
 ${commandResponses.info.subscriber(channel)}
