@@ -3,8 +3,10 @@ const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const signal = require('../../signal')
 const messenger = require('../../dispatcher/messenger')
 const { statuses } = require('../../../db/models/phoneNumber')
-const { loggerOf } = require('../../util')
+const { loggerOf, wait } = require('../../util')
 const logger = loggerOf()
+
+const welcomeDelay = 4000 // 4 sec
 
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
 const create = async ({ db, sock, phoneNumber, name, publishers }) => {
@@ -17,11 +19,13 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
       ]),
     )
     .then(([channel]) =>
-      sendWelcomes(db, sock, {
-        ...channel.dataValues,
-        publications: channel.publications,
-        subscriptions: [],
-      }),
+      wait(welcomeDelay)
+        .then(() =>
+          sendWelcomes(db, sock, {
+            ...channel.dataValues,
+            subscriptions: [],
+          }),
+        )
     )
     .then(() => ({ status: statuses.ACTIVE, phoneNumber, name, publishers }))
     .catch(e => {
