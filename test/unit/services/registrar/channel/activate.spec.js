@@ -5,7 +5,7 @@ import channelRepository from '../../../../../app/db/repositories/channel'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import signal from '../../../../../app/services/signal'
 import messenger from '../../../../../app/services/dispatcher/messenger'
-import { create } from '../../../../../app/services/registrar/channel/create'
+import ch from '../../../../../app/services/registrar/channel/create'
 
 describe('channel activation module', () => {
   const db = {}
@@ -57,7 +57,7 @@ describe('channel activation module', () => {
 
       describe('in all cases', () => {
         beforeEach(async () => {
-          await create({ db, sock, phoneNumber, name, publishers })
+          await ch.create({ db, sock, phoneNumber, name, publishers })
         })
 
         it('creates a channel resource', () => {
@@ -77,10 +77,11 @@ describe('channel activation module', () => {
         beforeEach(() => {
           createChannelStub.returns(Promise.resolve(channelInstance))
           updatePhoneNumberStub.returns(Promise.resolve(activePhoneNumberInstance))
+          welcomePublisherStub.returns(Promise.resolve())
         })
 
         it('sends a welcome message to new publishers', async () => {
-          await create({ db, sock, phoneNumber, name, publishers })
+          await ch.create({ db, sock, phoneNumber, name, publishers })
           expect(welcomePublisherStub.callCount).to.eql(publishers.length)
           expect(welcomePublisherStub.getCall(0).args).to.eql([
             {
@@ -107,7 +108,7 @@ describe('channel activation module', () => {
           })
 
           it('returns a success message', async () => {
-            expect(await create({ db, sock, phoneNumber, name, publishers })).to.eql({
+            expect(await ch.create({ db, sock, phoneNumber, name, publishers })).to.eql({
               status: 'ACTIVE',
               phoneNumber,
               name,
@@ -122,7 +123,7 @@ describe('channel activation module', () => {
           })
 
           it('returns an error message', async () => {
-            const result = await create({ db, sock, phoneNumber, name, publishers })
+            const result = await ch.create({ db, sock, phoneNumber, name, publishers })
             expect(result).to.eql({
               status: 'ERROR',
               error: 'oh noes!',
@@ -140,7 +141,7 @@ describe('channel activation module', () => {
         let result
         beforeEach(async () => {
           createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
-          result = await create({ db, sock, phoneNumber, name, publishers })
+          result = await ch.create({ db, sock, phoneNumber, name, publishers })
         })
 
         it('does not send welcome messages', () => {
@@ -164,7 +165,7 @@ describe('channel activation module', () => {
         let result
         beforeEach(async () => {
           createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
-          result = await create({ db, sock, phoneNumber, name, publishers })
+          result = await ch.create({ db, sock, phoneNumber, name, publishers })
         })
 
         it('does not send welcome messages', () => {
@@ -189,7 +190,7 @@ describe('channel activation module', () => {
       let result
       beforeEach(async () => {
         subscribeStub.callsFake(() => Promise.reject(new Error('oh noes!')))
-        result = await create({ db, sock, phoneNumber, name, publishers })
+        result = await ch.create({ db, sock, phoneNumber, name, publishers })
       })
 
       it('does not create channel record', () => {
