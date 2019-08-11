@@ -6,6 +6,7 @@ const defaults = {
   registrationBatchSize: 5,
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
+  welcomeDelay: 3000, // 3 sec
 }
 
 const test = {
@@ -15,6 +16,7 @@ const test = {
   maxConnectionAttempts: 10,
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
+  welcomeDelay: 0.0001, // .0001 millis
 }
 
 module.exports = {
