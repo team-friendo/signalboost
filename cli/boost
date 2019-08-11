@@ -17,12 +17,11 @@ print_usage(){
   echo "Valid commands include:"
   echo ""
   echo "  help"
-  echo "  new_channel"
-  echo "  new_numbers"
-  echo "  list_channels"
-  echo "  list_numbers"
-  echo "  release_number"
-  echo "  release_numbers"
+  echo "  create-channel"
+  echo "  create-number"
+  echo "  list-channels"
+  echo "  list-numbers"
+  echo "  release-numbers"
   echo ""
   echo "To learn what these commands do, run:"
   echo ""
@@ -31,17 +30,16 @@ print_usage(){
 }
 
 if [[ $command != "help" ]] &&
-     [[ $command != "new_channel" ]] &&
-     [[ $command != "new_numbers" ]] &&
-     [[ $command != "list_channels" ]] &&
-     [[ $command != "list_numbers" ]] &&
-     [[ $command != "release_number" ]] &&
-     [[ $command != "release_numbers" ]]
+     [[ $command != "create-channel" ]] &&
+     [[ $command != "create-number" ]] &&
+     [[ $command != "list-channels" ]] &&
+     [[ $command != "list-numbers" ]] &&
+     [[ $command != "release-numbers" ]]
 then
   print_usage
   exit 1
 else
-  ./boost_commands/${command} "${@:2}"
+  ./boost-commands/${command} "${@:2}"
 fi
 
 popd > /dev/null # return to original dir

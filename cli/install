@@ -14,7 +14,7 @@ echo "Adding '$cli_dir' to your \$PATH..."
 
 cd /usr/bin/
 ln -s ${cli_dir}/boost boost
-ln -s ${cli_dir}/boost_commands boost_commands
+ln -s ${cli_dir}/boost-commands boost-commands
 
 # echo "export PATH=\"\$PATH:${PWD}\"" >> ~/.bashrc
 # . ~/.bashrcq
