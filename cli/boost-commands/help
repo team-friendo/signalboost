@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+echo "\
+boost cli supports the following commands:
+
+  help
+    - shows this dialogue
+
+  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
+    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
+
+  create-number -a <area_code> -n <numbers_desired> -u <api_url>
+    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
+
+  list-channels -u <api_url>
+    - lists all channels active on the signalboost instance at the given (optional) url
+
+  list-numbers -u <api_url>
+    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
+  
+  release-numbers <path>
+    - releases all phone numbers with twilio ids listed at given path
+
+for more detailed instructions on any command, run:
+
+  boost <command> -h
+"

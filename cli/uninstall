@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+if [ ${USER} != 'root' ]
+then
+  echo "[OOPS]: you need to run this script as root. try running 'sudo ./cli/install' instead!"
+  exit 1
+fi
+
+echo "Removing boost files from your \$PATH..."
+
+cd /usr/bin/
+[ -d /usr/bin/boost ] && rm /usr/bin/boost
+[ -d /usr/bin/boost_commands ] && /usr/bin/boost_commands
+[ -d /usr/bin/boost-commands ] && /usr/bin/boost-commands
+
+echo "Done!"
+echo ""
+echo "To re-install run:"
+echo ""
+echo "  sudo ./cli/install"
+echo ""

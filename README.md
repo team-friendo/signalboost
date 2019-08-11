@@ -210,30 +210,52 @@ $ ansible-playbook -i inventory playbooks/deploy.yml
 
 ## Deploy Instructions for Maintainers <a name="deploy-maintainers"></a>
 
-If you are one of the people maintaining this repo, do the following to provision and deploy signalboost...
+If you are a member of `team-friendo`, here are instructions on how to provision, deploy, and maintain a running signalboost instance. :)
+
+*NOTE: If you are administering an already-existent signalboost instance, you can omit steps 3 and 4.*
 
 #### Initial Deployment
 
 **(1) Load secrets:**
 
 ``` shell
+$ cd /path/to/signalboost
 $ ./bin/blackbox/decrypt_all_files
 $ set -a && source .env && set +a
 ```
 
-**(2) Obtain a server:**
+*NOTE: we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. It is provided in `signalboost/bin/` as a convenience.
+
+If you would like to install your own version of blackbox you can do that with:*
 
 ``` shell
-$ ./bin/get-machine
+git clone git@github.com:StackExchange/blackbox
+cd blackbox
+make copy-install
 ```
 
-**(3) Install ansible dependencies (if needed):**
+For other installation options, see: https://github.com/StackExchange/blackbox#installation-instructions
+
+**(2) Install ansible dependencies:**
 
 ``` shell
 $ ./ansible/install-ansible
 ```
 
+*NOTE: This will install [ansible](https://www.ansible.com/) itself and the docker and pip roles we use in our playbooks.*
+
+
+**(3) Obtain a server:**
+
+*NOTE: If you are administering an already-existing signalboost instance, omit this step and skip straight to Step 5  ! :)*
+
+``` shell
+$ ./bin/get-machine
+```
+
 **(4) Provision and deploy signalboost:**
+
+*NOTE: If you are administering an already-existing signalboost instance, omit this step and skip straight to Step 5  ! :)*
 
 ``` shell
 $ cd ansible
@@ -258,30 +280,55 @@ $ ansible-playbook -i inventory playbooks/main.yml -e deploy
 
 **(5) Install the `boost` cli tool:**
 
+We have a cli tool for performing common sysadmin tasks on running signalboost instances. You can install it by using the following script (which will put the `boost` command on your $PATH by adding a symlink in `/usr/bin`, which is why it needs root):
+
 ``` shell
-$ cd ..
-$ ./cli/install
+$ cd <path/to/signalboost>
+$ sudo ./cli/install
+```
+The main use of this tool is to:
+
+1. provision new twillio phone numbers and authenticate them with signal
+2. deploy already-authenticated phone numbers for use as signalboost channels
+3. list already-provisioned numbers and already-deployed channels
+
+You can uninstall it later with:
+
+```shell
+$ cd <path/to/signalboost>
+$ sudo ./cli/install
 ```
 
-**(6) Provision new twilio phone numbers:**
+**(6) List existing numbers/channels:**
 
-The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
+You can check out what numbers and channels already exist with:
+
+```shell
+$ boost list-numbers
+$ boost list-channels
+```
+
+**(7) Provision new twilio phone numbers:**
+
+The below will provision 2 phone numbers in area code 510:
 
 ``` shell
 $ boost new_numbers -n 2 -a 510
 ```
 
-**(7) Provision new signalboost channels:**
+*NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.*
 
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+**(8) Provision new signalboost channels:**
+
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as publishers on the channel.
 
 ``` shell
-$ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+$ boost new_channel -p +15105555555 -n "conquest of bread" -b "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
 
-**(8) Deploy updates to signalboost:**
+**(9) Deploy updates to signalboost:**
 
 On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
