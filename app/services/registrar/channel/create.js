@@ -5,12 +5,13 @@ const messenger = require('../../dispatcher/messenger')
 const { statuses } = require('../../../db/models/phoneNumber')
 const { loggerOf, wait } = require('../../util')
 const logger = loggerOf()
-
-const welcomeDelay = 4000 // 4 sec
+const {
+  signal: { welcomeDelay },
+} = require('../../../config')
 
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
-const create = async ({ db, sock, phoneNumber, name, publishers }) => {
-  return signal
+const create = ({ db, sock, phoneNumber, name, publishers }) =>
+  signal
     .subscribe(sock, phoneNumber)
     .then(() =>
       Promise.all([
@@ -19,13 +20,12 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
       ]),
     )
     .then(([channel]) =>
-      wait(welcomeDelay)
-        .then(() =>
-          sendWelcomes(db, sock, {
-            ...channel.dataValues,
-            subscriptions: [],
-          }),
-        )
+      wait(welcomeDelay).then(() =>
+        sendWelcomes(db, sock, {
+          ...channel.dataValues,
+          subscriptions: [],
+        }),
+      ),
     )
     .then(() => ({ status: statuses.ACTIVE, phoneNumber, name, publishers }))
     .catch(e => {
@@ -36,7 +36,6 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
         request: { phoneNumber, name, publishers },
       }
     })
-}
 
 const sendWelcomes = async (db, sock, channel) =>
   Promise.all(

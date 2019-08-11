@@ -3,7 +3,6 @@ const messages = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
-const channelRepository = require('../../db/repositories/channel')
 
 /**
  * type MessageType = 'BROADCAST' | 'RESPONSE' | 'NOTIFICATION'
