@@ -176,7 +176,7 @@ Signalboost ships with a cli tool for adding phone numbers, channels, and admins
 Install it with:
 
 ``` shell
-$ sudo ./cli/install
+$ sudo ./cli/uninstall
 ```
 
 *(NOTE: This will add a symlink to `./cli` directory to your `/usr/bin` directory. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`, but you must take care to always be in the `<PROJECT_ROOT>` directory when/if you do that.)*
@@ -191,7 +191,7 @@ $ boost new_numbers -n 2 -a 510
 
 **(7) Provision new signalboost channels:**
 
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channenewl called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
 $ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
@@ -313,17 +313,17 @@ $ boost list-channels
 The below will provision 2 phone numbers in area code 510:
 
 ``` shell
-$ boost new_numbers -n 2 -a 510
+$ boost create-number -n 2 -a 510
 ```
 
 *NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.*
 
 **(8) Provision new signalboost channels:**
 
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as publishers on the channel.
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as senders on the channel.
 
 ``` shell
-$ boost new_channel -p +15105555555 -n "conquest of bread" -b "+151066666666,+15107777777"
+$ boost create-channel -p +15105555555 -n "conquest of bread" -s "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
@@ -358,20 +358,20 @@ Where `<command>` is one of the following:
   help
     - shows this dialogue
 
-  new_channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - activates a channel with provied phone number, name, and admins via api at provided url
+  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
+    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
 
-  new_numbers -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via api at provided url
+  create-number -a <area_code> -n <numbers_desired> -u <api_url>
+    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
 
-  list_numbers
-    - lists all numbers purchased from twilio (no channel info included)
+  list-channels -u <api_url>
+    - lists all channels active on the signalboost instance at the given (optional) url
 
-  release_number <sid>
-    - releases a twilio number with the given sid
+  list-numbers -u <api_url>
+    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
 
-  release_numbers <path>
-    - releases all twilio numbers with sids listed at given path
+  release-numbers <path>
+    - releases all phone numbers with twilio ids listed at given path
 ```
 
 For more detailed instructions on any of the commands, run:
