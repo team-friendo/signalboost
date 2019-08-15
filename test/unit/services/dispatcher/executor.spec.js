@@ -36,14 +36,21 @@ describe('executor service', () => {
     })
 
     describe('HELP command', () => {
-      it('parses an HELP command (regardless of case or whitespace)', () => {
+      it('parses a HELP command in english (regardless of case or whitespace)', () => {
         expect(parseCommand('HELP')).to.eql({ command: commands.HELP })
         expect(parseCommand('help')).to.eql({ command: commands.HELP })
         expect(parseCommand(' help ')).to.eql({ command: commands.HELP })
       })
 
+      it('parses a HELP command in spanish (regardless of case or whitespace)', () => {
+        expect(parseCommand('AYUDA')).to.eql({ command: commands.HELP })
+        expect(parseCommand('ayuda')).to.eql({ command: commands.HELP })
+        expect(parseCommand(' ayuda ')).to.eql({ command: commands.HELP })
+      })
+
       it('does not parse a HELP command when string contains characters other than `info`', () => {
         expect(parseCommand('i want help ')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('necesito ayuda')).to.eql({ command: commands.NOOP })
         expect(parseCommand('help me!')).to.eql({ command: commands.NOOP })
         expect(parseCommand('foobar')).to.eql({ command: commands.NOOP })
       })
@@ -64,10 +71,22 @@ describe('executor service', () => {
     })
 
     describe('JOIN command', () => {
-      it('parses an JOIN command (regardless of case or whitespace)', () => {
+      it('parses an JOIN command from "join" (regardless of case or whitespace)', () => {
         expect(parseCommand('JOIN')).to.eql({ command: commands.JOIN })
         expect(parseCommand('join')).to.eql({ command: commands.JOIN })
         expect(parseCommand(' join ')).to.eql({ command: commands.JOIN })
+      })
+
+      it('parses a JOIN command from "hello" (regardless of case or whitespace)', () => {
+        expect(parseCommand('HELLO')).to.eql({ command: commands.JOIN })
+        expect(parseCommand('hello')).to.eql({ command: commands.JOIN })
+        expect(parseCommand(' hello ')).to.eql({ command: commands.JOIN })
+      })
+
+      it('parses a JOIN command from "hola" (regardless of case or whitespace)', () => {
+        expect(parseCommand('HOLA')).to.eql({ command: commands.JOIN })
+        expect(parseCommand('hola')).to.eql({ command: commands.JOIN })
+        expect(parseCommand(' hola ')).to.eql({ command: commands.JOIN })
       })
 
       it('does not parse an JOIN command when string contains characters other than `join`', () => {
@@ -78,10 +97,22 @@ describe('executor service', () => {
     })
 
     describe('LEAVE command', () => {
-      it('parses a LEAVE command regardless of case or whitespace', () => {
+      it('parses a LEAVE command from "leave" regardless of case or whitespace', () => {
         expect(parseCommand('LEAVE')).to.eql({ command: commands.LEAVE })
         expect(parseCommand('leave')).to.eql({ command: commands.LEAVE })
         expect(parseCommand(' leave ')).to.eql({ command: commands.LEAVE })
+      })
+
+      it('parses a LEAVE command from "goodbye" regardless of case or whitespace', () => {
+        expect(parseCommand('GOODBYE')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand('goodbye')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand(' goodbye ')).to.eql({ command: commands.LEAVE })
+      })
+
+      it('parses a LEAVE command from "adiós" regardless of case or whitespace', () => {
+        expect(parseCommand('ADIOS')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand('adios')).to.eql({ command: commands.LEAVE })
+        expect(parseCommand(' adios ')).to.eql({ command: commands.LEAVE })
       })
 
       it('does not parse a LEAVE command when string contains characters other than `leave`', () => {
@@ -92,7 +123,7 @@ describe('executor service', () => {
     })
 
     describe('REMOVE PUBLISHER command', () => {
-      it('parses an REMOVE PUBLISHER command (regardless of case or whitespace)', () => {
+      it('parses an REMOVE command (regardless of case or whitespace)', () => {
         expect(parseCommand('REMOVE')).to.eql({ command: commands.REMOVE, payload: '' })
         expect(parseCommand('remove')).to.eql({ command: commands.REMOVE, payload: '' })
         expect(parseCommand(' remove ')).to.eql({ command: commands.REMOVE, payload: '' })
