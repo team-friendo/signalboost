@@ -37,7 +37,7 @@ BROADCASTING MESSAGES:
 
 Whenever a publisher sends a Signal message to ${phoneNumber}, it will be broadcast to all channel subscribers (and all publishers).
 
-Anyone can become a subscriber by sending a message that says "JOIN" to ${phoneNumber}. They can unsubscribe later by sending a message that says "LEAVE" to the same number.
+Anyone can become a subscriber by sending a message that says "HELLO" (or "HOLA") to ${phoneNumber}. They can unsubscribe later by sending a message that says "GOODBYE" (or "ADIOS") to the same number.
 ${commandResponses.help.publisher}
 `
   },
@@ -71,7 +71,7 @@ PUBLISHER COMMANDS:
 
 Publishers can send the following commands to this number:
 
-HELP
+HELP / AYUDA
 --> shows this message
 
 ADD +15555555555
@@ -80,7 +80,7 @@ ADD +15555555555
 REMOVE +15555555555
 --> removes +1 (555) 555-5555 as a publisher
 
-LEAVE
+GOODBYE / ADIOS
 --> removes you from the channel
 
 RENAME new name
@@ -95,13 +95,13 @@ SUBSCRIBER COMMANDS:
 
 Subscribers can send the following commands:
 
-JOIN
+HELLO / HOLA
 --> subscribes a person to the channel
 
-LEAVE
+GOODBYE / ADIOS
 --> unsubscribes a person from the channel
 
-HELP / INFO
+HELP / AYUDA , INFO
 --> same as above
 ${support}`,
     subscriber: `
@@ -111,13 +111,13 @@ COMMANDS:
 
 Sending the following commands to this phone number causes the following things to happen:
 
-HELP
+HELP / AYUDA
 --> shows this message
 
-JOIN
+HELLO / HOLA
 --> subscribes a person to the channel
 
-LEAVE
+GOODBYE / ADIOS
 --> unsubscribes a person from the channel
 
 INFO

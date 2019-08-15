@@ -51,10 +51,10 @@ const processCommand = dispatchable =>
 const parseCommand = msg => {
   const _msg = msg.trim()
   if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
-  else if (_msg.match(/^help$/i)) return { command: commands.HELP }
+  else if (_msg.match(/^(help|ayuda)$/i)) return { command: commands.HELP }
   else if (_msg.match(/^info$/i)) return { command: commands.INFO }
-  else if (_msg.match(/^join$/i)) return { command: commands.JOIN }
-  else if (_msg.match(/^leave$/i)) return { command: commands.LEAVE }
+  else if (_msg.match(/^(join|hello|hola)$/i)) return { command: commands.JOIN }
+  else if (_msg.match(/^(leave|goodbye|adios)$/i)) return { command: commands.LEAVE }
   else if (_msg.match(/^remove/i))
     return { command: commands.REMOVE, payload: _msg.match(/^remove\s?(.*)$/i)[1] }
   else if (_msg.match(/^rename/i))
