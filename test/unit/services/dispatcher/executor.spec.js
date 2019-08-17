@@ -632,7 +632,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.REMOVE,
                   status: statuses.ERROR,
-                  message: CR.publisher.remove.targetNotPublisher(payload),
+                  message: CR.publisher.remove.targetNotPublisher(publisherPhoneNumber),
                 },
                 dispatchable,
               })

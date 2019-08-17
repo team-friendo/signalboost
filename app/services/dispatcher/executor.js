@@ -174,8 +174,8 @@ const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(publisherNumber)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
 
-  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, publisherNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotPublisher(publisherNumber) }
+  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, phoneNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotPublisher(phoneNumber) }
 
   return removePublisher(db, channel, phoneNumber, cr)
 }
