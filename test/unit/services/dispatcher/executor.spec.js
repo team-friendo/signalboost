@@ -191,7 +191,8 @@ describe('executor service', () => {
         const sender = publisher
 
         describe('when payload is a valid phone number', () => {
-          const payload = genPhoneNumber()
+          const payload = '+1 (555) 555-5555' // to ensure we catch errors
+          const publisherPhoneNumber = '+15555555555'
           const sdMessage = sdMessageOf(channel, `ADD ${payload}`)
           const dispatchable = { db, channel, sender, sdMessage }
 
@@ -199,14 +200,14 @@ describe('executor service', () => {
 
           it("attempts to add payload number to the chanel's publishers", async () => {
             await processCommand(dispatchable)
-            expect(addPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+            expect(addPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, publisherPhoneNumber])
           })
 
           describe('when adding the publisher succeeds', () => {
             beforeEach(() =>
               addPublisherStub.returns(
                 Promise.resolve([
-                  { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: payload },
+                  { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber },
                 ]),
               ),
             )
@@ -216,8 +217,8 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.SUCCESS,
-                  message: CR.publisher.add.success(payload),
-                  payload,
+                  message: CR.publisher.add.success(publisherPhoneNumber),
+                  payload: publisherPhoneNumber,
                 },
                 dispatchable,
               })
@@ -232,7 +233,7 @@ describe('executor service', () => {
                 commandResult: {
                   command: commands.ADD,
                   status: statuses.ERROR,
-                  message: CR.publisher.add.dbError(payload),
+                  message: CR.publisher.add.dbError(publisherPhoneNumber),
                 },
                 dispatchable,
               })
@@ -574,7 +575,8 @@ describe('executor service', () => {
         beforeEach(() => removePublisherStub.returns(Promise.resolve()))
 
         describe('when payload is a valid phone number', () => {
-          const payload = genPhoneNumber()
+          const payload = '+1 (555) 555-5555' // to ensure we catch errors
+          const publisherPhoneNumber = '+15555555555'
           const sdMessage = sdMessageOf(channel, `REMOVE ${payload}`)
           const dispatchable = { db, channel, sender, sdMessage }
           beforeEach(() => validateStub.returns(true))
@@ -584,7 +586,7 @@ describe('executor service', () => {
 
             it("attempts to remove the human from the chanel's publishers", async () => {
               await processCommand(dispatchable)
-              expect(removePublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, payload])
+              expect(removePublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, publisherPhoneNumber])
             })
 
             describe('when removing the publisher succeeds', () => {
@@ -595,7 +597,7 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.SUCCESS,
-                    message: CR.publisher.remove.success(payload),
+                    message: CR.publisher.remove.success(publisherPhoneNumber),
                   },
                   dispatchable,
                 })
@@ -610,7 +612,7 @@ describe('executor service', () => {
                   commandResult: {
                     command: commands.REMOVE,
                     status: statuses.ERROR,
-                    message: CR.publisher.remove.dbError(payload),
+                    message: CR.publisher.remove.dbError(publisherPhoneNumber),
                   },
                   dispatchable,
                 })

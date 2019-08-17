@@ -170,11 +170,14 @@ const removeSender = (db, channel, sender, cr) => {
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   const cr = commandResponses.publisher.remove
   if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  if (!validator.validatePhoneNumber(publisherNumber))
-    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+
+  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(publisherNumber)
+  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+
   if (!(await channelRepository.isPublisher(db, channel.phoneNumber, publisherNumber)))
     return { status: statuses.ERROR, message: cr.targetNotPublisher(publisherNumber) }
-  return removePublisher(db, channel, publisherNumber, cr)
+
+  return removePublisher(db, channel, phoneNumber, cr)
 }
 
 const removePublisher = async (db, channel, publisherNumber, cr) =>
