@@ -4,6 +4,7 @@ const defaults = {
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
   registrationBatchSize: 5,
+  identityRequestTimeout: 1000, // 1 sec
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   welcomeDelay: 3000, // 3 sec
@@ -14,6 +15,7 @@ const test = {
   verificationTimeout: 30, // 30 millis
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
+  identityRequestTimeout: 60, // 60 millis
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   welcomeDelay: 0.0001, // .0001 millis

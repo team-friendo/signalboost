@@ -3,7 +3,7 @@ const { pick, get } = require('lodash')
 const fs = require('fs-extra')
 const { promisifyCallback, wait } = require('./util.js')
 const {
-  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout },
+  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, identityRequestTimeout },
 } = require('../config/index')
 
 /**
@@ -53,6 +53,14 @@ const {
  *   preview: string (The preview data to send, base64 encoded) == preview
  * }
  *
+ * type SignalIdentity -= {
+ *   trust_level: "TRUSTED" | "TRUSTED_UNVERIFIED" | "UNTRUSTED"
+ *   added: string, // millis from epoc
+ *   fingerprint: string // 32 space-separated 32 hex octets
+ *   safety_number: string, // 60 digit number
+ *   username: string, // valid phone number
+ * }
+ *
  * */
 
 // CONSTANTS
@@ -60,7 +68,9 @@ const {
 const signaldSocketPath = '/var/run/signald/signald.sock'
 
 const messageTypes = {
+  GET_IDENTITIES: 'get_identities',
   ERROR: 'unexpected_error',
+  IDENTITIES: 'identities',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
@@ -71,12 +81,14 @@ const messageTypes = {
   VERIFICATION_REQUIRED: 'verification_required',
 }
 
+// TODO(aguestuser|2019-08-18): consider localizing these?
 const errorMessages = {
   socketTimeout: 'maximum signald connection attempts exceeded.',
   socketConnectError: reason => `failed to connect to signald socket; Reason: ${reason}`,
   verificationFailure: (phoneNumber, reason) =>
     `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
   verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
+  identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
 }
 
 /**************************
@@ -98,7 +110,6 @@ const getSocket = async (attempts = 0) => {
 const connect = () => {
   try {
     const sock = net.createConnection(signaldSocketPath)
-    console.log()
     sock.setEncoding('utf8')
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
@@ -162,6 +173,39 @@ const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
     recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
   )
 
+// (Socket, String, String) -> Promise<Array<SignalIdentity>>
+const fetchIdentities = (sock, channelPhoneNumber, pubSubPhoneNumber) => {
+  write(sock, {
+    type: messageTypes.GET_IDENTITIES,
+    username: channelPhoneNumber,
+    recipientNumber: pubSubPhoneNumber,
+  })
+  return awaitIdentitiesOf(sock, pubSubPhoneNumber)
+}
+
+const awaitIdentitiesOf = (sock, pubSubPhoneNumber) => {
+  return new Promise((resolve, reject) => {
+    // create handler
+    function handle(msg) {
+      const { type, data } = JSON.parse(msg)
+      if (isSignalIdentitiesOf(type, data, pubSubPhoneNumber)) {
+        sock.removeListener('data', handle)
+        resolve(data.identities)
+      }
+    }
+    // register handler
+    sock.on('data', handle)
+    // reject and deregister handle after timeout
+    wait(identityRequestTimeout).then(() => {
+      sock.removeListener('data', handle)
+      reject(new Error(errorMessages.identityRequestTimeout(pubSubPhoneNumber)))
+    })
+  })
+}
+
+const isSignalIdentitiesOf = (msgType, msgData, pubSubPhoneNumber) =>
+  msgType === messageTypes.IDENTITIES && get(msgData, 'identities.0.username') === pubSubPhoneNumber
+
 /*******************
  * MESSAGE PARSING
  *******************/
@@ -192,12 +236,13 @@ module.exports = {
   messageTypes,
   errorMessages,
   awaitVerificationResult,
-  getSocket,
-  subscribe,
   broadcastMessage,
-  register,
-  sendMessage,
+  fetchIdentities,
+  getSocket,
   parseOutboundSdMessage,
   parseVerificationCode,
+  register,
+  sendMessage,
+  subscribe,
   verify,
 }

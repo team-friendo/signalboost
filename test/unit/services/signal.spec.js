@@ -63,8 +63,17 @@ describe('signal module', () => {
 
   describe('sending signald commands', () => {
     const channelPhoneNumber = genPhoneNumber()
+    const subscriberNumber = genPhoneNumber()
+    const fp1 =
+      '04 05 0e 12 19 1a 37 3f 46 4b 51 59 5d 61 64 69 7b 7f 80 82 91 9e 9f c2 d2 d4 d8 e0 e2 f3 f5 fd fe'
+    const fp2 =
+      'fe fd f5 f3 e2 e0 d8 d4 d2 c2 9f 9e 91 82 80 7f 7b 69 64 61 5d 59 51 4b 46 3f 37 1a 19 12 0e 05 04'
+
     let sock
-    beforeEach(() => (sock = { write: sinon.stub() }))
+    beforeEach(() => {
+      sock = new EventEmitter()
+      sock.write = sinon.stub()
+    })
 
     it('sends a register command', async () => {
       signal.register(sock, channelPhoneNumber)
@@ -123,6 +132,65 @@ describe('signal module', () => {
       expect(sock.write.getCall(1).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+12222222222","messageBody":"hello world!","attachments":[]}\n`,
       )
+    })
+
+    describe('fetching identities for a channel user', () => {
+      const untrustedIdenities = [
+        {
+          trust_level: 'TRUSTED_UNVERIFIED',
+          added: new Date().getTime(),
+          fingerpint: fp1,
+          username: subscriberNumber,
+        },
+        {
+          trust_level: 'UNTRUSTED',
+          added: new Date().getTime(),
+          fingerpint: fp2,
+          username: subscriberNumber,
+        },
+      ]
+
+      describe('when the fetch returns results', async () => {
+        beforeEach(async () => {
+          await wait(500)
+          sock.emit(
+            'data',
+            JSON.stringify({
+              type: 'identities',
+              data: { identities: untrustedIdenities },
+            }) + '\n',
+          )
+        })
+
+        it('returns an array of identities', async () => {
+          const promises = await Promise.all([
+            signal.fetchIdentities(sock, channelPhoneNumber, subscriberNumber),
+            wait(20).then(() =>
+              sock.emit(
+                'data',
+                JSON.stringify({
+                  type: 'identities',
+                  data: { identities: untrustedIdenities },
+                }) + '\n',
+              ),
+            ),
+          ])
+          const identities = promises[0]
+          expect(identities).to.eql(untrustedIdenities)
+        })
+      })
+
+      describe('when the fetch returns no results', () => {
+        it('rejects a promise', async () => {
+          const result = await signal
+            .fetchIdentities(sock, channelPhoneNumber, subscriberNumber)
+            .catch(a => a)
+
+          expect(result.message).to.eql(
+            signal.errorMessages.identityRequestTimeout(subscriberNumber),
+          )
+        })
+      })
     })
   })
 
