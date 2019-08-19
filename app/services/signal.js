@@ -1,9 +1,15 @@
 const net = require('net')
-const { pick, get } = require('lodash')
+const { pick, get, sortBy, last } = require('lodash')
 const fs = require('fs-extra')
 const { promisifyCallback, wait } = require('./util.js')
+const { statuses } = require('../constants')
 const {
-  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout },
+  signal: {
+    connectionInterval,
+    maxConnectionAttempts,
+    verificationTimeout,
+    identityRequestTimeout,
+  },
 } = require('../config/index')
 
 /**
@@ -53,6 +59,14 @@ const {
  *   preview: string (The preview data to send, base64 encoded) == preview
  * }
  *
+ * type SignalIdentity -= {
+ *   trust_level: "TRUSTED" | "TRUSTED_UNVERIFIED" | "UNTRUSTED"
+ *   added: string, // millis from epoc
+ *   fingerprint: string // 32 space-separated 32 hex octets
+ *   safety_number: string, // 60 digit number
+ *   username: string, // valid phone number
+ * }
+ *
  * */
 
 // CONSTANTS
@@ -60,23 +74,39 @@ const {
 const signaldSocketPath = '/var/run/signald/signald.sock'
 
 const messageTypes = {
+  GET_IDENTITIES: 'get_identities',
   ERROR: 'unexpected_error',
+  IDENTITIES: 'identities',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
   SUBSCRIBE: 'subscribe',
+  TRUST: 'trust',
   VERIFY: 'verify',
   VERIFICATION_SUCCESS: 'verification_succeeded',
   VERIFICATION_ERROR: 'verification_error',
   VERIFICATION_REQUIRED: 'verification_required',
 }
 
+const trustLevels = {
+  TRUSTED_VERIFIED: 'TRUSTED_VERIFIED',
+  TRUSTED_UNVERIFIED: 'TRUSTED_UNVERIFIED',
+  UNTRUSTED: 'UNTRUSTED',
+}
+
+// TODO(aguestuser|2019-08-18): consider localizing these?
 const errorMessages = {
-  socketTimeout: 'maximum signald connection attempts exceeded.',
-  socketConnectError: reason => `failed to connect to signald socket; Reason: ${reason}`,
+  socketTimeout: 'Maximum signald connection attempts exceeded.',
+  socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
+  trustError: phoneNumber => `Failed to trust new safety number for ${phoneNumber}`,
   verificationFailure: (phoneNumber, reason) =>
     `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
   verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
+  identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
+}
+
+const successMessages = {
+  trustSuccess: phoneNumber => `Trusted new safety number for ${phoneNumber}.`,
 }
 
 /**************************
@@ -98,7 +128,6 @@ const getSocket = async (attempts = 0) => {
 const connect = () => {
   try {
     const sock = net.createConnection(signaldSocketPath)
-    console.log()
     sock.setEncoding('utf8')
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
@@ -108,8 +137,10 @@ const connect = () => {
 
 const write = (sock, data) =>
   new Promise((resolve, reject) =>
-    sock.write(JSON.stringify(data) + '\n', promisifyCallback(resolve, reject)),
+    sock.write(signaldEncode(data), promisifyCallback(resolve, reject)),
   )
+
+const signaldEncode = data => JSON.stringify(data) + '\n'
 
 /********************
  * SIGNALD COMMANDS
@@ -162,6 +193,73 @@ const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
     recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
   )
 
+// (Socket, String, String) -> Promise<Array<TrustResult>>
+const trust = async (sock, channelPhoneNumber, pubSubPhoneNumber) => {
+  const { fingerprint } = await fetchMostRecentId(sock, channelPhoneNumber, pubSubPhoneNumber)
+  write(sock, {
+    type: messageTypes.TRUST,
+    username: channelPhoneNumber,
+    recipientNumber: pubSubPhoneNumber,
+    fingerprint,
+  })
+  return awaitTrustVerification(sock, channelPhoneNumber, pubSubPhoneNumber)
+}
+
+// (Socket, string, string) => Promise<TrustResult>
+const awaitTrustVerification = async (sock, channelPhoneNumber, pubSubPhoneNumber) => {
+  const id = await fetchMostRecentId(sock, channelPhoneNumber, pubSubPhoneNumber)
+  return id.trust_level === trustLevels.TRUSTED_VERIFIED
+    ? Promise.resolve({
+        status: statuses.SUCCESS,
+        message: successMessages.trustSuccess(pubSubPhoneNumber),
+      })
+    : Promise.reject({
+        status: statuses.ERROR,
+        message: errorMessages.trustError(pubSubPhoneNumber),
+      })
+}
+
+const fetchMostRecentId = async (sock, channelPhoneNumber, pubSubPhoneNumber) => {
+  const ids = await fetchIdentities(sock, channelPhoneNumber, pubSubPhoneNumber)
+  return last(sortBy(ids, 'added'))
+}
+
+// (Socket, String, String) -> Promise<Array<SignalIdentity>>
+const fetchIdentities = (sock, channelPhoneNumber, pubSubPhoneNumber) => {
+  write(sock, {
+    type: messageTypes.GET_IDENTITIES,
+    username: channelPhoneNumber,
+    recipientNumber: pubSubPhoneNumber,
+  })
+  return awaitIdentitiesOf(sock, pubSubPhoneNumber)
+}
+
+const awaitIdentitiesOf = (sock, pubSubPhoneNumber) => {
+  return new Promise((resolve, reject) => {
+    // create handler
+    const handle = msg => {
+      const { type, data } = JSON.parse(msg)
+      if (isSignalIdentitiesOf(type, data, pubSubPhoneNumber)) {
+        sock.removeListener('data', handle)
+        resolve(data.identities)
+      }
+    }
+    // register handler
+    sock.on('data', handle)
+    // reject and deregister handle after timeout
+    wait(identityRequestTimeout).then(() => {
+      sock.removeListener('data', handle)
+      reject({
+        status: statuses.ERROR,
+        message: errorMessages.identityRequestTimeout(pubSubPhoneNumber),
+      })
+    })
+  })
+}
+
+const isSignalIdentitiesOf = (msgType, msgData, pubSubPhoneNumber) =>
+  msgType === messageTypes.IDENTITIES && get(msgData, 'identities.0.username') === pubSubPhoneNumber
+
 /*******************
  * MESSAGE PARSING
  *******************/
@@ -191,13 +289,18 @@ const parseVerificationCode = verificationMessage =>
 module.exports = {
   messageTypes,
   errorMessages,
+  successMessages,
+  trustLevels,
   awaitVerificationResult,
-  getSocket,
-  subscribe,
   broadcastMessage,
-  register,
-  sendMessage,
+  fetchIdentities,
+  signaldEncode,
+  getSocket,
   parseOutboundSdMessage,
   parseVerificationCode,
+  register,
+  sendMessage,
+  subscribe,
+  trust,
   verify,
 }

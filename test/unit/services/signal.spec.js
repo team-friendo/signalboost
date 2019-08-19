@@ -63,8 +63,63 @@ describe('signal module', () => {
 
   describe('sending signald commands', () => {
     const channelPhoneNumber = genPhoneNumber()
+    const subscriberNumber = genPhoneNumber()
+    const timestamp = new Date().getTime()
+    const fp1 =
+      '04 05 0e 12 19 1a 37 3f 46 4b 51 59 5d 61 64 69 7b 7f 80 82 91 9e 9f c2 d2 d4 d8 e0 e2 f3 f5 fd fe'
+    const fp2 =
+      'fe fd f5 f3 e2 e0 d8 d4 d2 c2 9f 9e 91 82 80 7f 7b 69 64 61 5d 59 51 4b 46 3f 37 1a 19 12 0e 05 04'
+    const fp3 =
+      '69 64 61 5d 59 51 4b 46 3f 37 1a 19 12 0e 05 04 fe fd f5 f3 e2 e0 d8 d4 d2 c2 9f 9e 91 82 80 7f 7b'
+    const untrustedIdentities = [
+      {
+        trust_level: 'TRUSTED_UNVERIFIED',
+        added: timestamp,
+        fingerprint: fp1,
+        username: subscriberNumber,
+      },
+      {
+        trust_level: 'UNTRUSTED',
+        added: timestamp + 1000,
+        fingerprint: fp2,
+        username: subscriberNumber,
+      },
+      {
+        trust_level: 'UNTRUSTED',
+        added: timestamp + 2000,
+        fingerprint: fp3,
+        username: subscriberNumber,
+      },
+    ]
+    const trustedIdentities = [
+      {
+        trust_level: 'TRUSTED_UNVERIFIED',
+        added: timestamp,
+        fingerprint: fp1,
+        username: subscriberNumber,
+      },
+      {
+        trust_level: 'UNTRUSTED',
+        added: timestamp + 1000,
+        fingerprint: fp2,
+        username: subscriberNumber,
+      },
+      {
+        trust_level: 'TRUSTED_VERIFIED',
+        added: timestamp + 2000,
+        fingerprint: fp3,
+        username: subscriberNumber,
+      },
+    ]
+
     let sock
-    beforeEach(() => (sock = { write: sinon.stub() }))
+    const emit = msg => sock.emit('data', JSON.stringify(msg) + '\n')
+    const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
+
+    beforeEach(() => {
+      sock = new EventEmitter()
+      sock.write = sinon.stub()
+    })
 
     it('sends a register command', async () => {
       signal.register(sock, channelPhoneNumber)
@@ -124,79 +179,196 @@ describe('signal module', () => {
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+12222222222","messageBody":"hello world!","attachments":[]}\n`,
       )
     })
-  })
 
-  describe('listening for a registration verification event', () => {
-    const phoneNumber = genPhoneNumber()
-    let result
-
-    describe('when a verification success message for the listening channel is emitted', () => {
-      beforeEach(async () => {
-        wait(5).then(() =>
-          sock.emit(
-            'data',
-            JSON.stringify({
-              type: messageTypes.VERIFICATION_SUCCESS,
-              data: { username: phoneNumber },
-            }),
-          ),
-        )
-        result = await signal.awaitVerificationResult(sock, phoneNumber)
+    describe('fetching identities for a channel user', () => {
+      describe('when the fetch returns results', async () => {
+        it('returns an array of identities', async () => {
+          const promises = await Promise.all([
+            signal.fetchIdentities(sock, channelPhoneNumber, subscriberNumber),
+            emitWithDelay(20, { type: 'identities', data: { identities: untrustedIdentities } }),
+          ])
+          const identities = promises[0]
+          expect(identities).to.eql(untrustedIdentities)
+        })
       })
 
-      it('resolves with the success message', async () => {
-        expect(result).to.eql({ username: phoneNumber })
-      })
-    })
+      describe('when the fetch returns no results', () => {
+        it('rejects a promise', async () => {
+          const result = await signal
+            .fetchIdentities(sock, channelPhoneNumber, subscriberNumber)
+            .catch(a => a)
 
-    describe('when a verification failure message for the listening channel is emitted', () => {
-      beforeEach(async () => {
-        wait(5).then(() =>
-          sock.emit(
-            'data',
-            JSON.stringify({
-              type: messageTypes.VERIFICATION_ERROR,
-              data: { username: phoneNumber },
-            }),
-          ),
-        )
-        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
-      })
-
-      it('rejects with an error message', async () => {
-        expect(result).to.be.an('Error')
-        expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+          expect(result.message).to.eql(
+            signal.errorMessages.identityRequestTimeout(subscriberNumber),
+          )
+        })
       })
     })
 
-    describe('when no verification message is emitted before the timeout threshold', () => {
-      beforeEach(async () => {
-        wait(5).then(() => sock.emit('data', JSON.stringify({ type: 'foo' })))
-        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+    describe('trusting an expired safety number', () => {
+      it('attempts to fetch identities for the untrusted user', async () => {
+        await signal.trust(sock, channelPhoneNumber, subscriberNumber, fp3).catch(a => a)
+        expect(sock.write.getCall(0).args[0]).to.eql(
+          signal.signaldEncode({
+            type: messageTypes.GET_IDENTITIES,
+            username: channelPhoneNumber,
+            recipientNumber: subscriberNumber,
+          }),
+        )
+      })
+      describe('when identities can be fetched', () => {
+        it('attempts to trust most recently added untrusted fingerprint', async () => {
+          await Promise.all([
+            signal.trust(sock, channelPhoneNumber, subscriberNumber, fp3).catch(a => a),
+            emitWithDelay(10, {
+              type: messageTypes.IDENTITIES,
+              data: { identities: untrustedIdentities },
+            }),
+          ])
+          expect(sock.write.getCall(1).args[0]).to.eql(
+            signal.signaldEncode({
+              type: messageTypes.TRUST,
+              username: channelPhoneNumber,
+              recipientNumber: subscriberNumber,
+              fingerprint: fp3,
+            }),
+          )
+        })
+
+        describe('when trusted identity can be verified', () => {
+          it('returns a success object', async () => {
+            const promises = await Promise.all([
+              signal.trust(sock, channelPhoneNumber, subscriberNumber),
+              emitWithDelay(10, {
+                type: messageTypes.IDENTITIES,
+                data: { identities: untrustedIdentities },
+              }),
+              emitWithDelay(20, {
+                type: messageTypes.IDENTITIES,
+                data: { identities: trustedIdentities },
+              }),
+            ])
+            const result = promises[0]
+
+            expect(result).to.eql({
+              status: 'SUCCESS',
+              message: signal.successMessages.trustSuccess(subscriberNumber),
+            })
+          })
+        })
+
+        describe('when trusted identity cannot be verified', () => {
+          it('rejects with an error object', async () => {
+            const promises = await Promise.all([
+              signal.trust(sock, channelPhoneNumber, subscriberNumber).catch(a => a),
+              emitWithDelay(10, {
+                type: messageTypes.IDENTITIES,
+                data: { identities: untrustedIdentities },
+              }),
+              emitWithDelay(20, {
+                type: messageTypes.IDENTITIES,
+                data: { identities: untrustedIdentities },
+              }),
+            ])
+            const result = promises[0]
+            expect(result).to.eql({
+              status: 'ERROR',
+              message: signal.errorMessages.trustError(subscriberNumber),
+            })
+          })
+        })
       })
 
-      it('rejects with an error message', async () => {
-        expect(result).to.be.an('Error')
-        expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+      describe('when identities request times out', () => {
+        it('rejects with an error object', async () => {
+          const promises = await Promise.all([
+            signal.trust(sock, channelPhoneNumber, subscriberNumber).catch(a => a),
+            emitWithDelay(10, {
+              type: messageTypes.IDENTITIES,
+              data: { identities: untrustedIdentities },
+            }),
+          ])
+          const result = promises[0]
+          expect(result).to.eql({
+            status: 'ERROR',
+            message: signal.errorMessages.identityRequestTimeout(subscriberNumber),
+          })
+        })
       })
     })
 
-    describe('when a verification success message for another channel is emitted', () => {
-      beforeEach(async () => {
-        wait(5).then(() =>
-          sock.emit(
-            'data',
-            JSON.stringify({
-              type: messageTypes.VERIFICATION_ERROR,
-              data: { username: genPhoneNumber() },
-            }),
-          ),
-        )
-        result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+    describe('listening for a registration verification event', () => {
+      const phoneNumber = genPhoneNumber()
+      let result
+
+      describe('when a verification success message for the listening channel is emitted', () => {
+        beforeEach(async () => {
+          wait(5).then(() =>
+            sock.emit(
+              'data',
+              JSON.stringify({
+                type: messageTypes.VERIFICATION_SUCCESS,
+                data: { username: phoneNumber },
+              }),
+            ),
+          )
+          result = await signal.awaitVerificationResult(sock, phoneNumber)
+        })
+
+        it('resolves with the success message', async () => {
+          expect(result).to.eql({ username: phoneNumber })
+        })
       })
 
-      it('does nothing', () => {
-        expect(result).to.be.an('Error')
+      describe('when a verification failure message for the listening channel is emitted', () => {
+        beforeEach(async () => {
+          wait(5).then(() =>
+            sock.emit(
+              'data',
+              JSON.stringify({
+                type: messageTypes.VERIFICATION_ERROR,
+                data: { username: phoneNumber },
+              }),
+            ),
+          )
+          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+        })
+
+        it('rejects with an error message', async () => {
+          expect(result).to.be.an('Error')
+          expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+        })
+      })
+
+      describe('when no verification message is emitted before the timeout threshold', () => {
+        beforeEach(async () => {
+          wait(5).then(() => sock.emit('data', JSON.stringify({ type: 'foo' })))
+          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+        })
+
+        it('rejects with an error message', async () => {
+          expect(result).to.be.an('Error')
+          expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+        })
+      })
+
+      describe('when a verification success message for another channel is emitted', () => {
+        beforeEach(async () => {
+          wait(5).then(() =>
+            sock.emit(
+              'data',
+              JSON.stringify({
+                type: messageTypes.VERIFICATION_ERROR,
+                data: { username: genPhoneNumber() },
+              }),
+            ),
+          )
+          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+        })
+
+        it('does nothing', () => {
+          expect(result).to.be.an('Error')
+        })
       })
     })
   })
