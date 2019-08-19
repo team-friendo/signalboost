@@ -1,8 +1,11 @@
 const logger = require('./logger')
 const phoneNumberRegistrar = require('./phoneNumber')
+const safetyNumberRegistrar = require('./safetyNumbers')
 const api = require('./api')
+const util = require('../util')
 const {
   registrar: { port },
+  signal: { safetyNumberCheckInterval, signaldStartupTime },
 } = require('../../config')
 
 const run = async (db, sock) => {
@@ -15,6 +18,18 @@ const run = async (db, sock) => {
   logger.log('----- Registering phone numbers...')
   const regs = await phoneNumberRegistrar.registerAllUnregistered({ db, sock }).catch(logger.error)
   logger.log(`----- Registered ${regs.length} phone numbers.`)
+
+  logger.log('----- Scheduling safety number checks...')
+  util.wait(signaldStartupTime).then(() =>
+    util.repeatEvery(() => {
+      logger.log('Running safety number check...')
+      return safetyNumberRegistrar
+        .trustAll(db, sock)
+        .then(res => logger.log(`Safety number check results: ${JSON.stringify(res)}`))
+        .catch(logger.error)
+    }, safetyNumberCheckInterval),
+  )
+  logger.log(`----- Scheduled safety number checks.`)
 
   logger.log('--- Registrar running!')
 }

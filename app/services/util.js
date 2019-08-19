@@ -13,6 +13,11 @@ const promisifyCallback = (resolve, reject) => (err, res) => {
 
 const wait = interval => new Promise(rslv => setTimeout(rslv, interval))
 
+const repeatEvery = (fn, interval) =>
+  Promise.resolve(fn())
+    .then(() => wait(interval))
+    .then(() => repeatEvery(fn, interval))
+
 const repeatUntil = (fn, interval, predicate) =>
   predicate()
     ? Promise.resolve()
@@ -66,6 +71,7 @@ module.exports = {
   logger,
   prettyPrint,
   promisifyCallback,
+  repeatEvery,
   repeatUntilTimeout,
   sequence,
   wait,
