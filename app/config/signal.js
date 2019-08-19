@@ -15,7 +15,7 @@ const test = {
   verificationTimeout: 30, // 30 millis
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
-  identityRequestTimeout: 60, // 60 millis
+  identityRequestTimeout: 100, // 100 millis
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   welcomeDelay: 0.0001, // .0001 millis
