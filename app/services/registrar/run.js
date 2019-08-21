@@ -19,17 +19,21 @@ const run = async (db, sock) => {
   const regs = await phoneNumberRegistrar.registerAllUnregistered({ db, sock }).catch(logger.error)
   logger.log(`----- Registered ${regs.length} phone numbers.`)
 
-  logger.log('----- Scheduling safety number checks...')
-  util.wait(signaldStartupTime).then(() =>
-    util.repeatEvery(() => {
-      logger.log('Running safety number check...')
-      return safetyNumberRegistrar
-        .trustAll(db, sock)
-        .then(res => logger.log(`Safety number check results: ${JSON.stringify(res)}`))
-        .catch(logger.error)
-    }, safetyNumberCheckInterval),
-  )
-  logger.log(`----- Scheduled safety number checks.`)
+  // NOTE(aguestuser|2019-08-21):
+  // - this causes signald to stop working in unexepected ways (and stop relaying messages)...
+  // - commenting out until we can deterimine why...
+
+  // logger.log('----- Scheduling safety number checks...')
+  // util.wait(signaldStartupTime).then(() =>
+  //   util.repeatEvery(() => {
+  //     logger.log('Running safety number check...')
+  //     return safetyNumberRegistrar
+  //       .trustAll(db, sock)
+  //       .then(res => logger.log(`Safety number check results: ${JSON.stringify(res)}`))
+  //       .catch(logger.error)
+  //   }, safetyNumberCheckInterval),
+  // )
+  // logger.log(`----- Scheduled safety number checks.`)
 
   logger.log('--- Registrar running!')
 }
