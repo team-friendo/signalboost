@@ -69,6 +69,7 @@ describe('channel repository', () => {
         ).to.eql({
           phoneNumber: chPNum,
           name: '#blackops',
+          responsesEnabled: false,
         })
         expect(channel.publications.map(p => p.publisherPhoneNumber)).to.eql(publisherPNums)
         expect(channel.messageCount).to.be.an('object')
@@ -105,6 +106,7 @@ describe('channel repository', () => {
         ).to.eql({
           phoneNumber: chPNum,
           name: '#blackops',
+          responsesEnabled: false,
         })
         expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.have.members(
           newPublisherPNums,
@@ -281,6 +283,7 @@ describe('channel repository', () => {
         expect(keys(ch.toJSON())).to.eql([
           'phoneNumber',
           'name',
+          'responsesEnabled',
           'createdAt',
           'updatedAt',
           'subscriptions',

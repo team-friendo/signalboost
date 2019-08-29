@@ -12,6 +12,11 @@ const channelOf = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING,
     },
+    responsesEnabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
   })
 
   channel.associate = db => {
