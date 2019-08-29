@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+pushd `pwd`> /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+echo "--- rebuilding signalboost docker image..."
+
+docker build -t signalboost:latest -f ./docker/signalboost.dockerfile .
+
+echo "--- ...rebuilt signalboost docker image!"
+
+echo "--- DONE!"
+
+pushd > /dev/null
