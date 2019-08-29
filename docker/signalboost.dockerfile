@@ -29,7 +29,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # --- Install Node.js
 # ------------------------------------------------------
 
-ENV NODE_VERSION 10.15.3
+ENV NODE_VERSION 12.9.1
 ENV YARN_VERSION 1.16.0
 
 RUN groupadd --gid 1000 node \
