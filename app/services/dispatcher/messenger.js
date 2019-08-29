@@ -44,8 +44,17 @@ const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcast = dispatchable =>
-  dispatchable.sender.isPublisher
-    ? broadcast(dispatchable)
+  dispatchable.sender.isPublisher ? broadcast(dispatchable) : handleSubscriberResponse(dispatchable)
+
+const handleSubscriberResponse = dispatchable =>
+  dispatchable.channel.responsesEnabled
+    ? reportBack(dispatchable).then(() =>
+        respond({
+          ...dispatchable,
+          message: messages.reportBackForwarded(dispatchable.channel),
+          status: statuses.SUCCESS,
+        }),
+      )
     : respond({
         ...dispatchable,
         message: messages.unauthorized,
@@ -95,6 +104,14 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
     ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
     ...channel.publications.map(p => p.publisherPhoneNumber),
   ]
+  return signal
+    .broadcastMessage(sock, recipients, format(channel, sdMessage))
+    .then(() => countBroacast({ db, channel }))
+}
+
+// Dispatchable -> Promise<void>
+const reportBack = async ({ db, sock, channel, sdMessage }) => {
+  const recipients = channel.publications.map(p => p.publisherPhoneNumber)
   return signal
     .broadcastMessage(sock, recipients, format(channel, sdMessage))
     .then(() => countBroacast({ db, channel }))

@@ -185,6 +185,7 @@ ${commandResponses.help.subscriber}`
 const messages = {
   commandResponses,
   notifications,
+  reportBackForwarded: channel => `Your message was forwarded to the admins of [${channel.name}]`,
   unauthorized:
     'Whoops! You are not a publisher on this channel. Only publishers can send messages. Sorry! :)',
   noop: "Whoops! That's not a command!",

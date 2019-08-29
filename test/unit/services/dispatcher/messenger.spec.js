@@ -130,25 +130,33 @@ describe('messenger service', () => {
       })
 
       describe('when sender is not a publisher', () => {
-        const sender = subscriberSender
+        describe('and responses are disabled', () => {
+          const sender = subscriberSender
 
-        beforeEach(async () => {
-          await messenger.dispatch({
-            commandResult: { status: statuses.NOOP, messageBody: messages.noop },
-            dispatchable: { db, sock, channel, sender, sdMessage },
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.noop },
+              dispatchable: { db, sock, channel, sender, sdMessage },
+            })
+          })
+
+          it('does not broadcast a message', () => {
+            expect(broadcastSpy.callCount).to.eql(0)
+          })
+
+          it('sends an error message to the message sender', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(channel, messages.unauthorized),
+            ])
           })
         })
 
-        it('does not broadcast a message', () => {
-          expect(broadcastSpy.callCount).to.eql(0)
-        })
-
-        it('sends an error message to the message sender', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            sock,
-            sender.phoneNumber,
-            sdMessageOf(channel, messages.unauthorized),
-          ])
+        describe('and responses are enabled', () => {
+          it('does not broadcast a message')
+          it('forwards the message to channel admins')
+          it('responds to sender with a message forwarding notification')
         })
       })
     })
