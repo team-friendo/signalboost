@@ -5,13 +5,13 @@ const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
 
 /**
- * type MessageType = 'BROADCAST' | 'RESPONSE' | 'NOTIFICATION'
+ * type MessageType = 'BROADCAST' | 'COMMAND_RESPONSE' | 'NOTIFICATION'
  */
 
 const messageTypes = {
   BROADCAST: 'BROADCAST',
-  RESPONSE: 'RESPONSE',
-  NOTIFY_NEW_PUBLISHER: 'NEW_PUBLISHER',
+  COMMAND_RESPONSE: 'COMMAND_RESPONSE',
+  NOTIFICATION_OF_NEW_PUBLISHER: 'NEW_PUBLISHER',
 }
 
 /***************
@@ -24,9 +24,9 @@ const dispatch = async ({ commandResult, dispatchable }) => {
   switch (messageType) {
     case messageTypes.BROADCAST:
       return handleBroadcast(dispatchable)
-    case messageTypes.RESPONSE:
+    case messageTypes.COMMAND_RESPONSE:
       return handleResponse({ commandResult, dispatchable })
-    case messageTypes.NOTIFY_NEW_PUBLISHER:
+    case messageTypes.NOTIFICATION_OF_NEW_PUBLISHER:
       return handleNotification({ commandResult, dispatchable, messageType })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
@@ -36,8 +36,8 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 // CommandResult -> [MessageType, NotificationType]
 const parseMessageType = commandResult => {
   if (commandResult.status === statuses.NOOP) return messageTypes.BROADCAST
-  else if (isNewPublisher(commandResult)) return messageTypes.NOTIFY_NEW_PUBLISHER
-  else return messageTypes.RESPONSE
+  else if (isNewPublisher(commandResult)) return messageTypes.NOTIFICATION_OF_NEW_PUBLISHER
+  else return messageTypes.COMMAND_RESPONSE
 }
 
 const isNewPublisher = ({ command, status }) =>
@@ -48,22 +48,22 @@ const handleBroadcast = dispatchable =>
 
 const handleSubscriberResponse = dispatchable =>
   dispatchable.channel.responsesEnabled
-    ? reportBack(dispatchable).then(() =>
-        respond({
+    ? respondToBroadcast(dispatchable).then(() =>
+        respondToCommand({
           ...dispatchable,
-          message: messages.reportBackForwarded(dispatchable.channel),
+          message: messages.notifications.broadcastResponseSent(dispatchable.channel),
           status: statuses.SUCCESS,
         }),
       )
-    : respond({
+    : respondToCommand({
         ...dispatchable,
-        message: messages.unauthorized,
+        message: messages.notifications.unauthorized,
         status: statuses.UNAUTHORIZED,
       })
 
 const handleResponse = ({ commandResult, dispatchable }) => {
   const { message, command, status } = commandResult
-  return respond({ ...dispatchable, message, command, status })
+  return respondToCommand({ ...dispatchable, message, command, status })
 }
 
 const handleNotification = ({ commandResult, dispatchable, messageType }) => {
@@ -72,7 +72,7 @@ const handleNotification = ({ commandResult, dispatchable, messageType }) => {
     handleResponse({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
-      [messageTypes.NOTIFY_NEW_PUBLISHER]: () =>
+      [messageTypes.NOTIFICATION_OF_NEW_PUBLISHER]: () =>
         welcomeNewPublisher({
           db: d.db,
           sock: d.sock,
@@ -110,15 +110,15 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 }
 
 // Dispatchable -> Promise<void>
-const reportBack = async ({ db, sock, channel, sdMessage }) => {
+const respondToBroadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.publications.map(p => p.publisherPhoneNumber)
   return signal
-    .broadcastMessage(sock, recipients, format(channel, sdMessage))
+    .broadcastMessage(sock, recipients, sdMessage)
     .then(() => countBroacast({ db, channel }))
 }
 
 // (DbusInterface, string, Sender) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender, command, status }) => {
+const respondToCommand = ({ db, sock, channel, message, sender, command, status }) => {
   const sdMessage = format(channel, sdMessageOf(channel, message), command, status)
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessage)
@@ -165,7 +165,7 @@ module.exports = {
   dispatch,
   format,
   parseMessageType,
-  respond,
+  respondToCommand,
   sdMessageOf,
   welcomeNewPublisher,
 }

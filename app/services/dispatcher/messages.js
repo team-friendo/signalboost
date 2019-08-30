@@ -21,6 +21,7 @@ You can request a new channel or get help from a human by emailing:
 team-friendo@riseup.net`
 
 const notifications = {
+  broadcastResponseSent: channel => `Your message was forwarded to the admins of [${channel.name}]`,
   welcome: (channel, addingPublisher) => {
     const { name, phoneNumber } = channel
     return `
@@ -41,6 +42,9 @@ Anyone can become a subscriber by sending a message that says "HELLO" (or "HOLA"
 ${commandResponses.help.publisher}
 `
   },
+  noop: "Whoops! That's not a command!",
+  unauthorized:
+    'Whoops! You are not a publisher on this channel. Only publishers can send messages. Sorry! :)',
 }
 
 const commandResponses = {
@@ -185,10 +189,6 @@ ${commandResponses.help.subscriber}`
 const messages = {
   commandResponses,
   notifications,
-  reportBackForwarded: channel => `Your message was forwarded to the admins of [${channel.name}]`,
-  unauthorized:
-    'Whoops! You are not a publisher on this channel. Only publishers can send messages. Sorry! :)',
-  noop: "Whoops! That's not a command!",
 }
 
 module.exports = messages

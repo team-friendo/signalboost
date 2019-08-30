@@ -54,7 +54,7 @@ describe('messenger service', () => {
 
     it('parses a command response', () => {
       expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql(
-        messageTypes.RESPONSE,
+        messageTypes.COMMAND_RESPONSE,
       )
     })
 
@@ -65,7 +65,7 @@ describe('messenger service', () => {
           status: statuses.SUCCESS,
           payload: publisherSender.phoneNumber,
         }),
-      ).to.eql(messageTypes.NOTIFY_NEW_PUBLISHER)
+      ).to.eql(messageTypes.NOTIFICATION_OF_NEW_PUBLISHER)
     })
   })
 
@@ -79,7 +79,7 @@ describe('messenger service', () => {
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
-      respondSpy = sinon.spy(messenger, 'respond')
+      respondSpy = sinon.spy(messenger, 'respondToCommand')
       broadcastMessageStub = sinon.stub(signal, 'broadcastMessage').returns(Promise.resolve())
       sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
       incrementCommandCountStub = sinon
@@ -104,7 +104,7 @@ describe('messenger service', () => {
         beforeEach(
           async () =>
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.noop },
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
               dispatchable: { db, sock, channel, sender: publisherSender, sdMessage },
             }),
         )
@@ -135,7 +135,7 @@ describe('messenger service', () => {
 
           beforeEach(async () => {
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.noop },
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
               dispatchable: { db, sock, channel, sender, sdMessage },
             })
           })
@@ -148,15 +148,36 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(channel, messages.unauthorized),
+              sdMessageOf(channel, messages.notifications.unauthorized),
             ])
           })
         })
 
         describe('and responses are enabled', () => {
-          it('does not broadcast a message')
-          it('forwards the message to channel admins')
-          it('responds to sender with a message forwarding notification')
+          const sender = subscriberSender
+          const enabledChannel = { ...channel, responsesEnabled: true }
+
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              dispatchable: { db, sock, channel: enabledChannel, sender, sdMessage },
+            })
+          })
+
+          it('forwards the message to channel admins', () => {
+            expect(broadcastMessageStub.getCall(0).args).to.eql([sock, publisherNumbers, sdMessage])
+          })
+
+          it('responds to sender with a broadcast response notification', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(
+                channel,
+                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`
+              ),
+            ])
+          })
         })
       })
     })
