@@ -27,6 +27,8 @@ describe('messenger service', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
+  const responseEnabledChannel = { ...channel, responsesEnabled: true }
+
   const attachments = [{ filename: 'some/path', width: 42, height: 42 }]
   const sdMessage = {
     type: 'send',
@@ -44,11 +46,16 @@ describe('messenger service', () => {
     isPublisher: false,
     isSubscriber: true,
   }
+  const randomSender = {
+    phoneNumber: genPhoneNumber(),
+    isPublisher: false,
+    isSubscriber: false,
+  }
 
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
       expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql(
-        messageTypes.BROADCAST,
+        messageTypes.BROADCAST_MESSAGE,
       )
     })
 
@@ -65,7 +72,7 @@ describe('messenger service', () => {
           status: statuses.SUCCESS,
           payload: publisherSender.phoneNumber,
         }),
-      ).to.eql(messageTypes.NOTIFICATION_OF_NEW_PUBLISHER)
+      ).to.eql(messageTypes.NEW_PUBLISHER_WELCOME)
     })
   })
 
@@ -79,7 +86,7 @@ describe('messenger service', () => {
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
-      respondSpy = sinon.spy(messenger, 'respondToCommand')
+      respondSpy = sinon.spy(messenger, 'respond')
       broadcastMessageStub = sinon.stub(signal, 'broadcastMessage').returns(Promise.resolve())
       sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
       incrementCommandCountStub = sinon
@@ -129,7 +136,7 @@ describe('messenger service', () => {
         })
       })
 
-      describe('when sender is not a publisher', () => {
+      describe('when sender is a subscriber', () => {
         describe('and responses are disabled', () => {
           const sender = subscriberSender
 
@@ -155,12 +162,11 @@ describe('messenger service', () => {
 
         describe('and responses are enabled', () => {
           const sender = subscriberSender
-          const enabledChannel = { ...channel, responsesEnabled: true }
 
           beforeEach(async () => {
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { db, sock, channel: enabledChannel, sender, sdMessage },
+              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -174,8 +180,33 @@ describe('messenger service', () => {
               sender.phoneNumber,
               sdMessageOf(
                 channel,
-                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`
+                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`,
               ),
+            ])
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const sender = randomSender
+
+        describe('and responses are enabled', () => {
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
+            })
+          })
+
+          it('does not broadcast the message or forward it to admins ', () => {
+            expect(broadcastSpy.callCount).to.eql(0)
+          })
+
+          it('sends an error message to the message sender', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(channel, messages.notifications.unauthorized),
             ])
           })
         })
