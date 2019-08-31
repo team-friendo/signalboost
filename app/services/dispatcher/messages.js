@@ -1,3 +1,4 @@
+const { upperCase } = require('lodash')
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
 
 // NOTE: this is currently deprecated. Leaving it in in case we want to bring it back (aguestuser)
@@ -48,17 +49,17 @@ ${commandResponses.help.publisher}
 }
 
 const commandResponses = {
-  // PUBLISHER
+  // ADD/REMOVE PUBLISHER
   publisher: {
     add: {
-      success: num => `You successfully added ${num} as a publisher!`,
+      success: num => `${num} added as a publisher.`,
       unauthorized,
       dbError: num => `Whoops! There was an error adding ${num} as publisher. Please try again!`,
       invalidNumber: num =>
         `Whoops! Failed to add "${num}". Phone numbers must include country codes prefixed by a '+'`,
     },
     remove: {
-      success: num => `${num} was successfully removed as a publisher.`,
+      success: num => `${num} removed as a publisher.`,
       unauthorized,
       dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
       invalidNumber: num =>
@@ -156,12 +157,12 @@ publishers: ${channel.publications.length}`,
   // RENAME
   rename: {
     success: (oldName, newName) =>
-      `[${newName}]\nYou successfully renamed the channel from "${oldName}" to "${newName}".`,
+      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
     dbError: (oldName, newName) =>
       `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
     unauthorized,
   },
-  // SUBSCRIBER
+  // ADD/REMOVE SUBSCRIBER
   subscriber: {
     add: {
       success: channel => {
@@ -183,6 +184,15 @@ ${commandResponses.help.subscriber}`
       error: `Whoops! There was an error removing you from the channel. Please try again!`,
       unauthorized,
     },
+  },
+  // TOGGLE RESPONSES
+  toggleResponses: {
+    success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
+    unauthorized,
+    dbError: setting =>
+      `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
+    invalidSetting: setting =>
+      `Whoops! ${setting} is not a valid setting. You can set responses to be either ON or OFF.`,
   },
 }
 
