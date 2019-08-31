@@ -2,6 +2,7 @@ const channelRepository = require('../../db/repositories/channel')
 const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
 const { commandResponses } = require('./messages')
+const { lowerCase } = require('lodash')
 
 /**
  * type Executable = {
@@ -37,6 +38,7 @@ const commands = {
   NOOP: 'NOOP',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
+  TOGGLE_RESPONSES: 'TOGGLE_RESPONSES',
 }
 
 /******************
@@ -53,12 +55,15 @@ const parseCommand = msg => {
   if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
   else if (_msg.match(/^(help|ayuda)$/i)) return { command: commands.HELP }
   else if (_msg.match(/^info$/i)) return { command: commands.INFO }
+  // TODO(aguestuser|2019-08-30): handle spansish variations with proper localization
   else if (_msg.match(/^(join|hello|hola)$/i)) return { command: commands.JOIN }
   else if (_msg.match(/^(leave|goodbye|adios)$/i)) return { command: commands.LEAVE }
   else if (_msg.match(/^remove/i))
     return { command: commands.REMOVE, payload: _msg.match(/^remove\s?(.*)$/i)[1] }
   else if (_msg.match(/^rename/i))
     return { command: commands.RENAME, payload: _msg.match(/^rename\s?(.*)$/i)[1] }
+  else if (_msg.match(/^responses/i))
+    return { command: commands.TOGGLE_RESPONSES, payload: _msg.match(/^responses\s?(.*)$/i)[1] }
   else return { command: commands.NOOP }
 }
 
@@ -74,6 +79,7 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
+    [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
   }[command] || noop)()
   return { commandResult: { ...result, command }, dispatchable }
 }
@@ -202,6 +208,23 @@ const renameChannel = (db, channel, newName, cr) =>
     .catch(err =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
+
+const maybeToggleResponses = async (db, channel, sender, newSetting) => {
+  const cr = commandResponses.toggleResponses
+  if (!sender.isPublisher) {
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+  }
+  if (!['on', 'off'].includes(lowerCase(newSetting))) {
+    return Promise.resolve({ status: statuses.ERROR, message: cr.invalidSetting(newSetting) })
+  }
+  return toggleResponses(db, channel, newSetting, sender, cr)
+}
+
+const toggleResponses = (db, channel, newSetting, sender, cr) =>
+  channelRepository
+    .update(db, channel.phoneNumber, { responsesEnabled: lowerCase(newSetting) === 'on' })
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newSetting) }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
 
 // NOOP
 const noop = () =>

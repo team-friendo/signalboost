@@ -72,12 +72,19 @@ describe('channel model', () => {
   test('fields', async () => {
     channel = await db.channel.create(channelFactory())
 
-    expect(keys(channel.get())).to.have.members([
-      'phoneNumber',
-      'name',
-      'createdAt',
-      'updatedAt',
-    ])
+    it('has correct fields', () => {
+      expect(keys(channel.get())).to.have.members([
+        'phoneNumber',
+        'name',
+        'responsesEnabled',
+        'createdAt',
+        'updatedAt',
+      ])
+    })
+
+    it('sets correct defaults', () => {
+      expect(channel.responsesEnabled).to.equal(false)
+    })
   })
 
   describe('validations', () => {

@@ -1,17 +1,19 @@
 const signal = require('../signal')
 const messages = require('./messages')
+const { notifications } = messages
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
 
 /**
- * type MessageType = 'BROADCAST' | 'RESPONSE' | 'NOTIFICATION'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESULT' | 'NOTIFICATION'
  */
 
 const messageTypes = {
-  BROADCAST: 'BROADCAST',
-  RESPONSE: 'RESPONSE',
-  NOTIFY_NEW_PUBLISHER: 'NEW_PUBLISHER',
+  BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
+  BROADCAST_RESPONSE: 'BROADCAST_RESPONSE',
+  COMMAND_RESULT: 'COMMAND_RESULT',
+  NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
 }
 
 /***************
@@ -20,13 +22,15 @@ const messageTypes = {
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult)
+  const messageType = parseMessageType(commandResult, dispatchable.sender)
   switch (messageType) {
-    case messageTypes.BROADCAST:
-      return handleBroadcast(dispatchable)
-    case messageTypes.RESPONSE:
-      return handleResponse({ commandResult, dispatchable })
-    case messageTypes.NOTIFY_NEW_PUBLISHER:
+    case messageTypes.BROADCAST_MESSAGE:
+      return broadcast(dispatchable)
+    case messageTypes.BROADCAST_RESPONSE:
+      return handleBroadcastResponse(dispatchable)
+    case messageTypes.COMMAND_RESULT:
+      return handleCommandResult({ commandResult, dispatchable })
+    case messageTypes.NEW_PUBLISHER_WELCOME:
       return handleNotification({ commandResult, dispatchable, messageType })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
@@ -34,36 +38,44 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 }
 
 // CommandResult -> [MessageType, NotificationType]
-const parseMessageType = commandResult => {
-  if (commandResult.status === statuses.NOOP) return messageTypes.BROADCAST
-  else if (isNewPublisher(commandResult)) return messageTypes.NOTIFY_NEW_PUBLISHER
-  else return messageTypes.RESPONSE
+const parseMessageType = (commandResult, sender) => {
+  if (commandResult.status === statuses.NOOP) {
+    return sender.isPublisher ? messageTypes.BROADCAST_MESSAGE : messageTypes.BROADCAST_RESPONSE
+  } else if (isNewPublisher(commandResult)) return messageTypes.NEW_PUBLISHER_WELCOME
+  else return messageTypes.COMMAND_RESULT
 }
 
 const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
 
-const handleBroadcast = dispatchable =>
-  dispatchable.sender.isPublisher
-    ? broadcast(dispatchable)
-    : respond({
-        ...dispatchable,
-        message: messages.unauthorized,
-        status: statuses.UNAUTHORIZED,
-      })
+const handleBroadcastResponse = dispatchable => {
+  if (!(dispatchable.sender.isSubscriber && dispatchable.channel.responsesEnabled)) {
+    return respond({
+      ...dispatchable,
+      message: notifications.unauthorized,
+      status: statuses.UNAUTHORIZED,
+    })
+  }
+  return relayBroadcastResponse(dispatchable)
+}
 
-const handleResponse = ({ commandResult, dispatchable }) => {
+// TODO: rename this handleCommandResult
+const handleCommandResult = ({ commandResult, dispatchable }) => {
   const { message, command, status } = commandResult
+  // TODO: respond to sender, notify all other publishers
+  //  - exclude: HELP/INFO
+  //  - (implicitly) include: RENAME/RESPONSES/ADD/JOIN/LEAVE (don't include phone numbers in join/leave)
+  //  - add publisher phone numbers for RENAME/ADD/REMOVE/RESPONSES
   return respond({ ...dispatchable, message, command, status })
 }
 
 const handleNotification = ({ commandResult, dispatchable, messageType }) => {
   const [cr, d] = [commandResult, dispatchable]
   return Promise.all([
-    handleResponse({ commandResult, dispatchable }),
+    handleCommandResult({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
-      [messageTypes.NOTIFY_NEW_PUBLISHER]: () =>
+      [messageTypes.NEW_PUBLISHER_WELCOME]: () =>
         welcomeNewPublisher({
           db: d.db,
           sock: d.sock,
@@ -81,7 +93,7 @@ const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher 
     db,
     sock,
     channel,
-    notification: messages.notifications.welcome(channel, addingPublisher),
+    notification: notifications.welcome(channel, addingPublisher),
     recipients: [newPublisher],
   })
 
@@ -96,32 +108,52 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
     ...channel.publications.map(p => p.publisherPhoneNumber),
   ]
   return signal
-    .broadcastMessage(sock, recipients, format(channel, sdMessage))
+    .broadcastMessage(sock, recipients, format({ channel, sdMessage }))
     .then(() => countBroacast({ db, channel }))
 }
 
-// (DbusInterface, string, Sender) -> Promise<void>
+// Dispatchable -> Promise<void>
+const relayBroadcastResponse = async ({ db, sock, channel, sender, sdMessage }) => {
+  const recipients = channel.publications.map(p => p.publisherPhoneNumber)
+  const senderNotification = notifications.broadcastResponseSent(channel)
+  const messageType = messageTypes.BROADCAST_RESPONSE
+  //console.log('====== sdMessage.messageBody\n', sdMessage.messageBody)
+  return signal
+    .broadcastMessage(sock, recipients, format({ channel, sdMessage, messageType }))
+    .then(() => countBroacast({ db, channel }))
+    .then(() => respond({ db, sock, channel, sender, message: senderNotification }))
+}
+
+// (DbusInterface, string, Sender, string?, string?) -> Promise<void>
 const respond = ({ db, sock, channel, message, sender, command, status }) => {
-  const sdMessage = format(channel, sdMessageOf(channel, message), command, status)
+  const sdMessage = format({ channel, messageBody: message, command, status })
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessage)
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = ({ db, sock, channel, notification, recipients }) => {
-  const sdMessage = format(channel, sdMessageOf(channel, notification))
-  return signal
-    .broadcastMessage(sock, recipients, sdMessage)
-    .then(() => countCommand({ db, channel }))
+const notify = ({ sock, channel, notification, recipients }) => {
+  const sdMessage = format({ channel, messageBody: notification })
+  return signal.broadcastMessage(sock, recipients, sdMessage)
 }
 
-// string -> string
-const format = (channel, message, command, status) =>
-  // (1) Don't leak the channel name to non-subscribers
-  // (2) RENAME messages must provide their own header (b/c the channel name changed since it was queried)
-  status === statuses.UNAUTHORIZED || command === commands.RENAME
-    ? message
-    : { ...message, messageBody: `[${channel.name}]\n${message.messageBody}` }
+// TODO(aguestuser|2018-08-31) this strikes me as poorly factored
+// { Channel, string, string, string, string } -> string
+const format = ({ channel, sdMessage, messageBody, messageType, command, status }) => {
+  if (status === statuses.UNAUTHORIZED || command === commands.RENAME) {
+    // - Don't leak the channel name to non-subscribers
+    // - RENAME messages must provide their own header (b/c channel name changed since last query)
+    return sdMessageOf(channel, messageBody)
+  }
+  if (messageType === messageTypes.BROADCAST_RESPONSE) {
+    // flag subscriber responses so they don't look like broadcast messages
+    // throw out other fields on `sdMessage (like attachments)
+    return sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`)
+  }
+  // clone sdMessage if passed in to preserve attachements
+  const msg = sdMessage || sdMessageOf(channel, messageBody)
+  return { ...msg, messageBody: `[${channel.name}]\n${msg.messageBody}` }
+}
 
 const countBroacast = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here

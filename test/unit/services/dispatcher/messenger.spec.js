@@ -27,6 +27,8 @@ describe('messenger service', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
+  const responseEnabledChannel = { ...channel, responsesEnabled: true }
+
   const attachments = [{ filename: 'some/path', width: 42, height: 42 }]
   const sdMessage = {
     type: 'send',
@@ -44,18 +46,35 @@ describe('messenger service', () => {
     isPublisher: false,
     isSubscriber: true,
   }
+  const randomSender = {
+    phoneNumber: genPhoneNumber(),
+    isPublisher: false,
+    isSubscriber: false,
+  }
 
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
-      expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql(
-        messageTypes.BROADCAST,
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, publisherSender)).to.eql(
+        messageTypes.BROADCAST_MESSAGE,
       )
     })
 
-    it('parses a command response', () => {
-      expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql(
-        messageTypes.RESPONSE,
+    it('parses a broadcast response from a subscriber', () => {
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, subscriberSender)).to.eql(
+        messageTypes.BROADCAST_RESPONSE,
       )
+    })
+
+    it('parses a broadcast response from a random person', () => {
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.BROADCAST_RESPONSE)
+    })
+
+    it('parses a command result', () => {
+      const msg = { command: 'JOIN', status: statuses.SUCCESS }
+      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.COMMAND_RESULT)
     })
 
     it('parses a publisher welcome message', () => {
@@ -65,7 +84,7 @@ describe('messenger service', () => {
           status: statuses.SUCCESS,
           payload: publisherSender.phoneNumber,
         }),
-      ).to.eql(messageTypes.NOTIFY_NEW_PUBLISHER)
+      ).to.eql(messageTypes.NEW_PUBLISHER_WELCOME)
     })
   })
 
@@ -104,7 +123,7 @@ describe('messenger service', () => {
         beforeEach(
           async () =>
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.noop },
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
               dispatchable: { db, sock, channel, sender: publisherSender, sdMessage },
             }),
         )
@@ -129,26 +148,83 @@ describe('messenger service', () => {
         })
       })
 
-      describe('when sender is not a publisher', () => {
-        const sender = subscriberSender
+      describe('when sender is a subscriber', () => {
+        describe('and responses are disabled', () => {
+          const sender = subscriberSender
 
-        beforeEach(async () => {
-          await messenger.dispatch({
-            commandResult: { status: statuses.NOOP, messageBody: messages.noop },
-            dispatchable: { db, sock, channel, sender, sdMessage },
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              dispatchable: { db, sock, channel, sender, sdMessage },
+            })
+          })
+
+          it('does not broadcast a message', () => {
+            expect(broadcastSpy.callCount).to.eql(0)
+          })
+
+          it('sends an error message to the message sender', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(channel, messages.notifications.unauthorized),
+            ])
           })
         })
 
-        it('does not broadcast a message', () => {
-          expect(broadcastSpy.callCount).to.eql(0)
-        })
+        describe('and responses are enabled', () => {
+          const sender = subscriberSender
 
-        it('sends an error message to the message sender', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            sock,
-            sender.phoneNumber,
-            sdMessageOf(channel, messages.unauthorized),
-          ])
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
+            })
+          })
+
+          it('forwards the message to channel admins', () => {
+            expect(broadcastMessageStub.getCall(0).args).to.eql([
+              sock,
+              publisherNumbers,
+              sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`),
+            ])
+          })
+
+          it('responds to sender with a broadcast response notification', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(
+                channel,
+                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`,
+              ),
+            ])
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const sender = randomSender
+
+        describe('and responses are enabled', () => {
+          beforeEach(async () => {
+            await messenger.dispatch({
+              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
+            })
+          })
+
+          it('does not broadcast the message or forward it to admins ', () => {
+            expect(broadcastSpy.callCount).to.eql(0)
+          })
+
+          it('sends an error message to the message sender', () => {
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              sock,
+              sender.phoneNumber,
+              sdMessageOf(channel, messages.notifications.unauthorized),
+            ])
+          })
         })
       })
     })
@@ -231,37 +307,46 @@ describe('messenger service', () => {
   describe('formatting messages', () => {
     describe('broadcast messages', () => {
       it('adds a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah'))).to.eql(
-          sdMessageOf(channel, '[foobar]\nblah'),
-        )
+        const msg = { channel, sdMessage: sdMessageOf(channel, 'blah') }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
+
     describe('most commands', () => {
       it('adds a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah', 'JOIN', 'SUCCESS'))).to.eql(
-          sdMessageOf(channel, '[foobar]\nblah'),
-        )
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'JOIN',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
+
     describe('when message is the response to a RENAME comand', () => {
       it('does not add a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah'), 'RENAME', 'SUCCESS')).to.eql(
-          sdMessageOf(channel, 'blah'),
-        )
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'RENAME',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
+
     describe('when the message is the response to an unauthorized command attempt', () => {
       it('does not add a prefix', () => {
-        expect(
-          messenger.format(channel, sdMessageOf(channel, 'blah'), 'INFO', 'UNAUTHORIZED'),
-        ).to.eql(sdMessageOf(channel, 'blah'))
+        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
-    describe('when there is no command but status is UNAUHTORIZED', () => {
+
+    describe('when there is no command but status is UNAUTHORIZED', () => {
       it('does not add a prefix', () => {
-        expect(
-          messenger.format(channel, sdMessageOf(channel, 'blah'), 'INFO', 'UNAUTHORIZED'),
-        ).to.eql(sdMessageOf(channel, 'blah'))
+        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
   })
