@@ -108,40 +108,52 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
     ...channel.publications.map(p => p.publisherPhoneNumber),
   ]
   return signal
-    .broadcastMessage(sock, recipients, format(channel, sdMessage))
+    .broadcastMessage(sock, recipients, format({ channel, sdMessage }))
     .then(() => countBroacast({ db, channel }))
 }
 
 // Dispatchable -> Promise<void>
-const relayBroadcastResponse = async ({ db, sock, channel, sdMessage, sender }) => {
+const relayBroadcastResponse = async ({ db, sock, channel, sender, sdMessage }) => {
   const recipients = channel.publications.map(p => p.publisherPhoneNumber)
-  const notice = notifications.broadcastResponseSent(channel)
+  const senderNotification = notifications.broadcastResponseSent(channel)
+  const messageType = messageTypes.BROADCAST_RESPONSE
+  //console.log('====== sdMessage.messageBody\n', sdMessage.messageBody)
   return signal
-    .broadcastMessage(sock, recipients, sdMessage)
+    .broadcastMessage(sock, recipients, format({ channel, sdMessage, messageType }))
     .then(() => countBroacast({ db, channel }))
-    .then(() => respond({ db, sock, channel, sender, message: notice }))
+    .then(() => respond({ db, sock, channel, sender, message: senderNotification }))
 }
 
 // (DbusInterface, string, Sender, string?, string?) -> Promise<void>
 const respond = ({ db, sock, channel, message, sender, command, status }) => {
-  const sdMessage = format(channel, sdMessageOf(channel, message), command, status)
+  const sdMessage = format({ channel, messageBody: message, command, status })
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessage)
     .then(() => countCommand({ db, channel }))
 }
 
 const notify = ({ sock, channel, notification, recipients }) => {
-  const sdMessage = format(channel, sdMessageOf(channel, notification))
+  const sdMessage = format({ channel, messageBody: notification })
   return signal.broadcastMessage(sock, recipients, sdMessage)
 }
 
-// string -> string
-const format = (channel, message, command, status) =>
-  // (1) Don't leak the channel name to non-subscribers
-  // (2) RENAME messages must provide their own header (b/c the channel name changed since it was queried)
-  status === statuses.UNAUTHORIZED || command === commands.RENAME
-    ? message
-    : { ...message, messageBody: `[${channel.name}]\n${message.messageBody}` }
+// TODO(aguestuser|2018-08-31) this strikes me as poorly factored
+// { Channel, string, string, string, string } -> string
+const format = ({ channel, sdMessage, messageBody, messageType, command, status }) => {
+  if (status === statuses.UNAUTHORIZED || command === commands.RENAME) {
+    // - Don't leak the channel name to non-subscribers
+    // - RENAME messages must provide their own header (b/c channel name changed since last query)
+    return sdMessageOf(channel, messageBody)
+  }
+  if (messageType === messageTypes.BROADCAST_RESPONSE) {
+    // flag subscriber responses so they don't look like broadcast messages
+    // throw out other fields on `sdMessage (like attachments)
+    return sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`)
+  }
+  // clone sdMessage if passed in to preserve attachements
+  const msg = sdMessage || sdMessageOf(channel, messageBody)
+  return { ...msg, messageBody: `[${channel.name}]\n${msg.messageBody}` }
+}
 
 const countBroacast = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here

@@ -183,7 +183,11 @@ describe('messenger service', () => {
           })
 
           it('forwards the message to channel admins', () => {
-            expect(broadcastMessageStub.getCall(0).args).to.eql([sock, publisherNumbers, sdMessage])
+            expect(broadcastMessageStub.getCall(0).args).to.eql([
+              sock,
+              publisherNumbers,
+              sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`),
+            ])
           })
 
           it('responds to sender with a broadcast response notification', () => {
@@ -303,37 +307,46 @@ describe('messenger service', () => {
   describe('formatting messages', () => {
     describe('broadcast messages', () => {
       it('adds a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah'))).to.eql(
-          sdMessageOf(channel, '[foobar]\nblah'),
-        )
+        const msg = { channel, sdMessage: sdMessageOf(channel, 'blah') }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
+
     describe('most commands', () => {
       it('adds a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah', 'JOIN', 'SUCCESS'))).to.eql(
-          sdMessageOf(channel, '[foobar]\nblah'),
-        )
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'JOIN',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
+
     describe('when message is the response to a RENAME comand', () => {
       it('does not add a prefix', () => {
-        expect(messenger.format(channel, sdMessageOf(channel, 'blah'), 'RENAME', 'SUCCESS')).to.eql(
-          sdMessageOf(channel, 'blah'),
-        )
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'RENAME',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
+
     describe('when the message is the response to an unauthorized command attempt', () => {
       it('does not add a prefix', () => {
-        expect(
-          messenger.format(channel, sdMessageOf(channel, 'blah'), 'INFO', 'UNAUTHORIZED'),
-        ).to.eql(sdMessageOf(channel, 'blah'))
+        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
-    describe('when there is no command but status is UNAUHTORIZED', () => {
+
+    describe('when there is no command but status is UNAUTHORIZED', () => {
       it('does not add a prefix', () => {
-        expect(
-          messenger.format(channel, sdMessageOf(channel, 'blah'), 'INFO', 'UNAUTHORIZED'),
-        ).to.eql(sdMessageOf(channel, 'blah'))
+        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
       })
     })
   })
