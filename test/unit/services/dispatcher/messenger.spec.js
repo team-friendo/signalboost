@@ -54,15 +54,27 @@ describe('messenger service', () => {
 
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
-      expect(messenger.parseMessageType({ command: 'foo', status: statuses.NOOP })).to.eql(
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, publisherSender)).to.eql(
         messageTypes.BROADCAST_MESSAGE,
       )
     })
 
-    it('parses a command response', () => {
-      expect(messenger.parseMessageType({ command: 'JOIN', status: statuses.SUCCESS })).to.eql(
-        messageTypes.COMMAND_RESPONSE,
+    it('parses a broadcast response from a subscriber', () => {
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, subscriberSender)).to.eql(
+        messageTypes.BROADCAST_RESPONSE,
       )
+    })
+
+    it('parses a broadcast response from a random person', () => {
+      const msg = { command: 'foo', status: statuses.NOOP }
+      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.BROADCAST_RESPONSE)
+    })
+
+    it('parses a command result', () => {
+      const msg = { command: 'JOIN', status: statuses.SUCCESS }
+      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.COMMAND_RESULT)
     })
 
     it('parses a publisher welcome message', () => {

@@ -6,12 +6,13 @@ const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESPONSE' | 'NOTIFICATION'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESULT' | 'NOTIFICATION'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
-  COMMAND_RESPONSE: 'COMMAND_RESPONSE',
+  BROADCAST_RESPONSE: 'BROADCAST_RESPONSE',
+  COMMAND_RESULT: 'COMMAND_RESULT',
   NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
 }
 
@@ -21,12 +22,14 @@ const messageTypes = {
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult)
+  const messageType = parseMessageType(commandResult, dispatchable.sender)
   switch (messageType) {
     case messageTypes.BROADCAST_MESSAGE:
-      return handleBroadcastMessage(dispatchable)
-    case messageTypes.COMMAND_RESPONSE:
-      return handleComandResponse({ commandResult, dispatchable })
+      return broadcast(dispatchable)
+    case messageTypes.BROADCAST_RESPONSE:
+      return handleBroadcastResponse(dispatchable)
+    case messageTypes.COMMAND_RESULT:
+      return handleCommandResult({ commandResult, dispatchable })
     case messageTypes.NEW_PUBLISHER_WELCOME:
       return handleNotification({ commandResult, dispatchable, messageType })
     default:
@@ -35,31 +38,29 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 }
 
 // CommandResult -> [MessageType, NotificationType]
-const parseMessageType = commandResult => {
-  if (commandResult.status === statuses.NOOP) return messageTypes.BROADCAST_MESSAGE
-  else if (isNewPublisher(commandResult)) return messageTypes.NEW_PUBLISHER_WELCOME
-  else return messageTypes.COMMAND_RESPONSE
+const parseMessageType = (commandResult, sender) => {
+  if (commandResult.status === statuses.NOOP) {
+    return sender.isPublisher ? messageTypes.BROADCAST_MESSAGE : messageTypes.BROADCAST_RESPONSE
+  } else if (isNewPublisher(commandResult)) return messageTypes.NEW_PUBLISHER_WELCOME
+  else return messageTypes.COMMAND_RESULT
 }
 
 const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
 
-const handleBroadcastMessage = dispatchable => {
-  if (dispatchable.sender.isPublisher) {
-    return broadcast(dispatchable)
+const handleBroadcastResponse = dispatchable => {
+  if (!(dispatchable.sender.isSubscriber && dispatchable.channel.responsesEnabled)) {
+    return respond({
+      ...dispatchable,
+      message: notifications.unauthorized,
+      status: statuses.UNAUTHORIZED,
+    })
   }
-  if (dispatchable.sender.isSubscriber && dispatchable.channel.responsesEnabled) {
-    return relayBroadcastResponse(dispatchable)
-  }
-  return respond({
-    ...dispatchable,
-    message: notifications.unauthorized,
-    status: statuses.UNAUTHORIZED,
-  })
+  return relayBroadcastResponse(dispatchable)
 }
 
 // TODO: rename this handleCommandResult
-const handleComandResponse = ({ commandResult, dispatchable }) => {
+const handleCommandResult = ({ commandResult, dispatchable }) => {
   const { message, command, status } = commandResult
   // TODO: respond to sender, notify all other publishers
   //  - exclude: HELP/INFO
@@ -71,7 +72,7 @@ const handleComandResponse = ({ commandResult, dispatchable }) => {
 const handleNotification = ({ commandResult, dispatchable, messageType }) => {
   const [cr, d] = [commandResult, dispatchable]
   return Promise.all([
-    handleComandResponse({ commandResult, dispatchable }),
+    handleCommandResult({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
       [messageTypes.NEW_PUBLISHER_WELCOME]: () =>
