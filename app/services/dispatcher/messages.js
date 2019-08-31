@@ -80,16 +80,24 @@ HELP / AYUDA
 --> shows this message
 
 ADD +15555555555
---> makes +1 (555) 555-5555 a publisher
+--> makes +1-555-555-5555 a publisher
+--> NOTE: country code required
 
 REMOVE +15555555555
---> removes +1 (555) 555-5555 as a publisher
+--> removes +1-555-555-5555 as a publisher
+--> NOTE: country code required
 
 GOODBYE / ADIOS
 --> removes you from the channel
 
 RENAME new name
 --> renames the channel to "new name"
+
+RESPONSES ON
+--> enables subscscriber to respond to announcements
+
+RESPONSES OFF
+--> disables subscriber from responding to announcements
 
 INFO
 --> shows basic stats about the channel
