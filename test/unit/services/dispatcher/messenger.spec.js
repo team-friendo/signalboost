@@ -214,15 +214,22 @@ describe('messenger service', () => {
             })
           })
 
-          it('does not broadcast the message or forward it to admins ', () => {
-            expect(broadcastSpy.callCount).to.eql(0)
+          it('forwards the message to channel admins', () => {
+            expect(broadcastMessageStub.getCall(0).args).to.eql([
+              sock,
+              publisherNumbers,
+              sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`),
+            ])
           })
 
-          it('sends an error message to the message sender', () => {
+          it('responds to sender with a broadcast response notification', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(channel, messages.notifications.unauthorized),
+              sdMessageOf(
+                channel,
+                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`,
+              ),
             ])
           })
         })
