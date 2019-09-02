@@ -167,7 +167,7 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(channel, messages.notifications.unauthorized),
+              sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.unauthorized}`),
             ])
           })
         })
@@ -186,7 +186,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`),
+              sdMessageOf(channel, `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}`),
             ])
           })
 
@@ -218,7 +218,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`),
+              sdMessageOf(channel, `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}`),
             ])
           })
 
@@ -313,14 +313,25 @@ describe('messenger service', () => {
 
   describe('formatting messages', () => {
     describe('broadcast messages', () => {
-      it('adds a prefix', () => {
+      it('adds a channel name prefix', () => {
         const msg = { channel, sdMessage: sdMessageOf(channel, 'blah') }
         expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
 
+    describe('broadcast responses', () => {
+      it('adds a forwarded message prefix', () => {
+        const msg = {
+          channel,
+          sdMessage: sdMessageOf(channel, 'blah'),
+          messageType: messageTypes.BROADCAST_RESPONSE,
+        }
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE...]\nblah'))
+      })
+    })
+
     describe('most commands', () => {
-      it('adds a prefix', () => {
+      it('adds a channel name prefix', () => {
         const msg = {
           channel,
           messageBody: 'blah',
@@ -331,7 +342,7 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when message is the response to a RENAME comand', () => {
+    describe('response to a RENAME comand', () => {
       it('does not add a prefix', () => {
         const msg = {
           channel,
@@ -343,17 +354,17 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when the message is the response to an unauthorized command attempt', () => {
+    describe('response to a HELP command', () => {
       it('does not add a prefix', () => {
-        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
-      })
-    })
-
-    describe('when there is no command but status is UNAUTHORIZED', () => {
-      it('does not add a prefix', () => {
-        const msg = { channel, messageBody: 'blah', command: 'INFO', status: 'UNAUTHORIZED' }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'HELP',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(
+          sdMessageOf(channel, '[COMMANDS I UNDERSTAND...]\nblah'),
+        )
       })
     })
   })

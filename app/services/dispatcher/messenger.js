@@ -141,16 +141,22 @@ const notify = ({ sock, channel, notification, recipients }) => {
 
 // TODO(aguestuser|2018-08-31) this strikes me as poorly factored
 // { Channel, string, string, string, string } -> string
-const format = ({ channel, sdMessage, messageBody, messageType, command, status }) => {
-  if (status === statuses.UNAUTHORIZED || command === commands.RENAME) {
-    // - Don't leak the channel name to non-subscribers
-    // - RENAME messages must provide their own header (b/c channel name changed since last query)
+const format = ({ channel, sdMessage, messageBody, messageType, command }) => {
+  if (command === commands.RENAME) {
+    // RENAME messages must provide their own header (b/c channel name changed since last query)
     return sdMessageOf(channel, messageBody)
+  }
+  if (command === commands.HELP) {
+    // RENAME messages must provide their own header (b/c channel name changed since last query)
+    return sdMessageOf(channel, `[${messages.prefixes.helpResponse}]\n${messageBody}`)
   }
   if (messageType === messageTypes.BROADCAST_RESPONSE) {
     // flag subscriber responses so they don't look like broadcast messages
     // throw out other fields on `sdMessage (like attachments)
-    return sdMessageOf(channel, `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}`)
+    return sdMessageOf(
+      channel,
+      `[${messages.prefixes.broadcastResponse}]\n${sdMessage.messageBody}`,
+    )
   }
   // clone sdMessage if passed in to preserve attachements
   const msg = sdMessage || sdMessageOf(channel, messageBody)
