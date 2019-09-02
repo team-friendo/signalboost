@@ -10,6 +10,12 @@ docker build -t signalboost:latest -f ./docker/signalboost.dockerfile .
 
 echo "--- ...rebuilt signalboost docker image!"
 
+echo "--- rebuilding signald docker image..."
+
+docker build -t signald:latest -f ./docker/signald.dockerfile .
+
+echo "--- ...rebuilt signald docker image!"
+
 echo "--- DONE!"
 
 pushd > /dev/null

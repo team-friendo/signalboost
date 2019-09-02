@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:buster
 
 MAINTAINER Team Friendo <team-friendo@riseup.net>
 LABEL Description="Image for running a signal-boost service overlaid on top of signal-cli."
@@ -18,6 +18,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     git \
     gnupg \
     libpq-dev \
+    locales \
+    netcat-openbsd \ # for debugging signald
     procps \
     pkg-config \
     python \
@@ -26,10 +28,22 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
    --fix-missing
 
 # ------------------------------------------------------
+# --- Set locale (necessary for proper UTF-8 encoding)
+# ------------------------------------------------------
+
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    locale-gen
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+ENV LC_CTYPE en_US.UTF-8
+
+# ------------------------------------------------------
 # --- Install Node.js
 # ------------------------------------------------------
 
-ENV NODE_VERSION 10.15.3
+ENV NODE_VERSION 12.9.1
 ENV YARN_VERSION 1.16.0
 
 RUN groupadd --gid 1000 node \
