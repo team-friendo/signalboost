@@ -1,5 +1,6 @@
 const net = require('net')
 const fs = require('fs-extra')
+const { pick, get, sortBy, last } = require('lodash')
 const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../constants')
 const {
@@ -139,25 +140,7 @@ const write = (sock, data) =>
     sock.write(signaldEncode(data), promisifyCallback(resolve, reject)),
   )
 
-const { pick, get, sortBy, last, isArray, isObject, isNumber, isString, mapValues } = require('lodash')
-const wtf8 = require('wtf-8')
-
-// TODO: unit tests for encoding emoji, etc!
-const signaldEncode = data => {
-  console.log('=========== inbound message: \n', JSON.stringify(data))
-  return JSON.stringify(data) + '\n'
-}
-   
-   //JSON.stringify(wtf8Encode(data)) + '\n'
-
-// NOTE(aguestuser|2019-08-27)
-// we need this to workaround node.js not properly encoding all unicode codepoints
-let wtf8Encode = it => {
-  if (isArray(it)) return it.map(wtf8Encode)
-  if (isObject(it)) return mapValues(it, wtf8Encode)
-  if (isNumber(it)) return it
-  if (isString(it)) return wtf8.encode(it)
-}
+const signaldEncode = data => JSON.stringify(data) + '\n'
 
 /********************
  * SIGNALD COMMANDS
