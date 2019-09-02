@@ -43,8 +43,8 @@ ENV LC_CTYPE en_US.UTF-8
 # --- Install Node.js
 # ------------------------------------------------------
 
-ENV NODE_VERSION 12.9.1
-ENV YARN_VERSION 1.16.0
+ENV NODE_VERSION 10.16.3
+ENV YARN_VERSION 1.17.3
 
 RUN groupadd --gid 1000 node \
   && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
