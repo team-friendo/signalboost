@@ -19,7 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     gnupg \
     libpq-dev \
     locales \
-    netcat-openbsd \ # for debugging signald
+    netcat-openbsd \
     procps \
     pkg-config \
     python \
