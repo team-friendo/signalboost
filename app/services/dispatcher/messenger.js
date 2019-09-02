@@ -49,7 +49,9 @@ const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcastResponse = dispatchable => {
-  if (!(dispatchable.sender.isSubscriber && dispatchable.channel.responsesEnabled)) {
+  // TODO(aguestuser|2019-09-02):
+  //  this allows anyone to respond. consider only allowing responses from subscribers
+  if (!dispatchable.channel.responsesEnabled) {
     return respond({
       ...dispatchable,
       message: notifications.unauthorized,
