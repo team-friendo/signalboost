@@ -367,5 +367,19 @@ describe('messenger service', () => {
         )
       })
     })
+
+    describe('response to an INFO command', () => {
+      it('does not add a prefix', () => {
+        const msg = {
+          channel,
+          messageBody: 'blah',
+          command: 'INFO',
+          status: 'SUCCESS',
+        }
+        expect(messenger.format(msg)).to.eql(
+          sdMessageOf(channel, 'blah'),
+        )
+      })
+    })
   })
 })

@@ -142,23 +142,21 @@ const notify = ({ sock, channel, notification, recipients }) => {
 // TODO(aguestuser|2018-08-31) this strikes me as poorly factored
 // { Channel, string, string, string, string } -> string
 const format = ({ channel, sdMessage, messageBody, messageType, command }) => {
-  if (command === commands.RENAME) {
+  const pfx = messages.prefixes
+  if (command === commands.RENAME || command === commands.INFO) {
     // RENAME messages must provide their own header (b/c channel name changed since last query)
+    // INFO messages don't need a name prefix b/c they provide channel name as part of message
     return sdMessageOf(channel, messageBody)
   }
   if (command === commands.HELP) {
-    // RENAME messages must provide their own header (b/c channel name changed since last query)
-    return sdMessageOf(channel, `[${messages.prefixes.helpResponse}]\n${messageBody}`)
+    // HELP responses flag that they contain commands instead of listing channel name
+    return sdMessageOf(channel, `[${pfx.helpResponse}]\n${messageBody}`)
   }
   if (messageType === messageTypes.BROADCAST_RESPONSE) {
-    // flag subscriber responses so they don't look like broadcast messages
-    // throw out other fields on `sdMessage (like attachments)
-    return sdMessageOf(
-      channel,
-      `[${messages.prefixes.broadcastResponse}]\n${sdMessage.messageBody}`,
-    )
+    // subscriber responses get a special header so they don't look like broadcast messages from admins
+    return sdMessageOf(channel, `[${pfx.broadcastResponse}]\n${sdMessage.messageBody}`)
   }
-  // clone sdMessage if passed in to preserve attachements
+  // base formatting for broadcast messages (we clone sdMessage to preserve attachements)
   const msg = sdMessage || sdMessageOf(channel, messageBody)
   return { ...msg, messageBody: `[${channel.name}]\n${msg.messageBody}` }
 }

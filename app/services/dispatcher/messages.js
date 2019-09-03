@@ -9,19 +9,12 @@ const support = `
 HOW IT WORKS
 ----------------------------
 
--> It's safe: Nobody can see anyone else's phone number on Signalboost, and all messages are encrypted.
--> It's simple: Messages on Signalboost are one-way: from admins to subscribers.
--> It's free: This app is built by activists for activists. We won't ever charge you fees or spy on you for money!
-
-----------------------------
-DETAILS
-----------------------------
-
--> When an admin sends a message to a Signalboost channel, it is broadcast to all channel subscribers (and other admins).
--> People can subscribe by sending a message that says "HELLO" (or "HOLA") to the channel phone number.
--> People can unsubscribe by sending a message that says "GOODBYE" (or "ADIOS") to the channel phone number.
--> People can interact with Signalboost with commands, which they can discover by sending a "HELP" message.
--> Learn more (and see the code that runs Signalboost) here: https://0xacab.org/team-friendo/signalboost
+-> Signalboost numbers have admins and subscribers.
+-> Admins send announcements that are broadcasted to subscribers.
+-> Subscribe to announcements by sending "HELLO" to a number.
+-> Unsubscribe by sending "GOODBYE" to the number.
+-> Send "HELP" to a number to list commands that make it do things.
+-> Learn more: https://0xacab.org/team-friendo/signalboost
 `
 
 const notifications = {
@@ -100,6 +93,7 @@ GOODBYE / ADIOS
 CHANNEL INFO:
 ---------------------------
 
+name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${channel.subscriptions.length}
 publishers: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}
@@ -111,6 +105,7 @@ ${support}`,
 CHANNEL INFO:
 ---------------------------
 
+name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${channel.subscriptions.length}
