@@ -129,6 +129,7 @@ const connect = () => {
   try {
     const sock = net.createConnection(signaldSocketPath)
     sock.setEncoding('utf8')
+    sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
     return Promise.reject(new Error(errorMessages.socketConnectError(e.message)))
