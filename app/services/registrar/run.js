@@ -21,24 +21,23 @@ const run = async (db, sock) => {
 
   // TODO(aguestuer|2019-09-3):
   //  - this trusts every single user's safety number every day to avoid unverified safety numbers
-  //  - it would be nice to have something more elegant, like...
-  //    - trust changes safety numbers ASAP when they change
-  //      (requires upstream fix: https://gitlab.com/thefinn93/signald/issues/4)
-  //    - only use this job for admins, b/c we can detect subscriber safety number changes via message send failure
-  //      (see: https://0xacab.org/team-friendo/signalboost/issues/86)
-  //    - allow admins to trust each other, making it feasible to not run this job if they are vigilant
-  //      (see: https://0xacab.org/team-friendo/signalboost/issues/87)
-  logger.log('----- Scheduling safety number checks...')
-  util.wait(signaldStartupTime).then(() =>
-    util.repeatEvery(() => {
-      logger.log('Running safety number check...')
-      return safetyNumberRegistrar
-        .trustAll(db, sock)
-        .then(res => logger.log(`Safety number check results: ${JSON.stringify(res)}`))
-        .catch(logger.error)
-    }, safetyNumberCheckInterval),
-  )
-  logger.log(`----- Scheduled safety number checks.`)
+  //  - it fails for 160 out of 168 users on prod
+  //  - after repeated calls it causes signald to fall down (presumably b/c of repeated NPE's)
+  //  - comment it for now, and see if we can find a clever fix
+  //  - one hypothesis: perhaps batching safety number checks to batches of 8 might help?
+  //  - for more details see: https://0xacab.org/team-friendo/signalboost/merge_requests/73
+  //
+  // logger.log('----- Scheduling safety number checks...')
+  // util.wait(signaldStartupTime).then(() =>
+  //   util.repeatEvery(() => {
+  //     logger.log('Running safety number check...')
+  //     return safetyNumberRegistrar
+  //       .trustAll(db, sock)
+  //       .then(res => logger.log(`Safety number check results: ${JSON.stringify(res)}`))
+  //       .catch(logger.error)
+  //   }, safetyNumberCheckInterval),
+  // )
+  // logger.log(`----- Scheduled safety number checks.`)
 
   logger.log('--- Registrar running!')
 }
