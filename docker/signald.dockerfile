@@ -43,20 +43,27 @@ ENV LC_CTYPE en_US.UTF-8
 # --- Install and Configure JVM
 # ------------------------------------------------------
 
+# Signald attachments break if we use jdk11 (why?!??),
+# but buster does not provide a jdk8 installation candidate,
+# so we grab one from sid package repository...
+RUN echo "deb http://ftp.us.debian.org/debian sid main" \
+    | tee -a /etc/apt/sources.list \
+    && apt-get update -qq
+
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    openjdk-11-jdk-headless
+    openjdk-8-jdk-headless
 
-ENV JAVA_HOME "/usr/lib/jvm/java-11-openjdk-amd64"
-
+ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
 
 # ------------------------------------------------------
-# --- Install and Configure Signald
+# --- Install and Configure Signald (from source)
 # ------------------------------------------------------
 
-ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
+# store most recent HEAD of master...
+ ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
 
 # hack to avoid halting error on (unnecessary) `sudo` invocations
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
+ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # fetch repo at desired commit
 RUN git init && \
