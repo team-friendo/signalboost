@@ -1,4 +1,5 @@
 const { isPhoneNumber } = require('../validations/phoneNumber')
+const { defaultLanguage } = require('../../config')
 
 const publicationOf = (sequelize, DataTypes) => {
   const publication = sequelize.define(
@@ -19,6 +20,11 @@ const publicationOf = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         alowNull: false,
         validate: isPhoneNumber,
+      },
+      language: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: defaultLanguage,
       },
     },
     {},

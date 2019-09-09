@@ -41,6 +41,7 @@ services:
     env_file: .env
     environment:
       PROJECT_ROOT: "$PWD"
+      DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
       NODE_ENV: production
     ports:
       - 3000:3000

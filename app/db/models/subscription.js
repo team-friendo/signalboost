@@ -1,4 +1,5 @@
 const { isPhoneNumber } = require('../validations/phoneNumber')
+const { defaultLanguage } = require('../../config')
 
 const subscriptionOf = (sequelize, DataTypes) => {
   const subscription = sequelize.define(
@@ -19,6 +20,11 @@ const subscriptionOf = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         alowNull: false,
         validate: isPhoneNumber,
+      },
+      language: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: defaultLanguage,
       },
     },
     {},

@@ -3,4 +3,8 @@ const statuses = {
   ERROR: 'ERROR',
 }
 
-module.exports = { statuses }
+const languages = {
+  EN: 'EN',
+}
+
+module.exports = { statuses, languages }
