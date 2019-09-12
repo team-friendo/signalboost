@@ -154,9 +154,11 @@ const format = ({ channel, sdMessage, messageBody, messageType, command }) => {
   }
   if (messageType === messageTypes.BROADCAST_RESPONSE) {
     // subscriber responses get a special header so they don't look like broadcast messages from admins
-    return sdMessageOf(channel, `[${pfx.broadcastResponse}]\n${sdMessage.messageBody}`)
+    // we clone message to preserve attachments
+    const msg = sdMessage || sdMessageOf(channel, messageBody)
+    return { ...msg, messageBody: `[${pfx.broadcastResponse}]\n${sdMessage.messageBody}` }
   }
-  // base formatting for broadcast messages (we clone sdMessage to preserve attachements)
+  // base formatting for broadcast messages;  we clone sdMessage to preserve attachements
   const msg = sdMessage || sdMessageOf(channel, messageBody)
   return { ...msg, messageBody: `[${channel.name}]\n${msg.messageBody}` }
 }
