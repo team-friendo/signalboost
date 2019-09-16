@@ -7,4 +7,10 @@ const languages = {
   EN: 'EN',
 }
 
-module.exports = { statuses, languages }
+const senderTypes = {
+  PUBLISHER: 'PUBLISHER',
+  SUBSCRIBER: 'SUBSCRIBER',
+  RANDOM: 'RANDOM',
+}
+
+module.exports = { statuses, languages, senderTypes }
