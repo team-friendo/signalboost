@@ -1,8 +1,13 @@
-const { values } = require('lodash')
 const { languages } = require('../../../constants')
 
-const messagesIn = lang => (_isValid(lang) ? require(`./${lang}`) : {})
-const _isValid = lang => values(languages).includes(lang)
+const messagesIn = lang => {
+  switch(lang) {
+    case languages.EN:
+      return require('./EN')
+    default:
+      return {}
+  }
+}
 
 module.exports = {
   messagesIn,

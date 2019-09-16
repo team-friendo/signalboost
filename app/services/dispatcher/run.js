@@ -80,11 +80,16 @@ const parseMessage = inboundMsg => {
 const shouldRelay = sdMessage =>
   sdMessage.type === signal.messageTypes.MESSAGE && get(sdMessage, 'data.dataMessage')
 
-const classifySender = async (db, channelPhoneNumber, sender) => ({
-  phoneNumber: sender,
-  isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
-  isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
-})
+const classifySender = async (db, channelPhoneNumber, senderPhoneNumber) => {
+  const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
+  const language = await channelRepository.resolveSenderLanguage(
+    db,
+    channelPhoneNumber,
+    senderPhoneNumber,
+    type,
+  )
+  return { phoneNumber: senderPhoneNumber, type, language }
+}
 
 // EXPORTS
 

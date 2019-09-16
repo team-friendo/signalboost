@@ -1,7 +1,9 @@
 const channelRepository = require('../../db/repositories/channel')
 const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
-const { commandResponses } = require('./messages')
+const { messagesIn } = require('./messages')
+const { senderTypes } = require('../../constants')
+const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
 const { lowerCase } = require('lodash')
 
 /**
@@ -80,7 +82,7 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
-  }[command] || noop)()
+  }[command] || (() => noop(sender)))()
   return { commandResult: { ...result, command }, dispatchable }
 }
 
@@ -91,8 +93,10 @@ const execute = async (executable, dispatchable) => {
 // ADD
 
 const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
-  const cr = commandResponses.publisher.add
-  if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  const cr = messagesIn(sender.language).commandResponses.publisher.add
+  if (!(sender.type === PUBLISHER)) {
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+  }
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
   return addPublisher(db, channel, sender, phoneNumber, cr)
@@ -113,36 +117,36 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
 //TODO: extract `executable` from `dispatchable`
 
 const maybeShowHelp = async (db, channel, sender) => {
-  const cr = commandResponses.help
-  return sender.isPublisher || sender.isSubscriber
-    ? showHelp(db, channel, sender, cr)
-    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  const cr = messagesIn(sender.language).commandResponses.help
+  return sender.type === RANDOM
+    ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+    : showHelp(db, channel, sender, cr)
 }
 
 const showHelp = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.isPublisher ? cr.publisher : cr.subscriber,
+  message: sender.type === PUBLISHER ? cr.publisher : cr.subscriber,
 })
 
 // INFO
 
 const maybeShowInfo = async (db, channel, sender) => {
-  const cr = commandResponses.info
-  return sender.isPublisher || sender.isSubscriber
-    ? showInfo(db, channel, sender, cr)
-    : { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  const cr = messagesIn(sender.language).commandResponses.info
+  return sender.type === RANDOM
+    ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+    : showInfo(db, channel, sender, cr)
 }
 
 const showInfo = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.isPublisher ? cr.publisher(channel) : cr.subscriber(channel),
+  message: sender.type === PUBLISHER ? cr.publisher(channel) : cr.subscriber(channel),
 })
 
 // JOIN
 
 const maybeAddSubscriber = async (db, channel, sender) => {
-  const cr = commandResponses.subscriber.add
-  return sender.isSubscriber
+  const cr = messagesIn(sender.language).commandResponses.subscriber.add
+  return sender.type === SUBSCRIBER
     ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
     : addSubscriber(db, channel, sender, cr)
 }
@@ -156,16 +160,17 @@ const addSubscriber = (db, channel, sender, cr) =>
 // LEAVE
 
 const maybeRemoveSender = async (db, channel, sender) => {
-  const cr = commandResponses.subscriber.remove
-  return sender.isSubscriber || sender.isPublisher
-    ? removeSender(db, channel, sender, cr)
-    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+  const cr = messagesIn(sender.language).commandResponses.subscriber.remove
+  return sender.type === RANDOM
+    ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+    : removeSender(db, channel, sender, cr)
 }
 
 const removeSender = (db, channel, sender, cr) => {
-  const remove = sender.isPublisher
-    ? channelRepository.removePublisher
-    : channelRepository.removeSubscriber
+  const remove =
+    sender.type === PUBLISHER
+      ? channelRepository.removePublisher
+      : channelRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -174,8 +179,9 @@ const removeSender = (db, channel, sender, cr) => {
 // REMOVE
 
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
-  const cr = commandResponses.publisher.remove
-  if (!sender.isPublisher) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  const cr = messagesIn(sender.language).commandResponses.publisher.remove
+  if (!(sender.type === PUBLISHER))
+    return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
 
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(publisherNumber)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
@@ -195,8 +201,8 @@ const removePublisher = async (db, channel, publisherNumber, cr) =>
 // RENAME
 
 const maybeRenameChannel = async (db, channel, sender, newName) => {
-  const cr = commandResponses.rename
-  return sender.isPublisher
+  const cr = messagesIn(sender.language).commandResponses.rename
+  return sender.type === PUBLISHER
     ? renameChannel(db, channel, newName, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
@@ -210,8 +216,8 @@ const renameChannel = (db, channel, newName, cr) =>
     )
 
 const maybeToggleResponses = async (db, channel, sender, newSetting) => {
-  const cr = commandResponses.toggleResponses
-  if (!sender.isPublisher) {
+  const cr = messagesIn(sender.language).commandResponses.toggleResponses
+  if (!(sender.type === PUBLISHER)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
   if (!['on', 'off'].includes(lowerCase(newSetting))) {
@@ -227,10 +233,10 @@ const toggleResponses = (db, channel, newSetting, sender, cr) =>
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
 
 // NOOP
-const noop = () =>
+const noop = sender =>
   Promise.resolve({
     status: statuses.NOOP,
-    message: commandResponses.noop,
+    message: messagesIn(sender.language).notifications.noop,
   })
 
 /**********

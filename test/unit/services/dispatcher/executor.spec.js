@@ -8,13 +8,15 @@ import {
   parseCommand,
   processCommand,
 } from '../../../../app/services/dispatcher/executor'
-import { commandResponses as CR } from '../../../../app/services/dispatcher/messages'
+import { languages, senderTypes } from '../../../../app/constants'
+import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
 import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
+import { messagesIn } from '../../../../app/services/dispatcher/messages'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -158,9 +160,20 @@ describe('executor service', () => {
 
     describe('TOGGLE_RESPONSES command', () => {
       it('parses an TOGGLE_RESPONSES command (regardless of case or whitespace)', () => {
-        expect(parseCommand('RESPONSES')).to.eql({ command: commands.TOGGLE_RESPONSES, payload: '' })
-        expect(parseCommand('responses')).to.eql({ command: commands.TOGGLE_RESPONSES, payload: '' })
-        expect(parseCommand(' responses ')).to.eql({ command: commands.TOGGLE_RESPONSES, payload: '' })
+        expect(parseCommand('RESPONSES')).to.eql({
+          command: commands.TOGGLE_RESPONSES,
+          payload: '',
+        })
+        expect(parseCommand('responses')).to.eql({
+          command: commands.TOGGLE_RESPONSES,
+          payload: '',
+        })
+        expect(
+          parseCommand(' responses '),
+        ).to.eql({
+          command: commands.TOGGLE_RESPONSES,
+          payload: '',
+        })
       })
 
       it('parses the payload from an TOGGLE_RESPONSES command', () => {
@@ -188,18 +201,18 @@ describe('executor service', () => {
     }
     const publisher = {
       phoneNumber: '+11111111111',
-      isPublisher: true,
-      isSubscriber: false,
+      type: senderTypes.PUBLISHER,
+      language: languages.EN,
     }
     const subscriber = {
       phoneNumber: '+12222222222',
-      isPublisher: false,
-      isSubscriber: true,
+      type: senderTypes.SUBSCRIBER,
+      language: languages.EN,
     }
     const randomPerson = {
       phoneNumber: '+13333333333',
-      isPublisher: false,
-      isSubscriber: false,
+      type: senderTypes.RANDOM,
+      language: languages.EN,
     }
 
     describe('ADD command', () => {
@@ -912,7 +925,7 @@ describe('executor service', () => {
           commandResult: {
             command: commands.NOOP,
             status: statuses.NOOP,
-            message: CR.noop,
+            message: messagesIn('EN').notifications.noop,
           },
           dispatchable,
         })

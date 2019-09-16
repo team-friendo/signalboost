@@ -1,4 +1,7 @@
 const { Op } = require('sequelize')
+const { times } = require('lodash')
+const { defaultLanguage } = require('../../config')
+const { senderTypes } = require('../../constants')
 
 // PUBLIC FUNCTIONS
 
@@ -60,6 +63,28 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
     db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
+const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
+  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, senderPhoneNumber)
+  if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
+    return Promise.resolve(senderTypes.PUBLISHER)
+  }
+  if (db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
+    return Promise.resolve(senderTypes.SUBSCRIBER)
+  }
+  return Promise.resolve(senderTypes.RANDOM)
+}
+
+const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, senderType) => {
+  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, senderPhoneNumber)
+  if (senderType === senderTypes.PUBLISHER) {
+    return (await db.publication.findOne({ channelPhoneNumber, publisherPhoneNumber })).language
+  }
+  if (senderType === senderTypes.SUBSCRIBER) {
+    return (await db.publication.findOne({ channelPhoneNumber, subscriberPhoneNumber })).language
+  }
+  return defaultLanguage
+}
+
 const isPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }).then(Boolean)
 
@@ -104,5 +129,7 @@ module.exports = {
   isSubscriber,
   removePublisher,
   removeSubscriber,
+  resolveSenderType,
+  resolveSenderLanguage,
   update,
 }
