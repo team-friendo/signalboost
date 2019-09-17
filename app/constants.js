@@ -8,6 +8,7 @@ const statuses = {
 // TODO: move languages to somewhere more language-y!
 const languages = {
   EN: 'EN',
+  ES: 'ES',
 }
 
 module.exports = { statuses, languages }

@@ -1,6 +1,7 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import messagesEN from '../../../../app/services/dispatcher/messages/EN'
+import messagesES from '../../../../app/services/dispatcher/messages/ES'
 import { publicationFactory } from '../../../support/factories/publication'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
@@ -46,6 +47,10 @@ describe('messages module', () => {
 
     it('resolves messages for EN flag', () => {
       expect(messagesIn(languages.EN)).to.eql(messagesEN)
+    })
+
+    it('resolves messages for ES flag', () => {
+      expect(messagesIn(languages.ES)).to.eql(messagesES)
     })
   })
 })
