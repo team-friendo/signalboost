@@ -72,10 +72,7 @@ describe('dispatcher service', () => {
         .returns(languages.EN)
 
       processCommandStub = sinon.stub(executor, 'processCommand').returns(
-        Promise.resolve({
-          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
-          dispatchable: { db, sock, channel, sender: authenticatedSender, sdMessage: sdOutMessage },
-        }),
+        Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }),
       )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())

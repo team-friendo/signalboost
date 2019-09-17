@@ -60,9 +60,11 @@ const dispatch = async (db, sock, inboundMsg) => {
         channelRepository.findDeep(db, channelPhoneNumber),
         classifySender(db, channelPhoneNumber, inboundMsg.data.source),
       ])
-      return messenger.dispatch(
-        await executor.processCommand({ db, sock, channel, sender, sdMessage }),
-      )
+      const dispatchable = { db, sock, channel, sender, sdMessage }
+      return messenger.dispatch({
+        dispatchable,
+        commandResult: await executor.processCommand(dispatchable),
+      })
     } catch (e) {
       logger.error(e)
     }

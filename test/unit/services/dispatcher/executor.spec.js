@@ -168,9 +168,7 @@ describe('executor service', () => {
           command: commands.TOGGLE_RESPONSES,
           payload: '',
         })
-        expect(
-          parseCommand(' responses '),
-        ).to.eql({
+        expect(parseCommand(' responses ')).to.eql({
           command: commands.TOGGLE_RESPONSES,
           payload: '',
         })
@@ -251,13 +249,10 @@ describe('executor service', () => {
 
             it('returns a SUCCESS status / message and publisher number as payload', async () => {
               expect(await processCommand(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.ADD,
-                  status: statuses.SUCCESS,
-                  message: CR.publisher.add.success(publisherPhoneNumber),
-                  payload: publisherPhoneNumber,
-                },
-                dispatchable,
+                command: commands.ADD,
+                status: statuses.SUCCESS,
+                message: CR.publisher.add.success(publisherPhoneNumber),
+                payload: publisherPhoneNumber,
               })
             })
           })
@@ -267,12 +262,9 @@ describe('executor service', () => {
 
             it('returns an ERROR status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.ADD,
-                  status: statuses.ERROR,
-                  message: CR.publisher.add.dbError(publisherPhoneNumber),
-                },
-                dispatchable,
+                command: commands.ADD,
+                status: statuses.ERROR,
+                message: CR.publisher.add.dbError(publisherPhoneNumber),
               })
             })
           })
@@ -289,12 +281,9 @@ describe('executor service', () => {
 
           it('returns a ERROR status/message', () => {
             expect(result).to.eql({
-              commandResult: {
-                command: commands.ADD,
-                status: statuses.ERROR,
-                message: CR.publisher.add.invalidNumber('foo'),
-              },
-              dispatchable,
+              command: commands.ADD,
+              status: statuses.ERROR,
+              message: CR.publisher.add.invalidNumber('foo'),
             })
           })
         })
@@ -316,12 +305,9 @@ describe('executor service', () => {
 
         it('returns an UNAUTHORIZED status/message', () => {
           expect(result).to.eql({
-            commandResult: {
-              command: commands.ADD,
-              status: statuses.UNAUTHORIZED,
-              message: CR.publisher.add.unauthorized,
-            },
-            dispatchable,
+            command: commands.ADD,
+            status: statuses.UNAUTHORIZED,
+            message: CR.publisher.add.unauthorized,
           })
         })
       })
@@ -335,12 +321,9 @@ describe('executor service', () => {
 
         it('sends a help message to sender', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.HELP,
-              status: statuses.SUCCESS,
-              message: CR.help.publisher,
-            },
-            dispatchable,
+            command: commands.HELP,
+            status: statuses.SUCCESS,
+            message: CR.help.publisher,
           })
         })
       })
@@ -350,12 +333,9 @@ describe('executor service', () => {
 
         it('sends a help message to sender', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.HELP,
-              status: statuses.SUCCESS,
-              message: CR.help.subscriber,
-            },
-            dispatchable,
+            command: commands.HELP,
+            status: statuses.SUCCESS,
+            message: CR.help.subscriber,
           })
         })
       })
@@ -365,12 +345,9 @@ describe('executor service', () => {
 
         it('sends an UNAUTHORIZED message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.HELP,
-              status: statuses.UNAUTHORIZED,
-              message: CR.help.unauthorized,
-            },
-            dispatchable,
+            command: commands.HELP,
+            status: statuses.UNAUTHORIZED,
+            message: CR.help.unauthorized,
           })
         })
       })
@@ -384,12 +361,9 @@ describe('executor service', () => {
 
         it('sends an info message with more information', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.INFO,
-              status: statuses.SUCCESS,
-              message: CR.info.publisher(channel),
-            },
-            dispatchable,
+            command: commands.INFO,
+            status: statuses.SUCCESS,
+            message: CR.info.publisher(channel),
           })
         })
       })
@@ -399,12 +373,9 @@ describe('executor service', () => {
 
         it('sends an info message with less information', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.INFO,
-              status: statuses.SUCCESS,
-              message: CR.info.subscriber(channel),
-            },
-            dispatchable,
+            command: commands.INFO,
+            status: statuses.SUCCESS,
+            message: CR.info.subscriber(channel),
           })
         })
       })
@@ -414,12 +385,9 @@ describe('executor service', () => {
 
         it('sends an UNAUTHORIZED message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.INFO,
-              status: statuses.UNAUTHORIZED,
-              message: CR.info.unauthorized,
-            },
-            dispatchable,
+            command: commands.INFO,
+            status: statuses.UNAUTHORIZED,
+            message: CR.info.unauthorized,
           })
         })
       })
@@ -440,12 +408,9 @@ describe('executor service', () => {
 
           it('returns SUCCESS status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.JOIN,
-                status: statuses.SUCCESS,
-                message: CR.subscriber.add.success(channel),
-              },
-              dispatchable,
+              command: commands.JOIN,
+              status: statuses.SUCCESS,
+              message: CR.subscriber.add.success(channel),
             })
           })
         })
@@ -455,12 +420,9 @@ describe('executor service', () => {
 
           it('returns ERROR status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.JOIN,
-                status: statuses.ERROR,
-                message: CR.subscriber.add.error,
-              },
-              dispatchable,
+              command: commands.JOIN,
+              status: statuses.ERROR,
+              message: CR.subscriber.add.error,
             })
           })
         })
@@ -478,12 +440,9 @@ describe('executor service', () => {
 
         it('returns NOOP status/message', () => {
           expect(result).to.eql({
-            commandResult: {
-              command: commands.JOIN,
-              status: statuses.NOOP,
-              message: CR.subscriber.add.noop,
-            },
-            dispatchable,
+            command: commands.JOIN,
+            status: statuses.NOOP,
+            message: CR.subscriber.add.noop,
           })
         })
       })
@@ -513,12 +472,9 @@ describe('executor service', () => {
 
           it('returns SUCCESS status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.LEAVE,
-                status: statuses.SUCCESS,
-                message: CR.subscriber.remove.success,
-              },
-              dispatchable,
+              command: commands.LEAVE,
+              status: statuses.SUCCESS,
+              message: CR.subscriber.remove.success,
             })
           })
         })
@@ -527,12 +483,9 @@ describe('executor service', () => {
 
           it('returns ERROR status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.LEAVE,
-                status: statuses.ERROR,
-                message: CR.subscriber.remove.error,
-              },
-              dispatchable,
+              command: commands.LEAVE,
+              status: statuses.ERROR,
+              message: CR.subscriber.remove.error,
             })
           })
         })
@@ -549,12 +502,9 @@ describe('executor service', () => {
 
         it('returns UNAUTHORIZED status/message', () => {
           expect(result).to.eql({
-            commandResult: {
-              command: commands.LEAVE,
-              status: statuses.UNAUTHORIZED,
-              message: CR.subscriber.remove.unauthorized,
-            },
-            dispatchable,
+            command: commands.LEAVE,
+            status: statuses.UNAUTHORIZED,
+            message: CR.subscriber.remove.unauthorized,
           })
         })
       })
@@ -581,12 +531,9 @@ describe('executor service', () => {
 
         it('returns SUCCESS status/message', () => {
           expect(result).to.eql({
-            commandResult: {
-              command: commands.LEAVE,
-              status: statuses.SUCCESS,
-              message: CR.subscriber.remove.success,
-            },
-            dispatchable,
+            command: commands.LEAVE,
+            status: statuses.SUCCESS,
+            message: CR.subscriber.remove.success,
           })
         })
       })
@@ -635,12 +582,9 @@ describe('executor service', () => {
 
               it('returns a SUCCESS status and message', async () => {
                 expect(await processCommand(dispatchable)).to.eql({
-                  commandResult: {
-                    command: commands.REMOVE,
-                    status: statuses.SUCCESS,
-                    message: CR.publisher.remove.success(publisherPhoneNumber),
-                  },
-                  dispatchable,
+                  command: commands.REMOVE,
+                  status: statuses.SUCCESS,
+                  message: CR.publisher.remove.success(publisherPhoneNumber),
                 })
               })
             })
@@ -650,12 +594,9 @@ describe('executor service', () => {
 
               it('returns an ERROR status/message', async () => {
                 expect(await processCommand(dispatchable)).to.eql({
-                  commandResult: {
-                    command: commands.REMOVE,
-                    status: statuses.ERROR,
-                    message: CR.publisher.remove.dbError(publisherPhoneNumber),
-                  },
-                  dispatchable,
+                  command: commands.REMOVE,
+                  status: statuses.ERROR,
+                  message: CR.publisher.remove.dbError(publisherPhoneNumber),
                 })
               })
             })
@@ -670,12 +611,9 @@ describe('executor service', () => {
 
             it('returns a SUCCESS status / NOOP message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.REMOVE,
-                  status: statuses.ERROR,
-                  message: CR.publisher.remove.targetNotPublisher(publisherPhoneNumber),
-                },
-                dispatchable,
+                command: commands.REMOVE,
+                status: statuses.ERROR,
+                message: CR.publisher.remove.targetNotPublisher(publisherPhoneNumber),
               })
             })
           })
@@ -693,12 +631,9 @@ describe('executor service', () => {
 
           it('returns a SUCCESS status / NOOP message', () => {
             expect(result).to.eql({
-              commandResult: {
-                command: commands.REMOVE,
-                status: statuses.ERROR,
-                message: CR.publisher.remove.invalidNumber('foo'),
-              },
-              dispatchable,
+              command: commands.REMOVE,
+              status: statuses.ERROR,
+              message: CR.publisher.remove.invalidNumber('foo'),
             })
           })
         })
@@ -717,12 +652,9 @@ describe('executor service', () => {
 
         it('returns an SUCCESS status / NOT_NOOP message', () => {
           expect(result).to.eql({
-            commandResult: {
-              command: commands.REMOVE,
-              status: statuses.UNAUTHORIZED,
-              message: CR.publisher.remove.unauthorized,
-            },
-            dispatchable,
+            command: commands.REMOVE,
+            status: statuses.UNAUTHORIZED,
+            message: CR.publisher.remove.unauthorized,
           })
         })
       })
@@ -746,12 +678,9 @@ describe('executor service', () => {
 
           it('returns SUCCESS status / message', () => {
             expect(result).to.eql({
-              commandResult: {
-                command: commands.RENAME,
-                status: statuses.SUCCESS,
-                message: CR.rename.success(channel.name, 'foo'),
-              },
-              dispatchable,
+              command: commands.RENAME,
+              status: statuses.SUCCESS,
+              message: CR.rename.success(channel.name, 'foo'),
             })
           })
         })
@@ -764,12 +693,9 @@ describe('executor service', () => {
 
           it('returns ERROR status / message', () => {
             expect(result).to.eql({
-              commandResult: {
-                command: commands.RENAME,
-                status: statuses.ERROR,
-                message: CR.rename.dbError(channel.name, 'foo'),
-              },
-              dispatchable,
+              command: commands.RENAME,
+              status: statuses.ERROR,
+              message: CR.rename.dbError(channel.name, 'foo'),
             })
           })
         })
@@ -780,12 +706,9 @@ describe('executor service', () => {
 
         it('returns UNAUTHORIZED status / message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.RENAME,
-              status: statuses.UNAUTHORIZED,
-              message: CR.rename.unauthorized,
-            },
-            dispatchable,
+            command: commands.RENAME,
+            status: statuses.UNAUTHORIZED,
+            message: CR.rename.unauthorized,
           })
         })
       })
@@ -795,12 +718,9 @@ describe('executor service', () => {
 
         it('returns UNAUTHORIZED status / message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.RENAME,
-              status: statuses.UNAUTHORIZED,
-              message: CR.rename.unauthorized,
-            },
-            dispatchable,
+            command: commands.RENAME,
+            status: statuses.UNAUTHORIZED,
+            message: CR.rename.unauthorized,
           })
         })
       })
@@ -833,12 +753,9 @@ describe('executor service', () => {
 
             it('returns a SUCCESS status', async () => {
               expect(await processCommand(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.TOGGLE_RESPONSES,
-                  status: statuses.SUCCESS,
-                  message: CR.toggleResponses.success('ON'),
-                },
-                dispatchable,
+                command: commands.TOGGLE_RESPONSES,
+                status: statuses.SUCCESS,
+                message: CR.toggleResponses.success('ON'),
               })
             })
           })
@@ -850,12 +767,9 @@ describe('executor service', () => {
 
             it('returns an ERROR status', async () => {
               expect(await processCommand(dispatchable)).to.eql({
-                commandResult: {
-                  command: commands.TOGGLE_RESPONSES,
-                  status: statuses.ERROR,
-                  message: CR.toggleResponses.dbError('ON'),
-                },
-                dispatchable,
+                command: commands.TOGGLE_RESPONSES,
+                status: statuses.ERROR,
+                message: CR.toggleResponses.dbError('ON'),
               })
             })
           })
@@ -867,12 +781,9 @@ describe('executor service', () => {
 
           it('returns an ERROR status', async () => {
             expect(await processCommand(dispatchable)).to.eql({
-              commandResult: {
-                command: commands.TOGGLE_RESPONSES,
-                status: statuses.ERROR,
-                message: CR.toggleResponses.invalidSetting('FOOBAR'),
-              },
-              dispatchable,
+              command: commands.TOGGLE_RESPONSES,
+              status: statuses.ERROR,
+              message: CR.toggleResponses.invalidSetting('FOOBAR'),
             })
           })
         })
@@ -885,12 +796,9 @@ describe('executor service', () => {
 
         it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.TOGGLE_RESPONSES,
-              status: statuses.UNAUTHORIZED,
-              message: CR.toggleResponses.unauthorized,
-            },
-            dispatchable,
+            command: commands.TOGGLE_RESPONSES,
+            status: statuses.UNAUTHORIZED,
+            message: CR.toggleResponses.unauthorized,
           })
         })
       })
@@ -902,12 +810,9 @@ describe('executor service', () => {
 
         it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            commandResult: {
-              command: commands.TOGGLE_RESPONSES,
-              status: statuses.UNAUTHORIZED,
-              message: CR.toggleResponses.unauthorized,
-            },
-            dispatchable,
+            command: commands.TOGGLE_RESPONSES,
+            status: statuses.UNAUTHORIZED,
+            message: CR.toggleResponses.unauthorized,
           })
         })
       })
@@ -922,12 +827,9 @@ describe('executor service', () => {
           sdMessage: sdMessageOf(channel, 'foo'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          commandResult: {
-            command: commands.NOOP,
-            status: statuses.NOOP,
-            message: messagesIn('EN').notifications.noop,
-          },
-          dispatchable,
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: messagesIn('EN').notifications.noop,
         })
       })
     })

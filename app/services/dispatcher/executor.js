@@ -83,7 +83,7 @@ const execute = async (executable, dispatchable) => {
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
   }[command] || (() => noop(sender)))()
-  return { commandResult: { ...result, command }, dispatchable }
+  return { ...result, command }
 }
 
 /********************
