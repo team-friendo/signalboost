@@ -3,6 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { EventEmitter } from 'events'
+import { senderTypes, languages } from '../../../../app/constants'
 import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
@@ -21,8 +22,8 @@ describe('dispatcher service', () => {
     const sender = genPhoneNumber()
     const authenticatedSender = {
       phoneNumber: sender,
-      isPublisher: true,
-      isSubscriber: true,
+      language: languages.EN,
+      type: senderTypes.PUBLISHER,
     }
     const sdInMessage = {
       type: 'message',
@@ -41,8 +42,8 @@ describe('dispatcher service', () => {
 
     let findAllDeepStub,
       findDeepStub,
-      isPublisherStub,
-      isSubscriberStub,
+      resolveSenderTypeStub,
+      resolveSenderLanguageStub,
       subscribeStub,
       processCommandStub,
       dispatchStub
@@ -62,17 +63,16 @@ describe('dispatcher service', () => {
 
       findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
-      isPublisherStub = sinon.stub(channelRepository, 'isPublisher').returns(Promise.resolve(true))
+      resolveSenderTypeStub = sinon
+        .stub(channelRepository, 'resolveSenderType')
+        .returns(Promise.resolve(senderTypes.PUBLISHER))
 
-      isSubscriberStub = sinon
-        .stub(channelRepository, 'isSubscriber')
-        .returns(Promise.resolve(true))
+      resolveSenderLanguageStub = sinon
+        .stub(channelRepository, 'resolveSenderLanguage')
+        .returns(languages.EN)
 
       processCommandStub = sinon.stub(executor, 'processCommand').returns(
-        Promise.resolve({
-          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
-          dispatchable: { db, sock, channel, sender: authenticatedSender, sdMessage: sdOutMessage },
-        }),
+        Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }),
       )
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
@@ -85,8 +85,8 @@ describe('dispatcher service', () => {
     afterEach(() => {
       findAllDeepStub.restore()
       findDeepStub.restore()
-      isPublisherStub.restore()
-      isSubscriberStub.restore()
+      resolveSenderTypeStub.restore()
+      resolveSenderLanguageStub.restore()
       processCommandStub.restore()
       dispatchStub.restore()
       subscribeStub.restore()
@@ -118,8 +118,7 @@ describe('dispatcher service', () => {
         })
 
         it('retrieves permissions for the message sender', () => {
-          expect(isPublisherStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
-          expect(isSubscriberStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+          expect(resolveSenderTypeStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
         })
 
         it('processes any commands in the message', () => {

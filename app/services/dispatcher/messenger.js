@@ -1,6 +1,6 @@
+const { senderTypes } = require('../../constants')
 const signal = require('../signal')
-const messages = require('./messages')
-const { notifications } = messages
+const { messagesIn } = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
 const messageCountRepository = require('../../db/repositories/messageCount')
@@ -16,6 +16,9 @@ const messageTypes = {
   NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
 }
 
+const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT, NEW_PUBLISHER_WELCOME, } = messageTypes
+const { PUBLISHER, SENDER, RANDOM } = senderTypes
+
 /***************
  * DISPATCHING
  ***************/
@@ -24,13 +27,13 @@ const messageTypes = {
 const dispatch = async ({ commandResult, dispatchable }) => {
   const messageType = parseMessageType(commandResult, dispatchable.sender)
   switch (messageType) {
-    case messageTypes.BROADCAST_MESSAGE:
+    case BROADCAST_MESSAGE:
       return broadcast(dispatchable)
-    case messageTypes.BROADCAST_RESPONSE:
+    case BROADCAST_RESPONSE:
       return handleBroadcastResponse(dispatchable)
-    case messageTypes.COMMAND_RESULT:
+    case COMMAND_RESULT:
       return handleCommandResult({ commandResult, dispatchable })
-    case messageTypes.NEW_PUBLISHER_WELCOME:
+    case NEW_PUBLISHER_WELCOME:
       return handleNotification({ commandResult, dispatchable, messageType })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
@@ -40,21 +43,24 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 // CommandResult -> [MessageType, NotificationType]
 const parseMessageType = (commandResult, sender) => {
   if (commandResult.status === statuses.NOOP) {
-    return sender.isPublisher ? messageTypes.BROADCAST_MESSAGE : messageTypes.BROADCAST_RESPONSE
-  } else if (isNewPublisher(commandResult)) return messageTypes.NEW_PUBLISHER_WELCOME
-  else return messageTypes.COMMAND_RESULT
+    return sender.type === PUBLISHER ? BROADCAST_MESSAGE : BROADCAST_RESPONSE
+  } else if (isNewPublisher(commandResult)) return NEW_PUBLISHER_WELCOME
+  else return COMMAND_RESULT
 }
 
 const isNewPublisher = ({ command, status }) =>
   command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcastResponse = dispatchable => {
-  // TODO(aguestuser|2019-09-02):
-  //  this allows anyone to respond. consider only allowing responses from subscribers
-  if (!dispatchable.channel.responsesEnabled) {
+  const {
+    channel: { responsesEnabled },
+    sender: { language },
+  } = dispatchable
+
+  if (!responsesEnabled) {
     return respond({
       ...dispatchable,
-      message: notifications.unauthorized,
+      message: messagesIn(language).notifications.unauthorized,
       status: statuses.UNAUTHORIZED,
     })
   }
@@ -77,25 +83,26 @@ const handleNotification = ({ commandResult, dispatchable, messageType }) => {
     handleCommandResult({ commandResult, dispatchable }),
     {
       // TODO: extend to handle other notifiable command results
-      [messageTypes.NEW_PUBLISHER_WELCOME]: () =>
+      [NEW_PUBLISHER_WELCOME]: () =>
         welcomeNewPublisher({
           db: d.db,
           sock: d.sock,
           channel: d.channel,
           newPublisher: cr.payload,
           addingPublisher: d.sender.phoneNumber,
+          language: d.sender.language,
         }),
     }[messageType](),
   ])
 }
 
 // { Database, Channel, string, string } => Promise<void>
-const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher }) =>
+const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher, language }) =>
   notify({
     db,
     sock,
     channel,
-    notification: notifications.welcome(channel, addingPublisher),
+    notification: messagesIn(language).notifications.welcome(channel, addingPublisher),
     recipients: [newPublisher],
   })
 
@@ -116,51 +123,59 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 
 // Dispatchable -> Promise<void>
 const relayBroadcastResponse = async ({ db, sock, channel, sender, sdMessage }) => {
+  const { language } = sender
   const recipients = channel.publications.map(p => p.publisherPhoneNumber)
-  const senderNotification = notifications.broadcastResponseSent(channel)
-  const messageType = messageTypes.BROADCAST_RESPONSE
-  //console.log('====== sdMessage.messageBody\n', sdMessage.messageBody)
+  const notification = messagesIn(language).notifications.broadcastResponseSent(channel)
+  const outMessage = format({ channel, sdMessage, messageType: BROADCAST_RESPONSE, language })
   return signal
-    .broadcastMessage(sock, recipients, format({ channel, sdMessage, messageType }))
+    .broadcastMessage(sock, recipients, outMessage)
     .then(() => countBroacast({ db, channel }))
-    .then(() => respond({ db, sock, channel, sender, message: senderNotification }))
+    .then(() => respond({ db, sock, channel, sender, message: notification }))
 }
 
 // (DbusInterface, string, Sender, string?, string?) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender, command, status }) => {
-  const sdMessage = format({ channel, messageBody: message, command, status })
+const respond = ({ db, sock, channel, message, sender, command }) => {
+  const outMessage = format({
+    channel,
+    sdMessage: sdMessageOf(channel, message),
+    command,
+    language: sender.language,
+  })
   return signal
-    .sendMessage(sock, sender.phoneNumber, sdMessage)
+    .sendMessage(sock, sender.phoneNumber, outMessage)
     .then(() => countCommand({ db, channel }))
 }
 
 const notify = ({ sock, channel, notification, recipients }) => {
-  const sdMessage = format({ channel, messageBody: notification })
+  const sdMessage = format({ channel, sdMessage: sdMessageOf(channel, notification) })
   return signal.broadcastMessage(sock, recipients, sdMessage)
 }
 
-// TODO(aguestuser|2018-08-31) this strikes me as poorly factored
 // { Channel, string, string, string, string } -> string
-const format = ({ channel, sdMessage, messageBody, messageType, command }) => {
-  const pfx = messages.prefixes
+const format = ({ channel, sdMessage, messageType, command, language }) => {
+  const prefix = resolvePrefix(channel, messageType, command, language)
+  return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
+}
+
+// Channel, string, string, string -> string
+const resolvePrefix = (channel, messageType, command, language) => {
+  const prefixes = messagesIn(language).prefixes
   if (command === commands.RENAME || command === commands.INFO) {
     // RENAME messages must provide their own header (b/c channel name changed since last query)
     // INFO messages don't need a name prefix b/c they provide channel name as part of message
-    return sdMessageOf(channel, messageBody)
+    return ''
   }
   if (command === commands.HELP) {
     // HELP responses flag that they contain commands instead of listing channel name
-    return sdMessageOf(channel, `[${pfx.helpResponse}]\n${messageBody}`)
+    return `[${prefixes.helpResponse}]\n`
   }
-  if (messageType === messageTypes.BROADCAST_RESPONSE) {
+  if (messageType === BROADCAST_RESPONSE) {
     // subscriber responses get a special header so they don't look like broadcast messages from admins
     // we clone message to preserve attachments
-    const msg = sdMessage || sdMessageOf(channel, messageBody)
-    return { ...msg, messageBody: `[${pfx.broadcastResponse}]\n${sdMessage.messageBody}` }
+    return `[${prefixes.broadcastResponse}]\n`
   }
   // base formatting for broadcast messages;  we clone sdMessage to preserve attachements
-  const msg = sdMessage || sdMessageOf(channel, messageBody)
-  return { ...msg, messageBody: `[${channel.name}]\n${msg.messageBody}` }
+  return `[${channel.name}]\n`
 }
 
 const countBroacast = ({ db, channel }) =>
@@ -176,7 +191,7 @@ const countCommand = ({ db, channel }) =>
   messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
 const sdMessageOf = (channel, messageBody) => ({
-  type: signal.messageTypes.SEND,
+  type: signal.SEND,
   username: channel.phoneNumber,
   messageBody,
 })

@@ -36,6 +36,7 @@ services:
     environment:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "${NODE_ENV:-development}"
+      DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
     ports:
       - 3000:3000
     networks:

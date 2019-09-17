@@ -2,10 +2,11 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
+import { senderTypes, languages } from '../../../../app/constants'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import messenger, { messageTypes, sdMessageOf } from '../../../../app/services/dispatcher/messenger'
-import messages from '../../../../app/services/dispatcher/messages'
+import messages from '../../../../app/services/dispatcher/messages/EN'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
@@ -33,23 +34,23 @@ describe('messenger service', () => {
   const sdMessage = {
     type: 'send',
     messageBody: 'please help!',
-    recipientNumber: null,
+    recipientNumber: genPhoneNumber(),
     attachments,
   }
   const publisherSender = {
     phoneNumber: publisherNumbers[0],
-    isPublisher: true,
-    isSubscriber: true,
+    type: senderTypes.PUBLISHER,
+    language: languages.EN,
   }
   const subscriberSender = {
     phoneNumber: subscriberNumbers[0],
-    isPublisher: false,
-    isSubscriber: true,
+    type: senderTypes.SUBSCRIBER,
+    language: languages.EN,
   }
   const randomSender = {
     phoneNumber: genPhoneNumber(),
-    isPublisher: false,
-    isSubscriber: false,
+    type: senderTypes.RANDOM,
+    language: languages.EN,
   }
 
   describe('parsing a message type from a command result', () => {
@@ -186,7 +187,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              sdMessageOf(channel, `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}`),
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -218,7 +219,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              sdMessageOf(channel, `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}`),
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -325,18 +326,20 @@ describe('messenger service', () => {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
           messageType: messageTypes.BROADCAST_RESPONSE,
+          language: languages.EN,
         }
         expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE...]\nblah'))
       })
     })
 
     describe('most commands', () => {
+      const sdMessage = sdMessageOf(channel, 'blah')
       it('adds a channel name prefix', () => {
         const msg = {
           channel,
-          messageBody: 'blah',
+          sdMessage,
           command: 'JOIN',
-          status: 'SUCCESS',
+          language: languages.EN,
         }
         expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
@@ -346,25 +349,26 @@ describe('messenger service', () => {
       it('does not add a prefix', () => {
         const msg = {
           channel,
-          messageBody: 'blah',
+          sdMessage,
           command: 'RENAME',
-          status: 'SUCCESS',
+          language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, 'blah'))
+        expect(messenger.format(msg)).to.eql(sdMessage)
       })
     })
 
     describe('response to a HELP command', () => {
-      it('does not add a prefix', () => {
+      it('adds a help prefix', () => {
         const msg = {
           channel,
-          messageBody: 'blah',
+          sdMessage,
           command: 'HELP',
-          status: 'SUCCESS',
+          language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(
-          sdMessageOf(channel, '[COMMANDS I UNDERSTAND...]\nblah'),
-        )
+        expect(messenger.format(msg)).to.eql({
+          ...sdMessage,
+          messageBody: `[COMMANDS I UNDERSTAND...]\n${sdMessage.messageBody}`,
+        })
       })
     })
 
@@ -372,13 +376,11 @@ describe('messenger service', () => {
       it('does not add a prefix', () => {
         const msg = {
           channel,
-          messageBody: 'blah',
+          sdMessage,
           command: 'INFO',
-          status: 'SUCCESS',
+          language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(
-          sdMessageOf(channel, 'blah'),
-        )
+        expect(messenger.format(msg)).to.eql(sdMessage)
       })
     })
   })

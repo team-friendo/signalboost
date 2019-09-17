@@ -60,9 +60,11 @@ const dispatch = async (db, sock, inboundMsg) => {
         channelRepository.findDeep(db, channelPhoneNumber),
         classifySender(db, channelPhoneNumber, inboundMsg.data.source),
       ])
-      return messenger.dispatch(
-        await executor.processCommand({ db, sock, channel, sender, sdMessage }),
-      )
+      const dispatchable = { db, sock, channel, sender, sdMessage }
+      return messenger.dispatch({
+        dispatchable,
+        commandResult: await executor.processCommand(dispatchable),
+      })
     } catch (e) {
       logger.error(e)
     }
@@ -80,11 +82,16 @@ const parseMessage = inboundMsg => {
 const shouldRelay = sdMessage =>
   sdMessage.type === signal.messageTypes.MESSAGE && get(sdMessage, 'data.dataMessage')
 
-const classifySender = async (db, channelPhoneNumber, sender) => ({
-  phoneNumber: sender,
-  isPublisher: await channelRepository.isPublisher(db, channelPhoneNumber, sender),
-  isSubscriber: await channelRepository.isSubscriber(db, channelPhoneNumber, sender),
-})
+const classifySender = async (db, channelPhoneNumber, senderPhoneNumber) => {
+  const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
+  const language = await channelRepository.resolveSenderLanguage(
+    db,
+    channelPhoneNumber,
+    senderPhoneNumber,
+    type,
+  )
+  return { phoneNumber: senderPhoneNumber, type, language }
+}
 
 // EXPORTS
 

@@ -1,9 +1,6 @@
 const { upperCase } = require('lodash')
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
 
-// NOTE: this is currently deprecated. Leaving it in in case we want to bring it back (aguestuser)
-const blurb = `Signalboost is a rapid response tool made by and for activists. It enables users to send free, encrypted text blasts over the Signal messaging service to a mass subscriber list without revealing the sender or recipients' phone numbers to each other.`
-
 const support = `
 ----------------------------
 HOW IT WORKS
@@ -156,10 +153,10 @@ const prefixes = {
   broadcastResponse: `SUBSCRIBER RESPONSE...`,
 }
 
-const messages = {
+const EN = {
   commandResponses,
   notifications,
   prefixes,
 }
 
-module.exports = messages
+module.exports = EN

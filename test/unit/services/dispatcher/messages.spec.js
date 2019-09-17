@@ -1,14 +1,15 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import messages from '../../../../app/services/dispatcher/messages'
-
+import messagesEN from '../../../../app/services/dispatcher/messages/EN'
 import { publicationFactory } from '../../../support/factories/publication'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
+import { commandResponsesIn, messagesIn, prefixesIn } from "../../../../app/services/dispatcher/messages"
+import { languages } from '../../../../app/constants'
 
-describe('messages', () => {
-  describe('command responses', () => {
-    const cr = messages.commandResponses
+describe('messages module', () => {
+  describe('parsing command responses', () => {
+    const cr = messagesEN.commandResponses
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
@@ -35,6 +36,16 @@ describe('messages', () => {
           expect(msg).to.include('subscribers: 2')
         })
       })
+    })
+  })
+
+  describe('resolving messages in different languages', () => {
+    it('returns empty object for non-existent languages', () => {
+      expect(messagesIn('FOO')).to.eql({})
+    })
+
+    it('resolves messages for EN flag', () => {
+      expect(messagesIn(languages.EN)).to.eql(messagesEN)
     })
   })
 })

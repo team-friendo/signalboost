@@ -5,6 +5,7 @@ import { initDb } from '../../../../app/db/index'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('subscription model', () => {
   let db, subscription
@@ -25,9 +26,17 @@ describe('subscription model', () => {
       'id',
       'channelPhoneNumber',
       'subscriberPhoneNumber',
+      'language',
       'createdAt',
       'updatedAt',
     ])
+  })
+
+  describe('defaults', () => {
+    it('sets language to DEFAULT_LANGUAGE if none provided', async () => {
+      const sub = await db.subscription.create(subscriptionFactory({ language: undefined }))
+      expect(sub.language).to.eql(defaultLanguage)
+    })
   })
 
   describe('associations', () => {

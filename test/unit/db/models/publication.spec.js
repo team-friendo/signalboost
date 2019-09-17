@@ -5,6 +5,7 @@ import { initDb } from '../../../../app/db/index'
 import { publicationFactory } from '../../../support/factories/publication'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('publication model', () => {
   let db, publication
@@ -25,9 +26,17 @@ describe('publication model', () => {
       'id',
       'channelPhoneNumber',
       'publisherPhoneNumber',
+      'language',
       'createdAt',
       'updatedAt',
     ])
+  })
+
+  describe('defaults', () => {
+    it('sets language to DEFAULT_LANGUAGE if none provided', async () => {
+      const sub = await db.publication.create(publicationFactory({ language: undefined }))
+      expect(sub.language).to.eql(defaultLanguage)
+    })
   })
 
   describe('associations', () => {
