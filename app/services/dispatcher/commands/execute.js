@@ -1,13 +1,14 @@
-const channelRepository = require('../../db/repositories/channel')
-const validator = require('../../db/validations/phoneNumber')
-const logger = require('./logger')
-const { messagesIn } = require('./messages')
-const { memberTypes } = channelRepository
+const { commands, statuses } = require('./constants')
+const channelRepository = require('../../../db/repositories/channel')
+const validator = require('../../../db/validations/phoneNumber')
+const logger = require('../logger')
+const { messagesIn } = require('../strings/messages')
+const { memberTypes } = require('../../../db/repositories/channel')
 const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
 const { lowerCase } = require('lodash')
 const {
   signal: { signupPhoneNumber },
-} = require('../../config')
+} = require('../../../config')
 
 /**
  * type Executable = {
@@ -22,56 +23,6 @@ const {
  * }
  *
  * */
-
-/*************
- * CONSTANTS
- *************/
-
-const statuses = {
-  NOOP: 'NOOP',
-  SUCCESS: 'SUCCESS',
-  ERROR: 'ERROR',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-}
-
-const commands = {
-  ADD: 'ADD',
-  HELP: 'HELP',
-  INFO: 'INFO',
-  JOIN: 'JOIN',
-  LEAVE: 'LEAVE',
-  NOOP: 'NOOP',
-  REMOVE: 'REMOVE',
-  RENAME: 'RENAME',
-  TOGGLE_RESPONSES: 'TOGGLE_RESPONSES',
-}
-
-/******************
- * INPUT HANDLING
- ******************/
-
-// Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
-const processCommand = dispatchable => {
-  return execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
-}
-
-// string -> Executable
-const parseCommand = msg => {
-  const _msg = msg.trim()
-  if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
-  else if (_msg.match(/^(help|ayuda)$/i)) return { command: commands.HELP }
-  else if (_msg.match(/^info$/i)) return { command: commands.INFO }
-  // TODO(aguestuser|2019-08-30): handle spansish variations with proper localization
-  else if (_msg.match(/^(join|hello|hola)$/i)) return { command: commands.JOIN }
-  else if (_msg.match(/^(leave|goodbye|adios)$/i)) return { command: commands.LEAVE }
-  else if (_msg.match(/^remove/i))
-    return { command: commands.REMOVE, payload: _msg.match(/^remove\s?(.*)$/i)[1] }
-  else if (_msg.match(/^rename/i))
-    return { command: commands.RENAME, payload: _msg.match(/^rename\s?(.*)$/i)[1] }
-  else if (_msg.match(/^responses/i))
-    return { command: commands.TOGGLE_RESPONSES, payload: _msg.match(/^responses\s?(.*)$/i)[1] }
-  else return { command: commands.NOOP }
-}
 
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const execute = async (executable, dispatchable) => {
@@ -120,8 +71,6 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
 
 // HELP
 
-//TODO: extract `executable` from `dispatchable`
-
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
   return sender.type === NONE
@@ -151,6 +100,7 @@ const showInfo = async (db, channel, sender, cr) => ({
 // JOIN
 
 const maybeAddSubscriber = async (db, channel, sender) => {
+  // TODO: infer
   const cr = messagesIn(sender.language).commandResponses.subscriber.add
   return sender.type === SUBSCRIBER
     ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
@@ -253,4 +203,4 @@ const logAndReturn = (err, statusTuple) => {
   return statusTuple
 }
 
-module.exports = { statuses, commands, processCommand, parseCommand, execute }
+module.exports = { execute }

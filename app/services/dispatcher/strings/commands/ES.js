@@ -1,0 +1,13 @@
+module.exports = {
+  ADD: 'AGREGAR',
+  HELP: 'AYUDA',
+  INFO: 'INFO',
+  HELLO: 'HOLA',
+  GOODBYE: 'ADÍOS',
+  LEAVE: 'SALIR',
+  REMOVE: 'ELIMINAR',
+  RENAME: 'RENOMBRAR',
+  RESPONSES: 'RESPUESTAS',
+  ON: 'ACTIVADAS',
+  OFF: 'DESACTIVADAS',
+}

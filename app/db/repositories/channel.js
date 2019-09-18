@@ -7,7 +7,7 @@ const { defaultLanguage } = require('../../config')
 const memberTypes = {
   PUBLISHER: 'PUBLISHER',
   SUBSCRIBER: 'SUBSCRIBER',
-  RANDOM: 'RANDOM',
+  NONE: 'NONE',
 }
 
 // PUBLIC FUNCTIONS

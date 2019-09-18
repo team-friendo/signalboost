@@ -1,10 +1,10 @@
 const signal = require('../signal')
-const messageCountRepository = require('../../db/repositories/messageCount')
+const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/channel')
-const { messagesIn } = require('./messages')
 const { values } = require('lodash')
-const { commands, statuses } = require('./executor')
+const { commands, statuses } = require('./commands/constants')
+const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
 const {
   defaultLanguage,

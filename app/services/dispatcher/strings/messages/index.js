@@ -1,5 +1,5 @@
-const { languages } = require('../../../constants')
-const { defaultLanguage } = require('../../../config')
+const { defaultLanguage } = require('../../../../config')
+const { languages } = require('../../../../constants')
 
 const messagesIn = lang => {
   switch (lang) {

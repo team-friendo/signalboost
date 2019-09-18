@@ -9,7 +9,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { statuses } from '../../../../app/constants'
 import { create, addPublisher, list } from '../../../../app/services/registrar/channel'
-import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 
 describe('channel registrar', () => {
