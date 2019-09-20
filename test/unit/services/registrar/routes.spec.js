@@ -7,7 +7,7 @@ import { startServer } from '../../../../app/services/registrar/api'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/registrar/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/registrar/phoneNumber'
-
+import signalService from '../../../../app/services/signal'
 import { registrar } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
 
@@ -119,6 +119,56 @@ describe('routes', () => {
           .set('Token', registrar.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
           .expect(500, errorStatus)
+      })
+    })
+  })
+
+  describe('POST to /channels/trust', () => {
+    const [channelPhoneNumber, pubSubPhoneNumber] = times(2, genPhoneNumber)
+    let trustStub
+    beforeEach(() => (trustStub = sinon.stub(signalService, 'trust')))
+    afterEach(() => trustStub.restore())
+
+    describe('in all cases', () => {
+      beforeEach(() => trustStub.returns(Promise.resolve()))
+
+      it('attempts to trust a safety number between a channel and a publisher or subscriber', async () => {
+        await request(server)
+          .post('/channels/trust')
+          .set('Token', registrar.authToken)
+          .send({ channelPhoneNumber, pubSubPhoneNumber })
+
+        // slice off sock b/c we don't really care about it or have access to it
+        expect(trustStub.getCall(0).args.slice(1)).to.eql([channelPhoneNumber, pubSubPhoneNumber])
+      })
+
+      describe('when trusting fails', () => {
+        const errStatus = { status: 'ERROR', error: 'identity request timed out' }
+        beforeEach(() => trustStub.returns(Promise.resolve(errStatus)))
+
+        it('returns an error status', async () => {
+          await request(server)
+            .post('/channels/trust')
+            .set('Token', registrar.authToken)
+            .send({ channelPhoneNumber, pubSubPhoneNumber })
+            .expect(500, errStatus)
+        })
+      })
+
+      describe('when trusting succeeds', () => {
+        const successStatus = {
+          status: 'SUCCESS',
+          message: signalService.successMessages.trustSuccess(pubSubPhoneNumber)
+        }
+        beforeEach(() => trustStub.returns(Promise.resolve(successStatus)))
+
+        it('returns a success status', async () => {
+          await request(server)
+            .post('/channels/trust')
+            .set('Token', registrar.authToken)
+            .send({ channelPhoneNumber, pubSubPhoneNumber })
+            .expect(200, successStatus)
+        })
       })
     })
   })

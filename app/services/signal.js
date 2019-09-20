@@ -94,7 +94,7 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
-// TODO(aguestuser|2019-08-18): consider localizing these?
+// TODO(aguestuser|2019-09-20): localize these...
 const errorMessages = {
   socketTimeout: 'Maximum signald connection attempts exceeded.',
   socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
@@ -105,6 +105,7 @@ const errorMessages = {
   identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
 }
 
+// TODO(aguestuser|2019-08-20): alo localize these...
 const successMessages = {
   trustSuccess: phoneNumber => `Trusted new safety number for ${phoneNumber}.`,
 }
