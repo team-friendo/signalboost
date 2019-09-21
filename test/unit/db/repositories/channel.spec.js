@@ -9,14 +9,16 @@ import { omit, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
+import { subscriptionFactory } from '../../../support/factories/subscription'
+import { senderTypes } from '../../../../app/constants'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
 
-  const chPNum = genPhoneNumber()
-  const subPNums = [genPhoneNumber(), genPhoneNumber()]
-  const publisherPNums = [genPhoneNumber(), genPhoneNumber()]
-  let db, channel, sub, subCount, publisherCount, publishers, welcomeCount
+  const channelPhoneNumber = genPhoneNumber()
+  const subscriberPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const publisherPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+  let db, channel, sub, subCount, publisherCount, publishers
 
   before(() => (db = initDb()))
   afterEach(async () => {
@@ -37,7 +39,12 @@ describe('channel repository', () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         publicationCount = await db.publication.count()
-        channel = await channelRepository.create(db, chPNum, '#blackops', publisherPNums)
+        channel = await channelRepository.create(
+          db,
+          channelPhoneNumber,
+          '#blackops',
+          publisherPhoneNumbers,
+        )
       })
 
       it('creates a new channel', async () => {
@@ -67,11 +74,11 @@ describe('channel repository', () => {
             'publications',
           ]),
         ).to.eql({
-          phoneNumber: chPNum,
+          phoneNumber: channelPhoneNumber,
           name: '#blackops',
           responsesEnabled: false,
         })
-        expect(channel.publications.map(p => p.publisherPhoneNumber)).to.eql(publisherPNums)
+        expect(channel.publications.map(p => p.publisherPhoneNumber)).to.eql(publisherPhoneNumbers)
         expect(channel.messageCount).to.be.an('object')
       })
     })
@@ -79,11 +86,16 @@ describe('channel repository', () => {
     describe('when given phone number for a already-existing channel', () => {
       let newPublisherPNums = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.create(db, chPNum, '#foursquare', newPublisherPNums)
+        await channelRepository.create(db, channelPhoneNumber, '#foursquare', newPublisherPNums)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         publicationCount = await db.publication.count()
-        channel = await channelRepository.create(db, chPNum, '#blackops', newPublisherPNums)
+        channel = await channelRepository.create(
+          db,
+          channelPhoneNumber,
+          '#blackops',
+          newPublisherPNums,
+        )
       })
 
       it('does not create a new channel', async () => {
@@ -104,7 +116,7 @@ describe('channel repository', () => {
             'publications',
           ]),
         ).to.eql({
-          phoneNumber: chPNum,
+          phoneNumber: channelPhoneNumber,
           name: '#blackops',
           responsesEnabled: false,
         })
@@ -118,13 +130,13 @@ describe('channel repository', () => {
   describe('#update', () => {
     let updatedChannel
     beforeEach(async () => {
-      await db.channel.create({ phoneNumber: chPNum, name: 'foo' })
-      updatedChannel = await channelRepository.update(db, chPNum, { name: 'bar' })
+      await db.channel.create({ phoneNumber: channelPhoneNumber, name: 'foo' })
+      updatedChannel = await channelRepository.update(db, channelPhoneNumber, { name: 'bar' })
     })
 
     it("updates a channel's name", async () => {
       const newName = await db.channel
-        .findOne({ where: { phoneNumber: chPNum } })
+        .findOne({ where: { phoneNumber: channelPhoneNumber } })
         .then(ch => ch.name)
       expect(newName).to.eql('bar')
     })
@@ -140,7 +152,11 @@ describe('channel repository', () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.subscription.count()
         publisherCount = await db.publication.count()
-        publishers = await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums)
+        publishers = await channelRepository.addPublishers(
+          db,
+          channel.phoneNumber,
+          publisherPhoneNumbers,
+        )
       })
 
       it('creates 2 new publications', async () => {
@@ -162,7 +178,7 @@ describe('channel repository', () => {
         publishers.forEach((publisher, i) => {
           expect(pick(publisher, ['channelPhoneNumber', 'publisherPhoneNumber'])).to.eql({
             channelPhoneNumber: channel.phoneNumber,
-            publisherPhoneNumber: publisherPNums[i],
+            publisherPhoneNumber: publisherPhoneNumbers[i],
           })
         })
       })
@@ -171,9 +187,13 @@ describe('channel repository', () => {
     describe('when given the pNum of an already-existing publisher', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
+        await channelRepository.addPublishers(
+          db,
+          channel.phoneNumber,
+          publisherPhoneNumbers.slice(1),
+        )
         publisherCount = await db.publication.count()
-        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums)
+        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPhoneNumbers)
       })
 
       it('only creates one new publication', async () => {
@@ -184,7 +204,11 @@ describe('channel repository', () => {
     describe('when given an empty array of publisher numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPNums.slice(1))
+        await channelRepository.addPublishers(
+          db,
+          channel.phoneNumber,
+          publisherPhoneNumbers.slice(1),
+        )
         publisherCount = await db.publication.count()
         await channelRepository.addPublishers(db, channel.phoneNumber, [])
       })
@@ -298,16 +322,66 @@ describe('channel repository', () => {
     })
   })
 
+  describe('#findMembershipsByPhoneNumber', () => {
+    const channel2PhoneNumber = genPhoneNumber()
+    const memberPhoneNumber = genPhoneNumber()
+
+    beforeEach(
+      async () =>
+        // create 2 channels. member is publisher of first, subscriber to second
+        await Promise.all([
+          db.channel.create(
+            {
+              phoneNumber: channelPhoneNumber,
+              name: '#foo',
+              publications: [publicationFactory({ publisherPhoneNumber: memberPhoneNumber })],
+            },
+            {
+              include: [{ model: db.publication }],
+            },
+          ),
+          db.channel.create(
+            {
+              phoneNumber: channel2PhoneNumber,
+              name: '#bar',
+              subscriptions: [subscriptionFactory({ subscriberPhoneNumber: memberPhoneNumber })],
+            },
+            {
+              include: [{ model: db.subscription }],
+            },
+          ),
+        ]),
+    )
+
+    it('finds all channels for which a given phone number is either a publisher or subscriber', async () => {
+      const { publications, subscriptions } = await channelRepository.findMembershipsByPhoneNumber(
+        db,
+        memberPhoneNumber,
+      )
+      expect(publications.length).to.eql(1)
+      expect(publications[0].channelPhoneNumber).to.eql(channelPhoneNumber)
+      expect(publications[0].publisherPhoneNumber).to.eql(memberPhoneNumber)
+
+      expect(subscriptions.length).to.eql(1)
+      expect(subscriptions[0].channelPhoneNumber).to.eql(channel2PhoneNumber)
+      expect(subscriptions[0].subscriberPhoneNumber).to.eql(memberPhoneNumber)
+    })
+  })
+
   describe('#removePublisher', () => {
     describe('when given the number of an existing publisher', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPNums[0])
+        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPhoneNumbers[0])
         subCount = await db.subscription.count()
         publisherCount = await db.publication.count()
 
-        result = await channelRepository.removePublisher(db, channel.phoneNumber, publisherPNums)
+        result = await channelRepository.removePublisher(
+          db,
+          channel.phoneNumber,
+          publisherPhoneNumbers,
+        )
       })
 
       it('deletes a publication record', async () => {
@@ -323,7 +397,7 @@ describe('channel repository', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPNums[0])
+        await channelRepository.addPublisher(db, channel.phoneNumber, publisherPhoneNumbers[0])
         publisherCount = await db.publication.count()
 
         result = await channelRepository.removePublisher(db, channel.phoneNumber, '+11111111111')
@@ -341,7 +415,7 @@ describe('channel repository', () => {
 
   describe('#addSubscriber', () => {
     describe('when given the pNum of an existing channel and a new human', () => {
-      const subscriberPhone = subPNums[0]
+      const subscriberPhone = subscriberPhoneNumbers[0]
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
@@ -375,7 +449,7 @@ describe('channel repository', () => {
   })
 
   describe('#removeSubscriber', () => {
-    const [subscriberPhone, unsubscribedPhone] = subPNums
+    const [subscriberPhone, unsubscribedPhone] = subscriberPhoneNumbers
 
     beforeEach(async () => {
       channel = await db.channel.create(channelFactory())
@@ -423,10 +497,10 @@ describe('channel repository', () => {
     beforeEach(async () => {
       channel = await db.channel.create(
         {
-          ...channelFactory({ phoneNumber: chPNum }),
+          ...channelFactory({ phoneNumber: channelPhoneNumber }),
           publications: [
-            publicationFactory({ publisherPhoneNumber: publisherPNums[0] }),
-            publicationFactory({ publisherPhoneNumber: publisherPNums[1] }),
+            publicationFactory({ publisherPhoneNumber: publisherPhoneNumbers[0] }),
+            publicationFactory({ publisherPhoneNumber: publisherPhoneNumbers[1] }),
           ],
         },
         {
@@ -436,15 +510,74 @@ describe('channel repository', () => {
     })
 
     it("returns true when given a channel publisher's phone number", async () => {
-      expect(await channelRepository.isPublisher(db, chPNum, publisherPNums[0])).to.eql(true)
+      expect(
+        await channelRepository.isPublisher(db, channelPhoneNumber, publisherPhoneNumbers[0]),
+      ).to.eql(true)
     })
 
     it("it returns false when given a non-publisher's phone number", async () => {
-      expect(await channelRepository.isPublisher(db, chPNum, subPNums[0])).to.eql(false)
+      expect(
+        await channelRepository.isPublisher(db, channelPhoneNumber, subscriberPhoneNumbers[0]),
+      ).to.eql(false)
     })
 
     it('returns false when asked to check a non existent channel', async () => {
-      expect(await channelRepository.isPublisher(db, genPhoneNumber(), subPNums[0])).to.eql(false)
+      expect(
+        await channelRepository.isPublisher(db, genPhoneNumber(), subscriberPhoneNumbers[0]),
+      ).to.eql(false)
+    })
+  })
+
+  describe('#resolveSenderType', () => {
+    beforeEach(async () => {
+      channel = await db.channel.create(
+        {
+          ...channelFactory({ phoneNumber: channelPhoneNumber }),
+          publications: [publicationFactory({ publisherPhoneNumber: publisherPhoneNumbers[0] })],
+          subscriptions: [
+            subscriptionFactory({ subscriberPhoneNumber: subscriberPhoneNumbers[0] }),
+          ],
+        },
+        {
+          include: [{ model: db.publication }, { model: db.subscription }],
+        },
+      )
+    })
+
+    describe('when sender is publisher on channel', () => {
+      it('returns PUBLISHER', async () => {
+        expect(
+          await channelRepository.resolveSenderType(
+            db,
+            channelPhoneNumber,
+            publisherPhoneNumbers[0],
+          ),
+        ).to.eql(senderTypes.PUBLISHER)
+      })
+    })
+
+    describe('when sender is subscribed to channel', () => {
+      it('returns SUBSCRIBER', async () => {
+        expect(
+          await channelRepository.resolveSenderType(
+            db,
+            channelPhoneNumber,
+            subscriberPhoneNumbers[0],
+          ),
+        ).to.eql(senderTypes.SUBSCRIBER)
+      })
+    })
+
+    describe('when sender is neither publisher nor subscriber', () => {
+      it('returns RANDOM', async () => {
+        expect(
+          await channelRepository.resolveSenderType(
+            db,
+            channelPhoneNumber,
+            genPhoneNumber(),
+          ),
+        ).to.eql(senderTypes.RANDOM)
+      })
     })
   })
 })

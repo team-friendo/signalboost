@@ -16,8 +16,16 @@ const messageTypes = {
   NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
 }
 
-const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT, NEW_PUBLISHER_WELCOME, } = messageTypes
-const { PUBLISHER, SENDER, RANDOM } = senderTypes
+const {
+  BROADCAST_MESSAGE,
+  BROADCAST_RESPONSE,
+  COMMAND_RESULT,
+  NEW_PUBLISHER_WELCOME,
+} = messageTypes
+
+const { PUBLISHER } = senderTypes
+
+const sdMessageTypes = signal.messageTypes
 
 /***************
  * DISPATCHING
@@ -191,7 +199,7 @@ const countCommand = ({ db, channel }) =>
   messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
 const sdMessageOf = (channel, messageBody) => ({
-  type: signal.SEND,
+  type: sdMessageTypes.SEND,
   username: channel.phoneNumber,
   messageBody,
 })

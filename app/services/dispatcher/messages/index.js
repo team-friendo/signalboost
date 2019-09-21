@@ -1,11 +1,12 @@
 const { languages } = require('../../../constants')
+const { defaultLanguage } = require('../../../config')
 
 const messagesIn = lang => {
-  switch(lang) {
+  switch (lang) {
     case languages.EN:
       return require('./EN')
     default:
-      return {}
+      return require(`./${defaultLanguage}`)
   }
 }
 
