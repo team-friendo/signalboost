@@ -55,6 +55,18 @@ const findDeep = (db, phoneNumber) =>
 
 // CHANNEL ASSOCIATION QUERIES
 
+// TODO(aguestuser|2019-09-21)
+//  it would be nicer to extract publications and subscriptions into a memberhsips table
+//  then just query the membership table here (and move this function into a memberships repo
+const findMembershipsByPhoneNumber = async (db, memberPhoneNumber) => ({
+  publications: await db.publication.findAll({
+    where: { publisherPhoneNumber: memberPhoneNumber },
+  }),
+  subscriptions: await db.subscription.findAll({
+    where: { subscriberPhoneNumber: memberPhoneNumber },
+  }),
+})
+
 const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     Promise.all(publisherNumbers.map(num => addPublisher(db, channelPhoneNumber, num))),
@@ -140,7 +152,7 @@ module.exports = {
   createWelcome,
   findAll,
   findAllDeep,
-  findAllWithMember,
+  findMembershipsByPhoneNumber,
   findByPhoneNumber,
   findDeep,
   getUnwelcomedPublishers,

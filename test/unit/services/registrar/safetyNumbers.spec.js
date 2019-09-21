@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { expect } from 'chai'
-import { trustAll } from '../../../../app/services/registrar/safetyNumbers'
+import { trustAll, trustAllForMember } from '../../../../app/services/registrar/safetyNumbers'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal, { successMessages, errorMessages } from '../../../../app/services/signal'
 const { trustSuccess } = successMessages
@@ -37,15 +37,17 @@ describe('safety numbers registrar module', () => {
     },
   ]
 
-  let findAllStub, trustStub
+  let findAllStub, findMembershipsStub, trustStub
 
   beforeEach(() => {
     findAllStub = sinon.stub(channelRepository, 'findAllDeep')
+    findMembershipsStub = sinon.stub(channelRepository, 'findMembershipsByPhoneNumber')
     trustStub = sinon.stub(signal, 'trust')
   })
 
   afterEach(() => {
     findAllStub.restore()
+    findMembershipsStub.restore()
     trustStub.restore()
   })
 
@@ -83,6 +85,84 @@ describe('safety numbers registrar module', () => {
 
         it('returns a success object', async () => {
           expect(await trustAll(db, sock)).to.eql({ successes: 8, errors: 0 })
+        })
+      })
+
+      describe('when a trust call fails', () => {
+        beforeEach(() => {
+          trustStub.callsFake((_, __, pubSubNumber) =>
+            pubSubNumber === channels[0].subscriptions[1].subscriberPhoneNumber
+              ? Promise.reject({ status: 'ERROR', message: trustError(pubSubNumber) })
+              : Promise.resolve({ status: 'SUCCESS', message: trustSuccess(pubSubNumber) }),
+          )
+        })
+
+        it('resolves with a trust tally denoting one error', async () => {
+          expect(await trustAll(db, sock)).to.eql({ successes: 7, errors: 1 })
+        })
+      })
+    })
+
+    describe('when channel retrieval fails', () => {
+      beforeEach(() => {
+        findAllStub.callsFake(() => Promise.reject(new Error('db error')))
+      })
+
+      it('resolves with an error object', async () => {
+        expect(await trustAll(db, sock)).to.eql({
+          status: 'ERROR',
+          message: 'db error',
+        })
+      })
+    })
+  })
+
+  describe('trusting all safety numbers belonging to a given user', () => {
+    const memberPhoneNumber = genPhoneNumber()
+
+    it('attempts to retrieve all the users memberships', async () => {
+      await trustAllForMember(db, sock, memberPhoneNumber)
+      expect(findMembershipsStub.getCall(0).args).to.eql([db, memberPhoneNumber])
+    })
+
+    describe('when memberships retrieval succeeds', () => {
+      beforeEach(() => {
+        findMembershipsStub.returns(
+          Promise.resolve({
+            publications: [
+              publicationFactory({
+                channelPhoneNumber: channelNumbers[0],
+                publisherPhoneNumber: memberPhoneNumber,
+              }),
+            ],
+            subscriptions: [
+              subscriptionFactory({
+                channelPhoneNumber: channelNumbers[1],
+                subscriberPhoneNumber: memberPhoneNumber,
+              }),
+            ],
+          }),
+        )
+      })
+
+      it('attempts to trust all safety numbers for all memberships', async () => {
+        trustStub.returns(Promise.resolve())
+        await trustAllForMember(db, sock, memberPhoneNumber)
+        expect(trustStub.callCount).to.eql(2)
+      })
+
+      describe('when trust calls succeed', () => {
+        beforeEach(() => {
+          trustStub.callsFake((_, __, pubSubPhoneNumber) =>
+            Promise.resolve({
+              status: 'SUCCESS',
+              message: successMessages.trustSuccess(pubSubPhoneNumber),
+            }),
+          )
+        })
+
+        it('returns a success object', async () => {
+          expect(await trustAllForMember(db, sock, memberPhoneNumber)).to.eql({ successes: 2, errors: 0 })
         })
       })
 
