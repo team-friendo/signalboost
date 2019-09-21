@@ -63,24 +63,27 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
     db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
+// TODO(aguestuser|2019-09-21): this would be easier with a members table instead of pub/sub tables!
 const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
-  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, senderPhoneNumber)
+  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
   if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
     return Promise.resolve(senderTypes.PUBLISHER)
   }
-  if (db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
+  if (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
     return Promise.resolve(senderTypes.SUBSCRIBER)
   }
   return Promise.resolve(senderTypes.RANDOM)
 }
 
 const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, senderType) => {
-  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, senderPhoneNumber)
+  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
   if (senderType === senderTypes.PUBLISHER) {
-    return (await db.publication.findOne({ channelPhoneNumber, publisherPhoneNumber })).language
+    return (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }))
+      .language
   }
   if (senderType === senderTypes.SUBSCRIBER) {
-    return (await db.publication.findOne({ channelPhoneNumber, subscriberPhoneNumber })).language
+    return (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }))
+      .language
   }
   return defaultLanguage
 }
