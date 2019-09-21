@@ -30,6 +30,21 @@ const findAllDeep = db =>
     order: [[db.messageCount, 'broadcastOut', 'DESC']],
     include: [{ model: db.subscription }, { model: db.publication }, { model: db.messageCount }],
   })
+const findAllWithMember = async (db, memberPhoneNumber) =>
+  db.channel.findAll({
+    include: [
+      {
+        model: db.subscription,
+        required: false, // left inner join
+        where: { subscriberPhoneNumber: memberPhoneNumber },
+      },
+      {
+        model: db.publication,
+        required: false, // left inner join
+        where: { publisherPhoneNumber: memberPhoneNumber },
+      },
+    ],
+  })
 
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
 const findDeep = (db, phoneNumber) =>
@@ -125,6 +140,7 @@ module.exports = {
   createWelcome,
   findAll,
   findAllDeep,
+  findAllWithMember,
   findByPhoneNumber,
   findDeep,
   getUnwelcomedPublishers,
