@@ -7,6 +7,7 @@ import { startServer } from '../../../../app/services/registrar/api'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import channelService from '../../../../app/services/registrar/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/registrar/phoneNumber'
+import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import signalService from '../../../../app/services/signal'
 import { registrar } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
@@ -123,52 +124,52 @@ describe('routes', () => {
     })
   })
 
-  describe('POST to /channels/trust', () => {
-    const [channelPhoneNumber, pubSubPhoneNumber] = times(2, genPhoneNumber)
+  describe('POST to /phoneNumbers/trust', () => {
+    const memberPhoneNumber = genPhoneNumber()
     let trustStub
-    beforeEach(() => (trustStub = sinon.stub(signalService, 'trust')))
+    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'trustAllForMember')))
     afterEach(() => trustStub.restore())
 
     describe('in all cases', () => {
       beforeEach(() => trustStub.returns(Promise.resolve()))
 
-      it('attempts to trust a safety number between a channel and a publisher or subscriber', async () => {
+      it('attempts to trust all safety numbers associated with a user phone number', async () => {
         await request(server)
-          .post('/channels/trust')
+          .post('/phoneNumbers/trust')
           .set('Token', registrar.authToken)
-          .send({ channelPhoneNumber, pubSubPhoneNumber })
+          .send({ memberPhoneNumber })
 
-        // slice off sock b/c we don't really care about it or have access to it
-        expect(trustStub.getCall(0).args.slice(1)).to.eql([channelPhoneNumber, pubSubPhoneNumber])
+        // slice off db, sock b/c we don't really care about them
+        expect(trustStub.getCall(0).args[2]).to.eql(memberPhoneNumber)
       })
+    })
 
-      describe('when trusting fails', () => {
-        const errStatus = { status: 'ERROR', error: 'identity request timed out' }
-        beforeEach(() => trustStub.returns(Promise.resolve(errStatus)))
+    describe('when trusting fails', () => {
+      const errStatus = { status: 'ERROR', error: 'identity request timed out' }
+      beforeEach(() => trustStub.returns(Promise.resolve(errStatus)))
 
-        it('returns an error status', async () => {
-          await request(server)
-            .post('/channels/trust')
-            .set('Token', registrar.authToken)
-            .send({ channelPhoneNumber, pubSubPhoneNumber })
-            .expect(500, errStatus)
-        })
+      it('returns an error status', async () => {
+        await request(server)
+          .post('/phoneNumbers/trust')
+          .set('Token', registrar.authToken)
+          .send({ memberPhoneNumber })
+          .expect(500, errStatus)
       })
+    })
 
-      describe('when trusting succeeds', () => {
-        const successStatus = {
-          status: 'SUCCESS',
-          message: signalService.successMessages.trustSuccess(pubSubPhoneNumber)
-        }
-        beforeEach(() => trustStub.returns(Promise.resolve(successStatus)))
+    describe('when trusting succeeds', () => {
+      const successStatus = {
+        status: 'SUCCESS',
+        message: signalService.successMessages.trustSuccess(memberPhoneNumber),
+      }
+      beforeEach(() => trustStub.returns(Promise.resolve(successStatus)))
 
-        it('returns a success status', async () => {
-          await request(server)
-            .post('/channels/trust')
-            .set('Token', registrar.authToken)
-            .send({ channelPhoneNumber, pubSubPhoneNumber })
-            .expect(200, successStatus)
-        })
+      it('returns a success status', async () => {
+        await request(server)
+          .post('/phoneNumbers/trust')
+          .set('Token', registrar.authToken)
+          .send({ memberPhoneNumber })
+          .expect(200, successStatus)
       })
     })
   })

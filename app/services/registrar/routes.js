@@ -1,6 +1,6 @@
-const phoneNumberService = require('./phoneNumber/index')
-const channelService = require('./channel/index')
-const signalService = require('../signal')
+const phoneNumberService = require('./phoneNumber')
+const channelService = require('./channel')
+const safetyNumberService = require('./safetyNumbers')
 const { get, find } = require('lodash')
 const {
   twilio: { smsEndpoint },
@@ -25,18 +25,18 @@ const routesOf = (router, db, sock) => {
     ctx.body = result
   })
 
-  router.post('/channels/trust', async ctx => {
-    const { channelPhoneNumber, pubSubPhoneNumber } = ctx.request.body
-    const result = await signalService.trust(sock, channelPhoneNumber, pubSubPhoneNumber)
-    ctx.status = httpStatusOf(get(result, 'status'))
-    ctx.body = result
-  })
-
   router.get('/phoneNumbers', async ctx => {
     const filter = phoneNumberService.filters[ctx.query.filter] || null
     const phoneNumberList = await phoneNumberService.list(db, filter)
     ctx.status = httpStatusOf(phoneNumberList.status)
     ctx.body = phoneNumberList.data
+  })
+
+  router.post('/phoneNumbers/trust', async ctx => {
+    const { memberPhoneNumber } = ctx.request.body
+    const result = await safetyNumberService.trustAllForMember(db, sock, memberPhoneNumber)
+    ctx.status = httpStatusOf(get(result, 'status'))
+    ctx.body = result
   })
 
   router.post('/phoneNumbers', async ctx => {

@@ -21,6 +21,9 @@ boost cli supports the following commands:
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
 
+  trust <user phone number>
+    - trusts all safety numbers associated with a user's phone number
+
 for more detailed instructions on any command, run:
 
   boost <command> -h
