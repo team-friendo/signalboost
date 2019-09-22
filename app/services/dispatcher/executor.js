@@ -5,6 +5,7 @@ const { messagesIn } = require('./messages')
 const { senderTypes } = require('../../constants')
 const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
 const { lowerCase } = require('lodash')
+const safetyNumberService = require('../registrar/safetyNumbers')
 
 /**
  * type Executable = {
@@ -41,6 +42,7 @@ const commands = {
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
   TOGGLE_RESPONSES: 'TOGGLE_RESPONSES',
+  REAUTHORIZE: 'REAUTHORIZE',
 }
 
 /******************
@@ -66,13 +68,15 @@ const parseCommand = msg => {
     return { command: commands.RENAME, payload: _msg.match(/^rename\s?(.*)$/i)[1] }
   else if (_msg.match(/^responses/i))
     return { command: commands.TOGGLE_RESPONSES, payload: _msg.match(/^responses\s?(.*)$/i)[1] }
+  else if (_msg.match(/^reauthorize/i))
+    return { command: commands.REAUTHORIZE, payload: _msg.match(/^reauthorize\s?(.*)$/i)[1] }
   else return { command: commands.NOOP }
 }
 
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const execute = async (executable, dispatchable) => {
   const { command, payload } = executable
-  const { db, channel, sender } = dispatchable
+  const { db, sock, channel, sender } = dispatchable
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
@@ -82,6 +86,7 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
+    [commands.REAUTHORIZE]: () => maybeTrust(db, sock, channel, sender, payload),
   }[command] || (() => noop(sender)))()
   return { ...result, command }
 }
@@ -180,16 +185,18 @@ const removeSender = (db, channel, sender, cr) => {
 
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   const cr = messagesIn(sender.language).commandResponses.publisher.remove
-  if (!(sender.type === PUBLISHER))
+  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
+
+  if (!(sender.type === PUBLISHER)) {
     return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  }
+  if (!isValid) {
+    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+  }
+  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, validNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotPublisher(validNumber) }
 
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(publisherNumber)
-  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
-
-  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, phoneNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotPublisher(phoneNumber) }
-
-  return removePublisher(db, channel, phoneNumber, cr)
+  return removePublisher(db, channel, validNumber, cr)
 }
 
 const removePublisher = async (db, channel, publisherNumber, cr) =>
@@ -231,6 +238,45 @@ const toggleResponses = (db, channel, newSetting, sender, cr) =>
     .update(db, channel.phoneNumber, { responsesEnabled: lowerCase(newSetting) === 'on' })
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(newSetting) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
+
+// REAUTHORIZE
+
+const maybeTrust = async (db, sock, channel, sender, publisherNumber) => {
+  const cr = messagesIn(sender.language).commandResponses.trust
+  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
+
+  if (!(sender.type === PUBLISHER)) {
+    return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  }
+  if (!isValid) {
+    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+  }
+  if (
+    (await channelRepository.resolveSenderType(db, channel.phoneNumber, validNumber)) === RANDOM
+  ) {
+    return { status: statuses.ERROR, message: cr.targetNotMember(publisherNumber) }
+  }
+
+  return trust(db, sock, validNumber, cr)
+}
+
+const trust = (db, sock, memberPhoneNumber, cr) => {
+  // TODO(aguestuser|2019-09-22): redo the return value signaling when we confine trusting to a single channel
+  return safetyNumberService.trust(db, sock, memberPhoneNumber).then(({ successes, errors }) => {
+    if (errors > 0) {
+      return {
+        status: statuses.ERROR,
+        message: cr.partialError(memberPhoneNumber, successes, errors),
+        payload: memberPhoneNumber,
+      }
+    }
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(memberPhoneNumber),
+      payload: memberPhoneNumber,
+    }
+  })
+}
 
 // NOOP
 const noop = sender =>

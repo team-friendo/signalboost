@@ -45,7 +45,8 @@ const trust = async (db, sock, phoneNumber) => {
     const trustResponses = await issueManyTrustCommands(sock, publications, subscriptions)
     return tallyResults(trustResponses)
   } catch (e) {
-    return defaultErrorOf(e)
+    logger.error(`Error adding safety number for ${phoneNumber}: ${e}`)
+    return { successes: 0, errors: 1, noops: 0 }
   }
 }
 

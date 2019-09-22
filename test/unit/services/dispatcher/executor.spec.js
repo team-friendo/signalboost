@@ -11,6 +11,7 @@ import {
 import { languages, senderTypes } from '../../../../app/constants'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
+import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
@@ -186,10 +187,31 @@ describe('executor service', () => {
         expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
       })
     })
+
+    describe('REAUTHORIZE command', () => {
+      it('parses an REAUTHORIZE command (regardless of case or whitespace)', () => {
+        expect(parseCommand('REAUTHORIZE')).to.eql({ command: commands.REAUTHORIZE, payload: '' })
+        expect(parseCommand('reauthorize')).to.eql({ command: commands.REAUTHORIZE, payload: '' })
+        expect(parseCommand(' reauthorize ')).to.eql({ command: commands.REAUTHORIZE, payload: '' })
+      })
+
+      it('parses the payload from an REAUTHORIZE command', () => {
+        expect(parseCommand('REAUTHORIZE foo')).to.eql({
+          command: commands.REAUTHORIZE,
+          payload: 'foo',
+        })
+      })
+
+      it('does not parse REAUTHORIZE command if string starts with chars other than `reauthorize`', () => {
+        expect(parseCommand('do REAUTHORIZE')).to.eql({ command: commands.NOOP })
+        expect(parseCommand('lol')).to.eql({ command: commands.NOOP })
+      })
+    })
   })
 
   describe('executing commands', () => {
     const db = {}
+    const sock = {}
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
@@ -813,6 +835,131 @@ describe('executor service', () => {
             command: commands.TOGGLE_RESPONSES,
             status: statuses.UNAUTHORIZED,
             message: CR.toggleResponses.unauthorized,
+          })
+        })
+      })
+    })
+
+    describe('REAUTHORIZE command', () => {
+      let trustStub, resolveSenderTypeStub
+      beforeEach(() => {
+        trustStub = sinon.stub(safetyNumberService, 'trust')
+        resolveSenderTypeStub = sinon.stub(channelRepository, 'resolveSenderType')
+      })
+      afterEach(() => {
+        trustStub.restore()
+        resolveSenderTypeStub.restore()
+      })
+
+      describe('when sender is a publisher', () => {
+        const sender = publisher
+
+        describe('when payload is a valid phone number', () => {
+          const payload = '+1 (555) 555-5555' // to ensure we catch errors
+          const validPhoneNumber = '+15555555555'
+          const sdMessage = sdMessageOf(channel, `REAUTHORIZE ${payload}`)
+          const dispatchable = { db, sock, channel, sender, sdMessage }
+
+          describe("when payload is a publisher's phone number", () => {
+            beforeEach(() => resolveSenderTypeStub.returns(senderTypes.PUBLISHER))
+
+            it("attempts to add payload number to the chanel's publishers", async () => {
+              trustStub.returns(Promise.resolve({ successes: 2, errors: 0 }))
+              await processCommand(dispatchable)
+              expect(trustStub.getCall(0).args).to.eql([db, sock, validPhoneNumber])
+            })
+
+            describe('when adding the publisher succeeds', () => {
+              beforeEach(() => trustStub.returns(Promise.resolve({ successes: 2, errors: 0 })))
+
+              it('returns a SUCCESS status / message and publisher number as payload', async () => {
+                expect(await processCommand(dispatchable)).to.eql({
+                  command: commands.REAUTHORIZE,
+                  status: statuses.SUCCESS,
+                  message: CR.trust.success(validPhoneNumber),
+                  payload: validPhoneNumber,
+                })
+              })
+            })
+
+            describe('when trusting the publisher fails at least once', () => {
+              beforeEach(() => trustStub.returns(Promise.resolve({ successes: 1, errors: 1 })))
+
+              it('returns an ERROR status and message', async () => {
+                expect(await processCommand(dispatchable)).to.eql({
+                  command: commands.REAUTHORIZE,
+                  status: statuses.ERROR,
+                  message: CR.trust.partialError(validPhoneNumber, 1, 1),
+                  payload: validPhoneNumber,
+                })
+              })
+            })
+          })
+
+          describe('when payload is a random phone number', () => {
+            let res
+            beforeEach(async () => {
+              resolveSenderTypeStub.returns(Promise.resolve(senderTypes.RANDOM))
+              res = await processCommand(dispatchable)
+            })
+
+            it('does not attempt to trust the publisher', () => {
+              expect(trustStub.callCount).to.eql(0)
+            })
+
+            it('returns some useful error', () => {
+              expect(res).to.eql({
+                command: commands.REAUTHORIZE,
+                status: statuses.ERROR,
+                message: CR.trust.targetNotMember(payload),
+              })
+            })
+          })
+        })
+
+        describe('when payload is not a valid phone number', async () => {
+          const dispatchable = {
+            db,
+            channel,
+            sender,
+            sdMessage: sdMessageOf(channel, 'REAUTHORIZE foo'),
+          }
+          let result
+          beforeEach(async () => (result = await processCommand(dispatchable)))
+
+          it('does not attempt to reauthorize publisher', () => {
+            expect(trustStub.callCount).to.eql(0)
+          })
+
+          it('returns a ERROR status/message', () => {
+            expect(result).to.eql({
+              command: commands.REAUTHORIZE,
+              status: statuses.ERROR,
+              message: CR.publisher.add.invalidNumber('foo'),
+            })
+          })
+        })
+      })
+
+      describe('when sender is not a publisher', () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: subscriber,
+          sdMessage: sdMessageOf(channel, 'REAUTHORIZE +1-555-555-5555'),
+        }
+        let result
+        beforeEach(async () => (result = await processCommand(dispatchable)))
+
+        it('does not attempt to add publisher', () => {
+          expect(trustStub.callCount).to.eql(0)
+        })
+
+        it('returns an UNAUTHORIZED status/message', () => {
+          expect(result).to.eql({
+            command: commands.REAUTHORIZE,
+            status: statuses.UNAUTHORIZED,
+            message: CR.publisher.add.unauthorized,
           })
         })
       })

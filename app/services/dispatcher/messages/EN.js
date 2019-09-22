@@ -151,7 +151,11 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   },
   trust: {
     success: phoneNumber => `Updated safety number for ${phoneNumber}`,
+    partialError: (phoneNumber, success, error) =>
+      `Updated safety number for ${success} out of ${success +
+        error} channels that ${phoneNumber} belongs to.`,
     invalidNumber,
+    unauthorized,
     targetNotMember: phoneNumber =>
       `Whoops! ${phoneNumber} is not an admin or subscriber on this channel. Cannot reactivate them.`,
     dbError: phoneNumber =>
