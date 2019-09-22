@@ -115,10 +115,11 @@ describe('safety numbers registrar module', () => {
         findMembershipsStub.callsFake(() => Promise.reject(new Error('db error')))
       })
 
-      it('resolves with an error object', async () => {
+      it('registers failure in the trust tally', async () => {
         expect(await trust(db, sock, memberPhoneNumber)).to.eql({
-          status: 'ERROR',
-          message: 'db error',
+          successes: 0,
+          errors: 1,
+          noops: 0,
         })
       })
     })

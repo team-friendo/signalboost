@@ -56,7 +56,7 @@ describe('signal module', () => {
         const result = await signal.getSocket().catch(a => a)
         expect(pathExistsStub.callCount).to.be.above(10)
         expect(connectStub.callCount).to.eql(0)
-        expect(result.message).to.eql(signal.errorMessages.socketTimeout)
+        expect(result.message).to.eql(signal.messages.error.socketTimeout)
       })
     })
   })
@@ -199,7 +199,7 @@ describe('signal module', () => {
             .catch(a => a)
 
           expect(result.message).to.eql(
-            signal.errorMessages.identityRequestTimeout(subscriberNumber),
+            signal.messages.error.identityRequestTimeout(subscriberNumber),
           )
         })
       })
@@ -252,7 +252,7 @@ describe('signal module', () => {
 
             expect(result).to.eql({
               status: 'SUCCESS',
-              message: signal.successMessages.trustSuccess(subscriberNumber),
+              message: signal.messages.trust.success(channelPhoneNumber, subscriberNumber),
             })
           })
         })
@@ -273,7 +273,7 @@ describe('signal module', () => {
             const result = promises[0]
             expect(result).to.eql({
               status: 'ERROR',
-              message: signal.errorMessages.trustError(subscriberNumber),
+              message: signal.messages.trust.error(channelPhoneNumber, subscriberNumber),
             })
           })
         })
@@ -291,7 +291,7 @@ describe('signal module', () => {
           const result = promises[0]
           expect(result).to.eql({
             status: 'ERROR',
-            message: signal.errorMessages.identityRequestTimeout(subscriberNumber),
+            message: signal.messages.error.identityRequestTimeout(subscriberNumber),
           })
         })
       })
@@ -336,7 +336,7 @@ describe('signal module', () => {
 
         it('rejects with an error message', async () => {
           expect(result).to.be.an('Error')
-          expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+          expect(result.message).to.eql(signal.messages.error.verificationTimeout(phoneNumber))
         })
       })
 
@@ -348,7 +348,7 @@ describe('signal module', () => {
 
         it('rejects with an error message', async () => {
           expect(result).to.be.an('Error')
-          expect(result.message).to.eql(signal.errorMessages.verificationTimeout(phoneNumber))
+          expect(result.message).to.eql(signal.messages.error.verificationTimeout(phoneNumber))
         })
       })
 

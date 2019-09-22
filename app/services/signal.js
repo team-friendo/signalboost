@@ -10,7 +10,7 @@ const {
     verificationTimeout,
     identityRequestTimeout,
   },
-} = require('../config/index')
+} = require('../config')
 
 /**
  * type InboundSignaldMessage = {
@@ -215,7 +215,8 @@ const trust = async (sock, channelPhoneNumber, memberPhoneNumber) => {
       message: messages.trust.noop(memberPhoneNumber),
     })
   }
-  await write(sock, {
+  // don't await this write so we can start listening sooner!
+  write(sock, {
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
@@ -245,7 +246,8 @@ const fetchMostRecentId = async (sock, channelPhoneNumber, memberPhoneNumber) =>
 
 // (Socket, String, String) -> Promise<Array<SignalIdentity>>
 const fetchIdentities = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  await write(sock, {
+  // don't await this write to complete so we can start listening sooner!
+  write(sock, {
     type: messageTypes.GET_IDENTITIES,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,

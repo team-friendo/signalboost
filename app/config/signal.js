@@ -8,7 +8,6 @@ const defaults = {
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   resendDelay: 1000, // 1 second
-  safetyNumberCheckInterval: 1000 * 60 * 60 * 24, // 1 day
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
 }
@@ -22,7 +21,6 @@ const test = {
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   resendDelay: 40, // 40 millis
-  safetyNumberCheckInterval: 100, // 100 millis
   signaldStartupTime: 1, // 1 milli
   welcomeDelay: 0.0001, // .0001 millis
 }
