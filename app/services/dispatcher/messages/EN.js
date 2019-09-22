@@ -70,6 +70,10 @@ ADD +1-555-555-5555
 REMOVE +1-555-555-5555
 -> removes +1-555-555-5555 as an admin
 
+REAUTHORIZE +1-555-555-5555
+-> restores admin rights to +1-555-555-5555 after they have re-installed signal
+-> (admin rights are taken away when an admin reinstalls signal to protect from an attacker impersonating the admin)
+
 GOODBYE / ADIOS
 -> removes you from channel`,
     subscriber: `
@@ -83,7 +87,9 @@ HELLO / HOLA
 -> subscribes you to messages
 
 GOODBYE / ADIOS
--> unsubscribes you`,
+-> unsubscribes you
+
+`,
   },
 
   // INFO
