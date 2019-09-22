@@ -93,7 +93,7 @@ describe('dispatcher service', () => {
     })
 
     describe('handling an incoming message', () => {
-      describe('when message is not dispatchable', () => {
+      describe('when message is not relayable or a failed send attempt', () => {
         beforeEach(() => {
           sock.emit(
             'data',
@@ -143,6 +143,17 @@ describe('dispatcher service', () => {
             },
           })
         })
+      })
+      //TODO: IMPLEMENT THESE UNIT TESTS NEXT TIME WE TOUCH THIS CODE!!!
+      describe('when message is a failed send attempt', () => {
+        it("attempts to trust the sender's safety number and re-send the message")
+        describe('when message sending fails', () => {
+          it('logs the error')
+        })
+      })
+
+      describe('when message is a rate limit notification', () => {
+        it('ignores the message')
       })
     })
   })

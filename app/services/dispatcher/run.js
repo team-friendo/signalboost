@@ -75,7 +75,6 @@ const relay = async (db, sock, inboundMsg) => {
 }
 
 const updateSafetyNumber = async (db, sock, inboundMsg) => {
-  console.log('!!!!!!!!!!!!')
   const sdMessage = inboundMsg.data.request
   const memberPhoneNumber = sdMessage.recipientNumber
   logger.log(`updating safety number for ${memberPhoneNumber}`)
@@ -100,7 +99,7 @@ const shouldRelay = inboundMsg =>
 const shouldUpdateSafetyNumber = inboundMsg =>
   inboundMsg.type === signal.messageTypes.ERROR &&
   get(inboundMsg, 'data.request.type') === signal.messageTypes.SEND &&
-  !get(inboundMsg, 'data.message' || '').includes('Rate limit')
+  !get(inboundMsg, 'data.message', '').includes('Rate limit')
 
 const classifySender = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
