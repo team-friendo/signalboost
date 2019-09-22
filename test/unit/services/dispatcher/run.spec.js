@@ -71,9 +71,9 @@ describe('dispatcher service', () => {
         .stub(channelRepository, 'resolveSenderLanguage')
         .returns(languages.EN)
 
-      processCommandStub = sinon.stub(executor, 'processCommand').returns(
-        Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }),
-      )
+      processCommandStub = sinon
+        .stub(executor, 'processCommand')
+        .returns(Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }))
 
       dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
       // onReceivedMessage stubs --^

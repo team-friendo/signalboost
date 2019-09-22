@@ -4,6 +4,7 @@ const channelRepository = require('./../../db/repositories/channel')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
+const safetyNumberService = require('../registrar/safetyNumbers')
 
 /**
  * type Dispatchable = {
@@ -52,22 +53,36 @@ const listenForInboundMessages = async (db, sock, channels) =>
 // MESSAGE DISPATCH
 
 const dispatch = async (db, sock, inboundMsg) => {
-  if (shouldRelay(inboundMsg)) {
-    const channelPhoneNumber = inboundMsg.data.username
-    const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
-    try {
-      const [channel, sender] = await Promise.all([
-        channelRepository.findDeep(db, channelPhoneNumber),
-        classifySender(db, channelPhoneNumber, inboundMsg.data.source),
-      ])
-      const dispatchable = { db, sock, channel, sender, sdMessage }
-      return messenger.dispatch({
-        dispatchable,
-        commandResult: await executor.processCommand(dispatchable),
-      })
-    } catch (e) {
-      logger.error(e)
-    }
+  if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
+  if (shouldUpdateSafetyNumber(inboundMsg)) return updateSafetyNumber(db, sock, inboundMsg)
+  return Promise.resolve()
+}
+
+const relay = async (db, sock, inboundMsg) => {
+  const channelPhoneNumber = inboundMsg.data.username
+  const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
+  try {
+    const [channel, sender] = await Promise.all([
+      channelRepository.findDeep(db, channelPhoneNumber),
+      classifySender(db, channelPhoneNumber, inboundMsg.data.source),
+    ])
+    const dispatchable = { db, sock, channel, sender, sdMessage }
+    const commandResult = await executor.processCommand(dispatchable)
+    return messenger.dispatch({ dispatchable, commandResult })
+  } catch (e) {
+    logger.error(e)
+  }
+}
+
+const updateSafetyNumber = async (db, sock, inboundMsg) => {
+  console.log('!!!!!!!!!!!!')
+  const sdMessage = inboundMsg.data.request
+  const memberPhoneNumber = sdMessage.recipientNumber
+  logger.log(`updating safety number for ${memberPhoneNumber}`)
+  try {
+    return safetyNumberService.trustAndResend(db, sock, memberPhoneNumber, sdMessage)
+  } catch (e) {
+    logger.error(e)
   }
 }
 
@@ -79,8 +94,13 @@ const parseMessage = inboundMsg => {
   }
 }
 
-const shouldRelay = sdMessage =>
-  sdMessage.type === signal.messageTypes.MESSAGE && get(sdMessage, 'data.dataMessage')
+const shouldRelay = inboundMsg =>
+  inboundMsg.type === signal.messageTypes.MESSAGE && get(inboundMsg, 'data.dataMessage')
+
+const shouldUpdateSafetyNumber = inboundMsg =>
+  inboundMsg.type === signal.messageTypes.ERROR &&
+  get(inboundMsg, 'data.request.type') === signal.messageTypes.SEND &&
+  !get(inboundMsg, 'data.message' || '').includes('Rate limit')
 
 const classifySender = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
