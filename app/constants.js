@@ -1,5 +1,6 @@
 const statuses = {
   SUCCESS: 'SUCCESS',
+  NOOP: 'NOOP',
   ERROR: 'ERROR',
 }
 

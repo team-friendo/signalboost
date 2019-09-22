@@ -1,195 +1,223 @@
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { expect } from 'chai'
-import { trustAll, trust } from '../../../../app/services/registrar/safetyNumbers'
+import { trust, trustAndResend } from '../../../../app/services/registrar/safetyNumbers'
 import channelRepository from '../../../../app/db/repositories/channel'
-import signal, { successMessages, errorMessages } from '../../../../app/services/signal'
-const { trustSuccess } = successMessages
-const { trustError } = errorMessages
+import signal from '../../../../app/services/signal'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { channelFactory } from '../../../support/factories/channel'
 import { times } from 'lodash'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { publicationFactory } from '../../../support/factories/publication'
+import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
+import { statuses } from '../../../../app/constants'
+const {
+  signal: { resendDelay },
+} = require('../../../../app/config')
 
 describe('safety numbers registrar module', () => {
   let db = {}
   const sock = {}
   const channelNumbers = times(2, genPhoneNumber)
-  const channels = [
-    {
-      ...channelFactory({
-        phoneNumber: channelNumbers[0],
-        subscriptions: times(2, () =>
-          subscriptionFactory({ channelPhoneNumber: channelNumbers[0] }),
-        ),
-        publications: times(2, () => publicationFactory({ channelPhoneNumber: channelNumbers[0] })),
+  const memberPhoneNumber = genPhoneNumber()
+  const memberships = {
+    publications: [
+      publicationFactory({
+        channelPhoneNumber: channelNumbers[0],
+        publisherPhoneNumber: memberPhoneNumber,
       }),
-    },
-    {
-      ...channelFactory({
-        phoneNumber: channelNumbers[1],
-        subscriptions: times(2, () =>
-          subscriptionFactory({ channelPhoneNumber: channelNumbers[1] }),
-        ),
-        publications: times(2, () => publicationFactory({ channelPhoneNumber: channelNumbers[1] })),
+    ],
+    subscriptions: [
+      subscriptionFactory({
+        channelPhoneNumber: channelNumbers[1],
+        subscriberPhoneNumber: memberPhoneNumber,
       }),
-    },
-  ]
-
-  let findAllStub, findMembershipsStub, trustStub
+    ],
+  }
+  let findMembershipsStub, trustStub, sendMessageStub
 
   beforeEach(() => {
-    findAllStub = sinon.stub(channelRepository, 'findAllDeep')
     findMembershipsStub = sinon.stub(channelRepository, 'findMemberships')
     trustStub = sinon.stub(signal, 'trust')
+    sendMessageStub = sinon.stub(signal, 'sendMessage')
   })
 
   afterEach(() => {
-    findAllStub.restore()
     findMembershipsStub.restore()
     trustStub.restore()
+    sendMessageStub.restore()
   })
 
-  describe('trusting all safety numbers', () => {
-    it('attempts to retrieve all channels with their pub/subs', async () => {
-      await trustAll(db, sock)
-      expect(findAllStub.getCall(0).args).to.eql([db])
-    })
-
-    describe('when channels retrieval succeeds', () => {
-      beforeEach(() => {
-        findAllStub.returns(Promise.all(channels))
-      })
-
-      it('attempts to trust all safety numbers for all pub/subs', async () => {
-        trustStub.returns(Promise.resolve())
-        await trustAll(db, sock)
-        expect(trustStub.callCount).to.eql(
-          channels[0].publications.length +
-            channels[0].subscriptions.length +
-            channels[1].publications.length +
-            channels[1].subscriptions.length,
-        )
-      })
-
-      describe('when trust calls succeed', () => {
-        beforeEach(() => {
-          trustStub.callsFake((_, __, pubSubPhoneNumber) =>
-            Promise.resolve({
-              status: 'SUCCESS',
-              message: successMessages.trustSuccess(pubSubPhoneNumber),
-            }),
-          )
-        })
-
-        it('returns a success object', async () => {
-          expect(await trustAll(db, sock)).to.eql({ successes: 8, errors: 0 })
-        })
-      })
-
-      describe('when a trust call fails', () => {
-        beforeEach(() => {
-          trustStub.callsFake((_, __, pubSubNumber) =>
-            pubSubNumber === channels[0].subscriptions[1].subscriberPhoneNumber
-              ? Promise.reject({ status: 'ERROR', message: trustError(pubSubNumber) })
-              : Promise.resolve({ status: 'SUCCESS', message: trustSuccess(pubSubNumber) }),
-          )
-        })
-
-        it('resolves with a trust tally denoting one error', async () => {
-          expect(await trustAll(db, sock)).to.eql({ successes: 7, errors: 1 })
-        })
-      })
-    })
-
-    describe('when channel retrieval fails', () => {
-      beforeEach(() => {
-        findAllStub.callsFake(() => Promise.reject(new Error('db error')))
-      })
-
-      it('resolves with an error object', async () => {
-        expect(await trustAll(db, sock)).to.eql({
-          status: 'ERROR',
-          message: 'db error',
-        })
-      })
-    })
-  })
-
-  describe('trusting all safety numbers belonging to a given user', () => {
-    const memberPhoneNumber = genPhoneNumber()
-
+  describe('#trust (trusting all safety numbers belonging to a given user)', () => {
     it('attempts to retrieve all the users memberships', async () => {
       await trust(db, sock, memberPhoneNumber)
       expect(findMembershipsStub.getCall(0).args).to.eql([db, memberPhoneNumber])
     })
 
     describe('when memberships retrieval succeeds', () => {
-      beforeEach(() => {
-        findMembershipsStub.returns(
-          Promise.resolve({
-            publications: [
-              publicationFactory({
-                channelPhoneNumber: channelNumbers[0],
-                publisherPhoneNumber: memberPhoneNumber,
-              }),
-            ],
-            subscriptions: [
-              subscriptionFactory({
-                channelPhoneNumber: channelNumbers[1],
-                subscriberPhoneNumber: memberPhoneNumber,
-              }),
-            ],
-          }),
-        )
-      })
+      beforeEach(() => findMembershipsStub.returns(Promise.resolve(memberships)))
 
       it('attempts to trust all safety numbers for all memberships', async () => {
         trustStub.returns(Promise.resolve())
         await trust(db, sock, memberPhoneNumber)
+
         expect(trustStub.callCount).to.eql(2)
+        expect(trustStub.getCall(0).args).to.eql([sock, channelNumbers[0], memberPhoneNumber])
+        expect(trustStub.getCall(1).args).to.eql([sock, channelNumbers[1], memberPhoneNumber])
       })
 
       describe('when trust calls succeed', () => {
-        beforeEach(() => {
-          trustStub.callsFake((_, __, pubSubPhoneNumber) =>
+        beforeEach(() =>
+          trustStub.returns(
             Promise.resolve({
-              status: 'SUCCESS',
-              message: successMessages.trustSuccess(pubSubPhoneNumber),
+              status: statuses.SUCCESS,
+              message: 'fake trust success message',
             }),
-          )
-        })
+          ),
+        )
 
-        it('returns a success object', async () => {
-          expect(await trust(db, sock, memberPhoneNumber)).to.eql({ successes: 2, errors: 0 })
+        it('returns a success tally', async () => {
+          expect(await trust(db, sock, memberPhoneNumber)).to.eql({
+            successes: 2,
+            errors: 0,
+            noops: 0,
+          })
         })
       })
 
       describe('when a trust call fails', () => {
         beforeEach(() => {
-          trustStub.callsFake((_, __, pubSubNumber) =>
-            pubSubNumber === channels[0].subscriptions[1].subscriberPhoneNumber
-              ? Promise.reject({ status: 'ERROR', message: trustError(pubSubNumber) })
-              : Promise.resolve({ status: 'SUCCESS', message: trustSuccess(pubSubNumber) }),
+          trustStub.onCall(0).callsFake(() =>
+            Promise.reject({
+              status: statuses.ERROR,
+              message: 'fake trust error message',
+            }),
+          )
+          trustStub.onCall(1).returns(
+            Promise.resolve({
+              status: statuses.SUCCESS,
+              message: 'fake trust success message',
+            }),
           )
         })
 
         it('resolves with a trust tally denoting one error', async () => {
-          expect(await trustAll(db, sock)).to.eql({ successes: 7, errors: 1 })
+          expect(await trust(db, sock, memberPhoneNumber)).to.eql({
+            successes: 1,
+            errors: 1,
+            noops: 0,
+          })
         })
       })
     })
 
     describe('when channel retrieval fails', () => {
       beforeEach(() => {
-        findAllStub.callsFake(() => Promise.reject(new Error('db error')))
+        findMembershipsStub.callsFake(() => Promise.reject(new Error('db error')))
       })
 
       it('resolves with an error object', async () => {
-        expect(await trustAll(db, sock)).to.eql({
+        expect(await trust(db, sock, memberPhoneNumber)).to.eql({
           status: 'ERROR',
           message: 'db error',
+        })
+      })
+    })
+  })
+
+  describe("#trustAndResend (trusting a user's safety numbers then resending them a message)", () => {
+    const sdMessage = sdMessageOf({ phoneNumber: channelNumbers[0] }, 'foo')
+
+    describe('in all cases', () => {
+      beforeEach(() => findMembershipsStub.returns(Promise.resolve(memberships)))
+
+      it("attempts to retrust all of a user's safety numbers", async () => {
+        await trustAndResend(db, sock, memberPhoneNumber, sdMessage)
+
+        expect(findMembershipsStub.callCount).to.eql(1)
+        expect(trustStub.getCall(0).args).to.eql([sock, channelNumbers[0], memberPhoneNumber])
+      })
+    })
+
+    describe('when trust commands succeed', () => {
+      beforeEach(() => {
+        findMembershipsStub.returns(memberships)
+        trustStub.returns(
+          Promise.resolve({
+            status: statuses.SUCCESS,
+            message: 'foo',
+          }),
+        )
+        sendMessageStub.onCall(0).returns(Promise.resolve()) // notification for publisher membership
+        sendMessageStub.onCall(1).returns(Promise.resolve()) // notification for subscriber membership
+      })
+
+      it('waits for an interval then resends the original message', async () => {
+        const start = new Date().getTime()
+        await trustAndResend(db, sock, memberPhoneNumber)
+
+        expect(sendMessageStub.callCount).to.eql(3) // 2 for notifications, 1 for resend
+        expect(sendMessageStub.getCall(2).args[1]).to.eql(memberPhoneNumber)
+        expect(new Date().getTime() - start).to.be.at.least(resendDelay)
+      })
+
+      describe('when resending succeeds', () => {
+        beforeEach(() => sendMessageStub.onCall(2).returns(Promise.resolve()))
+
+        it('returns a success tally', async () => {
+          expect(await trustAndResend(db, sock, memberPhoneNumber)).to.eql({
+            successes: 2,
+            errors: 0,
+            noops: 0,
+          })
+        })
+      })
+
+      describe('when resending fails', () => {
+        beforeEach(() =>
+          sendMessageStub.onCall(2).callsFake(() => Promise.reject(new Error('oh noes!'))),
+        )
+
+        it('returns an error status', async () => {
+          expect(await trustAndResend(db, sock, memberPhoneNumber)).to.eql({
+            status: statuses.ERROR,
+            message: 'oh noes!',
+          })
+        })
+      })
+    })
+
+    describe('when a trust command fails', () => {
+      beforeEach(() => {
+        findMembershipsStub.returns(memberships)
+        trustStub.callsFake(() =>
+          Promise.reject({
+            status: statuses.ERROR,
+            message: 'fake error',
+          }),
+        )
+      })
+
+      it('returns an error status', async () => {
+        expect(await trustAndResend(db, sock, memberPhoneNumber)).to.eql({
+          successes: 0,
+          noops: 0,
+          errors: 2,
+        })
+      })
+
+      describe('when a trust notification fails', () => {
+        beforeEach(() => {
+          findMembershipsStub.returns(memberships)
+          trustStub.returns(Promise.resolve({ status: statuses.SUCCESS, message: 'foo'}))
+          sendMessageStub.onCall(0).callsFake(() => Promise.reject(new Error('oh noes!')))
+        })
+
+        it('includes the error in a tally', async () => {
+          expect(await trustAndResend(db, sock, memberPhoneNumber)).to.eql({
+            successes: 1,
+            errors: 1,
+            noops: 0,
+          })
         })
       })
     })

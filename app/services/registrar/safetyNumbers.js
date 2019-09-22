@@ -1,44 +1,48 @@
 const channelRepository = require('../../db/repositories/channel')
 const signal = require('../../services/signal')
-const { flattenDeep, identity, partition } = require('lodash')
+const { flattenDeep } = require('lodash')
 const { statuses } = require('../../constants')
 const { defaultErrorOf } = require('../util')
+const { messagesIn } = require('../dispatcher/messages')
+const { wait, sequence, loggerOf } = require('../util')
+const logger = loggerOf('safetyNumberService')
+const {
+  defaultLanguage,
+  signal: { resendDelay },
+} = require('../../config')
+const {
+  messages: { trust: trustMessages },
+} = signal
 
 /*******************************************************
  * type TrustResponse = {
  *   status: "SUCCESS" | "ERROR"
- *   message: string // trustSuccess(string) | trustError(string)
+ *   message: string,
  * }
  *
  * type TrustTally = {
  *   successes: number,
- *   errors: number
+ *   errors: number,
+ *   noops: number,
  * }
  ******************************************************/
 
-// (Database, Socket) -> Promise<TrustTally>
-const trustAll = async (db, sock) => {
+// (Database, Socket, string, SdMessage) -> Promise<TrustTally>
+const trustAndResend = async (db, sock, phoneNumber, sdMessage) => {
   try {
-    const channels = await channelRepository.findAllDeep(db)
-    const [publications, subscriptions] = channels.reduce(
-      ([pubs, subs], ch) => [pubs.concat(ch.publications), subs.concat(ch.subscriptions)],
-      [[], []],
-    )
-    const trustResponses = await sendTrustMessages(sock, publications, subscriptions)
-    return tallyResults(trustResponses)
+    const trustResults = await trust(db, sock, phoneNumber)
+    await wait(resendDelay).then(() => signal.sendMessage(sock, phoneNumber, sdMessage))
+    return trustResults
   } catch (e) {
     return defaultErrorOf(e)
   }
 }
 
 // (Database, Socket) -> Promise<TrustTally>
-const trustAllForMember = async (db, sock, memberPhoneNumber) => {
+const trust = async (db, sock, phoneNumber) => {
   try {
-    const { publications, subscriptions } = await channelRepository.findMemberships(
-      db,
-      memberPhoneNumber,
-    )
-    const trustResponses = await sendTrustMessages(sock, publications, subscriptions)
+    const { publications, subscriptions } = await channelRepository.findMemberships(db, phoneNumber)
+    const trustResponses = await issueManyTrustCommands(sock, publications, subscriptions)
     return tallyResults(trustResponses)
   } catch (e) {
     return defaultErrorOf(e)
@@ -47,33 +51,81 @@ const trustAllForMember = async (db, sock, memberPhoneNumber) => {
 
 // TODO(aguestuser|2019-09-21):
 //  it would be easier to write logic like this if we had a `memberships` table
-//  instead of separate subscriptions/publications tables
+//  instead of separate subscriptions/publications tables.
+//  then we wouldn't have to write two separate branches with highly duplicated logic here!
 //  also: `memberships` is a more intuitive concept that `subscriptions` or `publications`
+
 // (Socket, Array<Publication>, Array<Subscription>) -> Promise<TrustResponse>
-const sendTrustMessages = (sock, publications, subscriptions) =>
+const issueManyTrustCommands = (sock, publications, subscriptions) =>
+  // impose a 1 sec delay between safety-number trustings/notifications to avoid signal rate-limiting
   Promise.all([
-    Promise.all(
-      subscriptions.map(sub =>
-        signal.trust(sock, sub.channelPhoneNumber, sub.subscriberPhoneNumber).catch(identity),
+    sequence(
+      publications.map(({ channelPhoneNumber, publisherPhoneNumber }) => () =>
+        issueTrustCommand(sock, channelPhoneNumber, publisherPhoneNumber),
       ),
+      resendDelay,
     ),
-    Promise.all(
-      publications.map(pub =>
-        signal.trust(sock, pub.channelPhoneNumber, pub.publisherPhoneNumber).catch(identity),
+    sequence(
+      subscriptions.map(({ channelPhoneNumber, subscriberPhoneNumber }) => () =>
+        issueTrustCommand(sock, channelPhoneNumber, subscriberPhoneNumber),
       ),
+      resendDelay,
     ),
   ]).then(flattenDeep)
 
-// (Array<TrustResponse>) -> TrustTally
-const tallyResults = trustResponses => {
-  const [successes, errors] = partition(trustResponses, resp => resp.status === statuses.SUCCESS)
-  return { successes: successes.length, errors: errors.length }
+// yes, this is gross! (let's refactor to use memberships instead of needing this!)
+const issueTrustCommand = async (sock, channelPhoneNumber, memberPhoneNumber) => {
+  const trustResult = await signal
+    .trust(sock, channelPhoneNumber, memberPhoneNumber)
+    .then(successStatus => {
+      logger.log(successStatus.message)
+      return successStatus
+    })
+    .catch(errorStatus => {
+      logger.log(errorStatus.message)
+      return errorStatus
+    })
+  try {
+    await notifyMember(sock, channelPhoneNumber, memberPhoneNumber)
+    return Promise.resolve(trustResult)
+  } catch (e) {
+    const message = trustMessages.notifyError(channelPhoneNumber, memberPhoneNumber)
+    logger.log(message)
+    return { status: statuses.ERROR, message }
+  }
 }
 
-//
-// .catch(e => ({
-//   status: statuses.ERROR,
-//   message: e.message,
-// }))
+const notifyMember = (sock, channelPhoneNumber, memberPhoneNumber) =>
+  signal.sendMessage(
+    sock,
+    memberPhoneNumber,
+    sdMessageOf(
+      { phoneNumber: channelPhoneNumber },
+      messagesIn(defaultLanguage).notifications.safetyNumberReset(channelPhoneNumber),
+    ),
+  )
 
-module.exports = { trustAll, trustAllForMember }
+// TODO(aguestuser|2019-09-22)
+//  extract this to util so it can be used both here and in messenger w/o circular dependency!
+const sdMessageOf = (channel, messageBody) => ({
+  type: signal.messageTypes.SEND,
+  username: channel.phoneNumber,
+  messageBody,
+})
+
+// (Array<TrustResponse>) -> TrustTally
+const tallyResults = trustResponses =>
+  trustResponses.reduce(
+    (acc, resp) => ({
+      successes: resp.status === statuses.SUCCESS ? acc.successes + 1 : acc.successes,
+      errors: resp.status === statuses.ERROR ? acc.errors + 1 : acc.errors,
+      noops: resp.status === statuses.NOOP ? acc.noops + 1 : acc.noops,
+    }),
+    {
+      successes: 0,
+      errors: 0,
+      noops: 0,
+    },
+  )
+
+module.exports = { trustAndResend, trust }

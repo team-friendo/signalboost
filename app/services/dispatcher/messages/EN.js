@@ -1,5 +1,8 @@
 const { upperCase } = require('lodash')
+
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
+const invalidNumber = phoneNumber =>
+  `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 
 const support = `
 ----------------------------
@@ -24,6 +27,8 @@ Welcome to Signalboost! You were just made an admin of the [${name}] channel by 
 Reply with HELP for more information or GOODBYE to leave.`
   },
   noop: "Whoops! That's not a command!",
+  safetyNumberReset: channelPhoneNumber =>
+    `Your safety number was just reset with ${channelPhoneNumber}. (Likely because you recently reinstalled signal.)`,
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
 }
 
@@ -34,15 +39,13 @@ const commandResponses = {
       success: num => `${num} added as an admin.`,
       unauthorized,
       dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
-      invalidNumber: num =>
-        `Whoops! Failed to add "${num}". Phone numbers must include country codes prefixed by a '+'`,
+      invalidNumber,
     },
     remove: {
       success: num => `${num} removed as an admin.`,
       unauthorized,
       dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-      invalidNumber: num =>
-        `Whoops! Failed to remove "${num}". Phone numbers must include country codes prefixed by a '+'`,
+      invalidNumber,
       targetNotPublisher: num => `Whoops! ${num} is not an admin. Can't remove them.`,
     },
   },
@@ -118,7 +121,7 @@ ${support}`,
       `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
     unauthorized,
   },
-  // ADD/REMOVE SUBSCRIBER
+  // JOIN/LEAVE
   subscriber: {
     add: {
       success: channel => {
@@ -145,6 +148,14 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
       `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
     invalidSetting: setting =>
       `Whoops! ${setting} is not a valid setting. You can set responses to be either ON or OFF.`,
+  },
+  trust: {
+    success: phoneNumber => `Updated safety number for ${phoneNumber}`,
+    invalidNumber,
+    targetNotMember: phoneNumber =>
+      `Whoops! ${phoneNumber} is not an admin or subscriber on this channel. Cannot reactivate them.`,
+    dbError: phoneNumber =>
+      `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
 }
 

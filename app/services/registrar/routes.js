@@ -34,7 +34,7 @@ const routesOf = (router, db, sock) => {
 
   router.post('/phoneNumbers/trust', async ctx => {
     const { memberPhoneNumber } = ctx.request.body
-    const result = await safetyNumberService.trustAllForMember(db, sock, memberPhoneNumber)
+    const result = await safetyNumberService.trust(db, sock, memberPhoneNumber)
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
   })

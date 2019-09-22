@@ -127,7 +127,7 @@ describe('routes', () => {
   describe('POST to /phoneNumbers/trust', () => {
     const memberPhoneNumber = genPhoneNumber()
     let trustStub
-    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'trustAllForMember')))
+    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'trust')))
     afterEach(() => trustStub.restore())
 
     describe('in all cases', () => {
