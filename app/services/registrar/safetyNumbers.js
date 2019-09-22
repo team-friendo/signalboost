@@ -34,7 +34,7 @@ const trustAll = async (db, sock) => {
 // (Database, Socket) -> Promise<TrustTally>
 const trustAllForMember = async (db, sock, memberPhoneNumber) => {
   try {
-    const { publications, subscriptions } = await channelRepository.findMembershipsByPhoneNumber(
+    const { publications, subscriptions } = await channelRepository.findMemberships(
       db,
       memberPhoneNumber,
     )

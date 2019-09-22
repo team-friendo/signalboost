@@ -322,7 +322,7 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#findMembershipsByPhoneNumber', () => {
+  describe('#findMemberships', () => {
     const channel2PhoneNumber = genPhoneNumber()
     const memberPhoneNumber = genPhoneNumber()
 
@@ -354,7 +354,7 @@ describe('channel repository', () => {
     )
 
     it('finds all channels for which a given phone number is either a publisher or subscriber', async () => {
-      const { publications, subscriptions } = await channelRepository.findMembershipsByPhoneNumber(
+      const { publications, subscriptions } = await channelRepository.findMemberships(
         db,
         memberPhoneNumber,
       )

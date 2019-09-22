@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { expect } from 'chai'
-import { trustAll, trustAllForMember } from '../../../../app/services/registrar/safetyNumbers'
+import { trustAll, trust } from '../../../../app/services/registrar/safetyNumbers'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal, { successMessages, errorMessages } from '../../../../app/services/signal'
 const { trustSuccess } = successMessages
@@ -41,7 +41,7 @@ describe('safety numbers registrar module', () => {
 
   beforeEach(() => {
     findAllStub = sinon.stub(channelRepository, 'findAllDeep')
-    findMembershipsStub = sinon.stub(channelRepository, 'findMembershipsByPhoneNumber')
+    findMembershipsStub = sinon.stub(channelRepository, 'findMemberships')
     trustStub = sinon.stub(signal, 'trust')
   })
 
@@ -121,7 +121,7 @@ describe('safety numbers registrar module', () => {
     const memberPhoneNumber = genPhoneNumber()
 
     it('attempts to retrieve all the users memberships', async () => {
-      await trustAllForMember(db, sock, memberPhoneNumber)
+      await trust(db, sock, memberPhoneNumber)
       expect(findMembershipsStub.getCall(0).args).to.eql([db, memberPhoneNumber])
     })
 
@@ -147,7 +147,7 @@ describe('safety numbers registrar module', () => {
 
       it('attempts to trust all safety numbers for all memberships', async () => {
         trustStub.returns(Promise.resolve())
-        await trustAllForMember(db, sock, memberPhoneNumber)
+        await trust(db, sock, memberPhoneNumber)
         expect(trustStub.callCount).to.eql(2)
       })
 
@@ -162,7 +162,7 @@ describe('safety numbers registrar module', () => {
         })
 
         it('returns a success object', async () => {
-          expect(await trustAllForMember(db, sock, memberPhoneNumber)).to.eql({ successes: 2, errors: 0 })
+          expect(await trust(db, sock, memberPhoneNumber)).to.eql({ successes: 2, errors: 0 })
         })
       })
 

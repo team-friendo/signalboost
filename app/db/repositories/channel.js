@@ -58,7 +58,7 @@ const findDeep = (db, phoneNumber) =>
 // TODO(aguestuser|2019-09-21)
 //  it would be nicer to extract publications and subscriptions into a memberhsips table
 //  then just query the membership table here (and move this function into a memberships repo
-const findMembershipsByPhoneNumber = async (db, memberPhoneNumber) => ({
+const findMemberships = async (db, memberPhoneNumber) => ({
   publications: await db.publication.findAll({
     where: { publisherPhoneNumber: memberPhoneNumber },
   }),
@@ -152,7 +152,7 @@ module.exports = {
   createWelcome,
   findAll,
   findAllDeep,
-  findMembershipsByPhoneNumber,
+  findMemberships,
   findByPhoneNumber,
   findDeep,
   getUnwelcomedPublishers,
