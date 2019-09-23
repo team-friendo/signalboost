@@ -5,6 +5,7 @@ const { messagesIn } = require('./messages')
 const { senderTypes } = require('../../constants')
 const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
 const { lowerCase } = require('lodash')
+const signal = require('../../services/signal')
 const safetyNumberService = require('../registrar/safetyNumbers')
 
 /**
@@ -257,26 +258,19 @@ const maybeTrust = async (db, sock, channel, sender, publisherNumber) => {
     return { status: statuses.ERROR, message: cr.targetNotMember(publisherNumber) }
   }
 
-  return trust(db, sock, validNumber, cr)
+  //return trust(db, sock, validNumber, cr)
+  return trust(sock, channel.phoneNumber, validNumber, sender.language)
 }
 
-const trust = (db, sock, memberPhoneNumber, cr) => {
-  // TODO(aguestuser|2019-09-22): redo the return value signaling when we confine trusting to a single channel
-  return safetyNumberService.trust(db, sock, memberPhoneNumber).then(({ successes, errors }) => {
-    if (errors > 0) {
-      return {
-        status: statuses.ERROR,
-        message: cr.partialError(memberPhoneNumber, successes, errors),
-        payload: memberPhoneNumber,
-      }
-    }
-    return {
-      status: statuses.SUCCESS,
-      message: cr.success(memberPhoneNumber),
+const trust = (sock, channelPhoneNumber, memberPhoneNumber, language) =>
+  safetyNumberService
+    .triggerTrust(sock, channelPhoneNumber, memberPhoneNumber, language)
+    .then(({ status, message }) => ({
+      command: commands.REAUTHORIZE,
       payload: memberPhoneNumber,
-    }
-  })
-}
+      status,
+      message,
+    }))
 
 // NOOP
 const noop = sender =>

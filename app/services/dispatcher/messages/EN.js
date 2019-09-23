@@ -157,6 +157,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   },
   trust: {
     success: phoneNumber => `Updated safety number for ${phoneNumber}`,
+    error: phoneNumber => `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
     partialError: (phoneNumber, success, error) =>
       `Updated safety number for ${success} out of ${success +
         error} channels that ${phoneNumber} belongs to.`,

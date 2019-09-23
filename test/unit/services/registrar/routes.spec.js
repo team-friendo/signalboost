@@ -11,6 +11,7 @@ import safetyNumberService from '../../../../app/services/registrar/safetyNumber
 import signalService from '../../../../app/services/signal'
 import { registrar } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('routes', () => {
   const phoneNumber = genPhoneNumber()
@@ -125,27 +126,32 @@ describe('routes', () => {
   })
 
   describe('POST to /phoneNumbers/trust', () => {
+    const channelPhoneNumber = genPhoneNumber()
     const memberPhoneNumber = genPhoneNumber()
     let trustStub
-    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'trust')))
+    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'triggerTrust')))
     afterEach(() => trustStub.restore())
 
     describe('in all cases', () => {
       beforeEach(() => trustStub.returns(Promise.resolve()))
 
-      it('attempts to trust all safety numbers associated with a user phone number', async () => {
+      it('sends a message to trigger a saftey number retrust', async () => {
         await request(server)
           .post('/phoneNumbers/trust')
           .set('Token', registrar.authToken)
-          .send({ memberPhoneNumber })
+          .send({ channelPhoneNumber, memberPhoneNumber })
 
-        // slice off db, sock b/c we don't really care about them
-        expect(trustStub.getCall(0).args[2]).to.eql(memberPhoneNumber)
+        // slice off sock b/c we don't really care about it
+        expect(trustStub.getCall(0).args.slice(1)).to.eql([
+          channelPhoneNumber,
+          memberPhoneNumber,
+          defaultLanguage,
+        ])
       })
     })
 
     describe('when trusting fails', () => {
-      const errStatus = { status: 'ERROR', error: 'identity request timed out' }
+      const errStatus = { status: 'ERROR', error: '' }
       beforeEach(() => trustStub.returns(Promise.resolve(errStatus)))
 
       it('returns an error status', async () => {
@@ -158,10 +164,7 @@ describe('routes', () => {
     })
 
     describe('when trusting succeeds', () => {
-      const successStatus = {
-        status: 'SUCCESS',
-        message: signalService.successMessages.trustSuccess(memberPhoneNumber),
-      }
+      const successStatus = { status: 'SUCCESS', message: '', }
       beforeEach(() => trustStub.returns(Promise.resolve(successStatus)))
 
       it('returns a success status', async () => {

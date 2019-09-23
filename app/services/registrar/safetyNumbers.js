@@ -27,6 +27,28 @@ const {
  * }
  ******************************************************/
 
+// (Socket, Channel, string, string) -> Promise<void>
+const triggerTrust = (sock, channelPhoneNumber, memberPhoneNumber, language) => {
+  const trustMessages = messagesIn(language).trust
+  return signal
+    .sendMessage(
+      sock,
+      memberPhoneNumber,
+      sdMessageOf(
+        { phoneNumber: channelPhoneNumber },
+        messagesIn(language).notifications.safetyNumberReset(channelPhoneNumber),
+      ),
+    )
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: trustMessages.success(memberPhoneNumber),
+    }))
+    .catch(() => ({
+      status: statuses.ERROR,
+      message: trustMessages.error(memberPhoneNumber),
+    }))
+}
+
 // (Database, Socket, string, SdMessage) -> Promise<TrustTally>
 const trustAndResend = async (db, sock, phoneNumber, sdMessage) => {
   try {
@@ -59,20 +81,18 @@ const trust = async (db, sock, phoneNumber) => {
 // (Socket, Array<Publication>, Array<Subscription>) -> Promise<TrustResponse>
 const issueManyTrustCommands = (sock, publications, subscriptions) =>
   // impose a 1 sec delay between safety-number trustings/notifications to avoid signal rate-limiting
-  Promise.all([
-    sequence(
-      publications.map(({ channelPhoneNumber, publisherPhoneNumber }) => () =>
+  sequence(
+    publications
+      .map(({ channelPhoneNumber, publisherPhoneNumber }) => () =>
         issueTrustCommand(sock, channelPhoneNumber, publisherPhoneNumber),
+      )
+      .concat(
+        subscriptions.map(({ channelPhoneNumber, subscriberPhoneNumber }) => () =>
+          issueTrustCommand(sock, channelPhoneNumber, subscriberPhoneNumber),
+        ),
       ),
-      resendDelay,
-    ),
-    sequence(
-      subscriptions.map(({ channelPhoneNumber, subscriberPhoneNumber }) => () =>
-        issueTrustCommand(sock, channelPhoneNumber, subscriberPhoneNumber),
-      ),
-      resendDelay,
-    ),
-  ]).then(flattenDeep)
+    resendDelay,
+  ).then(flattenDeep)
 
 // yes, this is gross! (let's refactor to use memberships instead of needing this!)
 const issueTrustCommand = async (sock, channelPhoneNumber, memberPhoneNumber) => {
@@ -129,4 +149,4 @@ const tallyResults = trustResponses =>
     },
   )
 
-module.exports = { trustAndResend, trust }
+module.exports = { triggerTrust, trustAndResend, trust }

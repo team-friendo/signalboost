@@ -3,6 +3,7 @@ const channelService = require('./channel')
 const safetyNumberService = require('./safetyNumbers')
 const { get, find } = require('lodash')
 const {
+  defaultLanguage,
   twilio: { smsEndpoint },
 } = require('../../config/index')
 
@@ -33,8 +34,14 @@ const routesOf = (router, db, sock) => {
   })
 
   router.post('/phoneNumbers/trust', async ctx => {
-    const { memberPhoneNumber } = ctx.request.body
-    const result = await safetyNumberService.trust(db, sock, memberPhoneNumber)
+    const { channelPhoneNumber, memberPhoneNumber } = ctx.request.body
+    // TODO: lookup default language or paramaterize
+    const result = await safetyNumberService.triggerTrust(
+      sock,
+      channelPhoneNumber,
+      memberPhoneNumber,
+      defaultLanguage,
+    )
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
   })

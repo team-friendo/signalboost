@@ -18,6 +18,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
 import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -843,7 +844,7 @@ describe('executor service', () => {
     describe('REAUTHORIZE command', () => {
       let trustStub, resolveSenderTypeStub
       beforeEach(() => {
-        trustStub = sinon.stub(safetyNumberService, 'trust')
+        trustStub = sinon.stub(safetyNumberService, 'triggerTrust')
         resolveSenderTypeStub = sinon.stub(channelRepository, 'resolveSenderType')
       })
       afterEach(() => {
@@ -863,14 +864,25 @@ describe('executor service', () => {
           describe("when payload is a publisher's phone number", () => {
             beforeEach(() => resolveSenderTypeStub.returns(senderTypes.PUBLISHER))
 
-            it("attempts to add payload number to the chanel's publishers", async () => {
-              trustStub.returns(Promise.resolve({ successes: 2, errors: 0 }))
-              await processCommand(dispatchable)
-              expect(trustStub.getCall(0).args).to.eql([db, sock, validPhoneNumber])
+            it("sends a message to trigger retrusting the publisher's safety number", async () => {
+              await processCommand(dispatchable).catch(a => a)
+              expect(trustStub.getCall(0).args).to.eql([
+                sock,
+                channel.phoneNumber,
+                validPhoneNumber,
+                defaultLanguage,
+              ])
             })
 
-            describe('when adding the publisher succeeds', () => {
-              beforeEach(() => trustStub.returns(Promise.resolve({ successes: 2, errors: 0 })))
+            describe('when sending the message succeeds', () => {
+              beforeEach(() =>
+                trustStub.returns(
+                  Promise.resolve({
+                    status: statuses.SUCCESS,
+                    message: CR.trust.success(validPhoneNumber),
+                  }),
+                ),
+              )
 
               it('returns a SUCCESS status / message and publisher number as payload', async () => {
                 expect(await processCommand(dispatchable)).to.eql({
@@ -883,13 +895,20 @@ describe('executor service', () => {
             })
 
             describe('when trusting the publisher fails at least once', () => {
-              beforeEach(() => trustStub.returns(Promise.resolve({ successes: 1, errors: 1 })))
+              beforeEach(() =>
+                trustStub.returns(
+                  Promise.resolve({
+                    status: statuses.ERROR,
+                    message: CR.trust.error(validPhoneNumber),
+                  }),
+                ),
+              )
 
               it('returns an ERROR status and message', async () => {
                 expect(await processCommand(dispatchable)).to.eql({
                   command: commands.REAUTHORIZE,
                   status: statuses.ERROR,
-                  message: CR.trust.partialError(validPhoneNumber, 1, 1),
+                  message: CR.trust.error(validPhoneNumber),
                   payload: validPhoneNumber,
                 })
               })
