@@ -13,7 +13,7 @@ fi
 echo "--- checking environment..."
 
 if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\$ set -a && source .env && set +a\`"
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\set -a && source .env && set +a\`"
   exit 1
 fi
 
