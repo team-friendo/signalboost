@@ -4,11 +4,13 @@
 
 * [Overview](#overview)
 * [Application Design](#design)
-* [Deploying A Signalboost Instance](#deploy)
-  * [Deploy Instructions for General Public](#deploy-public)
-  * [Deploy Instructions for Maintainers](#deploy-maintainers)
-* [Using the Signalboost CLI Tool](#cli)
-* [Contributing](#contributing)
+* FOR SYSADMINS:
+  * [Deploying A Signalboost Instance](#deploy)
+    * [Deploy Instructions for General Public](#deploy-public)
+    * [Deploy Instructions for Maintainers](#deploy-maintainers)
+  * [Using the Signalboost CLI Tool](#cli)
+* FOR DEVELOPERS:
+  * [Getting Started](#getting-started)
 
 # Overview <a name="overview"></a>
 
@@ -296,7 +298,7 @@ You can uninstall it later with:
 
 ```shell
 $ cd <path/to/signalboost>
-$ sudo ./cli/install
+$ sudo ./cli/uninstall
 ```
 
 **(6) List existing numbers/channels:**
@@ -380,25 +382,40 @@ For more detailed instructions on any of the commands, run:
 $ boost <command> -h
 ```
 
-# Contributing <a name="contributing"></a>
+# Getting Started <a name="#getting-started"></a>
 
-## Getting Started
+TODO: read our (as of yet undrafted) contributing guide! :)
 
-### Secrets
+## System Dependencies
+
+You will need:
+
+* docker and docker-compose
+* jq
+* postgresql
+* ansible, ansible-playbook
+
+## Secrets
 
 Upon cloning the repo, do either of the following to provide missing env vars needed to run signalboost:
 
-#### Secrets for General Public
+### Secrets for General Public
 
 You will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
 
 We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
 
-#### Secrets for Maintainers
+### Secrets for Maintainers
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
-Use it to decrypt secrets and source them with:
+To be able to use it, you first need to whitelist your gpg key:
+
+* [make a working pgp key](http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/) if you don't have one already
+* obtain your public key fingerprint (with e.g., `gpg -K`)
+* send your pgp public key fingerprint to a signalboost maintainer and ask them to add you to the blackbox whitelist of trusted pgp keys
+
+Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
 
 ```
 $ git clone git@0xacab.org:team-friendo/signalboost
@@ -406,13 +423,13 @@ $ cd signalboost
 $ ./bin/blackbox/decrypt_all_files
 $ set +a && source .env && set -a
 ```
-### Setup
+## Setup
 
 ``` shell
 $ yarn setup
 ```
 
-### Run Tests
+## Run Tests
 
 ``` shell
 $ yarn test
@@ -428,13 +445,37 @@ $ yarn test:unit
 $ yarn test:e2e
 ```
 
-### Run App
+## Run App
 
 Run the app in dev mode with:
 
 ``` shell
 $ yarn dev
 ```
+
+## Seed Data
+
+You will need the `boost` cli tool installed to create seed numbers and channels. Here's how!
+
+```shell
+$ cd /path/to/signalbost 
+$ sudo ./cli/install
+$ boost create-number -n 2 -u signalboost.ngrok.io # creates 2 signalboost numbers
+```
+
+Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
+
+```shell
+$ boost create-channel \
+    -p <channel_phone_number> \
+    -n "my new channel" \
+    -s <your_actual_phone_number> \
+    -u signalboost.ngrok.io
+```
+
+## Database Scripts
+
+
 
 ### Use App
 
@@ -454,22 +495,22 @@ Any admin should be able to:
 
 There are a few scripts to do things with the db:
 
-Run migrations:
+To run all pending migrations (useful if another dev created migrations you haven't run yet):
 
-``` shell
+```shell
 $ yarn db:migrate
 ```
 
-Seed db:
+To drop the database (you will need to recreate seed data after this):
 
-``` shell
-$ yarn db:seed
+```shell
+$ yarn db:drop
 ```
 
-Unseed db:
+To get a psql shell (inside the postgres docker container for signalboost):
 
-``` shell
-$ yarn db:unseed
+```shell
+$ yarn db:psql
 ```
 
 Get a psql shell:

@@ -55,7 +55,13 @@ elif [[ ! $senders =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  senders="[\"$(echo $senders | sed -re "s/,/\", \"/g")\"]"
+  if [ "$(uname)" == 'Darwin' ]
+  then # we are in mac and must use -E
+     senders="[\"$(echo $senders | sed -E "s/,/\", \"/g")\"]"
+  else # we are in linux and may use -re
+     senders="[\"$(echo $senders | sed -re "s/,/\", \"/g")\"]"
+  fi
+  
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
