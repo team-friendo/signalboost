@@ -5,6 +5,7 @@ const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
+const { senderTypes } = require('../../constants')
 
 /**
  * type Dispatchable = {
@@ -25,6 +26,11 @@ const safetyNumberService = require('../registrar/safetyNumbers')
  *   status: string,
  *   command: string,
  *   message: string,
+ * }
+ *
+ * type SignalBoostStatus = {
+ *   status: 'SUCCESS' | 'ERROR',
+ *   message; string
  * }
  */
 
@@ -64,7 +70,7 @@ const relay = async (db, sock, inboundMsg) => {
   try {
     const [channel, sender] = await Promise.all([
       channelRepository.findDeep(db, channelPhoneNumber),
-      classifySender(db, channelPhoneNumber, inboundMsg.data.source),
+      classifyPhoneNumber(db, channelPhoneNumber, inboundMsg.data.source),
     ])
     const dispatchable = { db, sock, channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
@@ -76,13 +82,23 @@ const relay = async (db, sock, inboundMsg) => {
 
 const updateSafetyNumber = async (db, sock, inboundMsg) => {
   const sdMessage = inboundMsg.data.request
+  const channelPhoneNumber = sdMessage.username
   const memberPhoneNumber = sdMessage.recipientNumber
-  logger.log(`updating safety number for ${memberPhoneNumber}`)
-  try {
-    return safetyNumberService.trustAndResend(db, sock, memberPhoneNumber, sdMessage)
-  } catch (e) {
-    logger.error(e)
+
+  const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber)
+    .catch(logger.error)
+
+  if (recipient.type === senderTypes.PUBLISHER) {
+    return safetyNumberService
+      .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
+      .then(logger.logAndReturn)
+      .catch(logger.error)
   }
+  if (recipient.type !== senderTypes.SUBSCRIBER) return Promise.resolve()
+  return safetyNumberService
+    .trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage)
+    .then(logger.logAndReturn)
+    .catch(logger.error)
 }
 
 const parseMessage = inboundMsg => {
@@ -101,7 +117,7 @@ const shouldUpdateSafetyNumber = inboundMsg =>
   get(inboundMsg, 'data.request.type') === signal.messageTypes.SEND &&
   !get(inboundMsg, 'data.message', '').includes('Rate limit')
 
-const classifySender = async (db, channelPhoneNumber, senderPhoneNumber) => {
+const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
   const language = await channelRepository.resolveSenderLanguage(
     db,

@@ -50,9 +50,13 @@ const nowTimestamp = () => new Date().toISOString()
 
 const loggerOf = prefix =>
   process.env.NODE_ENV === 'test'
-    ? { log: () => null, error: () => null, fatalError: () => null }
+    ? { log: () => null, logAndReturn: () => null, error: () => null, fatalError: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        logAndReturn: sbStatus => {
+          console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.message}`)
+          return sbStatus
+        },
         error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
         fatalError: e => {
           console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`)

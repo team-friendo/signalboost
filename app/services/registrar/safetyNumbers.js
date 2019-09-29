@@ -17,19 +17,12 @@ const {
  *
  ******************************************************/
 
-// (Database, Socket, string, string, SdMessage) -> Promise<TrustTally>
+// (Database, Socket, string, string, SdMessage) -> Promise<SignalboostStatus>
 const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage) => {
-  try {
-    const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
-    await wait(resendDelay) // to avoid signal rate limiting block
-    await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
-
-    logger.log(trustResult.message)
-    return Promise.resolve(trustResult)
-  } catch (e) {
-    logger.error(e.message)
-    return Promise.reject(e)
-  }
+  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
+  await wait(resendDelay) // to avoid signal rate limiting block
+  await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+  return trustResult
 }
 
 // (Database, socket, string, string) -> Promise<SignalBoostStatus>

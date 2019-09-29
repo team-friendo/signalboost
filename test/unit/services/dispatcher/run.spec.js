@@ -8,152 +8,308 @@ import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/executor'
-import messenger, { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
+import messenger from '../../../../app/services/dispatcher/messenger'
+import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
+import logger from '../../../../app/services/dispatcher/logger'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 
 describe('dispatcher service', () => {
-  describe('running the service', () => {
-    const db = {}
-    const sock = new EventEmitter()
-    const channels = times(2, () => ({ ...channelFactory(), publications: [], subscriptions: [] }))
-    const channel = channels[0]
-    const sender = genPhoneNumber()
-    const authenticatedSender = {
-      phoneNumber: sender,
-      language: languages.EN,
-      type: senderTypes.PUBLISHER,
-    }
-    const sdInMessage = {
-      type: 'message',
-      data: {
-        username: channel.phoneNumber,
-        source: sender,
-        dataMessage: {
-          timestamp: new Date().getTime(),
-          message: 'foo',
-          expiresInSeconds: 0,
-          attachments: [],
-        },
+  const db = {}
+  const sock = new EventEmitter().setMaxListeners(30)
+  const channels = times(2, () => ({ ...channelFactory(), publications: [], subscriptions: [] }))
+  const channel = channels[0]
+  const sender = genPhoneNumber()
+  const authenticatedSender = {
+    phoneNumber: sender,
+    language: languages.EN,
+    type: senderTypes.PUBLISHER,
+  }
+  const sdInMessage = {
+    type: 'message',
+    data: {
+      username: channel.phoneNumber,
+      source: sender,
+      dataMessage: {
+        timestamp: new Date().getTime(),
+        message: 'foo',
+        expiresInSeconds: 0,
+        attachments: [],
       },
-    }
-    const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
+    },
+  }
+  const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
+  const socketDelay = 5
 
-    let findAllDeepStub,
-      findDeepStub,
-      resolveSenderTypeStub,
-      resolveSenderLanguageStub,
-      subscribeStub,
-      processCommandStub,
-      dispatchStub
+  let findAllDeepStub,
+    findDeepStub,
+    resolveSenderTypeStub,
+    resolveSenderLanguageStub,
+    subscribeStub,
+    trustAndResendStub,
+    deauthorizeStub,
+    processCommandStub,
+    dispatchStub,
+    logAndReturnSpy,
+    logErrorSpy
 
-    beforeEach(async () => {
-      // initialization stubs --v
+  beforeEach(async () => {
+    // initialization stubs --v
 
-      findAllDeepStub = sinon
-        .stub(channelRepository, 'findAllDeep')
-        .returns(Promise.resolve(channels))
+    findAllDeepStub = sinon
+      .stub(channelRepository, 'findAllDeep')
+      .returns(Promise.resolve(channels))
 
-      subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve())
+    subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
-      // main loop stubs --^
+    // main loop stubs --^
 
-      // on inboundMessage stubs --v
+    // on inboundMessage stubs --v
 
-      findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
+    findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
-      resolveSenderTypeStub = sinon
-        .stub(channelRepository, 'resolveSenderType')
-        .returns(Promise.resolve(senderTypes.PUBLISHER))
+    resolveSenderTypeStub = sinon
+      .stub(channelRepository, 'resolveSenderType')
+      .returns(Promise.resolve(senderTypes.PUBLISHER))
 
-      resolveSenderLanguageStub = sinon
-        .stub(channelRepository, 'resolveSenderLanguage')
-        .returns(languages.EN)
+    resolveSenderLanguageStub = sinon
+      .stub(channelRepository, 'resolveSenderLanguage')
+      .returns(languages.EN)
 
-      processCommandStub = sinon
-        .stub(executor, 'processCommand')
-        .returns(Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }))
+    trustAndResendStub = sinon
+      .stub(safetyNumberService, 'trustAndResend')
+      .returns(Promise.resolve({ status: 'SUCCESS', message: 'fake trust success' }))
 
-      dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
-      // onReceivedMessage stubs --^
+    deauthorizeStub = sinon
+      .stub(safetyNumberService, 'deauthorize')
+      .returns(Promise.resolve({ status: 'SUCCESS', message: 'fake deauthorize success' }))
 
-      await run(db, sock)
-      sock.emit('data', JSON.stringify(sdMessageOf(channel, 'foo')))
+    processCommandStub = sinon
+      .stub(executor, 'processCommand')
+      .returns(Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }))
+
+    dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
+
+    logAndReturnSpy = sinon.spy(logger, 'logAndReturn')
+    logErrorSpy = sinon.spy(logger, 'error')
+    // onReceivedMessage stubs --^
+
+    await run(db, sock)
+  })
+
+  afterEach(() => {
+    findAllDeepStub.restore()
+    findDeepStub.restore()
+    resolveSenderTypeStub.restore()
+    resolveSenderLanguageStub.restore()
+    trustAndResendStub.restore()
+    deauthorizeStub.restore()
+    processCommandStub.restore()
+    dispatchStub.restore()
+    subscribeStub.restore()
+    logAndReturnSpy.restore()
+    logErrorSpy.restore()
+  })
+
+  describe('handling an incoming message', () => {
+    describe('when message is not relayable or a failed send attempt', () => {
+      beforeEach(async () => {
+        sock.emit('data', JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }))
+        wait(socketDelay)
+      })
+
+      it('ignores the message', () => {
+        expect(processCommandStub.callCount).to.eql(0)
+        expect(dispatchStub.callCount).to.eql(0)
+      })
     })
 
-    afterEach(() => {
-      findAllDeepStub.restore()
-      findDeepStub.restore()
-      resolveSenderTypeStub.restore()
-      resolveSenderLanguageStub.restore()
-      processCommandStub.restore()
-      dispatchStub.restore()
-      subscribeStub.restore()
-    })
+    describe('when message is dispatchable', () => {
+      beforeEach(async () => {
+        sock.emit('data', JSON.stringify(sdInMessage))
+        await wait(socketDelay)
+      })
 
-    describe('handling an incoming message', () => {
-      describe('when message is not relayable or a failed send attempt', () => {
-        beforeEach(() => {
-          sock.emit(
-            'data',
-            JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }),
-          )
-        })
+      it('retrieves a channel record', () => {
+        expect(findDeepStub.getCall(0).args).to.eql([db, channel.phoneNumber])
+      })
 
-        it('ignores the message', () => {
-          expect(processCommandStub.callCount).to.eql(0)
-          expect(dispatchStub.callCount).to.eql(0)
+      it('retrieves permissions for the message sender', () => {
+        expect(resolveSenderTypeStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+      })
+
+      it('processes any commands in the message', () => {
+        expect(processCommandStub.getCall(0).args[0]).to.eql({
+          db,
+          sock,
+          channel,
+          sender: authenticatedSender,
+          sdMessage: sdOutMessage,
         })
       })
 
-      describe('when message is dispatchable', () => {
-        beforeEach(async () => {
-          sock.emit('data', JSON.stringify(sdInMessage))
-          await wait(10)
-        })
-
-        it('retrieves a channel record', () => {
-          expect(findDeepStub.getCall(0).args).to.eql([db, channel.phoneNumber])
-        })
-
-        it('retrieves permissions for the message sender', () => {
-          expect(resolveSenderTypeStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
-        })
-
-        it('processes any commands in the message', () => {
-          expect(processCommandStub.getCall(0).args[0]).to.eql({
+      it('passes the command result and original message to messenger for dispatch', () => {
+        expect(dispatchStub.getCall(0).args[0]).to.eql({
+          commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
+          dispatchable: {
             db,
             sock,
             channel,
             sender: authenticatedSender,
             sdMessage: sdOutMessage,
+          },
+        })
+      })
+    })
+
+    describe('when message is a failed send attempt', () => {
+      const recipientNumber = genPhoneNumber()
+      const messageBody = '[foo]\nbar'
+      const sdErrorMessage = {
+        type: signal.messageTypes.ERROR,
+        data: {
+          msg_number: 0,
+          error: true,
+          request: {
+            type: 'send',
+            username: channel.phoneNumber,
+            messageBody,
+            recipientNumber,
+            attachments: [],
+            expiresInSeconds: 0,
+          },
+        },
+      }
+
+      describe('when intended recipient is a subscriber', () => {
+        beforeEach(async () => resolveSenderTypeStub.returns(senderTypes.SUBSCRIBER))
+
+        it("attempts to trust the recipient's safety number and re-send the message", async () => {
+          sock.emit('data', JSON.stringify(sdErrorMessage))
+          await wait(socketDelay)
+
+          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
+          expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
+            channel.phoneNumber,
+            recipientNumber,
+            sdErrorMessage.data.request,
+          ])
+        })
+
+        describe('when trusting succeeds', () => {
+          // this is the default stub
+          it('logs the success', async () => {
+            sock.emit('data', JSON.stringify(sdErrorMessage))
+            await wait(socketDelay)
+
+            expect(logAndReturnSpy.getCall(0).args).to.eql([
+              {
+                status: 'SUCCESS',
+                message: 'fake trust success',
+              },
+            ])
           })
         })
 
-        it('passes the command result and original message to messenger for dispatch', () => {
-          expect(dispatchStub.getCall(0).args[0]).to.eql({
-            commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: authenticatedSender,
-              sdMessage: sdOutMessage,
-            },
+        describe('when trusting fails', () => {
+          const errorStatus = { status: 'ERROR', message: 'fake trust error' }
+          beforeEach(() => trustAndResendStub.callsFake(() => Promise.reject(errorStatus)))
+
+          it('logs the failure', async () => {
+            sock.emit('data', JSON.stringify(sdErrorMessage))
+            await wait(socketDelay)
+
+            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
           })
         })
       })
-      //TODO: IMPLEMENT THESE UNIT TESTS NEXT TIME WE TOUCH THIS CODE!!!
-      describe('when message is a failed send attempt', () => {
-        it("attempts to trust the sender's safety number and re-send the message")
-        describe('when message sending fails', () => {
-          it('logs the error')
+
+      describe('when intended recipient is an admin', () => {
+        beforeEach(async () => resolveSenderTypeStub.returns(senderTypes.PUBLISHER))
+        //TODO:
+        // resolveSenderType -> resolveMemberShipType
+        // senderTypes -> membershipTypes
+        // membershiptTypes.RANDOM -> membershipTypes.NONE
+
+        it('attempts to deauthorize the admin', async () => {
+          sock.emit('data', JSON.stringify(sdErrorMessage))
+          await wait(socketDelay)
+
+          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+          expect(deauthorizeStub.getCall(0).args.slice(2)).to.eql([
+            channel.phoneNumber,
+            recipientNumber,
+          ])
+        })
+
+        describe('when deauth succeeds', () => {
+          // this is the default stub
+          it('logs the success', async () => {
+            sock.emit('data', JSON.stringify(sdErrorMessage))
+            await wait(socketDelay)
+
+            expect(logAndReturnSpy.getCall(0).args).to.eql([
+              {
+                status: 'SUCCESS',
+                message: 'fake deauthorize success',
+              },
+            ])
+          })
+        })
+
+        describe('when deauth fails', () => {
+          const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
+          beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
+
+          it('logs the failure', async () => {
+            sock.emit('data', JSON.stringify(sdErrorMessage))
+            await wait(socketDelay)
+
+            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
+          })
         })
       })
 
       describe('when message is a rate limit notification', () => {
-        it('ignores the message')
+        beforeEach(async () => resolveSenderTypeStub.returns(senderTypes.SUBSCRIBER))
+
+        const rateLimitWarning = {
+          type: signal.messageTypes.ERROR,
+          data: {
+            msg_number: 0,
+            error: true,
+            message: 'Rate limit exceeded: you are in big trouble!',
+            request: {
+              type: 'send',
+              username: channel.phoneNumber,
+              messageBody,
+              recipientNumber,
+              attachments: [],
+              expiresInSeconds: 0,
+            },
+          },
+        }
+
+        it('drops the message', async () => {
+          sock.emit('data', JSON.stringify(rateLimitWarning))
+          await wait(socketDelay)
+
+          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
+        })
+      })
+
+      describe('and the recipient is a random person (why would this ever happen?)', () => {
+        beforeEach(async () => resolveSenderTypeStub.returns(senderTypes.RANDOM))
+
+        it('drops the message', async () => {
+          sock.emit('data', JSON.stringify(sdInMessage))
+          await wait(socketDelay)
+
+          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
+        })
       })
     })
   })
