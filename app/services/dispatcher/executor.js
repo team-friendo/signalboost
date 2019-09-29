@@ -2,11 +2,9 @@ const channelRepository = require('../../db/repositories/channel')
 const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
 const { messagesIn } = require('./messages')
-const { senderTypes } = require('../../constants')
+const { senderTypes } = channelRepository
 const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
 const { lowerCase } = require('lodash')
-const signal = require('../../services/signal')
-const safetyNumberService = require('../registrar/safetyNumbers')
 
 /**
  * type Executable = {

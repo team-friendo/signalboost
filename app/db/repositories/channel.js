@@ -1,7 +1,14 @@
 const { Op } = require('sequelize')
 const { times } = require('lodash')
 const { defaultLanguage } = require('../../config')
-const { senderTypes } = require('../../constants')
+
+// CONSTANTS
+
+const senderTypes = {
+  PUBLISHER: 'PUBLISHER',
+  SUBSCRIBER: 'SUBSCRIBER',
+  RANDOM: 'RANDOM',
+}
 
 // PUBLIC FUNCTIONS
 
@@ -152,4 +159,5 @@ module.exports = {
   resolveSenderType,
   resolveSenderLanguage,
   update,
+  senderTypes,
 }

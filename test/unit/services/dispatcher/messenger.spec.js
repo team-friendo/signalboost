@@ -2,7 +2,8 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { senderTypes, languages } from '../../../../app/constants'
+import { languages } from '../../../../app/constants'
+import { senderTypes } from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
@@ -272,7 +273,7 @@ describe('messenger service', () => {
         const newPublisher = genPhoneNumber()
         const sdMessage = `${commands.ADD} ${newPublisher}`
         const response = messages.commandResponses.publisher.add.success(newPublisher)
-        const welcome = messages.notifications.welcome(channel, publisherSender.phoneNumber)
+        const welcome = messages.notifications.welcome(publisherSender.phoneNumber)
 
         beforeEach(async () => {
           await messenger.dispatch({

@@ -10,7 +10,7 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
-import { senderTypes } from '../../../../app/constants'
+import { senderTypes } from '../../../../app/db/repositories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)

@@ -5,7 +5,7 @@ const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
-const { senderTypes } = require('../../constants')
+const { senderTypes } = require('../../db/repositories/channel')
 
 /**
  * type Dispatchable = {

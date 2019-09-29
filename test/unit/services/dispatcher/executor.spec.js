@@ -8,7 +8,8 @@ import {
   parseCommand,
   processCommand,
 } from '../../../../app/services/dispatcher/executor'
-import { languages, senderTypes } from '../../../../app/constants'
+import { languages } from '../../../../app/constants'
+import { senderTypes } from '../../../../app/db/repositories/channel'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations/phoneNumber'

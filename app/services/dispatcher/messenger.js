@@ -1,7 +1,7 @@
 const signal = require('../signal')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { sdMessageOf } = require('../signal')
-const { senderTypes } = require('../../constants')
+const { senderTypes } = require('../../db/repositories/channel')
 const { messagesIn } = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
@@ -109,7 +109,7 @@ const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher,
     db,
     sock,
     channel,
-    notification: messagesIn(language).notifications.welcome(channel, addingPublisher),
+    notification: messagesIn(language).notifications.welcome(addingPublisher),
     recipients: [newPublisher],
   })
 
