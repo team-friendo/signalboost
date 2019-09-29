@@ -5,12 +5,12 @@ import { deauthorize, trustAndResend } from '../../../../app/services/registrar/
 import signal from '../../../../app/services/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 import { statuses } from '../../../../app/constants'
 import { channelFactory } from '../../../support/factories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
 import { defaultLanguage } from '../../../../app/config'
+import { sdMessageOf } from "../../../../app/services/util"
 const {
   signal: { resendDelay },
 } = require('../../../../app/config')

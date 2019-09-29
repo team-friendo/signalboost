@@ -5,10 +5,11 @@ import { times } from 'lodash'
 import { senderTypes, languages } from '../../../../app/constants'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import messenger, { messageTypes, sdMessageOf } from '../../../../app/services/dispatcher/messenger'
+import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages/EN'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { sdMessageOf } from "../../../../app/services/util"
 
 describe('messenger service', () => {
   const [db, sock] = [{}, { write: () => {} }]

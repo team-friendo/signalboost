@@ -2,9 +2,9 @@ const signal = require('../../services/signal')
 const channelRepository = require('../../db/repositories/channel')
 const { wait, loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
-const { sdMessageOf } = require('../dispatcher/messenger')
 const { messagesIn } = require('../dispatcher/messages')
 const { defaultErrorOf } = require('../util')
+const { sdMessageOf } = require('../util')
 const {
   signal: { resendDelay },
 } = require('../../config')

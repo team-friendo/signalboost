@@ -11,14 +11,12 @@ import {
 import { languages, senderTypes } from '../../../../app/constants'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
-import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
-import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
-import { defaultLanguage } from '../../../../app/config'
+import { sdMessageOf } from '../../../../app/services/util'
 
 describe('executor service', () => {
   describe('parsing commands', () => {

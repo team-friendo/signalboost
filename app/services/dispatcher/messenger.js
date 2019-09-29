@@ -1,9 +1,10 @@
-const { senderTypes } = require('../../constants')
 const signal = require('../signal')
+const messageCountRepository = require('../../db/repositories/messageCount')
+const { sdMessageOf } = require('../util')
+const { senderTypes } = require('../../constants')
 const { messagesIn } = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
-const messageCountRepository = require('../../db/repositories/messageCount')
 
 /**
  * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESULT' | 'NOTIFICATION'
@@ -24,8 +25,6 @@ const {
 } = messageTypes
 
 const { PUBLISHER } = senderTypes
-
-const sdMessageTypes = signal.messageTypes
 
 /***************
  * DISPATCHING
@@ -198,12 +197,6 @@ const countCommand = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here
   messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
-const sdMessageOf = (channel, messageBody) => ({
-  type: sdMessageTypes.SEND,
-  username: channel.phoneNumber,
-  messageBody,
-})
-
 module.exports = {
   messageTypes,
   /**********/
@@ -212,6 +205,5 @@ module.exports = {
   format,
   parseMessageType,
   respond,
-  sdMessageOf,
   welcomeNewPublisher,
 }
