@@ -10,7 +10,7 @@ import { channelFactory } from '../../../support/factories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
 import { defaultLanguage } from '../../../../app/config'
-import { sdMessageOf } from "../../../../app/services/util"
+import { sdMessageOf } from '../../../../app/services/signal'
 const {
   signal: { resendDelay },
 } = require('../../../../app/config')

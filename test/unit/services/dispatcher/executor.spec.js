@@ -16,7 +16,7 @@ import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
-import { sdMessageOf } from '../../../../app/services/util'
+import { sdMessageOf } from '../../../../app/services/signal'
 
 describe('executor service', () => {
   describe('parsing commands', () => {

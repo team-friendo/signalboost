@@ -1,6 +1,6 @@
 const signal = require('../signal')
 const messageCountRepository = require('../../db/repositories/messageCount')
-const { sdMessageOf } = require('../util')
+const { sdMessageOf } = require('../signal')
 const { senderTypes } = require('../../constants')
 const { messagesIn } = require('./messages')
 const { values } = require('lodash')

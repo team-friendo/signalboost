@@ -4,7 +4,7 @@ const { wait, loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/messages')
 const { defaultErrorOf } = require('../util')
-const { sdMessageOf } = require('../util')
+const { sdMessageOf } = require('../signal')
 const {
   signal: { resendDelay },
 } = require('../../config')

@@ -9,7 +9,7 @@ import messenger, { messageTypes } from '../../../../app/services/dispatcher/mes
 import messages from '../../../../app/services/dispatcher/messages/EN'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { sdMessageOf } from "../../../../app/services/util"
+import { sdMessageOf } from '../../../../app/services/signal'
 
 describe('messenger service', () => {
   const [db, sock] = [{}, { write: () => {} }]

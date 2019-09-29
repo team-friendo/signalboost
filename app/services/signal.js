@@ -313,6 +313,12 @@ const parseOutboundAttachment = inAttachment => ({
 const parseVerificationCode = verificationMessage =>
   verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
 
+const sdMessageOf = (channel, messageBody) => ({
+  type: messageTypes.SEND,
+  username: channel.phoneNumber,
+  messageBody,
+})
+
 module.exports = {
   messageTypes,
   messages,
@@ -327,6 +333,7 @@ module.exports = {
   parseVerificationCode,
   register,
   sendMessage,
+  sdMessageOf,
   subscribe,
   trust,
   verify,

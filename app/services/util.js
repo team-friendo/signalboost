@@ -76,14 +76,6 @@ const defaultErrorOf = err => ({
   message: err.message,
 })
 
-/*************** Formatting ********************/
-
-const sdMessageOf = (channel, messageBody) => ({
-  type: 'send',
-  username: channel.phoneNumber,
-  messageBody,
-})
-
 module.exports = {
   defaultErrorOf,
   batchesOfN,
@@ -96,5 +88,4 @@ module.exports = {
   repeatUntilTimeout,
   sequence,
   wait,
-  sdMessageOf,
 }
