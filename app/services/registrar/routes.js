@@ -33,19 +33,6 @@ const routesOf = (router, db, sock) => {
     ctx.body = phoneNumberList.data
   })
 
-  router.post('/phoneNumbers/trust', async ctx => {
-    const { channelPhoneNumber, memberPhoneNumber } = ctx.request.body
-    // TODO: lookup default language or paramaterize
-    const result = await safetyNumberService.triggerTrust(
-      sock,
-      channelPhoneNumber,
-      memberPhoneNumber,
-      defaultLanguage,
-    )
-    ctx.status = httpStatusOf(get(result, 'status'))
-    ctx.body = result
-  })
-
   router.post('/phoneNumbers', async ctx => {
     const { num, areaCode } = ctx.request.body
     const n = parseInt(num) || 1

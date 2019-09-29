@@ -125,58 +125,6 @@ describe('routes', () => {
     })
   })
 
-  describe('POST to /phoneNumbers/trust', () => {
-    const channelPhoneNumber = genPhoneNumber()
-    const memberPhoneNumber = genPhoneNumber()
-    let trustStub
-    beforeEach(() => (trustStub = sinon.stub(safetyNumberService, 'triggerTrust')))
-    afterEach(() => trustStub.restore())
-
-    describe('in all cases', () => {
-      beforeEach(() => trustStub.returns(Promise.resolve()))
-
-      it('sends a message to trigger a saftey number retrust', async () => {
-        await request(server)
-          .post('/phoneNumbers/trust')
-          .set('Token', registrar.authToken)
-          .send({ channelPhoneNumber, memberPhoneNumber })
-
-        // slice off sock b/c we don't really care about it
-        expect(trustStub.getCall(0).args.slice(1)).to.eql([
-          channelPhoneNumber,
-          memberPhoneNumber,
-          defaultLanguage,
-        ])
-      })
-    })
-
-    describe('when trusting fails', () => {
-      const errStatus = { status: 'ERROR', error: '' }
-      beforeEach(() => trustStub.returns(Promise.resolve(errStatus)))
-
-      it('returns an error status', async () => {
-        await request(server)
-          .post('/phoneNumbers/trust')
-          .set('Token', registrar.authToken)
-          .send({ memberPhoneNumber })
-          .expect(500, errStatus)
-      })
-    })
-
-    describe('when trusting succeeds', () => {
-      const successStatus = { status: 'SUCCESS', message: '', }
-      beforeEach(() => trustStub.returns(Promise.resolve(successStatus)))
-
-      it('returns a success status', async () => {
-        await request(server)
-          .post('/phoneNumbers/trust')
-          .set('Token', registrar.authToken)
-          .send({ memberPhoneNumber })
-          .expect(200, successStatus)
-      })
-    })
-  })
-
   describe('GET to /phoneNumbers', () => {
     let listStub
     beforeEach(() => (listStub = sinon.stub(phoneNumberService, 'list')))
