@@ -105,10 +105,8 @@ const messages = {
     identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
   },
   trust: {
-    error: (channelPhoneNumber, memberPhoneNumber) =>
-      `Failed to trust new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}`,
-    notifyError: (channelPhoneNumber, memberPhoneNumber) =>
-      `Trusted new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber} but failed to notify user!`,
+    error: (channelPhoneNumber, memberPhoneNumber, msg) =>
+      `Failed to trust new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}: ${msg}`,
     success: (channelPhoneNumber, memberPhoneNumber) =>
       `Trusted new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}.`,
     noop: phoneNumber => `${phoneNumber} has no new safety numbers to trust`,
@@ -149,7 +147,15 @@ const connect = () => {
 
 const write = (sock, data) =>
   new Promise((resolve, reject) =>
-    sock.write(signaldEncode(data), promisifyCallback(resolve, reject)),
+    sock.write(
+      signaldEncode(data),
+      promisifyCallback(resolve, e =>
+        reject({
+          status: statuses.ERROR,
+          message: `Error writing to signald socket: ${e.message}`,
+        }),
+      ),
+    ),
   )
 
 const signaldEncode = data => JSON.stringify(data) + '\n'
