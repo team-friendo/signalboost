@@ -1,6 +1,10 @@
 const signal = require('../../services/signal')
+const channelRepository = require('../../db/repositories/channel')
 const { wait, loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
+const { sdMessageOf } = require('../dispatcher/messenger')
+const { messagesIn } = require('../dispatcher/messages')
+const { defaultErrorOf } = require('../util')
 const {
   signal: { resendDelay },
 } = require('../../config')
@@ -28,4 +32,30 @@ const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, s
   }
 }
 
-module.exports = { trustAndResend, logger }
+// (Database, socket, string, string) -> Promise<SignalBoostStatus>
+const deauthorize = async (db, sock, channelPhoneNumber, numberToDeauthorize) => {
+  const removalResult = await channelRepository
+    .removePublisher(db, channelPhoneNumber, numberToDeauthorize)
+    .catch(e => Promise.reject(defaultErrorOf(e)))
+  const { publications } = await channelRepository
+    .findDeep(db, channelPhoneNumber)
+    .catch(e => Promise.reject(defaultErrorOf(e)))
+  await _sendDeauthAlerts(sock, channelPhoneNumber, numberToDeauthorize, publications)
+  return removalResult
+}
+
+const _sendDeauthAlerts = (sock, channelPhoneNumber, deauthorizedNumber, publications) =>
+  Promise.all(
+    publications.map(({ publisherPhoneNumber, language }) =>
+      signal.sendMessage(
+        sock,
+        publisherPhoneNumber,
+        sdMessageOf(
+          { phoneNumber: channelPhoneNumber },
+          messagesIn(language).notifications.deauthorization(deauthorizedNumber),
+        ),
+      ),
+    ),
+  )
+
+module.exports = { trustAndResend, deauthorize, logger }

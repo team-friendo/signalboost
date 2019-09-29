@@ -30,6 +30,15 @@ Reply with HELP for more information or GOODBYE to leave.`
   safetyNumberReset: channelPhoneNumber =>
     `Your safety number was just reset with ${channelPhoneNumber}. (Likely because you recently reinstalled signal.)`,
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+  deauthorization : publisherPhoneNumber => `
+${publisherPhoneNumber} has been removed from this channel because their safety number changed.
+This is almost certainly because they reinstalled Signal on a new phone.
+However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+Check with ${publisherPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+
+ADD ${publisherPhoneNumber}
+
+Until then, they will be unable to send messages to or read messages from this channel.`,
 }
 
 const commandResponses = {
