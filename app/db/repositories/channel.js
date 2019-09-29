@@ -58,6 +58,10 @@ const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
   )
 
 const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
+  // NOTE(aguestuser|2019-09-26):
+  //  - it is EXTREMELY IMPORTANT that `#addPublisher` remain idempotent
+  //  - due to signald peculiarities, lots of logic about detecting safety number changes for publishers
+  //    and correctly (re)trusting their key material hangs off of this invariant. do not violate it! thx! :)
   db.publication
     .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
     .spread(x => x)

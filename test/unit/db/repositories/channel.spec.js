@@ -184,20 +184,25 @@ describe('channel repository', () => {
       })
     })
 
-    describe('when given the pNum of an already-existing publisher', () => {
+    describe('when one of given pNums is an already-existing publisher', () => {
+      let res
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublishers(
-          db,
-          channel.phoneNumber,
-          publisherPhoneNumbers.slice(1),
-        )
+        res = await channelRepository.addPublishers(db, channel.phoneNumber, publisherPhoneNumbers)
         publisherCount = await db.publication.count()
-        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPhoneNumbers)
+
+        await channelRepository.addPublishers(db, channel.phoneNumber, [
+          publisherPhoneNumbers[1],
+          genPhoneNumber(),
+        ])
       })
 
-      it('only creates one new publication', async () => {
+      it('does not create a new publication for the already existing number', async () => {
         expect(await db.publication.count()).to.eql(publisherCount + 1)
+      })
+
+      it('returns all publishers (including already-existing ones)', () => {
+        expect(res.length).to.eql(2)
       })
     })
 
@@ -571,11 +576,7 @@ describe('channel repository', () => {
     describe('when sender is neither publisher nor subscriber', () => {
       it('returns RANDOM', async () => {
         expect(
-          await channelRepository.resolveSenderType(
-            db,
-            channelPhoneNumber,
-            genPhoneNumber(),
-          ),
+          await channelRepository.resolveSenderType(db, channelPhoneNumber, genPhoneNumber()),
         ).to.eql(senderTypes.RANDOM)
       })
     })
