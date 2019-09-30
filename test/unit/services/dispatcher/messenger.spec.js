@@ -264,6 +264,10 @@ describe('messenger service', () => {
         const sdMessage = `${commands.ADD} ${newPublisher}`
         const response = messages.commandResponses.publisher.add.success(newPublisher)
         const welcome = messages.notifications.welcome(publisherSender.phoneNumber)
+        const alert = messages.notifications.publisherAdded(
+          publisherSender.phoneNumber,
+          newPublisher,
+        )
 
         beforeEach(async () => {
           await messenger.dispatch({
@@ -298,6 +302,14 @@ describe('messenger service', () => {
             sock,
             [newPublisher],
             sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
+          ])
+        })
+
+        it('sends an alert to the other channel admins', () => {
+          expect(broadcastMessageStub.getCall(1).args).to.eql([
+            sock,
+            publisherNumbers,
+            sdMessageOf(channel, `[${channel.name}]\n${alert}`),
           ])
         })
       })

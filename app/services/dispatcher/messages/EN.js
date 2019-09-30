@@ -18,22 +18,26 @@ HOW IT WORKS
 `
 
 const notifications = {
+  publisherAdded: (commandIssuer, addedPublisher) => `New admin ${addedPublisher} added by ${commandIssuer}`,
   broadcastResponseSent: channel => `Your message was forwarded to the admins of [${channel.name}]`,
-  welcome: addingPublisher => `
-You were just made an admin of this signalboost channel by ${addingPublisher}. Welcome!
-
-Reply with HELP for more information or GOODBYE to leave.`,
-  noop: "Whoops! That's not a command!",
-  unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
   deauthorization: publisherPhoneNumber => `
 ${publisherPhoneNumber} has been removed from this channel because their safety number changed.
+
 This is almost certainly because they reinstalled Signal on a new phone.
+
 However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+
 Check with ${publisherPhoneNumber} to make sure they still control their phone, then reauthorize them with:
 
 ADD ${publisherPhoneNumber}
 
 Until then, they will be unable to send messages to or read messages from this channel.`,
+  noop: "Whoops! That's not a command!",
+  unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+  welcome: addingPublisher => `
+You were just made an admin of this signalboost channel by ${addingPublisher}. Welcome!
+
+Reply with HELP for more information or GOODBYE to leave.`,
 }
 
 const commandResponses = {

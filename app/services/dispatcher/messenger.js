@@ -77,21 +77,28 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 }
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
-const handleNotifications = ({ commandResult, dispatchable }) => {
+const handleNotifications = async ({ commandResult, dispatchable }) => {
   // TODO: respond to sender, notify all other publishers
   //  - exclude: HELP/INFO
   //  - include but don't add phone numbers: JOIN/LEAVE
   //  - include and add publisher phone numbers: RENAME/ADD/REMOVE/RESPONSES
   const { command, status, payload } = commandResult
   const { db, sock, channel, sender } = dispatchable
+  const notifyBase = { db, sock, channel }
   if (command === commands.ADD && status === statuses.SUCCESS) {
     // welcome new publisher
-    return notify({
-      db,
-      sock,
-      channel,
+    await notify({
+      ...notifyBase,
       notification: messagesIn(sender.language).notifications.welcome(sender.phoneNumber),
       recipients: [payload],
+    })
+    return notify({
+      ...notifyBase,
+      notification: messagesIn(sender.language).notifications.publisherAdded(
+        sender.phoneNumber,
+        payload,
+      ),
+      recipients: channel.publications.map(p => p.publisherPhoneNumber),
     })
   }
 }
