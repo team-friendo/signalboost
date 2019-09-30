@@ -1,15 +1,20 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../../../app/db/repositories/channel'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import signal from '../../../../../app/services/signal'
-import messenger from '../../../../../app/services/dispatcher/messenger'
-import { create, welcomeNotification } from '../../../../../app/services/registrar/channel/create'
-import { addPublisher } from '../../../../../app/services/registrar/channel'
-import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
+import channelRepository from '../../../../app/db/repositories/channel'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
+import signal from '../../../../app/services/signal'
+import messenger from '../../../../app/services/dispatcher/messenger'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { deepChannelAttrs } from '../../../support/factories/channel'
+import {
+  welcomeNotification,
+  create,
+  addPublisher,
+  list,
+} from '../../../../app/services/registrar/channel'
 
-describe('channel creation module', () => {
+describe('channel registrar', () => {
   const db = {}
   const sock = {}
   const phoneNumber = genPhoneNumber()
@@ -30,7 +35,12 @@ describe('channel creation module', () => {
     status: 'ACTIVE',
   }
 
-  let addPublisherStub, createChannelStub, subscribeStub, updatePhoneNumberStub, notifyStub
+  let addPublisherStub,
+    createChannelStub,
+    subscribeStub,
+    updatePhoneNumberStub,
+    notifyStub,
+    findAllDeepStub
 
   beforeEach(() => {
     addPublisherStub = sinon.stub(channelRepository, 'addPublisher')
@@ -38,6 +48,7 @@ describe('channel creation module', () => {
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     notifyStub = sinon.stub(messenger, 'notify')
+    findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
   })
 
   afterEach(() => {
@@ -46,9 +57,10 @@ describe('channel creation module', () => {
     subscribeStub.restore()
     updatePhoneNumberStub.restore()
     notifyStub.restore()
+    findAllDeepStub.restore()
   })
 
-  describe('creating a channel', () => {
+  describe('#create', () => {
     beforeEach(() => {
       updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
     })
@@ -281,6 +293,56 @@ describe('channel creation module', () => {
           publisherPhoneNumber,
         }).catch(e => e)
         expect(err).to.eql(errorStatus)
+      })
+    })
+  })
+
+  describe('#list', () => {
+    const channels = deepChannelAttrs.map(ch => ({
+      ...ch,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }))
+
+    describe('when db fetch succeeds', () => {
+      beforeEach(() => findAllDeepStub.returns(Promise.resolve(channels)))
+
+      it('presents a list of formatted phone numbers and a count', async () => {
+        expect(await list({})).to.eql({
+          status: 'SUCCESS',
+          data: {
+            count: 2,
+            channels: [
+              {
+                name: 'foo',
+                phoneNumber: '+11111111111',
+                publishers: 2,
+                subscribers: 2,
+                messageCount: { broadcastOut: 4, commandIn: 5 },
+              },
+              {
+                name: 'bar',
+                phoneNumber: '+19999999999',
+                publishers: 1,
+                subscribers: 1,
+                messageCount: { broadcastOut: 100, commandIn: 20 },
+              },
+            ],
+          },
+        })
+      })
+    })
+
+    describe('when db fetch fails', () => {
+      beforeEach(() => findAllDeepStub.callsFake(() => Promise.reject('oh noes!')))
+
+      it('presents a list of phone numbers and a count', async () => {
+        expect(await list({})).to.eql({
+          status: 'ERROR',
+          data: {
+            error: 'oh noes!',
+          },
+        })
       })
     })
   })
