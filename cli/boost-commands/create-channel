@@ -5,7 +5,7 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo ""
   echo "-p : phone number of channel to activate";
   echo "-n : name to give to the channel once it is activated";
-  echo "-s : comma-delimited list of sender phone numbers";
+  echo "-a : comma-delimited list of admin phone numbers";
   echo "-u : url to target (in dev, use signalboost.ngrok.io)";
   echo ""
   exit 1
@@ -18,7 +18,7 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
   exit 1
 fi
 
-while getopts ":p:n:s:u:" opt; do
+while getopts ":p:n:a:u:" opt; do
   case "$opt" in
     p)
       phone_number="$OPTARG"
@@ -26,8 +26,8 @@ while getopts ":p:n:s:u:" opt; do
     n)
       name="$OPTARG"
       ;;
-    s)
-      senders="$OPTARG"
+    a)
+      admins="$OPTARG"
       ;;
     u)
       url="$OPTARG"
@@ -45,23 +45,17 @@ if [ -z "$name" ];then
   exit 1;
 fi
 
-if [ -z "$senders" ]
+if [ -z "$admins" ]
 then
   echo "> ERROR: you must provide at least one sender phone number after the -s flag to create a channel"
   exit 1
-elif [[ ! $senders =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
+elif [[ ! $admins =~ ^(\+(1|52)[0-9]{10}(,?))+$ ]];then
   echo "> ERROR: -s must be a  comma-delimited list of 10 digit phone numbers prefixed by a country code"
   exit 1
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  if [ "$(uname)" == 'Darwin' ]
-  then # we are in mac and must use -E
-     senders="[\"$(echo $senders | sed -E "s/,/\", \"/g")\"]"
-  else # we are in linux and may use -re
-     senders="[\"$(echo $senders | sed -re "s/,/\", \"/g")\"]"
-  fi
-  
+  admins="[\"$(echo $admins | sed -re "s/,/\", \"/g")\"]"
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
@@ -69,9 +63,9 @@ if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 echo "--- provisioning new channel [${name}] on phone number ${phone_number} at url ${url}"
 
 # TODO(aguestuser|2019-08-11):
-# replace `publishers` key in below JSON payload with `senders` once that has been updated on server
+# replace `publishers` key in below JSON payload with `admins` once that has been updated on server
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"publishers\":$senders }" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"publishers\":$admins }" \
      https://${url}/channels | jq

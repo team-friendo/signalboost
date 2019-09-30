@@ -4,8 +4,8 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command trusts all safety numbers associated with a member phone number. valid options are:"
   echo ""
   echo "-c: channel phone number (any phone number that user is a member of will work!)";
-  echo "-m: member phone number (required)";
-  echo "-u : url to target (in dev, use signalboost.ngrok.io)";
+  echo "-a: admin phone number (required)";
+  echo "-u: url to target (defaults to prod, in dev, use signalboost.ngrok.io)";
   echo ""
   exit 1
 fi
@@ -17,13 +17,13 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
   exit 1
 fi
 
-while getopts ":c:m:u:" opt; do
+while getopts ":c:a:u:" opt; do
   case "$opt" in
     c)
       channel_phone_number="$OPTARG"
       ;;
-    m)
-      member_phone_number="$OPTARG"
+    a)
+      admin_phone_number="$OPTARG"
       ;;
     u)
       url="$OPTARG"
@@ -32,12 +32,12 @@ while getopts ":c:m:u:" opt; do
 done
 
 if [[ ! $channel_phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
-  echo "> ERROR: -p must be a 10 digit phone number prefixed by a country code (+1 or +52)"
+  echo "> ERROR: -c must be a 10 digit phone number prefixed by a country code (+1 or +52)"
   exit 1
 fi
 
-if [[ ! $member_phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
-  echo "> ERROR: -p must be a 10 digit phone number prefixed by a country code (+1 or +52)"
+if [[ ! $admin_phone_number =~ ^\+(1|52)[0-9]{10}$ ]];then
+  echo "> ERROR: -a must be a 10 digit phone number prefixed by a country code (+1 or +52)"
   exit 1
 fi
 
@@ -49,5 +49,5 @@ echo "--- trusting all safety numbers for user ${phone_number} at url ${url}"
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"channelPhoneNumber\": \"$channel_phone_number\", \"memberPhoneNumber\": \"$member_phone_number\" }" \
-     https://${url}/phoneNumbers/trust | jq
+     -d "{ \"channelPhoneNumber\": \"$channel_phone_number\", \"publisherPhoneNumber\": \"$admin_phone_number\" }" \
+     https://${url}/channels/publishers | jq
