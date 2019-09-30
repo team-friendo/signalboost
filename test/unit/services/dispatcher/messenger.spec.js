@@ -79,16 +79,6 @@ describe('messenger service', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
       expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.COMMAND_RESULT)
     })
-
-    it('parses a publisher welcome message', () => {
-      expect(
-        messenger.parseMessageType({
-          command: 'ADD',
-          status: statuses.SUCCESS,
-          payload: publisherSender.phoneNumber,
-        }),
-      ).to.eql(messageTypes.NEW_PUBLISHER_WELCOME)
-    })
   })
 
   describe('dispatching a message', () => {

@@ -1,11 +1,13 @@
-const { get } = require('lodash')
 const signal = require('../signal')
 const channelRepository = require('./../../db/repositories/channel')
 const executor = require('./executor')
 const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
+const { messagesIn } = require('./messages')
+const { get } = require('lodash')
 const { senderTypes } = require('../../db/repositories/channel')
+const { defaultLanguage } = require('../../config')
 
 /**
  * type Dispatchable = {
@@ -34,7 +36,9 @@ const { senderTypes } = require('../../db/repositories/channel')
  * }
  */
 
-// INITIALIZATION
+/******************
+ *INITIALIZATION
+ *****************/
 
 const run = async (db, sock) => {
   logger.log('--- Initializing Dispatcher....')
@@ -56,7 +60,9 @@ const listenForInboundMessages = async (db, sock, channels) =>
     return listening
   })
 
-// MESSAGE DISPATCH
+/********************
+ * MESSAGE DISPATCH
+ *******************/
 
 const dispatch = async (db, sock, inboundMsg) => {
   if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
@@ -85,21 +91,29 @@ const updateSafetyNumber = async (db, sock, inboundMsg) => {
   const channelPhoneNumber = sdMessage.username
   const memberPhoneNumber = sdMessage.recipientNumber
 
-  const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber)
-    .catch(logger.error)
+  const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber).catch(
+    logger.error,
+  )
 
-  if (recipient.type === senderTypes.PUBLISHER) {
+  if (recipient.type === senderTypes.RANDOM) {
+    return Promise.resolve()
+  }
+  if (recipient.type === senderTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
+    // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
     return safetyNumberService
       .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
       .then(logger.logAndReturn)
       .catch(logger.error)
   }
-  if (recipient.type !== senderTypes.SUBSCRIBER) return Promise.resolve()
   return safetyNumberService
     .trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage)
     .then(logger.logAndReturn)
     .catch(logger.error)
 }
+
+/************
+ * HELPERS
+ ***********/
 
 const parseMessage = inboundMsg => {
   try {
@@ -126,6 +140,22 @@ const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) =>
     type,
   )
   return { phoneNumber: senderPhoneNumber, type, language }
+}
+
+const isWelcomeMessage = sdMessage => {
+  const phoneNumberPattern = /\+\d{9,15}/
+  const headerPattern = /\[.*]\n\n/
+  const strippedMessage = sdMessage.messageBody
+    .replace(headerPattern, '')
+    .replace(phoneNumberPattern, '')
+    .trim()
+  return Boolean(
+    // TODO(aguestuser|2019-09-26):
+    //  properly localize this, by including more languages in the input array here!
+    [messagesIn(defaultLanguage)].find(
+      messages => strippedMessage === messages.notifications.welcome('').trim(),
+    ),
+  )
 }
 
 // EXPORTS

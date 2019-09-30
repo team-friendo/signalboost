@@ -5,6 +5,10 @@ const { senderTypes } = require('../../db/repositories/channel')
 const { messagesIn } = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
+const { sequence, defaultErrorOf, wait } = require('../util')
+const {
+  signal: { resendDelay },
+} = require('../../config')
 
 /**
  * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESULT' | 'NOTIFICATION'
@@ -17,12 +21,7 @@ const messageTypes = {
   NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
 }
 
-const {
-  BROADCAST_MESSAGE,
-  BROADCAST_RESPONSE,
-  COMMAND_RESULT,
-  NEW_PUBLISHER_WELCOME,
-} = messageTypes
+const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT } = messageTypes
 
 const { PUBLISHER } = senderTypes
 
@@ -40,8 +39,6 @@ const dispatch = async ({ commandResult, dispatchable }) => {
       return handleBroadcastResponse(dispatchable)
     case COMMAND_RESULT:
       return handleCommandResult({ commandResult, dispatchable })
-    case NEW_PUBLISHER_WELCOME:
-      return handleNotification({ commandResult, dispatchable, messageType })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
   }
@@ -51,12 +48,9 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 const parseMessageType = (commandResult, sender) => {
   if (commandResult.status === statuses.NOOP) {
     return sender.type === PUBLISHER ? BROADCAST_MESSAGE : BROADCAST_RESPONSE
-  } else if (isNewPublisher(commandResult)) return NEW_PUBLISHER_WELCOME
-  else return COMMAND_RESULT
+  }
+  return COMMAND_RESULT
 }
-
-const isNewPublisher = ({ command, status }) =>
-  command === commands.ADD && status === statuses.SUCCESS
 
 const handleBroadcastResponse = dispatchable => {
   const {
@@ -75,32 +69,31 @@ const handleBroadcastResponse = dispatchable => {
 }
 
 // TODO: rename this handleCommandResult
-const handleCommandResult = ({ commandResult, dispatchable }) => {
+const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { message, command, status } = commandResult
-  // TODO: respond to sender, notify all other publishers
-  //  - exclude: HELP/INFO
-  //  - (implicitly) include: RENAME/RESPONSES/ADD/JOIN/LEAVE (don't include phone numbers in join/leave)
-  //  - add publisher phone numbers for RENAME/ADD/REMOVE/RESPONSES
-  return respond({ ...dispatchable, message, command, status })
+  await respond({ ...dispatchable, message, command, status })
+  await wait(resendDelay)
+  return handleNotifications({ commandResult, dispatchable })
 }
 
-const handleNotification = ({ commandResult, dispatchable, messageType }) => {
-  const [cr, d] = [commandResult, dispatchable]
-  return Promise.all([
-    handleCommandResult({ commandResult, dispatchable }),
-    {
-      // TODO: extend to handle other notifiable command results
-      [NEW_PUBLISHER_WELCOME]: () =>
-        welcomeNewPublisher({
-          db: d.db,
-          sock: d.sock,
-          channel: d.channel,
-          newPublisher: cr.payload,
-          addingPublisher: d.sender.phoneNumber,
-          language: d.sender.language,
-        }),
-    }[messageType](),
-  ])
+// ({ CommandResult, Dispatchable )) -> SignalboostStatus
+const handleNotifications = ({ commandResult, dispatchable }) => {
+  // TODO: respond to sender, notify all other publishers
+  //  - exclude: HELP/INFO
+  //  - include but don't add phone numbers: JOIN/LEAVE
+  //  - include and add publisher phone numbers: RENAME/ADD/REMOVE/RESPONSES
+  const { command, status, payload } = commandResult
+  const { db, sock, channel, sender } = dispatchable
+  if (command === commands.ADD && status === statuses.SUCCESS) {
+    // welcome new publisher
+    return notify({
+      db,
+      sock,
+      channel,
+      notification: messagesIn(sender.language).notifications.welcome(sender.phoneNumber),
+      recipients: [payload],
+    })
+  }
 }
 
 // { Database, Channel, string, string } => Promise<void>

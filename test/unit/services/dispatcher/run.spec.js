@@ -3,7 +3,8 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { EventEmitter } from 'events'
-import { senderTypes, languages } from '../../../../app/constants'
+import { languages } from '../../../../app/constants'
+import { senderTypes } from '../../../../app/db/repositories/channel'
 import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
@@ -14,6 +15,8 @@ import logger from '../../../../app/services/dispatcher/logger'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
+import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('dispatcher service', () => {
   const db = {}
@@ -227,47 +230,79 @@ describe('dispatcher service', () => {
 
       describe('when intended recipient is an admin', () => {
         beforeEach(async () => resolveSenderTypeStub.returns(senderTypes.PUBLISHER))
-        //TODO:
-        // resolveSenderType -> resolveMemberShipType
-        // senderTypes -> membershipTypes
-        // membershiptTypes.RANDOM -> membershipTypes.NONE
 
-        it('attempts to deauthorize the admin', async () => {
-          sock.emit('data', JSON.stringify(sdErrorMessage))
-          await wait(socketDelay)
-
-          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.getCall(0).args.slice(2)).to.eql([
-            channel.phoneNumber,
-            recipientNumber,
-          ])
-        })
-
-        describe('when deauth succeeds', () => {
-          // this is the default stub
-          it('logs the success', async () => {
+        describe('when message is not a welcome message', () => {
+          it('attempts to deauthorize the admin', async () => {
             sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
-            expect(logAndReturnSpy.getCall(0).args).to.eql([
-              {
-                status: 'SUCCESS',
-                message: 'fake deauthorize success',
-              },
+            expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+            expect(deauthorizeStub.getCall(0).args.slice(2)).to.eql([
+              channel.phoneNumber,
+              recipientNumber,
             ])
           })
+
+          describe('when deauth succeeds', () => {
+            // this is the default stub
+            it('logs the success', async () => {
+              sock.emit('data', JSON.stringify(sdErrorMessage))
+              await wait(socketDelay)
+
+              expect(logAndReturnSpy.getCall(0).args).to.eql([
+                {
+                  status: 'SUCCESS',
+                  message: 'fake deauthorize success',
+                },
+              ])
+            })
+          })
+
+          describe('when deauth fails', () => {
+            const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
+            beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
+
+            it('logs the failure', async () => {
+              sock.emit('data', JSON.stringify(sdErrorMessage))
+              await wait(socketDelay)
+
+              expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
+            })
+          })
         })
 
-        describe('when deauth fails', () => {
-          const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
-          beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
+        describe('when message is a welcome message', () => {
+          const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
+            genPhoneNumber(),
+          )}`
+          const failedWelcomeMessage = {
+            type: signal.messageTypes.ERROR,
+            data: {
+              msg_number: 0,
+              error: true,
+              request: {
+                type: 'send',
+                username: channel.phoneNumber,
+                messageBody: welcomeMessage,
+                recipientNumber,
+                attachments: [],
+                expiresInSeconds: 0,
+              },
+            },
+          }
 
-          it('logs the failure', async () => {
-            sock.emit('data', JSON.stringify(sdErrorMessage))
+          it('attempts to trust and resend the message', async () => {
+            sock.emit('data', JSON.stringify(failedWelcomeMessage))
             await wait(socketDelay)
 
-            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
+            expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
+            expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
+              channel.phoneNumber,
+              recipientNumber,
+              failedWelcomeMessage.data.request,
+            ])
           })
+          // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
         })
       })
 
