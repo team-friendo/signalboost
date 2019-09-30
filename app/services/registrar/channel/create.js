@@ -1,3 +1,6 @@
+import { messagesIn } from '../../dispatcher/messages'
+import { defaultLanguage } from '../../../config'
+
 const channelRepository = require('../../../db/repositories/channel')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const signal = require('../../signal')
@@ -9,45 +12,43 @@ const {
   signal: { welcomeDelay },
 } = require('../../../config')
 
+const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome('the system admin')
+
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
-const create = ({ db, sock, phoneNumber, name, publishers }) =>
-  signal
-    .subscribe(sock, phoneNumber)
-    .then(() =>
-      Promise.all([
-        channelRepository.create(db, phoneNumber, name, publishers),
-        phoneNumberRepository.update(db, phoneNumber, { status: statuses.ACTIVE }),
-      ]),
-    )
-    .then(([channel]) =>
-      wait(welcomeDelay).then(() =>
-        sendWelcomes(db, sock, {
-          ...channel.dataValues,
-          subscriptions: [],
-        }),
-      ),
-    )
-    .then(() => ({ status: statuses.ACTIVE, phoneNumber, name, publishers }))
-    .catch(e => {
-      logger.error(e)
-      return {
-        status: statuses.ERROR,
-        error: e.message || e,
-        request: { phoneNumber, name, publishers },
-      }
+const create = async ({ db, sock, phoneNumber, name, publishers }) => {
+  try {
+    await signal.subscribe(sock, phoneNumber)
+    const channel = await channelRepository.create(db, phoneNumber, name, publishers)
+    await phoneNumberRepository.update(db, phoneNumber, { status: statuses.ACTIVE })
+    await wait(welcomeDelay)
+    await messenger.notify({
+      db,
+      sock,
+      channel,
+      notification: welcomeNotification,
+      recipients: channel.publications.map(p => p.publisherPhoneNumber),
     })
+    return { status: statuses.ACTIVE, phoneNumber, name, publishers }
+  } catch (e) {
+    logger.error(e)
+    return {
+      status: statuses.ERROR,
+      error: e.message || e,
+      request: { phoneNumber, name, publishers },
+    }
+  }
+}
 
-const sendWelcomes = async (db, sock, channel) =>
-  Promise.all(
-    channel.publications.map(publication =>
-      messenger.welcomeNewPublisher({
-        db,
-        sock,
-        channel,
-        newPublisher: publication.publisherPhoneNumber,
-        addingPublisher: 'the system administrator',
-      }),
-    ),
-  )
+// ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
+const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
+  await channelRepository.addPublisher(db, channelPhoneNumber, publisherPhoneNumber)
+  return messenger.notify({
+    db,
+    sock,
+    channel: { phoneNumber: channelPhoneNumber },
+    notification: welcomeNotification,
+    recipients: [publisherPhoneNumber],
+  })
+}
 
-module.exports = { create }
+module.exports = { welcomeNotification, create, addPublisher }

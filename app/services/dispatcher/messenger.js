@@ -96,16 +96,6 @@ const handleNotifications = ({ commandResult, dispatchable }) => {
   }
 }
 
-// { Database, Channel, string, string } => Promise<void>
-const welcomeNewPublisher = ({ db, sock, channel, newPublisher, addingPublisher, language }) =>
-  notify({
-    db,
-    sock,
-    channel,
-    notification: messagesIn(language).notifications.welcome(addingPublisher),
-    recipients: [newPublisher],
-  })
-
 /************
  * SENDING
  ************/
@@ -198,5 +188,5 @@ module.exports = {
   format,
   parseMessageType,
   respond,
-  welcomeNewPublisher,
+  notify,
 }

@@ -107,20 +107,12 @@ describe('channel repository', () => {
       })
 
       it('updates the channel record and returns it', async () => {
-        expect(
-          omit(channel.get(), [
-            'createdAt',
-            'updatedAt',
-            'messageCount',
-            'containerId', // TODO: drop containerId from schema!
-            'publications',
-          ]),
-        ).to.eql({
+        expect(omit(channel, ['createdAt', 'updatedAt', 'messageCount', 'publications'])).to.eql({
           phoneNumber: channelPhoneNumber,
           name: '#blackops',
           responsesEnabled: false,
         })
-        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.have.members(
+        expect((await channel.publications).map(p => p.publisherPhoneNumber)).to.have.members(
           newPublisherPNums,
         )
       })

@@ -23,7 +23,9 @@ const create = async (db, phoneNumber, name, publishers) => {
   ]
   return !channel
     ? db.channel.create({ phoneNumber, name, publications, messageCount: {} }, { include })
-    : channel.update({ name, publications }, { include })
+    : channel
+        .update({ name, publications, returning: true }, { include })
+        .then(c => ({ ...c.dataValues, publications, messageCount: channel.messageCount }))
 }
 
 const update = (db, phoneNumber, attrs) =>

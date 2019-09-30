@@ -5,51 +5,52 @@ import channelRepository from '../../../../../app/db/repositories/channel'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import signal from '../../../../../app/services/signal'
 import messenger from '../../../../../app/services/dispatcher/messenger'
-import { create } from '../../../../../app/services/registrar/channel/create'
+import { create, welcomeNotification } from '../../../../../app/services/registrar/channel/create'
+import { addPublisher } from '../../../../../app/services/registrar/channel'
+import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 
 describe('channel creation module', () => {
   const db = {}
   const sock = {}
-  const phoneNumber = '+15555555555'
+  const phoneNumber = genPhoneNumber()
+  const channelPhoneNumber = phoneNumber
   const name = '#blackops'
-  const publishers = ['+12222222222', '+13333333333']
+  const publishers = [genPhoneNumber(), genPhoneNumber()]
+  const publisherPhoneNumber = publishers[0]
   const channelInstance = {
-    dataValues: {
-      phoneNumber,
-      name,
-      publications: [
-        { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] },
-        { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[1] },
-      ],
-    },
+    phoneNumber,
+    name,
+    publications: [
+      { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] },
+      { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[1] },
+    ],
   }
   const activePhoneNumberInstance = {
-    dataValues: {
-      phoneNumber,
-      status: 'ACTIVE',
-    },
+    phoneNumber,
+    status: 'ACTIVE',
   }
-  let subscribeStub, createChannelStub, updatePhoneNumberStub, welcomePublisherStub
+
+  let addPublisherStub, createChannelStub, subscribeStub, updatePhoneNumberStub, notifyStub
 
   beforeEach(() => {
-    subscribeStub = sinon.stub(signal, 'subscribe')
+    addPublisherStub = sinon.stub(channelRepository, 'addPublisher')
     createChannelStub = sinon.stub(channelRepository, 'create')
+    subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
-    welcomePublisherStub = sinon.stub(messenger, 'welcomeNewPublisher')
+    notifyStub = sinon.stub(messenger, 'notify')
   })
 
   afterEach(() => {
-    subscribeStub.restore()
+    addPublisherStub.restore()
     createChannelStub.restore()
+    subscribeStub.restore()
     updatePhoneNumberStub.restore()
-    welcomePublisherStub.restore()
+    notifyStub.restore()
   })
 
   describe('creating a channel', () => {
     beforeEach(() => {
-      updatePhoneNumberStub.returns(
-        Promise.resolve({ dataValues: { phoneNumber, status: 'ACTIVE' } }),
-      )
+      updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
     })
 
     describe('when subscribing to signal messages succeeds', () => {
@@ -80,30 +81,28 @@ describe('channel creation module', () => {
         })
 
         it('sends a welcome message to new publishers', async () => {
-          await create({ db, sock, phoneNumber, name, publishers, welcome: welcomePublisherStub })
-          expect(welcomePublisherStub.callCount).to.eql(publishers.length)
-          expect(welcomePublisherStub.getCall(0).args).to.eql([
+          await create({ db, sock, phoneNumber, name, publishers, welcome: notifyStub })
+          expect(notifyStub.getCall(0).args).to.eql([
             {
               db,
               sock,
               channel: {
                 phoneNumber,
                 name,
-                subscriptions: [],
                 publications: [
                   { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] },
                   { channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[1] },
                 ],
               },
-              newPublisher: publishers[0],
-              addingPublisher: 'the system administrator',
+              notification: welcomeNotification,
+              recipients: publishers,
             },
           ])
         })
 
         describe('when sending welcome messages succeeds', () => {
           beforeEach(() => {
-            welcomePublisherStub.returns(Promise.resolve())
+            notifyStub.returns(Promise.resolve())
           })
 
           it('returns a success message', async function() {
@@ -118,7 +117,7 @@ describe('channel creation module', () => {
 
         describe('when sending welcome message fails', () => {
           beforeEach(() => {
-            welcomePublisherStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+            notifyStub.callsFake(() => Promise.reject(new Error('oh noes!')))
           })
 
           it('returns an error message', async () => {
@@ -144,7 +143,7 @@ describe('channel creation module', () => {
         })
 
         it('does not send welcome messages', () => {
-          expect(welcomePublisherStub.callCount).to.eql(0)
+          expect(notifyStub.callCount).to.eql(0)
         })
 
         it('returns an error message', () => {
@@ -168,7 +167,7 @@ describe('channel creation module', () => {
         })
 
         it('does not send welcome messages', () => {
-          expect(welcomePublisherStub.callCount).to.eql(0)
+          expect(notifyStub.callCount).to.eql(0)
         })
 
         it('returns an error message', () => {
@@ -201,7 +200,7 @@ describe('channel creation module', () => {
       })
 
       it('does not send welcome messages', () => {
-        expect(welcomePublisherStub.callCount).to.eql(0)
+        expect(notifyStub.callCount).to.eql(0)
       })
 
       it('returns an error message', () => {
@@ -214,6 +213,74 @@ describe('channel creation module', () => {
             publishers,
           },
         })
+      })
+    })
+  })
+
+  describe('#addPublisher', () => {
+    it('attempts to add a publisher to a channel', async () => {
+      await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })
+      expect(addPublisherStub.getCall(0).args).to.eql([
+        db,
+        channelPhoneNumber,
+        publisherPhoneNumber,
+      ])
+    })
+
+    describe('when adding publisher succeeds', () => {
+      beforeEach(() => addPublisherStub.returns(Promise.resolve()))
+
+      it('attempts to send welcome message', async () => {
+        await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })
+        expect(notifyStub.getCall(0).args).to.eql([
+          {
+            db,
+            sock,
+            channel: { phoneNumber: channelPhoneNumber },
+            notification: welcomeNotification,
+            recipients: [publisherPhoneNumber],
+          },
+        ])
+      })
+
+      describe('when welcome message succeeds', () => {
+        const successStatus = { status: 'SUCCESS', message: 'success!' }
+        beforeEach(() => notifyStub.returns(Promise.resolve(successStatus)))
+
+        it('returns a success status', async () => {
+          expect(await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })).to.eql(
+            successStatus,
+          )
+        })
+      })
+
+      describe('when welcome message fails', () => {
+        const errorStatus = { status: 'ERROR', message: 'error!' }
+        beforeEach(() => notifyStub.callsFake(() => Promise.reject(errorStatus)))
+
+        it('returns an error status', async () => {
+          const err = await addPublisher({
+            db,
+            sock,
+            channelPhoneNumber,
+            publisherPhoneNumber,
+          }).catch(e => e)
+          expect(err).to.eql(errorStatus)
+        })
+      })
+    })
+
+    describe('when adding publisher fails', () => {
+      const errorStatus = { status: 'ERROR', message: 'error!' }
+      beforeEach(() => addPublisherStub.callsFake(() => Promise.reject(errorStatus)))
+      it('returns an error status', async () => {
+        const err = await addPublisher({
+          db,
+          sock,
+          channelPhoneNumber,
+          publisherPhoneNumber,
+        }).catch(e => e)
+        expect(err).to.eql(errorStatus)
       })
     })
   })
