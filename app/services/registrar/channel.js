@@ -18,10 +18,11 @@ const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome('t
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
   await channelRepository.addPublisher(db, channelPhoneNumber, publisherPhoneNumber)
+  const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
   await messenger.notify({
     db,
     sock,
-    channel: { phoneNumber: channelPhoneNumber },
+    channel,
     notification: welcomeNotification,
     recipients: [publisherPhoneNumber],
   })

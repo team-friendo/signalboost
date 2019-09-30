@@ -41,7 +41,8 @@ describe('channel registrar', () => {
     subscribeStub,
     updatePhoneNumberStub,
     notifyStub,
-    findAllDeepStub
+    findAllDeepStub,
+    findByNumberStub
 
   beforeEach(() => {
     addPublisherStub = sinon.stub(channelRepository, 'addPublisher')
@@ -50,6 +51,7 @@ describe('channel registrar', () => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     notifyStub = sinon.stub(messenger, 'notify')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
+    findByNumberStub = sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
   })
 
   afterEach(() => {
@@ -59,6 +61,7 @@ describe('channel registrar', () => {
     updatePhoneNumberStub.restore()
     notifyStub.restore()
     findAllDeepStub.restore()
+    findByNumberStub.restore()
   })
 
   describe('#create', () => {
@@ -249,7 +252,7 @@ describe('channel registrar', () => {
           {
             db,
             sock,
-            channel: { phoneNumber: channelPhoneNumber },
+            channel: channelInstance,
             notification: welcomeNotification,
             recipients: [publisherPhoneNumber],
           },
