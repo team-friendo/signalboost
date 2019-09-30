@@ -6,7 +6,7 @@ const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./messages')
 const { get } = require('lodash')
-const { senderTypes } = require('../../db/repositories/channel')
+const { memberTypes } = require('../../db/repositories/channel')
 const { defaultLanguage } = require('../../config')
 
 /**
@@ -95,10 +95,8 @@ const updateSafetyNumber = async (db, sock, inboundMsg) => {
     logger.error,
   )
 
-  if (recipient.type === senderTypes.RANDOM) {
-    return Promise.resolve()
-  }
-  if (recipient.type === senderTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
+  if (recipient.type === memberTypes.NONE) return Promise.resolve()
+  if (recipient.type === memberTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
     // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
     return safetyNumberService
       .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)

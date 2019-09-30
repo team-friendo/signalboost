@@ -1,11 +1,11 @@
 const signal = require('../signal')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { sdMessageOf } = require('../signal')
-const { senderTypes } = require('../../db/repositories/channel')
+const { memberTypes } = require('../../db/repositories/channel')
 const { messagesIn } = require('./messages')
 const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
-const { sequence, defaultErrorOf, wait } = require('../util')
+const { wait } = require('../util')
 const {
   signal: { resendDelay },
 } = require('../../config')
@@ -23,7 +23,7 @@ const messageTypes = {
 
 const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT } = messageTypes
 
-const { PUBLISHER } = senderTypes
+const { PUBLISHER } = memberTypes
 
 /***************
  * DISPATCHING

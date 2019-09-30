@@ -3,7 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { languages } from '../../../../app/constants'
-import { senderTypes } from '../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
@@ -41,17 +41,17 @@ describe('messenger service', () => {
   }
   const publisherSender = {
     phoneNumber: publisherNumbers[0],
-    type: senderTypes.PUBLISHER,
+    type: memberTypes.PUBLISHER,
     language: languages.EN,
   }
   const subscriberSender = {
     phoneNumber: subscriberNumbers[0],
-    type: senderTypes.SUBSCRIBER,
+    type: memberTypes.SUBSCRIBER,
     language: languages.EN,
   }
   const randomSender = {
     phoneNumber: genPhoneNumber(),
-    type: senderTypes.RANDOM,
+    type: memberTypes.NONE,
     language: languages.EN,
   }
 

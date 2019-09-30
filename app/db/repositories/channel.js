@@ -4,7 +4,7 @@ const { defaultLanguage } = require('../../config')
 
 // CONSTANTS
 
-const senderTypes = {
+const memberTypes = {
   PUBLISHER: 'PUBLISHER',
   SUBSCRIBER: 'SUBSCRIBER',
   RANDOM: 'RANDOM',
@@ -90,21 +90,21 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
 const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
   if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
-    return Promise.resolve(senderTypes.PUBLISHER)
+    return Promise.resolve(memberTypes.PUBLISHER)
   }
   if (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
-    return Promise.resolve(senderTypes.SUBSCRIBER)
+    return Promise.resolve(memberTypes.SUBSCRIBER)
   }
-  return Promise.resolve(senderTypes.RANDOM)
+  return Promise.resolve(memberTypes.NONE)
 }
 
 const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, senderType) => {
   const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
-  if (senderType === senderTypes.PUBLISHER) {
+  if (senderType === memberTypes.PUBLISHER) {
     return (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }))
       .language
   }
-  if (senderType === senderTypes.SUBSCRIBER) {
+  if (senderType === memberTypes.SUBSCRIBER) {
     return (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }))
       .language
   }
@@ -159,5 +159,5 @@ module.exports = {
   resolveSenderType,
   resolveSenderLanguage,
   update,
-  senderTypes,
+  memberTypes,
 }

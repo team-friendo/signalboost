@@ -2,8 +2,8 @@ const channelRepository = require('../../db/repositories/channel')
 const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
 const { messagesIn } = require('./messages')
-const { senderTypes } = channelRepository
-const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
+const { memberTypes } = channelRepository
+const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
 const { lowerCase } = require('lodash')
 
 /**
@@ -72,7 +72,7 @@ const parseCommand = msg => {
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const execute = async (executable, dispatchable) => {
   const { command, payload } = executable
-  const { db, sock, channel, sender } = dispatchable
+  const { db, channel, sender } = dispatchable
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
@@ -118,7 +118,7 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
 
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
     : showHelp(db, channel, sender, cr)
 }
@@ -132,7 +132,7 @@ const showHelp = async (db, channel, sender, cr) => ({
 
 const maybeShowInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
     : showInfo(db, channel, sender, cr)
 }
@@ -161,7 +161,7 @@ const addSubscriber = (db, channel, sender, cr) =>
 
 const maybeRemoveSender = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.subscriber.remove
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
     : removeSender(db, channel, sender, cr)
 }

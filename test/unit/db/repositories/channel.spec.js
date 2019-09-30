@@ -10,7 +10,7 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
-import { senderTypes } from '../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -557,7 +557,7 @@ describe('channel repository', () => {
             channelPhoneNumber,
             publisherPhoneNumbers[0],
           ),
-        ).to.eql(senderTypes.PUBLISHER)
+        ).to.eql(memberTypes.PUBLISHER)
       })
     })
 
@@ -569,7 +569,7 @@ describe('channel repository', () => {
             channelPhoneNumber,
             subscriberPhoneNumbers[0],
           ),
-        ).to.eql(senderTypes.SUBSCRIBER)
+        ).to.eql(memberTypes.SUBSCRIBER)
       })
     })
 
@@ -577,7 +577,7 @@ describe('channel repository', () => {
       it('returns RANDOM', async () => {
         expect(
           await channelRepository.resolveSenderType(db, channelPhoneNumber, genPhoneNumber()),
-        ).to.eql(senderTypes.RANDOM)
+        ).to.eql(memberTypes.NONE)
       })
     })
   })

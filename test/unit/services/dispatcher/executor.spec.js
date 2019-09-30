@@ -9,7 +9,7 @@ import {
   processCommand,
 } from '../../../../app/services/dispatcher/executor'
 import { languages } from '../../../../app/constants'
-import { senderTypes } from '../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations/phoneNumber'
@@ -201,17 +201,17 @@ describe('executor service', () => {
     }
     const publisher = {
       phoneNumber: '+11111111111',
-      type: senderTypes.PUBLISHER,
+      type: memberTypes.PUBLISHER,
       language: languages.EN,
     }
     const subscriber = {
       phoneNumber: '+12222222222',
-      type: senderTypes.SUBSCRIBER,
+      type: memberTypes.SUBSCRIBER,
       language: languages.EN,
     }
     const randomPerson = {
       phoneNumber: '+13333333333',
-      type: senderTypes.RANDOM,
+      type: memberTypes.NONE,
       language: languages.EN,
     }
 
