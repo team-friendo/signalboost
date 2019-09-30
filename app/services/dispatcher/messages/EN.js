@@ -1,5 +1,6 @@
 const { upperCase } = require('lodash')
 
+const systemName = 'the signalboost system administrator'
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
 const invalidNumber = phoneNumber =>
   `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
@@ -188,6 +189,7 @@ const EN = {
   commandResponses,
   notifications,
   prefixes,
+  systemName,
 }
 
 module.exports = EN

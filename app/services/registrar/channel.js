@@ -13,7 +13,9 @@ const {
   signal: { welcomeDelay },
 } = require('../../config')
 
-const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome('the system admin')
+const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
+  messagesIn(defaultLanguage).systemName,
+)
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {

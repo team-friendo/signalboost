@@ -151,7 +151,9 @@ const isWelcomeMessage = sdMessage => {
     // TODO(aguestuser|2019-09-26):
     //  properly localize this, by including more languages in the input array here!
     [messagesIn(defaultLanguage)].find(
-      messages => strippedMessage === messages.notifications.welcome('').trim(),
+      messages =>
+        strippedMessage === messages.notifications.welcome('').trim() || //if added by another admin
+        strippedMessage === messages.notifications.welcome(messages.systemName).trim(), //if added by sysadmin
     ),
   )
 }

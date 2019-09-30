@@ -271,9 +271,43 @@ describe('dispatcher service', () => {
           })
         })
 
-        describe('when message is a welcome message', () => {
+        describe('when message is a welcome message from an admin', () => {
           const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
             genPhoneNumber(),
+          )}`
+          const failedWelcomeMessage = {
+            type: signal.messageTypes.ERROR,
+            data: {
+              msg_number: 0,
+              error: true,
+              request: {
+                type: 'send',
+                username: channel.phoneNumber,
+                messageBody: welcomeMessage,
+                recipientNumber,
+                attachments: [],
+                expiresInSeconds: 0,
+              },
+            },
+          }
+
+          it('attempts to trust and resend the message', async () => {
+            sock.emit('data', JSON.stringify(failedWelcomeMessage))
+            await wait(socketDelay)
+
+            expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
+            expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
+              channel.phoneNumber,
+              recipientNumber,
+              failedWelcomeMessage.data.request,
+            ])
+          })
+          // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
+        })
+
+        describe('when message is a welcome message from a sysadmin', () => {
+          const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
+            messagesIn(defaultLanguage).systemName,
           )}`
           const failedWelcomeMessage = {
             type: signal.messageTypes.ERROR,
