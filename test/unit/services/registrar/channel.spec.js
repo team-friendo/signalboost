@@ -7,6 +7,7 @@ import signal from '../../../../app/services/signal'
 import messenger from '../../../../app/services/dispatcher/messenger'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
+import { statuses } from '../../../../app/constants'
 import {
   welcomeNotification,
   create,
@@ -256,12 +257,14 @@ describe('channel registrar', () => {
       })
 
       describe('when welcome message succeeds', () => {
-        const successStatus = { status: 'SUCCESS', message: 'success!' }
-        beforeEach(() => notifyStub.returns(Promise.resolve(successStatus)))
+        beforeEach(() => notifyStub.returns(Promise.resolve()))
 
         it('returns a success status', async () => {
           expect(await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })).to.eql(
-            successStatus,
+            {
+              status: statuses.SUCCESS,
+              message: welcomeNotification,
+            },
           )
         })
       })
