@@ -7,7 +7,7 @@ const defaults = {
   identityRequestTimeout: 1000, // 1 sec
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
-  resendDelay: 1000, // 1 second
+  resendDelay: 3000, // 3 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
 }

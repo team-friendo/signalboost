@@ -20,7 +20,7 @@ const {
 // (Database, Socket, string, string, SdMessage) -> Promise<SignalboostStatus>
 const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage) => {
   const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
-  await wait(resendDelay) // to avoid signal rate limiting block
+  await wait(resendDelay) // to allow key trust to take
   await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
   return trustResult
 }
