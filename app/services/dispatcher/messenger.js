@@ -98,7 +98,10 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
         sender.phoneNumber,
         payload,
       ),
-      recipients: channel.publications.map(p => p.publisherPhoneNumber),
+      // don't send to newly added publisher, that would mess up safety number re-trusting!
+      recipients: channel.publications
+        .map(p => p.publisherPhoneNumber)
+        .filter(pNum => pNum !== payload), 
     })
   }
 }
