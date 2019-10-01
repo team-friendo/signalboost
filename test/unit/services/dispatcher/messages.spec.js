@@ -4,7 +4,7 @@ import messagesEN from '../../../../app/services/dispatcher/messages/EN'
 import { publicationFactory } from '../../../support/factories/publication'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
-import { commandResponsesIn, messagesIn, prefixesIn } from "../../../../app/services/dispatcher/messages"
+import { messagesIn } from '../../../../app/services/dispatcher/messages'
 import { languages } from '../../../../app/constants'
 
 describe('messages module', () => {
@@ -40,8 +40,8 @@ describe('messages module', () => {
   })
 
   describe('resolving messages in different languages', () => {
-    it('returns empty object for non-existent languages', () => {
-      expect(messagesIn('FOO')).to.eql({})
+    it('returns default language if handed non-existent language flag', () => {
+      expect(messagesIn('FOO')).to.eql(messagesEN)
     })
 
     it('resolves messages for EN flag', () => {

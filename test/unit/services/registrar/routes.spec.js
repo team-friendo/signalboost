@@ -5,13 +5,14 @@ import request from 'supertest'
 import { times, keys, pick } from 'lodash'
 import { startServer } from '../../../../app/services/registrar/api'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
-import channelService from '../../../../app/services/registrar/channel'
+import channelRegistrar from '../../../../app/services/registrar/channel'
 import phoneNumberService, { statuses } from '../../../../app/services/registrar/phoneNumber'
-
 import { registrar } from '../../../../app/config/index'
 import { deepChannelFactory } from '../../../support/factories/channel'
 
 describe('routes', () => {
+  const db = { fake: 'db' }
+  const sock = { fake: 'sock' }
   const phoneNumber = genPhoneNumber()
   const verificationMessage = 'Your Signal verification code: 890-428 for +14322239406'
   const verifiedStatuses = times(3, () => ({
@@ -37,12 +38,12 @@ describe('routes', () => {
   }
 
   let server
-  before(async () => (server = (await startServer()).server))
+  before(async () => (server = (await startServer(200, db, sock)).server))
   after(() => server.close())
 
   describe('GET to /channels', () => {
     let listStub
-    beforeEach(() => (listStub = sinon.stub(channelService, 'list')))
+    beforeEach(() => (listStub = sinon.stub(channelRegistrar, 'list')))
     afterEach(() => listStub.restore())
 
     describe('when channel service returns list of channels', () => {
@@ -78,7 +79,7 @@ describe('routes', () => {
 
   describe('POST to /channels', () => {
     let createStub
-    beforeEach(() => (createStub = sinon.stub(channelService, 'create')))
+    beforeEach(() => (createStub = sinon.stub(channelRegistrar, 'create')))
     afterEach(() => createStub.restore())
 
     describe('in all cases', () => {
@@ -118,6 +119,60 @@ describe('routes', () => {
           .post('/channels')
           .set('Token', registrar.authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'publishers']))
+          .expect(500, errorStatus)
+      })
+    })
+  })
+
+  describe('POST to /channels/publishers', () => {
+    let addPublisherStub
+    beforeEach(() => (addPublisherStub = sinon.stub(channelRegistrar, 'addPublisher')))
+    afterEach(() => addPublisherStub.restore())
+
+    describe('in all cases', () => {
+      beforeEach(() => addPublisherStub.returns(Promise.resolve()))
+
+      it('attempts to addPublisher channel with values from POST request', async () => {
+        await request(server)
+          .post('/channels/publishers')
+          .set('Token', registrar.authToken)
+          .send({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] })
+
+        expect(addPublisherStub.getCall(0).args).to.eql([
+          {
+            db,
+            sock,
+            channelPhoneNumber: phoneNumber,
+            publisherPhoneNumber: publishers[0],
+          },
+        ])
+      })
+    })
+
+    describe('when adding publisher succeeds', () => {
+      const successStatus = {
+        status: 'SUCCESS',
+        message: 'fake add success',
+      }
+      beforeEach(() => addPublisherStub.returns(Promise.resolve(successStatus)))
+
+      it('creates channel and returns success status', async () => {
+        await request(server)
+          .post('/channels/publishers')
+          .set('Token', registrar.authToken)
+          .send({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] })
+          .expect(200, successStatus)
+      })
+    })
+
+    describe('when adding publisher fails', () => {
+      beforeEach(() => addPublisherStub.returns(Promise.resolve(errorStatus)))
+
+      it('creates returns error status', async () => {
+        await request(server)
+          .post('/channels/publishers')
+          .set('Token', registrar.authToken)
+          .send({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] })
           .expect(500, errorStatus)
       })
     })

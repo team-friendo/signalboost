@@ -1,5 +1,5 @@
-const phoneNumberService = require('./phoneNumber/index')
-const channelService = require('./channel/index')
+const phoneNumberService = require('./phoneNumber')
+const channelRegistrar = require('./channel')
 const { get, find } = require('lodash')
 const {
   twilio: { smsEndpoint },
@@ -11,15 +11,26 @@ const routesOf = (router, db, sock) => {
   })
 
   router.get('/channels', async ctx => {
-    const result = await channelService.list(db)
+    const result = await channelRegistrar.list(db)
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result.data
   })
 
   router.post('/channels', async ctx => {
     const { phoneNumber, name, publishers } = ctx.request.body
+    const result = await channelRegistrar.create({ db, sock, phoneNumber, name, publishers })
+    ctx.status = httpStatusOf(get(result, 'status'))
+    ctx.body = result
+  })
 
-    const result = await channelService.create({ db, sock, phoneNumber, name, publishers })
+  router.post('/channels/publishers', async ctx => {
+    const { channelPhoneNumber, publisherPhoneNumber } = ctx.request.body
+    const result = await channelRegistrar.addPublisher({
+      db,
+      sock,
+      channelPhoneNumber,
+      publisherPhoneNumber,
+    })
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
   })

@@ -1,4 +1,5 @@
 const { concat, take, drop, isEmpty } = require('lodash')
+const { statuses } = require('../constants')
 
 /**************** Promises ****************/
 
@@ -49,9 +50,13 @@ const nowTimestamp = () => new Date().toISOString()
 
 const loggerOf = prefix =>
   process.env.NODE_ENV === 'test'
-    ? { log: () => null, error: () => null, fatalError: () => null }
+    ? { log: () => null, logAndReturn: () => null, error: () => null, fatalError: () => null }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        logAndReturn: sbStatus => {
+          console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.message}`)
+          return sbStatus
+        },
         error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
         fatalError: e => {
           console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`)
@@ -64,7 +69,15 @@ const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
+/*************** Errors ********************/
+
+const defaultErrorOf = err => ({
+  status: statuses.ERROR,
+  message: err.message,
+})
+
 module.exports = {
+  defaultErrorOf,
   batchesOfN,
   exec,
   loggerOf,

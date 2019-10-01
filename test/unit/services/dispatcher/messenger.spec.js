@@ -2,13 +2,15 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { senderTypes, languages } from '../../../../app/constants'
+import { languages } from '../../../../app/constants'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import messenger, { messageTypes, sdMessageOf } from '../../../../app/services/dispatcher/messenger'
+import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
 import messages from '../../../../app/services/dispatcher/messages/EN'
 import { statuses, commands } from '../../../../app/services/dispatcher/executor'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { sdMessageOf } from '../../../../app/services/signal'
 
 describe('messenger service', () => {
   const [db, sock] = [{}, { write: () => {} }]
@@ -39,17 +41,17 @@ describe('messenger service', () => {
   }
   const publisherSender = {
     phoneNumber: publisherNumbers[0],
-    type: senderTypes.PUBLISHER,
+    type: memberTypes.PUBLISHER,
     language: languages.EN,
   }
   const subscriberSender = {
     phoneNumber: subscriberNumbers[0],
-    type: senderTypes.SUBSCRIBER,
+    type: memberTypes.SUBSCRIBER,
     language: languages.EN,
   }
   const randomSender = {
     phoneNumber: genPhoneNumber(),
-    type: senderTypes.RANDOM,
+    type: memberTypes.NONE,
     language: languages.EN,
   }
 
@@ -76,16 +78,6 @@ describe('messenger service', () => {
     it('parses a command result', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
       expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.COMMAND_RESULT)
-    })
-
-    it('parses a publisher welcome message', () => {
-      expect(
-        messenger.parseMessageType({
-          command: 'ADD',
-          status: statuses.SUCCESS,
-          payload: publisherSender.phoneNumber,
-        }),
-      ).to.eql(messageTypes.NEW_PUBLISHER_WELCOME)
     })
   })
 
@@ -271,7 +263,11 @@ describe('messenger service', () => {
         const newPublisher = genPhoneNumber()
         const sdMessage = `${commands.ADD} ${newPublisher}`
         const response = messages.commandResponses.publisher.add.success(newPublisher)
-        const welcome = messages.notifications.welcome(channel, publisherSender.phoneNumber)
+        const welcome = messages.notifications.welcome(publisherSender.phoneNumber)
+        const alert = messages.notifications.publisherAdded(
+          publisherSender.phoneNumber,
+          newPublisher,
+        )
 
         beforeEach(async () => {
           await messenger.dispatch({
@@ -306,6 +302,14 @@ describe('messenger service', () => {
             sock,
             [newPublisher],
             sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
+          ])
+        })
+
+        it('sends an alert to the other channel admins', () => {
+          expect(broadcastMessageStub.getCall(1).args).to.eql([
+            sock,
+            publisherNumbers,
+            sdMessageOf(channel, `[${channel.name}]\n${alert}`),
           ])
         })
       })

@@ -2,8 +2,8 @@ const channelRepository = require('../../db/repositories/channel')
 const validator = require('../../db/validations/phoneNumber')
 const logger = require('./logger')
 const { messagesIn } = require('./messages')
-const { senderTypes } = require('../../constants')
-const { PUBLISHER, SUBSCRIBER, RANDOM } = senderTypes
+const { memberTypes } = channelRepository
+const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
 const { lowerCase } = require('lodash')
 
 /**
@@ -118,7 +118,7 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
 
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
     : showHelp(db, channel, sender, cr)
 }
@@ -132,7 +132,7 @@ const showHelp = async (db, channel, sender, cr) => ({
 
 const maybeShowInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
     : showInfo(db, channel, sender, cr)
 }
@@ -161,7 +161,7 @@ const addSubscriber = (db, channel, sender, cr) =>
 
 const maybeRemoveSender = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.subscriber.remove
-  return sender.type === RANDOM
+  return sender.type === NONE
     ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
     : removeSender(db, channel, sender, cr)
 }
@@ -180,16 +180,18 @@ const removeSender = (db, channel, sender, cr) => {
 
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   const cr = messagesIn(sender.language).commandResponses.publisher.remove
-  if (!(sender.type === PUBLISHER))
+  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
+
+  if (!(sender.type === PUBLISHER)) {
     return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  }
+  if (!isValid) {
+    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+  }
+  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, validNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotPublisher(validNumber) }
 
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(publisherNumber)
-  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
-
-  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, phoneNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotPublisher(phoneNumber) }
-
-  return removePublisher(db, channel, phoneNumber, cr)
+  return removePublisher(db, channel, validNumber, cr)
 }
 
 const removePublisher = async (db, channel, publisherNumber, cr) =>

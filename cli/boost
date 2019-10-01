@@ -17,6 +17,7 @@ print_usage(){
   echo "Valid commands include:"
   echo ""
   echo "  help"
+  echo "  add-admin"
   echo "  create-channel"
   echo "  create-number"
   echo "  list-channels"
@@ -30,6 +31,7 @@ print_usage(){
 }
 
 if [[ $command != "help" ]] &&
+     [[ $command != "add-admin" ]] &&
      [[ $command != "create-channel" ]] &&
      [[ $command != "create-number" ]] &&
      [[ $command != "list-channels" ]] &&

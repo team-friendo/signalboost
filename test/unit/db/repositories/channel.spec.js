@@ -10,7 +10,7 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
-import { senderTypes } from '../../../../app/constants'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -107,20 +107,12 @@ describe('channel repository', () => {
       })
 
       it('updates the channel record and returns it', async () => {
-        expect(
-          omit(channel.get(), [
-            'createdAt',
-            'updatedAt',
-            'messageCount',
-            'containerId', // TODO: drop containerId from schema!
-            'publications',
-          ]),
-        ).to.eql({
+        expect(omit(channel, ['createdAt', 'updatedAt', 'messageCount', 'publications'])).to.eql({
           phoneNumber: channelPhoneNumber,
           name: '#blackops',
           responsesEnabled: false,
         })
-        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.have.members(
+        expect((await channel.publications).map(p => p.publisherPhoneNumber)).to.have.members(
           newPublisherPNums,
         )
       })
@@ -184,20 +176,25 @@ describe('channel repository', () => {
       })
     })
 
-    describe('when given the pNum of an already-existing publisher', () => {
+    describe('when one of given pNums is an already-existing publisher', () => {
+      let res
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await channelRepository.addPublishers(
-          db,
-          channel.phoneNumber,
-          publisherPhoneNumbers.slice(1),
-        )
+        res = await channelRepository.addPublishers(db, channel.phoneNumber, publisherPhoneNumbers)
         publisherCount = await db.publication.count()
-        await channelRepository.addPublishers(db, channel.phoneNumber, publisherPhoneNumbers)
+
+        await channelRepository.addPublishers(db, channel.phoneNumber, [
+          publisherPhoneNumbers[1],
+          genPhoneNumber(),
+        ])
       })
 
-      it('only creates one new publication', async () => {
+      it('does not create a new publication for the already existing number', async () => {
         expect(await db.publication.count()).to.eql(publisherCount + 1)
+      })
+
+      it('returns all publishers (including already-existing ones)', () => {
+        expect(res.length).to.eql(2)
       })
     })
 
@@ -322,7 +319,7 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#findMembershipsByPhoneNumber', () => {
+  describe('#findMemberships', () => {
     const channel2PhoneNumber = genPhoneNumber()
     const memberPhoneNumber = genPhoneNumber()
 
@@ -354,7 +351,7 @@ describe('channel repository', () => {
     )
 
     it('finds all channels for which a given phone number is either a publisher or subscriber', async () => {
-      const { publications, subscriptions } = await channelRepository.findMembershipsByPhoneNumber(
+      const { publications, subscriptions } = await channelRepository.findMemberships(
         db,
         memberPhoneNumber,
       )
@@ -552,7 +549,7 @@ describe('channel repository', () => {
             channelPhoneNumber,
             publisherPhoneNumbers[0],
           ),
-        ).to.eql(senderTypes.PUBLISHER)
+        ).to.eql(memberTypes.PUBLISHER)
       })
     })
 
@@ -564,19 +561,15 @@ describe('channel repository', () => {
             channelPhoneNumber,
             subscriberPhoneNumbers[0],
           ),
-        ).to.eql(senderTypes.SUBSCRIBER)
+        ).to.eql(memberTypes.SUBSCRIBER)
       })
     })
 
     describe('when sender is neither publisher nor subscriber', () => {
       it('returns RANDOM', async () => {
         expect(
-          await channelRepository.resolveSenderType(
-            db,
-            channelPhoneNumber,
-            genPhoneNumber(),
-          ),
-        ).to.eql(senderTypes.RANDOM)
+          await channelRepository.resolveSenderType(db, channelPhoneNumber, genPhoneNumber()),
+        ).to.eql(memberTypes.NONE)
       })
     })
   })

@@ -1,7 +1,14 @@
 const { Op } = require('sequelize')
 const { times } = require('lodash')
 const { defaultLanguage } = require('../../config')
-const { senderTypes } = require('../../constants')
+
+// CONSTANTS
+
+const memberTypes = {
+  PUBLISHER: 'PUBLISHER',
+  SUBSCRIBER: 'SUBSCRIBER',
+  RANDOM: 'RANDOM',
+}
 
 // PUBLIC FUNCTIONS
 
@@ -16,7 +23,9 @@ const create = async (db, phoneNumber, name, publishers) => {
   ]
   return !channel
     ? db.channel.create({ phoneNumber, name, publications, messageCount: {} }, { include })
-    : channel.update({ name, publications }, { include })
+    : channel
+        .update({ name, publications, returning: true }, { include })
+        .then(c => ({ ...c.dataValues, publications, messageCount: channel.messageCount }))
 }
 
 const update = (db, phoneNumber, attrs) =>
@@ -40,12 +49,28 @@ const findDeep = (db, phoneNumber) =>
 
 // CHANNEL ASSOCIATION QUERIES
 
+// TODO(aguestuser|2019-09-21)
+//  it would be nicer to extract publications and subscriptions into a memberhsips table
+//  then just query the membership table here (and move this function into a memberships repo
+const findMemberships = async (db, memberPhoneNumber) => ({
+  publications: await db.publication.findAll({
+    where: { publisherPhoneNumber: memberPhoneNumber },
+  }),
+  subscriptions: await db.subscription.findAll({
+    where: { subscriberPhoneNumber: memberPhoneNumber },
+  }),
+})
+
 const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     Promise.all(publisherNumbers.map(num => addPublisher(db, channelPhoneNumber, num))),
   )
 
 const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
+  // NOTE(aguestuser|2019-09-26):
+  //  - it is EXTREMELY IMPORTANT that `#addPublisher` remain idempotent
+  //  - due to signald peculiarities, lots of logic about detecting safety number changes for publishers
+  //    and correctly (re)trusting their key material hangs off of this invariant. do not violate it! thx! :)
   db.publication
     .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
     .spread(x => x)
@@ -67,21 +92,21 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
 const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
   if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
-    return Promise.resolve(senderTypes.PUBLISHER)
+    return Promise.resolve(memberTypes.PUBLISHER)
   }
   if (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
-    return Promise.resolve(senderTypes.SUBSCRIBER)
+    return Promise.resolve(memberTypes.SUBSCRIBER)
   }
-  return Promise.resolve(senderTypes.RANDOM)
+  return Promise.resolve(memberTypes.NONE)
 }
 
 const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, senderType) => {
   const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
-  if (senderType === senderTypes.PUBLISHER) {
+  if (senderType === memberTypes.PUBLISHER) {
     return (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }))
       .language
   }
-  if (senderType === senderTypes.SUBSCRIBER) {
+  if (senderType === memberTypes.SUBSCRIBER) {
     return (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }))
       .language
   }
@@ -125,6 +150,7 @@ module.exports = {
   createWelcome,
   findAll,
   findAllDeep,
+  findMemberships,
   findByPhoneNumber,
   findDeep,
   getUnwelcomedPublishers,
@@ -135,4 +161,5 @@ module.exports = {
   resolveSenderType,
   resolveSenderLanguage,
   update,
+  memberTypes,
 }

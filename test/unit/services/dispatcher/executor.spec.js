@@ -8,15 +8,16 @@ import {
   parseCommand,
   processCommand,
 } from '../../../../app/services/dispatcher/executor'
-import { languages, senderTypes } from '../../../../app/constants'
+import { languages } from '../../../../app/constants'
+import { memberTypes } from '../../../../app/db/repositories/channel'
 import { commandResponses as CR } from '../../../../app/services/dispatcher/messages/EN'
 import channelRepository from '../../../../app/db/repositories/channel'
 import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
-import { sdMessageOf } from '../../../../app/services/dispatcher/messenger'
 import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { sdMessageOf } from '../../../../app/services/signal'
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -190,6 +191,7 @@ describe('executor service', () => {
 
   describe('executing commands', () => {
     const db = {}
+    const sock = {}
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
@@ -199,17 +201,17 @@ describe('executor service', () => {
     }
     const publisher = {
       phoneNumber: '+11111111111',
-      type: senderTypes.PUBLISHER,
+      type: memberTypes.PUBLISHER,
       language: languages.EN,
     }
     const subscriber = {
       phoneNumber: '+12222222222',
-      type: senderTypes.SUBSCRIBER,
+      type: memberTypes.SUBSCRIBER,
       language: languages.EN,
     }
     const randomPerson = {
       phoneNumber: '+13333333333',
-      type: senderTypes.RANDOM,
+      type: memberTypes.NONE,
       language: languages.EN,
     }
 

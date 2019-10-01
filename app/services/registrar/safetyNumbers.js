@@ -1,63 +1,54 @@
-const channelRepository = require('../../db/repositories/channel')
 const signal = require('../../services/signal')
-const { flattenDeep, identity, partition } = require('lodash')
-const { statuses } = require('../../constants')
+const channelRepository = require('../../db/repositories/channel')
+const { wait, loggerOf } = require('../util')
+const logger = loggerOf('safetyNumberService')
+const { messagesIn } = require('../dispatcher/messages')
+const { defaultErrorOf } = require('../util')
+const { sdMessageOf } = require('../signal')
+const {
+  signal: { resendDelay },
+} = require('../../config')
 
 /*******************************************************
- * type TrustResponse = {
+ * type TrustResponse =
  *   status: "SUCCESS" | "ERROR"
- *   message: string // trustSuccess(string) | trustError(string)
+ *   message: string,
  * }
  *
- * type TrustTally = {
- *   successes: number,
- *   errors: number
- * }
  ******************************************************/
 
-// (Database, Socket) -> Promise<TrustTally>
-const trustAll = async (db, sock) => {
-  try {
-    const channels = await channelRepository.findAllDeep(db)
-    const trustResponses = await sendTrustMessages(sock, channels)
-    return tallyResults(trustResponses)
-  } catch (e) {
-    return {
-      status: statuses.ERROR,
-      message: e.message,
-    }
-  }
+// (Database, Socket, string, string, SdMessage) -> Promise<SignalboostStatus>
+const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage) => {
+  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
+  await wait(resendDelay) // to allow key trust to take
+  await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+  return trustResult
 }
 
-// (Socket, Array<Channel>) -> Promise<TrustResponse>
-const sendTrustMessages = (sock, channels) =>
+// (Database, socket, string, string) -> Promise<SignalBoostStatus>
+const deauthorize = async (db, sock, channelPhoneNumber, numberToDeauthorize) => {
+  const removalResult = await channelRepository
+    .removePublisher(db, channelPhoneNumber, numberToDeauthorize)
+    .catch(e => Promise.reject(defaultErrorOf(e)))
+  const { publications } = await channelRepository
+    .findDeep(db, channelPhoneNumber)
+    .catch(e => Promise.reject(defaultErrorOf(e)))
+  await _sendDeauthAlerts(sock, channelPhoneNumber, numberToDeauthorize, publications)
+  return removalResult
+}
+
+const _sendDeauthAlerts = (sock, channelPhoneNumber, deauthorizedNumber, publications) =>
   Promise.all(
-    (channels || []).map(ch =>
-      Promise.all([
-        Promise.all(
-          ch.subscriptions.map(sub =>
-            signal.trust(sock, sub.channelPhoneNumber, sub.subscriberPhoneNumber).catch(identity),
-          ),
+    publications.map(({ publisherPhoneNumber, language }) =>
+      signal.sendMessage(
+        sock,
+        publisherPhoneNumber,
+        sdMessageOf(
+          { phoneNumber: channelPhoneNumber },
+          messagesIn(language).notifications.deauthorization(deauthorizedNumber),
         ),
-        Promise.all(
-          ch.publications.map(pub =>
-            signal.trust(sock, pub.channelPhoneNumber, pub.publisherPhoneNumber).catch(identity),
-          ),
-        ),
-      ]),
+      ),
     ),
-  ).then(flattenDeep)
+  )
 
-// (Array<TrustResponse>) -> TrustTally
-const tallyResults = trustResponses => {
-  const [successes, errors] = partition(trustResponses, resp => resp.status === statuses.SUCCESS)
-  return { successes: successes.length, errors: errors.length }
-}
-
-//
-// .catch(e => ({
-//   status: statuses.ERROR,
-//   message: e.message,
-// }))
-
-module.exports = { trustAll }
+module.exports = { trustAndResend, deauthorize, logger }

@@ -6,17 +6,20 @@ boost cli supports the following commands:
   help
     - shows this dialogue
 
-  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
-    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
+  add-admin -c <channel phone number> -a <admin phone number> -u <url>
+    - adds an admin to a channel on the signalboost instance at url (defaults to prod!)
+
+  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
+    - creates a channel with provied phone number, name, and admins on signalboost instance at url (defaults to prod!)
 
   create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
+    - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
 
   list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given (optional) url
+    - lists all channels active on the signalboost instance at the given url (defaults to prod!)
 
   list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
+    - lists all numbers purchased from twilio on the signalboost instance at url (defaults to prod!)
   
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path

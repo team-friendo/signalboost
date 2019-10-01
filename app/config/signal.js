@@ -7,7 +7,7 @@ const defaults = {
   identityRequestTimeout: 1000, // 1 sec
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
-  safetyNumberCheckInterval: 1000 * 60 * 60 * 24, // 1 day
+  resendDelay: 3000, // 3 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
 }
@@ -20,7 +20,7 @@ const test = {
   identityRequestTimeout: 100, // 100 millis
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
-  safetyNumberCheckInterval: 100, // 100 millis
+  resendDelay: 40, // 40 millis
   signaldStartupTime: 1, // 1 milli
   welcomeDelay: 0.0001, // .0001 millis
 }
