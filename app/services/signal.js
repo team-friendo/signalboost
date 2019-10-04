@@ -173,7 +173,7 @@ const verify = (sock, phoneNumber, code) =>
 const awaitVerificationResult = async (sock, phoneNumber) => {
   return new Promise((resolve, reject) => {
     sock.on('data', function handle(msg) {
-      const { type, data } = JSON.parse(msg)
+      const { type, data } = jsonParseOrReject(msg, reject)
       if (isVerificationSuccess(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data)
@@ -265,7 +265,7 @@ const awaitIdentitiesOf = (sock, memberPhoneNumber) => {
   return new Promise((resolve, reject) => {
     // create handler
     const handle = msg => {
-      const { type, data } = JSON.parse(msg)
+      const { type, data } = jsonParseOrReject(msg, reject)
       if (isSignalIdentitiesOf(type, data, memberPhoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data.identities)
@@ -290,6 +290,14 @@ const isSignalIdentitiesOf = (msgType, msgData, memberPhoneNumber) =>
 /*******************
  * MESSAGE PARSING
  *******************/
+
+const jsonParseOrReject= (msg, reject) => {
+  try {
+    return JSON.parse(msg)
+  } catch (e) {
+    reject(e)
+  }
+}
 
 // InboundMessage -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
