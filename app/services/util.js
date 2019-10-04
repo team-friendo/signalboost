@@ -54,7 +54,7 @@ const loggerOf = prefix =>
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
         logAndReturn: sbStatus => {
-          console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.message}`)
+          console.log(`[${prefix} | ${nowTimestamp()}] ${JSON.stringify(sbStatus)}`)
           return sbStatus
         },
         error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
