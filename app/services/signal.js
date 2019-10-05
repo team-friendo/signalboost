@@ -98,6 +98,7 @@ const trustLevels = {
 const messages = {
   error: {
     socketTimeout: 'Maximum signald connection attempts exceeded.',
+    invalidJSON: msg => 'Failed to parse JSON: ${msg}',
     socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
     verificationFailure: (phoneNumber, reason) =>
       `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
@@ -173,8 +174,14 @@ const verify = (sock, phoneNumber, code) =>
 const awaitVerificationResult = async (sock, phoneNumber) => {
   return new Promise((resolve, reject) => {
     sock.on('data', function handle(msg) {
-      const { type, data } = jsonParseOrReject(msg, reject)
-      if (isVerificationSuccess(type, data, phoneNumber)) {
+      const { type, data } = safeJsonParse(msg, reject)
+      if (type === null && data === null) {
+        reject(new Error(messages.error.invalidJSON(msg)))
+      } else if (isVerificationFailure(type, data, phoneNumber)) {
+        sock.removeListener('data', handle)
+        const reason = get(data, 'message', 'Captcha required: 402')
+        reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
+      } else if (isVerificationSuccess(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data)
       } else if (isVerificationFailure(type, data, phoneNumber)) {
@@ -265,8 +272,11 @@ const awaitIdentitiesOf = (sock, memberPhoneNumber) => {
   return new Promise((resolve, reject) => {
     // create handler
     const handle = msg => {
-      const { type, data } = jsonParseOrReject(msg, reject)
-      if (isSignalIdentitiesOf(type, data, memberPhoneNumber)) {
+      const { type, data } = safeJsonParse(msg, reject)
+      if (type === null && data === null) {
+        sock.removeListener('data', handle)
+        reject({ status: statuses.ERROR, message: `${messages.error.invalidJSON(msg)}` })
+      } else if (isSignalIdentitiesOf(type, data, memberPhoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data.identities)
       }
@@ -291,11 +301,12 @@ const isSignalIdentitiesOf = (msgType, msgData, memberPhoneNumber) =>
  * MESSAGE PARSING
  *******************/
 
-const jsonParseOrReject= (msg, reject) => {
+// (Any) -> { type: string, data: object }
+const safeJsonParse = msg => {
   try {
     return JSON.parse(msg)
   } catch (e) {
-    reject(e)
+    return { type: null, data: null }
   }
 }
 
