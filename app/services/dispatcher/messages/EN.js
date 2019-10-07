@@ -107,7 +107,7 @@ CHANNEL INFO:
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${channel.subscriptions.length}
-publishers: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}
+admins: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}
 ${support}`,
@@ -120,7 +120,7 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${channel.subscriptions.length}
-publishers: ${channel.publications.length}
+admins: ${channel.publications.length}
 ${support}`,
     unauthorized,
   },
