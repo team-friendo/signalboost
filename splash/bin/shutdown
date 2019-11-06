@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+docker ps -aq | xargs -I docker_id docker rm -f docker_id

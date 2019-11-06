@@ -21,7 +21,9 @@
     "dev": "docker-compose -f docker-compose-dev.yml up",
     "start": "docker-compose up -d",
     "stop": "docker-compose  down",
-    "update": "./bin/dev/update"
+    "update": "./bin/dev/update",
+    "splash:dev": "cd splash && docker-compose -f docker-compose-dev.yml up",
+    "splash:prod": "cd splash && docker-compose up"
   },
   "engines": {
     "node": "10.16.3"

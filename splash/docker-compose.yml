@@ -1,0 +1,59 @@
+version: '3'
+
+networks:
+  proxy-tier:
+
+volumes:
+  certs:
+  html:
+  vhost.d:
+
+services:
+
+  splash:
+    image: signalboost_splash
+    container_name: signalboost_splash
+    entrypoint: "/splash/bin/entrypoint/prod"
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      VIRTUAL_HOST: "$SPLASH_VIRTUAL_HOST"
+      LETSENCRYPT_HOST: "$SPLASH_LETSENCRYPT_HOST"
+    ports:
+      - 9000:9000
+    networks:
+      - default
+    volumes:
+      - ./:/splash
+    restart: unless-stopped
+
+  proxy:
+    image: jwilder/nginx-proxy:alpien
+    container_name: proxy
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy-tier
+    restart: unless-stopped
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    restart: unless-stopped
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy-tier
+    depends_on:
+      - proxy
