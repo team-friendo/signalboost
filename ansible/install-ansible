@@ -8,3 +8,4 @@ fi
 ansible-galaxy install geerlingguy.docker
 ansible-galaxy install geerlingguy.pip
 ansible-galaxy install dev-sec.os-hardening
+ansible-galaxy install dev-sec.ssh-hardening

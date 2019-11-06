@@ -15,20 +15,17 @@ services:
     container_name: signalboost_splash
     entrypoint: "/splash/bin/entrypoint/prod"
     env_file: .env
-    environment:
-      NODE_ENV: development
-      VIRTUAL_HOST: "$SPLASH_VIRTUAL_HOST"
-      LETSENCRYPT_HOST: "$SPLASH_LETSENCRYPT_HOST"
     ports:
       - 9000:9000
     networks:
       - default
+      - proxy-tier
     volumes:
       - ./:/splash
     restart: unless-stopped
 
   proxy:
-    image: jwilder/nginx-proxy:alpien
+    image: jwilder/nginx-proxy:alpine
     container_name: proxy
     ports:
       - 80:80

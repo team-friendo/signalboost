@@ -11,11 +11,6 @@
       - name: docker
       - name: docker-compose
 
-  # docker dependencies (ansible roles)
-  roles:
-    - geerlingguy.pip
-    - geerlingguy.docker
-
   handlers:
     - name: restart fail2ban
       service: name=fail2ban state=restarted
@@ -58,8 +53,22 @@
         - lsof
         - rsync
         - python3
+        - python-pip
         - emacs-nox
     tags: packages
+
+  #################
+  # ENABLE DOCKER #
+  #################
+
+  - name: run pip role
+    import_role:
+      name: geerlingguy.pip
+
+  - name: run docker role
+    import_role:
+      name: geerlingguy.docker
+
 
   ######################
   # ENABLE SWAP MEMORY #
@@ -119,6 +128,7 @@
     lineinfile:
         dest: /etc/sudoers
         state: present
+
         regexp: '^%sudo'
         line: '%sudo ALL=(ALL) NOPASSWD: ALL'
         validate: visudo -cf %s
@@ -145,7 +155,9 @@
 
   # firewall
 
-  - ufw: state=enabled policy=allow
+  - ufw:
+      state: enabled
+      policy: allow
     tags: ufw
 
   - name: default (incoming) policy
