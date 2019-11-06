@@ -2,22 +2,24 @@ import React from 'react'
 import { Link } from 'gatsby'
 
 import Layout from '../components/layout'
-import Image from '../components/image'
 import SEO from '../components/seo'
 
 const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: Secure Textblasts and Hotlines for Activists" />
     <p>
-      Signalboost lets activists send text blasts and receive hotline tips
-      on their phones without revealing their identity or spending money. It is <em>secure, simple, and free.</em>
+      Signalboost lets activists send text blasts and receive hotline tips on
+      their phones without revealing their identity or spending money. It is{' '}
+      <em style={{ color: '#ff79c6' }}>
+        secure, simple, and free.
+      </em>
     </p>
+
     <h3>Secure:</h3>
     <ul>
       <li>
-        Signalboost sends messages over {' '}
-        <Link to="signal.org">Signal</Link>, the most secure encrypted
-        messaging service available for phones.
+        Signalboost sends messages over <Link to="signal.org">Signal</Link>, the
+        most secure encrypted messaging service available for phones.
       </li>
       <li>
         It does not display phone numbers or names. People can send and receive
@@ -32,6 +34,7 @@ const IndexPage = () => (
         make such disclosure impossible.
       </li>
     </ul>
+
     <h3>Simple:</h3>
     <ul>
       <li>
@@ -47,6 +50,7 @@ const IndexPage = () => (
         know what it's for amidst a dizzying sea of tech tools!
       </li>
     </ul>
+
     <h3>Free:</h3>
     <ul>
       <li>
@@ -55,7 +59,8 @@ const IndexPage = () => (
       </li>
     </ul>
 
-    <h1>Getting Started:</h1>
+    <h1>Getting Started</h1>
+
     <h3>To get a Signalboost channel:</h3>
     <ul>
       <li>Send a Signal message to +1-938-444-8536</li>
@@ -85,11 +90,19 @@ const IndexPage = () => (
       </li>
     </ul>
 
-    <h1>Learn More:</h1>
+    <h1>Learn More</h1>
     <p>If you have questions, we'd love to hear from you! You can...</p>
     <ul>
-      <li>Send us a signal message at +1-938-444-8536</li>
-      <li>Send us an email at team-friendo@protonmail.com</li>
+      <li>
+        Send us a signal message at{' '}
+        <span style={{ color: '#bd93f9' }}>+1-938-444-8536</span>
+      </li>
+      <li>
+        Send us an email at{' '}
+        <Link to="mailto:team-friendo@protonmail.com">
+          team-friendo@protonmail.com
+        </Link>
+      </li>
       <li>
         Visit our&nbsp;
         <Link to="0xacab.org/team-friendo/signalboost">gitlab page</Link>

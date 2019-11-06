@@ -1,21 +1,18 @@
 /**
- * Layout component that queries for data
- * with Gatsby's useStaticQuery component
- *
+ * Layout component could queries for data
+ * if we wanted it to.
  * See: https://www.gatsbyjs.org/docs/use-static-query/
  */
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { useStaticQuery, graphql } from 'gatsby'
-
 import Header from './header'
 import './layout.css'
 
 const Layout = ({ children }) => {
   return (
     <>
-      <Header siteTitle='Signalboost' />
+      <Header siteTitle="Signalboost" />
       <div
         style={{
           margin: `8rem auto 0 auto`, // TRBL
@@ -25,8 +22,7 @@ const Layout = ({ children }) => {
         }}
       >
         <main>{children}</main>
-        <footer>
-        </footer>
+        <footer />
       </div>
     </>
   )
