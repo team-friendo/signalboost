@@ -4,3 +4,4 @@ ansible/files/deploy_keys/signalboost_ssh_key
 ansible/files/deploy_keys/signalboost_ssh_key.pub
 ansible/inventory.tmpl
 bin/get-machine
+splash/ansible/inventory.tmpl

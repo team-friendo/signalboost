@@ -43,3 +43,4 @@ signal_data
 /ansible/files/deploy_keys/signalboost_ssh_key
 /ansible/files/deploy_keys/signalboost_ssh_key.pub
 /ansible/inventory.tmpl
+/splash/ansible/inventory.tmpl
