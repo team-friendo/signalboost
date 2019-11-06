@@ -101,4 +101,4 @@ RUN set -ex \
 
 RUN yarn global add gatsby-cli
 
-WORKDIR /signalboost
+WORKDIR /splash

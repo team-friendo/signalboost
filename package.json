@@ -23,6 +23,7 @@
     "stop": "docker-compose  down",
     "update": "./bin/dev/update",
     "splash:dev": "cd splash && docker-compose -f docker-compose-dev.yml up",
+    "splash:build": "cd splash && docker-compose run --entrypoint 'gatsby build' splash",
     "splash:prod": "cd splash && docker-compose up"
   },
   "engines": {
