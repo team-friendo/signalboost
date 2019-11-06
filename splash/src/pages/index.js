@@ -28,7 +28,7 @@ const IndexPage = () => (
         Signalboost retains the minimal user metadata necessary to route
         messages. Its maintainers, Team Friendo, will resist any attempt to
         compel us disclose it, and are working on{' '}
-        <a href="0xacab.org/team-friendo/signalboost/issues/68">updates</a> make
+        <a href="https://0xacab.org/team-friendo/signalboost/issues/68">updates</a> make
         such disclosure impossible.
       </li>
     </ul>
