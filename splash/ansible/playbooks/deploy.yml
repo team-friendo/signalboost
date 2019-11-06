@@ -1,0 +1,107 @@
+---
+- name: Deploy Splash
+  become: true
+  hosts: splash
+
+  environment:
+    NODE_ENV: production
+
+  vars:
+    homedir: /srv/splash
+    env_file: "files/.env"
+    secrets_method: copy
+
+  tasks:
+
+  #########
+  # CLONE #
+  #########
+
+  - name: Pull signalboost repository from 0xacab
+    git:
+      repo: https://0xacab.org/team-friendo/signalboost
+      dest: "{{ homedir }}"
+      force: true
+      version: "{{ branch | default('master') }}"
+    tags: clone
+
+  - name: Deploy environment file using blackbox
+    command: ./bin/blackbox/postdeploy
+    args:
+      chdir: "{{ homedir }}"
+    tags: clone
+    when: secrets_method == "blackbox"
+
+  - name: Deploy environment file by copying local file
+    copy:
+      src: "{{ env_file }}"
+      dest: "{{ homedir }}/.env"
+    tags: clone
+    when: secrets_method == "copy"
+
+  #######################
+  # BUILD DOCKER IMAGES #
+  #######################
+
+  - name: Load base dockerfiles
+    copy:
+      src: files/docker/
+      dest: /srv/splash/docker/
+    tags: docker
+
+  - name: Build splash container
+    command: docker build -f /srv/splash/docker/sigbalboost_splash.dockerfile -t signalboost_splash:latest /srv/splash
+    register: build_output
+    tags: docker
+
+  ########
+  # STOP #
+  ########
+
+  - name: Stop app
+    command: ./bin/shutdown
+    args:
+      chdir: "{{ homedir }}"
+    tags: stop
+
+  ###########
+  # PREPARE #
+  ###########
+
+  - name: Install node packages
+    command: "docker-compose run --entrypoint 'yarn install' splash"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  - name: Stop container used for install
+    command: "docker-compose down"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+  #########
+  # START #
+  #########
+
+  - name: Start app
+    docker_service:
+      project_src: "{{ homedir }}"
+      state: present
+    register: docker_up_result
+
+  # - debug:
+  #     var: docker_up_result
+
+  ######################
+  # AVAILABILITY CHECK #
+  ######################
+
+  - name: Ping nextcloud instance until it is available
+    shell: ./bin/check-availability
+    args:
+      chdir: "{{ homedir }}"
+    register: health_check_output
+    changed_when: false
+    failed_when: health_check_output.rc != 0
+    tags: health_check

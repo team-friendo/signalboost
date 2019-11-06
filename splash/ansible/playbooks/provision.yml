@@ -1,0 +1,199 @@
+---
+- name: Provision system dependencies & users, perform basic hardening
+  become: true
+  hosts: splash
+
+  vars:
+    ansible_user: root
+    secrets_method: copy
+    # docker dependencies (pip packages)
+    pip_install_packages:
+      - name: docker
+      - name: docker-compose
+
+  # docker dependencies (ansible roles)
+  roles:
+    - geerlingguy.pip
+    - geerlingguy.docker
+
+  handlers:
+    - name: restart fail2ban
+      service: name=fail2ban state=restarted
+
+    - name: restart ssh
+      service: name=ssh state=restarted
+
+    - name: reload ufw
+      ufw:
+        state: reloaded
+
+  tasks:
+
+  #######################
+  # SYSTEM DEPENDENCIES #
+  #######################
+
+  - name: update apt packages
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+    tags: packages
+
+  - name: upgrade apt packages
+    apt: upgrade=yes
+    tags: packages
+
+  - name: Install basic packages
+    apt:
+      cache_valid_time: 3600
+      name:
+        - sudo
+        - curl
+        - gnupg
+        - fail2ban
+        - ufw
+        - tmux
+        - git
+        - htop
+        - lsof
+        - rsync
+        - python3
+        - emacs-nox
+    tags: packages
+
+  ######################
+  # ENABLE SWAP MEMORY #
+  ######################
+
+  - name: Allocate 1GB to /swapfile
+    command: dd if=/dev/zero of=/swapfile bs=1M count=1024
+    register: write_swapfile
+    args:
+      creates: /swapfile
+
+  - name: Set swapfile permissions
+    file: path=/swapfile mode=600
+
+  - name: Create swapfile
+    command: mkswap /swapfile
+    register: create_swapfile
+    when: write_swapfile.changed
+
+  - name: Enable swapfile
+    command: swapon /swapfile
+    when: create_swapfile.changed
+
+  - name: Add swapfile to /etc/fstab
+    lineinfile:
+      path: /etc/fstab
+      line: "/swapfile   none    swap    sw    0   0"
+      state: present
+
+  ##########
+  # ADMINS #
+  ##########
+
+  - name: Make sure we have a sshusers groups
+    group:
+      name: sshusers
+      state: present
+
+  - name: Add admin users
+    user:
+      name: "{{ item.name }}"
+      groups:
+        - sudo
+        - sshusers
+      append: yes
+      shell: /bin/bash
+    with_items: "{{ admins }}"
+
+  - name: Set authorized keys
+    authorized_key:
+      user: "{{ item.name }}"
+      state: present
+      key: "{{ item.ssh_key }}"
+    with_items: "{{ admins }}"
+
+  - name: Allow sudo group to have passwordless sudo
+    lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: visudo -cf %s
+
+
+  ###################
+  # BASIC HARDENING #
+  ###################
+
+  # ssh
+
+  - name: ssh hardening
+    import_role:
+      name: dev-sec.ssh-hardening
+    vars:
+      ssh_allow_groups: sshusers
+
+  - name: unlock admin users
+    become: yes
+    command: "usermod -p '*' {{ item.name }}"
+    ignore_errors: True
+    changed_when: False
+    loop: "{{ admins }}"
+
+  # firewall
+
+  - ufw: state=enabled policy=allow
+    tags: ufw
+
+  - name: default (incoming) policy
+    ufw:
+      policy: deny
+      direction: incoming
+    notify: reload ufw
+    tags: ufw
+
+  - name: default (outgoing) policy
+    ufw:
+      policy: allow
+      direction: outgoing
+    notify: reload ufw
+    tags: ufw
+
+  - name: limit ssh
+    ufw:
+      rule: limit
+      port: ssh
+      proto: tcp
+    notify: reload ufw
+    tags: ufw
+
+  - name: allow http
+    ufw:
+      rule: allow
+      port: http
+    notify: reload ufw
+    tags: ufw
+
+  - name: allow https
+    ufw:
+      rule: allow
+      port: https
+    notify: reload ufw
+    tags: ufw
+
+  # fail2ban
+
+  - name: Copy fail2ban configuration into place
+    become: true
+    copy:
+      src: "files/jail.local"
+      dest: /etc/fail2ban/jail.local
+    notify: restart fail2ban
+    tags: hardening
+
+  - name: Ensure fail2ban is started
+    service: name=fail2ban state=started
+    tags: hardening

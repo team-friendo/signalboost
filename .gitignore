@@ -26,6 +26,7 @@
 *retry
 */inventory
 
+
 # text editors
 .idea/*
 /.vscode/settings.json
@@ -44,3 +45,5 @@ signal_data
 /ansible/files/deploy_keys/signalboost_ssh_key.pub
 /ansible/inventory.tmpl
 /splash/ansible/inventory.tmpl
+/splash/.env
+/splash/ansible/inventory

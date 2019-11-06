@@ -1,0 +1,9 @@
+---
+- name: Perform Advanced Hardening
+  hosts: signalboost
+  become: true
+
+  tasks:
+    - name: Run dev-sec os-hardening role
+      import_role:
+        name: dev-sec.os-hardening

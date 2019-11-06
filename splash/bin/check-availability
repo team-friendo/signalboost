@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+echo "--- checking if splash page available..."
+
+check-until-available(){
+  echo "--- check #$1"
+  count=$1
+  if [ ${count} -gt 300 ];then
+    echo  "--- splash page not available after 5 minutes. exiting"
+    exit 0
+  else
+    status=$(curl -s  https://signalboost.info | sed -n 1p | awk '{print $2}')
+    if [ ${status} != "200" ] && [ ${status} != "302" ];then
+      echo  "--- not available. checking again in 5sec..."
+      let new_count=$count+1
+      sleep 5
+      check-until-available $new_count
+    else
+      echo  "--- splash page available! continuing."
+    fi
+  fi
+}
+
+check-until-available 0

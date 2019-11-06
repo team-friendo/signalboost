@@ -1,0 +1,20 @@
+# Fail2Ban configuration file.
+
+[DEFAULT]
+
+# "ignoreip" can be an IP address, a CIDR mask or a DNS host
+bantime  = 10800
+maxretry = 3
+ignoreip = 127.0.0.1
+findtime  = 600
+
+#
+# JAILS
+#
+
+[sshd]
+enabled = true
+port    = ssh
+
+[sshd-ddos]
+enabled = true
