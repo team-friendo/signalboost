@@ -7,7 +7,8 @@ services:
     container_name: signalboost_splash
     entrypoint: "gatsby develop -H 0.0.0.0"
     environment:
-      NODE_ENV: development
+      - NODE_ENV=development
+      - GATSBY_WEBPACK_PUBLICPATH=/
     ports:
       - 8000:8000
     networks:
