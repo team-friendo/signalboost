@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+
+  splash:
+    image: signalboost_splash
+    container_name: signalboost_splash
+    entrypoint: "gatsby develop -H 0.0.0.0"
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      VIRTUAL_HOST: "$SPLASH_VIRTUAL_HOST"
+      LETSENCRYPT_HOST: "$SPLASH_LETSENCRYPT_HOST"
+    ports:
+      - 8000:8000
+    networks:
+      - default
+    volumes:
+      - ./:/splash
+    restart: unless-stopped
