@@ -50,7 +50,7 @@
     "koa-bodyparser": "^4.2.1",
     "koa-logger": "^3.2.0",
     "koa-router": "^7.4.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.13",
     "mocha": "^5.2.0",
     "moment": "^2.22.2",
     "nodemon": "^1.18.4",
