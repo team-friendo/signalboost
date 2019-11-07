@@ -43,7 +43,7 @@ Reply with HELP for more information or GOODBYE to leave.`,
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
   signupRequestResponse:
-    'Thank you for signing up for Signalboost! We are creating a channel for you!\n We will send you a welcome message on your channel shortly...',
+    'Thank you for signing up for Signalboost!\n You will receive a welcome message on your new channel shortly...',
 }
 
 const commandResponses = {

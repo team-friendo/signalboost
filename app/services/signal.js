@@ -86,6 +86,7 @@ const messageTypes = {
   VERIFICATION_SUCCESS: 'verification_succeeded',
   VERIFICATION_ERROR: 'verification_error',
   VERIFICATION_REQUIRED: 'verification_required',
+  SET_EXPIRATION: 'set_expiration',
 }
 
 const trustLevels = {
@@ -217,6 +218,14 @@ const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
   Promise.all(
     recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
   )
+
+const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
+  write(sock, {
+    type: messageTypes.SET_EXPIRATION,
+    username: channelPhoneNumber,
+    recipientNumber: memberPhoneNumber,
+    expiresInSeconds,
+  })
 
 // (Socket, String, String) -> Promise<Array<TrustResult>>
 const trust = async (sock, channelPhoneNumber, memberPhoneNumber) => {
@@ -356,4 +365,5 @@ module.exports = {
   subscribe,
   trust,
   verify,
+  setExpiration,
 }

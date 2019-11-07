@@ -49,14 +49,22 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 }
 
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
-  // TODO: set disappearing messages here
   const notifications = messagesIn(defaultLanguage).notifications
+  const oneDay = 60 * 60 * 24
+  // set expiry
+  await Promise.all(
+    channel.publications.map(p =>
+      signal.setExpiration(sock, channel.phoneNumber, p.publisherPhoneNumber, oneDay),
+    ),
+  )
+  // notify admins of signpu request
   await notify({
     sock,
     channel,
     notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
     recipients: channel.publications.map(p => p.publisherPhoneNumber),
   })
+  // respond to signpu requester
   return notify({
     sock,
     channel,
