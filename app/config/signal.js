@@ -10,7 +10,7 @@ const defaults = {
   resendDelay: 3000, // 3 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
-  signupChannel: process.env.SIGNUP_CHANNEL,
+  signupChannel: process.env.SIGNUP_CHANNEL_NUMBER,
 }
 
 const test = {
