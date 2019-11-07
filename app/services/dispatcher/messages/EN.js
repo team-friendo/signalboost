@@ -19,7 +19,8 @@ HOW IT WORKS
 `
 
 const notifications = {
-  publisherAdded: (commandIssuer, addedPublisher) => `New admin ${addedPublisher} added by ${commandIssuer}`,
+  publisherAdded: (commandIssuer, addedPublisher) =>
+    `New admin ${addedPublisher} added by ${commandIssuer}`,
   broadcastResponseSent: channel => `Your message was forwarded to the admins of [${channel.name}]`,
   deauthorization: publisherPhoneNumber => `
 ${publisherPhoneNumber} has been removed from this channel because their safety number changed.
@@ -39,6 +40,10 @@ Until then, they will be unable to send messages to or read messages from this c
 You were just made an admin of this signalboost channel by ${addingPublisher}. Welcome!
 
 Reply with HELP for more information or GOODBYE to leave.`,
+  signupRequestReceived: (senderNumber, requestMsg) =>
+    `Signup request received from ${senderNumber}:\n ${requestMsg}`,
+  signupRequestResponse:
+    'Thank you for signing up for Signalboost!\n You will receive a welcome message on your new channel shortly...',
 }
 
 const commandResponses = {

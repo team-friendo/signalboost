@@ -7,7 +7,8 @@ const { values } = require('lodash')
 const { commands, statuses } = require('./executor')
 const { wait } = require('../util')
 const {
-  signal: { resendDelay },
+  defaultLanguage,
+  signal: { signupChannel, resendDelay },
 } = require('../../config')
 
 /**
@@ -19,9 +20,10 @@ const messageTypes = {
   BROADCAST_RESPONSE: 'BROADCAST_RESPONSE',
   COMMAND_RESULT: 'COMMAND_RESULT',
   NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
+  SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
 }
 
-const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT } = messageTypes
+const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT, SIGNUP_MESSAGE } = messageTypes
 
 const { PUBLISHER } = memberTypes
 
@@ -31,7 +33,7 @@ const { PUBLISHER } = memberTypes
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult, dispatchable.sender)
+  const messageType = parseMessageType(commandResult, dispatchable)
   switch (messageType) {
     case BROADCAST_MESSAGE:
       return broadcast(dispatchable)
@@ -39,15 +41,44 @@ const dispatch = async ({ commandResult, dispatchable }) => {
       return handleBroadcastResponse(dispatchable)
     case COMMAND_RESULT:
       return handleCommandResult({ commandResult, dispatchable })
+    case SIGNUP_MESSAGE:
+      return handleSignupMessage(dispatchable)
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
   }
 }
 
+const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
+  const notifications = messagesIn(defaultLanguage).notifications
+  const oneDay = 60 * 60 * 24
+  // set expiry
+  await Promise.all(
+    channel.publications.map(p =>
+      signal.setExpiration(sock, channel.phoneNumber, p.publisherPhoneNumber, oneDay),
+    ),
+  )
+  // notify admins of signpu request
+  await notify({
+    sock,
+    channel,
+    notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
+    recipients: channel.publications.map(p => p.publisherPhoneNumber),
+  })
+  // respond to signpu requester
+  return notify({
+    sock,
+    channel,
+    notification: notifications.signupRequestResponse,
+    recipients: [sender.phoneNumber],
+  })
+}
+
 // CommandResult -> [MessageType, NotificationType]
-const parseMessageType = (commandResult, sender) => {
+const parseMessageType = (commandResult, { sender, channel }) => {
   if (commandResult.status === statuses.NOOP) {
-    return sender.type === PUBLISHER ? BROADCAST_MESSAGE : BROADCAST_RESPONSE
+    if (sender.type === PUBLISHER) return BROADCAST_MESSAGE
+    if (channel.phoneNumber === signupChannel) return SIGNUP_MESSAGE
+    return BROADCAST_RESPONSE
   }
   return COMMAND_RESULT
 }
@@ -101,7 +132,7 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
       // don't send to newly added publisher, that would mess up safety number re-trusting!
       recipients: channel.publications
         .map(p => p.publisherPhoneNumber)
-        .filter(pNum => pNum !== payload), 
+        .filter(pNum => pNum !== payload),
     })
   }
 }

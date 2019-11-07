@@ -10,6 +10,7 @@ const defaults = {
   resendDelay: 3000, // 3 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
+  signupChannel: process.env.SIGNUP_CHANNEL,
 }
 
 const test = {
@@ -23,10 +24,16 @@ const test = {
   resendDelay: 40, // 40 millis
   signaldStartupTime: 1, // 1 milli
   welcomeDelay: 0.0001, // .0001 millis
+  signupChannel: '+15555555555',
+}
+
+const development = {
+  ...defaults,
+  signupChannel: '+13343264237',
 }
 
 module.exports = {
-  development: defaults,
+  development,
   test,
   production: defaults,
 }
