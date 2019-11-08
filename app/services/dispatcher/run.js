@@ -96,7 +96,10 @@ const updateSafetyNumber = async (db, sock, inboundMsg) => {
   )
 
   if (recipient.type === memberTypes.NONE) return Promise.resolve()
-  if (recipient.type === memberTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
+  if (
+    recipient.type === memberTypes.PUBLISHER &&
+    !isWelcomeMessage(sdMessage, channelPhoneNumber)
+  ) {
     // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
     return safetyNumberService
       .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
@@ -140,7 +143,7 @@ const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) =>
   return { phoneNumber: senderPhoneNumber, type, language }
 }
 
-const isWelcomeMessage = sdMessage => {
+const isWelcomeMessage = (sdMessage, channelPhoneNumber) => {
   const phoneNumberPattern = /\+\d{9,15}/
   const headerPattern = /\[.*]\n\n/
   const strippedMessage = sdMessage.messageBody
@@ -152,8 +155,9 @@ const isWelcomeMessage = sdMessage => {
     //  properly localize this, by including more languages in the input array here!
     [messagesIn(defaultLanguage)].find(
       messages =>
-        strippedMessage === messages.notifications.welcome('').trim() || //if added by another admin
-        strippedMessage === messages.notifications.welcome(messages.systemName).trim(), //if added by sysadmin
+        strippedMessage === messages.notifications.welcome('', channelPhoneNumber).trim() || //if added by another admin
+        strippedMessage ===
+          messages.notifications.welcome(messages.systemName, channelPhoneNumber).trim(), //if added by sysadmin
     ),
   )
 }
