@@ -36,10 +36,12 @@ ADD ${publisherPhoneNumber}
 Until then, they will be unable to send messages to or read messages from this channel.`,
   noop: "Whoops! That's not a command!",
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
-  welcome: addingPublisher => `
-You were just made an admin of this signalboost channel by ${addingPublisher}. Welcome!
+  welcome: (addingPublisher, channelPhoneNumber) => `
+You were just made an admin of this Signalboost channel by ${addingPublisher}. Welcome!
 
-Reply with HELP for more information or GOODBYE to leave.`,
+People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+
+Reply with HELP for more info.`,
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
   signupRequestResponse:
@@ -66,6 +68,12 @@ const commandResponses = {
   // HELP
   help: {
     publisher: `
+HELLO / HOLA
+-> subscribes to this channel
+
+GOODBYE / ADIOS
+-> unsubscribes from this channel
+
 HELP / AYUDA
 -> lists commands
 
@@ -82,10 +90,7 @@ ADD +1-555-555-5555
 -> makes +1-555-555-5555 an admin
 
 REMOVE +1-555-555-5555
--> removes +1-555-555-5555 as an admin
-
-GOODBYE / ADIOS
--> removes you from channel`,
+-> removes +1-555-555-5555 as an admin`,
     subscriber: `
 HELP / AYUDA
 -> lists commands

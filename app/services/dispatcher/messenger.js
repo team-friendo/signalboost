@@ -120,7 +120,10 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
     // welcome new publisher
     await notify({
       ...notifyBase,
-      notification: messagesIn(sender.language).notifications.welcome(sender.phoneNumber),
+      notification: messagesIn(sender.language).notifications.welcome(
+        sender.phoneNumber,
+        channel.phoneNumber,
+      ),
       recipients: [payload],
     })
     return notify({

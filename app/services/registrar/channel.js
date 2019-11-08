@@ -13,9 +13,8 @@ const {
   signal: { welcomeDelay },
 } = require('../../config')
 
-const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
-  messagesIn(defaultLanguage).systemName,
-)
+const systemName = messagesIn(defaultLanguage).systemName
+const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
@@ -25,7 +24,7 @@ const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber
     db,
     sock,
     channel,
-    notification: welcomeNotification,
+    notification: welcomeNotification(systemName, channelPhoneNumber),
     recipients: [publisherPhoneNumber],
   })
   return {
@@ -45,7 +44,7 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
       db,
       sock,
       channel,
-      notification: welcomeNotification,
+      notification: welcomeNotification(systemName, channel.phoneNumber),
       recipients: channel.publications.map(p => p.publisherPhoneNumber),
     })
     return { status: pNumStatuses.ACTIVE, phoneNumber, name, publishers }
