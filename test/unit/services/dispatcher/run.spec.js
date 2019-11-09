@@ -272,9 +272,12 @@ describe('dispatcher service', () => {
         })
 
         describe('when message is a welcome message from an admin', () => {
+
           const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
             genPhoneNumber(),
+            channel.phoneNumber,
           )}`
+
           const failedWelcomeMessage = {
             type: signal.messageTypes.ERROR,
             data: {
@@ -308,6 +311,7 @@ describe('dispatcher service', () => {
         describe('when message is a welcome message from a sysadmin', () => {
           const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
             messagesIn(defaultLanguage).systemName,
+            channel.phoneNumber,
           )}`
           const failedWelcomeMessage = {
             type: signal.messageTypes.ERROR,

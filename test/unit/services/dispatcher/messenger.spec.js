@@ -58,26 +58,30 @@ describe('messenger service', () => {
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
-      expect(messenger.parseMessageType(msg, publisherSender)).to.eql(
+      const dispatchable = { channel, sender: publisherSender }
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(
         messageTypes.BROADCAST_MESSAGE,
       )
     })
 
     it('parses a broadcast response from a subscriber', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
-      expect(messenger.parseMessageType(msg, subscriberSender)).to.eql(
+      const dispatchable = { channel, sender: subscriberSender }
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(
         messageTypes.BROADCAST_RESPONSE,
       )
     })
 
     it('parses a broadcast response from a random person', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
-      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.BROADCAST_RESPONSE)
+      const dispatchable = { channel, sender: randomSender }
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_RESPONSE)
     })
 
     it('parses a command result', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
-      expect(messenger.parseMessageType(msg, randomSender)).to.eql(messageTypes.COMMAND_RESULT)
+      const dispatchable = { channel, sender: randomSender }
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.COMMAND_RESULT)
     })
   })
 
@@ -263,7 +267,7 @@ describe('messenger service', () => {
         const newPublisher = genPhoneNumber()
         const sdMessage = `${commands.ADD} ${newPublisher}`
         const response = messages.commandResponses.publisher.add.success(newPublisher)
-        const welcome = messages.notifications.welcome(publisherSender.phoneNumber)
+        const welcome = messages.notifications.welcome(publisherSender.phoneNumber, channel.phoneNumber)
         const alert = messages.notifications.publisherAdded(
           publisherSender.phoneNumber,
           newPublisher,

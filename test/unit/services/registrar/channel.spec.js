@@ -8,18 +8,19 @@ import messenger from '../../../../app/services/dispatcher/messenger'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { statuses } from '../../../../app/constants'
-import {
-  welcomeNotification,
-  create,
-  addPublisher,
-  list,
-} from '../../../../app/services/registrar/channel'
+import { create, addPublisher, list } from '../../../../app/services/registrar/channel'
+import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { defaultLanguage } from '../../../../app/config'
 
 describe('channel registrar', () => {
   const db = {}
   const sock = {}
   const phoneNumber = genPhoneNumber()
   const channelPhoneNumber = phoneNumber
+  const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
+    messagesIn(defaultLanguage).systemName,
+    channelPhoneNumber,
+  )
   const name = '#blackops'
   const publishers = [genPhoneNumber(), genPhoneNumber()]
   const publisherPhoneNumber = publishers[0]
@@ -51,7 +52,9 @@ describe('channel registrar', () => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     notifyStub = sinon.stub(messenger, 'notify')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
-    findByNumberStub = sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
+    findByNumberStub = sinon
+      .stub(channelRepository, 'findByPhoneNumber')
+      .returns(Promise.resolve(channelInstance))
   })
 
   afterEach(() => {

@@ -48,15 +48,19 @@ const dispatch = async ({ commandResult, dispatchable }) => {
   }
 }
 
+// (CommandResult, Dispatchable) -> MessageType
+const parseMessageType = (commandResult, { sender, channel }) => {
+  if (commandResult.status === statuses.NOOP) {
+    if (sender.type === PUBLISHER) return BROADCAST_MESSAGE
+    if (channel.phoneNumber === signupChannel) return SIGNUP_MESSAGE
+    return BROADCAST_RESPONSE
+  }
+  return COMMAND_RESULT
+}
+
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   const notifications = messagesIn(defaultLanguage).notifications
-  const oneDay = 60 * 60 * 24
-  // set expiry
-  await Promise.all(
-    channel.publications.map(p =>
-      signal.setExpiration(sock, channel.phoneNumber, p.publisherPhoneNumber, oneDay),
-    ),
-  )
+  // TODO(aguestuser|2019-11-09): send this as a disappearing message
   // notify admins of signpu request
   await notify({
     sock,
@@ -71,16 +75,6 @@ const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
     notification: notifications.signupRequestResponse,
     recipients: [sender.phoneNumber],
   })
-}
-
-// CommandResult -> [MessageType, NotificationType]
-const parseMessageType = (commandResult, { sender, channel }) => {
-  if (commandResult.status === statuses.NOOP) {
-    if (sender.type === PUBLISHER) return BROADCAST_MESSAGE
-    if (channel.phoneNumber === signupChannel) return SIGNUP_MESSAGE
-    return BROADCAST_RESPONSE
-  }
-  return COMMAND_RESULT
 }
 
 const handleBroadcastResponse = dispatchable => {
