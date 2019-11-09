@@ -23,7 +23,7 @@ describe('messages module', () => {
         it('shows publisher phone numbers and subscriber count', () => {
           const msg = cr.info.publisher(channel)
           expect(msg).to.include(
-            `publishers: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
+            `admins: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
           )
           expect(msg).to.include('subscribers: 2')
         })
@@ -32,7 +32,7 @@ describe('messages module', () => {
       describe('for subscriber', () => {
         it('shows publisher count and subscriber count', () => {
           const msg = cr.info.subscriber(channel)
-          expect(msg).to.include('publishers: 2')
+          expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
         })
       })
