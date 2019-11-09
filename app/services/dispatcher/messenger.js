@@ -8,7 +8,7 @@ const { commands, statuses } = require('./executor')
 const { wait } = require('../util')
 const {
   defaultLanguage,
-  signal: { signupChannel, resendDelay },
+  signal: { signupPhoneNumber, resendDelay },
 } = require('../../config')
 
 /**
@@ -52,7 +52,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 const parseMessageType = (commandResult, { sender, channel }) => {
   if (commandResult.status === statuses.NOOP) {
     if (sender.type === PUBLISHER) return BROADCAST_MESSAGE
-    if (channel.phoneNumber === signupChannel) return SIGNUP_MESSAGE
+    if (channel.phoneNumber === signupPhoneNumber) return SIGNUP_MESSAGE
     return BROADCAST_RESPONSE
   }
   return COMMAND_RESULT
@@ -61,7 +61,7 @@ const parseMessageType = (commandResult, { sender, channel }) => {
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   const notifications = messagesIn(defaultLanguage).notifications
   // TODO(aguestuser|2019-11-09): send this as a disappearing message
-  // notify admins of signpu request
+  // notify admins of signup request
   await notify({
     sock,
     channel,
