@@ -29,7 +29,7 @@ const test = {
 
 const development = {
   ...defaults,
-  signupPhoneNumber: '+13343264237',
+  signupPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER_DEV,
 }
 
 module.exports = {

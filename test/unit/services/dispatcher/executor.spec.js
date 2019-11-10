@@ -16,8 +16,10 @@ import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../support/factories/publication'
-import { messagesIn } from '../../../../app/services/dispatcher/messages'
 import { sdMessageOf } from '../../../../app/services/signal'
+const {
+  signal: { signupPhoneNumber },
+} = require('../../../../app/config')
 
 describe('executor service', () => {
   describe('parsing commands', () => {
@@ -198,6 +200,11 @@ describe('executor service', () => {
       publications: times(2, publicationFactory({ channelPhoneNumber: '+13333333333' })),
       subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
       messageCount: { broadcastIn: 42 },
+    }
+    const signupChannel = {
+      name: 'SB_SIGNUP',
+      phoneNumber: signupPhoneNumber,
+      publications: channel.publications,
     }
     const publisher = {
       phoneNumber: '+11111111111',
@@ -820,6 +827,22 @@ describe('executor service', () => {
       })
     })
 
+    describe('new user attempting to JOIN the signup channel', () => {
+      it('returns NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel: signupChannel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(signupChannel, 'HELLO'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+        })
+      })
+    })
+
     describe('invalid command', () => {
       it('returns NOOP status/message', async () => {
         const dispatchable = {
@@ -831,7 +854,7 @@ describe('executor service', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
           status: statuses.NOOP,
-          message: messagesIn('EN').notifications.noop,
+          message: '',
         })
       })
     })

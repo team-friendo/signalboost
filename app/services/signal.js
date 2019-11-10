@@ -173,6 +173,7 @@ const verify = (sock, phoneNumber, code) =>
   write(sock, { type: messageTypes.VERIFY, username: phoneNumber, code })
 
 const awaitVerificationResult = async (sock, phoneNumber) => {
+  //TODO(aguestuser|2019-11-09): use signald message ids to make this await call simpler
   return new Promise((resolve, reject) => {
     sock.on('data', function handle(msg) {
       const { type, data } = safeJsonParse(msg, reject)
@@ -278,6 +279,7 @@ const fetchIdentities = async (sock, channelPhoneNumber, memberPhoneNumber) => {
 }
 
 const awaitIdentitiesOf = (sock, memberPhoneNumber) => {
+  //TODO(aguestuser|2019-11-09): use signald message ids to make this await call simpler
   return new Promise((resolve, reject) => {
     // create handler
     const handle = msg => {

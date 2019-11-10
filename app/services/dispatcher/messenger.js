@@ -93,7 +93,6 @@ const handleBroadcastResponse = dispatchable => {
   return relayBroadcastResponse(dispatchable)
 }
 
-// TODO: rename this handleCommandResult
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { message, command, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
