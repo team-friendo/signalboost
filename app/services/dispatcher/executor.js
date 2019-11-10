@@ -5,6 +5,9 @@ const { messagesIn } = require('./messages')
 const { memberTypes } = channelRepository
 const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
 const { lowerCase } = require('lodash')
+const {
+  signal: { signupPhoneNumber },
+} = require('../../config')
 
 /**
  * type Executable = {
@@ -48,8 +51,9 @@ const commands = {
  ******************/
 
 // Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
-const processCommand = dispatchable =>
-  execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
+const processCommand = dispatchable => {
+  return execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
+}
 
 // string -> Executable
 const parseCommand = msg => {
@@ -73,6 +77,8 @@ const parseCommand = msg => {
 const execute = async (executable, dispatchable) => {
   const { command, payload } = executable
   const { db, channel, sender } = dispatchable
+  // don't allow command execution on the signup channel for non-admins
+  if (channel.phoneNumber === signupPhoneNumber && sender.type !== PUBLISHER) return noop()
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
@@ -82,8 +88,8 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
-  }[command] || (() => noop(sender)))()
-  return { ...result, command }
+  }[command] || (() => noop()))()
+  return { command, ...result }
 }
 
 /********************
@@ -235,11 +241,7 @@ const toggleResponses = (db, channel, newSetting, sender, cr) =>
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
 
 // NOOP
-const noop = sender =>
-  Promise.resolve({
-    status: statuses.NOOP,
-    message: messagesIn(sender.language).notifications.noop,
-  })
+const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
 
 /**********
  * HELPERS
