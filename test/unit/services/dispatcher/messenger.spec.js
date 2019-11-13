@@ -190,7 +190,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}` },
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -222,7 +222,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               publisherNumbers,
-              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE...]\n${sdMessage.messageBody}` },
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -384,7 +384,7 @@ describe('messenger service', () => {
           messageType: messageTypes.BROADCAST_RESPONSE,
           language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE...]\nblah'))
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE:]\nblah'))
       })
     })
 
@@ -414,7 +414,7 @@ describe('messenger service', () => {
     })
 
     describe('response to a HELP command', () => {
-      it('adds a help prefix', () => {
+      it('does not add a prefix', () => {
         const msg = {
           channel,
           sdMessage,
@@ -423,7 +423,7 @@ describe('messenger service', () => {
         }
         expect(messenger.format(msg)).to.eql({
           ...sdMessage,
-          messageBody: `[COMMANDS I UNDERSTAND...]\n${sdMessage.messageBody}`,
+          messageBody: `${sdMessage.messageBody}`,
         })
       })
     })
