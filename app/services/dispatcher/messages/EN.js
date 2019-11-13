@@ -10,12 +10,12 @@ const support = `
 HOW IT WORKS
 ----------------------------
 
--> Signalboost numbers have admins and subscribers.
--> Admins send announcements that are broadcasted to subscribers.
--> Subscribe to announcements by sending "HELLO" to a number.
--> Unsubscribe by sending "GOODBYE" to the number.
--> Send "HELP" to a number to list commands that make it do things.
--> Learn more: https://0xacab.org/team-friendo/signalboost
+-> Signalboost has admins and subscribers.
+-> Admins send announcements that are broadcast to subscribers.
+-> People can subscribe by sending HELLO or HOLA to this number.
+-> Unsubscribe by sending GOODBYE or ADÍOS to this number.
+-> Send HELP or AYUDA to list commands that make Signalboost do things.
+-> Learn more: https://signalboost.info
 `
 
 const notifications = {
@@ -67,44 +67,44 @@ const commandResponses = {
   },
   // HELP
   help: {
-    publisher: `
-HELLO / HOLA
--> subscribes to this channel
-
-GOODBYE / ADIOS
--> unsubscribes from this channel
+    publisher: `[COMMANDS I UNDERSTAND:]
 
 HELP / AYUDA
 -> lists commands
 
 INFO
--> shows stats, explains signalboost
+-> shows stats, explains how signalboost works
 
 RENAME new name
 -> renames channel to "new name"
-
-RESPONSES ON / RESPONSES OFF
--> enables/disables subscscriber responses
 
 ADD +1-555-555-5555
 -> makes +1-555-555-5555 an admin
 
 REMOVE +1-555-555-5555
--> removes +1-555-555-5555 as an admin`,
-    subscriber: `
+-> removes +1-555-555-5555 as an admin
+
+RESPONSES ON
+-> allows subscribers to send messages to admins
+
+RESPONSES OFF
+-> disables subscribers from sending messages to admins
+
+GOODBYE / ADIOS
+-> leaves this channel`,
+    subscriber: `[COMMANDS I UNDERSTAND:]
+
 HELP / AYUDA
 -> lists commands
 
 INFO
--> explains signalboost
+-> shows stats, explains how signalboost works
 
 HELLO / HOLA
--> subscribes you to messages
+-> subscribes you to announcements
 
 GOODBYE / ADIOS
--> unsubscribes you
-
-`,
+-> unsubscribes you from announcements`,
   },
 
   // INFO
@@ -187,8 +187,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
 }
 
 const prefixes = {
-  helpResponse: `COMMANDS I UNDERSTAND...`,
-  broadcastResponse: `SUBSCRIBER RESPONSE...`,
+  broadcastResponse: `SUBSCRIBER RESPONSE:`,
 }
 
 const EN = {

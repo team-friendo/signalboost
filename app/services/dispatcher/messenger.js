@@ -187,14 +187,10 @@ const format = ({ channel, sdMessage, messageType, command, language }) => {
 // Channel, string, string, string -> string
 const resolvePrefix = (channel, messageType, command, language) => {
   const prefixes = messagesIn(language).prefixes
-  if (command === commands.RENAME || command === commands.INFO) {
+  if (command === commands.RENAME || command === commands.INFO || command === commands.HELP) {
     // RENAME messages must provide their own header (b/c channel name changed since last query)
-    // INFO messages don't need a name prefix b/c they provide channel name as part of message
+    // INFO & HELP messages provide their own prefixes
     return ''
-  }
-  if (command === commands.HELP) {
-    // HELP responses flag that they contain commands instead of listing channel name
-    return `[${prefixes.helpResponse}]\n`
   }
   if (messageType === BROADCAST_RESPONSE) {
     // subscriber responses get a special header so they don't look like broadcast messages from admins
