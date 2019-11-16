@@ -73,10 +73,18 @@ const register = ({ db, sock, phoneNumber }) =>
     })
 
 // ({Database, Emitter, string, string}) => Promise<Boolean>
-const verify = ({ sock, phoneNumber, verificationMessage }) =>
-  signal
-    .verify(sock, phoneNumber, signal.parseVerificationCode(verificationMessage))
+const verify = ({ sock, phoneNumber, verificationMessage }) => {
+  const [ok, verificationCode] = signal.parseVerificationCode(verificationMessage)
+  if (!ok) {
+    // handled rejections from #verify only ever wind up in HTTP responses to twillio,
+    // so we don't reject with the error message (which we don't wish to expose to twillio)
+    logger.log(errors.invalidIncomingSms(phoneNumber, verificationMessage))
+    return Promise.reject()
+  }
+  return signal
+    .verify(sock, phoneNumber, verificationCode)
     .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+}
 
 /********************
  * HELPER FUNCTIONS

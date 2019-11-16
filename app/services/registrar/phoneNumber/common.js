@@ -11,6 +11,7 @@ const errors = {
   registrationFailed: err => `signal registration failed: ${err}`,
   verificationFailed: err => `signal verification failed: ${err}`,
   verificationTimeout: 'signal verification timed out',
+  invalidIncomingSms: (phoneNumber, msg) => `invalid incoming sms on ${phoneNumber}: ${msg}`,
 }
 
 const errorStatus = (error, phoneNumber) => ({

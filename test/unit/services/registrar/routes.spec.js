@@ -318,7 +318,7 @@ describe('routes', () => {
       })
     })
 
-    describe('when registration succeeds', () => {
+    describe('when verification succeeds', () => {
       beforeEach(() => verifyStub.returns(Promise.resolve()))
 
       it('responds with a success code', async () => {
@@ -330,7 +330,7 @@ describe('routes', () => {
       })
     })
 
-    describe('when registration fails', () => {
+    describe('when verification fails', () => {
       beforeEach(() => verifyStub.callsFake(() => Promise.reject()))
 
       it('responds with an error code', async () => {

@@ -3,6 +3,7 @@ const fs = require('fs-extra')
 const { pick, get, sortBy, last } = require('lodash')
 const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../constants')
+const { isEmpty } = require('lodash')
 const {
   signal: {
     connectionInterval,
@@ -340,8 +341,11 @@ const parseOutboundAttachment = inAttachment => ({
   ...pick(inAttachment, ['width', 'height', 'voiceNote']),
 })
 
-const parseVerificationCode = verificationMessage =>
-  verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)[1]
+// string -> [boolean, string]
+const parseVerificationCode = verificationMessage => {
+  const matches = verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)
+  return isEmpty(matches) ? [false, verificationMessage] : [true, matches[1]]
+}
 
 const sdMessageOf = (channel, messageBody) => ({
   type: messageTypes.SEND,

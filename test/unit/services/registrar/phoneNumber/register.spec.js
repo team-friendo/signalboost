@@ -3,17 +3,18 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import { times } from 'lodash'
+import signal from '../../../../../app/services/signal'
+import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
+import { statuses, errors } from '../../../../../app/services/registrar/phoneNumber/index'
+import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
+import { wait } from '../../../../../app/services/util'
+import logger from '../../../../../app/services/registrar/logger'
 import {
   register,
   registerMany,
   registerAllUnregistered,
   verify,
 } from '../../../../../app/services/registrar/phoneNumber/register'
-import signal from '../../../../../app/services/signal'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import { statuses, errors } from '../../../../../app/services/registrar/phoneNumber/index'
-import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
-import { wait } from '../../../../../app/services/util'
 const {
   signal: {
     registrationBatchSize,
@@ -40,7 +41,8 @@ describe('phone number services -- registration module', () => {
     updateStub,
     findAllStub,
     findAllPurchasedStub,
-    pathExistsStub
+    pathExistsStub,
+    logStub
 
   const updateSucceeds = () =>
     updateStub.callsFake((_, phoneNumber, { status }) => Promise.resolve({ phoneNumber, status }))
@@ -88,6 +90,7 @@ describe('phone number services -- registration module', () => {
     findAllPurchasedStub = sinon.stub(phoneNumberRepository, 'findAllPurchased')
     updateStub = sinon.stub(phoneNumberRepository, 'update')
     pathExistsStub = sinon.stub(fs, 'pathExists')
+    logStub = sinon.stub(logger, 'log')
   })
 
   afterEach(() => {
@@ -98,6 +101,7 @@ describe('phone number services -- registration module', () => {
     findAllStub.restore()
     findAllPurchasedStub.restore()
     pathExistsStub.restore()
+    logStub.restore()
   })
 
   describe('registering a number with signal', () => {
@@ -391,6 +395,14 @@ describe('phone number services -- registration module', () => {
 
       it('parses a verification code and attempts to verify it', () => {
         expect(verifyStub.getCall(0).args).to.eql([sock, phoneNumber, '809-842'])
+      })
+    })
+
+    describe('when sms message is not a verification code', () => {
+      it('logs an error and rejects an empty promise', async () => {
+        const err = await verify({ sock, phoneNumber, verificationMessage: 'JOIN' }).catch(e => e)
+        expect(err).to.eql(undefined)
+        expect(logStub.getCall(0).args[0]).to.eql(errors.invalidIncomingSms(phoneNumber, 'JOIN'))
       })
     })
 

@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import fs from 'fs-extra'
 import net from 'net'
 import { wait } from '../../../app/services/util'
-import signal, { messageTypes } from '../../../app/services/signal'
+import signal, { messageTypes, parseVerificationCode } from '../../../app/services/signal'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 
@@ -430,6 +430,19 @@ describe('signal module', () => {
             voiceNote: false,
           },
         ],
+      })
+    })
+
+    describe('parsing sms messages from twilio', () => {
+      it('parses a signal verification code from an sms message', () => {
+        expect(parseVerificationCode('Your Signal verification code: 123-456')).to.eql([
+          true,
+          '123-456',
+        ])
+      })
+
+      it('returns an error from an sms message that is not a verification code', () => {
+        expect(parseVerificationCode('JOIN')).to.eql([false, 'JOIN'])
       })
     })
   })
