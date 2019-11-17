@@ -558,7 +558,7 @@ describe('executing commands', () => {
     })
   })
 
-  describe('TOGGLE_RESPONSES command', () => {
+  describe('RESPONSES_ON command', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateChannelStub.restore())
@@ -566,54 +566,39 @@ describe('executing commands', () => {
     describe('when sender is a publisher', () => {
       const sender = publisher
 
-      describe('when payload is valid', () => {
-        const sdMessage = sdMessageOf(channel, 'RESPONSES ON')
-        const dispatchable = { db, channel, sender, sdMessage }
+      const sdMessage = sdMessageOf(channel, 'RESPONSES ON')
+      const dispatchable = { db, channel, sender, sdMessage }
 
-        it('attempts to update the responsesEnabld field on the channel', async () => {
-          updateChannelStub.returns(Promise.resolve())
-          await processCommand(dispatchable)
-          expect(updateChannelStub.getCall(0).args).to.have.deep.members([
-            db,
-            channel.phoneNumber,
-            { responsesEnabled: true },
-          ])
-        })
+      it('attempts to update the responsesEnabled field on the channel', async () => {
+        updateChannelStub.returns(Promise.resolve())
+        await processCommand(dispatchable)
+        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+          db,
+          channel.phoneNumber,
+          { responsesEnabled: true },
+        ])
+      })
 
-        describe('when db update succeeds', () => {
-          beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+      describe('when db update succeeds', () => {
+        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
-          it('returns a SUCCESS status', async () => {
-            expect(await processCommand(dispatchable)).to.eql({
-              command: commands.TOGGLE_RESPONSES,
-              status: statuses.SUCCESS,
-              message: CR.toggleResponses.success('ON'),
-            })
-          })
-        })
-
-        describe('when db update fails', () => {
-          beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
-
-          it('returns an ERROR status', async () => {
-            expect(await processCommand(dispatchable)).to.eql({
-              command: commands.TOGGLE_RESPONSES,
-              status: statuses.ERROR,
-              message: CR.toggleResponses.dbError('ON'),
-            })
+        it('returns a SUCCESS status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESPONSES_ON,
+            status: statuses.SUCCESS,
+            message: CR.toggleResponses.success('ON'),
           })
         })
       })
 
-      describe('when payload is invalid', () => {
-        const sdMessage = sdMessageOf(channel, 'RESPONSES FOOBAR')
-        const dispatchable = { db, channel, sender, sdMessage }
+      describe('when db update fails', () => {
+        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
 
         it('returns an ERROR status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.TOGGLE_RESPONSES,
+            command: commands.RESPONSES_ON,
             status: statuses.ERROR,
-            message: CR.toggleResponses.invalidSetting('FOOBAR'),
+            message: CR.toggleResponses.dbError('ON'),
           })
         })
       })
@@ -626,7 +611,7 @@ describe('executing commands', () => {
 
       it('returns an UNAUTHORIZED status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.TOGGLE_RESPONSES,
+          command: commands.RESPONSES_ON,
           status: statuses.UNAUTHORIZED,
           message: CR.toggleResponses.unauthorized,
         })
@@ -640,7 +625,82 @@ describe('executing commands', () => {
 
       it('returns an UNAUTHORIZED status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.TOGGLE_RESPONSES,
+          command: commands.RESPONSES_ON,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleResponses.unauthorized,
+        })
+      })
+    })
+  })
+
+  describe('RESPONSES_OFF command', () => {
+    let updateChannelStub
+    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateChannelStub.restore())
+
+    describe('when sender is a publisher', () => {
+      const sender = publisher
+
+      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('attempts to update the responsesEnabled field on the channel', async () => {
+        updateChannelStub.returns(Promise.resolve())
+        await processCommand(dispatchable)
+        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+          db,
+          channel.phoneNumber,
+          { responsesEnabled: false },
+        ])
+      })
+
+      describe('when db update succeeds', () => {
+        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+
+        it('returns a SUCCESS status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESPONSES_OFF,
+            status: statuses.SUCCESS,
+            message: CR.toggleResponses.success('OFF'),
+          })
+        })
+      })
+
+      describe('when db update fails', () => {
+        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+
+        it('returns an ERROR status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESPONSES_OFF,
+            status: statuses.ERROR,
+            message: CR.toggleResponses.dbError('OFF'),
+          })
+        })
+      })
+    })
+
+    describe('when sender is a subscriber', () => {
+      const sender = subscriber
+      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.RESPONSES_OFF,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleResponses.unauthorized,
+        })
+      })
+    })
+
+    describe('when sender is a random person', () => {
+      const sender = randomPerson
+      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.RESPONSES_OFF,
           status: statuses.UNAUTHORIZED,
           message: CR.toggleResponses.unauthorized,
         })

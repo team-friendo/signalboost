@@ -13,7 +13,8 @@ const {
 /**
  * type Executable = {
  *   command: string,
- *   payload: ?string,
+ *   payload: string,
+ *   language: string,
  * }
  *
  * type CommandResult = {
@@ -38,7 +39,8 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
-    [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
+    [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
+    [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
   }[command] || (() => noop()))()
   return { command, ...result }
 }
@@ -173,22 +175,28 @@ const renameChannel = (db, channel, newName, cr) =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
 
-const maybeToggleResponses = async (db, channel, sender, newSetting) => {
+// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
+const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
   if (!(sender.type === PUBLISHER)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
-  if (!['on', 'off'].includes(lowerCase(newSetting))) {
-    return Promise.resolve({ status: statuses.ERROR, message: cr.invalidSetting(newSetting) })
-  }
-  return toggleResponses(db, channel, newSetting, sender, cr)
+  return toggleResponses(db, channel, responsesEnabled, sender, cr)
 }
 
-const toggleResponses = (db, channel, newSetting, sender, cr) =>
+const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { responsesEnabled: lowerCase(newSetting) === 'on' })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newSetting) }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
+    .update(db, channel.phoneNumber, { responsesEnabled })
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(responsesEnabled ? 'ON' : 'OFF'),
+    }))
+    .catch(err =>
+      logAndReturn(err, {
+        status: statuses.ERROR,
+        message: cr.dbError(responsesEnabled ? 'ON' : 'OFF'),
+      }),
+    )
 
 // NOOP
 const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })

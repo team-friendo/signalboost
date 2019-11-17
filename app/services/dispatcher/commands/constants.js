@@ -14,7 +14,9 @@ const commands = {
   NOOP: 'NOOP',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
-  TOGGLE_RESPONSES: 'TOGGLE_RESPONSES',
+  // TODO: fix code that depends on these commands!
+  RESPONSES_ON: 'RESPONSES_ON',
+  RESPONSES_OFF: 'RESPONSES_OFF',
 }
 
 module.exports = { statuses, commands }
