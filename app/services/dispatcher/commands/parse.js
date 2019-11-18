@@ -1,25 +1,22 @@
 const { map, flattenDeep, isEmpty, find, get } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
-const { defaultLanguage } = require('../../../config')
 
 // TODO(aguestuser|2019-11-17): rename this parseExecutable
 // string -> Executable
 const parseCommand = msg => {
-  const matchResults = _findCommandMatches(msg)
-  const matched = find(matchResults, ({ matches }) => !isEmpty(matches))
-  // TODO(aguestuser|2019-11-17):
-  //  instead of returning language here, only use it to determine payload of a SET_LANGUAGE command
+  const match = _findCommandMatch(msg)
+  const command = get(match, 'command', commands.NOOP)
+  const defaultPayload = get(match, ['matches', '1'], '')
   return {
-    command: get(matched, 'command', commands.NOOP),
-    language: get(matched, 'language', defaultLanguage),
-    payload: get(matched, ['matches', '1'], ''),
+    command,
+    payload: command === commands.SET_LANGUAGE ? match.language : defaultPayload,
   }
 }
 
-// string -> Array<{command: string, language: string, matches: Array<string>}>
-const _findCommandMatches = msg =>
-  flattenDeep(
+// string -> {command: string, language: string, matches: Array<string>}
+const _findCommandMatch = msg => {
+  const matchResults = flattenDeep(
     map(commandsByLanguage, (commands, language) =>
       map(commands, (commandStrings, command) =>
         map(commandStrings, commandStr => ({
@@ -30,5 +27,7 @@ const _findCommandMatches = msg =>
       ),
     ),
   )
+  return find(matchResults, ({ matches }) => !isEmpty(matches))
+}
 
 module.exports = { parseCommand }

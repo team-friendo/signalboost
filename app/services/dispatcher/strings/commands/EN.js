@@ -8,4 +8,5 @@ module.exports = {
   RENAME: ['RENAME'],
   RESPONSES_ON: ['RESPONSES ON'],
   RESPONSES_OFF: ['RESPONSES OFF'],
+  SET_LANGUAGE: ['ENGLISH', 'INGLÉS', 'INGLES']
 }

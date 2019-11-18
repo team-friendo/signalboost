@@ -3,12 +3,12 @@ import { describe, it } from 'mocha'
 import { commands } from '../../../../../app/services/dispatcher/commands/constants'
 import { parseCommand } from '../../../../../app/services/dispatcher/commands/parse'
 import { languages } from '../../../../../app/constants'
-import { defaultLanguage } from '../../../../../app/config'
 
 describe('parsing commands', () => {
   describe('NOOP', () => {
     it('parses NOOP in any language if message does not begin with a command', () => {
       const msgs = [
+        'fire the missiles',
         'do ADD foo',
         'do REMOVE foo',
         'do HELP',
@@ -17,13 +17,21 @@ describe('parsing commands', () => {
         'do GOODBYE',
         'do RESPONSES ON',
         'do RESPONSES OFF',
+        'do ENGLISH',
         'hace AGREGAR foo',
-        'fire the missiles',
+        'hace AYUDA',
+        'hace INFO',
+        'hace HOLA',
+        'hace ADIÓS',
+        'hace ELIMINAR',
+        'hace RENOMBRAR',
+        'hace RESPUESTAS ACTIVADAS',
+        'hace RESPUESTAS DESACTIVADAS',
+        'hace ESPAÑOL'
       ]
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.NOOP,
-          language: defaultLanguage,
           payload: '',
         }),
       )
@@ -37,7 +45,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.ADD,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -46,7 +53,6 @@ describe('parsing commands', () => {
       it('parses the payload from an ADD command', () => {
         expect(parseCommand('ADD foo')).to.eql({
           command: commands.ADD,
-          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -58,7 +64,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.HELP,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -71,7 +76,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.INFO,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -84,7 +88,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.JOIN,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -97,7 +100,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.LEAVE,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -110,7 +112,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.REMOVE,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -119,7 +120,6 @@ describe('parsing commands', () => {
       it('parses the payload from an REMOVE command', () => {
         expect(parseCommand('REMOVE foo')).to.eql({
           command: commands.REMOVE,
-          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -132,7 +132,6 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RENAME,
-              language: languages.EN,
               payload: '',
             }),
           )
@@ -142,7 +141,6 @@ describe('parsing commands', () => {
       it('parses the payload from an RENAME command', () => {
         expect(parseCommand('RENAME foo')).to.eql({
           command: commands.RENAME,
-          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -155,7 +153,6 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RESPONSES_ON,
-              language: languages.EN,
               payload: '',
             }),
           )
@@ -170,11 +167,22 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RESPONSES_OFF,
-              language: languages.EN,
               payload: '',
             }),
           )
         })
+      })
+    })
+
+    describe('SET_LANGUAGE command', () => {
+      it('sets the language to English regardless of language in which English is specified', () => {
+        const msgs = ['ENGLISH', 'INGLÉS', 'INGLES', 'english', 'inglés', 'ingles']
+        msgs.forEach(msg =>
+          expect(parseCommand(msg)).to.eql({
+            command: commands.SET_LANGUAGE,
+            payload: languages.EN,
+          }),
+        )
       })
     })
   })
@@ -186,7 +194,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.ADD,
-            language: languages.ES,
             payload: '',
           }),
         )
@@ -195,7 +202,6 @@ describe('parsing commands', () => {
       it('parses the payload from an ADD command', () => {
         expect(parseCommand('AGREGAR foo')).to.eql({
           command: commands.ADD,
-          language: languages.ES,
           payload: 'foo',
         })
       })
@@ -207,7 +213,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.HELP,
-            language: languages.ES,
             payload: '',
           }),
         )
@@ -215,18 +220,11 @@ describe('parsing commands', () => {
     })
 
     describe('INFO command', () => {
-      //TODO(aguestuser|2019-11-17):
-      // - worth fixing fact that lang not detected?
-      // - would require disambiguating btw/ INFO / INFORMACION
-      //   and wouldn't necessarily always work for all commands in all langs
-      // - current state not horrible b/c we should have language stored on member
-      // - but also: maybe throw away the language if it is sometimes wrong?
       it('parses an INFO command but does NOT detect language', () => {
         const msgs = ['INFO', 'info', ' info ']
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.INFO,
-            language: languages.EN,
             payload: '',
           }),
         )
@@ -239,7 +237,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.JOIN,
-            language: languages.ES,
             payload: '',
           }),
         )
@@ -251,7 +248,6 @@ describe('parsing commands', () => {
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.LEAVE,
-          language: languages.ES,
           payload: '',
         }),
       )
@@ -264,7 +260,6 @@ describe('parsing commands', () => {
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.REMOVE,
-          language: languages.ES,
           payload: '',
         }),
       )
@@ -273,7 +268,6 @@ describe('parsing commands', () => {
     it('parses the payload from an REMOVE command', () => {
       expect(parseCommand('ELIMINAR foo')).to.eql({
         command: commands.REMOVE,
-        language: languages.ES,
         payload: 'foo',
       })
     })
@@ -286,7 +280,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RENAME,
-            language: languages.ES,
             payload: '',
           }),
         )
@@ -296,7 +289,6 @@ describe('parsing commands', () => {
     it('parses the payload from an RENAME command', () => {
       expect(parseCommand('RENOMBRAR foo')).to.eql({
         command: commands.RENAME,
-        language: languages.ES,
         payload: 'foo',
       })
     })
@@ -309,7 +301,6 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RESPONSES_ON,
-            language: languages.ES,
             payload: '',
           }),
         )
@@ -328,11 +319,22 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RESPONSES_OFF,
-            language: languages.ES,
             payload: '',
           }),
         )
       })
+    })
+  })
+
+  describe('SET_LANGUAGE command', () => {
+    it('sets the language to Spanish regardless of language in which English is specified', () => {
+      const msgs = ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'español', 'espanol', 'spanish']
+      msgs.forEach(msg =>
+        expect(parseCommand(msg)).to.eql({
+          command: commands.SET_LANGUAGE,
+          payload: languages.ES,
+        }),
+      )
     })
   })
 })

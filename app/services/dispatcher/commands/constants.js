@@ -14,9 +14,9 @@ const commands = {
   NOOP: 'NOOP',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
-  // TODO: fix code that depends on these commands!
-  RESPONSES_ON: 'RESPONSES_ON',
   RESPONSES_OFF: 'RESPONSES_OFF',
+  RESPONSES_ON: 'RESPONSES_ON',
+  SET_LANGUAGE: 'SET_LANGUAGE',
 }
 
 module.exports = { statuses, commands }
