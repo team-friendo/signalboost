@@ -49,7 +49,7 @@ Reply with HELP for more info.`,
 }
 
 const commandResponses = {
-  // ADD/REMOVE PUBLISHER
+  // ADD/REMOVE
   publisher: {
     add: {
       success: num => `${num} added as an admin.`,
@@ -183,6 +183,10 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
       `Whoops! ${phoneNumber} is not an admin or subscriber on this channel. Cannot reactivate them.`,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
+  },
+  setLanguage: {
+    success: 'I will talk to you in English now!',
+    dbError: 'Failed to store your language preference. Please try again!',
   },
 }
 

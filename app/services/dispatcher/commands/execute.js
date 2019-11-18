@@ -41,6 +41,7 @@ const execute = async (executable, dispatchable) => {
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
     [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
+    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, payload),
   }[command] || (() => noop()))()
   return { command, ...result }
 }
@@ -197,6 +198,16 @@ const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
         message: cr.dbError(responsesEnabled ? 'ON' : 'OFF'),
       }),
     )
+
+// SET_LANGUAGE
+
+const setLanguage = (db, sender, language) => {
+  const cr = messagesIn(language).commandResponses.setLanguage
+  return channelRepository
+    .updateMemberLanguage(db, sender.phoneNumber, sender.type, language)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
+}
 
 // NOOP
 const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })

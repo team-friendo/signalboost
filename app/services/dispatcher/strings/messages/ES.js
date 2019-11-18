@@ -151,6 +151,10 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     invalidSetting: setting =>
       `Whoops! $ {setting} no es una configuración válida. Puede configurar las respuestas para que estén ACTIVADAS o DESACTIVADAS.`,
   },
+  setLanguage: {
+    success: '¡Hablaré contigo en español ahora!',
+    dbError: 'Lo ciento. Era un error. ¡Inténtalo de nuevo!',
+  },
 }
 
 const prefixes = {

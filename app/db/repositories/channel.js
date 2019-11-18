@@ -88,7 +88,11 @@ const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =
     db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
   )
 
-// TODO(aguestuser|2019-09-21): this would be easier with a members table instead of pub/sub tables!
+/**********************************************
+ * PUBLISHER/SUBSCRIBER funcs (member funcs??)
+ **********************************************/
+
+// TODO(aguestuser|2019-09-21): this would be easier with a memberships table instead of pub/sub tables!
 const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
   const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
   if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
@@ -111,6 +115,26 @@ const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, 
       .language
   }
   return defaultLanguage
+}
+
+// TODO(aguestuser|2019-11-18): would be easier with a memberships table!
+// (Database, string, MemberType, string) -> Array<number>
+const updateMemberLanguage = async (db, memberPhoneNumber, memberType, language) => {
+  switch (memberType) {
+    case memberTypes.PUBLISHER:
+      return db.publication.update(
+        { language },
+        { where: { publisherPhoneNumber: memberPhoneNumber } },
+      )
+    case memberTypes.SUBSCRIBER:
+      return db.subscription.update(
+        { language },
+        { where: { subscriberPhoneNumber: memberPhoneNumber } },
+      )
+    // random person
+    default:
+      return Promise.resolve([0])
+  }
 }
 
 const isPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
@@ -161,5 +185,6 @@ module.exports = {
   resolveSenderType,
   resolveSenderLanguage,
   update,
+  updateMemberLanguage,
   memberTypes,
 }
