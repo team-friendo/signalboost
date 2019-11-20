@@ -31,9 +31,8 @@ describe('messages module', () => {
       })
 
       describe('for subscriber', () => {
-        it('shows publisher count and subscriber count', () => {
+        it('shows subscriber count', () => {
           const msg = cr.info.subscriber(channel)
-          expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
         })
       })

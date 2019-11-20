@@ -83,7 +83,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ADD,
               status: statuses.SUCCESS,
-              message: CR.publisher.add.success(publisherPhoneNumber),
+              message: CR.add.success(publisherPhoneNumber),
               payload: publisherPhoneNumber,
             })
           })
@@ -96,7 +96,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ADD,
               status: statuses.ERROR,
-              message: CR.publisher.add.dbError(publisherPhoneNumber),
+              message: CR.add.dbError(publisherPhoneNumber),
             })
           })
         })
@@ -115,7 +115,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.ADD,
             status: statuses.ERROR,
-            message: CR.publisher.add.invalidNumber('foo'),
+            message: CR.add.invalidNumber('foo'),
           })
         })
       })
@@ -139,7 +139,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.ADD,
           status: statuses.UNAUTHORIZED,
-          message: CR.publisher.add.unauthorized,
+          message: CR.add.unauthorized,
         })
       })
     })
@@ -256,7 +256,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.JOIN,
             status: statuses.SUCCESS,
-            message: CR.subscriber.add.success(channel),
+            message: CR.join.success(channel),
           })
         })
       })
@@ -268,7 +268,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.JOIN,
             status: statuses.ERROR,
-            message: CR.subscriber.add.error,
+            message: CR.join.error,
           })
         })
       })
@@ -288,7 +288,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.JOIN,
           status: statuses.NOOP,
-          message: CR.subscriber.add.noop,
+          message: CR.join.noop,
         })
       })
     })
@@ -320,7 +320,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.LEAVE,
             status: statuses.SUCCESS,
-            message: CR.subscriber.remove.success,
+            message: CR.leave.success,
           })
         })
       })
@@ -331,7 +331,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.LEAVE,
             status: statuses.ERROR,
-            message: CR.subscriber.remove.error,
+            message: CR.leave.error,
           })
         })
       })
@@ -350,7 +350,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
           status: statuses.UNAUTHORIZED,
-          message: CR.subscriber.remove.unauthorized,
+          message: CR.leave.unauthorized,
         })
       })
     })
@@ -379,7 +379,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
           status: statuses.SUCCESS,
-          message: CR.subscriber.remove.success,
+          message: CR.leave.success,
         })
       })
     })
@@ -430,7 +430,7 @@ describe('executing commands', () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
                 status: statuses.SUCCESS,
-                message: CR.publisher.remove.success(publisherPhoneNumber),
+                message: CR.remove.success(publisherPhoneNumber),
               })
             })
           })
@@ -442,7 +442,7 @@ describe('executing commands', () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
                 status: statuses.ERROR,
-                message: CR.publisher.remove.dbError(publisherPhoneNumber),
+                message: CR.remove.dbError(publisherPhoneNumber),
               })
             })
           })
@@ -459,7 +459,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REMOVE,
               status: statuses.ERROR,
-              message: CR.publisher.remove.targetNotPublisher(publisherPhoneNumber),
+              message: CR.remove.targetNotPublisher(publisherPhoneNumber),
             })
           })
         })
@@ -479,7 +479,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.REMOVE,
             status: statuses.ERROR,
-            message: CR.publisher.remove.invalidNumber('foo'),
+            message: CR.remove.invalidNumber('foo'),
           })
         })
       })
@@ -500,7 +500,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.REMOVE,
           status: statuses.UNAUTHORIZED,
-          message: CR.publisher.remove.unauthorized,
+          message: CR.remove.unauthorized,
         })
       })
     })

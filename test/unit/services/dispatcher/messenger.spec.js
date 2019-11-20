@@ -311,7 +311,7 @@ describe('messenger service', () => {
       describe('for a newly added publisher', () => {
         const newPublisher = genPhoneNumber()
         const sdMessage = `${commands.ADD} ${newPublisher}`
-        const response = messages.commandResponses.publisher.add.success(newPublisher)
+        const response = messages.commandResponses.add.success(newPublisher)
         const welcome = messages.notifications.welcome(
           publisherSender.phoneNumber,
           channel.phoneNumber,

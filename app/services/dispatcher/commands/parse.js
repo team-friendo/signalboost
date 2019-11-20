@@ -3,9 +3,8 @@ const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const { defaultLanguage } = require('../../../config')
 
-// TODO(aguestuser|2019-11-17): rename this parseExecutable
 // string -> Executable
-const parseCommand = msg => {
+const parseExecutable = msg => {
   const { command, language, matches } = _findCommandMatch(msg) || {}
   return {
     command: command || commands.NOOP,
@@ -14,7 +13,7 @@ const parseCommand = msg => {
   }
 }
 
-// string -> {command: string, language: string, matches: Array<string>}
+// string -> Array<{command: string, language: string, matches: Array<string>}>
 const _findCommandMatch = msg => {
   // attempt to match on every variant of every command in every language
   // return first variant that matches (along with language and payload capturing group)
@@ -33,4 +32,4 @@ const _findCommandMatch = msg => {
   return find(matchResults, ({ matches }) => !isEmpty(matches))
 }
 
-module.exports = { parseCommand }
+module.exports = { parseExecutable }

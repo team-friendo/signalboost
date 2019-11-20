@@ -1,71 +1,110 @@
 const { upperCase } = require('lodash')
-const unauthorized = 'Whoops! No tiene autorización para hacerlo en este canal.'
+
+const systemName = 'El administrador del sistema de Signalboost'
+const unauthorized = 'Lo siento! No tiene autorización para hacerlo en este canal.'
+const invalidNumber = phoneNumber =>
+  `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos de país con el prefijo '+'.`
 
 const support = `
 ----------------------------
 CÓMO FUNCIONA
 ----------------------------
 
--> Los números de Signalboost tienen administradores y suscriptores.
--> Los administradores envían anuncios que se transmiten a los suscriptores.
--> Suscríbete a los anuncios enviando "HOLA" a un número.
--> Darse de baja enviando "ADIOS" al número.
--> Enviar "AYUDA" a un número para enumerar los comandos que hacen que haga cosas.
--> Más información: https://0xacab.org/team-friendo/signalboost`
+Los números de Signalboost tienen administradores y suscriptores.
+
+-> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
+-> Si está habilitado, los suscriptores pueden enviar respuestas que solo los administradores pueden leer.
+-> Los suscriptores no pueden enviarse mensajes entre sí. (¡No hay diafonía ruidosa!)
+
+Los números de Signalboost entienden los comandos.
+
+-> Las personas pueden suscribirse enviando HOLA y darse de baja con ADIÓS.
+-> Enviar un nombre de idioma (por ejemplo: ESPAÑOL o ENGLISH) cambia de idioma.
+-> Enviar AYUDA enumera los comandos.
+
+Signalboost intenta preservar su privacidad.
+
+-> Los usuarios de Signalboost no pueden ver los números de teléfono de los demás.
+-> Signalboost no lee ni almacena los mensajes de nadie.
+
+Para más información: https://signalboost.info`
 
 const notifications = {
-  broadcastResponseSent: channel => `
-Su mensaje fue enviado a los administradores de [${channel.name}].
-¡Envíe AYUDA para ver los comandos que entiendo! :)
-`,
-  welcome: (channel, addingPublisher) => {
-    const { name } = channel
-    return `
-¡Bienvenido a Signalboost! ${addingPublisher} te acaba de hacer un administrador del canal [${name}].
+  publisherAdded: (commandIssuer, addedPublisher) =>
+    `Nuevo administrador ${addedPublisher} agregado por ${commandIssuer}`,
 
-Responda con AYUDA para obtener más información o ADIÓS para irse.`
-  },
-  noop: 'Whoops! Eso no es un comando!',
+  broadcastResponseSent: channel =>
+    `Su mensaje fue enviado a los administradores de [${channel.name}].
+    ¡Envíe AYUDA para ver los comandos que entiendo! :)`,
+
+  deauthorization: publisherPhoneNumber => `
+${publisherPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
+    
+Esto es casi seguro porque reinstalaron Signal en un nuevo teléfono.
+
+Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
+
+Verifique con ${publisherPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
+  
+  AGREGAR ${publisherPhoneNumber}
+  
+  Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
+
+  welcome: (addingPublisher, channelPhoneNumber) => `
+Acabas de convertirte en administrador de este canal Signalboost por ${addingPublisher}. ¡Bienvenidos!
+
+Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
+
+Responda con AYUDA para más información.`,
+
+  noop: 'Lo siento! Eso no es un comando!',
   unauthorized: `
-Whoops! No entiendo eso.
-¡Envíe AYUDA para ver los comandos que entiendo! :)`,
+Lo siento! No entiendo eso.
+Envíe AYUDA para ver los comandos que entiendo! :)`,
+
+  signupRequestReceived: (senderNumber, requestMsg) =>
+    `Solicitud de registro recibida de ${senderNumber}: \n {requestMsg}`,
+  signupRequestResponse:
+    '¡Gracias por registrarte en Signalboost! \nEn breve recibirás un mensaje de bienvenida en tu nuevo canal...',
 }
 
 const commandResponses = {
-  // ADD/REMOVE PUBLISHER
-  publisher: {
-    add: {
-      success: num => `${num} agregó como administrador.`,
-      unauthorized,
-      dbError: num =>
-        `Whoops! Se produjo un error al agregar ${num} como administrador. ¡Inténtalo de nuevo!`,
-      invalidNumber: num =>
-        `Whoops! Error al agregar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
-    },
-    remove: {
-      success: num => `${num} eliminado como administrador.`,
-      unauthorized,
-      dbError: num =>
-        `Whoops! Se produjo un error al intentar eliminar ${num}. ¡Inténtalo de nuevo!`,
-      invalidNumber: num =>
-        `¡Vaya! Error al eliminar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
-      targetNotPublisher: num => `¡Vaya! ${num} no es un administrador. No puedo eliminarla.`,
-    },
+  // ADD
+
+  add: {
+    success: num => `${num} agregó como administrador.`,
+    unauthorized,
+    dbError: num =>
+      `¡Lo siento! Se produjo un error al agregar ${num} como administrador. ¡Inténtalo de nuevo!`,
+    invalidNumber: num =>
+      `¡Lo siento! Error al agregar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
   },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} eliminado como administrador.`,
+    unauthorized,
+    dbError: num =>
+      `¡Lo siento! Se produjo un error al intentar eliminar ${num}. ¡Inténtalo de nuevo!`,
+    invalidNumber: num =>
+      `¡Lo siento. Error al eliminar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
+    targetNotPublisher: num => `Lo siento. ${num} no es un administrador. No puedo eliminarla.`,
+  },
+
   // HELP
+
   help: {
-    publisher: `
+    publisher: `[COMMANDS I UNDERSTAND:]
 AYUDA
 -> listas de comandos
 
-INFORMACIÓN
--> muestra estadísticas, explica el refuerzo de señal
+INFO
+-> muestra estadísticas, explica cómo funciona Signalboost
 
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-RESPUESTAS ACTIVADAS / RESPUESTAS DESACTIVADAS
--> activa / desactiva las respuestas del suscriptor
 
 AGREGAR + 1-555-555-5555
 -> convierte a + 1-555-555-5555 en administrador
@@ -73,14 +112,22 @@ AGREGAR + 1-555-555-5555
 QUITAR + 1-555-555-5555
 -> elimina + 1-555-555-5555 como administrador
 
+RESPUESTAS ACTIVADAS
+-> permite a los suscriptores enviar mensajes a los administradores
+
+RESPUESTAS DESACTIVADAS
+-> desactiva a los suscriptores de enviar mensajes a los administradores
+
 ADIÓS
 -> te quita del canal`,
-    subscriber: `
+
+    subscriber: `[COMMANDS I UNDERSTAND:]
+    
 AYUDA
 -> listas de comandos
 
-INFORMACIÓN
--> explica el refuerzo de señal
+INFO
+-> explica explica cómo funciona Signalboost
 
 HOLA
 -> te suscribe a mensajes
@@ -90,6 +137,7 @@ ADIÓS
   },
 
   // INFO
+
   info: {
     publisher: channel => `
 ---------------------------
@@ -103,66 +151,86 @@ respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
 administradorxs: ${channel.publications.map(a => a.publisherPhoneNumber).join(',')}
 ${support}`,
+
     subscriber: channel => `
 ---------------------------
-CHANNEL INFO:
+INFO DEL CANAL:
 ---------------------------
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${channel.subscriptions.length}
-administradorxs: ${channel.publications.length}
 ${support}`,
     unauthorized,
   },
+
   // RENAME
+
   rename: {
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nWhoops! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtalo de nuevo!`,
+      `[${oldName}]\nLo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtalo de nuevo!`,
     unauthorized,
   },
-  // ADD/REMOVE SUBSCRIBER
-  subscriber: {
-    add: {
-      success: channel => {
-        const { name } = channel
-        return `
-¡Bienvenido a Signalboost! Ahora está suscrito al canal [${name}].
+
+  // JOIN
+
+  join: {
+    success: channel => {
+      const { name } = channel
+      return `
+¡Bienvenido a Signalboost! Ahora estás suscrito al canal [${name}].
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
-      },
-      dbError: `Whoops! Se produjo un error al agregarlo al canal. ¡Inténtalo de nuevo!`,
-      noop: `Whoops! Ya eres miembro del canal.`,
     },
-    remove: {
-      success: `¡Has sido eliminado del canal! ¡Adiós!`,
-      error: `Whoops! Se produjo un error al eliminarlo del canal. ¡Inténtalo de nuevo!`,
-      unauthorized,
-    },
+    dbError: `Lo siento! Se produjo un error al agregarlo al canal. Inténtalo de nuevo!`,
+    noop: `¡Lo siento! Ya eres miembro del canal.`,
   },
-  // TOGGLE RESPONSES
+
+  // LEAVE
+
+  leave: {
+    success: `¡Has sido eliminado del canal! ¡Adiós!`,
+    error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtalo de nuevo!`,
+    unauthorized,
+  },
+
+  // RESPONSES_ON / RESPONSES_OFF
+
   toggleResponses: {
     success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
     unauthorized,
     dbError: setting =>
-      `Whoops! Se produjo un error al intentar establecer respuestas a $ {setting}. ¡Inténtalo de nuevo!`,
-    invalidSetting: setting =>
-      `Whoops! $ {setting} no es una configuración válida. Puede configurar las respuestas para que estén ACTIVADAS o DESACTIVADAS.`,
+      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtalo de nuevo!`,
   },
+
+  // SET_LANGUAGE
+
   setLanguage: {
-    success: '¡Hablaré contigo en español ahora!',
-    dbError: 'Lo ciento. Era un error. ¡Inténtalo de nuevo!',
+    success: '¡Hablaré contigo en español ahora! \nEnvia AYUDA para comandos que comprendo.',
+    dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtalo de nuevo!',
+  },
+
+  // TRUST
+
+  trust: {
+    success: phoneNumber => `Número de seguridad actualizado para ${phoneNumber}`,
+    error: phoneNumber =>
+      `Error al actualizar el número de seguridad para ${phoneNumber}. ¡Inténtalo de nuevo o contacta a un mantenedor!`,
+    invalidNumber,
+    unauthorized,
+    dbError: phoneNumber =>
+      `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtalo de nuevo!`,
   },
 }
 
 const prefixes = {
-  helpResponse: `COMANDOS QUE ENTIENDO ...`,
-  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR ...`,
+  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR:`,
 }
 
 const EN = {
+  systemName,
   commandResponses,
   notifications,
   prefixes,

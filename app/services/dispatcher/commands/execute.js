@@ -52,7 +52,7 @@ const execute = async (executable, dispatchable) => {
 // ADD
 
 const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
-  const cr = messagesIn(sender.language).commandResponses.publisher.add
+  const cr = messagesIn(sender.language).commandResponses.add
   if (!(sender.type === PUBLISHER)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
@@ -102,7 +102,7 @@ const showInfo = async (db, channel, sender, cr) => ({
 // JOIN
 
 const maybeAddSubscriber = async (db, channel, sender, language) => {
-  const cr = messagesIn(language).commandResponses.subscriber.add
+  const cr = messagesIn(language).commandResponses.join
   return sender.type === SUBSCRIBER
     ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
     : addSubscriber(db, channel, sender, language, cr)
@@ -117,7 +117,7 @@ const addSubscriber = (db, channel, sender, language, cr) =>
 // LEAVE
 
 const maybeRemoveSender = async (db, channel, sender) => {
-  const cr = messagesIn(sender.language).commandResponses.subscriber.remove
+  const cr = messagesIn(sender.language).commandResponses.leave
   return sender.type === NONE
     ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
     : removeSender(db, channel, sender, cr)
@@ -136,7 +136,7 @@ const removeSender = (db, channel, sender, cr) => {
 // REMOVE
 
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
-  const cr = messagesIn(sender.language).commandResponses.publisher.remove
+  const cr = messagesIn(sender.language).commandResponses.remove
   const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
 
   if (!(sender.type === PUBLISHER)) {
