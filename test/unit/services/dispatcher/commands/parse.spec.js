@@ -3,6 +3,7 @@ import { describe, it } from 'mocha'
 import { commands } from '../../../../../app/services/dispatcher/commands/constants'
 import { parseCommand } from '../../../../../app/services/dispatcher/commands/parse'
 import { languages } from '../../../../../app/constants'
+import { defaultLanguage } from '../../../../../app/config'
 
 describe('parsing commands', () => {
   describe('NOOP', () => {
@@ -27,11 +28,12 @@ describe('parsing commands', () => {
         'hace RENOMBRAR',
         'hace RESPUESTAS ACTIVADAS',
         'hace RESPUESTAS DESACTIVADAS',
-        'hace ESPAÑOL'
+        'hace ESPAÑOL',
       ]
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.NOOP,
+          language: defaultLanguage,
           payload: '',
         }),
       )
@@ -45,6 +47,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.ADD,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -53,6 +56,7 @@ describe('parsing commands', () => {
       it('parses the payload from an ADD command', () => {
         expect(parseCommand('ADD foo')).to.eql({
           command: commands.ADD,
+          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -64,6 +68,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.HELP,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -76,6 +81,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.INFO,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -88,6 +94,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.JOIN,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -100,6 +107,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.LEAVE,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -112,6 +120,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.REMOVE,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -120,6 +129,7 @@ describe('parsing commands', () => {
       it('parses the payload from an REMOVE command', () => {
         expect(parseCommand('REMOVE foo')).to.eql({
           command: commands.REMOVE,
+          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -132,6 +142,7 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RENAME,
+              language: languages.EN,
               payload: '',
             }),
           )
@@ -141,6 +152,7 @@ describe('parsing commands', () => {
       it('parses the payload from an RENAME command', () => {
         expect(parseCommand('RENAME foo')).to.eql({
           command: commands.RENAME,
+          language: languages.EN,
           payload: 'foo',
         })
       })
@@ -153,6 +165,7 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RESPONSES_ON,
+              language: languages.EN,
               payload: '',
             }),
           )
@@ -167,6 +180,7 @@ describe('parsing commands', () => {
           msgs.forEach(msg =>
             expect(parseCommand(msg)).to.eql({
               command: commands.RESPONSES_OFF,
+              language: languages.EN,
               payload: '',
             }),
           )
@@ -180,7 +194,8 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.SET_LANGUAGE,
-            payload: languages.EN,
+            language: languages.EN,
+            payload: '',
           }),
         )
       })
@@ -194,6 +209,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.ADD,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -202,6 +218,7 @@ describe('parsing commands', () => {
       it('parses the payload from an ADD command', () => {
         expect(parseCommand('AGREGAR foo')).to.eql({
           command: commands.ADD,
+          language: languages.ES,
           payload: 'foo',
         })
       })
@@ -213,6 +230,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.HELP,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -225,6 +243,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.INFO,
+            language: languages.EN,
             payload: '',
           }),
         )
@@ -237,6 +256,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.JOIN,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -248,6 +268,7 @@ describe('parsing commands', () => {
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.LEAVE,
+          language: languages.ES,
           payload: '',
         }),
       )
@@ -260,6 +281,7 @@ describe('parsing commands', () => {
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.REMOVE,
+          language: languages.ES,
           payload: '',
         }),
       )
@@ -268,6 +290,7 @@ describe('parsing commands', () => {
     it('parses the payload from an REMOVE command', () => {
       expect(parseCommand('ELIMINAR foo')).to.eql({
         command: commands.REMOVE,
+        language: languages.ES,
         payload: 'foo',
       })
     })
@@ -280,6 +303,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RENAME,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -289,6 +313,7 @@ describe('parsing commands', () => {
     it('parses the payload from an RENAME command', () => {
       expect(parseCommand('RENOMBRAR foo')).to.eql({
         command: commands.RENAME,
+        language: languages.ES,
         payload: 'foo',
       })
     })
@@ -301,6 +326,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RESPONSES_ON,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -319,6 +345,7 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseCommand(msg)).to.eql({
             command: commands.RESPONSES_OFF,
+            language: languages.ES,
             payload: '',
           }),
         )
@@ -332,7 +359,8 @@ describe('parsing commands', () => {
       msgs.forEach(msg =>
         expect(parseCommand(msg)).to.eql({
           command: commands.SET_LANGUAGE,
-          payload: languages.ES,
+          language: languages.ES,
+          payload: '',
         }),
       )
     })

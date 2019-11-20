@@ -417,7 +417,12 @@ describe('channel repository', () => {
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
-        sub = await channelRepository.addSubscriber(db, channel.phoneNumber, subscriberPhone)
+        sub = await channelRepository.addSubscriber(
+          db,
+          channel.phoneNumber,
+          subscriberPhone,
+          languages.ES,
+        )
       })
 
       it('creates a new subscription', async () => {
@@ -430,9 +435,10 @@ describe('channel repository', () => {
       })
 
       it('returns a subscription joining the channel to the human', () => {
-        expect(pick(sub, ['channelPhoneNumber', 'subscriberPhoneNumber'])).to.eql({
+        expect(pick(sub, ['channelPhoneNumber', 'subscriberPhoneNumber', 'language'])).to.eql({
           channelPhoneNumber: channel.phoneNumber,
           subscriberPhoneNumber: subscriberPhone,
+          language: languages.ES,
         })
       })
     })

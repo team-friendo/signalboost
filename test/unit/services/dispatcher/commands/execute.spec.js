@@ -235,6 +235,20 @@ describe('executing commands', () => {
     describe('when number is not subscribed to channel', () => {
       const dispatchable = { db, channel, sender: randomPerson, sdMessage }
 
+      describe('in all cases', () => {
+        beforeEach(() => addSubscriberStub.returns(Promise.resolve()))
+
+        it('attempts to subscribe sender to channel in the language they used to signup', async () => {
+          await processCommand(dispatchable)
+          expect(addSubscriberStub.getCall(0).args).to.eql([
+            db,
+            channel.phoneNumber,
+            randomPerson.phoneNumber,
+            languages.EN,
+          ])
+        })
+      })
+
       describe('when adding subscriber succeeds', () => {
         beforeEach(() => addSubscriberStub.returns(Promise.resolve(subscriptionFactory())))
 

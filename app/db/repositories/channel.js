@@ -78,9 +78,9 @@ const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
 const removePublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
   db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } })
 
-const addSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>
+const addSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber, language = defaultLanguage) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    db.subscription.create({ channelPhoneNumber, subscriberPhoneNumber }),
+    db.subscription.create({ channelPhoneNumber, subscriberPhoneNumber, language }),
   )
 
 const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>

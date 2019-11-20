@@ -5,7 +5,6 @@ const logger = require('../logger')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/channel')
 const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
-const { lowerCase } = require('lodash')
 const {
   signal: { signupPhoneNumber },
 } = require('../../../config')
@@ -14,7 +13,7 @@ const {
  * type Executable = {
  *   command: string,
  *   payload: string,
- *   language: string,
+ *   language: 'EN' | 'ES'
  * }
  *
  * type CommandResult = {
@@ -27,7 +26,7 @@ const {
 
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const execute = async (executable, dispatchable) => {
-  const { command, payload } = executable
+  const { command, payload, language } = executable
   const { db, channel, sender } = dispatchable
   // don't allow command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== PUBLISHER) return noop()
@@ -35,13 +34,13 @@ const execute = async (executable, dispatchable) => {
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
-    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
+    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
     [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
     [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
-    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, payload),
+    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
   return { command, ...result }
 }
@@ -102,17 +101,16 @@ const showInfo = async (db, channel, sender, cr) => ({
 
 // JOIN
 
-const maybeAddSubscriber = async (db, channel, sender) => {
-  // TODO: infer
-  const cr = messagesIn(sender.language).commandResponses.subscriber.add
+const maybeAddSubscriber = async (db, channel, sender, language) => {
+  const cr = messagesIn(language).commandResponses.subscriber.add
   return sender.type === SUBSCRIBER
     ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
-    : addSubscriber(db, channel, sender, cr)
+    : addSubscriber(db, channel, sender, language, cr)
 }
 
-const addSubscriber = (db, channel, sender, cr) =>
+const addSubscriber = (db, channel, sender, language, cr) =>
   channelRepository
-    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber)
+    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
