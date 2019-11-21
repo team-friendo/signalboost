@@ -19,7 +19,7 @@ Signalboost numbers have admins and subscribers.
 Signalboost numbers understand commands.
 
 -> Sending HELP lists the commands.
--> People can subscribe by sending HELLO (or HOLA) and unsusbcribe with GOODBYE (or ADIÓS).
+-> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
 -> Sending a language name (for example: ESPAÑOL or ENGLISH) switches languages.
 
 Signalboost tries to preserve your privacy.

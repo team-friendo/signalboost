@@ -1,9 +1,9 @@
 const { upperCase } = require('lodash')
 
 const systemName = 'El administrador del sistema de Signalboost'
-const unauthorized = 'Lo siento! No tiene autorización para hacerlo en este canal.'
+const unauthorized = 'Lo siento! Usted no está autorizado para hacerlo en este canal.'
 const invalidNumber = phoneNumber =>
-  `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos de país con el prefijo '+'.`
+  `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
 const support = `
 ----------------------------
@@ -14,17 +14,17 @@ Los números de Signalboost tienen administradores y suscriptores.
 
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar respuestas que solo los administradores pueden leer.
--> Los suscriptores no pueden enviarse mensajes entre sí. (¡No hay diafonía ruidosa!)
+-> Los suscriptores no pueden enviarse mensajes los unos a los otros. (¡No hay diafonía ruidosa!)
 
 Los números de Signalboost entienden los comandos.
 
+-> Enviar AYUDA para ver la lista de comandos.
 -> Las personas pueden suscribirse enviando HOLA y darse de baja con ADIÓS.
--> Enviar un nombre de idioma (por ejemplo: ESPAÑOL o ENGLISH) cambia de idioma.
--> Enviar AYUDA enumera los comandos.
+-> Enviar el nombre de idioma (por ejemplo: ESPAÑOL o ENGLISH) para cambiar de idioma.
 
 Signalboost intenta preservar su privacidad.
 
--> Los usuarios de Signalboost no pueden ver los números de teléfono de los demás.
+-> Los usuarios de Signalboost no pueden ver los números de otros usuarios.
 -> Signalboost no lee ni almacena los mensajes de nadie.
 
 Para más información: https://signalboost.info`
@@ -40,7 +40,7 @@ const notifications = {
   deauthorization: publisherPhoneNumber => `
 ${publisherPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
     
-Esto es casi seguro porque reinstalaron Signal en un nuevo teléfono.
+Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
 
 Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
 
@@ -65,7 +65,7 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Solicitud de registro recibida de ${senderNumber}: \n {requestMsg}`,
   signupRequestResponse:
-    '¡Gracias por registrarte en Signalboost! \nEn breve recibirás un mensaje de bienvenida en tu nuevo canal...',
+    '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...'
 }
 
 const commandResponses = {
@@ -75,9 +75,9 @@ const commandResponses = {
     success: num => `${num} agregó como administrador.`,
     unauthorized,
     dbError: num =>
-      `¡Lo siento! Se produjo un error al agregar ${num} como administrador. ¡Inténtalo de nuevo!`,
+      `¡Lo siento! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
-      `¡Lo siento! Error al agregar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
+      `¡Lo siento! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`
   },
 
   // REMOVE
@@ -86,10 +86,10 @@ const commandResponses = {
     success: num => `${num} eliminado como administrador.`,
     unauthorized,
     dbError: num =>
-      `¡Lo siento! Se produjo un error al intentar eliminar ${num}. ¡Inténtalo de nuevo!`,
+      `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
-      `¡Lo siento. Error al eliminar "${num}". Los números de teléfono deben incluir códigos de país con el prefijo '+'`,
-    targetNotPublisher: num => `Lo siento. ${num} no es un administrador. No puedo eliminarla.`,
+      `¡Lo siento. Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    targetNotPublisher: num => `Lo siento. ${num} no es un administrador. No puedo eliminarle.`
   },
 
   // HELP
@@ -97,7 +97,7 @@ const commandResponses = {
   help: {
     publisher: `[COMMANDS I UNDERSTAND:]
 AYUDA
--> listas de comandos
+-> lista de comandos
 
 INFO
 -> muestra estadísticas, explica cómo funciona Signalboost
@@ -110,7 +110,7 @@ AGREGAR + 1-555-555-5555
 -> convierte a + 1-555-555-5555 en administrador
 
 QUITAR + 1-555-555-5555
--> elimina + 1-555-555-5555 como administrador
+-> elimina a + 1-555-555-5555 como administrador
 
 RESPUESTAS ACTIVADAS
 -> permite a los suscriptores enviar mensajes a los administradores
@@ -119,21 +119,21 @@ RESPUESTAS DESACTIVADAS
 -> desactiva a los suscriptores de enviar mensajes a los administradores
 
 ADIÓS
--> te quita del canal`,
+-> le saca del canal`,
 
     subscriber: `[COMMANDS I UNDERSTAND:]
     
 AYUDA
--> listas de comandos
+-> lista de comandos
 
 INFO
--> explica explica cómo funciona Signalboost
+-> explica cómo funciona Signalboost
 
 HOLA
--> te suscribe a mensajes
+-> para subscribirse a un canal
 
 ADIÓS
--> te da de baja`,
+-> te da de baja`
   },
 
   // INFO
@@ -170,7 +170,7 @@ ${support}`,
   rename: {
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nLo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtalo de nuevo!`,
+      `[${oldName}]\nLo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     unauthorized,
   },
 
@@ -180,19 +180,19 @@ ${support}`,
     success: channel => {
       const { name } = channel
       return `
-¡Bienvenido a Signalboost! Ahora estás suscrito al canal [${name}].
+¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${name}].
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     },
-    dbError: `Lo siento! Se produjo un error al agregarlo al canal. Inténtalo de nuevo!`,
+    dbError: `Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
     noop: `¡Lo siento! Ya eres miembro del canal.`,
   },
 
   // LEAVE
 
   leave: {
-    success: `¡Has sido eliminado del canal! ¡Adiós!`,
-    error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtalo de nuevo!`,
+    success: `¡Usted ha sido eliminado del canal! ¡Adiós!`,
+    error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtelo de nuevo!`,
     unauthorized,
   },
 
@@ -202,14 +202,14 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
     unauthorized,
     dbError: setting =>
-      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtalo de nuevo!`,
+      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
   },
 
   // SET_LANGUAGE
 
   setLanguage: {
-    success: '¡Hablaré contigo en español ahora! \nEnvia AYUDA para comandos que comprendo.',
-    dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtalo de nuevo!',
+    success: '¡Puede enviar comandos en Español ahora! \nEnvíe AYUDA para ver los comandos que comprendo.',
+    dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!'
   },
 
   // TRUST
@@ -217,12 +217,12 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
   trust: {
     success: phoneNumber => `Número de seguridad actualizado para ${phoneNumber}`,
     error: phoneNumber =>
-      `Error al actualizar el número de seguridad para ${phoneNumber}. ¡Inténtalo de nuevo o contacta a un mantenedor!`,
+      `Error al actualizar el número de seguridad para ${phoneNumber}. ¡Inténtelo de nuevo o contacta a un mantenedor!`,
     invalidNumber,
     unauthorized,
     dbError: phoneNumber =>
-      `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtalo de nuevo!`,
-  },
+      `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
+  }
 }
 
 const prefixes = {
