@@ -133,7 +133,7 @@ HOLA
 -> para subscribirse a un canal
 
 ADIÓS
--> te da de baja`
+-> le da de baja`,
   },
 
   // INFO
