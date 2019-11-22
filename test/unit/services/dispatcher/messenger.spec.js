@@ -7,11 +7,11 @@ import { memberTypes } from '../../../../app/db/repositories/channel'
 import signal from '../../../../app/services/signal'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
 import messenger, { messageTypes } from '../../../../app/services/dispatcher/messenger'
-import messages from '../../../../app/services/dispatcher/messages/EN'
-import { statuses, commands } from '../../../../app/services/dispatcher/executor'
+import messages from '../../../../app/services/dispatcher/strings/messages/EN'
+import { statuses, commands } from '../../../../app/services/dispatcher/commands/constants'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { sdMessageOf } from '../../../../app/services/signal'
-import { messagesIn } from '../../../../app/services/dispatcher/messages'
+import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 const {
   signal: { signupPhoneNumber },
@@ -311,7 +311,7 @@ describe('messenger service', () => {
       describe('for a newly added publisher', () => {
         const newPublisher = genPhoneNumber()
         const sdMessage = `${commands.ADD} ${newPublisher}`
-        const response = messages.commandResponses.publisher.add.success(newPublisher)
+        const response = messages.commandResponses.add.success(newPublisher)
         const welcome = messages.notifications.welcome(
           publisherSender.phoneNumber,
           channel.phoneNumber,

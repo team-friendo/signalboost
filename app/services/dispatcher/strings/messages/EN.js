@@ -10,18 +10,32 @@ const support = `
 HOW IT WORKS
 ----------------------------
 
--> Signalboost has admins and subscribers.
--> Admins send announcements that are broadcast to subscribers.
--> People can subscribe by sending HELLO or HOLA to this number.
--> Unsubscribe by sending GOODBYE or ADÍOS to this number.
--> Send HELP or AYUDA to list commands that make Signalboost do things.
--> Learn more: https://signalboost.info
+Signalboost numbers have admins and subscribers.
+
+-> When admins send messages, they are broadcast to all subscribers.
+-> If enabled, subscribers can send responses that only admins can read.
+-> Subscribers cannot send messages to each other. (No noisy crosstalk!)
+
+Signalboost numbers understand commands.
+
+-> Sending HELP lists the commands.
+-> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
+-> Sending a language name (for example: ESPAÑOL or ENGLISH) switches languages.
+
+Signalboost tries to preserve your privacy.
+
+-> Signalboost users cannot see each other's phone numbers.
+-> Signalboost does not read or store anyone's messages.
+
+Learn more: https://signalboost.info
 `
 
 const notifications = {
   publisherAdded: (commandIssuer, addedPublisher) =>
     `New admin ${addedPublisher} added by ${commandIssuer}`,
-  broadcastResponseSent: channel => `Your message was forwarded to the admins of [${channel.name}]`,
+  broadcastResponseSent: channel =>
+    `Your message was forwarded to the admins of [${channel.name}].
+    Send HELP to see commands I understand! :)`,
   deauthorization: publisherPhoneNumber => `
 ${publisherPhoneNumber} has been removed from this channel because their safety number changed.
 
@@ -36,12 +50,14 @@ ADD ${publisherPhoneNumber}
 Until then, they will be unable to send messages to or read messages from this channel.`,
   noop: "Whoops! That's not a command!",
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+
   welcome: (addingPublisher, channelPhoneNumber) => `
 You were just made an admin of this Signalboost channel by ${addingPublisher}. Welcome!
 
 People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 
 Reply with HELP for more info.`,
+
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
   signupRequestResponse:
@@ -49,31 +65,35 @@ Reply with HELP for more info.`,
 }
 
 const commandResponses = {
-  // ADD/REMOVE PUBLISHER
-  publisher: {
-    add: {
-      success: num => `${num} added as an admin.`,
-      unauthorized,
-      dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
-      invalidNumber,
-    },
-    remove: {
-      success: num => `${num} removed as an admin.`,
-      unauthorized,
-      dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-      invalidNumber,
-      targetNotPublisher: num => `Whoops! ${num} is not an admin. Can't remove them.`,
-    },
+  // ADD
+
+  add: {
+    success: num => `${num} added as an admin.`,
+    unauthorized,
+    dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
+    invalidNumber,
   },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} removed as an admin.`,
+    unauthorized,
+    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    invalidNumber,
+    targetNotPublisher: num => `Whoops! ${num} is not an admin. Can't remove them.`,
+  },
+
   // HELP
+
   help: {
     publisher: `[COMMANDS I UNDERSTAND:]
 
-HELP / AYUDA
+HELP
 -> lists commands
 
 INFO
--> shows stats, explains how signalboost works
+-> shows stats, explains how Signalboost works
 
 RENAME new name
 -> renames channel to "new name"
@@ -90,24 +110,29 @@ RESPONSES ON
 RESPONSES OFF
 -> disables subscribers from sending messages to admins
 
-GOODBYE / ADIOS
--> leaves this channel`,
+GOODBYE
+-> leaves this channel
+
+ESPAÑOL
+-> switches language to Spanish`,
+
     subscriber: `[COMMANDS I UNDERSTAND:]
 
-HELP / AYUDA
+HELP
 -> lists commands
 
 INFO
 -> shows stats, explains how signalboost works
 
-HELLO / HOLA
+HELLO
 -> subscribes you to announcements
 
-GOODBYE / ADIOS
+GOODBYE
 -> unsubscribes you from announcements`,
   },
 
   // INFO
+
   info: {
     publisher: channel => `
 ---------------------------
@@ -121,6 +146,7 @@ admins: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}
 ${support}`,
+
     subscriber: channel => `
 ---------------------------
 CHANNEL INFO:
@@ -130,11 +156,12 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${channel.subscriptions.length}
-admins: ${channel.publications.length}
 ${support}`,
     unauthorized,
   },
+
   // RENAME
+
   rename: {
     success: (oldName, newName) =>
       `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
@@ -142,45 +169,53 @@ ${support}`,
       `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
     unauthorized,
   },
-  // JOIN/LEAVE
-  subscriber: {
-    add: {
-      success: channel => {
-        const { name } = channel
-        return `
+
+  // JOIN
+
+  join: {
+    success: channel => {
+      const { name } = channel
+      return `
 Welcome to Signalboost! You are now subscribed to the [${name}] channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`
-      },
-      dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
-      noop: `Whoops! You are already a member of the channel.`,
     },
-    remove: {
-      success: `You've been removed from the channel! Bye!`,
-      error: `Whoops! There was an error removing you from the channel. Please try again!`,
-      unauthorized,
-    },
+    dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
+    noop: `Whoops! You are already a member of the channel.`,
   },
-  // TOGGLE RESPONSES
+
+  // LEAVE
+
+  leave: {
+    success: `You've been removed from the channel! Bye!`,
+    error: `Whoops! There was an error removing you from the channel. Please try again!`,
+    unauthorized,
+  },
+
+  // RESPONSES_ON / RESPONSES_OFF
+
   toggleResponses: {
     success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
     unauthorized,
     dbError: setting =>
       `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
-    invalidSetting: setting =>
-      `Whoops! ${setting} is not a valid setting. You can set responses to be either ON or OFF.`,
   },
+
+  // SET_LANGUAGE
+
+  setLanguage: {
+    success: 'I will talk to you in English now! \n Send HELP to list commands I understand.',
+    dbError: 'Whoops! Failed to store your language preference. Please try again!',
+  },
+
+  // TRUST
+
   trust: {
     success: phoneNumber => `Updated safety number for ${phoneNumber}`,
     error: phoneNumber =>
       `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
-    partialError: (phoneNumber, success, error) =>
-      `Updated safety number for ${success} out of ${success +
-        error} channels that ${phoneNumber} belongs to.`,
     invalidNumber,
     unauthorized,
-    targetNotMember: phoneNumber =>
-      `Whoops! ${phoneNumber} is not an admin or subscriber on this channel. Cannot reactivate them.`,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },

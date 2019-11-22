@@ -2,7 +2,7 @@ const signal = require('../../services/signal')
 const channelRepository = require('../../db/repositories/channel')
 const { wait, loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
-const { messagesIn } = require('../dispatcher/messages')
+const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultErrorOf } = require('../util')
 const { sdMessageOf } = require('../signal')
 const {

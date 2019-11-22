@@ -5,9 +5,10 @@ const statuses = {
   ERROR: 'ERROR',
 }
 
-// TODO: move languages to somewhere more language-y!
+// TODO: move languages to dispatcher/strings/index and kill this file!
 const languages = {
   EN: 'EN',
+  ES: 'ES',
 }
 
 module.exports = { statuses, languages }

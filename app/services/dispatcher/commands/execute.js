@@ -1,18 +1,19 @@
-const channelRepository = require('../../db/repositories/channel')
-const validator = require('../../db/validations/phoneNumber')
-const logger = require('./logger')
-const { messagesIn } = require('./messages')
-const { memberTypes } = channelRepository
+const { commands, statuses } = require('./constants')
+const channelRepository = require('../../../db/repositories/channel')
+const validator = require('../../../db/validations/phoneNumber')
+const logger = require('../logger')
+const { messagesIn } = require('../strings/messages')
+const { memberTypes } = require('../../../db/repositories/channel')
 const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
-const { lowerCase } = require('lodash')
 const {
   signal: { signupPhoneNumber },
-} = require('../../config')
+} = require('../../../config')
 
 /**
  * type Executable = {
  *   command: string,
- *   payload: ?string,
+ *   payload: string,
+ *   language: 'EN' | 'ES'
  * }
  *
  * type CommandResult = {
@@ -23,59 +24,9 @@ const {
  *
  * */
 
-/*************
- * CONSTANTS
- *************/
-
-const statuses = {
-  NOOP: 'NOOP',
-  SUCCESS: 'SUCCESS',
-  ERROR: 'ERROR',
-  UNAUTHORIZED: 'UNAUTHORIZED',
-}
-
-const commands = {
-  ADD: 'ADD',
-  HELP: 'HELP',
-  INFO: 'INFO',
-  JOIN: 'JOIN',
-  LEAVE: 'LEAVE',
-  NOOP: 'NOOP',
-  REMOVE: 'REMOVE',
-  RENAME: 'RENAME',
-  TOGGLE_RESPONSES: 'TOGGLE_RESPONSES',
-}
-
-/******************
- * INPUT HANDLING
- ******************/
-
-// Dispatchable -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
-const processCommand = dispatchable => {
-  return execute(parseCommand(dispatchable.sdMessage.messageBody), dispatchable)
-}
-
-// string -> Executable
-const parseCommand = msg => {
-  const _msg = msg.trim()
-  if (_msg.match(/^add/i)) return { command: commands.ADD, payload: _msg.match(/^add\s?(.*)/i)[1] }
-  else if (_msg.match(/^(help|ayuda)$/i)) return { command: commands.HELP }
-  else if (_msg.match(/^info$/i)) return { command: commands.INFO }
-  // TODO(aguestuser|2019-08-30): handle spansish variations with proper localization
-  else if (_msg.match(/^(join|hello|hola)$/i)) return { command: commands.JOIN }
-  else if (_msg.match(/^(leave|goodbye|adios)$/i)) return { command: commands.LEAVE }
-  else if (_msg.match(/^remove/i))
-    return { command: commands.REMOVE, payload: _msg.match(/^remove\s?(.*)$/i)[1] }
-  else if (_msg.match(/^rename/i))
-    return { command: commands.RENAME, payload: _msg.match(/^rename\s?(.*)$/i)[1] }
-  else if (_msg.match(/^responses/i))
-    return { command: commands.TOGGLE_RESPONSES, payload: _msg.match(/^responses\s?(.*)$/i)[1] }
-  else return { command: commands.NOOP }
-}
-
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
 const execute = async (executable, dispatchable) => {
-  const { command, payload } = executable
+  const { command, payload, language } = executable
   const { db, channel, sender } = dispatchable
   // don't allow command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== PUBLISHER) return noop()
@@ -83,11 +34,13 @@ const execute = async (executable, dispatchable) => {
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
-    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender),
+    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
-    [commands.TOGGLE_RESPONSES]: () => maybeToggleResponses(db, channel, sender, payload),
+    [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
+    [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
+    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
   return { command, ...result }
 }
@@ -99,7 +52,7 @@ const execute = async (executable, dispatchable) => {
 // ADD
 
 const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
-  const cr = messagesIn(sender.language).commandResponses.publisher.add
+  const cr = messagesIn(sender.language).commandResponses.add
   if (!(sender.type === PUBLISHER)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
@@ -119,8 +72,6 @@ const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newPublisherNumber) }))
 
 // HELP
-
-//TODO: extract `executable` from `dispatchable`
 
 const maybeShowHelp = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
@@ -150,23 +101,23 @@ const showInfo = async (db, channel, sender, cr) => ({
 
 // JOIN
 
-const maybeAddSubscriber = async (db, channel, sender) => {
-  const cr = messagesIn(sender.language).commandResponses.subscriber.add
+const maybeAddSubscriber = async (db, channel, sender, language) => {
+  const cr = messagesIn(language).commandResponses.join
   return sender.type === SUBSCRIBER
     ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
-    : addSubscriber(db, channel, sender, cr)
+    : addSubscriber(db, channel, sender, language, cr)
 }
 
-const addSubscriber = (db, channel, sender, cr) =>
+const addSubscriber = (db, channel, sender, language, cr) =>
   channelRepository
-    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber)
+    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
 // LEAVE
 
 const maybeRemoveSender = async (db, channel, sender) => {
-  const cr = messagesIn(sender.language).commandResponses.subscriber.remove
+  const cr = messagesIn(sender.language).commandResponses.leave
   return sender.type === NONE
     ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
     : removeSender(db, channel, sender, cr)
@@ -185,7 +136,7 @@ const removeSender = (db, channel, sender, cr) => {
 // REMOVE
 
 const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
-  const cr = messagesIn(sender.language).commandResponses.publisher.remove
+  const cr = messagesIn(sender.language).commandResponses.remove
   const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
 
   if (!(sender.type === PUBLISHER)) {
@@ -223,22 +174,38 @@ const renameChannel = (db, channel, newName, cr) =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
 
-const maybeToggleResponses = async (db, channel, sender, newSetting) => {
+// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
+const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
   if (!(sender.type === PUBLISHER)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
-  if (!['on', 'off'].includes(lowerCase(newSetting))) {
-    return Promise.resolve({ status: statuses.ERROR, message: cr.invalidSetting(newSetting) })
-  }
-  return toggleResponses(db, channel, newSetting, sender, cr)
+  return toggleResponses(db, channel, responsesEnabled, sender, cr)
 }
 
-const toggleResponses = (db, channel, newSetting, sender, cr) =>
+const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { responsesEnabled: lowerCase(newSetting) === 'on' })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newSetting) }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(newSetting) }))
+    .update(db, channel.phoneNumber, { responsesEnabled })
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(responsesEnabled ? 'ON' : 'OFF'),
+    }))
+    .catch(err =>
+      logAndReturn(err, {
+        status: statuses.ERROR,
+        message: cr.dbError(responsesEnabled ? 'ON' : 'OFF'),
+      }),
+    )
+
+// SET_LANGUAGE
+
+const setLanguage = (db, sender, language) => {
+  const cr = messagesIn(language).commandResponses.setLanguage
+  return channelRepository
+    .updateMemberLanguage(db, sender.phoneNumber, sender.type, language)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
+}
 
 // NOOP
 const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
@@ -253,4 +220,4 @@ const logAndReturn = (err, statusTuple) => {
   return statusTuple
 }
 
-module.exports = { statuses, commands, processCommand, parseCommand, execute }
+module.exports = { execute }

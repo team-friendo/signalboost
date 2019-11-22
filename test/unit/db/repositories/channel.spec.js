@@ -11,6 +11,7 @@ import { publicationFactory } from '../../../support/factories/publication'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { memberTypes } from '../../../../app/db/repositories/channel'
+import { languages } from '../../../../app/constants'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -416,7 +417,12 @@ describe('channel repository', () => {
       beforeEach(async () => {
         subCount = await db.subscription.count()
         channel = await db.channel.create(channelFactory())
-        sub = await channelRepository.addSubscriber(db, channel.phoneNumber, subscriberPhone)
+        sub = await channelRepository.addSubscriber(
+          db,
+          channel.phoneNumber,
+          subscriberPhone,
+          languages.ES,
+        )
       })
 
       it('creates a new subscription', async () => {
@@ -429,9 +435,10 @@ describe('channel repository', () => {
       })
 
       it('returns a subscription joining the channel to the human', () => {
-        expect(pick(sub, ['channelPhoneNumber', 'subscriberPhoneNumber'])).to.eql({
+        expect(pick(sub, ['channelPhoneNumber', 'subscriberPhoneNumber', 'language'])).to.eql({
           channelPhoneNumber: channel.phoneNumber,
           subscriberPhoneNumber: subscriberPhone,
+          language: languages.ES,
         })
       })
     })
@@ -570,6 +577,74 @@ describe('channel repository', () => {
         expect(
           await channelRepository.resolveSenderType(db, channelPhoneNumber, genPhoneNumber()),
         ).to.eql(memberTypes.NONE)
+      })
+    })
+  })
+
+  describe('#updateMemberLanguage', () => {
+    const memberPhoneNumber = genPhoneNumber()
+    let result
+
+    describe('when member is a publisher', () => {
+      beforeEach(async () => {
+        await db.publication.create(
+          publicationFactory({ publisherPhoneNumber: memberPhoneNumber, language: languages.EN }),
+        )
+        result = await channelRepository.updateMemberLanguage(
+          db,
+          memberPhoneNumber,
+          memberTypes.PUBLISHER,
+          languages.ES,
+        )
+      })
+
+      it('updates the publication language', async () => {
+        expect(result).to.eql([1])
+        expect(
+          await db.publication
+            .findOne({ where: { publisherPhoneNumber: memberPhoneNumber } })
+            .then(p => p.language),
+        ).to.eql(languages.ES)
+      })
+    })
+
+    describe('when member is a subscriber', () => {
+      beforeEach(async () => {
+        await db.subscription.create(
+          subscriptionFactory({
+            subscriberPhoneNumber: memberPhoneNumber,
+            language: languages.EN,
+          }),
+        )
+        result = await channelRepository.updateMemberLanguage(
+          db,
+          memberPhoneNumber,
+          memberTypes.SUBSCRIBER,
+          languages.ES,
+        )
+      })
+
+      it('updates the subscription language', async () => {
+        expect(result).to.eql([1])
+        expect(
+          await db.subscription
+            .findOne({ where: { subscriberPhoneNumber: memberPhoneNumber } })
+            .then(p => p.language),
+        ).to.eql(languages.ES)
+      })
+    })
+
+    describe('when sender is neither publisher nor subscriber', () => {
+      beforeEach(async () => {
+        result = await channelRepository.updateMemberLanguage(
+          db,
+          memberPhoneNumber,
+          memberTypes.NONE,
+          languages.ES,
+        )
+      })
+      it('does nothing', () => {
+        expect(result).to.eql([0])
       })
     })
   })
