@@ -1,7 +1,7 @@
 const { upperCase } = require('lodash')
 
 const systemName = 'El administrador del sistema de Signalboost'
-const unauthorized = 'Lo siento! Usted no está autorizado para hacerlo en este canal.'
+const unauthorized = '¡Lo siento! Usted no está autorizado para hacerlo en este canal.'
 const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
@@ -14,7 +14,7 @@ Los números de Signalboost tienen administradores y suscriptores.
 
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar respuestas que solo los administradores pueden leer.
--> Los suscriptores no pueden enviarse mensajes los unos a los otros. (¡No hay diafonía ruidosa!)
+-> Los suscriptores no pueden enviarse mensajes los unos a los otros. (¡Nada de charlas enredadas ruidosas!)
 
 Los números de Signalboost entienden los comandos.
 
@@ -51,15 +51,15 @@ Verifique con ${publisherPhoneNumber} para asegurarse de que todavía controlan 
   Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
 
   welcome: (addingPublisher, channelPhoneNumber) => `
-Acabas de convertirte en administrador de este canal Signalboost por ${addingPublisher}. ¡Bienvenidos!
+Acabas de convertirte en administrador de este canal Signalboost por ${addingPublisher}. ¡Bienvenido!
 
 Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
 
 Responda con AYUDA para más información.`,
 
-  noop: 'Lo siento! Eso no es un comando!',
+  noop: '¡Lo siento! Eso no es un comando!',
   unauthorized: `
-Lo siento! No entiendo eso.
+¡Lo siento! No entiendo eso.
 Envíe AYUDA para ver los comandos que entiendo! :)`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
@@ -88,8 +88,8 @@ const commandResponses = {
     dbError: num =>
       `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
-      `¡Lo siento. Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
-    targetNotPublisher: num => `Lo siento. ${num} no es un administrador. No puedo eliminarle.`
+      `¡Lo siento! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    targetNotPublisher: num => `¡Lo siento! ${num} no es un administrador. No puedo eliminarle.`,
   },
 
   // HELP
@@ -170,7 +170,7 @@ ${support}`,
   rename: {
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nLo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
+      `[${oldName}]\n¡Lo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     unauthorized,
   },
 
@@ -184,7 +184,7 @@ ${support}`,
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     },
-    dbError: `Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
+    dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
     noop: `¡Lo siento! Ya eres miembro del canal.`,
   },
 
@@ -222,7 +222,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     unauthorized,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
-  }
+  },
 }
 
 const prefixes = {
