@@ -15,6 +15,7 @@
     "db:seed": "./bin/dev/seed",
     "db:unseed": "./bin/dev/unseed",
     "db:migrate": "./bin/dev/migrate",
+    "db:migrate:undo": "./bin/dev/migrate-undo",
     "test": "./bin/test/unit && ./bin/test/e2e",
     "test:unit": "./bin/test/unit",
     "test:e2e": "./bin/test/e2e",
