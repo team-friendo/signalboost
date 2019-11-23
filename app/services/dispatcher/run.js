@@ -21,7 +21,7 @@ const { defaultLanguage } = require('../../config')
  *
  * type Sender = {
  *   phoneNumber: string,
- *   isPublisher: boolean,
+ *   isAdmin: boolean,
  *   isSubscriber: boolean,
  * }
  *
@@ -97,7 +97,7 @@ const updateSafetyNumber = async (db, sock, inboundMsg) => {
   )
 
   if (recipient.type === memberTypes.NONE) return Promise.resolve()
-  if (recipient.type === memberTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
+  if (recipient.type === memberTypes.ADMIN && !isWelcomeMessage(sdMessage)) {
     // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
     return safetyNumberService
       .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)

@@ -21,8 +21,8 @@ const welcomeNotificationOf = channelPhoneNumber =>
   )
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
-const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
-  await membershipRepository.addPublisher(db, channelPhoneNumber, publisherPhoneNumber)
+const addAdmin = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
+  await membershipRepository.addAdmin(db, channelPhoneNumber, publisherPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
   await messenger.notify({
     db,
@@ -84,6 +84,6 @@ const _formatForList = ch => ({
 
 module.exports = {
   create,
-  addPublisher,
+  addAdmin,
   list,
 }

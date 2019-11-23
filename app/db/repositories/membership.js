@@ -2,109 +2,93 @@ const { times } = require('lodash')
 const { defaultLanguage } = require('../../config')
 
 const memberTypes = {
-  PUBLISHER: 'PUBLISHER',
+  ADMIN: 'ADMIN',
   SUBSCRIBER: 'SUBSCRIBER',
   NONE: 'NONE',
 }
 
-const addPublishers = (db, channelPhoneNumber, publisherNumbers = []) =>
+const addAdmins = (db, channelPhoneNumber, publisherNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(publisherNumbers.map(num => addPublisher(db, channelPhoneNumber, num))),
+    Promise.all(publisherNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
   )
 
-const addPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
+const addAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
   // NOTE(aguestuser|2019-09-26):
-  //  - it is EXTREMELY IMPORTANT that `#addPublisher` remain idempotent
+  //  - it is EXTREMELY IMPORTANT that `#addAdmin` remain idempotent
   //  - due to signald peculiarities, lots of logic about detecting safety number changes for publishers
   //    and correctly (re)trusting their key material hangs off of this invariant. do not violate it! thx! :)
-  db.publication
-    .findOrCreate({ where: { channelPhoneNumber, publisherPhoneNumber } })
+  db.membership
+    .findOrCreate({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
     .spread(x => x)
 
-const removePublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
-  db.publication.destroy({ where: { channelPhoneNumber, publisherPhoneNumber } })
+const removeAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
+  db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } })
 
-const addSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber, language = defaultLanguage) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    db.subscription.create({ channelPhoneNumber, subscriberPhoneNumber, language }),
+const addSubscriber = async (
+  db,
+  channelPhoneNumber,
+  memberPhoneNumber,
+  language = defaultLanguage,
+) =>
+  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe member to', () =>
+    db.membership.create({
+      type: memberTypes.SUBSCRIBER,
+      channelPhoneNumber,
+      memberPhoneNumber,
+      language,
+    }),
   )
 
-const removeSubscriber = async (db, channelPhoneNumber, subscriberPhoneNumber) =>
+const removeSubscriber = async (db, channelPhoneNumber, memberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () =>
-    db.subscription.destroy({ where: { channelPhoneNumber, subscriberPhoneNumber } }),
+    db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } }),
   )
 
-// TODO(aguestuser|2019-09-21): this would be easier with a memberships table instead of pub/sub tables!
-const resolveSenderType = async (db, channelPhoneNumber, senderPhoneNumber) => {
-  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
-  if (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } })) {
-    return Promise.resolve(memberTypes.PUBLISHER)
-  }
-  if (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } })) {
-    return Promise.resolve(memberTypes.SUBSCRIBER)
-  }
-  return Promise.resolve(memberTypes.NONE)
+const resolveSenderType = async (db, channelPhoneNumber, memberPhoneNumber) => {
+  const member = await db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } })
+  return member ? member.type : memberTypes.NONE
 }
 
-const resolveSenderLanguage = async (db, channelPhoneNumber, senderPhoneNumber, senderType) => {
-  const [subscriberPhoneNumber, publisherPhoneNumber] = times(2, () => senderPhoneNumber)
-  if (senderType === memberTypes.PUBLISHER) {
-    return (await db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }))
-      .language
-  }
-  if (senderType === memberTypes.SUBSCRIBER) {
-    return (await db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }))
-      .language
-  }
-  return defaultLanguage
+const resolveSenderLanguage = async (db, channelPhoneNumber, memberPhoneNumber, senderType) => {
+  if (senderType === memberTypes.NONE) return defaultLanguage
+  const member = await db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } })
+  return member ? member.language : defaultLanguage
 }
 
-// TODO(aguestuser|2019-11-18): would be easier with a memberships table!
-// (Database, string, MemberType, string) -> Array<number>
-const updateMemberLanguage = async (db, memberPhoneNumber, memberType, language) => {
-  switch (memberType) {
-    case memberTypes.PUBLISHER:
-      return db.publication.update(
-        { language },
-        { where: { publisherPhoneNumber: memberPhoneNumber } },
-      )
-    case memberTypes.SUBSCRIBER:
-      return db.subscription.update(
-        { language },
-        { where: { subscriberPhoneNumber: memberPhoneNumber } },
-      )
-    // random person
-    default:
-      return Promise.resolve([0])
-  }
-}
+// (Database, string, string) -> Array<number>
+const updateLanguage = async (db, memberPhoneNumber, language) =>
+  db.membership.update({ language }, { where: { memberPhoneNumber } })
 
-const isPublisher = (db, channelPhoneNumber, publisherPhoneNumber) =>
-  db.publication.findOne({ where: { channelPhoneNumber, publisherPhoneNumber } }).then(Boolean)
+const isAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
+  db.membership
+    .findOne({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
+    .then(Boolean)
 
-const isSubscriber = (db, channelPhoneNumber, subscriberPhoneNumber) =>
-  db.subscription.findOne({ where: { channelPhoneNumber, subscriberPhoneNumber } }).then(Boolean)
+const isSubscriber = (db, channelPhoneNumber, memberPhoneNumber) =>
+  db.membership
+    .findOne({ where: { type: memberTypes.SUBSCRIBER, channelPhoneNumber, memberPhoneNumber } })
+    .then(Boolean)
 
 // HELPERS
 
 const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, op) => {
   const ch = await db.channel.findOne({
     where: { phoneNumber: channelPhoneNumber },
-    include: [{ model: db.subscription }],
+    include: [{ model: db.membership }],
   })
   return ch ? op(ch) : Promise.reject(`cannot ${opDescription} non-existent channel`)
 }
 
 module.exports = {
-  addPublisher,
-  addPublishers,
+  addAdmin,
+  addAdmins,
   addSubscriber,
-  isPublisher,
+  isAdmin,
   isSubscriber,
-  removePublisher,
+  removeAdmin,
   removeSubscriber,
   resolveSenderType,
   resolveSenderLanguage,
-  updateMemberLanguage,
+  updateLanguage,
   memberTypes,
 }

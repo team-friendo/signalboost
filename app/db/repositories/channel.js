@@ -1,16 +1,17 @@
-const create = async (db, phoneNumber, name, publishers) => {
-  const publications = publishers.map(p => ({ publisherPhoneNumber: p }))
+const { memberTypes } = require('./membership')
+
+const create = async (db, phoneNumber, name, adminPhoneNumbers) => {
+  const memberships = adminPhoneNumbers.map(pNum => ({
+    type: memberTypes.ADMIN,
+    memberPhoneNumber: pNum,
+  }))
   const channel = await findByPhoneNumber(db, phoneNumber)
-  const include = [
-    { model: db.messageCount },
-    { model: db.subscription },
-    { model: db.publication },
-  ]
+  const include = [{ model: db.messageCount }, { model: db.membership }]
   return !channel
-    ? db.channel.create({ phoneNumber, name, publications, messageCount: {} }, { include })
+    ? db.channel.create({ phoneNumber, name, memberships, messageCount: {} }, { include })
     : channel
-        .update({ name, publications, returning: true }, { include })
-        .then(c => ({ ...c.dataValues, publications, messageCount: channel.messageCount }))
+        .update({ name, memberships, returning: true }, { include })
+        .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 
 const update = (db, phoneNumber, attrs) =>
@@ -23,7 +24,8 @@ const findAll = db => db.channel.findAll()
 const findAllDeep = db =>
   db.channel.findAll({
     order: [[db.messageCount, 'broadcastOut', 'DESC']],
-    include: [{ model: db.subscription }, { model: db.publication }, { model: db.messageCount }],
+    // order: [[db.messageCount, 'broadcastIn', 'DESC'], [db.messageCount, 'commandIn', 'DESC']],
+    include: [{ model: db.membership }, { model: db.messageCount }],
   })
 
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
@@ -31,7 +33,7 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
-    include: [{ model: db.subscription }, { model: db.publication }, { model: db.messageCount }],
+    include: [{ model: db.membership }, { model: db.messageCount }],
   })
 
 module.exports = {

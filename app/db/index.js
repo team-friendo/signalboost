@@ -1,11 +1,11 @@
 const Sequelize = require('sequelize')
 const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
-const { publicationOf } = require('./models/publication')
 const { channelOf } = require('./models/channel')
+const { membershipOf } = require('./models/membership')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { messageCountOf } = require('./models/messageCount')
-const { subscriptionOf } = require('./models/subscription')
+
 const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
 
@@ -16,11 +16,10 @@ const initDb = () => {
     : new Sequelize(config.database, config.username, config.password, config)
 
   const db = {
-    publication: publicationOf(sequelize, Sequelize),
     channel: channelOf(sequelize, Sequelize),
+    membership: membershipOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
-    subscription: subscriptionOf(sequelize, Sequelize),
   }
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))

@@ -4,41 +4,41 @@ import chaiAsPromised from 'chai-as-promised'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { initDb } from '../../../../app/db/index'
-import { pick, omit, keys, times } from 'lodash'
+import { pick, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../app/db/repositories/membership'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
 
   const channelPhoneNumber = genPhoneNumber()
-  const publisherPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
 
   before(() => (db = initDb()))
   afterEach(async () => {
     await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
-      db.publication.destroy({ where: {}, force: true }),
-      db.subscription.destroy({ where: {}, force: true }),
+      db.membership.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
   after(async () => await db.sequelize.close())
 
   describe('#create', () => {
-    let channel, channelCount, messageCountCount, publicationCount
+    let channel, channelCount, messageCountCount, membershipCount
 
-    describe('when given phone number for a non-existent channel and two publishers', () => {
+    describe('when given phone number for a non-existent channel and two admins', () => {
       beforeEach(async () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
-        publicationCount = await db.publication.count()
+        membershipCount = await db.membership.count()
         channel = await channelRepository.create(
           db,
           channelPhoneNumber,
           '#blackops',
-          publisherPhoneNumbers,
+          adminPhoneNumbers,
         )
       })
 
@@ -56,40 +56,30 @@ describe('channel repository', () => {
       })
 
       it('creates two publication records', async () => {
-        expect(await db.publication.count()).to.eql(publicationCount + 2)
+        expect(await db.membership.count()).to.eql(membershipCount + 2)
       })
 
       it('returns the channel record', () => {
-        expect(
-          omit(channel.get(), [
-            'createdAt',
-            'updatedAt',
-            'messageCount',
-            'containerId', // TODO: drop containerId from schema!
-            'publications',
-          ]),
-        ).to.eql({
-          phoneNumber: channelPhoneNumber,
-          name: '#blackops',
-          responsesEnabled: false,
-        })
-        expect(channel.publications.map(p => p.publisherPhoneNumber)).to.eql(publisherPhoneNumbers)
+        expect(channel.phoneNumber).to.eql(channelPhoneNumber)
+        expect(channel.name).to.eql('#blackops')
+        expect(channel.responsesEnabled).to.eql(false)
+        expect(channel.memberships.map(m => m.memberPhoneNumber)).to.eql(adminPhoneNumbers)
         expect(channel.messageCount).to.be.an('object')
       })
     })
 
     describe('when given phone number for a already-existing channel', () => {
-      let newPublisherPNums = times(2, genPhoneNumber)
+      let newAdminPhoneNumbers = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.create(db, channelPhoneNumber, '#foursquare', newPublisherPNums)
+        await channelRepository.create(db, channelPhoneNumber, '#foursquare', newAdminPhoneNumbers)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
-        publicationCount = await db.publication.count()
+        membershipCount = await db.membership.count()
         channel = await channelRepository.create(
           db,
           channelPhoneNumber,
           '#blackops',
-          newPublisherPNums,
+          newAdminPhoneNumbers,
         )
       })
 
@@ -102,13 +92,11 @@ describe('channel repository', () => {
       })
 
       it('updates the channel record and returns it', async () => {
-        expect(omit(channel, ['createdAt', 'updatedAt', 'messageCount', 'publications'])).to.eql({
-          phoneNumber: channelPhoneNumber,
-          name: '#blackops',
-          responsesEnabled: false,
-        })
-        expect((await channel.publications).map(p => p.publisherPhoneNumber)).to.have.members(
-          newPublisherPNums,
+        expect(channel.phoneNumber).to.eql(channelPhoneNumber)
+        expect(channel.name).to.eql('#blackops')
+        expect(channel.responsesEnabled).to.eql(false)
+        expect((await channel.memberships).map(m => m.memberPhoneNumber)).to.have.members(
+          newAdminPhoneNumbers,
         )
       })
     })
@@ -134,7 +122,7 @@ describe('channel repository', () => {
   })
 
   describe('#findDeep', () => {
-    const publisherNumbers = [genPhoneNumber(), genPhoneNumber()]
+    const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
     const subscriberNumbers = [genPhoneNumber(), genPhoneNumber()]
     let result
 
@@ -142,11 +130,16 @@ describe('channel repository', () => {
       channel = await db.channel.create(
         {
           ...channelFactory(),
-          subscriptions: subscriberNumbers.map(num => ({ subscriberPhoneNumber: num })),
-          publications: publisherNumbers.map(num => ({ publisherPhoneNumber: num })),
+          memberships: [
+            ...subscriberNumbers.map(num => ({
+              type: memberTypes.SUBSCRIBER,
+              memberPhoneNumber: num,
+            })),
+            ...adminNumbers.map(num => ({ type: memberTypes.ADMIN, memberPhoneNumber: num })),
+          ],
         },
         {
-          include: [{ model: db.subscription }, { model: db.publication }],
+          include: [{ model: db.membership }],
         },
       )
       result = await channelRepository.findDeep(db, channel.phoneNumber)
@@ -157,28 +150,31 @@ describe('channel repository', () => {
       expect(result.name).to.eql(channel.name)
     })
 
-    it("retrieves the channel's publications", () => {
+    it("retrieves the channel's memberships", () => {
       expect(
-        result.publications.map(a => pick(a.get(), ['channelPhoneNumber', 'publisherPhoneNumber'])),
-      ).to.have.deep.members([
-        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: publisherNumbers[0] },
-        { channelPhoneNumber: channel.phoneNumber, publisherPhoneNumber: publisherNumbers[1] },
-      ])
-    })
-
-    it("retrieves the channel's subscriptions", () => {
-      expect(
-        result.subscriptions.map(a =>
-          pick(a.get(), ['channelPhoneNumber', 'subscriberPhoneNumber']),
+        result.memberships.map(a =>
+          pick(a.get(), ['type', 'channelPhoneNumber', 'memberPhoneNumber']),
         ),
       ).to.have.deep.members([
         {
+          type: memberTypes.ADMIN,
           channelPhoneNumber: channel.phoneNumber,
-          subscriberPhoneNumber: subscriberNumbers[0],
+          memberPhoneNumber: adminNumbers[0],
         },
         {
+          type: memberTypes.ADMIN,
           channelPhoneNumber: channel.phoneNumber,
-          subscriberPhoneNumber: subscriberNumbers[1],
+          memberPhoneNumber: adminNumbers[1],
+        },
+        {
+          type: memberTypes.SUBSCRIBER,
+          channelPhoneNumber: channel.phoneNumber,
+          memberPhoneNumber: subscriberNumbers[0],
+        },
+        {
+          type: memberTypes.SUBSCRIBER,
+          channelPhoneNumber: channel.phoneNumber,
+          memberPhoneNumber: subscriberNumbers[1],
         },
       ])
     })
@@ -192,11 +188,7 @@ describe('channel repository', () => {
           db.channel.create(
             { ...ch, phoneNumber: genPhoneNumber() },
             {
-              include: [
-                { model: db.subscription },
-                { model: db.publication },
-                { model: db.messageCount },
-              ],
+              include: [{ model: db.membership }, { model: db.messageCount }],
             },
           ),
         ),
@@ -216,8 +208,7 @@ describe('channel repository', () => {
           'responsesEnabled',
           'createdAt',
           'updatedAt',
-          'subscriptions',
-          'publications',
+          'memberships',
           'messageCount',
         ])
       })
@@ -227,5 +218,4 @@ describe('channel repository', () => {
       expect(channels[0].messageCount.broadcastOut).to.eql(100)
     })
   })
-  
 })

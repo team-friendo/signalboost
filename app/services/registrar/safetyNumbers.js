@@ -29,7 +29,7 @@ const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, s
 // (Database, socket, string, string) -> Promise<SignalBoostStatus>
 const deauthorize = async (db, sock, channelPhoneNumber, numberToDeauthorize) => {
   const removalResult = await membershipRepository
-    .removePublisher(db, channelPhoneNumber, numberToDeauthorize)
+    .removeAdmin(db, channelPhoneNumber, numberToDeauthorize)
     .catch(e => Promise.reject(defaultErrorOf(e)))
   const { publications } = await channelRepository
     .findDeep(db, channelPhoneNumber)

@@ -3,9 +3,7 @@ import { describe, it, test, before, beforeEach, after, afterEach } from 'mocha'
 import { keys, times } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
-import { subscriptionFactory } from '../../../support/factories/subscription'
-import { publicationFactory } from '../../../support/factories/publication'
-import { welcomeFactory } from '../../../support/factories/welcome'
+import { membershipFactory } from '../../../support/factories/membership'
 
 describe('channel model', () => {
   let db, channel
@@ -14,21 +12,10 @@ describe('channel model', () => {
     db.channel.create(
       {
         ...channelFactory(),
-        subscriptions: [subscriptionFactory(), subscriptionFactory()],
+        memberships: [membershipFactory(), membershipFactory()],
       },
       {
-        include: [{ model: db.subscription }],
-      },
-    )
-
-  const createChannelWithPublications = () =>
-    db.channel.create(
-      {
-        ...channelFactory(),
-        publications: [publicationFactory(), publicationFactory()],
-      },
-      {
-        include: [{ model: db.publication }],
+        include: [{ model: db.membership }],
       },
     )
 
@@ -43,25 +30,13 @@ describe('channel model', () => {
       },
     )
 
-  const createChannelWithWelcomes = () =>
-    db.channel.create(
-      {
-        ...channelFactory(),
-        welcomes: [welcomeFactory(), welcomeFactory()],
-      },
-      {
-        include: [{ model: db.welcome }],
-      },
-    )
-
   before(async () => {
     db = initDb()
   })
 
   afterEach(() => {
-    db.publication.destroy({ where: {}, force: true })
     db.messageCount.destroy({ where: {}, force: true })
-    db.subscription.destroy({ where: {}, force: true })
+    db.membership.destroy({ where: {}, force: true })
     db.channel.destroy({ where: {}, force: true })
   })
 
@@ -101,51 +76,28 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, subscriptions, publications, messageCount, welcomes
+    let channel, messageCount, memberships
 
-    describe('subscriptions', () => {
+    describe('memberships', () => {
       beforeEach(async () => {
         channel = await createChannelWithSubscriptions()
-        subscriptions = await channel.getSubscriptions()
+        memberships = await channel.getMemberships()
       })
 
-      it('has many subscriptions', async () => {
-        expect(subscriptions).to.have.length(2)
+      it('has many memberships', async () => {
+        expect(memberships).to.have.length(2)
       })
 
-      it('sets the channel phone number as the foreign key in each subscription', () => {
-        expect(subscriptions.map(s => s.channelPhoneNumber)).to.eql(
+      it('sets the channel phone number as the foreign key in each membership', () => {
+        expect(memberships.map(s => s.channelPhoneNumber)).to.eql(
           times(2, () => channel.phoneNumber),
         )
       })
 
-      it('deletes subscriptions when it deletes channel', async () => {
-        const subCount = await db.subscription.count()
+      it('deletes memberships when it deletes channel', async () => {
+        const membershipCount = await db.membership.count()
         await channel.destroy()
-        expect(await db.subscription.count()).to.eql(subCount - 2)
-      })
-    })
-
-    describe('publications', () => {
-      beforeEach(async () => {
-        channel = await createChannelWithPublications()
-        publications = await channel.getPublications()
-      })
-
-      it('has many publications', async () => {
-        expect(publications).to.have.length(2)
-      })
-
-      it('sets channel phone number as the foreign key in each publication', () => {
-        expect(publications.map(s => s.channelPhoneNumber)).to.eql(
-          times(2, () => channel.phoneNumber),
-        )
-      })
-
-      it('deletes publications when it deletes channel', async () => {
-        const publisherCount = await db.publication.count()
-        await channel.destroy()
-        expect(await db.publication.count()).to.eql(publisherCount - 2)
+        expect(await db.membership.count()).to.eql(membershipCount - 2)
       })
     })
 

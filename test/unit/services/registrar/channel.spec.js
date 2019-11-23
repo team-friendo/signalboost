@@ -9,7 +9,7 @@ import messenger from '../../../../app/services/dispatcher/messenger'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 import { statuses } from '../../../../app/constants'
-import { create, addPublisher, list } from '../../../../app/services/registrar/channel'
+import { create, addAdmin, list } from '../../../../app/services/registrar/channel'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 
@@ -38,7 +38,7 @@ describe('channel registrar', () => {
     status: 'ACTIVE',
   }
 
-  let addPublisherStub,
+  let addAdminStub,
     createChannelStub,
     subscribeStub,
     updatePhoneNumberStub,
@@ -47,7 +47,7 @@ describe('channel registrar', () => {
     findByNumberStub
 
   beforeEach(() => {
-    addPublisherStub = sinon.stub(membershipRepository, 'addPublisher')
+    addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
@@ -59,7 +59,7 @@ describe('channel registrar', () => {
   })
 
   afterEach(() => {
-    addPublisherStub.restore()
+    addAdminStub.restore()
     createChannelStub.restore()
     subscribeStub.restore()
     updatePhoneNumberStub.restore()
@@ -237,10 +237,10 @@ describe('channel registrar', () => {
     })
   })
 
-  describe('#addPublisher', () => {
+  describe('#addAdmin', () => {
     it('attempts to add a publisher to a channel', async () => {
-      await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })
-      expect(addPublisherStub.getCall(0).args).to.eql([
+      await addAdmin({ db, sock, channelPhoneNumber, publisherPhoneNumber })
+      expect(addAdminStub.getCall(0).args).to.eql([
         db,
         channelPhoneNumber,
         publisherPhoneNumber,
@@ -248,10 +248,10 @@ describe('channel registrar', () => {
     })
 
     describe('when adding publisher succeeds', () => {
-      beforeEach(() => addPublisherStub.returns(Promise.resolve()))
+      beforeEach(() => addAdminStub.returns(Promise.resolve()))
 
       it('attempts to send welcome message', async () => {
-        await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })
+        await addAdmin({ db, sock, channelPhoneNumber, publisherPhoneNumber })
         expect(notifyStub.getCall(0).args).to.eql([
           {
             db,
@@ -267,7 +267,7 @@ describe('channel registrar', () => {
         beforeEach(() => notifyStub.returns(Promise.resolve()))
 
         it('returns a success status', async () => {
-          expect(await addPublisher({ db, sock, channelPhoneNumber, publisherPhoneNumber })).to.eql(
+          expect(await addAdmin({ db, sock, channelPhoneNumber, publisherPhoneNumber })).to.eql(
             {
               status: statuses.SUCCESS,
               message: welcomeNotification,
@@ -281,7 +281,7 @@ describe('channel registrar', () => {
         beforeEach(() => notifyStub.callsFake(() => Promise.reject(errorStatus)))
 
         it('returns an error status', async () => {
-          const err = await addPublisher({
+          const err = await addAdmin({
             db,
             sock,
             channelPhoneNumber,
@@ -294,9 +294,9 @@ describe('channel registrar', () => {
 
     describe('when adding publisher fails', () => {
       const errorStatus = { status: 'ERROR', message: 'error!' }
-      beforeEach(() => addPublisherStub.callsFake(() => Promise.reject(errorStatus)))
+      beforeEach(() => addAdminStub.callsFake(() => Promise.reject(errorStatus)))
       it('returns an error status', async () => {
-        const err = await addPublisher({
+        const err = await addAdmin({
           db,
           sock,
           channelPhoneNumber,

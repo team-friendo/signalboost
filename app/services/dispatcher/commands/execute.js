@@ -5,7 +5,7 @@ const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
-const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
+const { ADMIN, SUBSCRIBER, NONE } = memberTypes
 const {
   signal: { signupPhoneNumber },
 } = require('../../../config')
@@ -30,7 +30,7 @@ const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
   const { db, channel, sender } = dispatchable
   // don't allow command execution on the signup channel for non-admins
-  if (channel.phoneNumber === signupPhoneNumber && sender.type !== PUBLISHER) return noop()
+  if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
   const result = await ({
     [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
@@ -54,17 +54,17 @@ const execute = async (executable, dispatchable) => {
 
 const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
   const cr = messagesIn(sender.language).commandResponses.add
-  if (!(sender.type === PUBLISHER)) {
+  if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
-  return addPublisher(db, channel, sender, phoneNumber, cr)
+  return addAdmin(db, channel, sender, phoneNumber, cr)
 }
 
-const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
+const addAdmin = (db, channel, sender, newPublisherNumber, cr) =>
   membershipRepository
-    .addPublisher(db, channel.phoneNumber, newPublisherNumber)
+    .addAdmin(db, channel.phoneNumber, newPublisherNumber)
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(newPublisherNumber),
@@ -83,7 +83,7 @@ const maybeShowHelp = async (db, channel, sender) => {
 
 const showHelp = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.type === PUBLISHER ? cr.publisher : cr.subscriber,
+  message: sender.type === ADMIN ? cr.publisher : cr.subscriber,
 })
 
 // INFO
@@ -97,7 +97,7 @@ const maybeShowInfo = async (db, channel, sender) => {
 
 const showInfo = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.type === PUBLISHER ? cr.publisher(channel) : cr.subscriber(channel),
+  message: sender.type === ADMIN ? cr.publisher(channel) : cr.subscriber(channel),
 })
 
 // JOIN
@@ -126,7 +126,7 @@ const maybeRemoveSender = async (db, channel, sender) => {
 
 const removeSender = (db, channel, sender, cr) => {
   const remove =
-    sender.type === PUBLISHER ? membershipRepository.removePublisher : membershipRepository.removeSubscriber
+    sender.type === ADMIN ? membershipRepository.removeAdmin : membershipRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -138,21 +138,21 @@ const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
   const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
 
-  if (!(sender.type === PUBLISHER)) {
+  if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
   }
   if (!isValid) {
     return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
   }
-  if (!(await membershipRepository.isPublisher(db, channel.phoneNumber, validNumber)))
+  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validNumber)))
     return { status: statuses.ERROR, message: cr.targetNotPublisher(validNumber) }
 
-  return removePublisher(db, channel, validNumber, cr)
+  return removeAdmin(db, channel, validNumber, cr)
 }
 
-const removePublisher = async (db, channel, publisherNumber, cr) =>
+const removeAdmin = async (db, channel, publisherNumber, cr) =>
   membershipRepository
-    .removePublisher(db, channel.phoneNumber, publisherNumber)
+    .removeAdmin(db, channel.phoneNumber, publisherNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(publisherNumber) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(publisherNumber) }))
 
@@ -160,7 +160,7 @@ const removePublisher = async (db, channel, publisherNumber, cr) =>
 
 const maybeRenameChannel = async (db, channel, sender, newName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
-  return sender.type === PUBLISHER
+  return sender.type === ADMIN
     ? renameChannel(db, channel, newName, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
 }
@@ -176,7 +176,7 @@ const renameChannel = (db, channel, newName, cr) =>
 // (Database, Channel, Sender, boolean) -> Promise<CommandResult>
 const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
-  if (!(sender.type === PUBLISHER)) {
+  if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
   }
   return toggleResponses(db, channel, responsesEnabled, sender, cr)
@@ -201,7 +201,7 @@ const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
 const setLanguage = (db, sender, language) => {
   const cr = messagesIn(language).commandResponses.setLanguage
   return membershipRepository
-    .updateMemberLanguage(db, sender.phoneNumber, sender.type, language)
+    .updateLanguage(db, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }

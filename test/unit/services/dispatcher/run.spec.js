@@ -28,7 +28,7 @@ describe('dispatcher service', () => {
   const authenticatedSender = {
     phoneNumber: sender,
     language: languages.EN,
-    type: memberTypes.PUBLISHER,
+    type: memberTypes.ADMIN,
   }
   const sdInMessage = {
     type: 'message',
@@ -75,7 +75,7 @@ describe('dispatcher service', () => {
 
     resolveMemberTypeStub = sinon
       .stub(membershipRepository, 'resolveSenderType')
-      .returns(Promise.resolve(memberTypes.PUBLISHER))
+      .returns(Promise.resolve(memberTypes.ADMIN))
 
     resolveSenderLanguageStub = sinon
       .stub(membershipRepository, 'resolveSenderLanguage')
@@ -230,7 +230,7 @@ describe('dispatcher service', () => {
       })
 
       describe('when intended recipient is an admin', () => {
-        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.PUBLISHER))
+        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.ADMIN))
 
         describe('when message is not a welcome message', () => {
           it('attempts to deauthorize the admin', async () => {

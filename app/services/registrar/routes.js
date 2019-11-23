@@ -25,7 +25,7 @@ const routesOf = (router, db, sock) => {
 
   router.post('/channels/publishers', async ctx => {
     const { channelPhoneNumber, publisherPhoneNumber } = ctx.request.body
-    const result = await channelRegistrar.addPublisher({
+    const result = await channelRegistrar.addAdmin({
       db,
       sock,
       channelPhoneNumber,

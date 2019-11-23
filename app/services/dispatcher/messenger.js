@@ -19,13 +19,13 @@ const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   BROADCAST_RESPONSE: 'BROADCAST_RESPONSE',
   COMMAND_RESULT: 'COMMAND_RESULT',
-  NEW_PUBLISHER_WELCOME: 'NEW_PUBLISHER_WELCOME',
+  NEW_ADMIN_WELCOME: 'NEW_ADMIN_WELCOME',
   SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
 }
 
 const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT, SIGNUP_MESSAGE } = messageTypes
 
-const { PUBLISHER } = memberTypes
+const { ADMIN } = memberTypes
 
 /***************
  * DISPATCHING
@@ -51,7 +51,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 // (CommandResult, Dispatchable) -> MessageType
 const parseMessageType = (commandResult, { sender, channel }) => {
   if (commandResult.status === statuses.NOOP) {
-    if (sender.type === PUBLISHER) return BROADCAST_MESSAGE
+    if (sender.type === ADMIN) return BROADCAST_MESSAGE
     if (channel.phoneNumber === signupPhoneNumber) return SIGNUP_MESSAGE
     return BROADCAST_RESPONSE
   }

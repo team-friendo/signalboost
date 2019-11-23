@@ -52,7 +52,7 @@ describe('messenger service', () => {
   }
   const publisherSender = {
     phoneNumber: publisherNumbers[0],
-    type: memberTypes.PUBLISHER,
+    type: memberTypes.ADMIN,
     language: languages.EN,
   }
   const subscriberSender = {

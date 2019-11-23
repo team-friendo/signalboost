@@ -125,20 +125,20 @@ describe('routes', () => {
   })
 
   describe('POST to /channels/publishers', () => {
-    let addPublisherStub
-    beforeEach(() => (addPublisherStub = sinon.stub(channelRegistrar, 'addPublisher')))
-    afterEach(() => addPublisherStub.restore())
+    let addAdminStub
+    beforeEach(() => (addAdminStub = sinon.stub(channelRegistrar, 'addAdmin')))
+    afterEach(() => addAdminStub.restore())
 
     describe('in all cases', () => {
-      beforeEach(() => addPublisherStub.returns(Promise.resolve()))
+      beforeEach(() => addAdminStub.returns(Promise.resolve()))
 
-      it('attempts to addPublisher channel with values from POST request', async () => {
+      it('attempts to addAdmin channel with values from POST request', async () => {
         await request(server)
           .post('/channels/publishers')
           .set('Token', registrar.authToken)
           .send({ channelPhoneNumber: phoneNumber, publisherPhoneNumber: publishers[0] })
 
-        expect(addPublisherStub.getCall(0).args).to.eql([
+        expect(addAdminStub.getCall(0).args).to.eql([
           {
             db,
             sock,
@@ -154,7 +154,7 @@ describe('routes', () => {
         status: 'SUCCESS',
         message: 'fake add success',
       }
-      beforeEach(() => addPublisherStub.returns(Promise.resolve(successStatus)))
+      beforeEach(() => addAdminStub.returns(Promise.resolve(successStatus)))
 
       it('creates channel and returns success status', async () => {
         await request(server)
@@ -166,7 +166,7 @@ describe('routes', () => {
     })
 
     describe('when adding publisher fails', () => {
-      beforeEach(() => addPublisherStub.returns(Promise.resolve(errorStatus)))
+      beforeEach(() => addAdminStub.returns(Promise.resolve(errorStatus)))
 
       it('creates returns error status', async () => {
         await request(server)

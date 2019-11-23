@@ -23,12 +23,12 @@ describe('safety numbers registrar module', () => {
   const memberPhoneNumber = genPhoneNumber()
   const otherPublisherNumbers = [genPhoneNumber(), genPhoneNumber()]
   const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
-  let trustStub, sendMessageStub, removePublisherStub, findDeepStub
+  let trustStub, sendMessageStub, removeAdminStub, findDeepStub
 
   beforeEach(() => {
     trustStub = sinon.stub(signal, 'trust')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
-    removePublisherStub = sinon.stub(membershipRepository, 'removePublisher')
+    removeAdminStub = sinon.stub(membershipRepository, 'removeAdmin')
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(
       Promise.resolve(
         channelFactory({
@@ -51,7 +51,7 @@ describe('safety numbers registrar module', () => {
   afterEach(() => {
     trustStub.restore()
     sendMessageStub.restore()
-    removePublisherStub.restore()
+    removeAdminStub.restore()
     findDeepStub.restore()
   })
 
@@ -142,7 +142,7 @@ describe('safety numbers registrar module', () => {
   describe('#deauthorize', () => {
     it('attempts to remove a publisher from a channel', async () => {
       await deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber).catch(a => a)
-      expect(removePublisherStub.getCall(0).args).to.eql([
+      expect(removeAdminStub.getCall(0).args).to.eql([
         db,
         channelPhoneNumber,
         memberPhoneNumber,
@@ -151,7 +151,7 @@ describe('safety numbers registrar module', () => {
 
     describe('if removal succeeds', () => {
       beforeEach(() =>
-        removePublisherStub.returns(
+        removeAdminStub.returns(
           Promise.resolve({
             status: statuses.SUCCESS,
             message: 'fake removal success message',
@@ -205,7 +205,7 @@ describe('safety numbers registrar module', () => {
 
     describe('if removal fails', () => {
       beforeEach(() =>
-        removePublisherStub.callsFake(() =>
+        removeAdminStub.callsFake(() =>
           Promise.reject({
             status: statuses.ERROR,
             message: 'fake removal error message',
