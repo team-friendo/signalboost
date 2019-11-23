@@ -7,11 +7,12 @@ import { commands, statuses } from '../../../../../app/services/dispatcher/comma
 import { languages } from '../../../../../app/constants'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
 import channelRepository from '../../../../../app/db/repositories/channel'
+import membershipRepository from '../../../../../app/db/repositories/membership'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 import { publicationFactory } from '../../../../support/factories/publication'
-import { memberTypes } from '../../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../../app/db/repositories/membership'
 import { sdMessageOf } from '../../../../../app/services/signal'
 const {
   signal: { signupPhoneNumber },
@@ -49,7 +50,7 @@ describe('executing commands', () => {
 
   describe('ADD command', () => {
     let addPublisherStub
-    beforeEach(() => (addPublisherStub = sinon.stub(channelRepository, 'addPublisher')))
+    beforeEach(() => (addPublisherStub = sinon.stub(membershipRepository, 'addPublisher')))
     afterEach(() => addPublisherStub.restore())
 
     describe('when sender is a publisher', () => {
@@ -229,7 +230,7 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'JOIN')
     let addSubscriberStub
 
-    beforeEach(() => (addSubscriberStub = sinon.stub(channelRepository, 'addSubscriber')))
+    beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
     afterEach(() => addSubscriberStub.restore())
 
     describe('when number is not subscribed to channel', () => {
@@ -297,7 +298,7 @@ describe('executing commands', () => {
   describe('LEAVE command', () => {
     const sdMessage = sdMessageOf(channel, 'LEAVE')
     let removeSubscriberStub
-    beforeEach(() => (removeSubscriberStub = sinon.stub(channelRepository, 'removeSubscriber')))
+    beforeEach(() => (removeSubscriberStub = sinon.stub(membershipRepository, 'removeSubscriber')))
     afterEach(() => removeSubscriberStub.restore())
 
     describe('when sender is subscribed to channel', () => {
@@ -361,7 +362,7 @@ describe('executing commands', () => {
 
       beforeEach(async () => {
         removePublisherStub = sinon
-          .stub(channelRepository, 'removePublisher')
+          .stub(membershipRepository, 'removePublisher')
           .returns(Promise.resolve([1, 1]))
         result = await processCommand(dispatchable)
       })
@@ -390,8 +391,8 @@ describe('executing commands', () => {
 
     beforeEach(() => {
       validateStub = sinon.stub(validator, 'validatePhoneNumber')
-      isPublisherStub = sinon.stub(channelRepository, 'isPublisher')
-      removePublisherStub = sinon.stub(channelRepository, 'removePublisher')
+      isPublisherStub = sinon.stub(membershipRepository, 'isPublisher')
+      removePublisherStub = sinon.stub(membershipRepository, 'removePublisher')
     })
 
     afterEach(() => {

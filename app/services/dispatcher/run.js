@@ -1,12 +1,13 @@
 const signal = require('../signal')
 const channelRepository = require('./../../db/repositories/channel')
+const membershipRepository = require('../../db/repositories/membership')
+const { memberTypes } = membershipRepository
 const executor = require('./commands')
 const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get } = require('lodash')
-const { memberTypes } = require('../../db/repositories/channel')
 const { defaultLanguage } = require('../../config')
 
 /**
@@ -130,8 +131,8 @@ const shouldUpdateSafetyNumber = inboundMsg =>
   !get(inboundMsg, 'data.message', '').includes('Rate limit')
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
-  const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
-  const language = await channelRepository.resolveSenderLanguage(
+  const type = await membershipRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
+  const language = await membershipRepository.resolveSenderLanguage(
     db,
     channelPhoneNumber,
     senderPhoneNumber,

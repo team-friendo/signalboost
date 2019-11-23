@@ -1,9 +1,10 @@
 const { commands, statuses } = require('./constants')
 const channelRepository = require('../../../db/repositories/channel')
+const membershipRepository = require('../../../db/repositories/membership')
 const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
 const { messagesIn } = require('../strings/messages')
-const { memberTypes } = require('../../../db/repositories/channel')
+const { memberTypes } = require('../../../db/repositories/membership')
 const { PUBLISHER, SUBSCRIBER, NONE } = memberTypes
 const {
   signal: { signupPhoneNumber },
@@ -62,7 +63,7 @@ const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
 }
 
 const addPublisher = (db, channel, sender, newPublisherNumber, cr) =>
-  channelRepository
+  membershipRepository
     .addPublisher(db, channel.phoneNumber, newPublisherNumber)
     .then(() => ({
       status: statuses.SUCCESS,
@@ -109,7 +110,7 @@ const maybeAddSubscriber = async (db, channel, sender, language) => {
 }
 
 const addSubscriber = (db, channel, sender, language, cr) =>
-  channelRepository
+  membershipRepository
     .addSubscriber(db, channel.phoneNumber, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -125,9 +126,7 @@ const maybeRemoveSender = async (db, channel, sender) => {
 
 const removeSender = (db, channel, sender, cr) => {
   const remove =
-    sender.type === PUBLISHER
-      ? channelRepository.removePublisher
-      : channelRepository.removeSubscriber
+    sender.type === PUBLISHER ? membershipRepository.removePublisher : membershipRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -145,14 +144,14 @@ const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
   if (!isValid) {
     return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
   }
-  if (!(await channelRepository.isPublisher(db, channel.phoneNumber, validNumber)))
+  if (!(await membershipRepository.isPublisher(db, channel.phoneNumber, validNumber)))
     return { status: statuses.ERROR, message: cr.targetNotPublisher(validNumber) }
 
   return removePublisher(db, channel, validNumber, cr)
 }
 
 const removePublisher = async (db, channel, publisherNumber, cr) =>
-  channelRepository
+  membershipRepository
     .removePublisher(db, channel.phoneNumber, publisherNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(publisherNumber) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(publisherNumber) }))
@@ -201,7 +200,7 @@ const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
 
 const setLanguage = (db, sender, language) => {
   const cr = messagesIn(language).commandResponses.setLanguage
-  return channelRepository
+  return membershipRepository
     .updateMemberLanguage(db, sender.phoneNumber, sender.type, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))

@@ -1,5 +1,6 @@
 const signal = require('../../services/signal')
 const channelRepository = require('../../db/repositories/channel')
+const membershipRepository = require('../../db/repositories/membership')
 const { wait, loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
@@ -27,7 +28,7 @@ const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, s
 
 // (Database, socket, string, string) -> Promise<SignalBoostStatus>
 const deauthorize = async (db, sock, channelPhoneNumber, numberToDeauthorize) => {
-  const removalResult = await channelRepository
+  const removalResult = await membershipRepository
     .removePublisher(db, channelPhoneNumber, numberToDeauthorize)
     .catch(e => Promise.reject(defaultErrorOf(e)))
   const { publications } = await channelRepository

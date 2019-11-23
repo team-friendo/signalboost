@@ -4,9 +4,10 @@ import sinon from 'sinon'
 import { times } from 'lodash'
 import { EventEmitter } from 'events'
 import { languages } from '../../../../app/constants'
-import { memberTypes } from '../../../../app/db/repositories/channel'
+import { memberTypes } from '../../../../app/db/repositories/membership'
 import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
+import membershipRepository from '../../../../app/db/repositories/membership'
 import signal from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
 import messenger from '../../../../app/services/dispatcher/messenger'
@@ -47,7 +48,7 @@ describe('dispatcher service', () => {
 
   let findAllDeepStub,
     findDeepStub,
-    resolvememberTypestub,
+    resolveMemberTypeStub,
     resolveSenderLanguageStub,
     subscribeStub,
     trustAndResendStub,
@@ -72,12 +73,12 @@ describe('dispatcher service', () => {
 
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
-    resolvememberTypestub = sinon
-      .stub(channelRepository, 'resolveSenderType')
+    resolveMemberTypeStub = sinon
+      .stub(membershipRepository, 'resolveSenderType')
       .returns(Promise.resolve(memberTypes.PUBLISHER))
 
     resolveSenderLanguageStub = sinon
-      .stub(channelRepository, 'resolveSenderLanguage')
+      .stub(membershipRepository, 'resolveSenderLanguage')
       .returns(languages.EN)
 
     trustAndResendStub = sinon
@@ -104,7 +105,7 @@ describe('dispatcher service', () => {
   afterEach(() => {
     findAllDeepStub.restore()
     findDeepStub.restore()
-    resolvememberTypestub.restore()
+    resolveMemberTypeStub.restore()
     resolveSenderLanguageStub.restore()
     trustAndResendStub.restore()
     deauthorizeStub.restore()
@@ -139,7 +140,7 @@ describe('dispatcher service', () => {
       })
 
       it('retrieves permissions for the message sender', () => {
-        expect(resolvememberTypestub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+        expect(resolveMemberTypeStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
       })
 
       it('processes any commands in the message', () => {
@@ -186,7 +187,7 @@ describe('dispatcher service', () => {
       }
 
       describe('when intended recipient is a subscriber', () => {
-        beforeEach(async () => resolvememberTypestub.returns(memberTypes.SUBSCRIBER))
+        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
 
         it("attempts to trust the recipient's safety number and re-send the message", async () => {
           sock.emit('data', JSON.stringify(sdErrorMessage))
@@ -229,7 +230,7 @@ describe('dispatcher service', () => {
       })
 
       describe('when intended recipient is an admin', () => {
-        beforeEach(async () => resolvememberTypestub.returns(memberTypes.PUBLISHER))
+        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.PUBLISHER))
 
         describe('when message is not a welcome message', () => {
           it('attempts to deauthorize the admin', async () => {
@@ -345,7 +346,7 @@ describe('dispatcher service', () => {
       })
 
       describe('when message is a rate limit notification', () => {
-        beforeEach(async () => resolvememberTypestub.returns(memberTypes.SUBSCRIBER))
+        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
 
         const rateLimitWarning = {
           type: signal.messageTypes.ERROR,
@@ -374,7 +375,7 @@ describe('dispatcher service', () => {
       })
 
       describe('and the recipient is a random person (why would this ever happen?)', () => {
-        beforeEach(async () => resolvememberTypestub.returns(memberTypes.NONE))
+        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.NONE))
 
         it('drops the message', async () => {
           sock.emit('data', JSON.stringify(sdInMessage))

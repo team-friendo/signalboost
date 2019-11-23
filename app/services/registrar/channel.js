@@ -1,4 +1,5 @@
 const channelRepository = require('../../db/repositories/channel')
+const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const signal = require('../signal')
 const messenger = require('../dispatcher/messenger')
@@ -21,7 +22,7 @@ const welcomeNotificationOf = channelPhoneNumber =>
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addPublisher = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
-  await channelRepository.addPublisher(db, channelPhoneNumber, publisherPhoneNumber)
+  await membershipRepository.addPublisher(db, channelPhoneNumber, publisherPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
   await messenger.notify({
     db,

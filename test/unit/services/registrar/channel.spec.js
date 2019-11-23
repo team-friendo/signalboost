@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../../../app/db/repositories/channel'
+import membershipRepository from '../../../../app/db/repositories/membership'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import signal from '../../../../app/services/signal'
 import messenger from '../../../../app/services/dispatcher/messenger'
@@ -46,7 +47,7 @@ describe('channel registrar', () => {
     findByNumberStub
 
   beforeEach(() => {
-    addPublisherStub = sinon.stub(channelRepository, 'addPublisher')
+    addPublisherStub = sinon.stub(membershipRepository, 'addPublisher')
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')

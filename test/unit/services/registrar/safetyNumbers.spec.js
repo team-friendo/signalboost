@@ -4,6 +4,7 @@ import { expect } from 'chai'
 import { deauthorize, trustAndResend } from '../../../../app/services/registrar/safetyNumbers'
 import signal from '../../../../app/services/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
+import membershipRepository from '../../../../app/db/repositories/membership'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { statuses } from '../../../../app/constants'
 import { channelFactory } from '../../../support/factories/channel'
@@ -27,7 +28,7 @@ describe('safety numbers registrar module', () => {
   beforeEach(() => {
     trustStub = sinon.stub(signal, 'trust')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
-    removePublisherStub = sinon.stub(channelRepository, 'removePublisher')
+    removePublisherStub = sinon.stub(membershipRepository, 'removePublisher')
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(
       Promise.resolve(
         channelFactory({

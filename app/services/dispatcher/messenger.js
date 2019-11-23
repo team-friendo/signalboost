@@ -1,7 +1,7 @@
 const signal = require('../signal')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
-const { memberTypes } = require('../../db/repositories/channel')
+const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const messageCountRepository = require('../../db/repositories/messageCount')
