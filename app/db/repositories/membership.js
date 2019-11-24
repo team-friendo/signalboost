@@ -7,21 +7,25 @@ const memberTypes = {
   NONE: 'NONE',
 }
 
-const addAdmins = (db, channelPhoneNumber, publisherNumbers = []) =>
+const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(publisherNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
+    Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
   )
 
 const addAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
   // NOTE(aguestuser|2019-09-26):
   //  - it is EXTREMELY IMPORTANT that `#addAdmin` remain idempotent
-  //  - due to signald peculiarities, lots of logic about detecting safety number changes for publishers
+  //  - due to signald peculiarities, lots of logic about detecting safety number changes for admins
   //    and correctly (re)trusting their key material hangs off of this invariant. do not violate it! thx! :)
+  // TODO:
+  //  - make this upgrade a subscriber to an admin using `defaults` key
+  //  - leave a better explanation of how idempotency works
   db.membership
     .findOrCreate({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
     .spread(x => x)
 
 const removeAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
+  // TODO: use performOpIfChannelExists here
   db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } })
 
 const addSubscriber = async (
@@ -40,7 +44,7 @@ const addSubscriber = async (
   )
 
 const removeSubscriber = async (db, channelPhoneNumber, memberPhoneNumber) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe human from', async () =>
+  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe member from', async () =>
     db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } }),
   )
 

@@ -21,8 +21,8 @@ const { defaultLanguage } = require('../../config')
  *
  * type Sender = {
  *   phoneNumber: string,
- *   isAdmin: boolean,
- *   isSubscriber: boolean,
+ *   type: 'ADMIN', 'SUBSCRIBER', 'NONE',
+ *   language: 'EN', 'ES',
  * }
  *
  * type CommandResult = {

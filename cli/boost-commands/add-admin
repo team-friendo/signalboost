@@ -49,5 +49,5 @@ echo "--- trusting all safety numbers for user ${phone_number} at url ${url}"
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"channelPhoneNumber\": \"$channel_phone_number\", \"publisherPhoneNumber\": \"$admin_phone_number\" }" \
-     https://${url}/channels/publishers | jq
+     -d "{ \"channelPhoneNumber\": \"$channel_phone_number\", \"adminPhoneNumber\": \"$admin_phone_number\" }" \
+     https://${url}/channels/admins | jq

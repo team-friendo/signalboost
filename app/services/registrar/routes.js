@@ -17,19 +17,19 @@ const routesOf = (router, db, sock) => {
   })
 
   router.post('/channels', async ctx => {
-    const { phoneNumber, name, publishers } = ctx.request.body
-    const result = await channelRegistrar.create({ db, sock, phoneNumber, name, publishers })
+    const { phoneNumber, name, admins } = ctx.request.body
+    const result = await channelRegistrar.create({ db, sock, phoneNumber, name, admins })
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result
   })
 
-  router.post('/channels/publishers', async ctx => {
-    const { channelPhoneNumber, publisherPhoneNumber } = ctx.request.body
+  router.post('/channels/admins', async ctx => {
+    const { channelPhoneNumber, adminPhoneNumber } = ctx.request.body
     const result = await channelRegistrar.addAdmin({
       db,
       sock,
       channelPhoneNumber,
-      publisherPhoneNumber,
+      adminPhoneNumber,
     })
     ctx.status = httpStatusOf(get(result, 'status'))
     ctx.body = result

@@ -4,6 +4,7 @@ const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
+const channelRepository = require('../../db/repositories/channel')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
 const {
@@ -60,13 +61,13 @@ const parseMessageType = (commandResult, { sender, channel }) => {
 
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   const notifications = messagesIn(defaultLanguage).notifications
-  // TODO(aguestuser|2019-11-09): send this as a disappearing message
+  // TODO(aguestuser|2019-11-09): send this as a disappearing message?
   // notify admins of signup request
   await notify({
     sock,
     channel,
     notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
-    recipients: channel.publications.map(p => p.publisherPhoneNumber),
+    recipients: channelRepository.getAdminPhoneNumbers(channel),
   })
   // respond to signpu requester
   return notify({
@@ -102,15 +103,15 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
 const handleNotifications = async ({ commandResult, dispatchable }) => {
-  // TODO: respond to sender, notify all other publishers
+  // TODO: respond to sender, notify all other admins
   //  - exclude: HELP/INFO
   //  - include but don't add phone numbers: JOIN/LEAVE
-  //  - include and add publisher phone numbers: RENAME/ADD/REMOVE/RESPONSES
+  //  - include and add admin phone numbers: RENAME/ADD/REMOVE/RESPONSES
   const { command, status, payload } = commandResult
   const { db, sock, channel, sender } = dispatchable
   const notifyBase = { db, sock, channel }
   if (command === commands.ADD && status === statuses.SUCCESS) {
-    // welcome new publisher
+    // welcome new admin
     await notify({
       ...notifyBase,
       notification: messagesIn(sender.language).notifications.welcome(
@@ -121,14 +122,12 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
     })
     return notify({
       ...notifyBase,
-      notification: messagesIn(sender.language).notifications.publisherAdded(
+      notification: messagesIn(sender.language).notifications.adminAdded(
         sender.phoneNumber,
         payload,
       ),
-      // don't send to newly added publisher, that would mess up safety number re-trusting!
-      recipients: channel.publications
-        .map(p => p.publisherPhoneNumber)
-        .filter(pNum => pNum !== payload),
+      // don't send to newly added admin, that would mess up safety number re-trusting!
+      recipients: channelRepository.getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
     })
   }
 }
@@ -139,10 +138,7 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
-  const recipients = [
-    ...channel.subscriptions.map(s => s.subscriberPhoneNumber),
-    ...channel.publications.map(p => p.publisherPhoneNumber),
-  ]
+  const recipients = channel.memberships.map(m => m.memberPhoneNumber)
   return signal
     .broadcastMessage(sock, recipients, format({ channel, sdMessage }))
     .then(() => countBroacast({ db, channel }))
@@ -151,7 +147,7 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 // Dispatchable -> Promise<void>
 const relayBroadcastResponse = async ({ db, sock, channel, sender, sdMessage }) => {
   const { language } = sender
-  const recipients = channel.publications.map(p => p.publisherPhoneNumber)
+  const recipients = channelRepository.getAdminPhoneNumbers(channel)
   const notification = messagesIn(language).notifications.broadcastResponseSent(channel)
   const outMessage = format({ channel, sdMessage, messageType: BROADCAST_RESPONSE, language })
   return signal
@@ -206,7 +202,7 @@ const countBroacast = ({ db, channel }) =>
   messageCountRepository.incrementBroadcastCount(
     db,
     channel.phoneNumber,
-    channel.subscriptions.length,
+    channel.memberships.length,
   )
 
 const countCommand = ({ db, channel }) =>

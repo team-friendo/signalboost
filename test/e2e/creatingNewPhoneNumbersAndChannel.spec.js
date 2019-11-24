@@ -19,7 +19,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
    * - thx! <@3
    **/
   const name = 'foo'
-  const publishers = [genPhoneNumber(), genPhoneNumber()]
+  const admins = [genPhoneNumber(), genPhoneNumber()]
 
   let db,
     phoneNumberResponse,
@@ -102,7 +102,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
         channelResponse = await request('https://signalboost.ngrok.io')
           .post('/channels')
           .set('Token', registrar.authToken)
-          .send({ phoneNumber, name, publishers })
+          .send({ phoneNumber, name, admins })
 
         channel = await db.channel.findOne({ where: { phoneNumber } })
         console.log(
@@ -119,10 +119,10 @@ describe.skip('creating new phone numbers for use in new channels', () => {
         })
       })
 
-      it('creates db records for the channel publishers', async () => {
+      it('creates db records for the channel admins', async () => {
         expect(await db.publication.count()).to.eql(publicationCount + 2)
-        expect((await channel.getPublications()).map(p => p.publisherPhoneNumber)).to.have.members(
-          publishers,
+        expect((await channel.getPublications()).map(p => p.adminPhoneNumber)).to.have.members(
+          admins,
         )
       })
 
@@ -142,7 +142,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
           status: 'ACTIVE',
           name: 'foo',
           phoneNumber,
-          publishers,
+          admins,
         })
       })
     })

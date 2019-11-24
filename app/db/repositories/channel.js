@@ -1,5 +1,9 @@
 const { memberTypes } = require('./membership')
 
+/***********
+ * QUERIES
+ ***********/
+
 const create = async (db, phoneNumber, name, adminPhoneNumbers) => {
   const memberships = adminPhoneNumbers.map(pNum => ({
     type: memberTypes.ADMIN,
@@ -36,11 +40,28 @@ const findDeep = (db, phoneNumber) =>
     include: [{ model: db.membership }, { model: db.messageCount }],
   })
 
+/************
+ * SELECTORS
+ ***********/
+
+// all selectors assume you are operating on an already deeply-fetched channel (with all nested attrs avail)
+const getAdminMemberships = channel => channel.memberships.filter(m => m.type === memberTypes.ADMIN)
+const getAdminPhoneNumbers = channel => getAdminMemberships(channel).map(m => m.memberPhoneNumber)
+
+const getSubscriberMemberships = channel =>
+  channel.memberships.filter(m => m.type === memberTypes.SUBSCRIBER)
+const getSubscriberPhoneNumbers = channel =>
+  getSubscriberMemberships(channel).map(m => m.memberPhoneNumber)
+
 module.exports = {
   create,
   findAll,
   findAllDeep,
   findByPhoneNumber,
   findDeep,
+  getAdminMemberships,
+  getAdminPhoneNumbers,
+  getSubscriberMemberships,
+  getSubscriberPhoneNumbers,
   update,
 }

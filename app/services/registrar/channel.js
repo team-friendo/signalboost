@@ -21,15 +21,15 @@ const welcomeNotificationOf = channelPhoneNumber =>
   )
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
-const addAdmin = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) => {
-  await membershipRepository.addAdmin(db, channelPhoneNumber, publisherPhoneNumber)
+const addAdmin = async ({ db, sock, channelPhoneNumber, adminPhoneNumber }) => {
+  await membershipRepository.addAdmin(db, channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
   await messenger.notify({
     db,
     sock,
     channel,
     notification: welcomeNotificationOf(channelPhoneNumber),
-    recipients: [publisherPhoneNumber],
+    recipients: [adminPhoneNumber],
   })
   return {
     status: sbStatuses.SUCCESS,
@@ -38,10 +38,10 @@ const addAdmin = async ({ db, sock, channelPhoneNumber, publisherPhoneNumber }) 
 }
 
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
-const create = async ({ db, sock, phoneNumber, name, publishers }) => {
+const create = async ({ db, sock, phoneNumber, name, admins }) => {
   try {
     await signal.subscribe(sock, phoneNumber)
-    const channel = await channelRepository.create(db, phoneNumber, name, publishers)
+    const channel = await channelRepository.create(db, phoneNumber, name, admins)
     await phoneNumberRepository.update(db, phoneNumber, { status: pNumStatuses.ACTIVE })
     await wait(welcomeDelay)
     await messenger.notify({
@@ -49,15 +49,15 @@ const create = async ({ db, sock, phoneNumber, name, publishers }) => {
       sock,
       channel,
       notification: welcomeNotificationOf(channel.phoneNumber),
-      recipients: channel.publications.map(p => p.publisherPhoneNumber),
+      recipients: channelRepository.getAdminPhoneNumbers(channel),
     })
-    return { status: pNumStatuses.ACTIVE, phoneNumber, name, publishers }
+    return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
   } catch (e) {
     logger.error(e)
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,
-      request: { phoneNumber, name, publishers },
+      request: { phoneNumber, name, admins },
     }
   }
 }
@@ -77,8 +77,8 @@ const list = db =>
 
 const _formatForList = ch => ({
   ...pick(ch, ['name', 'phoneNumber']),
-  publishers: ch.publications.length,
-  subscribers: ch.subscriptions.length,
+  admins: channelRepository.getAdminMemberships(ch).length,
+  subscribers: channelRepository.getSubscriberMemberships(ch).length,
   messageCount: pick(ch.messageCount, ['broadcastOut', 'commandIn']),
 })
 

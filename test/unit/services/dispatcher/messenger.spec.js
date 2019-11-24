@@ -13,6 +13,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
+import channelRepository from '../../../../app/db/repositories/channel'
 const {
   signal: { signupPhoneNumber },
 } = require('../../../../app/config')
@@ -22,17 +23,23 @@ describe('messenger service', () => {
   const [db, sock] = [{}, { write: () => {} }]
   const channelPhoneNumber = genPhoneNumber()
   const subscriberNumbers = times(2, genPhoneNumber)
-  const publisherNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
-    publications: [
-      { channelPhoneNumber, publisherPhoneNumber: publisherNumbers[0] },
-      { channelPhoneNumber, publisherPhoneNumber: publisherNumbers[1] },
-    ],
-    subscriptions: [
-      { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[0] },
-      { channelPhoneNumber, subscriberPhoneNumber: subscriberNumbers[1] },
+    memberships: [
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[0] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[1] },
+      {
+        type: memberTypes.SUBSCRIBER,
+        channelPhoneNumber,
+        memberPhoneNumber: subscriberNumbers[0],
+      },
+      {
+        type: memberTypes.SUBSCRIBER,
+        channelPhoneNumber,
+        memberPhoneNumber: subscriberNumbers[1],
+      },
     ],
     messageCount: { broadcastIn: 42 },
   }
@@ -40,7 +47,7 @@ describe('messenger service', () => {
   const signupChannel = {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,
-    publications: channel.publications,
+    memberships: channel.memberships,
   }
 
   const attachments = [{ filename: 'some/path', width: 42, height: 42 }]
@@ -50,8 +57,8 @@ describe('messenger service', () => {
     recipientNumber: genPhoneNumber(),
     attachments,
   }
-  const publisherSender = {
-    phoneNumber: publisherNumbers[0],
+  const adminSender = {
+    phoneNumber: adminNumbers[0],
     type: memberTypes.ADMIN,
     language: languages.EN,
   }
@@ -69,7 +76,7 @@ describe('messenger service', () => {
   describe('parsing a message type from a command result', () => {
     it('parses a broadcast message', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
-      const dispatchable = { channel, sender: publisherSender }
+      const dispatchable = { channel, sender: adminSender }
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_MESSAGE)
     })
 
@@ -123,12 +130,12 @@ describe('messenger service', () => {
     })
 
     describe('when message is a broadcast message', () => {
-      describe('when sender is a publisher', () => {
+      describe('when sender is a admin', () => {
         beforeEach(
           async () =>
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { db, sock, channel, sender: publisherSender, sdMessage },
+              dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
             }),
         )
         it('does not respond to the sender', () => {
@@ -139,16 +146,16 @@ describe('messenger service', () => {
           expect(incrementCommandCountStub.callCount).to.eql(0)
         })
 
-        it('broadcasts the message to all channel subscribers and publishers', () => {
+        it('broadcasts the message to all channel subscribers and admins', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [...subscriberNumbers, ...publisherNumbers],
+            [...adminNumbers, ...subscriberNumbers],
             { ...sdMessage, messageBody: '[foobar]\nplease help!' },
           ])
         })
 
         it('it increments the command count for the channel', () => {
-          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 2])
+          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 4])
         })
       })
 
@@ -189,7 +196,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              publisherNumbers,
+              adminNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
             ])
           })
@@ -221,7 +228,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              publisherNumbers,
+              adminNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
             ])
           })
@@ -256,7 +263,7 @@ describe('messenger service', () => {
       it('forwards request to channel admins and appends phone number', () => {
         expect(broadcastMessageStub.getCall(0).args).to.eql([
           sock,
-          signupChannel.publications.map(p => p.publisherPhoneNumber),
+          channelRepository.getAdminPhoneNumbers(channel),
           sdMessageOf(
             signupChannel,
             `[${signupChannel.name}]\n${notifications.signupRequestReceived(
@@ -281,7 +288,7 @@ describe('messenger service', () => {
     describe('when message is a command response', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { db, sock, channel, sender: publisherSender, sdMessage: commands.JOIN },
+          dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
           commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
         })
       })
@@ -297,7 +304,7 @@ describe('messenger service', () => {
       it('sends a command result to the message sender', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
           sock,
-          publisherSender.phoneNumber,
+          adminSender.phoneNumber,
           sdMessageOf(channel, '[foobar]\nyay!'),
         ])
       })
@@ -308,27 +315,21 @@ describe('messenger service', () => {
     })
 
     describe('when message is a command notification', () => {
-      describe('for a newly added publisher', () => {
-        const newPublisher = genPhoneNumber()
-        const sdMessage = `${commands.ADD} ${newPublisher}`
-        const response = messages.commandResponses.add.success(newPublisher)
-        const welcome = messages.notifications.welcome(
-          publisherSender.phoneNumber,
-          channel.phoneNumber,
-        )
-        const alert = messages.notifications.publisherAdded(
-          publisherSender.phoneNumber,
-          newPublisher,
-        )
+      describe('for a newly added admin', () => {
+        const newAdmin = genPhoneNumber()
+        const sdMessage = `${commands.ADD} ${newAdmin}`
+        const response = messages.commandResponses.add.success(newAdmin)
+        const welcome = messages.notifications.welcome(adminSender.phoneNumber, channel.phoneNumber)
+        const alert = messages.notifications.adminAdded(adminSender.phoneNumber, newAdmin)
 
         beforeEach(async () => {
           await messenger.dispatch({
-            dispatchable: { db, sock, channel, sender: publisherSender, sdMessage },
+            dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
             commandResult: {
               command: commands.ADD,
               status: statuses.SUCCESS,
               message: response,
-              payload: newPublisher,
+              payload: newAdmin,
             },
           })
         })
@@ -344,15 +345,15 @@ describe('messenger service', () => {
         it('sends a response to the command sender', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sock,
-            publisherSender.phoneNumber,
+            adminSender.phoneNumber,
             sdMessageOf(channel, `[${channel.name}]\n${response}`),
           ])
         })
 
-        it('sends a welcome notification to the newly added publisher', () => {
+        it('sends a welcome notification to the newly added admin', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [newPublisher],
+            [newAdmin],
             sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
           ])
         })
@@ -360,7 +361,7 @@ describe('messenger service', () => {
         it('sends an alert to the other channel admins', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
-            publisherNumbers,
+            adminNumbers,
             sdMessageOf(channel, `[${channel.name}]\n${alert}`),
           ])
         })

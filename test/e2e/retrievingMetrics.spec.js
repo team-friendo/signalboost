@@ -29,11 +29,7 @@ describe('retrieving metrics', () => {
           db.channel.create(
             { ...ch, phoneNumber: genPhoneNumber() },
             {
-              include: [
-                { model: db.subscription },
-                { model: db.publication },
-                { model: db.messageCount },
-              ],
+              include: [{ model: db.membership }, { model: db.messageCount }],
             },
           ),
         ),
@@ -59,7 +55,7 @@ describe('retrieving metrics', () => {
       response.body.channels.forEach(ch => {
         expect(ch.phoneNumber).to.be.a('string')
         expect(ch.name).to.be.a('string')
-        expect(ch.publishers).to.be.a('number')
+        expect(ch.admins).to.be.a('number')
         expect(ch.subscribers).to.be.a('number')
         expect(ch.messageCount.broadcastOut).to.be.a('number')
         expect(ch.messageCount.commandIn).to.be.a('number')

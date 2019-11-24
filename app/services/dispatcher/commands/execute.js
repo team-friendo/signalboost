@@ -32,13 +32,13 @@ const execute = async (executable, dispatchable) => {
   // don't allow command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
   const result = await ({
-    [commands.ADD]: () => maybeAddPublisher(db, channel, sender, payload),
+    [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
     [commands.HELP]: () => maybeShowHelp(db, channel, sender),
     [commands.INFO]: () => maybeShowInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemovePublisher(db, channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
     [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
     [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
@@ -52,7 +52,7 @@ const execute = async (executable, dispatchable) => {
 
 // ADD
 
-const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
+const maybeAddAdmin = async (db, channel, sender, phoneNumberInput) => {
   const cr = messagesIn(sender.language).commandResponses.add
   if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
@@ -62,15 +62,15 @@ const maybeAddPublisher = async (db, channel, sender, phoneNumberInput) => {
   return addAdmin(db, channel, sender, phoneNumber, cr)
 }
 
-const addAdmin = (db, channel, sender, newPublisherNumber, cr) =>
+const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
   membershipRepository
-    .addAdmin(db, channel.phoneNumber, newPublisherNumber)
+    .addAdmin(db, channel.phoneNumber, newAdminNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(newPublisherNumber),
-      payload: newPublisherNumber,
+      message: cr.success(newAdminNumber),
+      payload: newAdminNumber,
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newPublisherNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
 
 // HELP
 
@@ -83,7 +83,7 @@ const maybeShowHelp = async (db, channel, sender) => {
 
 const showHelp = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.type === ADMIN ? cr.publisher : cr.subscriber,
+  message: sender.type === ADMIN ? cr.admin : cr.subscriber,
 })
 
 // INFO
@@ -97,7 +97,7 @@ const maybeShowInfo = async (db, channel, sender) => {
 
 const showInfo = async (db, channel, sender, cr) => ({
   status: statuses.SUCCESS,
-  message: sender.type === ADMIN ? cr.publisher(channel) : cr.subscriber(channel),
+  message: sender.type === ADMIN ? cr.admin(channel) : cr.subscriber(channel),
 })
 
 // JOIN
@@ -134,27 +134,27 @@ const removeSender = (db, channel, sender, cr) => {
 
 // REMOVE
 
-const maybeRemovePublisher = async (db, channel, sender, publisherNumber) => {
+const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
-  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(publisherNumber)
+  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(adminNumber)
 
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
   }
   if (!isValid) {
-    return { status: statuses.ERROR, message: cr.invalidNumber(publisherNumber) }
+    return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
   }
   if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotPublisher(validNumber) }
+    return { status: statuses.ERROR, message: cr.targetNotAdmin(validNumber) }
 
   return removeAdmin(db, channel, validNumber, cr)
 }
 
-const removeAdmin = async (db, channel, publisherNumber, cr) =>
+const removeAdmin = async (db, channel, adminNumber, cr) =>
   membershipRepository
-    .removeAdmin(db, channel.phoneNumber, publisherNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(publisherNumber) }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(publisherNumber) }))
+    .removeAdmin(db, channel.phoneNumber, adminNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
 
 // RENAME
 
