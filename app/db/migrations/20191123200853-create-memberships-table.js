@@ -80,14 +80,12 @@ module.exports = {
     }
     console.log('...inserted admin memberships!')
 
-    // migrate all subscribers from subscriptions table to memberships table
-    // in doing so, remove subscriber/admin dupes: if anyone has both roles, make them an admin
-    const adminPhoneNumbers = new Set(publications.map(p => p.publisherPhoneNumber))
     const subscriptions = await queryInterface.sequelize
       .query('SELECT * from subscriptions')
       .then(([, result]) => result.rows)
-      .filter(s => !adminPhoneNumbers.has(s.subscriberPhoneNumber))
 
+    // this will produce some uniqueness constraint errors, which is good!
+    // that will block inserting subscribers that are already admins on the same channel!
     console.log(`--- inserting ${subscriptions.length} subscriber memberships...`)
     if (!isEmpty(subscriptions)) {
       await queryInterface.bulkInsert(
