@@ -1,12 +1,13 @@
 const signal = require('../signal')
 const channelRepository = require('./../../db/repositories/channel')
+const membershipRepository = require('../../db/repositories/membership')
+const { memberTypes } = membershipRepository
 const executor = require('./commands')
 const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get } = require('lodash')
-const { memberTypes } = require('../../db/repositories/channel')
 const { defaultLanguage } = require('../../config')
 
 /**
@@ -20,8 +21,8 @@ const { defaultLanguage } = require('../../config')
  *
  * type Sender = {
  *   phoneNumber: string,
- *   isPublisher: boolean,
- *   isSubscriber: boolean,
+ *   type: 'ADMIN', 'SUBSCRIBER', 'NONE',
+ *   language: 'EN', 'ES',
  * }
  *
  * type CommandResult = {
@@ -96,7 +97,7 @@ const updateSafetyNumber = async (db, sock, inboundMsg) => {
   )
 
   if (recipient.type === memberTypes.NONE) return Promise.resolve()
-  if (recipient.type === memberTypes.PUBLISHER && !isWelcomeMessage(sdMessage)) {
+  if (recipient.type === memberTypes.ADMIN && !isWelcomeMessage(sdMessage)) {
     // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
     return safetyNumberService
       .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
@@ -130,8 +131,8 @@ const shouldUpdateSafetyNumber = inboundMsg =>
   !get(inboundMsg, 'data.message', '').includes('Rate limit')
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
-  const type = await channelRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
-  const language = await channelRepository.resolveSenderLanguage(
+  const type = await membershipRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
+  const language = await membershipRepository.resolveSenderLanguage(
     db,
     channelPhoneNumber,
     senderPhoneNumber,

@@ -20,17 +20,12 @@ const channelOf = (sequelize, DataTypes) => {
   })
 
   channel.associate = db => {
-    channel.hasMany(db.publication, {
+    channel.hasMany(db.membership, {
       hooks: true,
       onDelete: 'cascade',
     })
 
     channel.hasOne(db.messageCount, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasMany(db.subscription, {
       hooks: true,
       onDelete: 'cascade',
     })

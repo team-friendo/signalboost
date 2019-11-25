@@ -62,10 +62,8 @@ if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
 echo "--- provisioning new channel [${name}] on phone number ${phone_number} at url ${url}"
 
-# TODO(aguestuser|2019-08-11):
-# replace `publishers` key in below JSON payload with `admins` once that has been updated on server
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"publishers\":$admins }" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
      https://${url}/channels | jq

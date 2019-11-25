@@ -1,4 +1,3 @@
-// TODO: elminate call to 'dotenv' once tests are dockerized...
 require('dotenv').config()
 const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')

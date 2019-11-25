@@ -4,13 +4,14 @@ import { expect } from 'chai'
 import { deauthorize, trustAndResend } from '../../../../app/services/registrar/safetyNumbers'
 import signal from '../../../../app/services/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
+import membershipRepository from '../../../../app/db/repositories/membership'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { statuses } from '../../../../app/constants'
 import { channelFactory } from '../../../support/factories/channel'
-import { publicationFactory } from '../../../support/factories/publication'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 import { sdMessageOf } from '../../../../app/services/signal'
+import { adminMembershipFactory } from '../../../support/factories/membership'
 const {
   signal: { resendDelay },
 } = require('../../../../app/config')
@@ -20,26 +21,26 @@ describe('safety numbers registrar module', () => {
   const sock = {}
   const channelPhoneNumber = genPhoneNumber()
   const memberPhoneNumber = genPhoneNumber()
-  const otherPublisherNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const otherAdminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
-  let trustStub, sendMessageStub, removePublisherStub, findDeepStub
+  let trustStub, sendMessageStub, removeAdminStub, findDeepStub
 
   beforeEach(() => {
     trustStub = sinon.stub(signal, 'trust')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
-    removePublisherStub = sinon.stub(channelRepository, 'removePublisher')
+    removeAdminStub = sinon.stub(membershipRepository, 'removeAdmin')
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(
       Promise.resolve(
         channelFactory({
           phoneNumber: channelPhoneNumber,
-          publications: [
-            publicationFactory({
+          memberships: [
+            adminMembershipFactory({
               channelPhoneNumber,
-              publisherPhoneNumber: otherPublisherNumbers[0],
+              memberPhoneNumber: otherAdminPhoneNumbers[0],
             }),
-            publicationFactory({
+            adminMembershipFactory({
               channelPhoneNumber,
-              publisherPhoneNumber: otherPublisherNumbers[1],
+              memberPhoneNumber: otherAdminPhoneNumbers[1],
             }),
           ],
         }),
@@ -50,7 +51,7 @@ describe('safety numbers registrar module', () => {
   afterEach(() => {
     trustStub.restore()
     sendMessageStub.restore()
-    removePublisherStub.restore()
+    removeAdminStub.restore()
     findDeepStub.restore()
   })
 
@@ -139,18 +140,14 @@ describe('safety numbers registrar module', () => {
   })
 
   describe('#deauthorize', () => {
-    it('attempts to remove a publisher from a channel', async () => {
+    it('attempts to remove a admin from a channel', async () => {
       await deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber).catch(a => a)
-      expect(removePublisherStub.getCall(0).args).to.eql([
-        db,
-        channelPhoneNumber,
-        memberPhoneNumber,
-      ])
+      expect(removeAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, memberPhoneNumber])
     })
 
     describe('if removal succeeds', () => {
       beforeEach(() =>
-        removePublisherStub.returns(
+        removeAdminStub.returns(
           Promise.resolve({
             status: statuses.SUCCESS,
             message: 'fake removal success message',
@@ -158,12 +155,12 @@ describe('safety numbers registrar module', () => {
         ),
       )
 
-      it('notifies all the other publishers', async () => {
+      it('notifies all the other admins', async () => {
         await deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber).catch(a => a)
         expect(sendMessageStub.callCount).to.eql(2)
         expect(sendMessageStub.getCall(0).args).to.eql([
           db,
-          otherPublisherNumbers[0],
+          otherAdminPhoneNumbers[0],
           sdMessageOf(
             { phoneNumber: channelPhoneNumber },
             messagesIn(defaultLanguage).notifications.deauthorization(memberPhoneNumber),
@@ -204,7 +201,7 @@ describe('safety numbers registrar module', () => {
 
     describe('if removal fails', () => {
       beforeEach(() =>
-        removePublisherStub.callsFake(() =>
+        removeAdminStub.callsFake(() =>
           Promise.reject({
             status: statuses.ERROR,
             message: 'fake removal error message',

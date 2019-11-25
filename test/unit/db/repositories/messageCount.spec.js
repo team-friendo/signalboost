@@ -15,7 +15,7 @@ describe('message count repository', () => {
   before(() => (db = initDb()))
   afterEach(() => {
     db.messageCount.destroy({ where: {} })
-    db.subscription.destroy({ where: {} })
+    db.membership.destroy({ where: {} })
     db.channel.destroy({ where: {} })
   })
   after(async () => await db.sequelize.close())
@@ -24,7 +24,7 @@ describe('message count repository', () => {
     beforeEach(async () => {
       db.channel.create(
         { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
-        { include: [{ model: db.subscription }] },
+        { include: [{ model: db.membership }] },
       )
       countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
       countAfter = await messageCountRepository.incrementBroadcastCount(db, channelPhoneNumber, 4)
@@ -43,7 +43,7 @@ describe('message count repository', () => {
     beforeEach(async () => {
       db.channel.create(
         { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
-        { include: [{ model: db.subscription }] },
+        { include: [{ model: db.membership }] },
       )
       countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
       countAfter = await messageCountRepository.incrementCommandCount(db, channelPhoneNumber)

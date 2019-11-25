@@ -2,11 +2,10 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
 import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
-import { publicationFactory } from '../../../support/factories/publication'
-import { subscriptionFactory } from '../../../support/factories/subscription'
 import { times } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { languages } from '../../../../app/constants'
+import { adminMembershipFactory, subscriberMembershipFactory } from "../../../support/factories/membership"
 
 describe('messages module', () => {
   describe('parsing command responses', () => {
@@ -14,18 +13,18 @@ describe('messages module', () => {
     const channel = {
       name: 'foobar',
       phoneNumber: '+13333333333',
-      publications: times(2, publicationFactory({ channelPhoneNumber: '+13333333333' })),
-      subscriptions: times(2, subscriptionFactory({ channelPhoneNumber: '+13333333333' })),
+      memberships: [
+        ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
+        ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' }))
+      ],
       messageCount: { broadcastIn: 42 },
     }
 
     describe('for info command', () => {
-      describe('for publisher', () => {
-        it('shows publisher phone numbers and subscriber count', () => {
-          const msg = cr.info.publisher(channel)
-          expect(msg).to.include(
-            `admins: ${channel.publications.map(a => a.channelPhoneNumber).join(', ')}`,
-          )
+      describe('for admin', () => {
+        it('shows admin and subscriber counts', () => {
+          const msg = cr.info.admin(channel)
+          expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
         })
       })

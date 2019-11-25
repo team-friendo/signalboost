@@ -1,4 +1,8 @@
 const { upperCase } = require('lodash')
+const {
+  getAdminMemberships,
+  getSubscriberMemberships,
+} = require('../../../../db/repositories/channel')
 
 const systemName = 'the signalboost system administrator'
 const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
@@ -31,28 +35,30 @@ Learn more: https://signalboost.info
 `
 
 const notifications = {
-  publisherAdded: (commandIssuer, addedPublisher) =>
-    `New admin ${addedPublisher} added by ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) =>
+    `New admin ${addedAdmin} added by ${commandIssuer}`,
+
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
     Send HELP to see commands I understand! :)`,
-  deauthorization: publisherPhoneNumber => `
-${publisherPhoneNumber} has been removed from this channel because their safety number changed.
+
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} has been removed from this channel because their safety number changed.
 
 This is almost certainly because they reinstalled Signal on a new phone.
 
 However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
 
-Check with ${publisherPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
 
-ADD ${publisherPhoneNumber}
+ADD ${adminPhoneNumber}
 
 Until then, they will be unable to send messages to or read messages from this channel.`,
   noop: "Whoops! That's not a command!",
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
 
-  welcome: (addingPublisher, channelPhoneNumber) => `
-You were just made an admin of this Signalboost channel by ${addingPublisher}. Welcome!
+  welcome: (addingAdmin, channelPhoneNumber) => `
+You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
 
 People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 
@@ -60,6 +66,7 @@ Reply with HELP for more info.`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
+
   signupRequestResponse:
     'Thank you for signing up for Signalboost!\n You will receive a welcome message on your new channel shortly...',
 }
@@ -81,13 +88,13 @@ const commandResponses = {
     unauthorized,
     dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
     invalidNumber,
-    targetNotPublisher: num => `Whoops! ${num} is not an admin. Can't remove them.`,
+    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
   },
 
   // HELP
 
   help: {
-    publisher: `[COMMANDS I UNDERSTAND:]
+    admin: `[COMMANDS I UNDERSTAND:]
 
 HELP
 -> lists commands
@@ -134,15 +141,15 @@ GOODBYE
   // INFO
 
   info: {
-    publisher: channel => `
+    admin: channel => `
 ---------------------------
 CHANNEL INFO:
 ---------------------------
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
-subscribers: ${channel.subscriptions.length}
-admins: ${channel.publications.map(a => a.publisherPhoneNumber).join(', ')}
+admins: ${getAdminMemberships(channel).length}
+subscribers: ${getSubscriberMemberships(channel).length}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}
 ${support}`,
@@ -155,7 +162,7 @@ CHANNEL INFO:
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-subscribers: ${channel.subscriptions.length}
+subscribers: ${getSubscriberMemberships(channel).length}
 ${support}`,
     unauthorized,
   },
@@ -181,7 +188,7 @@ Welcome to Signalboost! You are now subscribed to the [${name}] channel.
 Reply with HELP to learn more or GOODBYE to unsubscribe.`
     },
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
-    noop: `Whoops! You are already a member of the channel.`,
+    alreadyMember: `Whoops! You are already a member of this channel.`,
   },
 
   // LEAVE

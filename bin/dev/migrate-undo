@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- running migrations..."
+
+docker-compose -f docker-compose-dev.yml \
+               run --entrypoint /signalboost/bin/db/migrate-undo \
+               app
+
+echo "--- removing db container..."
+
+docker rm -f signalboost_db
+
+echo "--- DONE!"
+
+popd

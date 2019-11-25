@@ -1,9 +1,9 @@
-const { isPhoneNumber } = require('../validations/phoneNumber')
 const { defaultLanguage } = require('../../config')
+const { isPhoneNumber } = require('../validations/phoneNumber')
 
-const publicationOf = (sequelize, DataTypes) => {
-  const publication = sequelize.define(
-    'publication',
+const membershipOf = (sequelize, DataTypes) => {
+  const membership = sequelize.define(
+    'membership',
     {
       id: {
         allowNull: false,
@@ -11,7 +11,12 @@ const publicationOf = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      publisherPhoneNumber: {
+      type: {
+        type: DataTypes.ENUM,
+        allowNull: false,
+        values: ['ADMIN', 'SUBSCRIBER'],
+      },
+      memberPhoneNumber: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: isPhoneNumber,
@@ -22,7 +27,7 @@ const publicationOf = (sequelize, DataTypes) => {
         validate: isPhoneNumber,
       },
       language: {
-        type: DataTypes.BOOLEAN,
+        type: DataTypes.STRING,
         allowNull: false,
         defaultValue: defaultLanguage,
       },
@@ -30,11 +35,11 @@ const publicationOf = (sequelize, DataTypes) => {
     {},
   )
 
-  publication.associate = db => {
-    publication.belongsTo(db.channel)
+  membership.associate = db => {
+    membership.belongsTo(db.channel)
   }
 
-  return publication
+  return membership
 }
 
-module.exports = { publicationOf }
+module.exports = { membershipOf }
