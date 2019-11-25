@@ -103,10 +103,6 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
 const handleNotifications = async ({ commandResult, dispatchable }) => {
-  // TODO: respond to sender, notify all other admins
-  //  - exclude: HELP/INFO
-  //  - include but don't add phone numbers: JOIN/LEAVE
-  //  - include and add admin phone numbers: RENAME/ADD/REMOVE/RESPONSES
   const { command, status, payload } = commandResult
   const { db, sock, channel, sender } = dispatchable
   const notifyBase = { db, sock, channel }
