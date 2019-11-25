@@ -73,6 +73,8 @@ module.exports = {
           channelPhoneNumber: p.channelPhoneNumber,
           memberPhoneNumber: p.publisherPhoneNumber,
           language: p.language,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
         })),
       )
     }
@@ -96,6 +98,8 @@ module.exports = {
           channelPhoneNumber: s.channelPhoneNumber,
           memberPhoneNumber: s.subscriberPhoneNumber,
           language: s.language,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
         })),
       )
     }
@@ -184,6 +188,8 @@ module.exports = {
         publisherPhoneNumber: m.memberPhoneNumber,
         channelPhoneNumber: m.channelPhoneNumber,
         language: m.language,
+        createdAt: m.createdAt,
+        updatedAt: m.updatedAt,
       }))
     const subscriptions = memberships
       .filter(m => m.type === 'SUBSCRIBER')
@@ -192,6 +198,8 @@ module.exports = {
         subscriberPhoneNumber: m.memberPhoneNumber,
         channelPhoneNumber: m.channelPhoneNumber,
         language: m.language,
+        createdAt: m.createdAt,
+        updatedAt: m.updatedAt,
       }))
 
     await Promise.all([
