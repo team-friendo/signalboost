@@ -1,4 +1,3 @@
-const { times } = require('lodash')
 const { defaultLanguage } = require('../../config')
 
 const memberTypes = {
@@ -12,17 +11,26 @@ const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
     Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
   )
 
-const addAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
-  // NOTE(aguestuser|2019-09-26):
-  //  - it is EXTREMELY IMPORTANT that `#addAdmin` remain idempotent
-  //  - due to signald peculiarities, lots of logic about detecting safety number changes for admins
-  //    and correctly (re)trusting their key material hangs off of this invariant. do not violate it! thx! :)
-  // TODO:
-  //  - make this upgrade a subscriber to an admin using `defaults` key
-  //  - leave a better explanation of how idempotency works
-  db.membership
-    .findOrCreate({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
-    .spread(x => x)
+const addAdmin = async (db, channelPhoneNumber, memberPhoneNumber) => {
+  // - when given the phone number of...
+  //   - a new user: make an admin
+  //   - an existing admin: return that admin's membership (do not error or alter/create anything)
+  //   - an existing subscriber: update membership to admin status & return it (do not error or create anything)
+  // - IMPORTANT CONTEXT:
+  //   - `#addAdmin` MUST be idempotent to ensure the correct re-trusting of admin safety numbers
+  //   - in particular, when someone uses the `ADD` command for a user who is already an admin,
+  //     `#addAdmin must not throw a uniqueness constraint error. It must succeed  so that a welcome
+  //     message is sent, which will fail to send (b/c of changed safety number) and trigger `trustAndResend`
+  //     to be called which will ultimately result in the admin's saftey number being trusted (as desired)
+  //   - because of the way signald handles changed safety numbers, we have NO OTHER WAY of detecting a
+  //     changed safety number and retrusting it without first sending a message, so observing
+  //     the above invariant is extra important
+  const membership = (await db.membership.findOrCreate({
+    where: { channelPhoneNumber, memberPhoneNumber },
+    defaults: { type: memberTypes.ADMIN },
+  }))[0]
+  return membership.update({ type: memberTypes.ADMIN })
+}
 
 const removeAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
   // TODO: use performOpIfChannelExists here

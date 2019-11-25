@@ -1,6 +1,6 @@
 import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
-import { pick } from 'lodash'
+import { omit, pick } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
@@ -30,8 +30,8 @@ describe('membership repository', () => {
   })
   after(async () => await db.sequelize.close())
 
-  describe('#addAdmins', () => {
-    describe('when given the pNum of an existing channel and a new human', () => {
+  describe('#addAdmin', () => {
+    describe('when given the phone number of an existing channel and a new admin', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
@@ -70,20 +70,20 @@ describe('membership repository', () => {
       })
     })
 
-    describe('when one of given pNums belongs to an already-existing admin', () => {
+    describe('when one of given phone numbers belongs to an already-existing admin', () => {
       let res
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        res = await membershipRepository.addAdmins(db, channel.phoneNumber, adminPhoneNumbers)
+        await membershipRepository.addAdmins(db, channel.phoneNumber, adminPhoneNumbers)
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-        await membershipRepository.addAdmins(db, channel.phoneNumber, [
+        res = await membershipRepository.addAdmins(db, channel.phoneNumber, [
           adminPhoneNumbers[1],
           genPhoneNumber(),
         ])
       })
 
-      it('does not create a new publication for the already existing number', async () => {
+      it('does not create a new membership for the already existing number', async () => {
         expect(await db.membership.count({ where: { type: memberTypes.ADMIN } })).to.eql(
           adminCount + 1,
         )
@@ -91,6 +91,64 @@ describe('membership repository', () => {
 
       it('returns all admins (including already-existing ones)', () => {
         expect(res.length).to.eql(2)
+      })
+    })
+
+    describe('when given the phone number of an existing subscriber', () => {
+      it('makes the subscriber an admin and does not create a new membership', () => {})
+    })
+
+    describe('#addAmin', () => {
+      let res1, res2
+
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        res1 = await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+        membershipCount = await db.membership.count()
+
+        res2 = await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+      })
+
+      describe('when given the number of an existing admin', () => {
+        it('does not create a new admin', async () => {
+          expect(await db.membership.count()).to.eql(membershipCount)
+        })
+
+        it("returns the existing admin's membership", () => {
+          expect(res1.get()).to.eql(res2.get())
+        })
+      })
+
+      describe('when given the number of an existing subscriber', () => {
+        let res1, res2
+        beforeEach(async () => {
+          channel = await db.channel.create(channelFactory())
+          res1 = await membershipRepository.addSubscriber(
+            db,
+            channel.phoneNumber,
+            subscriberPhoneNumbers[0],
+          )
+          membershipCount = await db.membership.count()
+          subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
+          adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
+
+          res2 = await membershipRepository.addAdmin(
+            db,
+            channel.phoneNumber,
+            subscriberPhoneNumbers[0],
+          )
+        })
+
+        it('makes the subscriber an admin and returns its membership', async () => {
+          expect(res2.updatedAt).to.be.above(res1.updatedAt)
+          expect(omit(res2.get(), ['updatedAt'])).to.eql(
+            omit({ ...res1.get(), type: memberTypes.ADMIN }, ['updatedAt']),
+          )
+        })
+
+        it('does not create a new membership', async () => {
+          expect(await db.membership.count()).to.eql(membershipCount)
+        })
       })
     })
 
@@ -339,11 +397,7 @@ describe('membership repository', () => {
         await db.membership.create(
           adminMembershipFactory({ memberPhoneNumber, language: languages.EN }),
         )
-        result = await membershipRepository.updateLanguage(
-          db,
-          memberPhoneNumber,
-          languages.ES,
-        )
+        result = await membershipRepository.updateLanguage(db, memberPhoneNumber, languages.ES)
       })
 
       it('updates the membership language', async () => {
@@ -362,11 +416,7 @@ describe('membership repository', () => {
             language: languages.EN,
           }),
         )
-        result = await membershipRepository.updateLanguage(
-          db,
-          memberPhoneNumber,
-          languages.ES,
-        )
+        result = await membershipRepository.updateLanguage(db, memberPhoneNumber, languages.ES)
       })
 
       it('updates the subscription language', async () => {
@@ -379,11 +429,7 @@ describe('membership repository', () => {
 
     describe('when sender is neither admin nor subscriber', () => {
       beforeEach(async () => {
-        result = await membershipRepository.updateLanguage(
-          db,
-          genPhoneNumber(),
-          languages.ES,
-        )
+        result = await membershipRepository.updateLanguage(db, genPhoneNumber(), languages.ES)
       })
       it('does nothing', () => {
         expect(result).to.eql([0])
