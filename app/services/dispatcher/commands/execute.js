@@ -104,9 +104,9 @@ const showInfo = async (db, channel, sender, cr) => ({
 
 const maybeAddSubscriber = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.join
-  return sender.type === SUBSCRIBER
-    ? Promise.resolve({ status: statuses.NOOP, message: cr.noop })
-    : addSubscriber(db, channel, sender, language, cr)
+  return sender.type === NONE
+    ? addSubscriber(db, channel, sender, language, cr)
+    : Promise.resolve({ status: statuses.ERROR, message: cr.alreadyMember })
 }
 
 const addSubscriber = (db, channel, sender, language, cr) =>

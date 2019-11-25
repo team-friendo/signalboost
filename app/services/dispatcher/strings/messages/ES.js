@@ -191,7 +191,7 @@ ${support}`,
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
     },
     dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
-    noop: `¡Lo siento! Ya eres miembro del canal.`,
+    alreadyMember: `¡Lo siento! Ya eres miembro del canal.`,
   },
 
   // LEAVE

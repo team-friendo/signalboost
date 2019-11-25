@@ -188,7 +188,7 @@ Welcome to Signalboost! You are now subscribed to the [${name}] channel.
 Reply with HELP to learn more or GOODBYE to unsubscribe.`
     },
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
-    noop: `Whoops! You are already a member of the channel.`,
+    alreadyMember: `Whoops! You are already a member of this channel.`,
   },
 
   // LEAVE

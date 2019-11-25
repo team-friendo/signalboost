@@ -11,10 +11,12 @@ import membershipRepository from '../../../../../app/db/repositories/membership'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
-import { publicationFactory } from '../../../../support/factories/publication'
 import { memberTypes } from '../../../../../app/db/repositories/membership'
 import { sdMessageOf } from '../../../../../app/services/signal'
-import { adminMembershipFactory, subscriberMembershipFactory } from "../../../../support/factories/membership"
+import {
+  adminMembershipFactory,
+  subscriberMembershipFactory,
+} from '../../../../support/factories/membership'
 const {
   signal: { signupPhoneNumber },
 } = require('../../../../../app/config')
@@ -69,11 +71,7 @@ describe('executing commands', () => {
 
         it("attempts to add payload number to the chanel's admins", async () => {
           await processCommand(dispatchable)
-          expect(addAdminStub.getCall(0).args).to.eql([
-            db,
-            channel.phoneNumber,
-            adminPhoneNumber,
-          ])
+          expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, adminPhoneNumber])
         })
 
         describe('when adding the admin succeeds', () => {
@@ -281,18 +279,35 @@ describe('executing commands', () => {
     describe('when number is subscribed to channel', () => {
       const dispatchable = { db, channel, sender: subscriber, sdMessage }
       let result
-
       beforeEach(async () => (result = await processCommand(dispatchable)))
 
       it('does not try to add subscriber', () => {
         expect(addSubscriberStub.callCount).to.eql(0)
       })
 
-      it('returns NOOP status/message', () => {
+      it('returns "already member" status/message', () => {
         expect(result).to.eql({
           command: commands.JOIN,
-          status: statuses.NOOP,
-          message: CR.join.noop,
+          status: statuses.ERROR,
+          message: CR.join.alreadyMember,
+        })
+      })
+    })
+
+    describe('when number belongs to a channel admin', () => {
+      const dispatchable = { db, channel, sender: admin, sdMessage }
+      let result
+      beforeEach(async () => (result = await processCommand(dispatchable)))
+
+      it('does not try to add subscriber', () => {
+        expect(addSubscriberStub.callCount).to.eql(0)
+      })
+
+      it('returns "already member" status/message', () => {
+        expect(result).to.eql({
+          command: commands.JOIN,
+          status: statuses.ERROR,
+          message: CR.join.alreadyMember,
         })
       })
     })
@@ -372,11 +387,7 @@ describe('executing commands', () => {
       afterEach(() => removeAdminStub.restore())
 
       it('removes sender as admin of channel', () => {
-        expect(removeAdminStub.getCall(0).args).to.eql([
-          db,
-          channel.phoneNumber,
-          admin.phoneNumber,
-        ])
+        expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, admin.phoneNumber])
       })
 
       it('returns SUCCESS status/message', () => {
