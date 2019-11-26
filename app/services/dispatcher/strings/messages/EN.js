@@ -9,8 +9,7 @@ const unauthorized = 'Whoops! You are not authorized to do that on this channel.
 const invalidNumber = phoneNumber =>
   `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 
-const support = `
-----------------------------
+const support = `----------------------------
 HOW IT WORKS
 ----------------------------
 
@@ -94,7 +93,9 @@ const commandResponses = {
   // HELP
 
   help: {
-    admin: `[COMMANDS I UNDERSTAND:]
+    admin: `----------------------------------------------
+COMMANDS I UNDERSTAND
+----------------------------------------------
 
 HELP
 -> lists commands
@@ -123,7 +124,9 @@ GOODBYE
 ESPAÑOL
 -> switches language to Spanish`,
 
-    subscriber: `[COMMANDS I UNDERSTAND:]
+    subscriber: `----------------------------------------------
+COMMANDS I UNDERSTAND
+----------------------------------------------
 
 HELP
 -> lists commands
@@ -141,8 +144,7 @@ GOODBYE
   // INFO
 
   info: {
-    admin: channel => `
----------------------------
+    admin: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
 
@@ -151,10 +153,10 @@ phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}
+
 ${support}`,
 
-    subscriber: channel => `
----------------------------
+    subscriber: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
 
@@ -162,6 +164,7 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${getSubscriberMemberships(channel).length}
+
 ${support}`,
     unauthorized,
   },

@@ -101,7 +101,10 @@ const commandResponses = {
   // HELP
 
   help: {
-    admin: `[COMMANDS I UNDERSTAND:]
+    admin: `----------------------------------------------
+COMANDOS QUE ENTIENDO
+----------------------------------------------
+
 AYUDA
 -> lista de comandos
 
@@ -127,7 +130,9 @@ RESPUESTAS DESACTIVADAS
 ADIÓS
 -> le saca del canal`,
 
-    subscriber: `[COMMANDS I UNDERSTAND:]
+    subscriber: `----------------------------------------------
+COMANDOS QUE ENTIENDO
+----------------------------------------------
     
 AYUDA
 -> lista de comandos
@@ -145,10 +150,9 @@ ADIÓS
   // INFO
 
   info: {
-    admin: channel => `
----------------------------
-INFO DEL CANAL:
----------------------------
+    admin: channel => `------------------------------
+INFO DEL CANAL
+------------------------------
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
@@ -157,10 +161,9 @@ respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
 ${support}`,
 
-    subscriber: channel => `
----------------------------
-INFO DEL CANAL:
----------------------------
+    subscriber: channel => `------------------------------
+INFO DEL CANAL
+------------------------------
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
