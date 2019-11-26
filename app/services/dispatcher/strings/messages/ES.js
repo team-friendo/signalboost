@@ -35,7 +35,7 @@ Para más información: https://signalboost.info`
 
 const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
-    `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
+    `Nuevo administrador agregado por ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Su mensaje fue enviado a los administradores de [${channel.name}].
@@ -152,7 +152,6 @@ INFO DEL CANAL:
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-administradorxs: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
