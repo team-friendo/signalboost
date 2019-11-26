@@ -36,7 +36,7 @@ Learn more: https://signalboost.info
 
 const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
-    `New admin ${addedAdmin} added by ${commandIssuer}`,
+    `New admin added by ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
@@ -148,7 +148,6 @@ CHANNEL INFO:
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
-admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}
