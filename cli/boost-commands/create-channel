@@ -18,6 +18,11 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
   exit 1
 fi
 
+if [ -z $(which jq) ];then
+  echo "--- ERROR: you need the jq program installed to run this command!"
+  exit 1
+fi
+
 while getopts ":p:n:a:u:" opt; do
   case "$opt" in
     p)
