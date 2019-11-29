@@ -31,4 +31,4 @@ echo "--- fetching numbers..."
 curl -s \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/channels | jq
+     https://${url}/channels | jq '.'
