@@ -150,6 +150,7 @@ CHANNEL INFO:
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
+admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages sent: ${channel.messageCount.broadcastIn}

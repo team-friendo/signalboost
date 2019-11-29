@@ -156,6 +156,7 @@ INFO DEL CANAL
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
+admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
