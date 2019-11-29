@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command provisions phone numbers in an area code. valid options are:"
@@ -14,6 +14,11 @@ echo "--- checking environment..."
 
 if [ -z $SIGNALBOOST_API_TOKEN ];then
   echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\set -a && source .env && set +a\`"
+  exit 1
+fi
+
+if [ -z $(which jq) ];then
+  echo "--- ERROR: you need the jq program installed to run this command!"
   exit 1
 fi
 

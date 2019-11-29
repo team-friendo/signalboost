@@ -15,6 +15,10 @@ if [ -z $SIGNALBOOST_API_TOKEN ];then
   exit 1
 fi
 
+if [ -z $(which jq) ];then
+  echo "--- ERROR: you need the jq program installed to run this command!"
+  exit 1
+fi
 
 while getopts ":u:" opt; do
   case "$opt" in
@@ -31,4 +35,4 @@ echo "--- fetching numbers..."
 curl -s \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/channels | jq
+     https://${url}/channels | jq '.'
