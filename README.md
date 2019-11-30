@@ -1,16 +1,16 @@
 # Signalboost
 
+Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
+
 ## Table Of Contents:
 
 * [Overview](#overview)
 * [Application Design](#design)
-* FOR SYSADMINS:
-  * [Deploying A Signalboost Instance](#deploy)
-    * [Deploy Instructions for General Public](#deploy-public)
-    * [Deploy Instructions for Maintainers](#deploy-maintainers)
-  * [Using the Signalboost CLI Tool](#cli)
-* FOR DEVELOPERS:
-  * [Getting Started](#getting-started)
+* [Developer Guide](#developer-guide)
+* [Using the CLI](#cli)
+* [Sysadmin Guide](#sysadmin-guide)
+  * [Deploy Instructions for General Public](#deploy-public)
+  * [Deploy Instructions for Team Friendo](#deploy-team-friendo)
 
 # Overview <a name="overview"></a>
 
@@ -20,9 +20,9 @@
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use signalboost for social justice work?**  Write us at `team-friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust team-friendo with storing your subscriber list(s). :)
+**Want to use signalboost for social justice work?**  Send us a signal message at `+1 (938) 444-8536` or email us at `team-friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust team-friendo with storing your subscriber list(s). :)
 
-**NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
+**NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie, Trevor, and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
 
 <a name="txtmob_joke"></a>
@@ -66,7 +66,248 @@ The application has the following components:
  it executes the command and returns response message.
    * the `messenger` subservice handles the output from the executor. if it sees a command response it sends it to the command issuer. else it broadcasts incoming messages to channel subscribers if access control rules so permit.
 
-# Deploying A SignalBoost Instance <a name="deploy"></a>
+
+# Developer Guide <a name="#developer-guide"></a>
+
+We're so happy you want to help write code for Signalboost!
+
+Please get started by reading our `CONTRIBUTING.md` file, located here:
+
+https://0xacab.org/team-friendo/signalboost/blob/master/CONTRIBUTING.md
+
+Then you'll probably want to know about...
+
+## System Requirements
+
+To develop signalboost, you should make sure your local computer has the following programs installed:
+
+* docker CE
+* docker-compose
+* jq
+* postgresql
+
+Installing those on a debian-flavored laptop would involve running the following commands:
+
+``` shell
+sudo apt-get install \
+     apt-transport-https \
+     ca-certificates \
+     curl \
+     gnupg2 \
+     software-properties-common
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+# check fingerprint matches 9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88:
+sudo apt-key fingerprint 0EBFCD88
+sudo apt-get update
+sudo apt-add-repository --yes --update ppa:ansible/ansible
+sudo apt-get install docker-ce, jq, postgresql
+pip install docker-compose
+```
+
+## Secrets <a name="secrets"></a>
+
+Upon cloning the repo, do either of the following to provide missing env vars needed to run signalboost:
+
+### Secrets for General Public
+
+You will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
+
+We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... For example: https://0xacab.org/team-friendo/signalboost/issues/118
+
+In the meantime: suggestions welcome! :)
+
+### Secrets for Team Friendo Members
+
+We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
+
+To be able to use it, you first need to whitelist your gpg key:
+
+* [make a working pgp key](http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/) if you don't have one already
+* obtain your public key fingerprint (with e.g., `gpg -K`)
+* send your pgp public key fingerprint to a signalboost maintainer and ask them to add you to the blackbox whitelist of trusted pgp keys
+
+Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
+
+```
+$ git clone git@0xacab.org:team-friendo/signalboost
+$ cd signalboost
+$ ./bin/blackbox/decrypt_all_files
+$ set +a && source .env && set -a
+```
+## Setup
+
+``` shell
+$ yarn setup
+```
+
+## Run Tests
+
+``` shell
+$ yarn test
+```
+
+If you want, you can run unit and e2e tests separately:
+
+``` shell
+$ yarn test:unit
+```
+
+``` shell
+$ yarn test:e2e
+```
+
+## Run App
+
+Run the app in dev mode with:
+
+``` shell
+$ yarn dev
+```
+
+## Seed Data
+
+You will need the `boost` cli tool installed to create seed numbers and channels.
+
+See the [Using the Cli](#cli) section for instructions on installing and using it!
+
+Once you've got the CLI installed, you can use the following to create 2 twillio numbers and verifiy them with signal on a local dev server running signalboost:
+
+``` shell
+$ yarn dev
+$ boost create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
+```
+
+Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
+
+You can use the following to use a channel that uses <channel_phone_number> as its number and uses <your_actual_phone_number> as an admin of the channel:
+
+
+```shell
+$ boost create-channel \
+    -p <channel_phone_number> \
+    -n "my new channel" \
+    -s <your_actual_phone_number> \
+    -u signalboost.ngrok.io
+```
+
+### Use App
+
+With the app running...
+
+Any human should be able to:
+
+* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
+* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
+
+Any admin should be able to:
+
+* Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
+* Receive all messages broadcast to the channel
+
+### Database scripts
+
+There are a few scripts to do things with the db:
+
+To run all pending migrations (useful if another dev created migrations you haven't run yet):
+
+```shell
+$ yarn db:migrate
+```
+
+To drop the database (you will need to recreate seed data after this):
+
+```shell
+$ yarn db:drop
+```
+
+To get a psql shell (inside the postgres docker container for signalboost):
+
+```shell
+$ yarn db:psql
+```
+
+Get a psql shell:
+
+``` shell
+$ yarn db:psql
+```
+
+# Using the CLI <a name="cli"></a>
+
+Assuming you have already provided secrets in `.env` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)), you can proceed to...
+
+Install the CLI with:
+
+```shell
+$ cd /path/to/signalbost
+$ sudo ./cli/install
+```
+
+You can administer any running signalboost instance with:
+
+``` shell
+$ boost <command> <options>
+```
+
+Where `<command>` is one of the following:
+
+``` shell
+  help
+    - shows this dialogue
+
+  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
+    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
+
+  create-number -a <area_code> -n <numbers_desired> -u <api_url>
+    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
+
+  list-channels -u <api_url>
+    - lists all channels active on the signalboost instance at the given (optional) url
+
+  list-numbers -u <api_url>
+    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
+
+  release-numbers <path>
+    - releases all phone numbers with twilio ids listed at given path
+```
+
+For more detailed instructions on any of the commands, run:
+
+``` shell
+$ boost <command> -h
+```
+
+# Sysadmin Guide <a name="sysadmin-guide"></a>
+
+Want to help run an instance of signalboost on the official Team Friendo server or your own? Great! This section is for you!
+
+It contains guides on system requirements you'll need to get started and two separate guides for people who want to run their own instances of signalboost ([Deploy Instructions for General Public](#deploy-public)) and Team Friendo members trying to learn how we deploy the mainline instance ([Deploy Instructions for Maintainers](#deploy-team-friendo))
+
+The below is the shakiest part of this README! If you try anything below and it doesn't work, or you'd prefer it run a different way! Please open an issue/MR to help us fix it! We'd really appreciate the help!
+
+## System Requirements
+
+To be a sysadmin for a signalboost instance, you will need:
+
+* ansible
+* ansible-playbook
+* various ansible roles from ansible-galaxy
+
+If you are running debian-flavored linux, you can install all ansible dependencies with:
+
+``` shell
+$ cd path/to/signalboost
+$ ./bin/install-ansible
+```
+
+If you are on another system, [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) then run:
+
+``` shell
+ansible-galaxy install geerlingguy.docker
+ansible-galaxy install geerlingguy.pip
+ansible-galaxy install dev-sec.os-hardening
+ansible-galaxy install dev-sec.ssh-hardening
+```
 
 ## Deploy Instructions for General Public <a name="deploy-public"></a>
 
@@ -183,6 +424,8 @@ $ sudo ./cli/uninstall
 
 *(NOTE: This will add a symlink to `./cli` directory to your `/usr/bin` directory. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`, but you must take care to always be in the `<PROJECT_ROOT>` directory when/if you do that.)*
 
+Learn more about how the CLI tools works in [Using the CLI](#cli).
+
 **(6) Provision new twilio phone numbers:**
 
 The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
@@ -210,7 +453,7 @@ $ cd ansible
 $ ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
-## Deploy Instructions for Maintainers <a name="deploy-maintainers"></a>
+## Deploy Instructions for Team Friendo <a name="deploy-team-friendo"></a>
 
 If you are a member of `team-friendo`, here are instructions on how to provision, deploy, and maintain a running signalboost instance. :)
 
@@ -301,6 +544,8 @@ $ cd <path/to/signalboost>
 $ sudo ./cli/uninstall
 ```
 
+Learn more about how the CLI tools works in [Using the CLI](#cli)
+
 **(6) List existing numbers/channels:**
 
 You can check out what numbers and channels already exist with:
@@ -344,177 +589,4 @@ If you would like an easier way to do this (and are okay with the `env_file` loc
 ``` shell
 $ cd <PROJECT_ROOT>
 $ ./bin/deploy
-```
-
-# Use the CLI <a name="cli"></a>
-
-You can administer any running signalboost instance with:
-
-``` shell
-$ boost <command> <options>
-```
-
-Where `<command>` is one of the following:
-
-``` shell
-  help
-    - shows this dialogue
-
-  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
-    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
-
-  create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
-
-  list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given (optional) url
-
-  list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
-
-  release-numbers <path>
-    - releases all phone numbers with twilio ids listed at given path
-```
-
-For more detailed instructions on any of the commands, run:
-
-``` shell
-$ boost <command> -h
-```
-
-# Getting Started <a name="#getting-started"></a>
-
-TODO: read our (as of yet undrafted) contributing guide! :)
-
-## System Dependencies
-
-You will need:
-
-* docker and docker-compose
-* jq
-* postgresql
-* ansible, ansible-playbook
-
-## Secrets
-
-Upon cloning the repo, do either of the following to provide missing env vars needed to run signalboost:
-
-### Secrets for General Public
-
-You will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
-
-We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... In the meantime: suggestions welcome! :)
-
-### Secrets for Maintainers
-
-We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
-
-To be able to use it, you first need to whitelist your gpg key:
-
-* [make a working pgp key](http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/) if you don't have one already
-* obtain your public key fingerprint (with e.g., `gpg -K`)
-* send your pgp public key fingerprint to a signalboost maintainer and ask them to add you to the blackbox whitelist of trusted pgp keys
-
-Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
-
-```
-$ git clone git@0xacab.org:team-friendo/signalboost
-$ cd signalboost
-$ ./bin/blackbox/decrypt_all_files
-$ set +a && source .env && set -a
-```
-## Setup
-
-``` shell
-$ yarn setup
-```
-
-## Run Tests
-
-``` shell
-$ yarn test
-```
-
-If you want, you can run unit and e2e tests separately:
-
-``` shell
-$ yarn test:unit
-```
-
-``` shell
-$ yarn test:e2e
-```
-
-## Run App
-
-Run the app in dev mode with:
-
-``` shell
-$ yarn dev
-```
-
-## Seed Data
-
-You will need the `boost` cli tool installed to create seed numbers and channels. Here's how!
-
-```shell
-$ cd /path/to/signalbost 
-$ sudo ./cli/install
-$ boost create-number -n 2 -u signalboost.ngrok.io # creates 2 signalboost numbers
-```
-
-Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
-
-```shell
-$ boost create-channel \
-    -p <channel_phone_number> \
-    -n "my new channel" \
-    -s <your_actual_phone_number> \
-    -u signalboost.ngrok.io
-```
-
-## Database Scripts
-
-
-
-### Use App
-
-With the app running...
-
-Any human should be able to:
-
-* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
-* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
-
-Any admin should be able to:
-
-* Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
-* Receive all messages broadcast to the channel
-
-### Database scripts
-
-There are a few scripts to do things with the db:
-
-To run all pending migrations (useful if another dev created migrations you haven't run yet):
-
-```shell
-$ yarn db:migrate
-```
-
-To drop the database (you will need to recreate seed data after this):
-
-```shell
-$ yarn db:drop
-```
-
-To get a psql shell (inside the postgres docker container for signalboost):
-
-```shell
-$ yarn db:psql
-```
-
-Get a psql shell:
-
-``` shell
-$ yarn db:psql
 ```
