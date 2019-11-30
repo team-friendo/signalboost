@@ -68,5 +68,6 @@ gatsby serve
 
 ``` shell
 cd path/to/signalboost
+set -a && source .env && set +a
 yarn splash:deploy
 ```
