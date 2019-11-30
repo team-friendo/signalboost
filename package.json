@@ -25,7 +25,8 @@
     "update": "./bin/dev/update",
     "splash:dev": "cd splash && docker-compose -f docker-compose-dev.yml up",
     "splash:build": "cd splash && docker-compose run --entrypoint 'gatsby build' splash",
-    "splash:prod": "cd splash && docker-compose up"
+    "splash:prod": "cd splash && docker-compose up",
+    "splash:deploy": "cd splash && ./bin/deploy"
   },
   "engines": {
     "node": "10.16.3"
