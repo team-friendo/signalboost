@@ -86,11 +86,6 @@ To develop signalboost, you should make sure your local computer has the followi
 * jq
 * make
 
-If you would like to be able to run individual unit tests on your computer, you will also  want:
-
-* node
-* postgresql
-
 Installing those on a debian-flavored laptop would involve running the following commands:
 
 ``` shell
@@ -108,6 +103,12 @@ sudo apt-add-repository --yes --update ppa:ansible/ansible
 sudo apt-get install docker-ce, jq, postgresql
 pip install docker-compose
 ```
+
+If you would like to be able to run individual unit tests on your computer, you will also  want:
+
+* node
+* postgresql
+
 
 ## Secrets <a name="secrets"></a>
 
@@ -137,8 +138,11 @@ Now that you are whitelisted, you can use blackbox to decrypt secrets and source
 git clone git@0xacab.org:team-friendo/signalboost
 cd signalboost
 ./bin/blackbox/decrypt_all_files
-set +a && source .env && set -a
+set -a && source .env && set +a
 ```
+
+(NOTE: if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`)
+
 ## Makefile
 
 We have a lot of scripts to help run the app that are all defined in the repo's `Makefile`. You can list them all with:
