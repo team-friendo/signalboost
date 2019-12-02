@@ -122,7 +122,7 @@ We realize that some of these secrets require paid accounts to work. And that co
 
 In the meantime: suggestions welcome! :)
 
-### Secrets for Team Friendo Members
+### Secrets for Team Friendo Members <a name="team-friendo-secrets"></a>
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
@@ -138,10 +138,16 @@ Now that you are whitelisted, you can use blackbox to decrypt secrets and source
 git clone git@0xacab.org:team-friendo/signalboost
 cd signalboost
 ./bin/blackbox/decrypt_all_files
-set -a && source .env && set +a
 ```
 
-(NOTE: if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`)
+Or... if you prefer something easier to remember than `./bin/blackbox/blah-blah-blah`, just run:
+
+``` shell
+make unlock
+
+```
+
+**GOTCHA WARNING:** if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files**
 
 ## Makefile
 
@@ -479,22 +485,11 @@ If you are a member of `team-friendo`, here are instructions on how to provision
 **(1) Load secrets:**
 
 ``` shell
-cd /path/to/signalboost
-./bin/blackbox/decrypt_all_files
-set -a && source .env && set +a
+make unlock
 ```
 
 *NOTE: we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. It is provided in `signalboost/bin/` as a convenience.
 
-If you would like to install your own version of blackbox you can do that with:*
-
-``` shell
-git clone git@github.com:StackExchange/blackbox
-cd blackbox
-make copy-install
-```
-
-For other installation options, see: https://github.com/StackExchange/blackbox#installation-instructions
 
 **(2) Obtain a server:**
 

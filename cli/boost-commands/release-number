@@ -11,6 +11,10 @@ fi
 
 echo "--- checking environment..."
 
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+source ../../.env # source env vars
+
 phone_number_sid=$1
 
 if [ -z $phone_number_sid ];then
@@ -21,12 +25,12 @@ fi
 
 
 if [ -z $TWILIO_ACCOUNT_SID ];then
-  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. try \`\$ source .env\`"
+  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. Try \`make unlock\` then run again. :)"
   exit 1
 fi
 
 if [ -z $TWILIO_AUTH_TOKEN ];then
-  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. try \`\$ source .env\`"
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. Try \`make unlock\` then run again. :)"
   exit 1
 fi
 
@@ -36,3 +40,4 @@ curl -s -X DELETE \
   -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
   https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/IncomingPhoneNumbers/${phone_number_sid}.json
 
+popd > /dev/null # return to starting directory
