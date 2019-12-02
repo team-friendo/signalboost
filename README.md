@@ -189,8 +189,23 @@ make test.e2e
 Run the app in dev mode with:
 
 ``` shell
-make up.dev
+make dev.up
 ```
+
+## Stop App
+
+To shut the app down gracefully (can take a while for all containers to spin down):
+
+``` shell
+make dev.down
+```
+
+To force all containers to shutdown immediately:
+
+``` shell
+make dev.abort
+```
+
 
 ## Seed Data
 
@@ -201,7 +216,7 @@ See the [Using the Cli](#cli) section for instructions on installing and using i
 Once you've got the CLI installed, you can use the following to create 2 twillio numbers and verifiy them with signal on a local dev server running signalboost:
 
 ``` shell
-make up.dev
+make dev.up
 boost create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
 ```
 
