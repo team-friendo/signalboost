@@ -23,7 +23,7 @@ services:
 
   signald:
     image: signald
-    container_name: signald
+    container_name: signalboost_signald
     networks:
       - default
     volumes:
@@ -61,7 +61,7 @@ services:
 
   proxy:
     image: jwilder/nginx-proxy:alpine
-    container_name: proxy
+    container_name: signalboost_proxy
     ports:
       - 80:80
       - 443:443
@@ -78,7 +78,7 @@ services:
 
   letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion
-    container_name: letsencrypt
+    container_name: signalboost_letsencrypt
     restart: unless-stopped
     volumes:
       - certs:/etc/nginx/certs

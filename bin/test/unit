@@ -11,4 +11,4 @@ echo "--- spinning down environment..."
 
 docker-compose -f docker-compose-test-unit.yml down
 
-docker ps --filter name=signalboost_dispatcher* -aq | xargs -I container_id docker rm -f container_id
+docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id

@@ -17,7 +17,7 @@ services:
 
   signald:
     image: signald
-    container_name: signald
+    container_name: signalboost_signald
     networks:
       - default
     volumes:
@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
 
   ngrok:
-    container_name: ngrok
+    container_name: signalboost_ngrok
     ports:
       - 0.0.0.0:4040:4040
     image: wernight/ngrok

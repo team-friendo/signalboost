@@ -7,27 +7,6 @@
   "author": "_",
   "license": "GPL-3.0",
   "private": false,
-  "scripts": {
-    "deploy": "./bin/deploy",
-    "setup": "./bin/dev/setup",
-    "db:drop": "./bin/dev/drop",
-    "db:psql": "./bin/dev/psql",
-    "db:seed": "./bin/dev/seed",
-    "db:unseed": "./bin/dev/unseed",
-    "db:migrate": "./bin/dev/migrate",
-    "db:migrate:undo": "./bin/dev/migrate-undo",
-    "test": "./bin/test/unit && ./bin/test/e2e",
-    "test:unit": "./bin/test/unit",
-    "test:e2e": "./bin/test/e2e",
-    "dev": "docker-compose -f docker-compose-dev.yml up",
-    "start": "docker-compose up -d",
-    "stop": "docker-compose  down",
-    "update": "./bin/dev/update",
-    "splash:dev": "cd splash && docker-compose -f docker-compose-dev.yml up",
-    "splash:build": "cd splash && docker-compose run --entrypoint 'gatsby build' splash",
-    "splash:prod": "cd splash && docker-compose up",
-    "splash:deploy": "cd splash && ./bin/deploy"
-  },
   "engines": {
     "node": "10.16.3"
   },

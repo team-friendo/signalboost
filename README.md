@@ -84,6 +84,11 @@ To develop signalboost, you should make sure your local computer has the followi
 * docker CE
 * docker-compose
 * jq
+* make
+
+If you would like to be able to run individual unit tests on your computer, you will also  want:
+
+* node
 * postgresql
 
 Installing those on a debian-flavored laptop would involve running the following commands:
@@ -129,31 +134,45 @@ To be able to use it, you first need to whitelist your gpg key:
 Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
 
 ```
-$ git clone git@0xacab.org:team-friendo/signalboost
-$ cd signalboost
-$ ./bin/blackbox/decrypt_all_files
-$ set +a && source .env && set -a
+git clone git@0xacab.org:team-friendo/signalboost
+cd signalboost
+./bin/blackbox/decrypt_all_files
+set +a && source .env && set -a
 ```
-## Setup
+## Makefile
+
+We have a lot of scripts to help run the app that are all defined in the repo's `Makefile`. You can list them all with:
 
 ``` shell
-$ yarn setup
+make help
+```
+
+If you type `make` and then hit `TAB`, you will get autocomplete suggestions for whatever you have typed so far.
+
+Let's use some make commands to set up your dev env! :)
+
+## Setup
+
+This will build signalboost's docker containers, install its node dependencies, create its database, and run migrations:
+
+``` shell
+make _.setup
 ```
 
 ## Run Tests
 
 ``` shell
-$ yarn test
+make test.all
 ```
 
 If you want, you can run unit and e2e tests separately:
 
 ``` shell
-$ yarn test:unit
+make test.unit
 ```
 
 ``` shell
-$ yarn test:e2e
+make test.e2e
 ```
 
 ## Run App
@@ -161,7 +180,7 @@ $ yarn test:e2e
 Run the app in dev mode with:
 
 ``` shell
-$ yarn dev
+make up.dev
 ```
 
 ## Seed Data
@@ -173,8 +192,8 @@ See the [Using the Cli](#cli) section for instructions on installing and using i
 Once you've got the CLI installed, you can use the following to create 2 twillio numbers and verifiy them with signal on a local dev server running signalboost:
 
 ``` shell
-$ yarn dev
-$ boost create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
+make up.dev
+boost create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
 ```
 
 Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
@@ -183,7 +202,7 @@ You can use the following to use a channel that uses <channel_phone_number> as i
 
 
 ```shell
-$ boost create-channel \
+boost create-channel \
     -p <channel_phone_number> \
     -n "my new channel" \
     -s <your_actual_phone_number> \
@@ -211,42 +230,43 @@ There are a few scripts to do things with the db:
 To run all pending migrations (useful if another dev created migrations you haven't run yet):
 
 ```shell
-$ yarn db:migrate
+make db.migrate.up
 ```
 
 To drop the database (you will need to recreate seed data after this):
 
 ```shell
-$ yarn db:drop
+make db.drop
 ```
 
 To get a psql shell (inside the postgres docker container for signalboost):
 
 ```shell
-$ yarn db:psql
-```
-
-Get a psql shell:
-
-``` shell
-$ yarn db:psql
+make db.psql
 ```
 
 # Using the CLI <a name="cli"></a>
 
 Assuming you have already provided secrets in `.env` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)), you can proceed to...
 
-Install the CLI with:
+Install* the CLI with:
 
 ```shell
-$ cd /path/to/signalbost
-$ sudo ./cli/install
+make _.install_cli
+```
+
+(*NOTE: this puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
+
+Uninstall it later with:
+
+``` shell
+make _.uninstall_cli
 ```
 
 You can administer any running signalboost instance with:
 
 ``` shell
-$ boost <command> <options>
+boost <command> <options>
 ```
 
 Where `<command>` is one of the following:
@@ -274,7 +294,7 @@ Where `<command>` is one of the following:
 For more detailed instructions on any of the commands, run:
 
 ``` shell
-$ boost <command> -h
+boost <command> -h
 ```
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
@@ -296,8 +316,8 @@ To be a sysadmin for a signalboost instance, you will need:
 If you are running debian-flavored linux, you can install all ansible dependencies with:
 
 ``` shell
-$ cd path/to/signalboost
-$ ./bin/install-ansible
+cd path/to/signalboost
+make _.install_ansible
 ```
 
 If you are on another system, [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) then run:
@@ -354,7 +374,7 @@ NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
 To generate a decently random 32-byte hex string for your `SIGNALBOOST_API_TOKEN`, you could do the following:
 
 ``` shell
-$ python
+python
 >>> import secrets
 >>> secrets.token_hex(32)
 ```
@@ -380,13 +400,7 @@ If you need help finding a server, we'd recommend shopping for a VPS from one th
 
 For domain name registration, we think that [Njal.la](https://njal.la) is hands down the best option.
 
-**(3) Install ansible dependencies:**
-
-``` shell
-$ ./ansible/install-ansible
-```
-
-**(4) Provision and deploy signalboost:**
+**(3) Provision and deploy signalboost:**
 
 This step uses ansible to provision a server, install signalboost and all of its dependencies, then deploy and run signalboost.
 
@@ -399,8 +413,8 @@ It uses four playbooks (all of which can be found in the `ansible/playbooks` dir
 You can run all playbooks with one command:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/main.yml
+cd ansible
+ansible-playbook -i inventory playbooks/main.yml
 ```
 
 *Variation:*
@@ -408,22 +422,19 @@ $ ansible-playbook -i inventory playbooks/main.yml
 By default the secrets needed to run signalboost (including ip addresses and hostnames) are read from `<PROJECT_ROOT>/.env>` If you would like to provide an alternate set of secrets (for example, for a staging server), you can configure the location where ansible will look for the `.env` file by setting the `env_file` ansible variable (specified with an `-e env_file=<some_path>` flag). For example, to read secrets from `/path/to/staging.env`, you would issue the following command:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -e "env_file=/path/to/staging.env" playbooks/main.yml
+cd ansible
+ansible-playbook -e "env_file=/path/to/staging.env" playbooks/main.yml
 ```
 
-**(5) Install the `boost` CLI tool:**
+**(4) Install the `boost` CLI tool:**
 
 Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
 
 Install it with:
 
 ``` shell
-$ sudo ./cli/uninstall
+make _.install_cli
 ```
-
-*(NOTE: This will add a symlink to `./cli` directory to your `/usr/bin` directory. If you prefer to not do that, you can invoke the cli as `./cli/boost` instead of just `boost`, but you must take care to always be in the `<PROJECT_ROOT>` directory when/if you do that.)*
-
 Learn more about how the CLI tools works in [Using the CLI](#cli).
 
 **(6) Provision new twilio phone numbers:**
@@ -431,7 +442,7 @@ Learn more about how the CLI tools works in [Using the CLI](#cli).
 The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
 
 ``` shell
-$ boost new_numbers -n 2 -a 510
+boost new_numbers -n 2 -a 510
 ```
 
 **(7) Provision new signalboost channels:**
@@ -439,7 +450,7 @@ $ boost new_numbers -n 2 -a 510
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channenewl called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
-$ boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
@@ -449,8 +460,8 @@ For more commands supported by the `boost` cli tool see the [Administering](#adm
 On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/deploy.yml
+cd ansible
+ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
 ## Deploy Instructions for Team Friendo <a name="deploy-team-friendo"></a>
@@ -464,9 +475,9 @@ If you are a member of `team-friendo`, here are instructions on how to provision
 **(1) Load secrets:**
 
 ``` shell
-$ cd /path/to/signalboost
-$ ./bin/blackbox/decrypt_all_files
-$ set -a && source .env && set +a
+cd /path/to/signalboost
+./bin/blackbox/decrypt_all_files
+set -a && source .env && set +a
 ```
 
 *NOTE: we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. It is provided in `signalboost/bin/` as a convenience.
@@ -481,112 +492,89 @@ make copy-install
 
 For other installation options, see: https://github.com/StackExchange/blackbox#installation-instructions
 
-**(2) Install ansible dependencies:**
-
-``` shell
-$ ./ansible/install-ansible
-```
-
-*NOTE: This will install [ansible](https://www.ansible.com/) itself and the docker and pip roles we use in our playbooks.*
-
-
-**(3) Obtain a server:**
+**(2) Obtain a server:**
 
 *NOTE: If you are administering an already-existing signalboost instance, omit this step and skip straight to Step 5  ! :)*
 
 ``` shell
-$ ./bin/get-machine
+./bin/get-machine
 ```
 
-**(4) Provision and deploy signalboost:**
+**(3) Provision and deploy signalboost:**
 
 *NOTE: If you are administering an already-existing signalboost instance, omit this step and skip straight to Step 5  ! :)*
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/main.yml
+cd ansible
+ansible-playbook -i inventory playbooks/main.yml
 ```
 
 *Variation 1:* The above will deploy secrets by copying them from `<PROJECT_ROOT>/.env` on your local machine. If you would like to copy them from elsewhere, provide alternate path to the `deploy_file` ansible variable (specified with an `-e deploy_file=<...>` flag). For example, to copy environment variables from `/path/to/development.env`, run:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/main.yml -e env_file /path/to/development.env
+cd ansible
+ansible-playbook -i inventory playbooks/main.yml -e env_file /path/to/development.env
 ```
 
 *Variation 2:*: If you would like to deploy secrets by decrypting the copy of `.env.gpg` under version control (and thus more likely to be up-to-date), add the `-e "deploy_method=blackbox"` flag. For example:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/main.yml -e deploy
+cd ansible
+ansible-playbook -i inventory playbooks/main.yml -e deploy
 ```
 
 *Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps...
 
-**(5) Install the `boost` cli tool:**
+**(4) Install the `boost` cli tool:**
 
-We have a cli tool for performing common sysadmin tasks on running signalboost instances. You can install it by using the following script (which will put the `boost` command on your $PATH by adding a symlink in `/usr/bin`, which is why it needs root):
+We have a cli tool for performing common sysadmin tasks on running signalboost instances. You can install it with:
 
 ``` shell
-$ cd <path/to/signalboost>
-$ sudo ./cli/install
+make _.install_cli
 ```
-The main use of this tool is to:
+To learn more about how the CLI tool works, see [Using the CLI](#cli)
 
-1. provision new twillio phone numbers and authenticate them with signal
-2. deploy already-authenticated phone numbers for use as signalboost channels
-3. list already-provisioned numbers and already-deployed channels
-
-You can uninstall it later with:
-
-```shell
-$ cd <path/to/signalboost>
-$ sudo ./cli/uninstall
-```
-
-Learn more about how the CLI tools works in [Using the CLI](#cli)
-
-**(6) List existing numbers/channels:**
+**(5) List existing numbers/channels:**
 
 You can check out what numbers and channels already exist with:
 
 ```shell
-$ boost list-numbers
-$ boost list-channels
+boost list-numbers
+boost list-channels
 ```
 
-**(7) Provision new twilio phone numbers:**
+**(6) Provision new twilio phone numbers:**
 
 The below will provision 2 phone numbers in area code 510:
 
 ``` shell
-$ boost create-number -n 2 -a 510
+boost create-number -n 2 -a 510
 ```
 
 *NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.*
 
-**(8) Provision new signalboost channels:**
+**(7) Provision new signalboost channels:**
 
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as senders on the channel.
 
 ``` shell
-$ boost create-channel -p +15105555555 -n "conquest of bread" -s "+151066666666,+15107777777"
+boost create-channel -p +15105555555 -n "conquest of bread" -s "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
 
-**(9) Deploy updates to signalboost:**
+**(8) Deploy updates to signalboost:**
 
 On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
 ``` shell
-$ cd ansible
-$ ansible-playbook -i inventory playbooks/deploy.yml
+cd ansible
+ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
 If you would like an easier way to do this (and are okay with the `env_file` location being set to `<PROJECT_ROOT>/.env` and the `secrets_mode` set to `copy`), you can simply run:
 
 ``` shell
-$ cd <PROJECT_ROOT>
-$ ./bin/deploy
+cd <PROJECT_ROOT>
+make deploy
 ```
