@@ -143,8 +143,7 @@ cd signalboost
 Or... if you prefer something easier to remember than `./bin/blackbox/blah-blah-blah`, just run:
 
 ``` shell
-make unlock
-
+make _.unlock
 ```
 
 **GOTCHA WARNING:** if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files**
@@ -262,7 +261,7 @@ Assuming you have already provided secrets in `.env` (as described in the [Secre
 Install* the CLI with:
 
 ```shell
-make _.install_cli
+make cli.install
 ```
 
 (*NOTE: this puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
@@ -270,7 +269,7 @@ make _.install_cli
 Uninstall it later with:
 
 ``` shell
-make _.uninstall_cli
+make cli.uninstall
 ```
 
 You can administer any running signalboost instance with:
@@ -327,7 +326,7 @@ If you are running debian-flavored linux, you can install all ansible dependenci
 
 ``` shell
 cd path/to/signalboost
-make _.install_ansible
+make ansible.install
 ```
 
 If you are on another system, [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) then run:
@@ -443,7 +442,7 @@ Signalboost ships with a cli tool for adding phone numbers, channels, and admins
 Install it with:
 
 ``` shell
-make _.install_cli
+make cli.install
 ```
 Learn more about how the CLI tools works in [Using the CLI](#cli).
 
@@ -485,7 +484,7 @@ If you are a member of `team-friendo`, here are instructions on how to provision
 **(1) Load secrets:**
 
 ``` shell
-make unlock
+make _.unlock
 ```
 
 *NOTE: we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. It is provided in `signalboost/bin/` as a convenience.
@@ -529,7 +528,7 @@ ansible-playbook -i inventory playbooks/main.yml -e deploy
 We have a cli tool for performing common sysadmin tasks on running signalboost instances. You can install it with:
 
 ``` shell
-make _.install_cli
+make cli.install
 ```
 To learn more about how the CLI tool works, see [Using the CLI](#cli)
 
@@ -575,5 +574,5 @@ If you would like an easier way to do this (and are okay with the `env_file` loc
 
 ``` shell
 cd <PROJECT_ROOT>
-make deploy
+make _.deploy
 ```

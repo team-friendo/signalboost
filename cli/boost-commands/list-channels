@@ -15,7 +15,7 @@ cd `dirname "$0"` # cd to script path
 source ../../.env # source env vars
 
 if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make unlock\` then run again."
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make _.unlock\` then run again."
   exit 1
 fi
 
