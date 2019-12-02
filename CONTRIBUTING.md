@@ -1,12 +1,13 @@
 # Table of Contents
 
-1. [Community Guidelines](#guidelines)
-1. [Opening Issues](#issues)
-  1. [Feature Requests](#features)
-  1. [Bug Reports](#bugs)
-1. [Submitting Merge Requests](#mrs)
-1. [Style preferences](#style)
-1. [Talking to humans](#comms)
+* [Community Guidelines](#guidelines)
+* [Opening Issues](#issues)
+  * [Feature Requests](#features)
+  * [Bug Reports](#bugs)
+* [Submitting Merge Requests](#mrs)
+* [Reviewing Merge Requests](#review)
+* [Style preferences](#style)
+* [Talking to humans](#comms)
 
 # Community Guidelines <a name="guidelines"></a>
 
@@ -105,6 +106,10 @@ As with feature requests, the "Desired Behavior" section should be written in ex
 
 Yay! Thanks for writing code to help the project! To help us keep track of things, please observe the following git conventions:
 
+* **assign a reviewer** (team-friendo only)
+  * if you're on the team, assign a reviewer who is likely to have context on your work to review it
+  * for now, that's either @aguestuser or @fdbk
+  * see [below](#review) for how the review process will go
 * **use issues:** whenever possible, make all MRs in response to an issue:
   * work on an MR in a feature branch with a name corresponding to the issue it resolves
     * eg: for issue number 99 with title "add lollipops" you'd make a branch called `99-add-lollipops`
@@ -112,7 +117,7 @@ Yay! Thanks for writing code to help the project! To help us keep track of thing
     * eg, on branch `99-add-lollipops`, all commit messages should start with `[99]`
   * reference the issue in the title of the MR
     * eg: `resolves "add lollipops" [#99]`
-* **solicit feedback on thorny issues:** use issues to solicit input on potentially controversial or complex changes
+* **solicit feedback first on thorny issues:** use issues to solicit input on potentially controversial or complex changes
   * if you want to make a potentially boat-rocking change, that's great! :)
   * please just give us a chance to talk about it first by opening an issue and marking it with the `Discussion` tag
   * this way, we can iron out any kinks and make sure that once you submit an MR, it meets the needs of the broader community and is more likely to be merged quickly! :)
@@ -123,7 +128,7 @@ Yay! Thanks for writing code to help the project! To help us keep track of thing
 * **tests:** use tests! for everything you possibly can! :)
   * run the test suite (`yarn test`) before opening an MR. if tests are failing, we will not merge your code, and that would be sad! :(
   * write tests for any new code you write. if you add code with no tests, we will ask you to add tests before merging
-* rebase onto master before merging
+* **rebase** onto master before merging
   * yes, we want you to rebase onto master instead of merging master into your branch.
   * this keeps the git history log graph nice and readable. (clean DAGs FTW! <3)
   * if one or more MRs have been merged between when you opened your MR and when it is merged, we might ask you to rebase agin
@@ -134,6 +139,23 @@ Yay! Thanks for writing code to help the project! To help us keep track of thing
 * **timely feedback:** you should expect to hear back from a `Team Friendo` member within 24 hours of submitting your request
   * if 48 hours passes and nobody has said anything, feel free to `@team-friendo` in the MR discussion to get our attention! :)
 
+# Reviewing Merge Requests <a name="review"></a>
+
+This is likely to change a bunch as we evolve the CI support for the project. For now, this is how the process of moving from an open MR to a shipped feature will go:
+
+* team assigns a reviewer if one has not already been assigned (for community-submitted MRs)
+* reviewer makes sure tests and lint rules are passing (manually or in CI)
+* reviewer pulls down branch, runs app, makes sure it behaves as the "Behavior" section in the corresponding issue describes (ie: that the MR meet's the issue's "acceptance criteria")
+* if feeling extra helpful, reviewer might poke around manually to make sure no regressions were introduced (at a base level: admins should be able to broadcast messages and new users should be able to subscribe and unsubscribe)
+* reviewer gives constructive code review (more on what that means to come), then:
+  * approves and merges
+  * asks for changes and merges once they have been made
+* if the work is functional but has clean up issues (difficult-to-maintain/hard-to-follow code, a useful refactor left unimplemented), the reviewer should consider:
+  * refraining from blocking shipping the MR over these issues, and instead
+  * opening a new issue -- the point of which is to clean up the MR under review -- and assign the MR author to implement it after the current MR is merged but before moving onto other work
+* if all of the above works, deploy!
+  * for now: @aguestuser will always do this manually
+  * long-term: @fdbk will investigate getting push-button deploy in gitlab (so that we can do manual testing first before automatically deploying)
 
 # Style Preferences <a name="style"></a>
 
