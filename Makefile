@@ -20,28 +20,32 @@ _.setup: # build docker container, create dbs, run migrations
 _.update: # re-build docker images, install dependencies, run migrations
 	./bin/dev/setup
 
-_.build_docker: ## rebuild the signalboost & signald docker images 
-	./bin/build-docker
-
-_.install_cli: ## install the boost cli (puts ./cli/boost-commands on your $PATH)
-	sudo ./cli/install
-
-_.uninstall_cli: ## removes boost cli files from your path
-	sudo ./cli/uninstall
-
-_.install_ansible: ## removes boost cli files from your path
-	./bin/install-ansible
-
-
-#####################
-# secret management #
-#####################
-
-secrets.unlock: ## unlock signalboost secrets
+_.unlock: ## unlock signalboost secrets
 	./bin/blackbox/decrypt_all_files
 
-secrets.source: ## export secrets as global env vars by sourcing .env
-	echo "you need to run `set -a && source .env && set +a`"
+
+########################
+# cli-related commands #
+########################
+
+cli.install: ## install the boost cli (puts ./cli/boost-commands on your $PATH)
+	sudo ./cli/install
+
+cli.uninstall: ## removes boost cli files from your path
+	sudo ./cli/uninstall
+
+# TODO: add aliases to commands here that accept args...
+
+
+##########################
+# docker/ansible-related #
+##########################
+
+docker.build: ## rebuild the signalboost & signald docker images 
+	./bin/build-docker
+
+ansible.install: ## removes boost cli files from your path
+	./bin/install-ansible
 
 
 #######################
@@ -77,6 +81,7 @@ down.soft: ## gracefully stop all signalboost container
 down.force: ## force stop all running signalboost containers
 	docker rm -f `docker ps --filter name=signalboost_* -aq`
 
+
 #############
 # run tests #
 #############
@@ -92,6 +97,7 @@ test.e2e: ## run e2e tests
 
 test.lint: ## run linter
 	npx eslint app
+
 
 ##################################
 # run and deploy the splash page #
@@ -109,6 +115,4 @@ splash.build: ## build production version of splash site
 
 splash.prod: ## run (already-built) version of splash site
 	cd splash && docker-compose up
-
-
 

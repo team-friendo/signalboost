@@ -25,12 +25,12 @@ fi
 
 
 if [ -z $TWILIO_ACCOUNT_SID ];then
-  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. Try \`make unlock\` then run again. :)"
+  echo "--- ERROR: no TWILIO_ACCOUNT_SID found. Try \`make _.unlock\` then run again. :)"
   exit 1
 fi
 
 if [ -z $TWILIO_AUTH_TOKEN ];then
-  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. Try \`make unlock\` then run again. :)"
+  echo "--- ERROR: no TWILIO_AUTH_TOKEN found. Try \`make _.unlock\` then run again. :)"
   exit 1
 fi
 
