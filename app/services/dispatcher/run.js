@@ -131,7 +131,12 @@ const shouldUpdateSafetyNumber = inboundMsg =>
   !get(inboundMsg, 'data.message', '').includes('Rate limit')
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
-  const type = await membershipRepository.resolveSenderType(db, channelPhoneNumber, senderPhoneNumber)
+  // TODO(aguestuser|2019-12-02): do this with one db query!
+  const type = await membershipRepository.resolveSenderType(
+    db,
+    channelPhoneNumber,
+    senderPhoneNumber,
+  )
   const language = await membershipRepository.resolveSenderLanguage(
     db,
     channelPhoneNumber,

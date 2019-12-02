@@ -90,6 +90,9 @@ test.unit: ## run unit tests
 test.e2e: ## run e2e tests
 	./bin/test/e2e
 
+test.lint: ## run linter
+	npx eslint app
+
 ##################################
 # run and deploy the splash page #
 ##################################

@@ -1,4 +1,4 @@
-const { map, flattenDeep, isEmpty, find, get } = require('lodash')
+const { map, flattenDeep, isEmpty, find } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const { defaultLanguage } = require('../../../config')
