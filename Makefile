@@ -69,17 +69,14 @@ db.migrate.down: # undo last migration
 # start and stop the app #
 ##########################
 
-up.dev: ## run signalboost in local dev mode
+dev.up: ## run signalboost in local dev mode
 	docker-compose -f docker-compose-dev.yml up
 
-up.prod: ## run signalboost in prod mode
-	docker-compose up -d
+dev.down: ## gracefully stop all signalboost container
+	docker-compose -f docker-compose-dev.yml down
 
-down.soft: ## gracefully stop all signalboost container
-	docker-compose down
-
-down.force: ## force stop all running signalboost containers
-	docker rm -f `docker ps --filter name=signalboost_* -aq`
+dev.abort: ## force stop all running signalboost containers
+	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
 
 
 #############
