@@ -22,5 +22,3 @@ while read sid; do
   echo "--- releasing number with sid $sid ..."
   boost release-number $sid
 done < $path_to_number_sids
-
-popd # return to original dir

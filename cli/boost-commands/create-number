@@ -12,8 +12,12 @@ fi
 
 echo "--- checking environment..."
 
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+source ../../.env # source env vars
+
 if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. try \`\set -a && source .env && set +a\`"
+  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make unlock\` then run again."
   exit 1
 fi
 
@@ -63,3 +67,5 @@ curl -s -X POST \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
      -d "{ $area_code_kv, \"num\": $num }" \
      https://${url}/phoneNumbers | jq
+
+popd > /dev/null # return to starting directory
