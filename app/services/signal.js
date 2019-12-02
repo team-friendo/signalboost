@@ -100,7 +100,7 @@ const trustLevels = {
 const messages = {
   error: {
     socketTimeout: 'Maximum signald connection attempts exceeded.',
-    invalidJSON: msg => 'Failed to parse JSON: ${msg}',
+    invalidJSON: msg => `Failed to parse JSON: ${msg}`,
     socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
     verificationFailure: (phoneNumber, reason) =>
       `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,

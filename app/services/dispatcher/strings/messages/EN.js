@@ -34,8 +34,7 @@ Learn more: https://signalboost.info
 `
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `New admin added by ${commandIssuer}`,
+  adminAdded: commandIssuer => `New admin added by ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].

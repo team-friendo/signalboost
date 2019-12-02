@@ -5,7 +5,7 @@ const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
-const { ADMIN, SUBSCRIBER, NONE } = memberTypes
+const { ADMIN, NONE } = memberTypes
 const {
   signal: { signupPhoneNumber },
 } = require('../../../config')

@@ -1,6 +1,5 @@
 const { Op } = require('sequelize')
 const { statuses } = require('../models/phoneNumber')
-const validations = require('../validations/phoneNumber')
 
 const filters = {
   ACTIVE: 'ACTIVE',
@@ -28,6 +27,6 @@ const parseQueryFilter = filter => {
 const update = (db, phoneNumber, attrs) =>
   db.phoneNumber
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
-    .then(([_, [pNumInstance]]) => pNumInstance)
+    .then(([, [pNumInstance]]) => pNumInstance)
 
 module.exports = { filters, findAll, findAllPurchased, list, update }

@@ -21,7 +21,7 @@ const create = async (db, phoneNumber, name, adminPhoneNumbers) => {
 const update = (db, phoneNumber, attrs) =>
   db.channel
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
-    .then(([_, [pNumInstance]]) => pNumInstance)
+    .then(([, [pNumInstance]]) => pNumInstance)
 
 const findAll = db => db.channel.findAll()
 
