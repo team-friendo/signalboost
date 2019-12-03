@@ -5,6 +5,7 @@ const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const channelRepository = require('../../db/repositories/channel')
+const { getAdminPhoneNumbers } = channelRepository
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
 const {
@@ -92,7 +93,7 @@ const handleHotlineMessage = dispatchable => {
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
-  const { message, command, status } = commandResult
+  const { command, message, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
   await wait(resendDelay)
   return handleNotifications({ commandResult, dispatchable })
@@ -100,7 +101,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
 const handleNotifications = async ({ commandResult, dispatchable }) => {
-  const { command, status, payload } = commandResult
+  const { command, message, status, payload } = commandResult
   const { db, sock, channel, sender } = dispatchable
   const notifyBase = { db, sock, channel }
   if (command === commands.ADD && status === statuses.SUCCESS) {
@@ -115,12 +116,10 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
     })
     return notify({
       ...notifyBase,
-      notification: messagesIn(sender.language).notifications.adminAdded(
-        sender.phoneNumber,
-        payload,
-      ),
+      // TODO (@mari): sender language shouldn't override recipient lang pref
+      notification: messagesIn(sender.language).notifications.adminAdded,
       // don't send to newly added admin, that would mess up safety number re-trusting!
-      recipients: channelRepository.getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
+      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
     })
   }
   if (command === commands.INVITE && status === statuses.SUCCESS) {
@@ -129,6 +128,48 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
       ...notifyBase,
       notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
       recipients: [payload],
+
+  if (command === commands.REMOVE && status === statuses.SUCCESS) {
+    // notify removed admin they've been removed
+    await notify({
+      ...notifyBase,
+      notification: messagesIn(sender.language).notifications.toRemovedAdmin,
+      recipients: [payload],
+    })
+    // notify everyone else that an admin has been removed
+    return notify({
+      ...notifyBase,
+      notification: messagesIn(sender.language).notifications.adminRemoved,
+      recipients: getAdminPhoneNumbers(channel).filter(
+        pNum => pNum !== sender.phoneNumber && pNum !== payload,
+      ),
+    })
+  }
+
+  if (command === commands.RENAME && status === statuses.SUCCESS) {
+    return notify({
+      ...notifyBase,
+      notification: messagesIn(sender.language).notifications.channelRenamed(channel.name, payload),
+      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
+    })
+  }
+
+  if (
+    (command === commands.RESPONSES_OFF || command === commands.RESPONSES_ON) &&
+    status === statuses.SUCCESS
+  ) {
+    return notify({
+      ...notifyBase,
+      notification: message,
+      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
+    })
+  }
+
+  if (command === commands.LEAVE && status === statuses.SUCCESS) {
+    return notify({
+      ...notifyBase,
+      notification: messagesIn(sender.language).notifications.adminLeft,
+      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
     })
   }
 }

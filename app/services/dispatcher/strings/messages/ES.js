@@ -34,13 +34,12 @@ Signalboost responde a comandos:
 Para más información: https://signalboost.info`
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
+  adminAdded: 'Se acaba de agregar nuevo administrador.',
+
+  adminRemoved: 'Se acaba de eliminar un administrador.',
 
   hotlineMessageSent: channel =>
-    `Su mensaje se envió de forma anónima a los admins de [${
-      channel.name
-    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+    `Su mensaje se envió de forma anónima a los admins de [${channel.name}]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
 
 Enviar AYUDA para enumerar comandos válidos.
 `,
@@ -53,6 +52,10 @@ Enviar AYUDA para enumerar comandos válidos.
   inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
   
   Responda con ACEPTAR o RECHAZAR.`,
+
+  adminLeft: 'Un administrador dejó el canal.',
+
+  channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -76,6 +79,9 @@ Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumbe
 
 Responda con AYUDA para más información.`,
 
+  toRemovedAdmin:
+    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+
   noop: '¡Lo siento! Eso no es un comando!',
 
   unauthorized: `¡Lo siento! No entiendo eso.
@@ -98,9 +104,7 @@ const commandResponses = {
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowThreshold: (channel, required, actual) =>
-      `Lo sentimos, ${
-        channel.name
-      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar tu invitación. ¡Inténtalo de nuevo!',
   },
 

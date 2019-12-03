@@ -311,7 +311,7 @@ describe('messenger service', () => {
         const sdMessage = `${commands.ADD} ${newAdmin}`
         const response = messages.commandResponses.add.success(newAdmin)
         const welcome = messages.notifications.welcome(adminSender.phoneNumber, channel.phoneNumber)
-        const alert = messages.notifications.adminAdded(adminSender.phoneNumber, newAdmin)
+        const alert = messages.notifications.adminAdded
 
         beforeEach(async () => {
           await messenger.dispatch({

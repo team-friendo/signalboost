@@ -19,15 +19,15 @@ const {
  * }
  *
  * type CommandResult = {
- *   status: string,
  *   command: string,
+ *   status: string,
  *   message: string,
  * }
  *
  * type Toggle = toggles.RESPONSES | toggles.VOUCHING
  * */
 
-// (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
+// (Executable, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
   const { db, channel, sender } = dispatchable
@@ -221,7 +221,11 @@ const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
 const removeAdmin = async (db, channel, adminNumber, cr) =>
   membershipRepository
     .removeAdmin(db, channel.phoneNumber, adminNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(adminNumber),
+      payload: adminNumber,
+    }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
 
 // RENAME
@@ -236,7 +240,11 @@ const maybeRenameChannel = async (db, channel, sender, newName) => {
 const renameChannel = (db, channel, newName, cr) =>
   channelRepository
     .update(db, channel.phoneNumber, { name: newName })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.name, newName) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(channel.name, newName),
+      payload: newName,
+    }))
     .catch(err =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
