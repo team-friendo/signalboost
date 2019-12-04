@@ -48,17 +48,17 @@ describe('channel model', () => {
     channel = await db.channel.create(channelFactory())
 
     it('has correct fields', () => {
-      expect(keys(channel.get())).to.have.members([
-        'phoneNumber',
-        'name',
-        'responsesEnabled',
-        'createdAt',
-        'updatedAt',
-      ])
+      expect(channel.phoneNumber).to.be.a('string')
+      expect(channel.name).to.be.a('string')
+      expect(channel.responsesEnabled).to.be.a('boolean')
+      expect(channel.vouchingOn).to.be.a('boolean')
+      expect(channel.createdAt).to.be.a('Date')
+      expect(channel.updatedAt).to.be.a('Date')
     })
 
     it('sets correct defaults', () => {
       expect(channel.responsesEnabled).to.equal(false)
+      expect(channel.vouchingOn).to.equal(false)
     })
   })
 

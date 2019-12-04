@@ -17,6 +17,11 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false,
     },
+    vouchingOn: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   })
 
   channel.associate = db => {
