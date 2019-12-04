@@ -30,6 +30,11 @@ const channelOf = (sequelize, DataTypes) => {
       onDelete: 'cascade',
     })
 
+    channel.hasMany(db.invite, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
+
     channel.hasOne(db.messageCount, {
       hooks: true,
       onDelete: 'cascade',

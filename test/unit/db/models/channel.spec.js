@@ -1,14 +1,15 @@
 import { expect } from 'chai'
 import { describe, it, test, before, beforeEach, after, afterEach } from 'mocha'
-import { keys, times } from 'lodash'
+import { times } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
+import { inviteFactory } from '../../../support/factories/invite'
 
 describe('channel model', () => {
   let db, channel
 
-  const createChannelWithSubscriptions = () =>
+  const createChannelWithMemberships = () =>
     db.channel.create(
       {
         ...channelFactory(),
@@ -27,6 +28,17 @@ describe('channel model', () => {
       },
       {
         include: [{ model: db.messageCount }],
+      },
+    )
+
+  const createChannelWithInvites = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        invites: [inviteFactory(), inviteFactory()],
+      },
+      {
+        include: [{ model: db.invite }],
       },
     )
 
@@ -76,11 +88,11 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, messageCount, memberships
+    let channel, messageCount, memberships, invites
 
     describe('memberships', () => {
       beforeEach(async () => {
-        channel = await createChannelWithSubscriptions()
+        channel = await createChannelWithMemberships()
         memberships = await channel.getMemberships()
       })
 
@@ -123,6 +135,29 @@ describe('channel model', () => {
         const messageCountCount = await db.messageCount.count()
         await channel.destroy()
         expect(await db.messageCount.count()).to.eql(messageCountCount - 1)
+      })
+    })
+
+    describe('invites', () => {
+      describe('invites', () => {
+        beforeEach(async () => {
+          channel = await createChannelWithInvites()
+          invites = await channel.getInvites()
+        })
+
+        it('has many invites', async () => {
+          expect(invites).to.have.length(2)
+        })
+
+        it('sets the channel phone number as the foreign key in each invite', () => {
+          expect(invites.map(s => s.channelPhoneNumber)).to.eql(times(2, () => channel.phoneNumber))
+        })
+
+        it('deletes invites when it deletes channel', async () => {
+          const inviteCount = await db.invite.count()
+          await channel.destroy()
+          expect(await db.invite.count()).to.eql(inviteCount - 2)
+        })
       })
     })
   })
