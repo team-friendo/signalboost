@@ -7,7 +7,7 @@ const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
-const { get } = require('lodash')
+const { get, isEmpty } = require('lodash')
 const { defaultLanguage } = require('../../config')
 
 /**
@@ -66,6 +66,7 @@ const listenForInboundMessages = async (db, sock, channels) =>
  *******************/
 
 const dispatch = async (db, sock, inboundMsg) => {
+  const should = shouldRelay(inboundMsg)
   if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
   if (shouldUpdateSafetyNumber(inboundMsg)) return updateSafetyNumber(db, sock, inboundMsg)
   return Promise.resolve()
@@ -122,8 +123,14 @@ const parseMessage = inboundMsg => {
   }
 }
 
-const shouldRelay = inboundMsg =>
+const shouldRelay = inboundMsg => _isMessage(inboundMsg) && !_isEmpty(inboundMsg)
+
+const _isMessage = inboundMsg =>
   inboundMsg.type === signal.messageTypes.MESSAGE && get(inboundMsg, 'data.dataMessage')
+
+const _isEmpty = inboundMsg =>
+  get(inboundMsg, 'data.dataMessage.message') === '' &&
+  isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
 
 const shouldUpdateSafetyNumber = inboundMsg =>
   inboundMsg.type === signal.messageTypes.ERROR &&

@@ -117,7 +117,92 @@ describe('dispatcher service', () => {
   })
 
   describe('handling an incoming message', () => {
-    describe('when message is not relayable or a failed send attempt', () => {
+    describe('deciding whether to dispatch a message', () => {
+      describe('when message is not of type "message"', () => {
+        beforeEach(async () => {
+          sock.emit(
+            'data',
+            JSON.stringify({
+              type: 'list_groups',
+              data: {
+                username: '+12223334444',
+              },
+            }),
+          )
+          await wait(socketDelay)
+        })
+
+        it('ignores the message', () => {
+          expect(processCommandStub.callCount).to.eql(0)
+          expect(dispatchStub.callCount).to.eql(0)
+        })
+      })
+
+      describe('when message is of type "message"', () => {
+        describe('when message has a body', () => {
+          beforeEach(async () => {
+            sock.emit(
+              'data',
+              JSON.stringify({
+                type: 'message',
+                data: {
+                  dataMessage: {
+                    message: 'hi',
+                    attachments: [],
+                  },
+                },
+              }),
+            )
+            await wait(socketDelay)
+          })
+
+          it('dispatches the message', () => {
+            expect(processCommandStub.callCount).to.be.above(0)
+            expect(dispatchStub.callCount).to.be.above(0)
+          })
+        })
+
+        describe('when message lacks a body but contains an attachment', () => {
+          beforeEach(async () => {
+            sock.emit(
+              'data',
+              JSON.stringify({
+                type: 'message',
+                data: {
+                  dataMessage: {
+                    message: '',
+                    attachments: ['cool pix!'],
+                  },
+                },
+              }),
+            )
+            await wait(socketDelay)
+          })
+
+          it('dispatches the message', () => {
+            expect(processCommandStub.callCount).to.be.above(0)
+            expect(dispatchStub.callCount).to.be.above(0)
+          })
+        })
+
+        describe('when message lacks a body AND an attachment', () => {
+          beforeEach(async () => {
+            sock.emit(
+              'data',
+              JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }),
+            )
+            await wait(socketDelay)
+          })
+
+          it('ignores the message', () => {
+            expect(processCommandStub.callCount).to.eql(0)
+            expect(dispatchStub.callCount).to.eql(0)
+          })
+        })
+      })
+    })
+
+    describe('when message lacks a body AND an attachment', () => {
       beforeEach(async () => {
         sock.emit('data', JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }))
         wait(socketDelay)
@@ -129,7 +214,7 @@ describe('dispatcher service', () => {
       })
     })
 
-    describe('when message is dispatchable', () => {
+    describe('dispatching a message', () => {
       beforeEach(async () => {
         sock.emit('data', JSON.stringify(sdInMessage))
         await wait(socketDelay)
@@ -273,7 +358,6 @@ describe('dispatcher service', () => {
         })
 
         describe('when message is a welcome message from an admin', () => {
-
           const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
             genPhoneNumber(),
             channel.phoneNumber,
