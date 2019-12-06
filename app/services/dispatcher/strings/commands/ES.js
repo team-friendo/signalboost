@@ -2,6 +2,7 @@ module.exports = {
   ADD: ['AGREGAR'],
   HELP: ['AYUDA'],
   INFO: ['INFO'],
+  INVITE: ['INVITAR'],
   JOIN: ['HOLA'],
   LEAVE: ['ADIÓS', 'ADIOS'],
   REMOVE: ['ELIMINAR'],

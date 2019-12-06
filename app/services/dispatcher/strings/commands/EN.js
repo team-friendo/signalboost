@@ -2,6 +2,7 @@ module.exports = {
   ADD: ['ADD'],
   HELP: ['HELP'],
   INFO: ['INFO'],
+  INVITE: ['INVITE'],
   JOIN: ['HELLO', 'JOIN'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
   LEAVE: ['GOODBYE', 'LEAVE'],
   REMOVE: ['REMOVE'],

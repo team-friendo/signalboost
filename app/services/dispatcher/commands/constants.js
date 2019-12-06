@@ -9,6 +9,7 @@ const commands = {
   ADD: 'ADD',
   HELP: 'HELP',
   INFO: 'INFO',
+  INVITE: 'INVITE',
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
   NOOP: 'NOOP',

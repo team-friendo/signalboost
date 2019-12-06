@@ -14,6 +14,7 @@ describe('parsing commands', () => {
         'do REMOVE foo',
         'do HELP',
         'do INFO',
+        'do INVITE',
         'do HELLO',
         'do GOODBYE',
         'do RESPONSES ON',
@@ -22,6 +23,7 @@ describe('parsing commands', () => {
         'hace AGREGAR foo',
         'hace AYUDA',
         'hace INFO',
+        'hace INVITAR',
         'hace HOLA',
         'hace ADIÓS',
         'hace ELIMINAR',
@@ -81,6 +83,19 @@ describe('parsing commands', () => {
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.INFO,
+            language: languages.EN,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('INVITE command', () => {
+      it('parses an INVITE command (regardless of case or whitespace)', () => {
+        const msgs = ['INVITE', 'invite', ' invite ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.INVITE,
             language: languages.EN,
             payload: '',
           }),
@@ -244,6 +259,19 @@ describe('parsing commands', () => {
           expect(parseExecutable(msg)).to.eql({
             command: commands.INFO,
             language: languages.EN,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('INVITE command', () => {
+      it('parses an INVITE command (regardless of case or whitespace)', () => {
+        const msgs = ['INVITAR', 'invitar', ' invitar ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.INVITE,
+            language: languages.ES,
             payload: '',
           }),
         )
