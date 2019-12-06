@@ -78,6 +78,9 @@ dev.down: ## gracefully stop all signalboost container
 dev.abort: ## force stop all running signalboost containers
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
 
+dev.restart: ## force stop and start the app again
+	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
+	docker-compose -f docker-compose-dev.yml up
 
 #############
 # run tests #
