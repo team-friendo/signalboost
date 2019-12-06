@@ -64,7 +64,13 @@ elif [[ ! $admins =~ ^(\+[0-9]{9,15}(,?))+$ ]];then
 else
   # convert comma-delimited list of numbers
   # into string representation of array of string representations of numbers
-  admins="[\"$(echo $admins | sed -re "s/,/\", \"/g")\"]"
+  if [ "$(uname)" == 'Darwin' ]
+    then # we are in mac and must use -E
+       admins="[\"$(echo $admins | sed -E "s/,/\", \"/g")\"]"
+    else # we are in linux and may use -re
+       admins="[\"$(echo $admins | sed -re "s/,/\", \"/g")\"]"
+  fi
+
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi

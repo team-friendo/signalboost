@@ -229,7 +229,7 @@ You can use the following to use a channel that uses <channel_phone_number> as i
 boost create-channel \
     -p <channel_phone_number> \
     -n "my new channel" \
-    -s <your_actual_phone_number> \
+    -a <your_actual_phone_number> \
     -u signalboost.ngrok.io
 ```
 
@@ -299,17 +299,20 @@ Where `<command>` is one of the following:
   help
     - shows this dialogue
 
-  create-channel -p <chan_phone_number> -n <chan_name> -s <senders> -u <api_url>
-    - creates a channel with provied phone number, name, and senders on signalboost instance at (optional) url
+  add-admin -c <channel phone number> -a <admin phone number> -u <url>
+    - adds an admin to a channel on the signalboost instance at url (defaults to prod!)
+
+  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
+    - creates a channel with provied phone number, name, and admins on signalboost instance at url (defaults to prod!)
 
   create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at (optional) url
+    - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
 
   list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given (optional) url
+    - lists all channels active on the signalboost instance at the given url (defaults to prod!)
 
   list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at (optional) url
+    - lists all numbers purchased from twilio on the signalboost instance at url (defaults to prod!)
 
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
@@ -571,7 +574,7 @@ boost create-number -n 2 -a 510
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as senders on the channel.
 
 ``` shell
-boost create-channel -p +15105555555 -n "conquest of bread" -s "+151066666666,+15107777777"
+boost create-channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
 For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
