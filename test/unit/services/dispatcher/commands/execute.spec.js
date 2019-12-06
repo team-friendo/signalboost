@@ -7,6 +7,7 @@ import { commands, statuses } from '../../../../../app/services/dispatcher/comma
 import { languages } from '../../../../../app/constants'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
 import channelRepository from '../../../../../app/db/repositories/channel'
+import inviteRepository from '../../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../../app/db/repositories/membership'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
@@ -31,6 +32,7 @@ describe('executing commands', () => {
       ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
     ],
     messageCount: { broadcastIn: 42 },
+    vouchingOn: false,
   }
   const signupChannel = {
     name: 'SB_SIGNUP',
@@ -222,6 +224,130 @@ describe('executing commands', () => {
           command: commands.INFO,
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.NONE](channel),
+        })
+      })
+    })
+  })
+
+  describe('INVITE command', () => {
+    const inviteePhoneNumber = genPhoneNumber()
+    const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumber}`)
+    let issueInviteStub
+    beforeEach(() => (issueInviteStub = sinon.stub(inviteRepository, 'issue')))
+    afterEach(() => issueInviteStub.restore())
+
+    describe('when vouching mode is on', () => {
+      const vouchingChannel = { ...channel, vouchingOn: true }
+
+      describe('when sender is not a member of channel', () => {
+        const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: randomPerson }
+
+        it('returns UNAUTHORIZED', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.INVITE,
+            status: statuses.UNAUTHORIZED,
+            message: CR.invite.unauthorized,
+          })
+        })
+      })
+
+      describe('when sender is an admin', () => {
+        describe('when invitee phone number is invalid', () => {
+          const dispatchable = {
+            db,
+            sdMessage: sdMessageOf(channel, 'INVITE foo'),
+            channel: vouchingChannel,
+            sender: admin,
+          }
+
+          it('returns ERROR', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.INVITE,
+              status: statuses.ERROR,
+              message: CR.invite.invalidNumber('foo'),
+            })
+          })
+        })
+
+        describe('when invitee phone number is valid', () => {
+          const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: admin }
+
+          describe('when sender is already a member of channel or pending invite', () => {
+            let res
+            beforeEach(async () => {
+              issueInviteStub.returns(Promise.resolve(false))
+              res = await processCommand(dispatchable)
+            })
+
+            it('attempts to issue an invite', () => {
+              expect(issueInviteStub.callCount).to.eql(1)
+            })
+
+            it('returns ERROR and no payload', () => {
+              expect(res).to.eql({
+                command: commands.INVITE,
+                status: statuses.ERROR,
+                message: CR.invite.success,
+              })
+            })
+          })
+
+          describe('when invitee is not member or pending invitee', () => {
+            let res
+            beforeEach(async () => {
+              issueInviteStub.returns(Promise.resolve(true))
+              res = await processCommand(dispatchable)
+            })
+
+            it('attempts to issue an invite', () => {
+              expect(issueInviteStub.callCount).to.eql(1)
+            })
+
+            it('returns SUCCESS and payload for notifying invitee', () => {
+              expect(res).to.eql({
+                command: commands.INVITE,
+                status: statuses.SUCCESS,
+                message: CR.invite.success,
+                payload: inviteePhoneNumber,
+              })
+            })
+          })
+        })
+      })
+
+      describe('when sender is a subscriber on happy path', () => {
+        const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: subscriber }
+        let res
+        beforeEach(async () => {
+          issueInviteStub.returns(Promise.resolve(true))
+          res = await processCommand(dispatchable)
+        })
+
+        it('creates an invite record', () => {
+          expect(issueInviteStub.callCount).to.eql(1)
+        })
+
+        it('returns SUCCESS and payload for notifying invitee', () => {
+          expect(res).to.eql({
+            command: commands.INVITE,
+            status: statuses.SUCCESS,
+            message: CR.invite.success,
+            payload: inviteePhoneNumber,
+          })
+        })
+      })
+    })
+
+    describe('when vouching mode is off', () => {
+      const dispatchable = { db, channel, sender: admin, sdMessage }
+
+      it('has same behavior as vouching on', async () => {
+        issueInviteStub.returns(Promise.resolve(true))
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.INVITE,
+          status: statuses.SUCCESS,
+          message: CR.invite.success,
+          payload: inviteePhoneNumber,
         })
       })
     })

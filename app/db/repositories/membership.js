@@ -71,6 +71,9 @@ const resolveSenderLanguage = async (db, channelPhoneNumber, memberPhoneNumber, 
 const updateLanguage = async (db, memberPhoneNumber, language) =>
   db.membership.update({ language }, { where: { memberPhoneNumber } })
 
+const isMember = (db, channelPhoneNumber, memberPhoneNumber) =>
+  db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }).then(Boolean)
+
 const isAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
   db.membership
     .findOne({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
@@ -95,6 +98,7 @@ module.exports = {
   addAdmin,
   addAdmins,
   addSubscriber,
+  isMember,
   isAdmin,
   isSubscriber,
   removeAdmin,

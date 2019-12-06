@@ -64,6 +64,10 @@ Send HELP to list valid commands.`,
       ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
       : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
 
+  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel.
+Would you like to subscribe to encrypted announcements from this Signal number?
+Please respond with ACCEPT or DECLINE.`,
+
   welcome: (addingAdmin, channelPhoneNumber) => `
 You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
 
@@ -83,7 +87,6 @@ const commandResponses = {
 
   add: {
     success: num => `${num} added as an admin.`,
-    // unauthorized: notSubscriber,
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidNumber,
@@ -185,6 +188,17 @@ phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
+  },
+
+  // INVITE
+
+  invite: {
+    notSubscriber,
+    vouchingOff:
+      'Whoops! Invites are not enabled on this channel.\nAsk the admins to turn VOUCHING ON to invite someone.',
+    invalidNumber: input => `Whoops! Failed to issue invitation. ${invalidNumber(input)}`,
+    success: `Issued invitation.`,
+    dbError: 'Whoops! Failed to issue invitation. Please try again. :)',
   },
 
   // JOIN

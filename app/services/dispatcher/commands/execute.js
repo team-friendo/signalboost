@@ -1,6 +1,7 @@
 const { commands, statuses } = require('./constants')
 const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
+const inviteRepository = require('../../../db/repositories/invite')
 const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
 const { messagesIn } = require('../strings/messages')
@@ -35,6 +36,7 @@ const execute = async (executable, dispatchable) => {
     [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
+    [commands.INVITE]: () => maybeInvite(db, channel, sender, payload),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
@@ -87,6 +89,36 @@ const showHelp = async (db, channel, sender) => {
 const showInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
   return { status: statuses.SUCCESS, message: cr[sender.type](channel) }
+}
+
+// INVITE
+
+const maybeInvite = async (db, channel, sender, rawInviteePhoneNumber) => {
+  const cr = messagesIn(sender.language).commandResponses.invite
+
+  if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawInviteePhoneNumber)
+  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(rawInviteePhoneNumber) }
+
+  return invite(db, channel, sender.phoneNumber, phoneNumber, cr)
+}
+
+const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) => {
+  try {
+    const inviteWasCreated = await inviteRepository.issue(
+      db,
+      channel.phoneNumber,
+      inviterPhoneNumber,
+      inviteePhoneNumber,
+    )
+    // To prevent leaking membership lists, we return the same message in all cases except db error.
+    // (Ie: we do *not* reveal a person was not invited b/c they're already a channel member.)
+    return inviteWasCreated
+      ? { status: statuses.SUCCESS, message: cr.success, payload: inviteePhoneNumber }
+      : { status: statuses.ERROR, message: cr.success }
+  } catch (e) {
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
 }
 
 // JOIN

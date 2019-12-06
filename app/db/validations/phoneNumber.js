@@ -12,7 +12,7 @@ const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(p
 
 // string -> { isValid: boolean, phoneNumber: string }
 const parseValidPhoneNumber = userInput => {
-  const stripped = userInput.replace(/["\-().\s]/g, '')
+  const stripped = (userInput || '').replace(/["\-().\s]/g, '')
   return {
     isValid: validatePhoneNumber(stripped),
     phoneNumber: stripped,
