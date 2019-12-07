@@ -9,6 +9,7 @@ const statuses = {
 const languages = {
   EN: 'EN',
   ES: 'ES',
+  FR: 'FR',
 }
 
 module.exports = { statuses, languages }

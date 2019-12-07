@@ -4,69 +4,67 @@ const {
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
 
-const systemName = 'the signalboost system administrator'
-const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
+const systemName = 'le maintenant du système Signalboost'
+const unauthorized = 'Oups! Vous n’êtes pas autorisé de faire cela sur ce canal.'
 const invalidNumber = phoneNumber =>
-  `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
+  `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
 
 const support = `----------------------------
-HOW IT WORKS
+COMMENT ÇA FONCTIONNE
 ----------------------------
 
-Signalboost channels have admins and subscribers.
+Un canal de Signalboost ont des administratrices-teurs et des abonnéEs.
 
--> When admins send messages, they are broadcast to all subscribers.
--> If enabled, subscribers can send responses that only admins can read.
--> Subscribers cannot send messages to each other. (No noisy crosstalk!)
+-> Lorsque les administratrices-teurs transmettent des messages, ces messages sont envoyés à touTEs les abonnéEs.
+-> Si activé, les abonnéEs peuvent envoyer des réponses que seulEs les administratrices-teurs peuvent lire.
+-> Les abonnéEs ne peuvent pas envoyer des messages entre elleux. (Pas de cacophonie!)
 
-Signalboost channels understand commands.
+Un canal de Signalboost comprennent des commandes.
 
--> Sending HELP lists the commands.
--> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
--> Sending a language name (for example: ESPAÑOL or ENGLISH) switches languages.
+-> AIDE affiche le menu des commandes.
+-> On peut s’abonner en utilisant la commande ALLÔ, ou se désabonner avec ADIEU.
+-> Envoyer le nom d’une langue (par exemple: ESPAÑOL ou ANGLAIS) changera la langue.
 
-Signalboost tries to preserve your privacy.
+Signalboost tente de préserver votre intimité.
 
--> Signalboost users cannot see each other's phone numbers.
--> Signalboost does not read or store anyone's messages.
+-> Les usagers ne peuvent pas voir les numéros de téléphone des autres usagers.
+-> Signalboost ne lit pas et ne conserve aucun de vos messages.
 
-Learn more: https://signalboost.info
-`
+Pour plus de renseignements: https://signalboost.info`
 
 const notifications = {
-  adminAdded: commandIssuer => `New Admin ${addedAdmin} added by ${commandIssuer}`,
+  adminAdded: commandIssuer => `Nouvelle-eau Admin ${addedAdmin} ajoutéE par ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
-    `Your message was forwarded to the admins of [${channel.name}].
-    Send HELP to see commands I understand! :)`,
+    `Votre message a été communiqué aux Admins de [${channel.name}]. 
+    Commande AIDE pour le menu des commandes que je maîtrise! :)`,
 
   deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} has been removed from this channel because their safety number changed.
+${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
 
-This is almost certainly because they reinstalled Signal on a new phone.
+Ceci est presque certainement parce qu’ielles ont réinstallé Signal sur un nouvel appareil.
 
-However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+Cependant, il y a un petit risque que leur téléphone soit compromis et tente de se faire passer pour elleux.
 
-Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
+AJOUTER ${adminPhoneNumber}
 
-ADD ${adminPhoneNumber}
-
-Until then, they will be unable to send messages to or read messages from this channel.`,
-  noop: "Whoops! That's not a command!",
-  unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
+  noop: "Oups! Ceci n’est pas une commande!",
+  unauthorized: "Oups! Les réponses d’abonnéEs sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!",
 
   welcome: (addingAdmin, channelPhoneNumber) => `
-You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+Vous êtes maintenant unE admin de ce canal Signalboost grâce à ${addingAdmin}. BienvenuE!
 
-People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
 
-Reply with HELP for more info.`,
+Commande AIDE pour plus de renseignements.`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Signup request received from ${senderNumber}:\n ${requestMsg}`,
+    `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
 
   signupRequestResponse:
-    'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
+    'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
 }
 
 const commandResponses = {
@@ -213,7 +211,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   // SET_LANGUAGE
 
   setLanguage: {
-    success: 'I will talk to you in English now! \n Send HELP to list commands I understand.',
+    success: 'Je vous parlerai maintenant en français! Commande AIDE pour le menu des commandes que je maîtrise.',
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
