@@ -30,15 +30,15 @@ Signalboost tries to preserve your privacy.
 -> Signalboost users cannot see each other's phone numbers.
 -> Signalboost does not read or store anyone's messages.
 
-Learn more: https://signalboost.info
-`
+Learn more: https://signalboost.info`
 
 const notifications = {
   adminAdded: commandIssuer => `New Admin ${addedAdmin} added by ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
-    Send HELP to see commands I understand! :)`,
+
+Send HELP to see commands I understand! :)`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} has been removed from this channel because their safety number changed.
@@ -215,7 +215,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   setLanguage: {
     success: `I will talk to you in English now! 
     
-    Send HELP to list commands I understand.`,
+Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
@@ -233,7 +233,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
 }
 
 const prefixes = {
-  broadcastResponse: `SUBSCRIBER RESPONSE:`,
+  broadcastResponse: `SUBSCRIBER RESPONSE`,
 }
 
 const EN = {

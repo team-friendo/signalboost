@@ -37,7 +37,8 @@ const notifications = {
 
   broadcastResponseSent: channel =>
     `Votre message a été communiqué aux Admins de [${channel.name}]. 
-    Commande AIDE pour le menu des commandes que je maîtrise! :)`,
+
+Commande AIDE pour le menu des commandes que je maîtrise! :)`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
@@ -47,6 +48,7 @@ Ceci est presque certainement parce qu’ielles ont réinstallé Signal sur un n
 Cependant, il y a un petit risque que leur téléphone soit compromis et tente de se faire passer pour elleux.
 
 Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
+
 AJOUTER ${adminPhoneNumber}
 
 Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
@@ -182,8 +184,7 @@ ${support}`,
   join: {
     success: channel => {
       const { name } = channel
-      return `
-BienvenuE à Signalboost! Vous êtes maintenant abonnéE au/à la canal.
+      return `BienvenuE à Signalboost! Vous êtes maintenant abonnéE au/à la canal.
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
     },
@@ -213,7 +214,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
   setLanguage: {
     success: `Je vous parlerai maintenant en français!
     
-    Commande AIDE pour le menu des commandes que je maîtrise.`,
+Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: 'Oups! Votre langage de préférence n’a pas été conservé. Veuillez essayer de nouveau!',
   },
 
@@ -231,7 +232,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
 }
 
 const prefixes = {
-  broadcastResponse: `RÉPONSES ABONNÉeS:`,
+  broadcastResponse: `RÉPONSES ABONNÉeS`,
 }
 
 const EN = {
