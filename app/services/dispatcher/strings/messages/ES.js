@@ -34,7 +34,8 @@ Signalboost intenta preservar su privacidad.
 Para más información: https://signalboost.info`
 
 const notifications = {
-  adminAdded: commandIssuer => `Nuevo administrador agregado por ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) =>
+    `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Su mensaje fue enviado a los administradores de [${channel.name}].
@@ -49,12 +50,14 @@ Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometid
 
 Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
   
-  AGREGAR ${adminPhoneNumber}
+AGREGAR ${adminPhoneNumber}
   
-  Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
+Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) => `
-Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
+  welcome: (
+    addingAdmin,
+    channelPhoneNumber,
+  ) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
 
 Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
 
@@ -62,8 +65,8 @@ Responda con AYUDA para más información.`,
 
   noop: '¡Lo siento! Eso no es un comando!',
 
-  unauthorized: `
-¡Lo siento! No entiendo eso.
+  unauthorized: `¡Lo siento! No entiendo eso.
+  
 Envíe AYUDA para ver los comandos que entiendo! :)`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
@@ -113,7 +116,6 @@ INFO
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-
 AGREGAR + 1-555-555-5555
 -> convierte a + 1-555-555-5555 en administrador
 
@@ -127,7 +129,10 @@ RESPUESTAS DESACTIVADAS
 -> desactiva a los suscriptores de enviar mensajes a los administradores
 
 ADIÓS
--> le saca del canal`,
+-> le saca del canal
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés`,
 
     subscriber: `----------------------------------------------
 COMANDOS QUE ENTIENDO
@@ -143,7 +148,10 @@ HOLA
 -> para subscribirse a un canal
 
 ADIÓS
--> le da de baja`,
+-> le da de baja
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés`,
   },
 
   // INFO
@@ -185,13 +193,10 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => {
-      const { name } = channel
-      return `
-¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${name}].
+    success: channel =>
+      `¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${channel.name}].
 
-Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
-    },
+Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
     alreadyMember: `¡Lo siento! Ya eres miembro del canal.`,
   },
@@ -216,8 +221,9 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
   // SET_LANGUAGE
 
   setLanguage: {
-    success:
-      '¡Puede enviar comandos en Español ahora! \nEnvíe AYUDA para ver los comandos que comprendo.',
+    success: `¡Puede enviar comandos en Español ahora! 
+      
+Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
   },
 
@@ -235,14 +241,12 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
 }
 
 const prefixes = {
-  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR:`,
+  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR`,
 }
 
-const EN = {
+module.exports = {
   systemName,
   commandResponses,
   notifications,
   prefixes,
 }
-
-module.exports = EN

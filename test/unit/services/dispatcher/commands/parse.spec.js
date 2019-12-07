@@ -190,7 +190,7 @@ describe('parsing commands', () => {
 
     describe('SET_LANGUAGE command', () => {
       it('sets the language to English regardless of language in which English is specified', () => {
-        const msgs = ['ENGLISH', 'INGLÉS', 'INGLES', 'english', 'inglés', 'ingles']
+        const msgs = ['ENGLISH', 'INGLÉS', 'INGLES', 'ANGLAIS', 'english', 'inglés', 'ingles']
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.SET_LANGUAGE,
@@ -263,106 +263,266 @@ describe('parsing commands', () => {
       })
     })
 
-    it('parses an LEAVE command from "ADIOS" (regardless of accents, case or whitespace)', () => {
-      const msgs = ['ADIÓS', 'adiós', ' adiós ', 'ADIOS', 'adios', '  adios ']
-      msgs.forEach(msg =>
-        expect(parseExecutable(msg)).to.eql({
-          command: commands.LEAVE,
-          language: languages.ES,
-          payload: '',
-        }),
-      )
+    describe('LEAVE command', () => {
+      it('parses an LEAVE command from "ADIOS" (regardless of accents, case or whitespace)', () => {
+        const msgs = ['ADIÓS', 'adiós', ' adiós ', 'ADIOS', 'adios', '  adios ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.LEAVE,
+            language: languages.ES,
+            payload: '',
+          }),
+        )
+      })
     })
-  })
 
-  describe('REMOVE command', () => {
-    it('parses a REMOVE command (regardless of case or whitespace)', () => {
-      const msgs = ['ELIMINAR', 'eliminar', ' eliminar ']
-      msgs.forEach(msg =>
-        expect(parseExecutable(msg)).to.eql({
+    describe('REMOVE command', () => {
+      it('parses a REMOVE command (regardless of case or whitespace)', () => {
+        const msgs = ['ELIMINAR', 'eliminar', ' eliminar ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.REMOVE,
+            language: languages.ES,
+            payload: '',
+          }),
+        )
+      })
+
+      it('parses the payload from an REMOVE command', () => {
+        expect(parseExecutable('ELIMINAR foo')).to.eql({
           command: commands.REMOVE,
           language: languages.ES,
-          payload: '',
-        }),
-      )
+          payload: 'foo',
+        })
+      })
     })
 
-    it('parses the payload from an REMOVE command', () => {
-      expect(parseExecutable('ELIMINAR foo')).to.eql({
-        command: commands.REMOVE,
-        language: languages.ES,
-        payload: 'foo',
+    describe('RENAME command', () => {
+      it('parses an RENAME command (regardless of case or whitespace)', () => {
+        it('parses an RENAME command (regardless of case or whitespace)', () => {
+          const msgs = ['RENOMBRAR', 'renombrar', ' renombrar ']
+          msgs.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.RENAME,
+              language: languages.ES,
+              payload: '',
+            }),
+          )
+        })
+      })
+
+      it('parses the payload from an RENAME command', () => {
+        expect(parseExecutable('RENOMBRAR foo')).to.eql({
+          command: commands.RENAME,
+          language: languages.ES,
+          payload: 'foo',
+        })
+      })
+    })
+
+    describe('RESPONSES_ON command', () => {
+      it('parses an RESPONSES_ON command (regardless of case or whitespace)', () => {
+        it('parses an RENAME command (regardless of case or whitespace)', () => {
+          const msgs = ['RESPUESTAS ACTIVADAS', 'respuestas activadas', ' respuestas  activadas ']
+          msgs.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.RESPONSES_ON,
+              language: languages.ES,
+              payload: '',
+            }),
+          )
+        })
+      })
+    })
+
+    describe('RESPONSES_OFF command', () => {
+      it('parses an RESPONSES_OFF command (regardless of case or whitespace)', () => {
+        it('parses an RENAME command (regardless of case or whitespace)', () => {
+          const msgs = [
+            'RESPUESTAS DESACTIVADAS',
+            'respuestas desactivadas',
+            ' respuestas  desactivadas ',
+          ]
+          msgs.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.RESPONSES_OFF,
+              language: languages.ES,
+              payload: '',
+            }),
+          )
+        })
+      })
+    })
+
+    describe('SET_LANGUAGE command', () => {
+      it('sets the language to Spanish regardless of language in which English is specified', () => {
+        const msgs = ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'español', 'espanol', 'spanish']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.SET_LANGUAGE,
+            language: languages.ES,
+            payload: '',
+          }),
+        )
       })
     })
   })
 
-  describe('RENAME command', () => {
-    it('parses an RENAME command (regardless of case or whitespace)', () => {
+  describe('in French', () => {
+    describe('ADD command', () => {
+      it('parses an ADD command (regardless of case or whitespace)', () => {
+        const msgs = ['AJOUTER', 'ajouter', ' ajouter ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.ADD,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
+
+      it('parses the payload from an ADD command', () => {
+        expect(parseExecutable('AJOUTER foo')).to.eql({
+          command: commands.ADD,
+          language: languages.FR,
+          payload: 'foo',
+        })
+      })
+    })
+
+    describe('HELP command', () => {
+      it('parses an HELP command (regardless of case or whitespace)', () => {
+        const msgs = ['AIDE', 'aide', ' aide ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.HELP,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('INFO command', () => {
+      it('parses an INFO command but does NOT detect language', () => {
+        const msgs = ['INFO', 'info', ' info ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.INFO,
+            language: languages.EN,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('JOIN command', () => {
+      it('parses an JOIN command from "hola"(regardless of case or whitespace)', () => {
+        const msgs = ['ALLÔ', 'ALLO', 'allo', ' allo ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.JOIN,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('LEAVE command', () => {
+      it('parses an LEAVE command from "ADIOS" (regardless of accents, case or whitespace)', () => {
+        const msgs = ['ADIEU', 'adieu', ' adieu ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.LEAVE,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
+    })
+
+    describe('REMOVE command', () => {
+      it('parses a REMOVE command (regardless of case or whitespace)', () => {
+        const msgs = ['SUPPRIMER', 'supprimer', ' supprimer ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.REMOVE,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
+
+      it('parses the payload from an REMOVE command', () => {
+        expect(parseExecutable('SUPPRIMER foo')).to.eql({
+          command: commands.REMOVE,
+          language: languages.FR,
+          payload: 'foo',
+        })
+      })
+    })
+
+    describe('RENAME command', () => {
       it('parses an RENAME command (regardless of case or whitespace)', () => {
-        const msgs = ['RENOMBRAR', 'renombrar', ' renombrar ']
+        const msgs = ['RENOMMER', 'renommer', ' renommer ']
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.RENAME,
-            language: languages.ES,
+            language: languages.FR,
             payload: '',
           }),
         )
       })
-    })
 
-    it('parses the payload from an RENAME command', () => {
-      expect(parseExecutable('RENOMBRAR foo')).to.eql({
-        command: commands.RENAME,
-        language: languages.ES,
-        payload: 'foo',
+      it('parses the payload from an RENAME command', () => {
+        expect(parseExecutable('RENOMMER foo')).to.eql({
+          command: commands.RENAME,
+          language: languages.FR,
+          payload: 'foo',
+        })
       })
     })
-  })
 
-  describe('RESPONSES_ON command', () => {
-    it('parses an RESPONSES_ON command (regardless of case or whitespace)', () => {
-      it('parses an RENAME command (regardless of case or whitespace)', () => {
-        const msgs = ['RESPUESTAS ACTIVADAS', 'respuestas activadas', ' respuestas  activadas ']
-        msgs.forEach(msg =>
-          expect(parseExecutable(msg)).to.eql({
-            command: commands.RESPONSES_ON,
-            language: languages.ES,
-            payload: '',
-          }),
-        )
+    describe('RESPONSES_ON command', () => {
+      it('parses an RESPONSES_ON command (regardless of case or whitespace)', () => {
+        it('parses an RENAME command (regardless of case or whitespace)', () => {
+          const msgs = ['RÉPONSES ACTIVÉES', 'REPONSES ACTIVEES', ' reponses activees ']
+          msgs.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.RESPONSES_ON,
+              language: languages.FR,
+              payload: '',
+            }),
+          )
+        })
       })
     })
-  })
 
-  describe('RESPONSES_OFF command', () => {
-    it('parses an RESPONSES_OFF command (regardless of case or whitespace)', () => {
-      it('parses an RENAME command (regardless of case or whitespace)', () => {
-        const msgs = [
-          'RESPUESTAS DESACTIVADAS',
-          'respuestas desactivadas',
-          ' respuestas  desactivadas ',
-        ]
+    describe('RESPONSES_OFF command', () => {
+      it('parses an RESPONSES_OFF command (regardless of case or whitespace)', () => {
+        const msgs = ['RÉPONSES DÉSACTIVÉES', 'REPONSES DESACTIVEES', 'reponses desactivees']
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.RESPONSES_OFF,
-            language: languages.ES,
+            language: languages.FR,
             payload: '',
           }),
         )
       })
     })
-  })
 
-  describe('SET_LANGUAGE command', () => {
-    it('sets the language to Spanish regardless of language in which English is specified', () => {
-      const msgs = ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'español', 'espanol', 'spanish']
-      msgs.forEach(msg =>
-        expect(parseExecutable(msg)).to.eql({
-          command: commands.SET_LANGUAGE,
-          language: languages.ES,
-          payload: '',
-        }),
-      )
+    describe('SET_LANGUAGE command', () => {
+      it('sets the language to Spanish regardless of language in which English is specified', () => {
+        const msgs = ['FRENCH', 'FRANÇAIS', 'FRANCAIS', 'FRANCESA']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.SET_LANGUAGE,
+            language: languages.FR,
+            payload: '',
+          }),
+        )
+      })
     })
   })
 })

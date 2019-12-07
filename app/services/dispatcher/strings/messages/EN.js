@@ -13,13 +13,13 @@ const support = `----------------------------
 HOW IT WORKS
 ----------------------------
 
-Signalboost numbers have admins and subscribers.
+Signalboost channels have admins and subscribers.
 
 -> When admins send messages, they are broadcast to all subscribers.
 -> If enabled, subscribers can send responses that only admins can read.
 -> Subscribers cannot send messages to each other. (No noisy crosstalk!)
 
-Signalboost numbers understand commands.
+Signalboost channels understand commands.
 
 -> Sending HELP lists the commands.
 -> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
@@ -30,15 +30,15 @@ Signalboost tries to preserve your privacy.
 -> Signalboost users cannot see each other's phone numbers.
 -> Signalboost does not read or store anyone's messages.
 
-Learn more: https://signalboost.info
-`
+Learn more: https://signalboost.info`
 
 const notifications = {
-  adminAdded: commandIssuer => `New admin added by ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) => `New Admin ${addedAdmin} added by ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
-    Send HELP to see commands I understand! :)`,
+
+Send HELP to see commands I understand! :)`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} has been removed from this channel because their safety number changed.
@@ -66,7 +66,7 @@ Reply with HELP for more info.`,
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
 
   signupRequestResponse:
-    'Thank you for signing up for Signalboost!\n You will receive a welcome message on your new channel shortly...',
+    'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
 }
 
 const commandResponses = {
@@ -120,8 +120,8 @@ RESPONSES OFF
 GOODBYE
 -> leaves this channel
 
-ESPAÑOL
--> switches language to Spanish`,
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French`,
 
     subscriber: `----------------------------------------------
 COMMANDS I UNDERSTAND
@@ -137,7 +137,10 @@ HELLO
 -> subscribes you to announcements
 
 GOODBYE
--> unsubscribes you from announcements`,
+-> unsubscribes you from announcements
+
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French`,
   },
 
   // INFO
@@ -182,13 +185,10 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => {
-      const { name } = channel
-      return `
-Welcome to Signalboost! You are now subscribed to the [${name}] channel.
+    success: channel =>
+      `Welcome to Signalboost! You are now subscribed to the [${channel.name}] channel.
 
-Reply with HELP to learn more or GOODBYE to unsubscribe.`
-    },
+Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
     alreadyMember: `Whoops! You are already a member of this channel.`,
   },
@@ -213,7 +213,9 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   // SET_LANGUAGE
 
   setLanguage: {
-    success: 'I will talk to you in English now! \n Send HELP to list commands I understand.',
+    success: `I will talk to you in English now! 
+    
+Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
@@ -231,14 +233,12 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
 }
 
 const prefixes = {
-  broadcastResponse: `SUBSCRIBER RESPONSE:`,
+  broadcastResponse: `SUBSCRIBER RESPONSE`,
 }
 
-const EN = {
+module.exports = {
   commandResponses,
   notifications,
   prefixes,
   systemName,
 }
-
-module.exports = EN

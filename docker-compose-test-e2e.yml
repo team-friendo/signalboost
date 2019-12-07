@@ -16,8 +16,8 @@ services:
     restart: unless-stopped
 
   signald:
-    image: signalboost_signald
-    container_name: signald
+    image: signald
+    container_name: signalboost_signald
     networks:
       - default
     volumes:
