@@ -33,7 +33,7 @@ Signalboost tente de préserver votre intimité.
 Pour plus de renseignements: https://signalboost.info`
 
 const notifications = {
-  adminAdded: commandIssuer => `Nouvelle-eau Admin ${addedAdmin} ajoutéE par ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) => `Nouvelle-eau Admin ${addedAdmin} ajoutéE par ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Votre message a été communiqué aux Admins de [${channel.name}]. 

@@ -33,7 +33,7 @@ Signalboost tries to preserve your privacy.
 Learn more: https://signalboost.info`
 
 const notifications = {
-  adminAdded: commandIssuer => `New Admin ${addedAdmin} added by ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) => `New Admin ${addedAdmin} added by ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
