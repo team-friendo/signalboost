@@ -110,7 +110,6 @@ INFO
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-
 AGREGAR + 1-555-555-5555
 -> convierte a + 1-555-555-5555 en administrador
 
