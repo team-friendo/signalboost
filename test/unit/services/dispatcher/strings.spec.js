@@ -2,6 +2,7 @@ import { describe, it } from 'mocha'
 import { expect } from 'chai'
 import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
 import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
+import messagesFR from '../../../../app/services/dispatcher/strings/messages/FR'
 
 describe('string translations', () => {
   describe('for messages', () => {

@@ -197,7 +197,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               adminNumbers,
-              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -229,7 +229,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
               adminNumbers,
-              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE:]\n${sdMessage.messageBody}` },
+              { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
 
@@ -385,7 +385,7 @@ describe('messenger service', () => {
           messageType: messageTypes.BROADCAST_RESPONSE,
           language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE:]\nblah'))
+        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE]\nblah'))
       })
     })
 
