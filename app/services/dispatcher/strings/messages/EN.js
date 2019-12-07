@@ -120,8 +120,8 @@ RESPONSES OFF
 GOODBYE
 -> leaves this channel
 
-ESPAÑOL
--> switches language to Spanish`,
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French`,
 
     subscriber: `----------------------------------------------
 COMMANDS I UNDERSTAND
@@ -137,7 +137,10 @@ HELLO
 -> subscribes you to announcements
 
 GOODBYE
--> unsubscribes you from announcements`,
+-> unsubscribes you from announcements
+
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French`,
   },
 
   // INFO

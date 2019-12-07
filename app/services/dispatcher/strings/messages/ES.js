@@ -123,7 +123,10 @@ RESPUESTAS DESACTIVADAS
 -> desactiva a los suscriptores de enviar mensajes a los administradores
 
 ADIÓS
--> le saca del canal`,
+-> le saca del canal
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés`,
 
     subscriber: `----------------------------------------------
 COMANDOS QUE ENTIENDO
@@ -139,7 +142,10 @@ HOLA
 -> para subscribirse a un canal
 
 ADIÓS
--> le da de baja`,
+-> le da de baja
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés`,
   },
 
   // INFO

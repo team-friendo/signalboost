@@ -13,11 +13,11 @@ const support = `----------------------------
 COMMENT ÇA FONCTIONNE
 ----------------------------
 
-Un canal de Signalboost ont des administratrices-teurs et des abonnéEs.
+Un canal de Signalboost ont des administratrices-teurs et des abonnées.
 
--> Lorsque les administratrices-teurs transmettent des messages, ces messages sont envoyés à touTEs les abonnéEs.
--> Si activé, les abonnéEs peuvent envoyer des réponses que seulEs les administratrices-teurs peuvent lire.
--> Les abonnéEs ne peuvent pas envoyer des messages entre elleux. (Pas de cacophonie!)
+-> Lorsque les administratrices-teurs transmettent des messages, ces messages sont envoyés à toutes les abonnées.
+-> Si activé, les abonnées peuvent envoyer des réponses que seulEs les administratrices-teurs peuvent lire.
+-> Les abonnés ne peuvent pas envoyer des messages entre elleux. (Pas de cacophonie!)
 
 Un canal de Signalboost comprennent des commandes.
 
@@ -33,7 +33,8 @@ Signalboost tente de préserver votre intimité.
 Pour plus de renseignements: https://signalboost.info`
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) => `Nouvelle-eau Admin ${addedAdmin} ajoutéE par ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) =>
+    `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Votre message a été communiqué aux Admins de [${channel.name}]. 
@@ -52,8 +53,9 @@ Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôle
 AJOUTER ${adminPhoneNumber}
 
 Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
-  noop: "Oups! Ceci n’est pas une commande!",
-  unauthorized: "Oups! Les réponses d’abonnéEs sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!",
+  noop: 'Oups! Ceci n’est pas une commande!',
+  unauthorized:
+    'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
   welcome: (addingAdmin, channelPhoneNumber) => `
 Vous êtes maintenant unE admin de ce canal Signalboost grâce à ${addingAdmin}. BienvenuE!
@@ -73,9 +75,10 @@ const commandResponses = {
   // ADD
 
   add: {
-    success: num => `${num} ajoutéE comme admin.`,
+    success: num => `${num} ajoutée comme admin.`,
     unauthorized,
-    dbError: num => `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
+    dbError: num =>
+      `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
   },
 
@@ -84,9 +87,10 @@ const commandResponses = {
   remove: {
     success: num => `${num} supprimé en tant qu'admin.`,
     unauthorized,
-    dbError: num => `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
+    dbError: num =>
+      `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
-    targetNotAdmin: num => `Oups! ${num} n’est pas unE admin. Ielle ne peut être suppriméE.`,
+    targetNotAdmin: num => `Oups! ${num} n’est pas unE admin. Ielle ne peut être supprimée.`,
   },
 
   // HELP
@@ -112,16 +116,16 @@ SUPPRIMER +1-555-555-5555
 -> supprime +1-555-555-5555 en tant qu’admin
 
 RÉPONSES ACTIVÉES
--> permet aux abonnéEs d’envoyer des messages aux admins
+-> permet aux abonnées d’envoyer des messages aux admins
 
 RÉPONSES DÉSACTIVÉES
--> désactive la capacité des abonnéEs d’envoyer des messages aux admins
+-> désactive la capacité des abonnées d’envoyer des messages aux admins
 
 ADIEU
 -> désabonnement de la canal 
 
-ESPAÑOL
--> change la langue au español`,
+ESPAÑOL / ENGLISH
+-> change la langue au español or anglais`,
 
     subscriber: `----------------------------------------------
 COMMANDES QUE JE MAITRÎSE
@@ -137,7 +141,10 @@ ALLÔ
 -> abonnement aux avis
 
 ADIEU
--> désabonnement des avis`,
+-> désabonnement des avis
+
+ESPAÑOL / ENGLISH
+-> change la langue au español or anglais`,
   },
 
   // INFO
@@ -150,7 +157,7 @@ INFOS CANAL
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
-abonnéEs: ${getSubscriberMemberships(channel).length}
+abonnées: ${getSubscriberMemberships(channel).length}
 réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 messages envoyés: ${channel.messageCount.broadcastIn}
 
@@ -163,7 +170,7 @@ INFOS CANAL
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-abonnéEs: ${getSubscriberMemberships(channel).length}
+abonnées: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
     unauthorized,
@@ -172,8 +179,7 @@ ${support}`,
   // RENAME
 
   rename: {
-    success: (oldName, newName) =>
-      `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
+    success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
     dbError: (oldName, newName) =>
       `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
     unauthorized,
@@ -184,18 +190,18 @@ ${support}`,
   join: {
     success: channel => {
       const { name } = channel
-      return `BienvenuE à Signalboost! Vous êtes maintenant abonnéE au/à la canal.
+      return `BienvenuE à Signalboost! Vous êtes maintenant abonnée au/à la canal.
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
     },
     dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
-    alreadyMember: `Oups! Vous êtes déjà abonnéE à ce canal.`,
+    alreadyMember: `Oups! Vous êtes déjà abonnée à ce canal.`,
   },
 
   // LEAVE
 
   leave: {
-    success: `Vous êtes maintenant désabonnéE de ce canal. Au revoir!`,
+    success: `Vous êtes maintenant désabonnée de ce canal. Au revoir!`,
     error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
     unauthorized,
   },
@@ -203,7 +209,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
-    success: setting => `Réponses des abonnéEs maintenant ${upperCase(setting)}.`,
+    success: setting => `Réponses des abonnées maintenant ${upperCase(setting)}.`,
     unauthorized,
     dbError: setting =>
       `Oups! Une erreur s’est produite en tentant de changer les réponses à ${setting}. Veuillez essayer de nouveau!`,
