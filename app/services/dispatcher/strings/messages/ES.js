@@ -217,7 +217,9 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
 
   setLanguage: {
     success:
-      '¡Puede enviar comandos en Español ahora! \nEnvíe AYUDA para ver los comandos que comprendo.',
+      `¡Puede enviar comandos en Español ahora! 
+      
+      Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
   },
 

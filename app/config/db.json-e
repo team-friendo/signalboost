@@ -1,0 +1,32 @@
+{
+  "development": {
+    "database": "signalboost_development",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null,
+    "connectionInterval": 100,
+    "maxConnectionAttempts": 100
+  },
+  "test": {
+    "database": "signalboost_test",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null,
+    "connectionInterval": 10,
+    "maxConnectionAttempts": 10
+  },
+  "production": {
+    "database": "signalboost",
+    "host": "db",
+    "dialect": "postgres",
+    "logging": false,
+    "username": "postgres",
+    "password": null,
+    "connectionInterval": 100,
+    "maxConnectionAttempts": 100
+  }
+}

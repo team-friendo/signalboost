@@ -211,7 +211,9 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
   // SET_LANGUAGE
 
   setLanguage: {
-    success: 'Je vous parlerai maintenant en français! Commande AIDE pour le menu des commandes que je maîtrise.',
+    success: `Je vous parlerai maintenant en français!
+    
+    Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: 'Oups! Votre langage de préférence n’a pas été conservé. Veuillez essayer de nouveau!',
   },
 

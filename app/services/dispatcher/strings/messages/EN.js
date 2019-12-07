@@ -213,7 +213,9 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`
   // SET_LANGUAGE
 
   setLanguage: {
-    success: 'I will talk to you in English now! \n Send HELP to list commands I understand.',
+    success: `I will talk to you in English now! 
+    
+    Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
