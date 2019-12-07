@@ -71,97 +71,97 @@ const commandResponses = {
   // ADD
 
   add: {
-    success: num => `${num} added as an admin.`,
+    success: num => `${num} ajoutéE comme admin.`,
     unauthorized,
-    dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
+    dbError: num => `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
   },
 
   // REMOVE
 
   remove: {
-    success: num => `${num} removed as an admin.`,
+    success: num => `${num} supprimé en tant qu'admin.`,
     unauthorized,
-    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    dbError: num => `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
-    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
+    targetNotAdmin: num => `Oups! ${num} n’est pas unE admin. Ielle ne peut être suppriméE.`,
   },
 
   // HELP
 
   help: {
     admin: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDES QUE JE MAITRÎSE
 ----------------------------------------------
 
-HELP
--> lists commands
+AIDE
+-> menu des commandes
 
 INFO
--> shows stats, explains how Signalboost works
+-> affiche les stats, explique le fonctionnement de Signalboost
 
-RENAME new name
--> renames channel to "new name"
+RENOMMER nouveau nom
+-> renomme le canal au “nouveau nom”
 
-ADD +1-555-555-5555
--> makes +1-555-555-5555 an admin
+AJOUTER +1-555-555-5555
+-> ajoute +1-555-555-5555 comme admin
 
-REMOVE +1-555-555-5555
--> removes +1-555-555-5555 as an admin
+SUPPRIMER +1-555-555-5555
+-> supprime +1-555-555-5555 en tant qu’admin
 
-RESPONSES ON
--> allows subscribers to send messages to admins
+RÉPONSES ACTIVÉES
+-> permet aux abonnéEs d’envoyer des messages aux admins
 
-RESPONSES OFF
--> disables subscribers from sending messages to admins
+RÉPONSES DÉSACTIVÉES
+-> désactive la capacité des abonnéEs d’envoyer des messages aux admins
 
-GOODBYE
--> leaves this channel
+ADIEU
+-> désabonnement de la canal 
 
 ESPAÑOL
--> switches language to Spanish`,
+-> change la langue au español`,
 
     subscriber: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDES QUE JE MAITRÎSE
 ----------------------------------------------
 
-HELP
--> lists commands
+AIDE
+-> menu des commandes
 
 INFO
--> shows stats, explains how signalboost works
+-> affiche les stats, explique le fonctionnement de Signalboost
 
-HELLO
--> subscribes you to announcements
+ALLÔ
+-> abonnement aux avis
 
-GOODBYE
--> unsubscribes you from announcements`,
+ADIEU
+-> désabonnement des avis`,
   },
 
   // INFO
 
   info: {
     admin: channel => `---------------------------
-CHANNEL INFO:
+INFOS CANAL
 ---------------------------
 
-name: ${channel.name}
-phone number: ${channel.phoneNumber}
+nom: ${channel.name}
+numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
-subscribers: ${getSubscriberMemberships(channel).length}
-responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-messages sent: ${channel.messageCount.broadcastIn}
+abonnéEs: ${getSubscriberMemberships(channel).length}
+réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+messages envoyés: ${channel.messageCount.broadcastIn}
 
 ${support}`,
 
     subscriber: channel => `---------------------------
-CHANNEL INFO:
+INFOS CANAL
 ---------------------------
 
-name: ${channel.name}
-phone number: ${channel.phoneNumber}
-responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-subscribers: ${getSubscriberMemberships(channel).length}
+nom: ${channel.name}
+numéro de téléphone: ${channel.phoneNumber}
+réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+abonnéEs: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
     unauthorized,
@@ -171,9 +171,9 @@ ${support}`,
 
   rename: {
     success: (oldName, newName) =>
-      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
+      `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
+      `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
     unauthorized,
   },
 
@@ -183,53 +183,53 @@ ${support}`,
     success: channel => {
       const { name } = channel
       return `
-Welcome to Signalboost! You are now subscribed to the [${name}] channel.
+BienvenuE à Signalboost! Vous êtes maintenant abonnéE au/à la canal.
 
-Reply with HELP to learn more or GOODBYE to unsubscribe.`
+Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
     },
-    dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
-    alreadyMember: `Whoops! You are already a member of this channel.`,
+    dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
+    alreadyMember: `Oups! Vous êtes déjà abonnéE à ce canal.`,
   },
 
   // LEAVE
 
   leave: {
-    success: `You've been removed from the channel! Bye!`,
-    error: `Whoops! There was an error removing you from the channel. Please try again!`,
+    success: `Vous êtes maintenant désabonnéE de ce canal. Au revoir!`,
+    error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
     unauthorized,
   },
 
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
-    success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
+    success: setting => `Réponses des abonnéEs maintenant ${upperCase(setting)}.`,
     unauthorized,
     dbError: setting =>
-      `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
+      `Oups! Une erreur s’est produite en tentant de changer les réponses à ${setting}. Veuillez essayer de nouveau!`,
   },
 
   // SET_LANGUAGE
 
   setLanguage: {
     success: 'Je vous parlerai maintenant en français! Commande AIDE pour le menu des commandes que je maîtrise.',
-    dbError: 'Whoops! Failed to store your language preference. Please try again!',
+    dbError: 'Oups! Votre langage de préférence n’a pas été conservé. Veuillez essayer de nouveau!',
   },
 
   // TRUST
 
   trust: {
-    success: phoneNumber => `Updated safety number for ${phoneNumber}`,
+    success: phoneNumber => `Mise à jour du numéro de sécurité à ${phoneNumber}`,
     error: phoneNumber =>
-      `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
+      `La mise à jour du numéro de sécurité à ${phoneNumber} a échoué. Veuillez essayer à nouveau ou contactez unE mainteneur!`,
     invalidNumber,
     unauthorized,
     dbError: phoneNumber =>
-      `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
+      `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
 }
 
 const prefixes = {
-  broadcastResponse: `SUBSCRIBER RESPONSE:`,
+  broadcastResponse: `RÉPONSES ABONNÉeS:`,
 }
 
 const EN = {
