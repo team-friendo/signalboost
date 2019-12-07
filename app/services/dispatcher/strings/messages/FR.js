@@ -188,12 +188,10 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => {
-      const { name } = channel
-      return `BienvenuE à Signalboost! Vous êtes maintenant abonnée au/à la canal.
+    success: channel =>
+      `BienvenuE à Signalboost! Vous êtes maintenant abonnée au/à la [${channel.name}] canal.
 
-Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`
-    },
+Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
     alreadyMember: `Oups! Vous êtes déjà abonnée à ce canal.`,
   },

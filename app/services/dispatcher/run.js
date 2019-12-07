@@ -66,7 +66,6 @@ const listenForInboundMessages = async (db, sock, channels) =>
  *******************/
 
 const dispatch = async (db, sock, inboundMsg) => {
-  const should = shouldRelay(inboundMsg)
   if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
   if (shouldUpdateSafetyNumber(inboundMsg)) return updateSafetyNumber(db, sock, inboundMsg)
   return Promise.resolve()

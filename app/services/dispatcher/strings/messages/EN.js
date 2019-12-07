@@ -185,13 +185,10 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => {
-      const { name } = channel
-      return `
-Welcome to Signalboost! You are now subscribed to the [${name}] channel.
+    success: channel =>
+      `Welcome to Signalboost! You are now subscribed to the [${channel.name}] channel.
 
-Reply with HELP to learn more or GOODBYE to unsubscribe.`
-    },
+Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
     alreadyMember: `Whoops! You are already a member of this channel.`,
   },

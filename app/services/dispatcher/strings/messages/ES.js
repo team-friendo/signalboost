@@ -34,7 +34,8 @@ Signalboost intenta preservar su privacidad.
 Para más información: https://signalboost.info`
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) => `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
+  adminAdded: (commandIssuer, addedAdmin) =>
+    `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
 
   broadcastResponseSent: channel =>
     `Su mensaje fue enviado a los administradores de [${channel.name}].
@@ -53,7 +54,10 @@ AGREGAR ${adminPhoneNumber}
   
 Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
+  welcome: (
+    addingAdmin,
+    channelPhoneNumber,
+  ) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
 
 Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
 
@@ -89,8 +93,10 @@ const commandResponses = {
   remove: {
     success: num => `${num} eliminado como administrador.`,
     unauthorized,
-    dbError: num => `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
-    invalidNumber: num => `¡Lo siento! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    dbError: num =>
+      `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
+    invalidNumber: num =>
+      `¡Lo siento! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
     targetNotAdmin: num => `¡Lo siento! ${num} no es un administrador. No puedo eliminarle.`,
   },
 
@@ -187,12 +193,10 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => {
-      const { name } = channel
-      return `¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${name}].
+    success: channel =>
+      `¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${channel.name}].
 
-Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
-    },
+Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
     alreadyMember: `¡Lo siento! Ya eres miembro del canal.`,
   },
@@ -210,14 +214,14 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`
   toggleResponses: {
     success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
     unauthorized,
-    dbError: setting => `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
+    dbError: setting =>
+      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
   },
 
   // SET_LANGUAGE
 
   setLanguage: {
-    success:
-      `¡Puede enviar comandos en Español ahora! 
+    success: `¡Puede enviar comandos en Español ahora! 
       
 Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
