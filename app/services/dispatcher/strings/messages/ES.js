@@ -244,11 +244,9 @@ const prefixes = {
   broadcastResponse: `RESPUESTA DEL SUSCRIPTOR`,
 }
 
-const EN = {
+module.exports = {
   systemName,
   commandResponses,
   notifications,
   prefixes,
 }
-
-module.exports = EN
