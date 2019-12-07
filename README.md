@@ -79,12 +79,19 @@ Then you'll probably want to know about...
 
 ## System Requirements
 
+First you'll need to clone the repo:
+
+``` shell
+git clone git@0xacab.org:team-friendo/signalboost
+cd signalboost
+```
+
 To develop signalboost, you should make sure your local computer has the following programs installed:
 
+* make (you probably have this. check with `which make`. if you get output: you have it!)
 * docker CE
 * docker-compose
 * jq
-* make
 
 If you would like to be able to run individual unit tests on your computer, you will also  want:
 
@@ -157,8 +164,7 @@ To be able to use it, you first need to whitelist your gpg key:
 Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
 
 ```
-git clone git@0xacab.org:team-friendo/signalboost
-cd signalboost
+cd path/to/signlaboost/
 ./bin/blackbox/decrypt_all_files
 ```
 
