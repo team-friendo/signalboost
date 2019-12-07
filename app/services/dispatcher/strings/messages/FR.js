@@ -16,7 +16,7 @@ COMMENT ÇA FONCTIONNE
 Un canal de Signalboost ont des administratrices-teurs et des abonnées.
 
 -> Lorsque les administratrices-teurs transmettent des messages, ces messages sont envoyés à toutes les abonnées.
--> Si activé, les abonnées peuvent envoyer des réponses que seulEs les administratrices-teurs peuvent lire.
+-> Si activé, les abonnées peuvent envoyer des réponses que seules les administratrices-teurs peuvent lire.
 -> Les abonnés ne peuvent pas envoyer des messages entre elleux. (Pas de cacophonie!)
 
 Un canal de Signalboost comprennent des commandes.
@@ -58,7 +58,8 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
     'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
   welcome: (addingAdmin, channelPhoneNumber) => `
-Vous êtes maintenant unE admin de ce canal Signalboost grâce à ${addingAdmin}. BienvenuE!
+Vous êtes maintenant un
+ admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
 
 On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
 
@@ -90,7 +91,7 @@ const commandResponses = {
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
-    targetNotAdmin: num => `Oups! ${num} n’est pas unE admin. Ielle ne peut être supprimée.`,
+    targetNotAdmin: num => `Oups! ${num} n’est pas une admin. Ielle ne peut être supprimée.`,
   },
 
   // HELP
@@ -125,7 +126,7 @@ ADIEU
 -> désabonnement de la canal 
 
 ESPAÑOL / ENGLISH
--> change la langue au español or anglais`,
+-> change la langue au Español or Anglais`,
 
     subscriber: `----------------------------------------------
 COMMANDES QUE JE MAITRÎSE
@@ -144,7 +145,7 @@ ADIEU
 -> désabonnement des avis
 
 ESPAÑOL / ENGLISH
--> change la langue au español or anglais`,
+-> change la langue au Español or Anglais`,
   },
 
   // INFO
@@ -189,7 +190,7 @@ ${support}`,
 
   join: {
     success: channel =>
-      `BienvenuE à Signalboost! Vous êtes maintenant abonnée au/à la [${channel.name}] canal.
+      `Bienvenue à Signalboost! Vous êtes maintenant abonnée au/à la [${channel.name}] canal.
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
@@ -227,7 +228,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
   trust: {
     success: phoneNumber => `Mise à jour du numéro de sécurité à ${phoneNumber}`,
     error: phoneNumber =>
-      `La mise à jour du numéro de sécurité à ${phoneNumber} a échoué. Veuillez essayer à nouveau ou contactez unE mainteneur!`,
+      `La mise à jour du numéro de sécurité à ${phoneNumber} a échoué. Veuillez essayer à nouveau ou contactez une mainteneur!`,
     invalidNumber,
     unauthorized,
     dbError: phoneNumber =>
