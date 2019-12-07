@@ -104,11 +104,32 @@ sudo apt-get install docker-ce, jq, postgresql
 pip install docker-compose
 ```
 
+On a Mac, that would look like:
+
+``` shell
+brew update
+brew install docker docker-compose jq
+brew cask install docker
+```
+
+(Note: The `cask` version of docker allows you to run docker from Applications folder and get a nice systray icon. Some devs report needing to do that to get dev env working! :))
+
 If you would like to be able to run individual unit tests on your computer, you will also  want:
 
 * node
 * postgresql
 
+On debian-flavored linux:
+
+``` shell
+sudo apt install nodejs postgresql
+```
+
+On Mac:
+
+``` shell
+brew install postgresql node
+```
 
 ## Secrets <a name="secrets"></a>
 
