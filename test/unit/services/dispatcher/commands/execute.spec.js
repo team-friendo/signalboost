@@ -789,6 +789,7 @@ describe('executing commands', () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
                 status: statuses.SUCCESS,
+                payload: adminPhoneNumber,
                 message: CR.remove.success(adminPhoneNumber),
               })
             })
@@ -881,10 +882,11 @@ describe('executing commands', () => {
           result = await processCommand(dispatchable)
         })
 
-        it('returns SUCCESS status / message', () => {
+        it('returns SUCCESS status / message with new name in payload', () => {
           expect(result).to.eql({
             command: commands.RENAME,
             status: statuses.SUCCESS,
+            payload: 'foo',
             message: CR.rename.success(channel.name, 'foo'),
           })
         })
