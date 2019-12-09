@@ -104,8 +104,8 @@ test.lint: ## run linter
 ##################################
 
 
-splash.deploy: ## deploy the splash app
-	cd splash && ./bin/deploy
+splash.setup: ## build dev env for docker site (build docker container, install  npm deps)
+	./splash/bin/setup
 
 splash.dev: ## run splash site in dev mode
 	cd splash && docker-compose -f docker-compose-dev.yml up
@@ -115,4 +115,7 @@ splash.build: ## build production version of splash site
 
 splash.prod: ## run (already-built) version of splash site
 	cd splash && docker-compose up
+
+splash.deploy: ## deploy the splash app
+	./splash/bin/deploy
 

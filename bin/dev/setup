@@ -7,7 +7,7 @@ cd ../.. # cd to project root
 echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 
-echo "--- START building docker images..."
+echo "--- building docker images..."
 
 echo "--- building signalboost docker image..."
 docker build -f docker/signalboost.dockerfile -t "signalboost:latest" .
@@ -15,7 +15,7 @@ docker build -f docker/signalboost.dockerfile -t "signalboost:latest" .
 echo "--- building signald docker image..."
 docker build -f docker/signald.dockerfile -t "signald:latest" .
 
-echo "--- DONE building docker images"
+echo "--- done building docker images"
 
 echo "--- installing dependencies..."
 docker-compose -f docker-compose-dev.yml \
