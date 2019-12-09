@@ -22,23 +22,25 @@ describe('messenger service', () => {
   const notifications = messagesIn(defaultLanguage).notifications
   const [db, sock] = [{}, { write: () => {} }]
   const channelPhoneNumber = genPhoneNumber()
-  const subscriberNumbers = times(2, genPhoneNumber)
-  const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const subscriberPhoneNumbers = times(2, genPhoneNumber)
+  const adminPhoneNumbers = times(4, genPhoneNumber)
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
     memberships: [
-      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[0] },
-      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[1] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[0] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[1] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[2] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[3] },
       {
         type: memberTypes.SUBSCRIBER,
         channelPhoneNumber,
-        memberPhoneNumber: subscriberNumbers[0],
+        memberPhoneNumber: subscriberPhoneNumbers[0],
       },
       {
         type: memberTypes.SUBSCRIBER,
         channelPhoneNumber,
-        memberPhoneNumber: subscriberNumbers[1],
+        memberPhoneNumber: subscriberPhoneNumbers[1],
       },
     ],
     messageCount: { broadcastIn: 42 },
@@ -58,12 +60,12 @@ describe('messenger service', () => {
     attachments,
   }
   const adminSender = {
-    phoneNumber: adminNumbers[0],
+    phoneNumber: adminPhoneNumbers[0],
     type: memberTypes.ADMIN,
     language: languages.EN,
   }
   const subscriberSender = {
-    phoneNumber: subscriberNumbers[0],
+    phoneNumber: subscriberPhoneNumbers[0],
     type: memberTypes.SUBSCRIBER,
     language: languages.EN,
   }
@@ -149,7 +151,7 @@ describe('messenger service', () => {
         it('broadcasts the message to all channel subscribers and admins', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [...adminNumbers, ...subscriberNumbers],
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers],
             { ...sdMessage, messageBody: '[foobar]\nplease help!' },
           ])
         })
@@ -196,7 +198,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              adminNumbers,
+              adminPhoneNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
@@ -225,7 +227,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              adminNumbers,
+              adminPhoneNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
@@ -334,18 +336,21 @@ describe('messenger service', () => {
         it('sends an alert to the other channel admins', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
-            adminNumbers,
+            adminPhoneNumbers,
             sdMessageOf(channel, `[${channel.name}]\n${alert}`),
           ])
         })
       })
 
       describe('for a REMOVE command', () => {
-        const removedAdminPhoneNumber = genPhoneNumber()
-        const adminsWhoDidntRemoveOrGetRemoved = getAdminPhoneNumbers(channel).filter(
-          pNum => pNum !== adminSender.phoneNumber && pNum !== removedAdminPhoneNumber,
-        )
-        const sdMessage = `${commands.REMOVE} ${removedAdminPhoneNumber}`
+        const remover = {
+          type: memberTypes.ADMIN,
+          language: languages.EN,
+          phoneNumber: adminPhoneNumbers[0],
+        }
+        const removedPhoneNumber = adminPhoneNumbers[1]
+        const bystanderPhoneNumbers = [adminPhoneNumbers[2], adminPhoneNumbers[3]]
+        const sdMessage = `${commands.REMOVE} ${removedPhoneNumber}`
 
         beforeEach(async () => {
           await messenger.dispatch({
@@ -353,13 +358,26 @@ describe('messenger service', () => {
               db,
               sock,
               channel,
-              sender: adminSender,
+              sender: remover,
               sdMessage,
             },
             commandResult: {
               command: commands.REMOVE,
               status: statuses.SUCCESS,
-              payload: removedAdminPhoneNumber,
+              notifications: [
+                {
+                  recipient: removedPhoneNumber,
+                  message: `${messages.notifications.toRemovedAdmin}`,
+                },
+                {
+                  recipient: bystanderPhoneNumbers[0],
+                  message: messages.notifications.adminRemoved,
+                },
+                {
+                  recipient: bystanderPhoneNumbers[1],
+                  message: messages.notifications.adminRemoved,
+                },
+              ],
             },
           })
         })
@@ -367,7 +385,7 @@ describe('messenger service', () => {
         it('notifies the removed admin', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [removedAdminPhoneNumber],
+            [removedPhoneNumber],
             sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.toRemovedAdmin}`),
           ])
         })
@@ -375,7 +393,12 @@ describe('messenger service', () => {
         it('notifies all other admins', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
-            adminsWhoDidntRemoveOrGetRemoved,
+            [bystanderPhoneNumbers[0]],
+            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.adminRemoved}`),
+          ])
+          expect(broadcastMessageStub.getCall(2).args).to.eql([
+            sock,
+            [bystanderPhoneNumbers[1]],
             sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.adminRemoved}`),
           ])
         })

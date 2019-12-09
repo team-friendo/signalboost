@@ -104,6 +104,22 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
   const { command, message, status, payload } = commandResult
   const { db, sock, channel, sender } = dispatchable
   const notifyBase = { db, sock, channel }
+  // TODO(aguestuser|2019-12-08):
+  //  once if/else branch logic has all been moved into new format
+  //  - return this Promise.all
+  //  - update the signature of `notify` to
+  //    - take one recipient, *not* many recipients
+  //    - call signal.sendMessage *not* broadcastMessage
+  //    - don't call `format` (to add msg header) in `notify` anymore (?)
+  await Promise.all(
+    commandResult.notifications.map(notification =>
+      notify({
+        ...notifyBase,
+        notification: notification.message,
+        recipients: [notification.recipient],
+      }),
+    ),
+  )
   if (command === commands.ADD && status === statuses.SUCCESS) {
     // welcome new admin
     await notify({
@@ -128,23 +144,6 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
       ...notifyBase,
       notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
       recipients: [payload],
-
-  if (command === commands.REMOVE && status === statuses.SUCCESS) {
-    // notify removed admin they've been removed
-    await notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.toRemovedAdmin,
-      recipients: [payload],
-    })
-    // notify everyone else that an admin has been removed
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.adminRemoved,
-      recipients: getAdminPhoneNumbers(channel).filter(
-        pNum => pNum !== sender.phoneNumber && pNum !== payload,
-      ),
-    })
-  }
 
   if (command === commands.RENAME && status === statuses.SUCCESS) {
     return notify({

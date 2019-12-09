@@ -4,6 +4,7 @@ const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
+const { getAdminMemberships } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
@@ -22,6 +23,7 @@ const {
  *   command: string,
  *   status: string,
  *   message: string,
+ *   notifications: Array<{ recipient: Array<string>, message: string }>
  * }
  *
  * type Toggle = toggles.RESPONSES | toggles.VOUCHING
@@ -202,31 +204,53 @@ const removeSender = (db, channel, sender, cr) => {
 
 // REMOVE
 
-const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
+const maybeRemoveAdmin = async (db, channel, sender, adminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
-  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(adminNumber)
+  const { isValid, phoneNumber: validAdminNumber } = validator.parseValidPhoneNumber(
+    adminPhoneNumber,
+  )
 
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   if (!isValid) {
-    return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
+    return { status: statuses.ERROR, message: cr.invalidNumber(adminPhoneNumber) }
   }
-  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotAdmin(validNumber) }
+  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validAdminNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotAdmin(validAdminNumber) }
 
-  return removeAdmin(db, channel, validNumber, cr)
+  return removeAdmin(db, channel, validAdminNumber, sender, cr)
 }
 
-const removeAdmin = async (db, channel, adminNumber, cr) =>
-  membershipRepository
-    .removeAdmin(db, channel.phoneNumber, adminNumber)
+const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
+  const notifications = removalNotificationsOf(channel, adminPhoneNumber, sender)
+  return membershipRepository
+    .removeAdmin(db, channel.phoneNumber, adminPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(adminNumber),
-      payload: adminNumber,
+      message: cr.success(adminPhoneNumber),
+      notifications: removalNotificationsOf(channel, adminPhoneNumber, sender),
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminPhoneNumber) }))
+}
+
+const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
+  const allMemberships = getAdminMemberships(channel)
+  const removedMembership = allMemberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
+  const bystanderMemberships = allMemberships.filter(
+    m => m.memberPhoneNumber !== sender.phoneNumber && m.memberPhoneNumber !== adminPhoneNumber,
+  )
+  return [
+    {
+      recipient: adminPhoneNumber,
+      message: `${messagesIn(removedMembership.language).notifications.toRemovedAdmin}`,
+    },
+    ...bystanderMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.adminRemoved,
+    })),
+  ]
+}
 
 // RENAME
 

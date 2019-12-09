@@ -15,7 +15,7 @@ import inviteRepository from '../../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../../app/db/repositories/membership'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
-import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
+import { genPhoneNumber, parenthesize } from '../../../../support/factories/phoneNumber'
 import { memberTypes } from '../../../../../app/db/repositories/membership'
 import { sdMessageOf } from '../../../../../app/services/signal'
 import {
@@ -23,6 +23,7 @@ import {
   membershipFactory,
   subscriberMembershipFactory,
 } from '../../../../support/factories/membership'
+import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 const {
   signal: { signupPhoneNumber },
 } = require('../../../../../app/config')
@@ -33,11 +34,14 @@ describe('executing commands', () => {
     name: 'foobar',
     phoneNumber: '+13333333333',
     memberships: [
-      ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
+      adminMembershipFactory({
+        memberPhoneNumber: admin.phoneNumber,
+        channelPhoneNumber: '+13333333333',
+      }),
+      ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
       ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
     ],
     messageCount: { broadcastIn: 42 },
-    vouchingOn: false,
   }
   const signupChannel = {
     name: 'SB_SIGNUP',
@@ -764,9 +768,9 @@ describe('executing commands', () => {
       beforeEach(() => removeAdminStub.returns(Promise.resolve()))
 
       describe('when payload is a valid phone number', () => {
-        const payload = '+1 (555) 555-5555' // to ensure we catch errors
-        const adminPhoneNumber = '+15555555555'
-        const sdMessage = sdMessageOf(channel, `REMOVE ${payload}`)
+        const removalTargetNumber = channel.memberships[1].memberPhoneNumber
+        const rawRemovalTargetNumber = parenthesize(removalTargetNumber)
+        const sdMessage = sdMessageOf(channel, `REMOVE ${rawRemovalTargetNumber}`)
         const dispatchable = { db, channel, sender, sdMessage }
         beforeEach(() => validateStub.returns(true))
 
@@ -778,7 +782,7 @@ describe('executing commands', () => {
             expect(removeAdminStub.getCall(0).args).to.eql([
               db,
               channel.phoneNumber,
-              adminPhoneNumber,
+              removalTargetNumber,
             ])
           })
 
@@ -789,8 +793,23 @@ describe('executing commands', () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
                 status: statuses.SUCCESS,
-                payload: adminPhoneNumber,
-                message: CR.remove.success(adminPhoneNumber),
+                message: CR.remove.success(removalTargetNumber),
+                notifications: [
+                  // removed
+                  {
+                    recipient: removalTargetNumber,
+                    message: messagesIn(languages.EN).notifications.toRemovedAdmin,
+                  },
+                  // bystanders
+                  {
+                    recipient: channel.memberships[2].memberPhoneNumber,
+                    message: messagesIn(languages.EN).notifications.adminRemoved,
+                  },
+                  {
+                    recipient: channel.memberships[3].memberPhoneNumber,
+                    message: messagesIn(languages.EN).notifications.adminRemoved,
+                  },
+                ],
               })
             })
           })
@@ -802,7 +821,7 @@ describe('executing commands', () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
                 status: statuses.ERROR,
-                message: CR.remove.dbError(adminPhoneNumber),
+                message: CR.remove.dbError(removalTargetNumber),
               })
             })
           })
@@ -819,7 +838,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REMOVE,
               status: statuses.ERROR,
-              message: CR.remove.targetNotAdmin(adminPhoneNumber),
+              message: CR.remove.targetNotAdmin(removalTargetNumber),
             })
           })
         })
