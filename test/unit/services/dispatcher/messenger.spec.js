@@ -13,7 +13,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
-import channelRepository from '../../../../app/db/repositories/channel'
+import channelRepository, { getAdminPhoneNumbers } from '../../../../app/db/repositories/channel'
 const {
   signal: { signupPhoneNumber },
 } = require('../../../../app/config')
@@ -268,15 +268,13 @@ describe('messenger service', () => {
         expect(broadcastMessageStub.getCall(1).args).to.eql([
           sock,
           [randomSender.phoneNumber],
-          sdMessageOf(
-            signupChannel,
-            notifications.signupRequestResponse,
-          ),
+          sdMessageOf(signupChannel, notifications.signupRequestResponse),
         ])
       })
     })
 
     describe('when message is a command response', () => {
+      // TODO(aguestuser|mari): loop over all commands here
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
@@ -305,11 +303,11 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when message is a command notification', () => {
-      describe('for a newly added admin', () => {
-        const newAdmin = genPhoneNumber()
-        const sdMessage = `${commands.ADD} ${newAdmin}`
-        const response = messages.commandResponses.add.success(newAdmin)
+    describe('when command requires notification(s)', () => {
+      describe('for an ADD command', () => {
+        const newAdminPhoneNumber = genPhoneNumber()
+        const sdMessage = `${commands.ADD} ${newAdminPhoneNumber}`
+        const response = messages.commandResponses.add.success(newAdminPhoneNumber)
         const welcome = messages.notifications.welcome(adminSender.phoneNumber, channel.phoneNumber)
         const alert = messages.notifications.adminAdded
 
@@ -320,32 +318,16 @@ describe('messenger service', () => {
               command: commands.ADD,
               status: statuses.SUCCESS,
               message: response,
-              payload: newAdmin,
+              payload: newAdminPhoneNumber,
             },
           })
-        })
-
-        it('does not broadcast a message', () => {
-          expect(broadcastSpy.callCount).to.eql(0)
-        })
-
-        it('does not increment the broadcast count', () => {
-          expect(incrementBroadcastCountStub.callCount).to.eql(0)
-        })
-
-        it('sends a response to the command sender', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            sock,
-            adminSender.phoneNumber,
-            sdMessageOf(channel, response),
-          ])
         })
 
         it('sends a welcome notification to the newly added admin', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [newAdmin],
-            sdMessageOf(channel, welcome),
+            [newAdminPhoneNumber],
+            sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
           ])
         })
 
@@ -353,7 +335,48 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
             adminNumbers,
-            sdMessageOf(channel, alert),
+            sdMessageOf(channel, `[${channel.name}]\n${alert}`),
+          ])
+        })
+      })
+
+      describe('for a REMOVE command', () => {
+        const removedAdminPhoneNumber = genPhoneNumber()
+        const adminsWhoDidntRemoveOrGetRemoved = getAdminPhoneNumbers(channel).filter(
+          pNum => pNum !== adminSender.phoneNumber && pNum !== removedAdminPhoneNumber,
+        )
+        const sdMessage = `${commands.REMOVE} ${removedAdminPhoneNumber}`
+
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: {
+              db,
+              sock,
+              channel,
+              sender: adminSender,
+              sdMessage,
+            },
+            commandResult: {
+              command: commands.REMOVE,
+              status: statuses.SUCCESS,
+              payload: removedAdminPhoneNumber,
+            },
+          })
+        })
+
+        it('notifies the removed admin', () => {
+          expect(broadcastMessageStub.getCall(0).args).to.eql([
+            sock,
+            [removedAdminPhoneNumber],
+            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.toRemovedAdmin}`),
+          ])
+        })
+
+        it('notifies all other admins', () => {
+          expect(broadcastMessageStub.getCall(1).args).to.eql([
+            sock,
+            adminsWhoDidntRemoveOrGetRemoved,
+            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.adminRemoved}`),
           ])
         })
       })
