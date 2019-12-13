@@ -108,36 +108,26 @@ sudo apt-get install \
      gnupg2 \
      software-properties-common
 curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-# check fingerprint matches 9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88:
+# check fingerprint matches 9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88, then:
 sudo apt-key fingerprint 0EBFCD88
 sudo add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/$(lsb_release -is | tr '[:upper:]' '[:lower:]') \
    $(lsb_release -cs) \
    stable"
 sudo apt-get update
-sudo apt-add-repository --yes --update ppa:ansible/ansible
-sudo apt-get install docker-ce jq
+sudo apt-get install docker-ce jq nodejs postgresql
 pip install docker-compose
-```
-
-``` shell
-sudo apt install nodejs postgresql
 ```
 
 On a Mac (tested on 10.14.5 Mojave), that would look like:
 
 ``` shell
 brew update
-brew install docker docker-compose jq
+brew install docker docker-compose jq node postgresql
 brew cask install docker
 ```
 
 (Note: The `cask` version of docker allows you to run docker from Applications folder and get a nice systray icon. Some devs report needing to do that to get dev env working! :))
-
-
-``` shell
-brew install postgresql node
-```
 
 ## Secrets <a name="secrets"></a>
 
@@ -371,6 +361,8 @@ To be a sysadmin for a signalboost instance, you will need:
 If you are running debian-flavored linux, you can install all ansible dependencies with:
 
 ``` shell
+sudo apt-add-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
 cd path/to/signalboost
 make ansible.install
 ```
