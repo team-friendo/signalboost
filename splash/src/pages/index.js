@@ -82,8 +82,13 @@ const IndexPage = () => (
       </li>
       <li>
         People can subscribe to announcements by sending a Signal message to
-        this phone number that says "HELLO" or "HOLA" and leave by sending
-        "GOOBYE" or "ADÌOS."
+        this phone number that says "HELLO", "HOLA" or "ALLÔ" and leave by sending
+        "GOOBYE", "ADÌOS" or "ADIEU."
+      </li>
+      <li>
+        Signalboost speaks English, French and Spanish and everyone can choose which
+        language they want to use for commands and notifications. Send a Signal
+        message to the channel that says "HELP" to see the command options.
       </li>
       <li>
         You can convert the channel into a hotline by sending a message that
