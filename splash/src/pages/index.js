@@ -8,8 +8,8 @@ const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: Secure Textblasts and Hotlines for Activists" />
     <p>
-      Signalboost lets activists send text blasts and receive hotline tips on
-      their phones without revealing their identity or spending money. It is{' '}
+      Signalboost lets activists use Signal to send text blasts and receive hotline tips on
+      their phones without revealing their identity or spending money. <br />It is{' '}
       <em style={{ color: '#ff79c6' }}>secure, simple, and free.</em>
     </p>
 
@@ -101,6 +101,15 @@ const IndexPage = () => (
         Send us an email at{' '}
         <a href="mailto:team-friendo@protonmail.com">
           team-friendo@protonmail.com
+        </a> or{' '} 
+	<a href="mailto:team-friendo@riseup.net">
+          team-friendo@riseup.net
+        </a>
+      </li>
+      <li>
+        Find our{' '}
+        <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
+        	PGP key here
         </a>
       </li>
       <li>
