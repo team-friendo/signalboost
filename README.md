@@ -86,6 +86,11 @@ To develop signalboost, you should make sure your local computer has the followi
 * jq
 * make
 
+If you would like to be able to run individual unit tests on your computer, you will also  want:
+
+* node
+* postgresql
+
 Installing those on a debian-flavored laptop would involve running the following commands:
 
 ``` shell
@@ -108,7 +113,11 @@ sudo apt-get install docker-ce jq
 pip install docker-compose
 ```
 
-On a Mac, that would look like:
+``` shell
+sudo apt install nodejs postgresql
+```
+
+On a Mac (tested on 10.14.5 Mojave), that would look like:
 
 ``` shell
 brew update
@@ -118,18 +127,6 @@ brew cask install docker
 
 (Note: The `cask` version of docker allows you to run docker from Applications folder and get a nice systray icon. Some devs report needing to do that to get dev env working! :))
 
-If you would like to be able to run individual unit tests on your computer, you will also  want:
-
-* node
-* postgresql
-
-On debian-flavored linux:
-
-``` shell
-sudo apt install nodejs postgresql
-```
-
-On Mac:
 
 ``` shell
 brew install postgresql node
