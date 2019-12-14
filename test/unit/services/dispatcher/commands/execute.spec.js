@@ -177,11 +177,11 @@ describe('executing commands', () => {
     describe('when sender is a random person', () => {
       const dispatchable = { db, channel, sender: randomPerson, sdMessage }
 
-      it('sends an UNAUTHORIZED message', async () => {
+      it('sends a subscriber help message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.HELP,
-          status: statuses.UNAUTHORIZED,
-          message: CR.help.unauthorized,
+          status: statuses.SUCCESS,
+          message: CR.help.subscriber,
         })
       })
     })
@@ -217,11 +217,11 @@ describe('executing commands', () => {
     describe('when sender is neither admin nor subscriber', () => {
       const dispatchable = { db, channel, sender: randomPerson, sdMessage }
 
-      it('sends an UNAUTHORIZED message', async () => {
+      it('sends a subscriber info message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
-          status: statuses.UNAUTHORIZED,
-          message: CR.info.unauthorized,
+          status: statuses.SUCCESS,
+          message: CR.info.subscriber(channel),
         })
       })
     })

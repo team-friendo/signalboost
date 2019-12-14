@@ -33,8 +33,8 @@ const execute = async (executable, dispatchable) => {
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
   const result = await ({
     [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
-    [commands.HELP]: () => maybeShowHelp(db, channel, sender),
-    [commands.INFO]: () => maybeShowInfo(db, channel, sender),
+    [commands.HELP]: () => showHelp(db, channel, sender),
+    [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
@@ -74,31 +74,23 @@ const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
 
 // HELP
 
-const maybeShowHelp = async (db, channel, sender) => {
+const showHelp = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
-  return sender.type === NONE
-    ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-    : showHelp(db, channel, sender, cr)
+  return {
+    status: statuses.SUCCESS,
+    message: sender.type === ADMIN ? cr.admin : cr.subscriber,
+  }
 }
-
-const showHelp = async (db, channel, sender, cr) => ({
-  status: statuses.SUCCESS,
-  message: sender.type === ADMIN ? cr.admin : cr.subscriber,
-})
 
 // INFO
 
-const maybeShowInfo = async (db, channel, sender) => {
+const showInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
-  return sender.type === NONE
-    ? { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-    : showInfo(db, channel, sender, cr)
+  return {
+    status: statuses.SUCCESS,
+    message: sender.type === ADMIN ? cr.admin(channel) : cr.subscriber(channel),
+  }
 }
-
-const showInfo = async (db, channel, sender, cr) => ({
-  status: statuses.SUCCESS,
-  message: sender.type === ADMIN ? cr.admin(channel) : cr.subscriber(channel),
-})
 
 // JOIN
 
