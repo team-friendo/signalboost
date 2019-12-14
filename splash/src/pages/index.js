@@ -83,7 +83,7 @@ const IndexPage = () => (
       <li>
         People can subscribe to announcements by sending a Signal message to
         this phone number that says "HELLO", "HOLA" or "ALLÔ" and leave by sending
-        "GOOBYE", "ADÌOS" or "ADIEU."
+        "GOOBYE", "ADIÓS" or "ADIEU."
       </li>
       <li>
         Signalboost speaks English, French and Spanish and everyone can choose which
