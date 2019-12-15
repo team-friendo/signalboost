@@ -119,3 +119,5 @@ splash.prod: ## run (already-built) version of splash site
 splash.deploy: ## deploy the splash app
 	./splash/bin/deploy
 
+splash.update: ## install new node dependencies and rebuild docker container if needed
+	./splash/bin/update
