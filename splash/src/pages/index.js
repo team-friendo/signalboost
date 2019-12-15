@@ -8,8 +8,8 @@ const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: Secure Textblasts and Hotlines for Activists" />
     <p>
-      Signalboost lets activists send text blasts and receive hotline tips on
-      their phones without revealing their identity or spending money. It is{' '}
+      Signalboost lets activists use Signal to send text blasts and receive hotline tips on
+      their phones without revealing their identity or spending money. <br />It is{' '}
       <em style={{ color: '#ff79c6' }}>secure, simple, and free.</em>
     </p>
 
@@ -82,8 +82,13 @@ const IndexPage = () => (
       </li>
       <li>
         People can subscribe to announcements by sending a Signal message to
-        this phone number that says "HELLO" or "HOLA" and leave by sending
-        "GOOBYE" or "ADÌOS."
+        this phone number that says "HELLO", "HOLA" or "ALLÔ" and leave by sending
+        "GOOBYE", "ADIÓS" or "ADIEU."
+      </li>
+      <li>
+        Signalboost speaks English, French and Spanish and everyone can choose which
+        language they want to use for commands and notifications. Send a Signal
+        message to the channel that says "HELP" to see the command options.
       </li>
       <li>
         You can convert the channel into a hotline by sending a message that
@@ -101,6 +106,15 @@ const IndexPage = () => (
         Send us an email at{' '}
         <a href="mailto:team-friendo@protonmail.com">
           team-friendo@protonmail.com
+        </a> or{' '} 
+	<a href="mailto:team-friendo@riseup.net">
+          team-friendo@riseup.net
+        </a>
+      </li>
+      <li>
+        Find our{' '}
+        <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
+        	PGP key here
         </a>
       </li>
       <li>
