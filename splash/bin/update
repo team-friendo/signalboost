@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- re-building signalboost_splash docker image..."
+
+docker build -f docker/signalboost_splash.dockerfile -t "signalboost_splash:latest" .
+
+echo "--- installing dependencies..."
+
+docker-compose -f docker-compose-dev.yml \
+               run --entrypoint 'yarn install' \
+               splash
+
+echo "--- DONE!"
+
+popd
