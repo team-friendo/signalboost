@@ -7,7 +7,7 @@ echo "--- loading secrets..."
 
 cd ..
 ../../bin/blackbox/postdeploy
-set -a && source .env && set +a
+source .env
 
 echo "--- deploying..."
 
