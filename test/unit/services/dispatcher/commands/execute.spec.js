@@ -360,80 +360,95 @@ describe('executing commands', () => {
     beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
     afterEach(() => addSubscriberStub.restore())
 
-    describe('when number is not subscribed to channel', () => {
-      const dispatchable = { db, channel, sender: randomPerson, sdMessage }
+    describe('when vouching mode is on', () => {
+      const vouchedChannel = { ...channel, vouchingOn: true }
+      const dispatchable = { db, channel: vouchedChannel, sender: randomPerson, sdMessage }
 
-      describe('in all cases', () => {
-        beforeEach(() => addSubscriberStub.returns(Promise.resolve()))
-
-        it('attempts to subscribe sender to channel in the language they used to signup', async () => {
-          await processCommand(dispatchable)
-          expect(addSubscriberStub.getCall(0).args).to.eql([
-            db,
-            channel.phoneNumber,
-            randomPerson.phoneNumber,
-            languages.EN,
-          ])
+      it('responds with an ERROR', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.JOIN,
+          status: statuses.ERROR,
+          message: CR.join.inviteRequired,
         })
       })
+    })
 
-      describe('when adding subscriber succeeds', () => {
-        beforeEach(() => addSubscriberStub.returns(Promise.resolve(subscriptionFactory())))
+    describe('when vouching mode is off', () => {
+      describe('when number is not subscribed to channel', () => {
+        const dispatchable = { db, channel, sender: randomPerson, sdMessage }
 
-        it('returns SUCCESS status/message', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.JOIN,
-            status: statuses.SUCCESS,
-            message: CR.join.success(channel),
+        describe('in all cases', () => {
+          beforeEach(() => addSubscriberStub.returns(Promise.resolve()))
+
+          it('attempts to subscribe sender to channel in the language they used to signup', async () => {
+            await processCommand(dispatchable)
+            expect(addSubscriberStub.getCall(0).args).to.eql([
+              db,
+              channel.phoneNumber,
+              randomPerson.phoneNumber,
+              languages.EN,
+            ])
+          })
+        })
+
+        describe('when adding subscriber succeeds', () => {
+          beforeEach(() => addSubscriberStub.returns(Promise.resolve(subscriptionFactory())))
+
+          it('returns SUCCESS status/message', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.JOIN,
+              status: statuses.SUCCESS,
+              message: CR.join.success(channel),
+            })
+          })
+        })
+
+        describe('when adding subscriber fails', () => {
+          beforeEach(() => addSubscriberStub.callsFake(() => Promise.reject('foo')))
+
+          it('returns ERROR status/message', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.JOIN,
+              status: statuses.ERROR,
+              message: CR.join.error,
+            })
           })
         })
       })
 
-      describe('when adding subscriber fails', () => {
-        beforeEach(() => addSubscriberStub.callsFake(() => Promise.reject('foo')))
+      describe('when number is subscribed to channel', () => {
+        const dispatchable = { db, channel, sender: subscriber, sdMessage }
+        let result
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
-        it('returns ERROR status/message', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
+        it('does not try to add subscriber', () => {
+          expect(addSubscriberStub.callCount).to.eql(0)
+        })
+
+        it('returns "already member" status/message', () => {
+          expect(result).to.eql({
             command: commands.JOIN,
             status: statuses.ERROR,
-            message: CR.join.error,
+            message: CR.join.alreadyMember,
           })
         })
       })
-    })
 
-    describe('when number is subscribed to channel', () => {
-      const dispatchable = { db, channel, sender: subscriber, sdMessage }
-      let result
-      beforeEach(async () => (result = await processCommand(dispatchable)))
+      describe('when number belongs to a channel admin', () => {
+        const dispatchable = { db, channel, sender: admin, sdMessage }
+        let result
+        beforeEach(async () => (result = await processCommand(dispatchable)))
 
-      it('does not try to add subscriber', () => {
-        expect(addSubscriberStub.callCount).to.eql(0)
-      })
-
-      it('returns "already member" status/message', () => {
-        expect(result).to.eql({
-          command: commands.JOIN,
-          status: statuses.ERROR,
-          message: CR.join.alreadyMember,
+        it('does not try to add subscriber', () => {
+          expect(addSubscriberStub.callCount).to.eql(0)
         })
-      })
-    })
 
-    describe('when number belongs to a channel admin', () => {
-      const dispatchable = { db, channel, sender: admin, sdMessage }
-      let result
-      beforeEach(async () => (result = await processCommand(dispatchable)))
-
-      it('does not try to add subscriber', () => {
-        expect(addSubscriberStub.callCount).to.eql(0)
-      })
-
-      it('returns "already member" status/message', () => {
-        expect(result).to.eql({
-          command: commands.JOIN,
-          status: statuses.ERROR,
-          message: CR.join.alreadyMember,
+        it('returns "already member" status/message', () => {
+          expect(result).to.eql({
+            command: commands.JOIN,
+            status: statuses.ERROR,
+            message: CR.join.alreadyMember,
+          })
         })
       })
     })

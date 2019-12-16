@@ -125,9 +125,9 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
 
 const maybeAddSubscriber = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.join
-  return sender.type === NONE
-    ? addSubscriber(db, channel, sender, language, cr)
-    : Promise.resolve({ status: statuses.ERROR, message: cr.alreadyMember })
+  if (sender.type !== NONE) return { status: statuses.ERROR, message: cr.alreadyMember }
+  if (channel.vouchingOn) return { status: statuses.ERROR, message: cr.inviteRequired }
+  return addSubscriber(db, channel, sender, language, cr)
 }
 
 const addSubscriber = (db, channel, sender, language, cr) =>

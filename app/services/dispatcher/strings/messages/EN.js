@@ -208,6 +208,9 @@ ${support}`,
       `Welcome to Signalboost! You are now subscribed to the [${channel.name}] channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
+    inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
+
+If you already have an invite, try sending ACCEPT`,
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
     alreadyMember: `Whoops! You are already a member of this channel.`,
   },
