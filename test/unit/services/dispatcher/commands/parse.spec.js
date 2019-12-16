@@ -175,31 +175,27 @@ describe('parsing commands', () => {
 
     describe('RESPONSES_ON command', () => {
       it('parses an RESPONSES_ON command (regardless of case or whitespace)', () => {
-        it('parses an RENAME command (regardless of case or whitespace)', () => {
-          const msgs = ['RESPONSES ON', 'responses on', ' responses  on ']
-          msgs.forEach(msg =>
-            expect(parseExecutable(msg)).to.eql({
-              command: commands.RESPONSES_ON,
-              language: languages.EN,
-              payload: '',
-            }),
-          )
-        })
+        const msgs = ['RESPONSES ON', 'responses on', ' responses  on ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.RESPONSES_ON,
+            language: languages.EN,
+            payload: '',
+          }),
+        )
       })
     })
 
     describe('RESPONSES_OFF command', () => {
       it('parses an RESPONSES_OFF command (regardless of case or whitespace)', () => {
-        it('parses an RENAME command (regardless of case or whitespace)', () => {
-          const msgs = ['RESPONSES OFF', 'responses off', ' responses  off ']
-          msgs.forEach(msg =>
-            expect(parseExecutable(msg)).to.eql({
-              command: commands.RESPONSES_OFF,
-              language: languages.EN,
-              payload: '',
-            }),
-          )
-        })
+        const msgs = ['RESPONSES OFF', 'responses off', ' responses  off ']
+        msgs.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.RESPONSES_OFF,
+            language: languages.EN,
+            payload: '',
+          }),
+        )
       })
     })
 
@@ -212,6 +208,62 @@ describe('parsing commands', () => {
             language: languages.EN,
             payload: '',
           }),
+        )
+      })
+    })
+
+    describe('VOUCHING_ON command', () => {
+      it('parses VOUCHING_ON regardless of spacing, accents, casing, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['VOUCHING ON', ' vouching on '],
+          },
+          {
+            language: languages.ES,
+            messages: ['ATESTIGUANDO ACTIVADA', ' atestiguando activada '],
+          },
+          {
+            language: languages.FR,
+            messages: ['SE PORTER GARANT ACTIVÉES', ' se porter garant activees '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.VOUCHING_ON,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('VOUCHING_OFF command', () => {
+      it('parses VOUCHING_OFF regardless of spacing, accents, casing, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['VOUCHING OFF', ' vouching off '],
+          },
+          {
+            language: languages.ES,
+            messages: ['ATESTIGUANDO DESACTIVADA', ' atestiguando desactivada '],
+          },
+          {
+            language: languages.FR,
+            messages: ['SE PORTER GARANT DÉSACTIVÉES', ' se porter garant desactivees '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.VOUCHING_OFF,
+              language,
+              payload: '',
+            }),
+          ),
         )
       })
     })

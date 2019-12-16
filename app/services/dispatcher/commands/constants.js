@@ -18,6 +18,8 @@ const commands = {
   RESPONSES_OFF: 'RESPONSES_OFF',
   RESPONSES_ON: 'RESPONSES_ON',
   SET_LANGUAGE: 'SET_LANGUAGE',
+  VOUCHING_ON: 'VOUCHING_ON',
+  VOUCHING_OFF: 'VOUCHING_OFF',
 }
 
 module.exports = { statuses, commands }
