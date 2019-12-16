@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
 
 echo "--- running app..."
-node /signalboost/app
+
+if [ "$NODE_ENV" = "development" ];then
+  cd /signalboost
+  npx nodemon app
+else
+  node /signalboost/app
+fi
