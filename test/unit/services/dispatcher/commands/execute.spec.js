@@ -878,6 +878,156 @@ describe('executing commands', () => {
     })
   })
 
+  describe('VOUCHING_ON command', () => {
+    let updateChannelStub
+    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateChannelStub.restore())
+
+    describe('when sender is a admin', () => {
+      const sender = admin
+
+      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('attempts to update the vouchingOn field on the channel', async () => {
+        updateChannelStub.returns(Promise.resolve())
+        await processCommand(dispatchable)
+        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+          db,
+          channel.phoneNumber,
+          { vouchingOn: true },
+        ])
+      })
+
+      describe('when db update succeeds', () => {
+        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+
+        it('returns a SUCCESS status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.VOUCHING_ON,
+            status: statuses.SUCCESS,
+            message: CR.toggleVouching.success('ON'),
+          })
+        })
+      })
+
+      describe('when db update fails', () => {
+        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+
+        it('returns an ERROR status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.VOUCHING_ON,
+            status: statuses.ERROR,
+            message: CR.toggleVouching.dbError('ON'),
+          })
+        })
+      })
+    })
+
+    describe('when sender is a subscriber', () => {
+      const sender = subscriber
+      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.VOUCHING_ON,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleVouching.unauthorized,
+        })
+      })
+    })
+
+    describe('when sender is a random person', () => {
+      const sender = randomPerson
+      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.VOUCHING_ON,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleVouching.unauthorized,
+        })
+      })
+    })
+  })
+
+  describe('VOUCHING_OFF command', () => {
+    let updateChannelStub
+    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateChannelStub.restore())
+
+    describe('when sender is a admin', () => {
+      const sender = admin
+
+      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('attempts to update the vouchingOn field on the channel', async () => {
+        updateChannelStub.returns(Promise.resolve())
+        await processCommand(dispatchable)
+        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+          db,
+          channel.phoneNumber,
+          { vouchingOn: false },
+        ])
+      })
+
+      describe('when db update succeeds', () => {
+        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+
+        it('returns a SUCCESS status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.VOUCHING_OFF,
+            status: statuses.SUCCESS,
+            message: CR.toggleVouching.success('OFF'),
+          })
+        })
+      })
+
+      describe('when db update fails', () => {
+        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+
+        it('returns an ERROR status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.VOUCHING_OFF,
+            status: statuses.ERROR,
+            message: CR.toggleVouching.dbError('OFF'),
+          })
+        })
+      })
+    })
+
+    describe('when sender is a subscriber', () => {
+      const sender = subscriber
+      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.VOUCHING_OFF,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleVouching.unauthorized,
+        })
+      })
+    })
+
+    describe('when sender is a random person', () => {
+      const sender = randomPerson
+      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.VOUCHING_OFF,
+          status: statuses.UNAUTHORIZED,
+          message: CR.toggleVouching.unauthorized,
+        })
+      })
+    })
+  })
+
   describe('new user attempting to JOIN the signup channel', () => {
     it('returns NOOP', async () => {
       const dispatchable = {

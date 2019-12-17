@@ -272,6 +272,14 @@ Send HELP to list commands I understand.`,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
+
+  // VOUCHING_ON / VOUCHING_OFF
+  toggleVouching: {
+    success: toggleValue => `Vouching turned ${toggleValue}`,
+    unauthorized,
+    dbError: toggleValue =>
+      `Whoops! There was an error trying to set vouching to ${toggleValue}. Please try again!`,
+  },
 }
 
 const prefixes = {

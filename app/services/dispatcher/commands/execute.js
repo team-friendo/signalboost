@@ -43,6 +43,8 @@ const execute = async (executable, dispatchable) => {
     [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
     [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
     [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
+    [commands.VOUCHING_ON]: () => maybeToggleVouching(db, channel, sender, true),
+    [commands.VOUCHING_OFF]: () => maybeToggleVouching(db, channel, sender, false),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
   return { command, ...result }
@@ -194,6 +196,8 @@ const renameChannel = (db, channel, newName, cr) =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
 
+// RESPONSES ON / OFF
+
 // (Database, Channel, Sender, boolean) -> Promise<CommandResult>
 const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
@@ -214,6 +218,31 @@ const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
       logAndReturn(err, {
         status: statuses.ERROR,
         message: cr.dbError(responsesEnabled ? 'ON' : 'OFF'),
+      }),
+    )
+
+// VOUCHING ON / OFF
+
+// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
+const maybeToggleVouching = async (db, channel, sender, vouchingOn) => {
+  const cr = messagesIn(sender.language).commandResponses.toggleVouching
+  if (!(sender.type === ADMIN)) {
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+  }
+  return toggleVouching(db, channel, vouchingOn, sender, cr)
+}
+
+const toggleVouching = (db, channel, vouchingOn, sender, cr) =>
+  channelRepository
+    .update(db, channel.phoneNumber, { vouchingOn })
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(vouchingOn ? 'ON' : 'OFF'),
+    }))
+    .catch(err =>
+      logAndReturn(err, {
+        status: statuses.ERROR,
+        message: cr.dbError(vouchingOn ? 'ON' : 'OFF'),
       }),
     )
 
