@@ -55,6 +55,10 @@ Enviar AYUDA para enumerar comandos válidos.
       ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
+  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
+  
+  Responda con ACEPTAR o RECHAZAR.`,
+
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
     
@@ -91,27 +95,36 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
 }
 
 const commandResponses = {
+  // ACCEPT
+
+  accept: {
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
+
+Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
+    alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
+    belowThreshold: (channel, required, actual) =>
+      `Lo sentimos, ${
+        channel.name
+      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+    dbError: '¡Ay! Se produjo un error al aceptar tu invitación. ¡Inténtalo de nuevo!',
+  },
+
   // ADD
 
   add: {
     success: num => `${num} agregó como administrador.`,
     notAdmin,
     dbError: num =>
-      `¡Lo siento! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
+      `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
-      `¡Lo siento! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+      `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
   },
 
-  // REMOVE
+  // DECLINE
 
-  remove: {
-    success: num => `${num} eliminado como administrador.`,
-    notAdmin,
-    dbError: num =>
-      `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
-    invalidNumber: num =>
-      `¡Lo siento! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
-    targetNotAdmin: num => `¡Lo siento! ${num} no es un administrador. No puedo eliminarle.`,
+  decline: {
+    success: 'Invitación rechazada Toda la información sobre la invitación eliminada.',
+    dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
   },
 
   // HELP
@@ -210,12 +223,32 @@ suscriptorxs: ${getSubscriberMemberships(channel).length}
 ${support}`,
   },
 
+  // INVITE
+
+  invite: {
+    notSubscriber,
+    invalidNumber: input => `¡Ay! No se pudo emitir la invitación. ${invalidNumber(input)}`,
+    success: `Invitación emitida.`,
+    dbError: '¡Ay! No se pudo emitir la invitación. Inténtalo de nuevo. :)',
+  },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} eliminado como administrador.`,
+    notAdmin,
+    dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
+    invalidNumber: num =>
+      `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    targetNotAdmin: num => `¡Ay! ${num} no es un administrador. No puedo eliminarle.`,
+  },
+
   // RENAME
 
   rename: {
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\n¡Lo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
+      `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     notAdmin,
   },
 
@@ -223,11 +256,14 @@ ${support}`,
 
   join: {
     success: channel =>
-      `¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${channel.name}].
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
-    dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
-    alreadyMember: `¡Lo siento! Ya eres miembro del canal.`,
+    inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
+
+Si ya tiene usted una invitación, intente enviar ACEPTAR`,
+    dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
+    alreadyMember: `¡Ay! Ya eres miembro del canal.`,
   },
 
   // LEAVE

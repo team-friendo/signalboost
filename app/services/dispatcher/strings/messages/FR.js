@@ -9,7 +9,7 @@ const systemName = 'le maintenant du système Signalboost'
 const notAdmin =
   'Désolé, seuls les admins sont autorisés à exécuter cette commande. Envoyez AIDE pour une liste de commandes valides.'
 const notSubscriber =
-  "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette chaîne. Envoyez BONJOUR pour vous abonner."
+  "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette canal. Envoyez BONJOUR pour vous abonner."
 
 const invalidNumber = phoneNumber =>
   `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
@@ -51,8 +51,12 @@ Send HELP to list valid commands.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
-      ? 'Désolé, les messages entrants ne sont pas activés sur cette chaîne. Envoyez AIDE pour répertorier les commandes valides.'
-      : 'Désolé, les messages entrants ne sont pas activés sur cette chaîne. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
+      ? 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
+      : 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
+
+  inviteReceived: channelName => `Vous avez été invité sur la  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
+
+Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
@@ -86,6 +90,23 @@ Commande AIDE pour plus de renseignements.`,
 }
 
 const commandResponses = {
+  // ACCEPT
+
+  accept: {
+    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à la [${
+      channel.name
+    }] canal Signalboost.
+
+Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
+    alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
+    belowThreshold: (channel, required, actual) =>
+      `Désolé, ${
+        channel.name
+      } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
+    dbError:
+      "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
+  },
+
   // ADD
 
   add: {
@@ -96,15 +117,11 @@ const commandResponses = {
     invalidNumber,
   },
 
-  // REMOVE
+  // DECLINE
 
-  remove: {
-    success: num => `${num} supprimé en tant qu'admin.`,
-    notAdmin,
-    dbError: num =>
-      `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
-    invalidNumber,
-    targetNotAdmin: num => `Oups! ${num} n’est pas une admin. Ielle ne peut être supprimée.`,
+  decline: {
+    success: `Invitation refusée. Toutes les informations sur l'invitation ont été supprimées.`,
+    dbError: `Oups! Une erreur s'est produite lors du refus de l'invitation. Veuillez réessayer!`,
   },
 
   // HELP
@@ -168,7 +185,7 @@ ESPAÑOL / ENGLISH
 INFOS CANAL
 ---------------------------
 
-Vous êtes admin de cette chaîne.
+Vous êtes admin de cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
@@ -183,7 +200,7 @@ ${support}`,
 INFOS CANAL
 ---------------------------
 
-Vous êtes abonné a cette chaîne.
+Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
@@ -196,7 +213,7 @@ ${support}`,
 INFOS CANAL
 ---------------------------
 
-Vous n'êtes pas abonné à cette chaîne. Envoyez AIDE pour vous abonner.
+Vous n'êtes pas abonné à cette canal. Envoyez AIDE pour vous abonner.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
@@ -205,22 +222,25 @@ abonnées: ${getSubscriberMemberships(channel).length}
 ${support}`,
   },
 
-  // RENAME
+  // INVITE
 
-  rename: {
-    success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
-    notAdmin,
+  invite: {
+    notSubscriber,
+    invalidNumber: input => `Oups! Échec de l'émission de l'invitation. ${invalidNumber(input)}`,
+    success: `Invitation émise.`,
+    dbError: `Oups! Échec de l'émission de l'invitation. Veuillez réessayer. :)`,
   },
 
   // JOIN
 
   join: {
     success: channel =>
-      `Bienvenue à Signalboost! Vous êtes maintenant abonnée au/à la [${channel.name}] canal.
+      `Bonjour! Vous êtes maintenant abonnée au/à la [${channel.name}] canal Signalboost.
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
+    inviteRequired: `Pardon! Les invitations sont nécessaires pour s'abonner à cette canal. Demandez à un ami de vous inviter!
+
+Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
     alreadyMember: `Oups! Vous êtes déjà abonnée à ce canal.`,
   },
@@ -231,6 +251,26 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     success: `Vous êtes maintenant désabonnée de ce canal. Au revoir!`,
     error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
     notSubscriber,
+  },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} supprimé en tant qu'admin.`,
+    notAdmin,
+    dbError: num =>
+      `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
+    invalidNumber,
+    targetNotAdmin: num => `Oups! ${num} n’est pas une admin. Ielle ne peut être supprimée.`,
+  },
+
+  // RENAME
+
+  rename: {
+    success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
+    dbError: (oldName, newName) =>
+      `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
+    notAdmin,
   },
 
   // SET_LANGUAGE

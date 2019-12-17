@@ -1,4 +1,3 @@
-const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -65,8 +64,8 @@ Send HELP to list valid commands.`,
       ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
       : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
 
-  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel.
-Would you like to subscribe to encrypted announcements from this Signal number?
+  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
+
 Please respond with ACCEPT or DECLINE.`,
 
   welcome: (addingAdmin, channelPhoneNumber) => `
@@ -84,6 +83,18 @@ Reply with HELP for more info.`,
 }
 
 const commandResponses = {
+  // ACCEPT
+
+  accept: {
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+
+Reply with HELP to learn more or GOODBYE to unsubscribe.`,
+    alreadyMember: 'Sorry, you are already a member of this channel',
+    belowThreshold: (channel, required, actual) =>
+      `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
+    dbError: 'Whoops! There was an error accepting your invite. Please try again!',
+  },
+
   // ADD
 
   add: {
@@ -91,6 +102,13 @@ const commandResponses = {
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidNumber,
+  },
+
+  // DECLINE
+
+  decline: {
+    success: 'Invitation declined. All information about invitation deleted.',
+    dbError: 'Whoops! There was an error declining the invite. Please try again!',
   },
 
   // HELP
@@ -195,8 +213,6 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    vouchingOff:
-      'Whoops! Invites are not enabled on this channel.\nAsk the admins to turn VOUCHING ON to invite someone.',
     invalidNumber: input => `Whoops! Failed to issue invitation. ${invalidNumber(input)}`,
     success: `Issued invitation.`,
     dbError: 'Whoops! Failed to issue invitation. Please try again. :)',
@@ -205,8 +221,7 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel =>
-      `Welcome to Signalboost! You are now subscribed to the [${channel.name}] channel.
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -280,14 +295,6 @@ Send HELP to list commands I understand.`,
     notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
-  },
-
-  // VOUCHING_ON / VOUCHING_OFF
-  toggleVouching: {
-    success: toggleValue => `Vouching turned ${toggleValue}`,
-    notAdmin,
-    dbError: toggleValue =>
-      `Whoops! There was an error trying to set vouching to ${toggleValue}. Please try again!`,
   },
 }
 

@@ -34,7 +34,9 @@ const execute = async (executable, dispatchable) => {
   // don't allow command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
   const result = await ({
+    [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.DECLINE]: () => decline(db, channel, sender, language),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload),
@@ -54,6 +56,44 @@ const execute = async (executable, dispatchable) => {
 /********************
  * COMMAND EXECUTION
  ********************/
+
+// ACCEPT
+
+const maybeAccept = async (db, channel, sender, language) => {
+  const cr = messagesIn(language).commandResponses.accept
+  const THRESHOLD = 1 // TODO read threshold from channel when playing #137
+  try {
+    // don't accept invite if sender is already a member
+    if (await membershipRepository.isMember(db, channel.phoneNumber, sender.phoneNumber))
+      return { status: statuses.ERROR, message: cr.alreadyMember }
+
+    // don't accept invite if sender does not have enough invites to pass vouch threshold
+    const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
+    if (channel.vouchingOn && inviteCount < THRESHOLD)
+      return { status: statuses.ERROR, message: cr.belowThreshold(channel, THRESHOLD, inviteCount) }
+
+    // okay, fine: accept the invite! :)
+    return accept(db, channel, sender, language, cr)
+  } catch (e) {
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const accept = async (db, channel, sender, language, cr) =>
+  inviteRepository
+    .accept(db, channel.phoneNumber, sender.phoneNumber, language)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+
+// DECLINE
+
+const decline = async (db, channel, sender, language) => {
+  const cr = messagesIn(language).commandResponses.decline
+  return inviteRepository
+    .decline(db, channel.phoneNumber, sender.phoneNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+}
 
 // ADD
 
@@ -102,6 +142,11 @@ const maybeInvite = async (db, channel, sender, rawInviteePhoneNumber) => {
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawInviteePhoneNumber)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(rawInviteePhoneNumber) }
+  if (await membershipRepository.isMember(db, channel.phoneNumber, phoneNumber)) {
+    // We don't return an "already member" error message here to defend side-channel attacks on membership lists.
+    // But we *do* return an error status so messenger won't send out an invite notification!
+    return { status: statuses.ERROR, message: cr.success }
+  }
 
   return invite(db, channel, sender.phoneNumber, phoneNumber, cr)
 }
@@ -114,8 +159,7 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
       inviterPhoneNumber,
       inviteePhoneNumber,
     )
-    // To prevent leaking membership lists, we return the same message in all cases except db error.
-    // (Ie: we do *not* reveal a person was not invited b/c they're already a channel member.)
+    // We don't return an "already invited" error here to defend side-channel attacks (as above)
     return inviteWasCreated
       ? { status: statuses.SUCCESS, message: cr.success, payload: inviteePhoneNumber }
       : { status: statuses.ERROR, message: cr.success }

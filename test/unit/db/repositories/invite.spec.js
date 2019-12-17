@@ -19,9 +19,31 @@ describe('invite repository', () => {
     pendingInviteePhoneNumber,
     randoPhoneNumber,
   ] = times(5, genPhoneNumber)
-  let res, db, inviteCount
+  let res, db, inviteCount, memberCount
 
   before(() => (db = initDb()))
+  beforeEach(async () => {
+    await db.channel.create(
+      channelFactory({
+        phoneNumber: channelPhoneNumber,
+        memberships: [
+          adminMembershipFactory({ memberPhoneNumber: adminPhoneNumber }),
+          subscriberMembershipFactory({ memberPhoneNumber: subscriberPhoneNumber }),
+        ],
+        invites: [
+          inviteFactory({
+            inviterPhoneNumber: subscriberPhoneNumber,
+            inviteePhoneNumber: pendingInviteePhoneNumber,
+          }),
+        ],
+      }),
+      {
+        include: [{ model: db.membership }, { model: db.invite }],
+      },
+    )
+    inviteCount = await db.invite.count()
+    memberCount = await db.membership.count()
+  })
   afterEach(async () => {
     await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
@@ -32,28 +54,6 @@ describe('invite repository', () => {
   after(async () => await db.sequelize.close())
 
   describe('#issue', () => {
-    beforeEach(async () => {
-      await db.channel.create(
-        channelFactory({
-          phoneNumber: channelPhoneNumber,
-          memberships: [
-            adminMembershipFactory({ memberPhoneNumber: adminPhoneNumber }),
-            subscriberMembershipFactory({ memberPhoneNumber: subscriberPhoneNumber }),
-          ],
-          invites: [
-            inviteFactory({
-              inviterPhoneNumber: subscriberPhoneNumber,
-              inviteePhoneNumber: pendingInviteePhoneNumber,
-            }),
-          ],
-        }),
-        {
-          include: [{ model: db.membership }, { model: db.invite }],
-        },
-      )
-      inviteCount = await db.invite.count()
-    })
-
     describe('when issuing an invite to a new member', () => {
       beforeEach(async () => {
         res = await inviteRepository.issue(
@@ -70,25 +70,6 @@ describe('invite repository', () => {
 
       it('returns true', () => {
         expect(res).to.eql(true)
-      })
-    })
-
-    describe('when issuing an invite to an existing member', () => {
-      beforeEach(async () => {
-        res = await inviteRepository.issue(
-          db,
-          channelPhoneNumber,
-          adminPhoneNumber,
-          subscriberPhoneNumber,
-        )
-      })
-
-      it('does not create a new invite', async () => {
-        expect(await db.invite.count()).to.eql(inviteCount)
-      })
-
-      it('returns false', () => {
-        expect(res).to.eql(false)
       })
     })
 
@@ -129,6 +110,67 @@ describe('invite repository', () => {
         it('returns false', () => {
           expect(res).to.eql(false)
         })
+      })
+    })
+  })
+
+  describe('#count', () => {
+    it('counts the number of invites received by a number on a channel', async () => {
+      expect(await inviteRepository.count(db, channelPhoneNumber, adminPhoneNumber)).to.eql(0)
+      expect(
+        await inviteRepository.count(db, channelPhoneNumber, pendingInviteePhoneNumber),
+      ).to.eql(1)
+    })
+  })
+
+  describe('#accept', () => {
+    beforeEach(async () => {
+      await inviteRepository.accept(db, channelPhoneNumber, pendingInviteePhoneNumber)
+    })
+
+    it('subscribes invitee to channel', async () => {
+      expect(await db.membership.count()).to.eql(memberCount + 1)
+      expect(
+        await db.membership.findOne({
+          where: { memberPhoneNumber: pendingInviteePhoneNumber },
+        }),
+      ).not.to.eql(null)
+    })
+
+    it("deletes invitee's invite", async () => {
+      expect(await db.invite.count()).to.eql(inviteCount - 1)
+      expect(
+        await db.invite.findOne({ where: { inviteePhoneNumber: pendingInviteePhoneNumber } }),
+      ).to.eql(null)
+    })
+  })
+
+  describe('#decline', () => {
+    describe('when decliner has a pending invite', () => {
+      beforeEach(async () => {
+        await inviteRepository.decline(db, channelPhoneNumber, pendingInviteePhoneNumber)
+      })
+
+      it("deletes invitee's invite", async () => {
+        expect(await db.invite.count()).to.eql(inviteCount - 1)
+        expect(
+          await db.invite.findOne({ where: { inviteePhoneNumber: pendingInviteePhoneNumber } }),
+        ).to.eql(null)
+      })
+    })
+
+    describe('when decliner has no pending invite', () => {
+      let res
+      beforeEach(async () => {
+        res = await inviteRepository.decline(db, channelPhoneNumber, subscriberPhoneNumber)
+      })
+
+      it('does not throw', () => {
+        expect(res).not.to.be.an('Error')
+      })
+
+      it('does not delete an invite', async () => {
+        expect(await db.invite.count()).to.eql(inviteCount)
       })
     })
   })

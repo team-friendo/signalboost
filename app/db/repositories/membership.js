@@ -42,14 +42,18 @@ const addSubscriber = async (
   memberPhoneNumber,
   language = defaultLanguage,
 ) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe member to', () =>
-    db.membership.create({
-      type: memberTypes.SUBSCRIBER,
-      channelPhoneNumber,
-      memberPhoneNumber,
-      language,
-    }),
-  )
+  // TODO: use findOrCreate here to make this idempotent!
+  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe member to', async () => {
+    const [membership] = await db.membership.findOrCreate({
+      where: {
+        type: memberTypes.SUBSCRIBER,
+        channelPhoneNumber,
+        memberPhoneNumber,
+        language,
+      },
+    })
+    return membership
+  })
 
 const removeSubscriber = async (db, channelPhoneNumber, memberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe member from', async () =>

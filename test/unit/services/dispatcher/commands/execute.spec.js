@@ -20,6 +20,7 @@ import { memberTypes } from '../../../../../app/db/repositories/membership'
 import { sdMessageOf } from '../../../../../app/services/signal'
 import {
   adminMembershipFactory,
+  membershipFactory,
   subscriberMembershipFactory,
 } from '../../../../support/factories/membership'
 const {
@@ -58,6 +59,136 @@ describe('executing commands', () => {
     type: memberTypes.NONE,
     language: languages.EN,
   }
+
+  describe('ACCEPT command', () => {
+    const dispatchable = {
+      db,
+      channel: { ...channel, vouchingOn: true },
+      sender: randomPerson,
+      sdMessage: sdMessageOf(channel, 'ACCEPT'),
+    }
+    let isMemberStub, countInvitesStub, acceptStub
+    beforeEach(() => {
+      isMemberStub = sinon.stub(membershipRepository, 'isMember')
+      countInvitesStub = sinon.stub(inviteRepository, 'count')
+      acceptStub = sinon.stub(inviteRepository, 'accept')
+    })
+    afterEach(() => {
+      isMemberStub.restore()
+      countInvitesStub.restore()
+      acceptStub.restore()
+    })
+
+    describe('when sender is already member of channel', () => {
+      beforeEach(() => isMemberStub.returns(Promise.resolve(true)))
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.ACCEPT,
+          status: statuses.ERROR,
+          message: CR.accept.alreadyMember,
+        })
+      })
+    })
+
+    describe('when sender is not already member of channel', () => {
+      beforeEach(() => isMemberStub.returns(Promise.resolve(false)))
+
+      describe('when vouching is on', () => {
+        describe('when sender lacks sufficient invites', () => {
+          beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
+
+          it('returns an ERROR status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.ACCEPT,
+              status: statuses.ERROR,
+              message: CR.accept.belowThreshold(channel, 1, 0),
+            })
+          })
+        })
+
+        describe('when sender has sufficient invites', () => {
+          describe('when accept db call succeeds', () => {
+            beforeEach(() => acceptStub.returns(Promise.resolve([membershipFactory(), 1])))
+
+            it('returns SUCCESS status', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.ACCEPT,
+                status: statuses.SUCCESS,
+                message: CR.accept.success(channel),
+              })
+            })
+          })
+
+          describe('when accept db call fails', () => {
+            beforeEach(() => acceptStub.callsFake(() => Promise.reject(new Error('boom!'))))
+
+            it('returns ERROR status', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.ACCEPT,
+                status: statuses.ERROR,
+                message: CR.accept.dbError,
+              })
+            })
+          })
+        })
+      })
+
+      describe('when vouching is off and user has no invites', () => {
+        const _dispatchable = { ...dispatchable, channel }
+        beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
+
+        describe('when accept db call succeeds', () => {
+          beforeEach(() => acceptStub.returns(Promise.resolve([membershipFactory(), 1])))
+
+          it('returns SUCCESS status', async () => {
+            expect(await processCommand(_dispatchable)).to.eql({
+              command: commands.ACCEPT,
+              status: statuses.SUCCESS,
+              message: CR.accept.success(channel),
+            })
+          })
+        })
+
+        describe('when accept db call fails', () => {
+          beforeEach(() => acceptStub.callsFake(() => Promise.reject(new Error('boom!'))))
+
+          it('returns ERROR status', async () => {
+            expect(await processCommand(_dispatchable)).to.eql({
+              command: commands.ACCEPT,
+              status: statuses.ERROR,
+              message: CR.accept.dbError,
+            })
+          })
+        })
+      })
+    })
+
+    describe('when there is an error retrieving membership status', () => {
+      beforeEach(() => isMemberStub.callsFake(() => Promise.reject(new Error('boom!'))))
+
+      it('returns ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.ACCEPT,
+          status: statuses.ERROR,
+          message: CR.accept.dbError,
+        })
+      })
+    })
+    describe('when there is an error counting invites', () => {
+      beforeEach(() => {
+        isMemberStub.returns(Promise.resolve(false))
+        countInvitesStub.callsFake(() => Promise.reject(new Error('boom!')))
+      })
+
+      it('returns ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.ACCEPT,
+          status: statuses.ERROR,
+          message: CR.accept.dbError,
+        })
+      })
+    })
+  })
 
   describe('ADD command', () => {
     let addAdminStub
@@ -153,6 +284,43 @@ describe('executing commands', () => {
     })
   })
 
+  describe('DECLINE command', () => {
+    const dispatchable = {
+      db,
+      channel,
+      sender: randomPerson,
+      sdMessage: sdMessageOf(channel, 'DECLINE'),
+    }
+
+    let declineStub
+    beforeEach(() => (declineStub = sinon.stub(inviteRepository, 'decline')))
+    afterEach(() => declineStub.restore())
+
+    describe('when db call succeeds', () => {
+      beforeEach(() => declineStub.returns(Promise.resolve(1)))
+
+      it('returns a SUCCESS status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DECLINE,
+          status: statuses.SUCCESS,
+          message: CR.decline.success,
+        })
+      })
+    })
+
+    describe('when db call fails', () => {
+      beforeEach(() => declineStub.callsFake(() => Promise.reject(new Error('boom!'))))
+
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DECLINE,
+          status: statuses.ERROR,
+          message: CR.decline.dbError,
+        })
+      })
+    })
+  })
+
   describe('HELP command', () => {
     const sdMessage = sdMessageOf(channel, 'HELP')
 
@@ -236,9 +404,16 @@ describe('executing commands', () => {
   describe('INVITE command', () => {
     const inviteePhoneNumber = genPhoneNumber()
     const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumber}`)
-    let issueInviteStub
-    beforeEach(() => (issueInviteStub = sinon.stub(inviteRepository, 'issue')))
-    afterEach(() => issueInviteStub.restore())
+
+    let isMemberStub, issueInviteStub
+    beforeEach(() => {
+      isMemberStub = sinon.stub(membershipRepository, 'isMember')
+      issueInviteStub = sinon.stub(inviteRepository, 'issue')
+    })
+    afterEach(() => {
+      isMemberStub.restore()
+      issueInviteStub.restore()
+    })
 
     describe('when vouching mode is on', () => {
       const vouchingChannel = { ...channel, vouchingOn: true }
@@ -273,21 +448,21 @@ describe('executing commands', () => {
           })
         })
 
-        describe('when invitee phone number is valid', () => {
+        describe('when invitee number is valid', () => {
           const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: admin }
 
-          describe('when sender is already a member of channel or pending invite', () => {
+          describe('when invitee is already member of channel', () => {
             let res
             beforeEach(async () => {
-              issueInviteStub.returns(Promise.resolve(false))
+              isMemberStub.returns(Promise.resolve(true))
               res = await processCommand(dispatchable)
             })
 
-            it('attempts to issue an invite', () => {
-              expect(issueInviteStub.callCount).to.eql(1)
+            it('does not attempt to issue invite', () => {
+              expect(issueInviteStub.callCount).to.eql(0)
             })
 
-            it('returns ERROR and no payload', () => {
+            it('returns ERROR status, success message, and no payload', () => {
               expect(res).to.eql({
                 command: commands.INVITE,
                 status: statuses.ERROR,
@@ -296,23 +471,47 @@ describe('executing commands', () => {
             })
           })
 
-          describe('when invitee is not member or pending invitee', () => {
-            let res
-            beforeEach(async () => {
-              issueInviteStub.returns(Promise.resolve(true))
-              res = await processCommand(dispatchable)
+          describe('when invitee is not already member of channel', () => {
+            beforeEach(() => isMemberStub.returns(Promise.resolve(false)))
+
+            describe('when invitee has already been invited to channel', () => {
+              let res
+              beforeEach(async () => {
+                issueInviteStub.returns(Promise.resolve(false))
+                res = await processCommand(dispatchable)
+              })
+
+              it('attempts to issue an invite', () => {
+                expect(issueInviteStub.callCount).to.eql(1)
+              })
+
+              it('returns ERROR and no payload', () => {
+                expect(res).to.eql({
+                  command: commands.INVITE,
+                  status: statuses.ERROR,
+                  message: CR.invite.success,
+                })
+              })
             })
 
-            it('attempts to issue an invite', () => {
-              expect(issueInviteStub.callCount).to.eql(1)
-            })
+            describe('when invitee has not already been invited', () => {
+              let res
+              beforeEach(async () => {
+                issueInviteStub.returns(Promise.resolve(true))
+                res = await processCommand(dispatchable)
+              })
 
-            it('returns SUCCESS and payload for notifying invitee', () => {
-              expect(res).to.eql({
-                command: commands.INVITE,
-                status: statuses.SUCCESS,
-                message: CR.invite.success,
-                payload: inviteePhoneNumber,
+              it('attempts to issue an invite', () => {
+                expect(issueInviteStub.callCount).to.eql(1)
+              })
+
+              it('returns SUCCESS and payload for notifying invitee', () => {
+                expect(res).to.eql({
+                  command: commands.INVITE,
+                  status: statuses.SUCCESS,
+                  message: CR.invite.success,
+                  payload: inviteePhoneNumber,
+                })
               })
             })
           })
@@ -748,7 +947,7 @@ describe('executing commands', () => {
         ...toggles.RESPONSES,
         isOn: false,
         command: commands.RESPONSES_OFF,
-        commandStr: 'RESPONSES OFF'
+        commandStr: 'RESPONSES OFF',
       },
       {
         ...toggles.VOUCHING,
@@ -815,7 +1014,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command,
             status: statuses.UNAUTHORIZED,
-            message: CR.toggles[name].unauthorized,
+            message: CR.toggles[name].notAdmin,
           })
         })
       })
@@ -829,7 +1028,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command,
             status: statuses.UNAUTHORIZED,
-            message: CR.toggles[name].unauthorized,
+            message: CR.toggles[name].notAdmin,
           })
         })
       })

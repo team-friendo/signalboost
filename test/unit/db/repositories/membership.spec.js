@@ -247,6 +247,33 @@ describe('membership repository', () => {
       })
     })
 
+    describe('when given the number of an existing subscriber', () => {
+      let res1, res2
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        res1 = await membershipRepository.addSubscriber(
+          db,
+          channel.phoneNumber,
+          subscriberPhoneNumbers[0],
+        )
+        membershipCount = await db.membership.count()
+
+        res2 = await membershipRepository.addSubscriber(
+          db,
+          channel.phoneNumber,
+          subscriberPhoneNumbers[0],
+        )
+      })
+
+      it("does not modify the subscriber's membership", async () => {
+        expect(res2.dataValues).to.eql(res1.dataValues)
+      })
+
+      it('does not create a new membership', async () => {
+        expect(await db.membership.count()).to.eql(membershipCount)
+      })
+    })
+
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
         expect(

@@ -4,7 +4,7 @@ import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
 import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
 import messagesFR from '../../../../app/services/dispatcher/strings/messages/FR'
 import { memberTypes } from '../../../../app/db/repositories/membership'
-import { times } from 'lodash'
+import { times, keys } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { languages } from '../../../../app/constants'
 import {
@@ -21,18 +21,29 @@ describe('messages module', () => {
       expect(messagesFR.systemName).to.exist
     })
 
-    Object.keys(messagesEN.commandResponses).forEach(key => {
-      Object.keys(messagesEN.commandResponses[key]).forEach(subKey => {
-        it(`translates ${key}.${subKey} command response to ES`, () => {
-          expect(messagesES.commandResponses[key][subKey]).to.exist
-        })
-        it(`translates ${key}.${subKey} command response to FR`, () => {
-          expect(messagesFR.commandResponses[key][subKey]).to.exist
-        })
+    keys(messagesEN.commandResponses).forEach(key => {
+      keys(messagesEN.commandResponses[key]).forEach(subKey => {
+        if (key === 'toggles') {
+          keys(messagesEN.commandResponses[key][subKey]).forEach(subSubKey => {
+            it(`translates ${key}.${subKey}.${subSubKey} command response to ES`, () => {
+              expect(messagesES.commandResponses[key][subKey][subSubKey]).to.exist
+            })
+            it(`translates ${key}.${subKey}.${subSubKey} command response to FR`, () => {
+              expect(messagesFR.commandResponses[key][subKey][subSubKey]).to.exist
+            })
+          })
+        } else {
+          it(`translates ${key}.${subKey} command response to ES`, () => {
+            expect(messagesES.commandResponses[key][subKey]).to.exist
+          })
+          it(`translates ${key}.${subKey} command response to FR`, () => {
+            expect(messagesFR.commandResponses[key][subKey]).to.exist
+          })
+        }
       })
     })
 
-    Object.keys(messagesEN.notifications).forEach(key => {
+    keys(messagesEN.notifications).forEach(key => {
       it(`translates ${key} notification to ES`, () => {
         expect(messagesES.notifications[key]).to.exist
       })
@@ -40,7 +51,7 @@ describe('messages module', () => {
         expect(messagesFR.notifications[key]).to.exist
       })
     })
-    Object.keys(messagesEN.prefixes).forEach(key => {
+    keys(messagesEN.prefixes).forEach(key => {
       it(`translates ${key} prefix to ES`, () => {
         expect(messagesES.prefixes[key]).to.exist
       })
