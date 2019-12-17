@@ -1,5 +1,7 @@
 module.exports = {
   ADD: ['AJOUTER'],
+  ACCEPT: ['ACCEPTER'],
+  DECLINE: ['REFUSER'],
   HELP: ['AIDE'],
   INFO: ['INFO'],
   INVITE: ['INVITER'],

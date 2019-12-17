@@ -11,6 +11,8 @@ describe('parsing commands', () => {
       const msgs = [
         'fire the missiles',
         'the ADD foo',
+        'the ACCEPT',
+        'the DECLINE',
         'the REMOVE foo',
         'the HELP',
         'the INFO',
@@ -19,21 +21,27 @@ describe('parsing commands', () => {
         'the GOODBYE',
         'the RESPONSES ON',
         'the RESPONSES OFF',
+        'the VOUCHING ON',
+        'the VOUCHING OFF',
         'the ENGLISH',
 
         'la AGREGAR foo',
+        'la ACEPTAR',
         'la AYUDA',
         'la INFO',
         'la INVITAR',
         'la HOLA',
         'la ADIÓS',
         'la ELIMINAR',
+        'la RECHAZAR',
         'la RENOMBRAR',
         'la RESPUESTAS ACTIVADAS',
         'la RESPUESTAS DESACTIVADAS',
         'la ESPAÑOL',
 
         'le AJOUTER',
+        'le ACCEPTER',
+        'le REFUSER',
         'le AIDE',
         'le INFO',
         'le INVITER',
@@ -53,6 +61,34 @@ describe('parsing commands', () => {
           language: defaultLanguage,
           payload: '',
         }),
+      )
+    })
+  })
+
+  describe('ACCEPT command', () => {
+    it('parses an ACCEPT command regardless of casing, spacing, accents, or language', () => {
+      const variants = [
+        {
+          language: languages.EN,
+          messages: ['ACCEPT', ' accept '],
+        },
+        {
+          language: languages.ES,
+          messages: ['ACEPTAR', ' aceptar '],
+        },
+        {
+          language: languages.FR,
+          messages: ['ACCEPTER', ' accepter '],
+        },
+      ]
+      variants.forEach(({ language, messages }) =>
+        messages.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.ACCEPT,
+            language,
+            payload: '',
+          }),
+        ),
       )
     })
   })
@@ -105,6 +141,34 @@ describe('parsing commands', () => {
           language,
           payload: 'foo',
         }),
+      )
+    })
+  })
+
+  describe('DECLINE command', () => {
+    it('parses an DECLINE command regardless of casing, spacing, accents, or language', () => {
+      const variants = [
+        {
+          language: languages.EN,
+          messages: ['DECLINE', ' decline '],
+        },
+        {
+          language: languages.ES,
+          messages: ['RECHAZAR', ' rechazar '],
+        },
+        {
+          language: languages.FR,
+          messages: ['REFUSER', ' refuser '],
+        },
+      ]
+      variants.forEach(({ language, messages }) =>
+        messages.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.DECLINE,
+            language,
+            payload: '',
+          }),
+        ),
       )
     })
   })

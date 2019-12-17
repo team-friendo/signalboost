@@ -12,6 +12,8 @@ const toggles = {
 
 const commands = {
   ADD: 'ADD',
+  ACCEPT: 'ACCEPT',
+  DECLINE: 'DECLINE',
   HELP: 'HELP',
   INFO: 'INFO',
   INVITE: 'INVITE',
