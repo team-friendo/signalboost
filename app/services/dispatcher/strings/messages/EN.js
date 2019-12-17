@@ -12,6 +12,7 @@ const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const invalidNumber = phoneNumber =>
   `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
+const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const support = `----------------------------
 HOW IT WORKS
@@ -243,15 +244,6 @@ If you already have an invite, try sending ACCEPT`,
     notAdmin,
   },
 
-  // RESPONSES_ON / RESPONSES_OFF
-
-  toggleResponses: {
-    success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
-    notAdmin,
-    dbError: setting =>
-      `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
-  },
-
   // SET_LANGUAGE
 
   setLanguage: {
@@ -259,6 +251,23 @@ If you already have an invite, try sending ACCEPT`,
     
 Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
+  },
+
+  // TOGGLES (RESPONSES, VOUCHING)
+
+  toggles: {
+    responses: {
+      success: isOn => `Subscriber responses turned ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
+    },
+    vouching: {
+      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+    },
   },
 
   // TRUST
@@ -276,7 +285,7 @@ Send HELP to list commands I understand.`,
   // VOUCHING_ON / VOUCHING_OFF
   toggleVouching: {
     success: toggleValue => `Vouching turned ${toggleValue}`,
-    unauthorized,
+    notAdmin,
     dbError: toggleValue =>
       `Whoops! There was an error trying to set vouching to ${toggleValue}. Please try again!`,
   },

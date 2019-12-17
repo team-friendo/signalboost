@@ -12,6 +12,7 @@ const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
+const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
 const support = `
 ----------------------------
@@ -237,15 +238,6 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     notSubscriber,
   },
 
-  // RESPONSES_ON / RESPONSES_OFF
-
-  toggleResponses: {
-    success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
-    notAdmin,
-    dbError: setting =>
-      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
-  },
-
   // SET_LANGUAGE
 
   setLanguage: {
@@ -253,6 +245,27 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
       
 Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
+  },
+
+  // TOGGLES (RESPONSES, VOUCHING)
+
+  toggles: {
+    responses: {
+      success: isOn => `Respuestas del suscriptor configurado en ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${onOrOff(
+          isOn,
+        )}. ¡Inténtelo de nuevo!`,
+    },
+    vouching: {
+      success: isOn => `Atestiguando configurado en ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
+          isOn,
+        )}. ¡Inténtelo de nuevo!`,
+    },
   },
 
   // TRUST

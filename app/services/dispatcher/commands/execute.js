@@ -1,4 +1,4 @@
-const { commands, statuses } = require('./constants')
+const { commands, statuses, toggles } = require('./constants')
 const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
@@ -24,6 +24,7 @@ const {
  *   message: string,
  * }
  *
+ * type Toggle = toggles.RESPONSES | toggles.VOUCHING
  * */
 
 // (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
@@ -41,10 +42,10 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
-    [commands.RESPONSES_ON]: () => maybeToggleResponses(db, channel, sender, true),
-    [commands.RESPONSES_OFF]: () => maybeToggleResponses(db, channel, sender, false),
-    [commands.VOUCHING_ON]: () => maybeToggleVouching(db, channel, sender, true),
-    [commands.VOUCHING_OFF]: () => maybeToggleVouching(db, channel, sender, false),
+    [commands.RESPONSES_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.RESPONSES),
+    [commands.RESPONSES_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.RESPONSES),
+    [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
+    [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
   return { command, ...result }
@@ -196,55 +197,31 @@ const renameChannel = (db, channel, newName, cr) =>
       logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
     )
 
-// RESPONSES ON / OFF
+// ON / OFF TOGGLES FOR RESPONSES, VOUCHING
 
-// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
-const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
-  const cr = messagesIn(sender.language).commandResponses.toggleResponses
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOn = (db, channel, sender, toggle) =>
+  _maybeToggleSetting(db, channel, sender, toggle, true)
+
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOff = (db, channel, sender, toggle) =>
+  _maybeToggleSetting(db, channel, sender, toggle, false)
+
+// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
+const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
+  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
   if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
-  return toggleResponses(db, channel, responsesEnabled, sender, cr)
+  return _toggleSetting(db, channel, sender, toggle, isOn, cr)
 }
 
-const toggleResponses = (db, channel, responsesEnabled, sender, cr) =>
+// (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
+const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { responsesEnabled })
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(responsesEnabled ? 'ON' : 'OFF'),
-    }))
-    .catch(err =>
-      logAndReturn(err, {
-        status: statuses.ERROR,
-        message: cr.dbError(responsesEnabled ? 'ON' : 'OFF'),
-      }),
-    )
-
-// VOUCHING ON / OFF
-
-// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
-const maybeToggleVouching = async (db, channel, sender, vouchingOn) => {
-  const cr = messagesIn(sender.language).commandResponses.toggleVouching
-  if (!(sender.type === ADMIN)) {
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
-  }
-  return toggleVouching(db, channel, vouchingOn, sender, cr)
-}
-
-const toggleVouching = (db, channel, vouchingOn, sender, cr) =>
-  channelRepository
-    .update(db, channel.phoneNumber, { vouchingOn })
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(vouchingOn ? 'ON' : 'OFF'),
-    }))
-    .catch(err =>
-      logAndReturn(err, {
-        status: statuses.ERROR,
-        message: cr.dbError(vouchingOn ? 'ON' : 'OFF'),
-      }),
-    )
+    .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(isOn) }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
 
 // SET_LANGUAGE
 
@@ -269,4 +246,4 @@ const logAndReturn = (err, statusTuple) => {
   return statusTuple
 }
 
-module.exports = { execute }
+module.exports = { execute, toggles }

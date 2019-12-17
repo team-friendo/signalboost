@@ -13,6 +13,7 @@ const notSubscriber =
 
 const invalidNumber = phoneNumber =>
   `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
+const onOrOff = isOn => (isOn ? 'activées' : 'désactivées')
 
 const support = `----------------------------
 COMMENT ÇA FONCTIONNE
@@ -232,15 +233,6 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     notSubscriber,
   },
 
-  // RESPONSES_ON / RESPONSES_OFF
-
-  toggleResponses: {
-    success: setting => `Réponses des abonnées maintenant ${upperCase(setting)}.`,
-    notAdmin,
-    dbError: setting =>
-      `Oups! Une erreur s’est produite en tentant de changer les réponses à ${setting}. Veuillez essayer de nouveau!`,
-  },
-
   // SET_LANGUAGE
 
   setLanguage: {
@@ -248,6 +240,27 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     
 Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: 'Oups! Votre langage de préférence n’a pas été conservé. Veuillez essayer de nouveau!',
+  },
+
+  // TOGGLES (RESPONSES, VOUCHING)
+
+  toggles: {
+    responses: {
+      success: isOn => `Réponses des abonnées maintenant ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Oups! Une erreur s’est produite en tentant de changer les réponses à ${onOrOff(
+          isOn,
+        )}. Veuillez essayer de nouveau!`,
+    },
+    vouching: {
+      success: isOn => `se porter garant maintenant ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Oups! Une erreur s’est produite en tentant de changer se porter garant à ${onOrOff(
+          isOn,
+        )}. Veuillez essayer de nouveau!`,
+    },
   },
 
   // TRUST

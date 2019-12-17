@@ -3,7 +3,11 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { processCommand } from '../../../../../app/services/dispatcher/commands'
-import { commands, statuses } from '../../../../../app/services/dispatcher/commands/constants'
+import {
+  commands,
+  toggles,
+  statuses,
+} from '../../../../../app/services/dispatcher/commands/constants'
 import { languages } from '../../../../../app/constants'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
 import channelRepository from '../../../../../app/db/repositories/channel'
@@ -728,301 +732,105 @@ describe('executing commands', () => {
     })
   })
 
-  describe('RESPONSES_ON command', () => {
+  describe('TOGGLE commands', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateChannelStub.restore())
 
-    describe('when sender is a admin', () => {
-      const sender = admin
+    const scenarios = [
+      {
+        ...toggles.RESPONSES,
+        isOn: true,
+        command: commands.RESPONSES_ON,
+        commandStr: 'RESPONSES ON',
+      },
+      {
+        ...toggles.RESPONSES,
+        isOn: false,
+        command: commands.RESPONSES_OFF,
+        commandStr: 'RESPONSES OFF'
+      },
+      {
+        ...toggles.VOUCHING,
+        isOn: true,
+        command: commands.VOUCHING_ON,
+        commandStr: 'VOUCHING ON',
+      },
+      {
+        ...toggles.VOUCHING,
+        isOn: false,
+        command: commands.VOUCHING_OFF,
+        commandStr: 'VOUCHING OFF',
+      },
+    ]
 
-      const sdMessage = sdMessageOf(channel, 'RESPONSES ON')
-      const dispatchable = { db, channel, sender, sdMessage }
+    scenarios.forEach(({ name, dbField, isOn, command, commandStr }) => {
+      describe('when sender is a admin', () => {
+        const sender = admin
 
-      it('attempts to update the responsesEnabled field on the channel', async () => {
-        updateChannelStub.returns(Promise.resolve())
-        await processCommand(dispatchable)
-        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
-          db,
-          channel.phoneNumber,
-          { responsesEnabled: true },
-        ])
-      })
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
 
-      describe('when db update succeeds', () => {
-        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+        it('attempts to update the responsesEnabled field on the channel', async () => {
+          updateChannelStub.returns(Promise.resolve())
+          await processCommand(dispatchable)
+          expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+            db,
+            channel.phoneNumber,
+            { [dbField]: isOn },
+          ])
+        })
 
-        it('returns a SUCCESS status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.RESPONSES_ON,
-            status: statuses.SUCCESS,
-            message: CR.toggleResponses.success('ON'),
+        describe('when db update succeeds', () => {
+          beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+
+          it('returns a SUCCESS status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command,
+              status: statuses.SUCCESS,
+              message: CR.toggles[name].success(isOn),
+            })
+          })
+        })
+
+        describe('when db update fails', () => {
+          beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+
+          it('returns an ERROR status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command,
+              status: statuses.ERROR,
+              message: CR.toggles[name].dbError(isOn),
+            })
           })
         })
       })
 
-      describe('when db update fails', () => {
-        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+      describe('when sender is a subscriber', () => {
+        const sender = subscriber
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
 
-        it('returns an ERROR status', async () => {
+        it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.RESPONSES_ON,
-            status: statuses.ERROR,
-            message: CR.toggleResponses.dbError('ON'),
-          })
-        })
-      })
-    })
-
-    describe('when sender is a subscriber', () => {
-      const sender = subscriber
-      const sdMessage = sdMessageOf(channel, 'RESPONSES ON')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RESPONSES_ON,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.notAdmin,
-        })
-      })
-    })
-
-    describe('when sender is a random person', () => {
-      const sender = randomPerson
-      const sdMessage = sdMessageOf(channel, 'RESPONSES ON')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RESPONSES_ON,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.notAdmin,
-        })
-      })
-    })
-  })
-
-  describe('RESPONSES_OFF command', () => {
-    let updateChannelStub
-    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateChannelStub.restore())
-
-    describe('when sender is a admin', () => {
-      const sender = admin
-
-      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('attempts to update the responsesEnabled field on the channel', async () => {
-        updateChannelStub.returns(Promise.resolve())
-        await processCommand(dispatchable)
-        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
-          db,
-          channel.phoneNumber,
-          { responsesEnabled: false },
-        ])
-      })
-
-      describe('when db update succeeds', () => {
-        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
-
-        it('returns a SUCCESS status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.RESPONSES_OFF,
-            status: statuses.SUCCESS,
-            message: CR.toggleResponses.success('OFF'),
+            command,
+            status: statuses.UNAUTHORIZED,
+            message: CR.toggles[name].unauthorized,
           })
         })
       })
 
-      describe('when db update fails', () => {
-        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+      describe('when sender is a random person', () => {
+        const sender = randomPerson
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
 
-        it('returns an ERROR status', async () => {
+        it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.RESPONSES_OFF,
-            status: statuses.ERROR,
-            message: CR.toggleResponses.dbError('OFF'),
+            command,
+            status: statuses.UNAUTHORIZED,
+            message: CR.toggles[name].unauthorized,
           })
-        })
-      })
-    })
-
-    describe('when sender is a subscriber', () => {
-      const sender = subscriber
-      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RESPONSES_OFF,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.notAdmin,
-        })
-      })
-    })
-
-    describe('when sender is a random person', () => {
-      const sender = randomPerson
-      const sdMessage = sdMessageOf(channel, 'RESPONSES OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RESPONSES_OFF,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.notAdmin,
-        })
-      })
-    })
-  })
-
-  describe('VOUCHING_ON command', () => {
-    let updateChannelStub
-    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateChannelStub.restore())
-
-    describe('when sender is a admin', () => {
-      const sender = admin
-
-      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('attempts to update the vouchingOn field on the channel', async () => {
-        updateChannelStub.returns(Promise.resolve())
-        await processCommand(dispatchable)
-        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
-          db,
-          channel.phoneNumber,
-          { vouchingOn: true },
-        ])
-      })
-
-      describe('when db update succeeds', () => {
-        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
-
-        it('returns a SUCCESS status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.VOUCHING_ON,
-            status: statuses.SUCCESS,
-            message: CR.toggleVouching.success('ON'),
-          })
-        })
-      })
-
-      describe('when db update fails', () => {
-        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
-
-        it('returns an ERROR status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.VOUCHING_ON,
-            status: statuses.ERROR,
-            message: CR.toggleVouching.dbError('ON'),
-          })
-        })
-      })
-    })
-
-    describe('when sender is a subscriber', () => {
-      const sender = subscriber
-      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.VOUCHING_ON,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleVouching.unauthorized,
-        })
-      })
-    })
-
-    describe('when sender is a random person', () => {
-      const sender = randomPerson
-      const sdMessage = sdMessageOf(channel, 'VOUCHING ON')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.VOUCHING_ON,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleVouching.unauthorized,
-        })
-      })
-    })
-  })
-
-  describe('VOUCHING_OFF command', () => {
-    let updateChannelStub
-    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateChannelStub.restore())
-
-    describe('when sender is a admin', () => {
-      const sender = admin
-
-      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('attempts to update the vouchingOn field on the channel', async () => {
-        updateChannelStub.returns(Promise.resolve())
-        await processCommand(dispatchable)
-        expect(updateChannelStub.getCall(0).args).to.have.deep.members([
-          db,
-          channel.phoneNumber,
-          { vouchingOn: false },
-        ])
-      })
-
-      describe('when db update succeeds', () => {
-        beforeEach(() => updateChannelStub.returns(Promise.resolve()))
-
-        it('returns a SUCCESS status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.VOUCHING_OFF,
-            status: statuses.SUCCESS,
-            message: CR.toggleVouching.success('OFF'),
-          })
-        })
-      })
-
-      describe('when db update fails', () => {
-        beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
-
-        it('returns an ERROR status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.VOUCHING_OFF,
-            status: statuses.ERROR,
-            message: CR.toggleVouching.dbError('OFF'),
-          })
-        })
-      })
-    })
-
-    describe('when sender is a subscriber', () => {
-      const sender = subscriber
-      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.VOUCHING_OFF,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleVouching.unauthorized,
-        })
-      })
-    })
-
-    describe('when sender is a random person', () => {
-      const sender = randomPerson
-      const sdMessage = sdMessageOf(channel, 'VOUCHING OFF')
-      const dispatchable = { db, channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.VOUCHING_OFF,
-          status: statuses.UNAUTHORIZED,
-          message: CR.toggleVouching.unauthorized,
         })
       })
     })

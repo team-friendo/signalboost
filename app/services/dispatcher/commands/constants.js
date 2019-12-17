@@ -5,6 +5,11 @@ const statuses = {
   UNAUTHORIZED: 'UNAUTHORIZED',
 }
 
+const toggles = {
+  RESPONSES: { dbField: 'responsesEnabled', name: 'responses' },
+  VOUCHING: { dbField: 'vouchingOn', name: 'vouching' },
+}
+
 const commands = {
   ADD: 'ADD',
   HELP: 'HELP',
@@ -22,4 +27,4 @@ const commands = {
   VOUCHING_OFF: 'VOUCHING_OFF',
 }
 
-module.exports = { statuses, commands }
+module.exports = { statuses, toggles, commands }
