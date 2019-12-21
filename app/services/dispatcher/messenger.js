@@ -120,55 +120,13 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
       }),
     ),
   )
-  if (command === commands.ADD && status === statuses.SUCCESS) {
-    // welcome new admin
-    await notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.welcome(
-        sender.phoneNumber,
-        channel.phoneNumber,
-      ),
-      recipients: [payload],
-    })
-    return notify({
-      ...notifyBase,
-      // TODO (@mari): sender language shouldn't override recipient lang pref
-      notification: messagesIn(sender.language).notifications.adminAdded,
-      // don't send to newly added admin, that would mess up safety number re-trusting!
-      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
-    })
-  }
+
   if (command === commands.INVITE && status === statuses.SUCCESS) {
     // welcome new admin
     return notify({
       ...notifyBase,
       notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
       recipients: [payload],
-
-  if (command === commands.RENAME && status === statuses.SUCCESS) {
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.channelRenamed(channel.name, payload),
-      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
-    })
-  }
-
-  if (
-    (command === commands.RESPONSES_OFF || command === commands.RESPONSES_ON) &&
-    status === statuses.SUCCESS
-  ) {
-    return notify({
-      ...notifyBase,
-      notification: message,
-      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
-    })
-  }
-
-  if (command === commands.LEAVE && status === statuses.SUCCESS) {
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.adminLeft,
-      recipients: getAdminPhoneNumbers(channel).filter(pNum => pNum !== sender.phoneNumber),
     })
   }
 }

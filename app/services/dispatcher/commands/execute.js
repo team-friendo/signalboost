@@ -115,10 +115,31 @@ const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(newAdminNumber),
-      payload: newAdminNumber,
+      notifications: addAdminNotificationsOf(channel, newAdminNumber, sender),
     }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
 
+const addAdminNotificationsOf = (channel, phoneNumberToAddAsAdmin, sender) => {
+  const allMemberships = getAdminMemberships(channel)
+  const addedMembership = allMemberships.find(m => m.memberPhoneNumber === phoneNumberToAddAsAdmin)
+  const bystanderMemberships = allMemberships.filter(
+    m =>
+      m.memberPhoneNumber !== sender.phoneNumber && m.memberPhoneNumber !== phoneNumberToAddAsAdmin,
+  )
+  return [
+    {
+      recipient: phoneNumberToAddAsAdmin,
+      message: `${messagesIn(addedMembership.language).notifications.welcome(
+        sender.phoneNumber,
+        channel.phoneNumber,
+      )}`,
+    },
+    ...bystanderMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.adminAdded,
+    })),
+  ]
+}
 // HELP
 
 const showHelp = async (db, channel, sender) => {
@@ -223,7 +244,6 @@ const maybeRemoveAdmin = async (db, channel, sender, adminPhoneNumber) => {
 }
 
 const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
-  const notifications = removalNotificationsOf(channel, adminPhoneNumber, sender)
   return membershipRepository
     .removeAdmin(db, channel.phoneNumber, adminPhoneNumber)
     .then(() => ({

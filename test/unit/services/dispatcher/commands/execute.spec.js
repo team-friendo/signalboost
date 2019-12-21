@@ -199,35 +199,59 @@ describe('executing commands', () => {
     beforeEach(() => (addAdminStub = sinon.stub(membershipRepository, 'addAdmin')))
     afterEach(() => addAdminStub.restore())
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const sender = admin
 
       describe('when payload is a valid phone number', () => {
-        const payload = '+1 (555) 555-5555' // to ensure we catch errors
-        const adminPhoneNumber = '+15555555555'
-        const sdMessage = sdMessageOf(channel, `ADD ${payload}`)
+        const phoneNumberToAddAsAdmin = channel.memberships[1].memberPhoneNumber
+        const rawPhoneNumberToAddAsAdmin = parenthesize(phoneNumberToAddAsAdmin)
+        const sdMessage = sdMessageOf(channel, `ADD ${rawPhoneNumberToAddAsAdmin}`)
         const dispatchable = { db, channel, sender, sdMessage }
 
         beforeEach(() => addAdminStub.returns(Promise.resolve()))
 
-        it("attempts to add payload number to the chanel's admins", async () => {
+        it("attempts to add payload number to the channel's admins", async () => {
           await processCommand(dispatchable)
-          expect(addAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, adminPhoneNumber])
+          expect(addAdminStub.getCall(0).args).to.eql([
+            db,
+            channel.phoneNumber,
+            phoneNumberToAddAsAdmin,
+          ])
         })
 
         describe('when adding the admin succeeds', () => {
           beforeEach(() =>
             addAdminStub.returns(
-              Promise.resolve([{ channelPhoneNumber: channel.phoneNumber, adminPhoneNumber }]),
+              Promise.resolve([
+                { channelPhoneNumber: channel.phoneNumber, phoneNumberToAddAsAdmin },
+              ]),
             ),
           )
 
-          it('returns a SUCCESS status / message and admin number as payload', async () => {
+          it('returns a SUCCESS status, message, and notifications', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ADD,
               status: statuses.SUCCESS,
-              message: CR.add.success(adminPhoneNumber),
-              payload: adminPhoneNumber,
+              message: CR.add.success(phoneNumberToAddAsAdmin),
+              notifications: [
+                // welcome message to newly added admin
+                {
+                  recipient: phoneNumberToAddAsAdmin,
+                  message: messagesIn(languages.EN).notifications.welcome(
+                    sender.phoneNumber,
+                    channel.phoneNumber,
+                  ),
+                },
+                // notifications for all other bystander admins
+                {
+                  recipient: channel.memberships[2].memberPhoneNumber,
+                  message: messagesIn(languages.EN).notifications.adminAdded,
+                },
+                {
+                  recipient: channel.memberships[3].memberPhoneNumber,
+                  message: messagesIn(languages.EN).notifications.adminAdded,
+                },
+              ],
             })
           })
         })
@@ -239,7 +263,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ADD,
               status: statuses.ERROR,
-              message: CR.add.dbError(adminPhoneNumber),
+              message: CR.add.dbError(phoneNumberToAddAsAdmin),
             })
           })
         })
