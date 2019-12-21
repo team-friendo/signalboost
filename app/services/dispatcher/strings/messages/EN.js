@@ -5,9 +5,10 @@ const {
 } = require('../../../../db/repositories/channel')
 
 const systemName = 'the signalboost system administrator'
-const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
+const unauthorized =
+  'Your message could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const invalidNumber = phoneNumber =>
-  `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
+  `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 
 const support = `----------------------------
 HOW IT WORKS
@@ -35,11 +36,6 @@ Learn more: https://signalboost.info`
 const notifications = {
   adminAdded: (commandIssuer, addedAdmin) => `New Admin ${addedAdmin} added by ${commandIssuer}`,
 
-  broadcastResponseSent: channel =>
-    `Your message was forwarded to the admins of [${channel.name}].
-
-Send HELP to see commands I understand! :)`,
-
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} has been removed from this channel because their safety number changed.
 
@@ -54,6 +50,18 @@ ADD ${adminPhoneNumber}
 Until then, they will be unable to send messages to or read messages from this channel.`,
   noop: "Whoops! That's not a command!",
   unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+
+  hotlineMessageSent: channel =>
+    `Your message was anonymously forwarded to the admins of [${
+      channel.name
+    }]. Include your phone number if you want admins to respond to you individually.
+
+Send HELP to list valid commands.`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
+      : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
 
   welcome: (addingAdmin, channelPhoneNumber) => `
 You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
@@ -233,7 +241,8 @@ Send HELP to list commands I understand.`,
 }
 
 const prefixes = {
-  broadcastResponse: `SUBSCRIBER RESPONSE`,
+  // TODO(aguestuser|2019-12-21): change this to HOTLINE MESSAGE
+  hotlineMessage: `SUBSCRIBER RESPONSE`,
 }
 
 module.exports = {

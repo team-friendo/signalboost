@@ -18,13 +18,13 @@ const {
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
-  BROADCAST_RESPONSE: 'BROADCAST_RESPONSE',
+  HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
   COMMAND_RESULT: 'COMMAND_RESULT',
   NEW_ADMIN_WELCOME: 'NEW_ADMIN_WELCOME',
   SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
 }
 
-const { BROADCAST_MESSAGE, BROADCAST_RESPONSE, COMMAND_RESULT, SIGNUP_MESSAGE } = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND_RESULT, SIGNUP_MESSAGE } = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -38,8 +38,8 @@ const dispatch = async ({ commandResult, dispatchable }) => {
   switch (messageType) {
     case BROADCAST_MESSAGE:
       return broadcast(dispatchable)
-    case BROADCAST_RESPONSE:
-      return handleBroadcastResponse(dispatchable)
+    case HOTLINE_MESSAGE:
+      return handleHotlineMessage(dispatchable)
     case COMMAND_RESULT:
       return handleCommandResult({ commandResult, dispatchable })
     case SIGNUP_MESSAGE:
@@ -54,7 +54,7 @@ const parseMessageType = (commandResult, { sender, channel }) => {
   if (commandResult.status === statuses.NOOP) {
     if (sender.type === ADMIN) return BROADCAST_MESSAGE
     if (channel.phoneNumber === signupPhoneNumber) return SIGNUP_MESSAGE
-    return BROADCAST_RESPONSE
+    return HOTLINE_MESSAGE
   }
   return COMMAND_RESULT
 }
@@ -69,7 +69,7 @@ const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
     notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
     recipients: channelRepository.getAdminPhoneNumbers(channel),
   })
-  // respond to signpu requester
+  // respond to signup requester
   return notify({
     sock,
     channel,
@@ -78,20 +78,17 @@ const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   })
 }
 
-const handleBroadcastResponse = dispatchable => {
+const handleHotlineMessage = dispatchable => {
   const {
     channel: { responsesEnabled },
-    sender: { language },
+    sender: { language, type },
   } = dispatchable
-
-  if (!responsesEnabled) {
-    return respond({
-      ...dispatchable,
-      message: messagesIn(language).notifications.unauthorized,
-      status: statuses.UNAUTHORIZED,
-    })
-  }
-  return relayBroadcastResponse(dispatchable)
+  const disabledMessage = messagesIn(language).notifications.hotlineMessagesDisabled(
+    type === memberTypes.SUBSCRIBER,
+  )
+  return responsesEnabled
+    ? relayHotlineMessage(dispatchable)
+    : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
@@ -141,11 +138,11 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
 }
 
 // Dispatchable -> Promise<void>
-const relayBroadcastResponse = async ({ db, sock, channel, sender, sdMessage }) => {
+const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => {
   const { language } = sender
   const recipients = channelRepository.getAdminPhoneNumbers(channel)
-  const notification = messagesIn(language).notifications.broadcastResponseSent(channel)
-  const outMessage = format({ channel, sdMessage, messageType: BROADCAST_RESPONSE, language })
+  const notification = messagesIn(language).notifications.hotlineMessageSent(channel)
+  const outMessage = format({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
   return signal
     .broadcastMessage(sock, recipients, outMessage)
     .then(() => countBroacast({ db, channel }))
@@ -184,10 +181,10 @@ const resolvePrefix = (channel, messageType, command, language) => {
     // INFO & HELP messages provide their own prefixes
     return ''
   }
-  if (messageType === BROADCAST_RESPONSE) {
+  if (messageType === HOTLINE_MESSAGE) {
     // subscriber responses get a special header so they don't look like broadcast messages from admins
     // we clone message to preserve attachments
-    return `[${prefixes.broadcastResponse}]\n`
+    return `[${prefixes.hotlineMessage}]\n`
   }
   // base formatting for broadcast messages;  we clone sdMessage to preserve attachements
   return `[${channel.name}]\n`

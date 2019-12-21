@@ -37,9 +37,18 @@ const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
     `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
 
-  broadcastResponseSent: channel =>
-    `Su mensaje fue enviado a los administradores de [${channel.name}].
-    ¡Envíe AYUDA para ver los comandos que entiendo! :)`,
+  hotlineMessageSent: channel =>
+    `Su mensaje se envió de forma anónima a los admins de [${
+      channel.name
+    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+
+Enviar AYUDA para enumerar comandos válidos.
+`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
+      : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -241,7 +250,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 }
 
 const prefixes = {
-  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR`,
+  hotlineMessage: `RESPUESTA DEL SUSCRIPTOR`,
 }
 
 module.exports = {

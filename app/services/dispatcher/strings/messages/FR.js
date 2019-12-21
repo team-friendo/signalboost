@@ -36,10 +36,22 @@ const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
     `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
 
-  broadcastResponseSent: channel =>
+  hotlineMessageSent: channel =>
     `Votre message a été communiqué aux Admins de [${channel.name}]. 
 
 Commande AIDE pour le menu des commandes que je maîtrise! :)`,
+
+  hotlineMessageSent: channel =>
+    `Votre message a été transmis de manière anonyme aux admins de [${
+      channel.name
+    }]. Indiquez votre numéro de téléphone si vous souhaitez que les administrateurs vous répondent individuellement.'
+
+Send HELP to list valid commands.`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Désolé, les messages entrants ne sont pas activés sur cette chaîne. Envoyez AIDE pour répertorier les commandes valides.'
+      : 'Désolé, les messages entrants ne sont pas activés sur cette chaîne. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
@@ -237,7 +249,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
 }
 
 const prefixes = {
-  broadcastResponse: `RÉPONSES ABONNÉeS`,
+  hotlineMessage: `RÉPONSES ABONNÉeS`,
 }
 
 module.exports = {

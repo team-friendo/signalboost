@@ -73,26 +73,26 @@ describe('messenger service', () => {
     language: languages.EN,
   }
 
-  describe('parsing a message type from a command result', () => {
-    it('parses a broadcast message', () => {
+  describe('classifying a command result', () => {
+    it('recognizes a broadcast message', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
       const dispatchable = { channel, sender: adminSender }
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_MESSAGE)
     })
 
-    it('parses a broadcast response from a subscriber', () => {
+    it('recognizes a hotline message from a subscriber', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
       const dispatchable = { channel, sender: subscriberSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_RESPONSE)
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
     })
 
-    it('parses a broadcast response from a random person', () => {
+    it('recognizes a broadcast response from a random person', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
       const dispatchable = { channel, sender: randomSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_RESPONSE)
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
     })
 
-    it('parses a command result', () => {
+    it('recognizes a command result', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
       const dispatchable = { channel, sender: randomSender }
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.COMMAND_RESULT)
@@ -129,7 +129,7 @@ describe('messenger service', () => {
       incrementBroadcastCountStub.restore()
     })
 
-    describe('when message is a broadcast message', () => {
+    describe('a hotline message', () => {
       describe('when sender is a admin', () => {
         beforeEach(
           async () =>
@@ -142,7 +142,7 @@ describe('messenger service', () => {
           expect(respondSpy.callCount).to.eql(0)
         })
 
-        it('does not imcrement the command count for the channel', () => {
+        it('does not increment the command count for the channel', () => {
           expect(incrementCommandCountStub.callCount).to.eql(0)
         })
 
@@ -178,7 +178,10 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.unauthorized}`),
+              sdMessageOf(
+                channel,
+                `[${channel.name}]\n${messages.notifications.hotlineMessagesDisabled(true)}`,
+              ),
             ])
           })
         })
@@ -207,7 +210,7 @@ describe('messenger service', () => {
               sender.phoneNumber,
               sdMessageOf(
                 channel,
-                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`,
+                `[${channel.name}]\n${messages.notifications.hotlineMessageSent(channel)}`,
               ),
             ])
           })
@@ -239,7 +242,7 @@ describe('messenger service', () => {
               sender.phoneNumber,
               sdMessageOf(
                 channel,
-                `[${channel.name}]\n${messages.notifications.broadcastResponseSent(channel)}`,
+                `[${channel.name}]\n${messages.notifications.hotlineMessageSent(channel)}`,
               ),
             ])
           })
@@ -377,15 +380,17 @@ describe('messenger service', () => {
       })
     })
 
-    describe('broadcast responses', () => {
+    describe('hotline responses', () => {
       it('adds a forwarded message prefix', () => {
         const msg = {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
-          messageType: messageTypes.BROADCAST_RESPONSE,
+          messageType: messageTypes.HOTLINE_MESSAGE,
           language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[SUBSCRIBER RESPONSE]\nblah'))
+        expect(messenger.format(msg)).to.eql(
+          sdMessageOf(channel, `[${messages.prefixes.hotlineMessage}]\nblah`),
+        )
       })
     })
 
