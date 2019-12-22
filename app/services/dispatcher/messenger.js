@@ -133,7 +133,7 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
   return signal
-    .broadcastMessage(sock, recipients, format({ channel, sdMessage }))
+    .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
     .then(() => countBroacast({ db, channel }))
 }
 
@@ -142,7 +142,7 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
   const { language } = sender
   const recipients = channelRepository.getAdminPhoneNumbers(channel)
   const notification = messagesIn(language).notifications.hotlineMessageSent(channel)
-  const outMessage = format({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
+  const outMessage = addHeader({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
   return signal
     .broadcastMessage(sock, recipients, outMessage)
     .then(() => countBroacast({ db, channel }))
@@ -150,44 +150,26 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
 }
 
 // (DbusInterface, string, Sender, string?, string?) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender, command }) => {
-  const outMessage = format({
-    channel,
-    sdMessage: sdMessageOf(channel, message),
-    command,
-    language: sender.language,
-  })
+const respond = ({ db, sock, channel, message, sender }) => {
   return signal
-    .sendMessage(sock, sender.phoneNumber, outMessage)
+    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = ({ sock, channel, notification, recipients }) => {
-  const sdMessage = format({ channel, sdMessage: sdMessageOf(channel, notification) })
-  return signal.broadcastMessage(sock, recipients, sdMessage)
-}
+const notify = ({ sock, channel, notification, recipients }) =>
+  signal.broadcastMessage(sock, recipients, sdMessageOf(channel, notification))
+
+/**********
+ * HELPERS
+ **********/
 
 // { Channel, string, string, string, string } -> string
-const format = ({ channel, sdMessage, messageType, command, language }) => {
-  const prefix = resolvePrefix(channel, messageType, command, language)
+const addHeader = ({ channel, sdMessage, messageType, language }) => {
+  const prefix =
+    messageType === HOTLINE_MESSAGE
+      ? `[${messagesIn(language).prefixes.hotlineMessage}]\n`
+      : `[${channel.name}]\n`
   return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
-}
-
-// Channel, string, string, string -> string
-const resolvePrefix = (channel, messageType, command, language) => {
-  const prefixes = messagesIn(language).prefixes
-  if (command === commands.RENAME || command === commands.INFO || command === commands.HELP) {
-    // RENAME messages must provide their own header (b/c channel name changed since last query)
-    // INFO & HELP messages provide their own prefixes
-    return ''
-  }
-  if (messageType === HOTLINE_MESSAGE) {
-    // subscriber responses get a special header so they don't look like broadcast messages from admins
-    // we clone message to preserve attachments
-    return `[${prefixes.hotlineMessage}]\n`
-  }
-  // base formatting for broadcast messages;  we clone sdMessage to preserve attachements
-  return `[${channel.name}]\n`
 }
 
 const countBroacast = ({ db, channel }) =>
@@ -207,7 +189,7 @@ module.exports = {
   /**********/
   broadcast,
   dispatch,
-  format,
+  addHeader,
   parseMessageType,
   respond,
   notify,

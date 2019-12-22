@@ -178,10 +178,7 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(
-                channel,
-                `[${channel.name}]\n${messages.notifications.hotlineMessagesDisabled(true)}`,
-              ),
+              sdMessageOf(channel, messages.notifications.hotlineMessagesDisabled(true)),
             ])
           })
         })
@@ -208,10 +205,7 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(
-                channel,
-                `[${channel.name}]\n${messages.notifications.hotlineMessageSent(channel)}`,
-              ),
+              sdMessageOf(channel, messages.notifications.hotlineMessageSent(channel)),
             ])
           })
         })
@@ -240,10 +234,7 @@ describe('messenger service', () => {
             expect(sendMessageStub.getCall(0).args).to.eql([
               sock,
               sender.phoneNumber,
-              sdMessageOf(
-                channel,
-                `[${channel.name}]\n${messages.notifications.hotlineMessageSent(channel)}`,
-              ),
+              sdMessageOf(channel, messages.notifications.hotlineMessageSent(channel)),
             ])
           })
         })
@@ -269,10 +260,7 @@ describe('messenger service', () => {
           channelRepository.getAdminPhoneNumbers(channel),
           sdMessageOf(
             signupChannel,
-            `[${signupChannel.name}]\n${notifications.signupRequestReceived(
-              randomSender.phoneNumber,
-              'gimme a channel',
-            )}`,
+            notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
           ),
         ])
       })
@@ -282,7 +270,7 @@ describe('messenger service', () => {
           [randomSender.phoneNumber],
           sdMessageOf(
             signupChannel,
-            `[${signupChannel.name}]\n${notifications.signupRequestResponse}`,
+            notifications.signupRequestResponse,
           ),
         ])
       })
@@ -308,7 +296,7 @@ describe('messenger service', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
           sock,
           adminSender.phoneNumber,
-          sdMessageOf(channel, '[foobar]\nyay!'),
+          sdMessageOf(channel, 'yay!'),
         ])
       })
 
@@ -349,7 +337,7 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sock,
             adminSender.phoneNumber,
-            sdMessageOf(channel, `[${channel.name}]\n${response}`),
+            sdMessageOf(channel, response),
           ])
         })
 
@@ -357,7 +345,7 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
             [newAdmin],
-            sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
+            sdMessageOf(channel, welcome),
           ])
         })
 
@@ -365,84 +353,33 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
             adminNumbers,
-            sdMessageOf(channel, `[${channel.name}]\n${alert}`),
+            sdMessageOf(channel, alert),
           ])
         })
       })
     })
   })
 
-  describe('formatting messages', () => {
+  describe('message headers', () => {
     describe('broadcast messages', () => {
-      it('adds a channel name prefix', () => {
+      it('adds a channel name header', () => {
         const msg = { channel, sdMessage: sdMessageOf(channel, 'blah') }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
+        expect(messenger.addHeader(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
     })
 
     describe('hotline responses', () => {
-      it('adds a forwarded message prefix', () => {
+      it('adds an INCOMING MESSAGE header', () => {
+        // TODO(aguestuser|2019-12-21): make naming consistent here (hotline v. incoming)
         const msg = {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
           messageType: messageTypes.HOTLINE_MESSAGE,
           language: languages.EN,
         }
-        expect(messenger.format(msg)).to.eql(
+        expect(messenger.addHeader(msg)).to.eql(
           sdMessageOf(channel, `[${messages.prefixes.hotlineMessage}]\nblah`),
         )
-      })
-    })
-
-    describe('most commands', () => {
-      const sdMessage = sdMessageOf(channel, 'blah')
-      it('adds a channel name prefix', () => {
-        const msg = {
-          channel,
-          sdMessage,
-          command: 'JOIN',
-          language: languages.EN,
-        }
-        expect(messenger.format(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
-      })
-    })
-
-    describe('response to a RENAME comand', () => {
-      it('does not add a prefix', () => {
-        const msg = {
-          channel,
-          sdMessage,
-          command: 'RENAME',
-          language: languages.EN,
-        }
-        expect(messenger.format(msg)).to.eql(sdMessage)
-      })
-    })
-
-    describe('response to a HELP command', () => {
-      it('does not add a prefix', () => {
-        const msg = {
-          channel,
-          sdMessage,
-          command: 'HELP',
-          language: languages.EN,
-        }
-        expect(messenger.format(msg)).to.eql({
-          ...sdMessage,
-          messageBody: `${sdMessage.messageBody}`,
-        })
-      })
-    })
-
-    describe('response to an INFO command', () => {
-      it('does not add a prefix', () => {
-        const msg = {
-          channel,
-          sdMessage,
-          command: 'INFO',
-          language: languages.EN,
-        }
-        expect(messenger.format(msg)).to.eql(sdMessage)
       })
     })
   })
