@@ -141,7 +141,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.ADD,
           status: statuses.UNAUTHORIZED,
-          message: CR.add.unauthorized,
+          message: CR.add.notAdmin,
         })
       })
     })
@@ -369,7 +369,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
           status: statuses.UNAUTHORIZED,
-          message: CR.leave.unauthorized,
+          message: CR.leave.notSubscriber,
         })
       })
     })
@@ -515,7 +515,7 @@ describe('executing commands', () => {
         expect(result).to.eql({
           command: commands.REMOVE,
           status: statuses.UNAUTHORIZED,
-          message: CR.remove.unauthorized,
+          message: CR.remove.notAdmin,
         })
       })
     })
@@ -569,7 +569,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RENAME,
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.unauthorized,
+          message: CR.rename.notAdmin,
         })
       })
     })
@@ -581,7 +581,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RENAME,
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.unauthorized,
+          message: CR.rename.notAdmin,
         })
       })
     })
@@ -642,7 +642,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESPONSES_ON,
           status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.unauthorized,
+          message: CR.toggleResponses.notAdmin,
         })
       })
     })
@@ -656,7 +656,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESPONSES_ON,
           status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.unauthorized,
+          message: CR.toggleResponses.notAdmin,
         })
       })
     })
@@ -717,7 +717,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESPONSES_OFF,
           status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.unauthorized,
+          message: CR.toggleResponses.notAdmin,
         })
       })
     })
@@ -731,7 +731,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESPONSES_OFF,
           status: statuses.UNAUTHORIZED,
-          message: CR.toggleResponses.unauthorized,
+          message: CR.toggleResponses.notAdmin,
         })
       })
     })

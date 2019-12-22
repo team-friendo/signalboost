@@ -5,8 +5,10 @@ const {
 } = require('../../../../db/repositories/channel')
 
 const systemName = 'the signalboost system administrator'
-const unauthorized =
-  'Your message could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
+const notAdmin =
+  'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
+const notSubscriber =
+  'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const invalidNumber = phoneNumber =>
   `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 
@@ -48,8 +50,6 @@ Check with ${adminPhoneNumber} to make sure they still control their phone, then
 ADD ${adminPhoneNumber}
 
 Until then, they will be unable to send messages to or read messages from this channel.`,
-  noop: "Whoops! That's not a command!",
-  unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
 
   hotlineMessageSent: channel =>
     `Your message was anonymously forwarded to the admins of [${
@@ -82,19 +82,10 @@ const commandResponses = {
 
   add: {
     success: num => `${num} added as an admin.`,
-    unauthorized,
+    // unauthorized: notSubscriber,
+    notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidNumber,
-  },
-
-  // REMOVE
-
-  remove: {
-    success: num => `${num} removed as an admin.`,
-    unauthorized,
-    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-    invalidNumber,
-    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
   },
 
   // HELP
@@ -177,17 +168,6 @@ responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
-    unauthorized,
-  },
-
-  // RENAME
-
-  rename: {
-    success: (oldName, newName) =>
-      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
-    unauthorized,
   },
 
   // JOIN
@@ -206,14 +186,34 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   leave: {
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
-    unauthorized,
+    notSubscriber,
+  },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} removed as an admin.`,
+    notAdmin,
+    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    invalidNumber,
+    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
+  },
+
+  // RENAME
+
+  rename: {
+    success: (oldName, newName) =>
+      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
+    dbError: (oldName, newName) =>
+      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
+    notAdmin,
   },
 
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
     success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
-    unauthorized,
+    notAdmin,
     dbError: setting =>
       `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
   },
@@ -234,7 +234,7 @@ Send HELP to list commands I understand.`,
     error: phoneNumber =>
       `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
     invalidNumber,
-    unauthorized,
+    notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },

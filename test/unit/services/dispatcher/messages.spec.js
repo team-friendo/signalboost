@@ -21,11 +21,13 @@ describe('messages module', () => {
     })
 
     Object.keys(messagesEN.commandResponses).forEach(key => {
-      it(`translates ${key} command response to ES`, () => {
-        expect(messagesES.commandResponses[key]).to.exist
-      })
-      it(`translates ${key} command response to FR`, () => {
-        expect(messagesFR.commandResponses[key]).to.exist
+      Object.keys(messagesEN.commandResponses[key]).forEach(subKey => {
+        it(`translates ${key}.${subKey} command response to ES`, () => {
+          expect(messagesES.commandResponses[key][subKey]).to.exist
+        })
+        it(`translates ${key}.${subKey} command response to FR`, () => {
+          expect(messagesFR.commandResponses[key][subKey]).to.exist
+        })
       })
     })
 

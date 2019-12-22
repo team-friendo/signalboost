@@ -5,7 +5,11 @@ const {
 } = require('../../../../db/repositories/channel')
 
 const systemName = 'le maintenant du système Signalboost'
-const unauthorized = 'Oups! Vous n’êtes pas autorisé de faire cela sur ce canal.'
+const notAdmin =
+  'Désolé, seuls les admins sont autorisés à exécuter cette commande. Envoyez AIDE pour une liste de commandes valides.'
+const notSubscriber =
+  "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette chaîne. Envoyez BONJOUR pour vous abonner."
+
 const invalidNumber = phoneNumber =>
   `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
 
@@ -35,11 +39,6 @@ Pour plus de renseignements: https://signalboost.info`
 const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
     `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
-
-  hotlineMessageSent: channel =>
-    `Votre message a été communiqué aux Admins de [${channel.name}]. 
-
-Commande AIDE pour le menu des commandes que je maîtrise! :)`,
 
   hotlineMessageSent: channel =>
     `Votre message a été transmis de manière anonyme aux admins de [${
@@ -89,7 +88,7 @@ const commandResponses = {
 
   add: {
     success: num => `${num} ajoutée comme admin.`,
-    unauthorized,
+    notAdmin,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
@@ -99,7 +98,7 @@ const commandResponses = {
 
   remove: {
     success: num => `${num} supprimé en tant qu'admin.`,
-    unauthorized,
+    notAdmin,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
     invalidNumber,
@@ -186,7 +185,6 @@ réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 abonnées: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
-    unauthorized,
   },
 
   // RENAME
@@ -195,7 +193,7 @@ ${support}`,
     success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
     dbError: (oldName, newName) =>
       `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
-    unauthorized,
+    notAdmin,
   },
 
   // JOIN
@@ -214,14 +212,14 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   leave: {
     success: `Vous êtes maintenant désabonnée de ce canal. Au revoir!`,
     error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
-    unauthorized,
+    notSubscriber,
   },
 
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
     success: setting => `Réponses des abonnées maintenant ${upperCase(setting)}.`,
-    unauthorized,
+    notAdmin,
     dbError: setting =>
       `Oups! Une erreur s’est produite en tentant de changer les réponses à ${setting}. Veuillez essayer de nouveau!`,
   },
@@ -242,7 +240,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     error: phoneNumber =>
       `La mise à jour du numéro de sécurité à ${phoneNumber} a échoué. Veuillez essayer à nouveau ou contactez une mainteneur!`,
     invalidNumber,
-    unauthorized,
+    notAdmin,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
