@@ -1,13 +1,17 @@
 const { upperCase } = require('lodash')
+const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
 
 const systemName = 'the signalboost system administrator'
-const unauthorized = 'Whoops! You are not authorized to do that on this channel.'
+const notAdmin =
+  'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
+const notSubscriber =
+  'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const invalidNumber = phoneNumber =>
-  `Whoops! "${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
+  `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 
 const support = `----------------------------
 HOW IT WORKS
@@ -35,11 +39,6 @@ Learn more: https://signalboost.info`
 const notifications = {
   adminAdded: (commandIssuer, addedAdmin) => `New Admin ${addedAdmin} added by ${commandIssuer}`,
 
-  broadcastResponseSent: channel =>
-    `Your message was forwarded to the admins of [${channel.name}].
-
-Send HELP to see commands I understand! :)`,
-
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} has been removed from this channel because their safety number changed.
 
@@ -52,8 +51,18 @@ Check with ${adminPhoneNumber} to make sure they still control their phone, then
 ADD ${adminPhoneNumber}
 
 Until then, they will be unable to send messages to or read messages from this channel.`,
-  noop: "Whoops! That's not a command!",
-  unauthorized: "Whoops! I don't understand that.\n Send HELP to see commands I understand!",
+
+  hotlineMessageSent: channel =>
+    `Your message was anonymously forwarded to the admins of [${
+      channel.name
+    }]. Include your phone number if you want admins to respond to you individually.
+
+Send HELP to list valid commands.`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
+      : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
 
   welcome: (addingAdmin, channelPhoneNumber) => `
 You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
@@ -74,19 +83,10 @@ const commandResponses = {
 
   add: {
     success: num => `${num} added as an admin.`,
-    unauthorized,
+    // unauthorized: notSubscriber,
+    notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidNumber,
-  },
-
-  // REMOVE
-
-  remove: {
-    success: num => `${num} removed as an admin.`,
-    unauthorized,
-    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-    invalidNumber,
-    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
   },
 
   // HELP
@@ -146,9 +146,11 @@ ESPAÑOL / FRANÇAIS
   // INFO
 
   info: {
-    admin: channel => `---------------------------
+    [memberTypes.ADMIN]: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
+
+You are an admin of this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
@@ -159,9 +161,11 @@ messages sent: ${channel.messageCount.broadcastIn}
 
 ${support}`,
 
-    subscriber: channel => `---------------------------
+    [memberTypes.SUBSCRIBER]: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
+
+You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
@@ -169,17 +173,18 @@ responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
 subscribers: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
-    unauthorized,
-  },
 
-  // RENAME
+    [memberTypes.NONE]: channel => `---------------------------
+CHANNEL INFO:
+---------------------------
 
-  rename: {
-    success: (oldName, newName) =>
-      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
-    unauthorized,
+You are not subscribed to this channel. Send HELLO to subscribe.
+
+name: ${channel.name}
+phone number: ${channel.phoneNumber}
+subscribers: ${getSubscriberMemberships(channel).length}
+
+${support}`,
   },
 
   // JOIN
@@ -198,14 +203,34 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   leave: {
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
-    unauthorized,
+    notSubscriber,
+  },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} removed as an admin.`,
+    notAdmin,
+    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    invalidNumber,
+    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
+  },
+
+  // RENAME
+
+  rename: {
+    success: (oldName, newName) =>
+      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
+    dbError: (oldName, newName) =>
+      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
+    notAdmin,
   },
 
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
     success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
-    unauthorized,
+    notAdmin,
     dbError: setting =>
       `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
   },
@@ -226,14 +251,15 @@ Send HELP to list commands I understand.`,
     error: phoneNumber =>
       `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
     invalidNumber,
-    unauthorized,
+    notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
 }
 
 const prefixes = {
-  broadcastResponse: `SUBSCRIBER RESPONSE`,
+  // TODO(aguestuser|2019-12-21): change this to HOTLINE MESSAGE
+  hotlineMessage: `SUBSCRIBER RESPONSE`,
 }
 
 module.exports = {

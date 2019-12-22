@@ -1,11 +1,15 @@
 const { upperCase } = require('lodash')
+const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
 
 const systemName = 'El administrador del sistema de Signalboost'
-const unauthorized = '¡Lo siento! Usted no está autorizado para hacerlo en este canal.'
+const notAdmin =
+  'Lo sentimos, solo los admins pueden emitir ese comando. Envíe AYUDA para obtener una lista de comandos válidos.'
+const notSubscriber =
+  'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
@@ -37,9 +41,18 @@ const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
     `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
 
-  broadcastResponseSent: channel =>
-    `Su mensaje fue enviado a los administradores de [${channel.name}].
-    ¡Envíe AYUDA para ver los comandos que entiendo! :)`,
+  hotlineMessageSent: channel =>
+    `Su mensaje se envió de forma anónima a los admins de [${
+      channel.name
+    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+
+Enviar AYUDA para enumerar comandos válidos.
+`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
+      : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -81,7 +94,7 @@ const commandResponses = {
 
   add: {
     success: num => `${num} agregó como administrador.`,
-    unauthorized,
+    notAdmin,
     dbError: num =>
       `¡Lo siento! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
@@ -92,7 +105,7 @@ const commandResponses = {
 
   remove: {
     success: num => `${num} eliminado como administrador.`,
-    unauthorized,
+    notAdmin,
     dbError: num =>
       `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
@@ -157,9 +170,11 @@ ENGLISH / FRANÇAIS
   // INFO
 
   info: {
-    admin: channel => `------------------------------
+    [memberTypes.ADMIN]: channel => `------------------------------
 INFO DEL CANAL
 ------------------------------
+
+Usted es admin de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
@@ -169,16 +184,29 @@ respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
 ${support}`,
 
-    subscriber: channel => `------------------------------
+    [memberTypes.SUBSCRIBER]: channel => `------------------------------
 INFO DEL CANAL
 ------------------------------
+
+Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 ${support}`,
-    unauthorized,
+
+    [memberTypes.NONE]: channel => `------------------------------
+INFO DEL CANAL
+------------------------------
+
+Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
+
+nombre: ${channel.name}
+número de teléfono: ${channel.phoneNumber}
+respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+suscriptorxs: ${getSubscriberMemberships(channel).length}
+${support}`,
   },
 
   // RENAME
@@ -187,7 +215,7 @@ ${support}`,
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
       `[${oldName}]\n¡Lo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
-    unauthorized,
+    notAdmin,
   },
 
   // JOIN
@@ -206,14 +234,14 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   leave: {
     success: `¡Usted ha sido eliminado del canal! ¡Adiós!`,
     error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtelo de nuevo!`,
-    unauthorized,
+    notSubscriber,
   },
 
   // RESPONSES_ON / RESPONSES_OFF
 
   toggleResponses: {
     success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
-    unauthorized,
+    notAdmin,
     dbError: setting =>
       `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
   },
@@ -234,14 +262,14 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     error: phoneNumber =>
       `Error al actualizar el número de seguridad para ${phoneNumber}. ¡Inténtelo de nuevo o contacta a un mantenedor!`,
     invalidNumber,
-    unauthorized,
+    notAdmin,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
   },
 }
 
 const prefixes = {
-  broadcastResponse: `RESPUESTA DEL SUSCRIPTOR`,
+  hotlineMessage: `RESPUESTA DEL SUSCRIPTOR`,
 }
 
 module.exports = {

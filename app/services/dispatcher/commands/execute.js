@@ -55,7 +55,7 @@ const execute = async (executable, dispatchable) => {
 const maybeAddAdmin = async (db, channel, sender, phoneNumberInput) => {
   const cr = messagesIn(sender.language).commandResponses.add
   if (!(sender.type === ADMIN)) {
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
@@ -86,10 +86,7 @@ const showHelp = async (db, channel, sender) => {
 
 const showInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
-  return {
-    status: statuses.SUCCESS,
-    message: sender.type === ADMIN ? cr.admin(channel) : cr.subscriber(channel),
-  }
+  return { status: statuses.SUCCESS, message: cr[sender.type](channel) }
 }
 
 // JOIN
@@ -112,7 +109,7 @@ const addSubscriber = (db, channel, sender, language, cr) =>
 const maybeRemoveSender = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.leave
   return sender.type === NONE
-    ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+    ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notSubscriber })
     : removeSender(db, channel, sender, cr)
 }
 
@@ -131,7 +128,7 @@ const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
   const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(adminNumber)
 
   if (!(sender.type === ADMIN)) {
-    return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   if (!isValid) {
     return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
@@ -154,7 +151,7 @@ const maybeRenameChannel = async (db, channel, sender, newName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
   return sender.type === ADMIN
     ? renameChannel(db, channel, newName, cr)
-    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
 const renameChannel = (db, channel, newName, cr) =>
@@ -169,7 +166,7 @@ const renameChannel = (db, channel, newName, cr) =>
 const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
   if (!(sender.type === ADMIN)) {
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.unauthorized })
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
   return toggleResponses(db, channel, responsesEnabled, sender, cr)
 }
