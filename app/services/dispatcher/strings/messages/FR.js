@@ -1,4 +1,5 @@
 const { upperCase } = require('lodash')
+const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
   getSubscriberMemberships,
@@ -162,9 +163,11 @@ ESPAÑOL / ENGLISH
   // INFO
 
   info: {
-    admin: channel => `---------------------------
+    [memberTypes.ADMIN]: channel => `---------------------------
 INFOS CANAL
 ---------------------------
+
+Vous êtes admin de cette chaîne.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
@@ -175,13 +178,27 @@ messages envoyés: ${channel.messageCount.broadcastIn}
 
 ${support}`,
 
-    subscriber: channel => `---------------------------
+    [memberTypes.SUBSCRIBER]: channel => `---------------------------
 INFOS CANAL
 ---------------------------
+
+Vous êtes abonné a cette chaîne.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+abonnées: ${getSubscriberMemberships(channel).length}
+
+${support}`,
+
+    [memberTypes.NONE]: channel => `---------------------------
+INFOS CANAL
+---------------------------
+
+Vous n'êtes pas abonné à cette chaîne. Envoyez AIDE pour vous abonner.
+
+nom: ${channel.name}
+numéro de téléphone: ${channel.phoneNumber}
 abonnées: ${getSubscriberMemberships(channel).length}
 
 ${support}`,

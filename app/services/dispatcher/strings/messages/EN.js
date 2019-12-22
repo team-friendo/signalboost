@@ -1,4 +1,5 @@
 const { upperCase } = require('lodash')
+const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
   getSubscriberMemberships,
@@ -145,9 +146,11 @@ ESPAÑOL / FRANÇAIS
   // INFO
 
   info: {
-    admin: channel => `---------------------------
+    [memberTypes.ADMIN]: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
+
+You are an admin of this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
@@ -158,13 +161,27 @@ messages sent: ${channel.messageCount.broadcastIn}
 
 ${support}`,
 
-    subscriber: channel => `---------------------------
+    [memberTypes.SUBSCRIBER]: channel => `---------------------------
 CHANNEL INFO:
 ---------------------------
+
+You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
 responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+subscribers: ${getSubscriberMemberships(channel).length}
+
+${support}`,
+
+    [memberTypes.NONE]: channel => `---------------------------
+CHANNEL INFO:
+---------------------------
+
+You are not subscribed to this channel. Send HELLO to subscribe.
+
+name: ${channel.name}
+phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 
 ${support}`,

@@ -1,4 +1,5 @@
 const { upperCase } = require('lodash')
+const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
   getSubscriberMemberships,
@@ -8,7 +9,7 @@ const systemName = 'El administrador del sistema de Signalboost'
 const notAdmin =
   'Lo sentimos, solo los admins pueden emitir ese comando. Envíe AYUDA para obtener una lista de comandos válidos.'
 const notSubscriber =
-  'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirte.'
+  'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
@@ -169,9 +170,11 @@ ENGLISH / FRANÇAIS
   // INFO
 
   info: {
-    admin: channel => `------------------------------
+    [memberTypes.ADMIN]: channel => `------------------------------
 INFO DEL CANAL
 ------------------------------
+
+Usted es admin de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
@@ -181,9 +184,23 @@ respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
 ${support}`,
 
-    subscriber: channel => `------------------------------
+    [memberTypes.SUBSCRIBER]: channel => `------------------------------
 INFO DEL CANAL
 ------------------------------
+
+Usted es suscriptor de este canal.
+
+nombre: ${channel.name}
+número de teléfono: ${channel.phoneNumber}
+respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+suscriptorxs: ${getSubscriberMemberships(channel).length}
+${support}`,
+
+    [memberTypes.NONE]: channel => `------------------------------
+INFO DEL CANAL
+------------------------------
+
+Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}

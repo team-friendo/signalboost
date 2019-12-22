@@ -86,10 +86,7 @@ const showHelp = async (db, channel, sender) => {
 
 const showInfo = async (db, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
-  return {
-    status: statuses.SUCCESS,
-    message: sender.type === ADMIN ? cr.admin(channel) : cr.subscriber(channel),
-  }
+  return { status: statuses.SUCCESS, message: cr[sender.type](channel) }
 }
 
 // JOIN

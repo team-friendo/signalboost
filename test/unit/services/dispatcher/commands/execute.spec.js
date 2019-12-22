@@ -197,7 +197,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
           status: statuses.SUCCESS,
-          message: CR.info.admin(channel),
+          message: CR.info[memberTypes.ADMIN](channel),
         })
       })
     })
@@ -209,7 +209,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
           status: statuses.SUCCESS,
-          message: CR.info.subscriber(channel),
+          message: CR.info[memberTypes.SUBSCRIBER](channel),
         })
       })
     })
@@ -221,7 +221,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
           status: statuses.SUCCESS,
-          message: CR.info.subscriber(channel),
+          message: CR.info[memberTypes.NONE](channel),
         })
       })
     })

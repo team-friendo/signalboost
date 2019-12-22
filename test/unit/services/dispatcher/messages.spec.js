@@ -3,6 +3,7 @@ import { describe, it } from 'mocha'
 import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
 import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
 import messagesFR from '../../../../app/services/dispatcher/strings/messages/FR'
+import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { languages } from '../../../../app/constants'
@@ -65,7 +66,7 @@ describe('messages module', () => {
     describe('for INFO command', () => {
       describe('for admin', () => {
         it('shows admin and subscriber counts', () => {
-          const msg = cr.info.admin(channel)
+          const msg = cr.info[memberTypes.ADMIN](channel)
           expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
         })
@@ -73,7 +74,7 @@ describe('messages module', () => {
 
       describe('for subscriber', () => {
         it('shows subscriber count', () => {
-          const msg = cr.info.subscriber(channel)
+          const msg = cr.info[memberTypes.SUBSCRIBER](channel)
           expect(msg).to.include('subscribers: 2')
         })
       })
