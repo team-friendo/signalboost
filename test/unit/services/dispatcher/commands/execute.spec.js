@@ -915,8 +915,9 @@ describe('executing commands', () => {
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateStub.restore())
 
-    describe('when sender is a admin', () => {
-      const dispatchable = { db, channel, sender: admin, sdMessage }
+    describe('when sender is an admin', () => {
+      const sender = admin
+      const dispatchable = { db, channel, sender, sdMessage }
       let result
 
       describe('when renaming succeeds', () => {
@@ -925,12 +926,21 @@ describe('executing commands', () => {
           result = await processCommand(dispatchable)
         })
 
-        it('returns SUCCESS status / message with new name in payload', () => {
+        it('returns SUCCESS status, message, and notifications', () => {
+          const bystanderAdminMemberships = channel.memberships.slice(1, 4)
           expect(result).to.eql({
             command: commands.RENAME,
             status: statuses.SUCCESS,
-            payload: 'foo',
             message: CR.rename.success(channel.name, 'foo'),
+            notifications: [
+              ...bystanderAdminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: messagesIn(sender.language).notifications.channelRenamed(
+                  channel.name,
+                  'foo',
+                ),
+              })),
+            ],
           })
         })
       })

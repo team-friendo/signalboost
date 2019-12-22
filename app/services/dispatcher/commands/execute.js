@@ -274,23 +274,26 @@ const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
 
 // RENAME
 
-const maybeRenameChannel = async (db, channel, sender, newName) => {
+const maybeRenameChannel = async (db, channel, sender, newChannelName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
   return sender.type === ADMIN
-    ? renameChannel(db, channel, newName, cr)
+    ? renameChannel(db, channel, newChannelName, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const renameChannel = (db, channel, newName, cr) =>
+const renameChannel = (db, channel, newChannelName, sender, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { name: newName })
+    .update(db, channel.phoneNumber, { name: newChannelName })
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(channel.name, newName),
-      payload: newName,
+      message: cr.success(channel.name, newChannelName),
+      notifications: renameNotificationsOf(channel, newChannelName, sender),
     }))
     .catch(err =>
-      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
+      logAndReturn(err, {
+        status: statuses.ERROR,
+        message: cr.dbError(channel.name, newChannelName),
+      }),
     )
 
 // ON / OFF TOGGLES FOR RESPONSES, VOUCHING
@@ -306,6 +309,24 @@ const maybeToggleSettingOff = (db, channel, sender, toggle) =>
 // (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
 const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
   const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
+const renameNotificationsOf = (channel, newChannelName, sender) => {
+  const allMemberships = getAdminMemberships(channel)
+  const bystanderMemberships = allMemberships.filter(
+    m => m.memberPhoneNumber !== sender.phoneNumber,
+  )
+  return [
+    ...bystanderMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(sender.language).notifications.channelRenamed(
+        channel.name,
+        newChannelName,
+      ),
+    })),
+  ]
+}
+// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
+const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
+  const cr = messagesIn(sender.language).commandResponses.toggleResponses
   if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }

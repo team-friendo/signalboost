@@ -404,6 +404,56 @@ describe('messenger service', () => {
         })
       })
 
+      describe('for a RENAME command', () => {
+        const sender = {
+          type: memberTypes.ADMIN,
+          language: languages.EN,
+          phoneNumber: adminPhoneNumbers[0],
+        }
+        const bystanderPhoneNumbers = adminPhoneNumbers.slice(1, 4)
+        const sdMessage = `${commands.RENAME} floof`
+
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: {
+              db,
+              sock,
+              channel,
+              sender,
+              sdMessage,
+            },
+            commandResult: {
+              command: commands.RENAME,
+              status: statuses.SUCCESS,
+              notifications: [
+                ...bystanderPhoneNumbers.map(phoneNumber => ({
+                  recipient: phoneNumber,
+                  message: `${messages.notifications.channelRenamed(channel.name, 'floof')}`,
+                })),
+              ],
+            },
+          })
+        })
+
+        it('notifies all admins except sender', () => {
+          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
+            expect(broadcastMessageStub.getCall(index).args).to.eql([
+              sock,
+              [phoneNumber],
+              sdMessageOf(
+                channel,
+                `[${channel.name}]\n${messages.notifications.channelRenamed(
+                  channel.name,
+                  'floof',
+                )}`,
+              ),
+            ])
+          })
+        })
+      })
+    })
+  })
+
       describe('for an invitee', () => {
         const inviteePhoneNumber = genPhoneNumber()
         const sdMessage = sdMessageOf(channel, `${commands.invite} ${inviteePhoneNumber}`)
