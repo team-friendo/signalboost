@@ -1,3 +1,4 @@
+/* eslint require-atomic-updates: 0 */
 const phoneNumberService = require('./phoneNumber')
 const channelRegistrar = require('./channel')
 const { get, find } = require('lodash')

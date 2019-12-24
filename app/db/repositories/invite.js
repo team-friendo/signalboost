@@ -1,7 +1,8 @@
 const moment = require('moment')
 const { Op } = require('sequelize')
 const membershipRepository = require('./membership')
-const { repeatEvery } = require('../../services/util')
+const { repeatEvery, loggerOf } = require('../../services/util')
+const logger = loggerOf('db|inviteRepository')
 const {
   defaultLanguage,
   job: { inviteExpiryInMillis, inviteDeletionInterval },
@@ -32,7 +33,8 @@ const decline = async (db, channelPhoneNumber, inviteePhoneNumber) =>
   db.invite.destroy({ where: { channelPhoneNumber, inviteePhoneNumber } })
 
 // (Database, number) -> Promise<void>
-const launchInviteDeletionJob = db => repeatEvery(() => deleteExpired(db), inviteDeletionInterval)
+const launchInviteDeletionJob = db =>
+  repeatEvery(() => deleteExpired(db).catch(logger.error), inviteDeletionInterval)
 
 // Database -> Promise<number>
 const deleteExpired = async db =>

@@ -368,14 +368,13 @@ describe('messenger service', () => {
           message: messages.commandResponses.invite.success,
           payload: inviteePhoneNumber,
         }
-        const notification = messages.notifications.inviteReceived(channel.name)
 
         it('sends an invite notification to the invitee', async () => {
           await messenger.dispatch({ dispatchable, commandResult })
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
             [inviteePhoneNumber],
-            sdMessageOf(channel, `[${channel.name}]\n${notification}`),
+            sdMessageOf(channel, messages.notifications.inviteReceived(channel.name)),
           ])
         })
       })
