@@ -1,4 +1,3 @@
-const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -12,28 +11,25 @@ const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
+const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
-const support = `
-----------------------------
+const support = `----------------------------
 CÓMO FUNCIONA
 ----------------------------
 
-Los números de Signalboost tienen administradores y suscriptores.
+Signalboost tiene canales con administradores y suscriptores.
 
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar respuestas que solo los administradores pueden leer.
--> Los suscriptores no pueden enviarse mensajes los unos a los otros. (¡Nada de charlas enredadas ruidosas!)
 
-Los números de Signalboost entienden los comandos.
+Signalboost intenta preservar su privacidad:
+
+-> Los usuarios de Signalboost no pueden ver los números de otros usuarios. (¡Los policías tampoco pueden!)
+-> Signalboost no lee ni almacena los mensajes de nadie.
+
+Signalboost responde a comandos:
 
 -> Enviar AYUDA para ver la lista de comandos.
--> Las personas pueden suscribirse enviando HOLA y darse de baja con ADIÓS.
--> Enviar el nombre de idioma (por ejemplo: ESPAÑOL o ENGLISH) para cambiar de idioma.
-
-Signalboost intenta preservar su privacidad.
-
--> Los usuarios de Signalboost no pueden ver los números de otros usuarios.
--> Signalboost no lee ni almacena los mensajes de nadie.
 
 Para más información: https://signalboost.info`
 
@@ -53,6 +49,10 @@ Enviar AYUDA para enumerar comandos válidos.
     isSubscriber
       ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
+
+  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
+  
+  Responda con ACEPTAR o RECHAZAR.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -90,34 +90,43 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
 }
 
 const commandResponses = {
+  // ACCEPT
+
+  accept: {
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
+
+Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
+    alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
+    belowThreshold: (channel, required, actual) =>
+      `Lo sentimos, ${
+        channel.name
+      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+    dbError: '¡Ay! Se produjo un error al aceptar tu invitación. ¡Inténtalo de nuevo!',
+  },
+
   // ADD
 
   add: {
     success: num => `${num} agregó como administrador.`,
     notAdmin,
     dbError: num =>
-      `¡Lo siento! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
+      `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidNumber: num =>
-      `¡Lo siento! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+      `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
   },
 
-  // REMOVE
+  // DECLINE
 
-  remove: {
-    success: num => `${num} eliminado como administrador.`,
-    notAdmin,
-    dbError: num =>
-      `¡Lo siento! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
-    invalidNumber: num =>
-      `¡Lo siento! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
-    targetNotAdmin: num => `¡Lo siento! ${num} no es un administrador. No puedo eliminarle.`,
+  decline: {
+    success: 'Invitación rechazada Toda la información sobre la invitación eliminada.',
+    dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
   },
 
   // HELP
 
   help: {
     admin: `----------------------------------------------
-COMANDOS QUE ENTIENDO
+COMANDOS
 ----------------------------------------------
 
 AYUDA
@@ -126,45 +135,52 @@ AYUDA
 INFO
 -> muestra estadísticas, explica cómo funciona Signalboost
 
+----------------------------------------------
+
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-AGREGAR + 1-555-555-5555
--> convierte a + 1-555-555-5555 en administrador
+INVITAR +1-555-555-5555
+-> invita a +1-555-555-5555 a suscribirse al canal
 
-QUITAR + 1-555-555-5555
--> elimina a + 1-555-555-5555 como administrador
+AGREGAR / QUITAR + 1-555-555-5555
+-> agrega or quita + 1-555-555-5555 como admin de este canal
 
-RESPUESTAS ACTIVADAS
--> permite a los suscriptores enviar mensajes a los administradores
+RESPUESTAS ACTIVADAS / DESACTIVADAS
+-> habilita o deshabilita mensajes entrantes a los admins
 
-RESPUESTAS DESACTIVADAS
--> desactiva a los suscriptores de enviar mensajes a los administradores
-
-ADIÓS
--> le saca del canal
+ATESTIGUANDO ACTIVADA / DESACTIVADA
+-> activa o desactiva el requisito de recibir una invitación para suscribirse
 
 ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés`,
+-> cambia idiomas a Inglés o Francés
+
+ADIÓS
+-> le saca del canal`,
 
     subscriber: `----------------------------------------------
-COMANDOS QUE ENTIENDO
+COMANDOS
 ----------------------------------------------
     
 AYUDA
 -> lista de comandos
 
 INFO
--> explica cómo funciona Signalboost
+-> muestra estadísticas, explica cómo funciona Signalboost
+
+----------------------------------------------
+
+INVITAR +1-555-555-5555
+-> invita a +1-555-555-5555 a suscribirse al canal
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés
 
 HOLA
 -> para subscribirse a un canal
 
 ADIÓS
--> le da de baja
-
-ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés`,
+-> le da de baja`,
   },
 
   // INFO
@@ -182,6 +198,7 @@ admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
+
 ${support}`,
 
     [memberTypes.SUBSCRIBER]: channel => `------------------------------
@@ -194,6 +211,7 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
+
 ${support}`,
 
     [memberTypes.NONE]: channel => `------------------------------
@@ -206,7 +224,28 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
+
 ${support}`,
+  },
+
+  // INVITE
+
+  invite: {
+    notSubscriber,
+    invalidNumber: input => `¡Ay! No se pudo emitir la invitación. ${invalidNumber(input)}`,
+    success: `Invitación emitida.`,
+    dbError: '¡Ay! No se pudo emitir la invitación. Inténtalo de nuevo. :)',
+  },
+
+  // REMOVE
+
+  remove: {
+    success: num => `${num} eliminado como administrador.`,
+    notAdmin,
+    dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
+    invalidNumber: num =>
+      `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    targetNotAdmin: num => `¡Ay! ${num} no es un administrador. No puedo eliminarle.`,
   },
 
   // RENAME
@@ -214,7 +253,7 @@ ${support}`,
   rename: {
     success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\n¡Lo siento! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
+      `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     notAdmin,
   },
 
@@ -222,11 +261,14 @@ ${support}`,
 
   join: {
     success: channel =>
-      `¡Bienvenido a Signalboost! Ahora usted está suscrito al canal [${channel.name}].
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
-    dbError: `¡Lo siento! Se produjo un error al agregarlo al canal. Inténtelo de nuevo!`,
-    alreadyMember: `¡Lo siento! Ya eres miembro del canal.`,
+    inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
+
+Si ya tiene usted una invitación, intente enviar ACEPTAR`,
+    dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
+    alreadyMember: `¡Ay! Ya eres miembro del canal.`,
   },
 
   // LEAVE
@@ -237,15 +279,6 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     notSubscriber,
   },
 
-  // RESPONSES_ON / RESPONSES_OFF
-
-  toggleResponses: {
-    success: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
-    notAdmin,
-    dbError: setting =>
-      `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${setting}. ¡Inténtelo de nuevo!`,
-  },
-
   // SET_LANGUAGE
 
   setLanguage: {
@@ -253,6 +286,27 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
       
 Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
+  },
+
+  // TOGGLES (RESPONSES, VOUCHING)
+
+  toggles: {
+    responses: {
+      success: isOn => `Respuestas del suscriptor configurado en ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `¡Lo siento! Se produjo un error al intentar establecer respuestas a ${onOrOff(
+          isOn,
+        )}. ¡Inténtelo de nuevo!`,
+    },
+    vouching: {
+      success: isOn => `Atestiguando configurado en ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
+          isOn,
+        )}. ¡Inténtelo de nuevo!`,
+    },
   },
 
   // TRUST

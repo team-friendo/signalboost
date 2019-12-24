@@ -123,6 +123,14 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
       recipients: channelRepository.getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
     })
   }
+  if (command === commands.INVITE && status === statuses.SUCCESS) {
+    // welcome new admin
+    return notify({
+      ...notifyBase,
+      notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
+      recipients: [payload],
+    })
+  }
 }
 
 /************

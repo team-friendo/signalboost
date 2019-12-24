@@ -357,6 +357,27 @@ describe('messenger service', () => {
           ])
         })
       })
+
+      describe('for an invitee', () => {
+        const inviteePhoneNumber = genPhoneNumber()
+        const sdMessage = sdMessageOf(channel, `${commands.invite} ${inviteePhoneNumber}`)
+        const dispatchable = { db, sock, channel, sender: adminSender, sdMessage }
+        const commandResult = {
+          command: commands.INVITE,
+          status: statuses.SUCCESS,
+          message: messages.commandResponses.invite.success,
+          payload: inviteePhoneNumber,
+        }
+
+        it('sends an invite notification to the invitee', async () => {
+          await messenger.dispatch({ dispatchable, commandResult })
+          expect(broadcastMessageStub.getCall(0).args).to.eql([
+            sock,
+            [inviteePhoneNumber],
+            sdMessageOf(channel, messages.notifications.inviteReceived(channel.name)),
+          ])
+        })
+      })
     })
   })
 

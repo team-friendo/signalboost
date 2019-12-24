@@ -4,6 +4,7 @@ const { times } = require('lodash')
 import { messageCountFactory } from './messageCount'
 import { welcomeFactory } from './welcome'
 import { memberTypes } from '../../../app/db/repositories/membership'
+import { inviteFactory } from "./invite"
 const { genPhoneNumber } = require('./phoneNumber')
 
 export const channelFactory = attrs => ({
@@ -21,7 +22,7 @@ export const deepChannelFactory = pNum => {
       ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber })),
     ],
     messageCount: messageCountFactory({ channelPhoneNumber }),
-    welcomes: times(2, () => welcomeFactory({ channelPhoneNumber })),
+    invites: times(2, () => inviteFactory({ channelPhoneNumber })),
   }
 }
 
@@ -57,7 +58,18 @@ export const deepChannelAttrs = [
       commandIn: 5,
       commandOut: 6,
     },
-    welcomes: [{ channelPhoneNumber: '+11111111111', welcomedPhoneNumber: '+12222222222' }],
+    invites: [
+      {
+        channelPhoneNumber: '+11111111111',
+        inviterPhoneNumber: '+12222222222',
+        inviteePhoneNumber: '+12222222223',
+      },
+      {
+        channelPhoneNumber: '+11111111111',
+        inviterPhoneNumber: '+12222222222',
+        inviteePhoneNumber: '+12222222224',
+      },
+    ],
   },
   {
     name: 'bar',
@@ -80,6 +92,17 @@ export const deepChannelAttrs = [
       commandIn: 20,
       commandOut: 20,
     },
-    welcomes: [{ channelPhoneNumber: '+19999999999', welcomedPhoneNumber: '+16666666666' }],
+    invites: [
+      {
+        channelPhoneNumber: '+19999999999',
+        inviterPhoneNumber: '+16666666666',
+        inviteePhoneNumber: '+16666666667',
+      },
+      {
+        channelPhoneNumber: '+19999999999',
+        inviterPhoneNumber: '+16666666666',
+        inviteePhoneNumber: '+16666666668',
+      },
+    ],
   },
 ]

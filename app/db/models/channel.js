@@ -17,10 +17,20 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false,
     },
+    vouchingOn: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   })
 
   channel.associate = db => {
     channel.hasMany(db.membership, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
+
+    channel.hasMany(db.invite, {
       hooks: true,
       onDelete: 'cascade',
     })

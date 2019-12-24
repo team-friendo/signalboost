@@ -37,7 +37,7 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
-    include: [{ model: db.membership }, { model: db.messageCount }],
+    include: [{ model: db.membership }, { model: db.invite }, { model: db.messageCount }],
   })
 
 /************
@@ -45,6 +45,7 @@ const findDeep = (db, phoneNumber) =>
  ***********/
 
 // all selectors assume you are operating on an already deeply-fetched channel (with all nested attrs avail)
+const getMemberPhoneNumbers = channel => (channel.memberships || []).map(m => m.memberPhoneNumber)
 const getAdminMemberships = channel => channel.memberships.filter(m => m.type === memberTypes.ADMIN)
 const getAdminPhoneNumbers = channel => getAdminMemberships(channel).map(m => m.memberPhoneNumber)
 
@@ -61,6 +62,7 @@ module.exports = {
   findDeep,
   getAdminMemberships,
   getAdminPhoneNumbers,
+  getMemberPhoneNumbers,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
   update,

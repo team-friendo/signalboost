@@ -1,4 +1,3 @@
-const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -12,27 +11,25 @@ const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const invalidNumber = phoneNumber =>
   `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
+const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const support = `----------------------------
 HOW IT WORKS
 ----------------------------
 
-Signalboost channels have admins and subscribers.
+Signalboost has channels with admins and subscribers:
 
--> When admins send messages, they are broadcast to all subscribers.
+-> When admins send announcements, they are broadcast to all subscribers.
 -> If enabled, subscribers can send responses that only admins can read.
--> Subscribers cannot send messages to each other. (No noisy crosstalk!)
 
-Signalboost channels understand commands.
+Signalboost protects your privacy:
 
--> Sending HELP lists the commands.
--> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
--> Sending a language name (for example: ESPAÑOL or ENGLISH) switches languages.
+-> Users cannot see other users' phone numbers. (Cops can't either!)
+-> Signalboost does not read or store the contents of anyone's messages.
 
-Signalboost tries to preserve your privacy.
+Signalboost responds to commands:
 
--> Signalboost users cannot see each other's phone numbers.
--> Signalboost does not read or store anyone's messages.
+-> Send HELP to list them.
 
 Learn more: https://signalboost.info`
 
@@ -64,6 +61,10 @@ Send HELP to list valid commands.`,
       ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
       : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
 
+  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
+
+Please respond with ACCEPT or DECLINE.`,
+
   welcome: (addingAdmin, channelPhoneNumber) => `
 You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
 
@@ -79,21 +80,39 @@ Reply with HELP for more info.`,
 }
 
 const commandResponses = {
+  // ACCEPT
+
+  accept: {
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+
+Reply with HELP to learn more or GOODBYE to unsubscribe.`,
+    alreadyMember: 'Sorry, you are already a member of this channel',
+    belowThreshold: (channel, required, actual) =>
+      `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
+    dbError: 'Whoops! There was an error accepting your invite. Please try again!',
+  },
+
   // ADD
 
   add: {
     success: num => `${num} added as an admin.`,
-    // unauthorized: notSubscriber,
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidNumber,
+  },
+
+  // DECLINE
+
+  decline: {
+    success: 'Invitation declined. All information about invitation deleted.',
+    dbError: 'Whoops! There was an error declining the invite. Please try again!',
   },
 
   // HELP
 
   help: {
     admin: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDS
 ----------------------------------------------
 
 HELP
@@ -102,52 +121,59 @@ HELP
 INFO
 -> shows stats, explains how Signalboost works
 
+----------------------------------------------
+
 RENAME new name
 -> renames channel to "new name"
 
-ADD +1-555-555-5555
--> makes +1-555-555-5555 an admin
+INVITE +1-555-555-5555
+-> invites +1-555-555-5555 to subscribe to the channel
 
-REMOVE +1-555-555-5555
--> removes +1-555-555-5555 as an admin
+ADD / REMOVE +1-555-555-5555
+-> adds or removes +1-555-555-5555 as an admin of the channel
 
-RESPONSES ON
--> allows subscribers to send messages to admins
+RESPONSES ON / OFF
+-> enables or disables incoming messages to admins
 
-RESPONSES OFF
--> disables subscribers from sending messages to admins
-
-GOODBYE
--> leaves this channel
+VOUCHING ON / OFF
+-> enables or disables requirement to receive an invite to subscribe
 
 ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French`,
+-> switches language to Spanish or French
+
+GOODBYE
+-> leaves this channel`,
 
     subscriber: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDS
 ----------------------------------------------
 
 HELP
 -> lists commands
 
 INFO
--> shows stats, explains how signalboost works
+-> shows stats, explains how Signalboost works
+
+----------------------------------------------
+
+INVITE +1-555-555-5555
+-> invites +1-555-555-5555 to subscribe to the channel
+
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French
 
 HELLO
 -> subscribes you to announcements
 
 GOODBYE
--> unsubscribes you from announcements
-
-ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French`,
+-> unsubscribes you from announcements`,
   },
 
   // INFO
 
   info: {
     [memberTypes.ADMIN]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are an admin of this channel.
@@ -162,7 +188,7 @@ messages sent: ${channel.messageCount.broadcastIn}
 ${support}`,
 
     [memberTypes.SUBSCRIBER]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are subscribed to this channel.
@@ -175,7 +201,7 @@ subscribers: ${getSubscriberMemberships(channel).length}
 ${support}`,
 
     [memberTypes.NONE]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are not subscribed to this channel. Send HELLO to subscribe.
@@ -187,13 +213,24 @@ subscribers: ${getSubscriberMemberships(channel).length}
 ${support}`,
   },
 
+  // INVITE
+
+  invite: {
+    notSubscriber,
+    invalidNumber: input => `Whoops! Failed to issue invitation. ${invalidNumber(input)}`,
+    success: `Issued invitation.`,
+    dbError: 'Whoops! Failed to issue invitation. Please try again. :)',
+  },
+
   // JOIN
 
   join: {
-    success: channel =>
-      `Welcome to Signalboost! You are now subscribed to the [${channel.name}] channel.
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
+    inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
+
+If you already have an invite, try sending ACCEPT`,
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
     alreadyMember: `Whoops! You are already a member of this channel.`,
   },
@@ -226,15 +263,6 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     notAdmin,
   },
 
-  // RESPONSES_ON / RESPONSES_OFF
-
-  toggleResponses: {
-    success: setting => `Subscriber responses turned ${upperCase(setting)}.`,
-    notAdmin,
-    dbError: setting =>
-      `Whoops! There was an error trying to set responses to ${setting}. Please try again!`,
-  },
-
   // SET_LANGUAGE
 
   setLanguage: {
@@ -242,6 +270,23 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     
 Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
+  },
+
+  // TOGGLES (RESPONSES, VOUCHING)
+
+  toggles: {
+    responses: {
+      success: isOn => `Subscriber responses turned ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
+    },
+    vouching: {
+      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+    },
   },
 
   // TRUST
