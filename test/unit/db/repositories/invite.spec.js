@@ -8,8 +8,12 @@ import {
   adminMembershipFactory,
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
-import * as inviteRepository from '../../../../app/db/repositories/invite'
+import inviteRepository from '../../../../app/db/repositories/invite'
 import { inviteFactory } from '../../../support/factories/invite'
+import { wait } from '../../../../app/services/util'
+const {
+  expiry: { inviteExpiryInMillis },
+} = require('../../../../app/config')
 
 describe('invite repository', () => {
   const [
@@ -172,6 +176,17 @@ describe('invite repository', () => {
       it('does not delete an invite', async () => {
         expect(await db.invite.count()).to.eql(inviteCount)
       })
+    })
+  })
+
+  describe('#deleteExpired', () => {
+    it('deletes any invite older than a given expiry time', async () => {
+      await inviteRepository.deleteExpired(db)
+      expect(await db.invite.count()).to.eql(inviteCount)
+
+      await wait(inviteExpiryInMillis)
+      await inviteRepository.deleteExpired(db)
+      expect(await db.invite.count()).to.eql(inviteCount - 1)
     })
   })
 })

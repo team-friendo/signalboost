@@ -1,5 +1,10 @@
+const moment = require('moment')
+const { Op } = require('sequelize')
 const membershipRepository = require('./membership')
-const { defaultLanguage } = require('../../config')
+const {
+  defaultLanguage,
+  expiry: { inviteExpiryInMillis },
+} = require('../../config')
 
 // (Database, string, string, string) -> Promise<boolean>
 const issue = async (db, channelPhoneNumber, inviterPhoneNumber, inviteePhoneNumber) => {
@@ -25,4 +30,14 @@ const accept = (db, channelPhoneNumber, inviteePhoneNumber, language = defaultLa
 const decline = async (db, channelPhoneNumber, inviteePhoneNumber) =>
   db.invite.destroy({ where: { channelPhoneNumber, inviteePhoneNumber } })
 
-module.exports = { issue, count, accept, decline }
+// Database -> Promise<number>
+const deleteExpired = async db =>
+  db.invite.destroy({
+    where: {
+      createdAt: {
+        [Op.lte]: moment().subtract(inviteExpiryInMillis, 'ms'),
+      },
+    },
+  })
+
+module.exports = { issue, count, accept, decline, deleteExpired }
