@@ -182,8 +182,8 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
-responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-messages sent: ${channel.messageCount.broadcastIn}
+responses: ${onOrOff(channel.responsesEnabled)}
+vouching: ${onOrOff(channel.vouchingOn)}
 
 ${support}`,
 
@@ -195,7 +195,8 @@ You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
-responses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+responses: ${onOrOff(channel.responsesEnabled)}
+vouching: ${onOrOff(channel.vouchingOn)}
 subscribers: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
