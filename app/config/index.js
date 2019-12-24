@@ -1,7 +1,7 @@
 require('dotenv').config()
 const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')
-const expiryConfigsByEnv = require('./expiry')
+const jobConfigsByEnv = require('./job')
 const twilioConfigsByEnv = require('./twilio')
 const registrarConfigsByEnv = require('./registrar')
 const signalConfigsByEnv = require('./signal')
@@ -13,7 +13,7 @@ module.exports = {
   projectRoot: process.env.PROJECT_ROOT,
   defaultLanguage: process.env.DEFAULT_LANGUAGE || languages.EN,
   db: getConfig(dbConfigsByEnv),
-  expiry: getConfig(expiryConfigsByEnv),
+  job: getConfig(jobConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
   registrar: getConfig(registrarConfigsByEnv),
   signal: getConfig(signalConfigsByEnv),
