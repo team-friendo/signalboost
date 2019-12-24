@@ -131,7 +131,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
 
   help: {
     admin: `----------------------------------------------
-COMANDOS QUE ENTIENDO
+COMANDOS
 ----------------------------------------------
 
 AYUDA
@@ -140,45 +140,52 @@ AYUDA
 INFO
 -> muestra estadísticas, explica cómo funciona Signalboost
 
+----------------------------------------------
+
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-AGREGAR + 1-555-555-5555
--> convierte a + 1-555-555-5555 en administrador
+INVITAR +1-555-555-5555
+-> invita a +1-555-555-5555 a suscribirse al canal
 
-QUITAR + 1-555-555-5555
--> elimina a + 1-555-555-5555 como administrador
+AGREGAR / QUITAR + 1-555-555-5555
+-> agrega or quita + 1-555-555-5555 como admin de este canal
 
-RESPUESTAS ACTIVADAS
--> permite a los suscriptores enviar mensajes a los administradores
+RESPUESTAS ACTIVADAS / DESACTIVADAS
+-> habilita o deshabilita mensajes entrantes a los admins
 
-RESPUESTAS DESACTIVADAS
--> desactiva a los suscriptores de enviar mensajes a los administradores
-
-ADIÓS
--> le saca del canal
+ATESTIGUANDO ACTIVADA / DESACTIVADA
+-> activa o desactiva el requisito de recibir una invitación para suscribirse
 
 ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés`,
+-> cambia idiomas a Inglés o Francés
+
+ADIÓS
+-> le saca del canal`,
 
     subscriber: `----------------------------------------------
-COMANDOS QUE ENTIENDO
+COMANDOS
 ----------------------------------------------
     
 AYUDA
 -> lista de comandos
 
 INFO
--> explica cómo funciona Signalboost
+-> muestra estadísticas, explica cómo funciona Signalboost
+
+----------------------------------------------
+
+INVITAR +1-555-555-5555
+-> invita a +1-555-555-5555 a suscribirse al canal
+
+ENGLISH / FRANÇAIS
+-> cambia idiomas a Inglés o Francés
 
 HOLA
 -> para subscribirse a un canal
 
 ADIÓS
--> le da de baja
-
-ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés`,
+-> le da de baja`,
   },
 
   // INFO

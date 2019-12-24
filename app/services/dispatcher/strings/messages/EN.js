@@ -115,7 +115,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
 
   help: {
     admin: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDS
 ----------------------------------------------
 
 HELP
@@ -124,52 +124,59 @@ HELP
 INFO
 -> shows stats, explains how Signalboost works
 
+----------------------------------------------
+
 RENAME new name
 -> renames channel to "new name"
 
-ADD +1-555-555-5555
--> makes +1-555-555-5555 an admin
+INVITE +1-555-555-5555
+-> invites +1-555-555-5555 to subscribe to the channel
 
-REMOVE +1-555-555-5555
--> removes +1-555-555-5555 as an admin
+ADD / REMOVE +1-555-555-5555
+-> adds or removes +1-555-555-5555 as an admin of the channel
 
-RESPONSES ON
--> allows subscribers to send messages to admins
+RESPONSES ON / OFF
+-> enables or disables incoming messages to admins
 
-RESPONSES OFF
--> disables subscribers from sending messages to admins
-
-GOODBYE
--> leaves this channel
+VOUCHING ON / OFF
+-> enables or disables requirement to receive an invite to subscribe
 
 ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French`,
+-> switches language to Spanish or French
+
+GOODBYE
+-> leaves this channel`,
 
     subscriber: `----------------------------------------------
-COMMANDS I UNDERSTAND
+COMMANDS
 ----------------------------------------------
 
 HELP
 -> lists commands
 
 INFO
--> shows stats, explains how signalboost works
+-> shows stats, explains how Signalboost works
+
+----------------------------------------------
+
+INVITE +1-555-555-5555
+-> invites +1-555-555-5555 to subscribe to the channel
+
+ESPAÑOL / FRANÇAIS
+-> switches language to Spanish or French
 
 HELLO
 -> subscribes you to announcements
 
 GOODBYE
--> unsubscribes you from announcements
-
-ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French`,
+-> unsubscribes you from announcements`,
   },
 
   // INFO
 
   info: {
     [memberTypes.ADMIN]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are an admin of this channel.
@@ -184,7 +191,7 @@ messages sent: ${channel.messageCount.broadcastIn}
 ${support}`,
 
     [memberTypes.SUBSCRIBER]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are subscribed to this channel.
@@ -197,7 +204,7 @@ subscribers: ${getSubscriberMemberships(channel).length}
 ${support}`,
 
     [memberTypes.NONE]: channel => `---------------------------
-CHANNEL INFO:
+CHANNEL INFO
 ---------------------------
 
 You are not subscribed to this channel. Send HELLO to subscribe.

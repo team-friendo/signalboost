@@ -128,7 +128,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
 
   help: {
     admin: `----------------------------------------------
-COMMANDES QUE JE MAITRÎSE
+COMMANDES
 ----------------------------------------------
 
 AIDE
@@ -136,30 +136,29 @@ AIDE
 
 INFO
 -> affiche les stats, explique le fonctionnement de Signalboost
+
+----------------------------------------------
 
 RENOMMER nouveau nom
 -> renomme le canal au “nouveau nom”
 
-AJOUTER +1-555-555-5555
--> ajoute +1-555-555-5555 comme admin
+AJOUTER / SUPPRIMER +1-555-555-5555
+-> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de la canal
 
-SUPPRIMER +1-555-555-5555
--> supprime +1-555-555-5555 en tant qu’admin
+RÉPONSES ACTIVÉES / DÉSACTIVÉES
+-> active ou désactive les messages entrants aux administrateurs
 
-RÉPONSES ACTIVÉES
--> permet aux abonnées d’envoyer des messages aux admins
-
-RÉPONSES DÉSACTIVÉES
--> désactive la capacité des abonnées d’envoyer des messages aux admins
-
-ADIEU
--> désabonnement de la canal 
+SE PORTER GARANT ACTIVÉES / DÉSACTIVÉES
+-> active ou désactive l'exigence de recevoir une invitation à s'abonner
 
 ESPAÑOL / ENGLISH
--> change la langue au Español or Anglais`,
+-> change la langue au Español or Anglais
+
+ADIEU
+-> désabonnement de la canal`,
 
     subscriber: `----------------------------------------------
-COMMANDES QUE JE MAITRÎSE
+COMMANDES
 ----------------------------------------------
 
 AIDE
@@ -167,15 +166,20 @@ AIDE
 
 INFO
 -> affiche les stats, explique le fonctionnement de Signalboost
+
+----------------------------------------------
+
+INVITER
+-> invite + 1-555-555-5555 à s'abonner à la canal
+
+ESPAÑOL / ENGLISH
+-> change la langue au Español or Anglais
 
 ALLÔ
 -> abonnement aux avis
 
 ADIEU
--> désabonnement des avis
-
-ESPAÑOL / ENGLISH
--> change la langue au Español or Anglais`,
+-> désabonnement des avis`,
   },
 
   // INFO
