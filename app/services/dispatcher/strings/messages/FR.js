@@ -191,8 +191,8 @@ nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
-réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
-messages envoyés: ${channel.messageCount.broadcastIn}
+réponses: ${onOrOff(channel.responsesEnabled)}
+se porter garant: ${onOrOff(channel.vouchingOn)}
 
 ${support}`,
 
