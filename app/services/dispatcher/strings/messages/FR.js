@@ -1,4 +1,3 @@
-const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -15,26 +14,23 @@ const invalidNumber = phoneNumber =>
   `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
 const onOrOff = isOn => (isOn ? 'activées' : 'désactivées')
 
-const support = `----------------------------
+const support = `----------------------------------------------
 COMMENT ÇA FONCTIONNE
-----------------------------
+----------------------------------------------
 
-Un canal de Signalboost ont des administratrices-teurs et des abonnées.
+Signalboost dispose de canaux avec des administrateurs et des abonnés:
 
--> Lorsque les administratrices-teurs transmettent des messages, ces messages sont envoyés à toutes les abonnées.
--> Si activé, les abonnées peuvent envoyer des réponses que seules les administratrices-teurs peuvent lire.
--> Les abonnés ne peuvent pas envoyer des messages entre elleux. (Pas de cacophonie!)
+-> Lorsque les adminis transmettent des messages, ces messages sont envoyés à toutes les abonnées.
+-> Si activé, les abonnées peuvent envoyer des réponses que seules les admins peuvent lire.
 
-Un canal de Signalboost comprennent des commandes.
+Signalboost protège votre vie privée:
+
+-> Les usagers ne peuvent pas voir les numéros de téléphone des autres usagers. (Les flics ne peuvent pas non plus!)
+-> Signalboost ne lit pas et ne conserve aucun de vos messages.
+
+Signalboost répond aux commandes:
 
 -> AIDE affiche le menu des commandes.
--> On peut s’abonner en utilisant la commande ALLÔ, ou se désabonner avec ADIEU.
--> Envoyer le nom d’une langue (par exemple: ESPAÑOL ou ANGLAIS) changera la langue.
-
-Signalboost tente de préserver votre intimité.
-
--> Les usagers ne peuvent pas voir les numéros de téléphone des autres usagers.
--> Signalboost ne lit pas et ne conserve aucun de vos messages.
 
 Pour plus de renseignements: https://signalboost.info`
 

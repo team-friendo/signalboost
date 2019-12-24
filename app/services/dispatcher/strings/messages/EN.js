@@ -17,22 +17,19 @@ const support = `----------------------------
 HOW IT WORKS
 ----------------------------
 
-Signalboost channels have admins and subscribers.
+Signalboost has channels with admins and subscribers:
 
--> When admins send messages, they are broadcast to all subscribers.
+-> When admins send announcements, they are broadcast to all subscribers.
 -> If enabled, subscribers can send responses that only admins can read.
--> Subscribers cannot send messages to each other. (No noisy crosstalk!)
 
-Signalboost channels understand commands.
+Signalboost protects your privacy:
 
--> Sending HELP lists the commands.
--> People can subscribe by sending HELLO (or HOLA) and unsubscribe with GOODBYE (or ADIÓS).
--> Sending a language name (for example: ESPAÑOL or ENGLISH) switches languages.
+-> Users cannot see other users' phone numbers. (Cops can't either!)
+-> Signalboost does not read or store the contents of anyone's messages.
 
-Signalboost tries to preserve your privacy.
+Signalboost responds to commands:
 
--> Signalboost users cannot see each other's phone numbers.
--> Signalboost does not read or store anyone's messages.
+-> Send HELP to list them.
 
 Learn more: https://signalboost.info`
 

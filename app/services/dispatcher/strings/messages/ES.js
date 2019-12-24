@@ -1,4 +1,3 @@
-const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -14,27 +13,23 @@ const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
-const support = `
-----------------------------
+const support = `----------------------------
 CÓMO FUNCIONA
 ----------------------------
 
-Los números de Signalboost tienen administradores y suscriptores.
+Signalboost tiene canales con administradores y suscriptores.
 
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar respuestas que solo los administradores pueden leer.
--> Los suscriptores no pueden enviarse mensajes los unos a los otros. (¡Nada de charlas enredadas ruidosas!)
 
-Los números de Signalboost entienden los comandos.
+Signalboost intenta preservar su privacidad:
+
+-> Los usuarios de Signalboost no pueden ver los números de otros usuarios. (¡Los policías tampoco pueden!)
+-> Signalboost no lee ni almacena los mensajes de nadie.
+
+Signalboost responde a comandos:
 
 -> Enviar AYUDA para ver la lista de comandos.
--> Las personas pueden suscribirse enviando HOLA y darse de baja con ADIÓS.
--> Enviar el nombre de idioma (por ejemplo: ESPAÑOL o ENGLISH) para cambiar de idioma.
-
-Signalboost intenta preservar su privacidad.
-
--> Los usuarios de Signalboost no pueden ver los números de otros usuarios.
--> Signalboost no lee ni almacena los mensajes de nadie.
 
 Para más información: https://signalboost.info`
 
@@ -203,6 +198,7 @@ admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 mensajes enviados: ${channel.messageCount.broadcastIn}
+
 ${support}`,
 
     [memberTypes.SUBSCRIBER]: channel => `------------------------------
@@ -215,6 +211,7 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
+
 ${support}`,
 
     [memberTypes.NONE]: channel => `------------------------------
@@ -227,6 +224,7 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
+
 ${support}`,
   },
 
