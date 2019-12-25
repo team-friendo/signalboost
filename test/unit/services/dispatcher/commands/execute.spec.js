@@ -713,6 +713,7 @@ describe('executing commands', () => {
             command: commands.LEAVE,
             status: statuses.SUCCESS,
             message: CR.leave.success,
+            notifications: [],
           })
         })
       })
@@ -748,8 +749,9 @@ describe('executing commands', () => {
     })
 
     describe('when sender is a admin', () => {
+      const sender = admin
       let result, removeAdminStub
-      const dispatchable = { db, channel, sender: admin, sdMessage }
+      const dispatchable = { db, channel, sender, sdMessage }
 
       beforeEach(async () => {
         removeAdminStub = sinon
@@ -760,14 +762,24 @@ describe('executing commands', () => {
       afterEach(() => removeAdminStub.restore())
 
       it('removes sender as admin of channel', () => {
-        expect(removeAdminStub.getCall(0).args).to.eql([db, channel.phoneNumber, admin.phoneNumber])
+        expect(removeAdminStub.getCall(0).args).to.eql([
+          db,
+          channel.phoneNumber,
+          sender.phoneNumber,
+        ])
       })
 
-      it('returns SUCCESS status/message', () => {
+      it('returns SUCCESS status, message, and notifications', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
           status: statuses.SUCCESS,
           message: CR.leave.success,
+          notifications: [
+            ...bystanderAdminMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: messagesIn(membership.language).notifications.adminLeft,
+            })),
+          ],
         })
       })
     })

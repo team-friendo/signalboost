@@ -223,7 +223,7 @@ const removeSender = (db, channel, sender, cr) => {
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
-      notifications: removeSenderNotificationsOf(channel, sender),
+      notifications: sender.type === ADMIN ? removeSenderNotificationsOf(channel, sender) : [],
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 }

@@ -5,7 +5,6 @@ const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const channelRepository = require('../../db/repositories/channel')
-const { getAdminPhoneNumbers } = channelRepository
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
 const {
@@ -101,8 +100,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
 const handleNotifications = async ({ commandResult, dispatchable }) => {
-  const { command, status } = commandResult
-  const { db, sock, channel, sender } = dispatchable
+  const { db, sock, channel } = dispatchable
   const notifyBase = { db, sock, channel }
   // TODO(aguestuser|2019-12-08):
   //  once if/else branch logic has all been moved into new format
@@ -111,15 +109,17 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
   //    - take one recipient, *not* many recipients
   //    - call signal.sendMessage *not* broadcastMessage
   //    - don't call `format` (to add msg header) in `notify` anymore (?)
-  await Promise.all(
-    commandResult.notifications.map(notification =>
-      notify({
-        ...notifyBase,
-        notification: notification.message,
-        recipients: [notification.recipient],
-      }),
-    ),
-  )
+  if (commandResult.status === 'SUCCESS') {
+    await Promise.all(
+      commandResult.notifications.map(notification =>
+        notify({
+          ...notifyBase,
+          notification: notification.message,
+          recipients: [notification.recipient],
+        }),
+      ),
+    )
+  }
 
   if (command === commands.INVITE && status === statuses.SUCCESS) {
     // welcome new admin
