@@ -101,7 +101,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> SignalboostStatus
 const handleNotifications = async ({ commandResult, dispatchable }) => {
-  const { command, message, status } = commandResult
+  const { command, status } = commandResult
   const { db, sock, channel, sender } = dispatchable
   const notifyBase = { db, sock, channel }
   // TODO(aguestuser|2019-12-08):

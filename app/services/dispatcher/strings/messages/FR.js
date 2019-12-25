@@ -83,6 +83,8 @@ Commande AIDE pour plus de renseignements.`,
 
   signupRequestResponse:
     'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
+
+  responsesToggled: setting => `Réponses des abonnées maintenant ${upperCase(setting)}.`,
 }
 
 const commandResponses = {

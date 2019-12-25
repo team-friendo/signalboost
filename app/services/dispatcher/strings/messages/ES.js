@@ -93,6 +93,8 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
 
   signupRequestResponse:
     '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
+
+  responsesToggled: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
 }
 
 const commandResponses = {

@@ -83,6 +83,8 @@ Reply with HELP for more info.`,
 
   signupRequestResponse:
     'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
+
+  responsesToggled: setting => `Subscriber responses turned ${upperCase(setting)}.`,
 }
 
 const commandResponses = {

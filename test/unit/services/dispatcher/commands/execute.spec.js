@@ -43,6 +43,7 @@ describe('executing commands', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
+  const bystanderAdminMemberships = channel.memberships.slice(1, 4)
   const signupChannel = {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,
@@ -245,11 +246,11 @@ describe('executing commands', () => {
                 // notifications for all other bystander admins
                 {
                   recipient: channel.memberships[2].memberPhoneNumber,
-                  message: messagesIn(languages.EN).notifications.adminAdded,
+                  message: messagesIn(channel.memberships[2].language).notifications.adminAdded,
                 },
                 {
                   recipient: channel.memberships[3].memberPhoneNumber,
-                  message: messagesIn(languages.EN).notifications.adminAdded,
+                  message: messagesIn(channel.memberships[3].language).notifications.adminAdded,
                 },
               ],
             })
@@ -927,7 +928,6 @@ describe('executing commands', () => {
         })
 
         it('returns SUCCESS status, message, and notifications', () => {
-          const bystanderAdminMemberships = channel.memberships.slice(1, 4)
           expect(result).to.eql({
             command: commands.RENAME,
             status: statuses.SUCCESS,
@@ -935,7 +935,7 @@ describe('executing commands', () => {
             notifications: [
               ...bystanderAdminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: messagesIn(sender.language).notifications.channelRenamed(
+                message: messagesIn(membership.language).notifications.channelRenamed(
                   channel.name,
                   'foo',
                 ),
@@ -1038,11 +1038,17 @@ describe('executing commands', () => {
         describe('when db update succeeds', () => {
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
-          it('returns a SUCCESS status', async () => {
+          it('returns a SUCCESS status, message, and notifications', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command,
               status: statuses.SUCCESS,
               message: CR.toggles[name].success(isOn),
+              // notifications: [
+              // ...bystanderAdminMemberships.map(membership => ({
+              //   recipient: membership.memberPhoneNumber,
+              //   message: messagesIn(membership.language).notifications.responsesToggled('ON'),
+              // })),
+              // ],
             })
           })
         })

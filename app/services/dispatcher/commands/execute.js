@@ -52,6 +52,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
+  // result.notifications = result.notifications || []
   return { command, ...result }
 }
 
@@ -219,8 +220,25 @@ const removeSender = (db, channel, sender, cr) => {
   const remove =
     sender.type === ADMIN ? membershipRepository.removeAdmin : membershipRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success,
+      notifications: removeSenderNotificationsOf(channel, sender),
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
+}
+
+const removeSenderNotificationsOf = (channel, sender) => {
+  const allMemberships = getAdminMemberships(channel)
+  const bystanderMemberships = allMemberships.filter(
+    m => m.memberPhoneNumber !== sender.phoneNumber,
+  )
+  return [
+    ...bystanderMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.adminLeft,
+    })),
+  ]
 }
 
 // REMOVE
@@ -324,6 +342,8 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
     })),
   ]
 }
+
+// RESPONSES_ON / RESPONSES_OFF
 // (Database, Channel, Sender, boolean) -> Promise<CommandResult>
 const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
   const cr = messagesIn(sender.language).commandResponses.toggleResponses
@@ -339,6 +359,21 @@ const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
     .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(isOn) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
+
+const responseTogglingNotificationsOf = (channel, sender, responsesEnabled) => {
+  const allMemberships = getAdminMemberships(channel)
+  const bystanderMemberships = allMemberships.filter(
+    m => m.memberPhoneNumber !== sender.phoneNumber,
+  )
+  return [
+    ...bystanderMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(sender.language).notifications.responsesToggled(
+        responsesEnabled ? 'ON' : 'OFF',
+      ),
+    })),
+  ]
+}
 
 // SET_LANGUAGE
 
