@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { times } from 'lodash'
+import { times, values } from 'lodash'
 import { EventEmitter } from 'events'
 import { languages } from '../../../../app/constants'
 import { memberTypes } from '../../../../app/db/repositories/membership'
@@ -367,44 +367,46 @@ describe('dispatcher service', () => {
           })
         })
 
-        describe('when message is a welcome message from an admin', () => {
-          const welcomeMessage = {
-            type: 'send',
-            username: channel.phoneNumber,
-            messageBody: `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
-              genPhoneNumber(),
-              channel.phoneNumber,
-            )}`,
-            recipientNumber,
-            attachments: [],
-            expiresInSeconds: 0,
-          }
+        values(languages).forEach(language => {
+          describe(`when message is a welcome message from an admin in ${language}`, () => {
+            const welcomeMessage = {
+              type: 'send',
+              username: channel.phoneNumber,
+              messageBody: `[foo]\n\n${messagesIn(language).notifications.welcome(
+                genPhoneNumber(),
+                channel.phoneNumber,
+              )}`,
+              recipientNumber,
+              attachments: [],
+              expiresInSeconds: 0,
+            }
 
-          const failedWelcomeMessage = {
-            type: signal.messageTypes.UNTRUSTED_IDENTITY,
-            data: {
-              ...sdErrorMessage.data,
-              request: welcomeMessage,
-            },
-          }
-
-          it('attempts to trust and resend the message', async () => {
-            sock.emit('data', JSON.stringify(failedWelcomeMessage))
-            await wait(socketDelay)
-
-            expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-            expect(trustAndResendStub.getCall(0).args).to.eql([
-              db,
-              sock,
-              {
-                channelPhoneNumber: channel.phoneNumber,
-                memberPhoneNumber: recipientNumber,
-                fingerprint,
-                sdMessage: welcomeMessage,
+            const failedWelcomeMessage = {
+              type: signal.messageTypes.UNTRUSTED_IDENTITY,
+              data: {
+                ...sdErrorMessage.data,
+                request: welcomeMessage,
               },
-            ])
+            }
+
+            it('attempts to trust and resend the message', async () => {
+              sock.emit('data', JSON.stringify(failedWelcomeMessage))
+              await wait(socketDelay)
+
+              expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
+              expect(trustAndResendStub.getCall(0).args).to.eql([
+                db,
+                sock,
+                {
+                  channelPhoneNumber: channel.phoneNumber,
+                  memberPhoneNumber: recipientNumber,
+                  fingerprint,
+                  sdMessage: welcomeMessage,
+                },
+              ])
+            })
+            // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
           })
-          // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
         })
 
         describe('when message is a welcome message from a sysadmin', () => {

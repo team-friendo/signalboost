@@ -7,8 +7,8 @@ const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
-const { get, isEmpty } = require('lodash')
-const { defaultLanguage } = require('../../config')
+const { get, isEmpty, find, map, values } = require('lodash')
+const { languages } = require('../../constants')
 
 /**
  * type Dispatchable = {
@@ -182,10 +182,11 @@ const isWelcomeMessage = sdMessage => {
     .replace(headerPattern, '')
     .replace(phoneNumberPattern, '')
     .trim()
+  // produce an array of message strings in every language
+  // test if incoming message is a welcome message in each language
   return Boolean(
-    // TODO(aguestuser|2019-09-26):
-    //  properly localize this, by including more languages in the input array here!
-    [messagesIn(defaultLanguage)].find(
+    find(
+      map(values(languages), messagesIn),
       messages =>
         strippedMessage === messages.notifications.welcome('', '').trim() || //if added by another admin
         strippedMessage === messages.notifications.welcome(messages.systemName, '').trim(), //if added by sysadmin
