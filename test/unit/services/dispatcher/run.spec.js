@@ -252,22 +252,27 @@ describe('dispatcher service', () => {
       })
     })
 
-    describe('when message is a failed send attempt', () => {
+    describe('when message is an untrusted identity error notification', () => {
       const recipientNumber = genPhoneNumber()
       const messageBody = '[foo]\nbar'
+      const originalSdMessage = {
+        type: 'send',
+        username: channel.phoneNumber,
+        messageBody,
+        recipientNumber,
+        attachments: [],
+        expiresInSeconds: 0,
+      }
+      const fingerprint =
+        '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
       const sdErrorMessage = {
-        type: signal.messageTypes.ERROR,
+        type: signal.messageTypes.UNTRUSTED_IDENTITY,
         data: {
-          msg_number: 0,
-          error: true,
-          request: {
-            type: 'send',
-            username: channel.phoneNumber,
-            messageBody,
-            recipientNumber,
-            attachments: [],
-            expiresInSeconds: 0,
-          },
+          username: channel.phoneNumber,
+          number: recipientNumber,
+          fingerprint,
+          safety_number: '074940190139780110760016007890517723684588610476310913703803',
+          request: originalSdMessage,
         },
       }
 
@@ -279,10 +284,15 @@ describe('dispatcher service', () => {
           await wait(socketDelay)
 
           expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-          expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
-            channel.phoneNumber,
-            recipientNumber,
-            sdErrorMessage.data.request,
+          expect(trustAndResendStub.getCall(0).args).to.eql([
+            db,
+            sock,
+            {
+              channelPhoneNumber: channel.phoneNumber,
+              memberPhoneNumber: recipientNumber,
+              fingerprint,
+              sdMessage: originalSdMessage,
+            },
           ])
         })
 
@@ -358,24 +368,23 @@ describe('dispatcher service', () => {
         })
 
         describe('when message is a welcome message from an admin', () => {
-          const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
-            genPhoneNumber(),
-            channel.phoneNumber,
-          )}`
+          const welcomeMessage = {
+            type: 'send',
+            username: channel.phoneNumber,
+            messageBody: `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
+              genPhoneNumber(),
+              channel.phoneNumber,
+            )}`,
+            recipientNumber,
+            attachments: [],
+            expiresInSeconds: 0,
+          }
 
           const failedWelcomeMessage = {
-            type: signal.messageTypes.ERROR,
+            type: signal.messageTypes.UNTRUSTED_IDENTITY,
             data: {
-              msg_number: 0,
-              error: true,
-              request: {
-                type: 'send',
-                username: channel.phoneNumber,
-                messageBody: welcomeMessage,
-                recipientNumber,
-                attachments: [],
-                expiresInSeconds: 0,
-              },
+              ...sdErrorMessage.data,
+              request: welcomeMessage,
             },
           }
 
@@ -384,33 +393,38 @@ describe('dispatcher service', () => {
             await wait(socketDelay)
 
             expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-            expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
-              channel.phoneNumber,
-              recipientNumber,
-              failedWelcomeMessage.data.request,
+            expect(trustAndResendStub.getCall(0).args).to.eql([
+              db,
+              sock,
+              {
+                channelPhoneNumber: channel.phoneNumber,
+                memberPhoneNumber: recipientNumber,
+                fingerprint,
+                sdMessage: welcomeMessage,
+              },
             ])
           })
           // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
         })
 
         describe('when message is a welcome message from a sysadmin', () => {
-          const welcomeMessage = `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
-            messagesIn(defaultLanguage).systemName,
-            channel.phoneNumber,
-          )}`
+          const welcomeMessage = {
+            type: 'send',
+            username: channel.phoneNumber,
+            messageBody: `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
+              messagesIn(defaultLanguage).systemName,
+              channel.phoneNumber,
+            )}`,
+            recipientNumber,
+            attachments: [],
+            expiresInSeconds: 0,
+          }
+
           const failedWelcomeMessage = {
-            type: signal.messageTypes.ERROR,
+            type: signal.messageTypes.UNTRUSTED_IDENTITY,
             data: {
-              msg_number: 0,
-              error: true,
-              request: {
-                type: 'send',
-                username: channel.phoneNumber,
-                messageBody: welcomeMessage,
-                recipientNumber,
-                attachments: [],
-                expiresInSeconds: 0,
-              },
+              ...sdErrorMessage.data,
+              request: welcomeMessage,
             },
           }
 
@@ -419,10 +433,15 @@ describe('dispatcher service', () => {
             await wait(socketDelay)
 
             expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-            expect(trustAndResendStub.getCall(0).args.slice(2)).to.eql([
-              channel.phoneNumber,
-              recipientNumber,
-              failedWelcomeMessage.data.request,
+            expect(trustAndResendStub.getCall(0).args).to.eql([
+              db,
+              sock,
+              {
+                channelPhoneNumber: channel.phoneNumber,
+                memberPhoneNumber: recipientNumber,
+                fingerprint,
+                sdMessage: welcomeMessage,
+              },
             ])
           })
           // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above

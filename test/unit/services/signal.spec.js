@@ -210,76 +210,33 @@ describe('signal module', () => {
         await signal.trust(sock, channelPhoneNumber, subscriberNumber, fp3).catch(a => a)
         expect(sock.write.getCall(0).args[0]).to.eql(
           signal.signaldEncode({
-            type: messageTypes.GET_IDENTITIES,
+            type: messageTypes.TRUST,
             username: channelPhoneNumber,
             recipientNumber: subscriberNumber,
+            fingerprint: fp3,
           }),
         )
       })
-      describe('when identities can be fetched', () => {
-        it('attempts to trust most recently added untrusted fingerprint', async () => {
-          await Promise.all([
-            signal.trust(sock, channelPhoneNumber, subscriberNumber, fp3).catch(a => a),
+
+      describe('when trusted identity can be verified', () => {
+        it('returns a success object', async () => {
+          const promises = await Promise.all([
+            signal.trust(sock, channelPhoneNumber, subscriberNumber),
             emitWithDelay(10, {
               type: messageTypes.IDENTITIES,
-              data: { identities: untrustedIdentities },
+              data: { identities: trustedIdentities },
             }),
           ])
-          expect(sock.write.getCall(1).args[0]).to.eql(
-            signal.signaldEncode({
-              type: messageTypes.TRUST,
-              username: channelPhoneNumber,
-              recipientNumber: subscriberNumber,
-              fingerprint: fp3,
-            }),
-          )
-        })
+          const result = promises[0]
 
-        describe('when trusted identity can be verified', () => {
-          it('returns a success object', async () => {
-            const promises = await Promise.all([
-              signal.trust(sock, channelPhoneNumber, subscriberNumber),
-              emitWithDelay(10, {
-                type: messageTypes.IDENTITIES,
-                data: { identities: untrustedIdentities },
-              }),
-              emitWithDelay(20, {
-                type: messageTypes.IDENTITIES,
-                data: { identities: trustedIdentities },
-              }),
-            ])
-            const result = promises[0]
-
-            expect(result).to.eql({
-              status: 'SUCCESS',
-              message: signal.messages.trust.success(channelPhoneNumber, subscriberNumber),
-            })
-          })
-        })
-
-        describe('when trusted identity cannot be verified', () => {
-          it('rejects with an error object', async () => {
-            const promises = await Promise.all([
-              signal.trust(sock, channelPhoneNumber, subscriberNumber).catch(a => a),
-              emitWithDelay(10, {
-                type: messageTypes.IDENTITIES,
-                data: { identities: untrustedIdentities },
-              }),
-              emitWithDelay(20, {
-                type: messageTypes.IDENTITIES,
-                data: { identities: untrustedIdentities },
-              }),
-            ])
-            const result = promises[0]
-            expect(result).to.eql({
-              status: 'ERROR',
-              message: signal.messages.trust.error(channelPhoneNumber, subscriberNumber),
-            })
+          expect(result).to.eql({
+            status: 'SUCCESS',
+            message: signal.messages.trust.success(channelPhoneNumber, subscriberNumber),
           })
         })
       })
 
-      describe('when identities request times out', () => {
+      describe('when trusted identity cannot be verified', () => {
         it('rejects with an error object', async () => {
           const promises = await Promise.all([
             signal.trust(sock, channelPhoneNumber, subscriberNumber).catch(a => a),
@@ -289,6 +246,18 @@ describe('signal module', () => {
             }),
           ])
           const result = promises[0]
+          expect(result).to.eql({
+            status: 'ERROR',
+            message: signal.messages.trust.error(channelPhoneNumber, subscriberNumber),
+          })
+        })
+      })
+
+      describe('when identities request times out', () => {
+        it('rejects with an error object', async () => {
+          const result = await signal
+            .trust(sock, channelPhoneNumber, subscriberNumber)
+            .catch(a => a)
           expect(result).to.eql({
             status: 'ERROR',
             message: signal.messages.error.identityRequestTimeout(subscriberNumber),

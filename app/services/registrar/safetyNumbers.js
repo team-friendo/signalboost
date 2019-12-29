@@ -10,18 +10,14 @@ const {
   signal: { resendDelay },
 } = require('../../config')
 
-/**
- * type TrustResponse =
- *   status: "SUCCESS" | "ERROR"
- *   message: string,
- * }
- **/
-
-// (Database, Socket, string, string, SdMessage) -> Promise<SignalboostStatus>
-const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage) => {
-  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
-  await wait(resendDelay) // to allow key trust to take
-  await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+// (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
+const trustAndResend = async (db, sock, updatableFingerprint) => {
+  const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
+  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
+  if (sdMessage) {
+    // if there is a failed message to be re-sent, resend it, waiting a brief interval for key re-trusting to complete
+    await wait(resendDelay).then(() => signal.sendMessage(sock, memberPhoneNumber, sdMessage))
+  }
   return trustResult
 }
 

@@ -75,19 +75,21 @@ const {
 const signaldSocketPath = '/var/run/signald/signald.sock'
 
 const messageTypes = {
-  GET_IDENTITIES: 'get_identities',
   ERROR: 'unexpected_error',
+  GET_IDENTITIES: 'get_identities',
   IDENTITIES: 'identities',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
+  SET_EXPIRATION: 'set_expiration',
   SUBSCRIBE: 'subscribe',
   TRUST: 'trust',
-  VERIFY: 'verify',
-  VERIFICATION_SUCCESS: 'verification_succeeded',
+  UNTRUSTED_IDENTITY: 'untrusted_identity',
+  UNREADABLE_MESSAGE: 'unreadable_message',
   VERIFICATION_ERROR: 'verification_error',
   VERIFICATION_REQUIRED: 'verification_required',
-  SET_EXPIRATION: 'set_expiration',
+  VERIFICATION_SUCCESS: 'verification_succeeded',
+  VERIFY: 'verify',
 }
 
 const trustLevels = {
@@ -229,22 +231,14 @@ const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSec
     expiresInSeconds,
   })
 
-// (Socket, String, String) -> Promise<Array<TrustResult>>
-const trust = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  const id = await fetchMostRecentId(sock, channelPhoneNumber, memberPhoneNumber)
-  if (id.trust_level !== trustLevels.UNTRUSTED) {
-    // don't try to trust a trusted safety number, will cause signald to throw!
-    return Promise.resolve({
-      status: statuses.NOOP,
-      message: messages.trust.noop(memberPhoneNumber),
-    })
-  }
+// (Socket, String, String, String?) -> Promise<Array<TrustResult>>
+const trust = async (sock, channelPhoneNumber, memberPhoneNumber, fingerprint) => {
   // don't await this write so we can start listening sooner!
   write(sock, {
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
-    fingerprint: id.fingerprint,
+    fingerprint,
   })
   return await awaitTrustVerification(sock, channelPhoneNumber, memberPhoneNumber)
 }

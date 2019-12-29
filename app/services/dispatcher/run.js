@@ -19,6 +19,13 @@ const { defaultLanguage } = require('../../config')
  *   sdMessage: signal.OutBoundSignaldMessage,,
  * }
  *
+ *  type UpdatableFingerprint = {
+ *   channelPhoneNumber: string,
+ *   memberPhoneNumber: string,
+ *   fingerprint: string,
+ *   sdMessage: SdMessage,
+ * }
+ *
  * type Sender = {
  *   phoneNumber: string,
  *   type: 'ADMIN', 'SUBSCRIBER', 'NONE',
@@ -67,8 +74,10 @@ const listenForInboundMessages = async (db, sock, channels) =>
 
 const dispatch = async (db, sock, inboundMsg) => {
   if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
-  if (shouldUpdateSafetyNumber(inboundMsg)) return updateSafetyNumber(db, sock, inboundMsg)
-  return Promise.resolve()
+  const updatableFingerprint = detectUpdatableFingerprint(inboundMsg)
+  return updatableFingerprint
+    ? updateSafetyNumber(db, sock, updatableFingerprint)
+    : Promise.resolve()
 }
 
 const relay = async (db, sock, inboundMsg) => {
@@ -87,27 +96,25 @@ const relay = async (db, sock, inboundMsg) => {
   }
 }
 
-const updateSafetyNumber = async (db, sock, inboundMsg) => {
-  const sdMessage = inboundMsg.data.request
-  const channelPhoneNumber = sdMessage.username
-  const memberPhoneNumber = sdMessage.recipientNumber
-
-  const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber).catch(
-    logger.error,
-  )
-
-  if (recipient.type === memberTypes.NONE) return Promise.resolve()
-  if (recipient.type === memberTypes.ADMIN && !isWelcomeMessage(sdMessage)) {
-    // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
+const updateSafetyNumber = async (db, sock, updatableFingerprint) => {
+  const { channelPhoneNumber, memberPhoneNumber, sdMessage } = updatableFingerprint
+  try {
+    const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber)
+    if (recipient.type === memberTypes.NONE) return Promise.resolve()
+    if (recipient.type === memberTypes.ADMIN && !isWelcomeMessage(sdMessage)) {
+      // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
+      return safetyNumberService
+        .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
+        .then(logger.logAndReturn)
+        .catch(logger.error)
+    }
     return safetyNumberService
-      .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
+      .trustAndResend(db, sock, updatableFingerprint)
       .then(logger.logAndReturn)
       .catch(logger.error)
+  } catch (e) {
+    return logger.error(e)
   }
-  return safetyNumberService
-    .trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage)
-    .then(logger.logAndReturn)
-    .catch(logger.error)
 }
 
 /************
@@ -131,10 +138,26 @@ const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.message') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
 
-const shouldUpdateSafetyNumber = inboundMsg =>
-  inboundMsg.type === signal.messageTypes.ERROR &&
-  get(inboundMsg, 'data.request.type') === signal.messageTypes.SEND &&
-  !get(inboundMsg, 'data.message', '').includes('Rate limit')
+// SdMessage ->  UpdateableFingerprint?
+const detectUpdatableFingerprint = inboundMsg => {
+  if (inboundMsg.type === signal.messageTypes.UNTRUSTED_IDENTITY) {
+    // indicates a failed outbound message (from channel to recipient with new safety number)
+    return {
+      channelPhoneNumber: inboundMsg.data.username,
+      memberPhoneNumber: inboundMsg.data.number,
+      fingerprint: inboundMsg.data.fingerprint,
+      sdMessage: inboundMsg.data.request,
+    }
+  }
+  /**
+   * TODO(aguestuser|2019-12-28):
+   *  handle failed incoming messages here once an upstream issue around preserving fingerprints
+   *  from exceptions of type `UntrustedIdentityException` is resolved:
+   *  https://gitlab.com/thefinn93/signald/issues/4#note_265584999
+   *  (atm: signald returns a not very useful `'type': 'unreadable_message'` message)
+   **/
+  return null
+}
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!

@@ -22,7 +22,10 @@ describe('safety numbers registrar module', () => {
   const channelPhoneNumber = genPhoneNumber()
   const memberPhoneNumber = genPhoneNumber()
   const otherAdminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const fingerprint =
+    '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
   const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
+  const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage }
   let trustStub, sendMessageStub, removeAdminStub, findDeepStub
 
   beforeEach(() => {
@@ -57,8 +60,13 @@ describe('safety numbers registrar module', () => {
 
   describe('#trustAndResend', () => {
     it('attempts to trust the safety number between a member and a channel phone number', async () => {
-      await trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage).catch(a => a)
-      expect(trustStub.getCall(0).args).to.eql([sock, channelPhoneNumber, memberPhoneNumber])
+      await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
+      expect(trustStub.getCall(0).args).to.eql([
+        sock,
+        channelPhoneNumber,
+        memberPhoneNumber,
+        fingerprint,
+      ])
     })
 
     describe('when trust operation succeeds', () => {
@@ -70,9 +78,7 @@ describe('safety numbers registrar module', () => {
 
       it('attempts to resend the original message after waiting some interval', async () => {
         const start = new Date().getTime()
-        await trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage).catch(
-          a => a,
-        )
+        await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
         const elapsed = new Date().getTime() - start
 
         expect(sendMessageStub.getCall(0).args).to.eql([sock, memberPhoneNumber, sdMessage])
@@ -83,9 +89,7 @@ describe('safety numbers registrar module', () => {
         beforeEach(() => sendMessageStub.returns(Promise.resolve()))
 
         it('resolves with succes status', async () => {
-          expect(
-            await trustAndResend(db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage),
-          ).to.eql({
+          expect(await trustAndResend(db, sock, updatableFingerprint)).to.eql({
             status: statuses.SUCCESS,
             message: 'fake trust success msg',
           })
@@ -103,14 +107,7 @@ describe('safety numbers registrar module', () => {
         )
 
         it('rejects with error status', async () => {
-          const err = await trustAndResend(
-            db,
-            sock,
-            channelPhoneNumber,
-            memberPhoneNumber,
-            sdMessage,
-          ).catch(a => a)
-
+          const err = await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
           expect(err).to.eql({ status: statuses.ERROR, message: 'whoops' })
         })
       })
