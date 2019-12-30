@@ -102,6 +102,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 const handleNotifications = async ({ commandResult, dispatchable }) => {
   const { db, sock, channel } = dispatchable
   const notifyBase = { db, sock, channel }
+  const { command, status, payload } = commandResult
   // TODO(aguestuser|2019-12-08):
   //  once if/else branch logic has all been moved into new format
   //  - return this Promise.all

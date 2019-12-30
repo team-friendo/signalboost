@@ -56,7 +56,9 @@ ADD ${adminPhoneNumber}
 Until then, they will be unable to send messages to or read messages from this channel.`,
 
   hotlineMessageSent: channel =>
-    `Your message was anonymously forwarded to the admins of [${channel.name}]. Include your phone number if you want admins to respond to you individually.
+    `Your message was anonymously forwarded to the admins of [${
+      channel.name
+    }]. Include your phone number if you want admins to respond to you individually.
 
 Send HELP to list valid commands.`,
 
@@ -76,15 +78,28 @@ People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} a
 
 Reply with HELP for more info.`,
 
-  toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
-
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
 
   signupRequestResponse:
     'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
 
-  responsesToggled: setting => `Subscriber responses turned ${upperCase(setting)}.`,
+  toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
+
+  toggles: {
+    responses: {
+      success: isOn => `Subscriber responses turned ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
+    },
+    vouching: {
+      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+    },
+  },
 }
 
 const commandResponses = {

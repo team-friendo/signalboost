@@ -341,7 +341,7 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
             [newAdminPhoneNumber],
-            sdMessageOf(channel, `[${channel.name}]\n${welcome}`),
+            sdMessageOf(channel, welcome),
           ])
         })
 
@@ -350,7 +350,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(index + 1).args).to.eql([
               sock,
               [bystanderPhoneNumbers[index]],
-              sdMessageOf(channel, `[${channel.name}]\n${notificationMessage}`),
+              sdMessageOf(channel, notificationMessage),
             ])
           })
         })
@@ -377,7 +377,7 @@ describe('messenger service', () => {
               notifications: [
                 {
                   recipient: removedPhoneNumber,
-                  message: `${messages.notifications.toRemovedAdmin}`,
+                  message: messages.notifications.toRemovedAdmin,
                 },
                 {
                   recipient: bystanderPhoneNumbers[0],
@@ -396,7 +396,7 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
             [removedPhoneNumber],
-            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.toRemovedAdmin}`),
+            sdMessageOf(channel, messages.notifications.toRemovedAdmin),
           ])
         })
 
@@ -404,12 +404,12 @@ describe('messenger service', () => {
           expect(broadcastMessageStub.getCall(1).args).to.eql([
             sock,
             [bystanderPhoneNumbers[0]],
-            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.adminRemoved}`),
+            sdMessageOf(channel, messages.notifications.adminRemoved),
           ])
           expect(broadcastMessageStub.getCall(2).args).to.eql([
             sock,
             [bystanderPhoneNumbers[1]],
-            sdMessageOf(channel, `[${channel.name}]\n${messages.notifications.adminRemoved}`),
+            sdMessageOf(channel, messages.notifications.adminRemoved),
           ])
         })
       })
@@ -450,85 +450,7 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(index).args).to.eql([
               sock,
               [phoneNumber],
-              sdMessageOf(channel, `[${channel.name}]\n${notificationMessage}`),
-            ])
-          })
-        })
-      })
-
-      describe('for RESPONSES_ON command', () => {
-        const sdMessage = `${commands.RESPONSES_ON}`
-        const commandResponse = messages.commandResponses.toggleResponses.success
-        const notificationMessage = `${messages.notifications.responsesToggled('ON')}`
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: adminSender,
-              sdMessage,
-            },
-            commandResult: {
-              command: commands.RESPONSES_ON,
-              status: statuses.SUCCESS,
-              message: commandResponse,
-              notifications: [
-                ...bystanderPhoneNumbers.map(phoneNumber => ({
-                  recipient: phoneNumber,
-                  message: notificationMessage,
-                })),
-              ],
-            },
-          })
-        })
-
-        it('notifies all admins except sender', () => {
-          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(broadcastMessageStub.getCall(index).args).to.eql([
-              sock,
-              [phoneNumber],
-              sdMessageOf(channel, `[${channel.name}]\n${notificationMessage}`),
-            ])
-          })
-        })
-      })
-
-      describe('for RESPONSES_OFF command', () => {
-        const sdMessage = `${commands.RESPONSES_OFF}`
-        const commandResponse = messages.commandResponses.toggleResponses.success
-        const notificationMessage = `${messages.notifications.responsesToggled('OFF')}`
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: adminSender,
-              sdMessage,
-            },
-            commandResult: {
-              command: commands.RESPONSES_OFF,
-              status: statuses.SUCCESS,
-              message: commandResponse,
-              notifications: [
-                ...bystanderPhoneNumbers.map(phoneNumber => ({
-                  recipient: phoneNumber,
-                  message: notificationMessage,
-                })),
-              ],
-            },
-          })
-        })
-
-        it('notifies all admins except sender', () => {
-          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(broadcastMessageStub.getCall(index).args).to.eql([
-              sock,
-              [phoneNumber],
-              sdMessageOf(channel, `[${channel.name}]\n${notificationMessage}`),
+              sdMessageOf(channel, notificationMessage),
             ])
           })
         })
@@ -567,15 +489,13 @@ describe('messenger service', () => {
             expect(broadcastMessageStub.getCall(index).args).to.eql([
               sock,
               [phoneNumber],
-              sdMessageOf(channel, `[${channel.name}]\n${notificationMessage}`),
+              sdMessageOf(channel, notificationMessage),
             ])
           })
         })
       })
-    })
-  })
 
-      describe('for an invitee', () => {
+      describe('for an INVITE command', () => {
         const inviteePhoneNumber = genPhoneNumber()
         const sdMessage = sdMessageOf(channel, `${commands.invite} ${inviteePhoneNumber}`)
         const dispatchable = { db, sock, channel, sender: adminSender, sdMessage }

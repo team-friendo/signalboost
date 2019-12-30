@@ -30,6 +30,11 @@ const {
 
 describe('executing commands', () => {
   const db = {}
+  const admin = {
+    phoneNumber: '+11111111111',
+    type: memberTypes.ADMIN,
+    language: languages.EN,
+  }
   const channel = {
     name: 'foobar',
     phoneNumber: '+13333333333',
@@ -48,11 +53,6 @@ describe('executing commands', () => {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,
     publications: channel.publications,
-  }
-  const admin = {
-    phoneNumber: '+11111111111',
-    type: memberTypes.ADMIN,
-    language: languages.EN,
   }
   const subscriber = {
     phoneNumber: '+12222222222',
@@ -1048,6 +1048,10 @@ describe('executing commands', () => {
         })
 
         describe('when db update succeeds', () => {
+          const notificationMsg = messagesIn(sender.language).notifications.toggles[name].success(
+            isOn,
+          )
+
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
           it('returns a SUCCESS status, message, and notifications', async () => {
@@ -1055,12 +1059,12 @@ describe('executing commands', () => {
               command,
               status: statuses.SUCCESS,
               message: CR.toggles[name].success(isOn),
-              // notifications: [
-              // ...bystanderAdminMemberships.map(membership => ({
-              //   recipient: membership.memberPhoneNumber,
-              //   message: messagesIn(membership.language).notifications.responsesToggled('ON'),
-              // })),
-              // ],
+              notifications: [
+                ...bystanderAdminMemberships.map(membership => ({
+                  recipient: membership.memberPhoneNumber,
+                  message: notificationMsg,
+                })),
+              ],
             })
           })
         })

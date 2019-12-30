@@ -38,6 +38,12 @@ const notifications = {
   adminAdded: (commandIssuer, addedAdmin) =>
     `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
 
+  adminRemoved: "Un administrateur vient d'être supprimé.",
+
+  adminLeft: 'Un administrateur vient de quitter la chaîne',
+
+  channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
+
   hotlineMessageSent: channel =>
     `Votre message a été transmis de manière anonyme aux admins de [${
       channel.name
@@ -84,7 +90,23 @@ Commande AIDE pour plus de renseignements.`,
   signupRequestResponse:
     'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
 
-  responsesToggled: setting => `Réponses des abonnées maintenant ${upperCase(setting)}.`,
+  toRemovedAdmin:
+    "Vous venez d'être supprimé en tant qu'administrateur de cette chaîne. Envoyez BONJOUR pour vous réinscrire.",
+
+  toggles: {
+    responses: {
+      success: isOn => `Subscriber responses turned ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
+    },
+    vouching: {
+      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+    },
+  },
 }
 
 const commandResponses = {

@@ -38,8 +38,14 @@ const notifications = {
 
   adminRemoved: 'Se acaba de eliminar un administrador.',
 
+  adminLeft: 'Un administrador dejó el canal.',
+
+  channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
+
   hotlineMessageSent: channel =>
-    `Su mensaje se envió de forma anónima a los admins de [${channel.name}]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+    `Su mensaje se envió de forma anónima a los admins de [${
+      channel.name
+    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
 
 Enviar AYUDA para enumerar comandos válidos.
 `,
@@ -52,10 +58,6 @@ Enviar AYUDA para enumerar comandos válidos.
   inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
   
   Responda con ACEPTAR o RECHAZAR.`,
-
-  adminLeft: 'Un administrador dejó el canal.',
-
-  channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -79,9 +81,6 @@ Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumbe
 
 Responda con AYUDA para más información.`,
 
-  toRemovedAdmin:
-    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
-
   noop: '¡Lo siento! Eso no es un comando!',
 
   unauthorized: `¡Lo siento! No entiendo eso.
@@ -94,7 +93,23 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
   signupRequestResponse:
     '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
 
-  responsesToggled: setting => `Respuestas del suscriptor configurado en ${upperCase(setting)}.`,
+  toRemovedAdmin:
+    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+
+  toggles: {
+    responses: {
+      success: isOn => `Subscriber responses turned ${onOrOff(isOn)}.`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
+    },
+    vouching: {
+      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      notAdmin,
+      dbError: isOn =>
+        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+    },
+  },
 }
 
 const commandResponses = {
@@ -106,7 +121,9 @@ const commandResponses = {
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowThreshold: (channel, required, actual) =>
-      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${
+        channel.name
+      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar tu invitación. ¡Inténtalo de nuevo!',
   },
 

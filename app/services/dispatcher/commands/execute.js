@@ -52,7 +52,6 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
-  // result.notifications = result.notifications || []
   return { command, ...result }
 }
 
@@ -314,19 +313,6 @@ const renameChannel = (db, channel, newChannelName, sender, cr) =>
       }),
     )
 
-// ON / OFF TOGGLES FOR RESPONSES, VOUCHING
-
-// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOn = (db, channel, sender, toggle) =>
-  _maybeToggleSetting(db, channel, sender, toggle, true)
-
-// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOff = (db, channel, sender, toggle) =>
-  _maybeToggleSetting(db, channel, sender, toggle, false)
-
-// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
-const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
-  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
 const renameNotificationsOf = (channel, newChannelName, sender) => {
   const allMemberships = getAdminMemberships(channel)
   const bystanderMemberships = allMemberships.filter(
@@ -343,10 +329,19 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
   ]
 }
 
-// RESPONSES_ON / RESPONSES_OFF
-// (Database, Channel, Sender, boolean) -> Promise<CommandResult>
-const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
-  const cr = messagesIn(sender.language).commandResponses.toggleResponses
+// ON / OFF TOGGLES FOR RESPONSES, VOUCHING
+
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOn = (db, channel, sender, toggle) =>
+  _maybeToggleSetting(db, channel, sender, toggle, true)
+
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOff = (db, channel, sender, toggle) =>
+  _maybeToggleSetting(db, channel, sender, toggle, false)
+
+// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
+const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
+  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
   if (!(sender.type === ADMIN)) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
@@ -357,20 +352,25 @@ const maybeToggleResponses = async (db, channel, sender, responsesEnabled) => {
 const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
   channelRepository
     .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(isOn) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(isOn),
+      notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
 
-const responseTogglingNotificationsOf = (channel, sender, responsesEnabled) => {
+const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const allMemberships = getAdminMemberships(channel)
   const bystanderMemberships = allMemberships.filter(
     m => m.memberPhoneNumber !== sender.phoneNumber,
   )
+  const notificationMsg = messagesIn(sender.language).notifications.toggles[toggle.name].success(
+    isOn,
+  )
   return [
     ...bystanderMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: messagesIn(sender.language).notifications.responsesToggled(
-        responsesEnabled ? 'ON' : 'OFF',
-      ),
+      message: notificationMsg,
     })),
   ]
 }
