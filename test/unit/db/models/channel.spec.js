@@ -5,6 +5,9 @@ import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
 import { inviteFactory } from '../../../support/factories/invite'
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../../../app/config')
 
 describe('channel model', () => {
   let db, channel
@@ -65,6 +68,7 @@ describe('channel model', () => {
       expect(channel.description).to.be.a('string')
       expect(channel.responsesEnabled).to.be.a('boolean')
       expect(channel.vouchingOn).to.be.a('boolean')
+      expect(channel.messageExpiryTime).to.be.a('number')
       expect(channel.createdAt).to.be.a('Date')
       expect(channel.updatedAt).to.be.a('Date')
     })
@@ -72,6 +76,7 @@ describe('channel model', () => {
     it('sets correct defaults', () => {
       expect(channel.responsesEnabled).to.equal(false)
       expect(channel.vouchingOn).to.equal(false)
+      expect(channel.expiryTime).to.equal(defaultMessageExpiryTime)
     })
   })
 

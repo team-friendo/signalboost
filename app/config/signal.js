@@ -11,6 +11,7 @@ const defaults = {
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
   signupPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER,
+  defaultMessageExpiryTime: 60 * 60 * 24, // 1 week
 }
 
 const test = {

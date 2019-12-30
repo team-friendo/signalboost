@@ -1,4 +1,7 @@
 const { isPhoneNumber } = require('../validations/phoneNumber')
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../config')
 
 const channelOf = (sequelize, DataTypes) => {
   const channel = sequelize.define('channel', {
@@ -17,6 +20,11 @@ const channelOf = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: '',
+    },
+    messageExpiryTime: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: defaultMessageExpiryTime,
     },
     responsesEnabled: {
       type: DataTypes.BOOLEAN,
