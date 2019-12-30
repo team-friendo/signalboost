@@ -102,7 +102,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 const handleNotifications = async ({ commandResult, dispatchable }) => {
   const { db, sock, channel } = dispatchable
   const notifyBase = { db, sock, channel }
-  const { command, status, payload } = commandResult
+  const { status, notifications } = commandResult
   // TODO(aguestuser|2019-12-08):
   //  once if/else branch logic has all been moved into new format
   //  - return this Promise.all
@@ -110,9 +110,9 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
   //    - take one recipient, *not* many recipients
   //    - call signal.sendMessage *not* broadcastMessage
   //    - don't call `format` (to add msg header) in `notify` anymore (?)
-  if (commandResult.status === 'SUCCESS') {
+  if (status === 'SUCCESS') {
     await Promise.all(
-      commandResult.notifications.map(notification =>
+      notifications.map(notification =>
         notify({
           ...notifyBase,
           notification: notification.message,
@@ -120,15 +120,6 @@ const handleNotifications = async ({ commandResult, dispatchable }) => {
         }),
       ),
     )
-  }
-
-  if (command === commands.INVITE && status === statuses.SUCCESS) {
-    // welcome new admin
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
-      recipients: [payload],
-    })
   }
 }
 

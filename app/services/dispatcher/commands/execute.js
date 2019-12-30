@@ -184,11 +184,24 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
     )
     // We don't return an "already invited" error here to defend side-channel attacks (as above)
     return inviteWasCreated
-      ? { status: statuses.SUCCESS, message: cr.success, payload: inviteePhoneNumber }
+      ? {
+          status: statuses.SUCCESS,
+          message: cr.success,
+          notifications: inviteNotificationsOf(channel, inviteePhoneNumber),
+        }
       : { status: statuses.ERROR, message: cr.success }
   } catch (e) {
     return { status: statuses.ERROR, message: cr.dbError }
   }
+}
+
+const inviteNotificationsOf = (channel, inviteePhoneNumber) => {
+  return [
+    {
+      recipient: inviteePhoneNumber,
+      message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+    },
+  ]
 }
 
 // JOIN

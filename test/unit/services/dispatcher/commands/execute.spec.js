@@ -534,12 +534,19 @@ describe('executing commands', () => {
                 expect(issueInviteStub.callCount).to.eql(1)
               })
 
-              it('returns SUCCESS and payload for notifying invitee', () => {
+              it('returns SUCCESS, message, and notification for invitee', () => {
                 expect(res).to.eql({
                   command: commands.INVITE,
                   status: statuses.SUCCESS,
                   message: CR.invite.success,
-                  payload: inviteePhoneNumber,
+                  notifications: [
+                    {
+                      recipient: inviteePhoneNumber,
+                      message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                        vouchingChannel.name,
+                      ),
+                    },
+                  ],
                 })
               })
             })
@@ -564,7 +571,14 @@ describe('executing commands', () => {
             command: commands.INVITE,
             status: statuses.SUCCESS,
             message: CR.invite.success,
-            payload: inviteePhoneNumber,
+            notifications: [
+              {
+                recipient: inviteePhoneNumber,
+                message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                  vouchingChannel.name,
+                ),
+              },
+            ],
           })
         })
       })
@@ -579,7 +593,12 @@ describe('executing commands', () => {
           command: commands.INVITE,
           status: statuses.SUCCESS,
           message: CR.invite.success,
-          payload: inviteePhoneNumber,
+          notifications: [
+            {
+              recipient: inviteePhoneNumber,
+              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+            },
+          ],
         })
       })
     })

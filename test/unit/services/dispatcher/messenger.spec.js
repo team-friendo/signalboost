@@ -503,7 +503,12 @@ describe('messenger service', () => {
           command: commands.INVITE,
           status: statuses.SUCCESS,
           message: messages.commandResponses.invite.success,
-          payload: inviteePhoneNumber,
+          notifications: [
+            {
+              recipient: inviteePhoneNumber,
+              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+            },
+          ],
         }
 
         it('sends an invite notification to the invitee', async () => {
