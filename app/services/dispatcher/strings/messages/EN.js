@@ -293,6 +293,8 @@ ADD ${adminPhoneNumber}
 
 Until then, they will be unable to send messages to or read messages from this channel.`,
 
+  expiryUpdateNotAuthorized: 'Sorry, only admins can set the disappearing message timer.',
+
   hotlineMessageSent: channel =>
     `Your message was anonymously forwarded to the admins of [${
       channel.name

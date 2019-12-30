@@ -1,44 +1,48 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { times, values } from 'lodash'
+import { times, values, merge } from 'lodash'
 import { EventEmitter } from 'events'
 import { languages } from '../../../../app/constants'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import { run } from '../../../../app/services/dispatcher/run'
 import channelRepository from '../../../../app/db/repositories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
-import signal from '../../../../app/services/signal'
+import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
 import messenger from '../../../../app/services/dispatcher/messenger'
 import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import logger from '../../../../app/services/dispatcher/logger'
-import { channelFactory } from '../../../support/factories/channel'
+import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../../../app/config')
 
 describe('dispatcher service', () => {
   const db = {}
   const sock = new EventEmitter().setMaxListeners(30)
-  const channels = times(2, () => ({ ...channelFactory(), publications: [], subscriptions: [] }))
+  const channels = times(2, deepChannelFactory)
   const channel = channels[0]
-  const sender = genPhoneNumber()
-  const authenticatedSender = {
-    phoneNumber: sender,
+  const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
+  const subscriberPhoneNumber = channels[0].memberships[2].memberPhoneNumber
+  const sender = {
+    phoneNumber: adminPhoneNumber,
     language: languages.EN,
     type: memberTypes.ADMIN,
   }
   const sdInMessage = {
-    type: 'message',
+    type: messageTypes.MESSAGE,
     data: {
       username: channel.phoneNumber,
-      source: sender,
+      source: adminPhoneNumber,
       dataMessage: {
         timestamp: new Date().getTime(),
         message: 'foo',
-        expiresInSeconds: 0,
+        expiresInSeconds: defaultMessageExpiryTime,
         attachments: [],
       },
     },
@@ -225,7 +229,11 @@ describe('dispatcher service', () => {
       })
 
       it('retrieves permissions for the message sender', () => {
-        expect(resolveMemberTypeStub.getCall(0).args).to.eql([db, channel.phoneNumber, sender])
+        expect(resolveMemberTypeStub.getCall(0).args).to.eql([
+          db,
+          channel.phoneNumber,
+          adminPhoneNumber,
+        ])
       })
 
       it('processes any commands in the message', () => {
@@ -233,7 +241,7 @@ describe('dispatcher service', () => {
           db,
           sock,
           channel,
-          sender: authenticatedSender,
+          sender,
           sdMessage: sdOutMessage,
         })
       })
@@ -245,10 +253,51 @@ describe('dispatcher service', () => {
             db,
             sock,
             channel,
-            sender: authenticatedSender,
+            sender,
             sdMessage: sdOutMessage,
           },
         })
+      })
+    })
+
+    describe('and the recipient is a random person (why would this ever happen?)', () => {
+      beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.NONE))
+
+      it('drops the message', async () => {
+        sock.emit('data', JSON.stringify(sdInMessage))
+        await wait(socketDelay)
+
+        expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+        expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
+      })
+    })
+
+    describe('when message is a rate limit notification', () => {
+      beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
+
+      const rateLimitWarning = {
+        type: signal.messageTypes.ERROR,
+        data: {
+          msg_number: 0,
+          error: true,
+          message: 'Rate limit exceeded: you are in big trouble!',
+          request: {
+            type: 'send',
+            username: channel.phoneNumber,
+            messageBody: 'hiya',
+            recipientNumber: genPhoneNumber(),
+            attachments: [],
+            expiresInSeconds: 0,
+          },
+        },
+      }
+
+      it('drops the message', async () => {
+        sock.emit('data', JSON.stringify(rateLimitWarning))
+        await wait(socketDelay)
+
+        expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+        expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
       })
     })
 
@@ -411,7 +460,7 @@ describe('dispatcher service', () => {
 
         describe('when message is a welcome message from a sysadmin', () => {
           const welcomeMessage = {
-            type: 'send',
+            type: messageTypes.SEND,
             username: channel.phoneNumber,
             messageBody: `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
               messagesIn(defaultLanguage).systemName,
@@ -449,45 +498,84 @@ describe('dispatcher service', () => {
           // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
         })
       })
+    })
 
-      describe('when message is a rate limit notification', () => {
-        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
-
-        const rateLimitWarning = {
-          type: signal.messageTypes.ERROR,
-          data: {
-            msg_number: 0,
-            error: true,
-            message: 'Rate limit exceeded: you are in big trouble!',
-            request: {
-              type: 'send',
-              username: channel.phoneNumber,
-              messageBody,
-              recipientNumber,
-              attachments: [],
-              expiresInSeconds: 0,
-            },
+    describe('when the message is a expiry time update', () => {
+      const expiryUpdate = merge({}, sdInMessage, {
+        data: {
+          dataMessage: {
+            expiresInSeconds: 60,
+            messageBody: '',
           },
-        }
+        },
+      })
 
-        it('drops the message', async () => {
-          sock.emit('data', JSON.stringify(rateLimitWarning))
+      let updateStub, setExpirationStub, sendMessageStub
+      beforeEach(() => {
+        updateStub = sinon.stub(channelRepository, 'update')
+        setExpirationStub = sinon.stub(signal, 'setExpiration')
+        sendMessageStub = sinon.stub(signal, 'sendMessage')
+      })
+      afterEach(() => {
+        updateStub.restore()
+        setExpirationStub.restore()
+        sendMessageStub.restore()
+      })
+
+      describe('from an admin', () => {
+        beforeEach(async () => {
+          sock.emit('data', JSON.stringify(expiryUpdate))
           await wait(socketDelay)
+        })
 
-          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
+        it('stores the new expiry time', () => {
+          expect(updateStub.getCall(0).args).to.eql([
+            db,
+            channel.phoneNumber,
+            { messageExpiryTime: 60 },
+          ])
+        })
+
+        it('updates the expiry time between the channel and every channel member', () => {
+          channel.memberships.forEach((membership, i) =>
+            expect(setExpirationStub.getCall(i).args).to.eql([
+              sock,
+              channel.phoneNumber,
+              membership.memberPhoneNumber,
+              60,
+            ]),
+          )
         })
       })
 
-      describe('and the recipient is a random person (why would this ever happen?)', () => {
-        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.NONE))
-
-        it('drops the message', async () => {
-          sock.emit('data', JSON.stringify(sdInMessage))
+      describe('from a subscriber', () => {
+        const subscriberExpiryUpdate = merge({}, expiryUpdate, {
+          data: { source: subscriberPhoneNumber },
+        })
+        beforeEach(async () => {
+          resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
+          sock.emit('data', JSON.stringify(subscriberExpiryUpdate))
           await wait(socketDelay)
+        })
 
-          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
+        it('sets the expiry time btw/ channel and sender back to original expiry time', () => {
+          expect(setExpirationStub.getCall(0).args).to.eql([
+            sock,
+            channel.phoneNumber,
+            subscriberPhoneNumber,
+            defaultMessageExpiryTime,
+          ])
+        })
+        
+        it('notifies the subscriber that their change was overriden', () => {
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            sock,
+            subscriberPhoneNumber,
+            sdMessageOf(
+              channel,
+              messagesIn(defaultLanguage).notifications.expiryUpdateNotAuthorized,
+            ),
+          ])
         })
       })
     })

@@ -290,6 +290,9 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
+  expiryUpdateNotAuthorized:
+    'Lo sentimos, solo los admins pueden configurar el temporizador de mensajes desaparecidos',
+
   hotlineMessageSent: channel =>
     `Su mensaje se envió de forma anónima a los admins de [${
       channel.name

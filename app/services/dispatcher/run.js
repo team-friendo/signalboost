@@ -1,4 +1,6 @@
+const { wait } = require('../util')
 const signal = require('../signal')
+const { sdMessageOf } = signal
 const channelRepository = require('./../../db/repositories/channel')
 const membershipRepository = require('../../db/repositories/membership')
 const { memberTypes } = membershipRepository
@@ -7,8 +9,11 @@ const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
-const { get, isEmpty, find, map, values } = require('lodash')
+const { get, isEmpty, find, map, values, isNumber } = require('lodash')
 const { languages } = require('../../constants')
+const {
+  signal: { expiryUpdateDelay },
+} = require('../../config')
 
 /**
  * type Dispatchable = {
@@ -64,7 +69,7 @@ const run = async (db, sock) => {
 
 const listenForInboundMessages = async (db, sock, channels) =>
   Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
-    sock.on('data', inboundMsg => dispatch(db, sock, parseMessage(inboundMsg)))
+    sock.on('data', inboundMsg => dispatch(db, sock, parseMessage(inboundMsg)).catch(logger.error))
     return listening
   })
 
@@ -73,21 +78,28 @@ const listenForInboundMessages = async (db, sock, channels) =>
  *******************/
 
 const dispatch = async (db, sock, inboundMsg) => {
-  if (shouldRelay(inboundMsg)) return relay(db, sock, inboundMsg)
-  const updatableFingerprint = detectUpdatableFingerprint(inboundMsg)
-  return updatableFingerprint
-    ? updateSafetyNumber(db, sock, updatableFingerprint)
-    : Promise.resolve()
+  // retrieve db info we need for dispatching...
+  const [channel, sender] = _isMessage(inboundMsg)
+    ? await Promise.all([
+        channelRepository.findDeep(db, inboundMsg.data.username),
+        classifyPhoneNumber(db, inboundMsg.data.username, inboundMsg.data.source),
+      ])
+    : []
+
+  // dispatch system-created messages
+  const newFingerprint = detectUpdatableFingerprint(inboundMsg)
+  if (newFingerprint) return updateFingerprint(db, sock, newFingerprint)
+
+  const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
+  if (isNumber(newExpiryTime)) return updateExpiryTime(db, sock, sender, channel, newExpiryTime)
+
+  // dispatch user-created messages
+  if (shouldRelay(inboundMsg)) return relay(db, sock, channel, sender, inboundMsg)
 }
 
-const relay = async (db, sock, inboundMsg) => {
-  const channelPhoneNumber = inboundMsg.data.username
+const relay = async (db, sock, channel, sender, inboundMsg) => {
   const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
   try {
-    const [channel, sender] = await Promise.all([
-      channelRepository.findDeep(db, channelPhoneNumber),
-      classifyPhoneNumber(db, channelPhoneNumber, inboundMsg.data.source),
-    ])
     const dispatchable = { db, sock, channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
     return messenger.dispatch({ dispatchable, commandResult })
@@ -96,7 +108,7 @@ const relay = async (db, sock, inboundMsg) => {
   }
 }
 
-const updateSafetyNumber = async (db, sock, updatableFingerprint) => {
+const updateFingerprint = async (db, sock, updatableFingerprint) => {
   const { channelPhoneNumber, memberPhoneNumber, sdMessage } = updatableFingerprint
   try {
     const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber)
@@ -117,9 +129,36 @@ const updateSafetyNumber = async (db, sock, updatableFingerprint) => {
   }
 }
 
-/************
- * HELPERS
- ***********/
+// (Database, Socket, Channel, number) -> Promise<void>
+const updateExpiryTime = async (db, sock, sender, channel, messageExpiryTime) => {
+  if (sender.type !== memberTypes.ADMIN) {
+    // override a disappearing message time set by a subscriber or rando
+    await signal.setExpiration(
+      sock,
+      channel.phoneNumber,
+      sender.phoneNumber,
+      channel.messageExpiryTime,
+    )
+    // wait 200ms for less jarring UX for sender
+    await wait(expiryUpdateDelay)
+    return signal.sendMessage(
+      sock,
+      sender.phoneNumber,
+      sdMessageOf(channel, messagesIn(sender.language).notifications.expiryUpdateNotAuthorized),
+    )
+  }
+  // enforce a disappearing message time set by an admin
+  await channelRepository.update(db, channel.phoneNumber, { messageExpiryTime })
+  return Promise.all(
+    channel.memberships.map(m =>
+      signal.setExpiration(sock, channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
+    ),
+  )
+}
+
+/******************
+ * MESSAGE PARSING
+ ******************/
 
 const parseMessage = inboundMsg => {
   try {
@@ -137,6 +176,13 @@ const _isMessage = inboundMsg =>
 const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.message') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
+
+// (SdMessage, Channel) -> UpdatableExpiryTime?
+const detectUpdatableExpiryTime = (inboundMsg, channel) =>
+  _isMessage(inboundMsg) &&
+  inboundMsg.data.dataMessage.expiresInSeconds !== channel.messageExpiryTime
+    ? inboundMsg.data.dataMessage.expiresInSeconds
+    : null
 
 // SdMessage ->  UpdateableFingerprint?
 const detectUpdatableFingerprint = inboundMsg => {

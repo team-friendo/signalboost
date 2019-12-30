@@ -289,6 +289,9 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Canal renommée à partir de "${oldName}" to "${newName}."`,
 
+  expiryUpdateNotAuthorized:
+    "Désolé, seuls les admins peuvent régler l'horloge des messages disparus.",
+
   hotlineMessageSent: channel =>
     `Votre message a été transmis de manière anonyme aux admins de [${
       channel.name

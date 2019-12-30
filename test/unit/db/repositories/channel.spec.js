@@ -202,12 +202,13 @@ describe('channel repository', () => {
 
     it('fetches all attributes and nested resources for each channel', () => {
       channels.forEach(ch => {
-        expect(keys(ch.toJSON())).to.have.eql([
+        expect(keys(ch.toJSON())).to.have.deep.members([
           'phoneNumber',
           'name',
           'description',
           'responsesEnabled',
           'vouchingOn',
+          'messageExpiryTime',
           'createdAt',
           'updatedAt',
           'memberships',

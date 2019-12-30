@@ -1,15 +1,17 @@
 import { adminMembershipFactory, subscriberMembershipFactory } from './membership'
-
-const { times } = require('lodash')
+import { times } from 'lodash'
 import { messageCountFactory } from './messageCount'
-import { welcomeFactory } from './welcome'
 import { memberTypes } from '../../../app/db/repositories/membership'
-import { inviteFactory } from "./invite"
-const { genPhoneNumber } = require('./phoneNumber')
+import { inviteFactory } from './invite'
+import { genPhoneNumber } from './phoneNumber'
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../../app/config')
 
 export const channelFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
   name: '#red-alert',
+  messageExpiryTime: defaultMessageExpiryTime,
   description: 'the food channel',
   ...attrs,
 })

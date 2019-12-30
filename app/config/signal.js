@@ -12,6 +12,7 @@ const defaults = {
   welcomeDelay: 3000, // 3 sec
   signupPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER,
   defaultMessageExpiryTime: 60 * 60 * 24, // 1 week
+  expiryUpdateDelay: 200, // 200 millis
 }
 
 const test = {
@@ -26,6 +27,7 @@ const test = {
   signaldStartupTime: 1, // 1 milli
   welcomeDelay: 0.0001, // .0001 millis
   signupPhoneNumber: '+15555555555',
+  expiryUpdateDelay: 1, // 1 milli
 }
 
 const development = {
