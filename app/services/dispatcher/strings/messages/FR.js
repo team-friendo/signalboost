@@ -314,6 +314,16 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
+  
+  // SET_DESCRIPTION
+
+  description: {
+    success: (oldDesc, newDesc) =>
+      `Change me - La descripción del canal cambió de "${oldDesc}" a "${newDesc}".`,
+    dbError: (oldDesc, newDesc) =>
+      `Change me Whoops! Se produjo un error al cambiar la descripción del canal de "${oldDesc}" a "${newDesc}". ¡Inténtalo de nuevo!`,
+    notAdmin,
+  },
 }
 
 const prefixes = {
