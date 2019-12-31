@@ -4,7 +4,7 @@ const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
-const { getAdminMemberships } = require('../../../db/repositories/channel')
+const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
@@ -128,11 +128,8 @@ const addAdmin = async (db, channel, sender, newAdminPhoneNumber, cr) => {
 }
 
 const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
-  const allMemberships = getAdminMemberships(channel)
   const newAdminPhoneNumber = newAdminMembership.memberPhoneNumber
-  const bystanderMemberships = allMemberships.filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber,
-  )
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return [
     {
       recipient: newAdminPhoneNumber,
@@ -141,7 +138,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
         channel.phoneNumber,
       )}`,
     },
-    ...bystanderMemberships.map(membership => ({
+    ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: messagesIn(membership.language).notifications.adminAdded,
     })),
@@ -251,16 +248,11 @@ const removeSender = (db, channel, sender, cr) => {
 }
 
 const removeSenderNotificationsOf = (channel, sender) => {
-  const allMemberships = getAdminMemberships(channel)
-  const bystanderMemberships = allMemberships.filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber,
-  )
-  return [
-    ...bystanderMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications.adminLeft,
-    })),
-  ]
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.adminLeft,
+  }))
 }
 
 // REMOVE
@@ -295,17 +287,14 @@ const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
 }
 
 const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
-  const allMemberships = getAdminMemberships(channel)
-  const removedMembership = allMemberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
-  const bystanderMemberships = allMemberships.filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber && m.memberPhoneNumber !== adminPhoneNumber,
-  )
+  const removedMember = channel.memberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, adminPhoneNumber])
   return [
     {
       recipient: adminPhoneNumber,
-      message: `${messagesIn(removedMembership.language).notifications.toRemovedAdmin}`,
+      message: `${messagesIn(removedMember.language).notifications.toRemovedAdmin}`,
     },
-    ...bystanderMemberships.map(membership => ({
+    ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: messagesIn(membership.language).notifications.adminRemoved,
     })),
@@ -337,19 +326,11 @@ const renameChannel = (db, channel, newChannelName, sender, cr) =>
     )
 
 const renameNotificationsOf = (channel, newChannelName, sender) => {
-  const allMemberships = getAdminMemberships(channel)
-  const bystanderMemberships = allMemberships.filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber,
-  )
-  return [
-    ...bystanderMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: messagesIn(sender.language).notifications.channelRenamed(
-        channel.name,
-        newChannelName,
-      ),
-    })),
-  ]
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.channelRenamed(channel.name, newChannelName),
+  }))
 }
 
 // ON / OFF TOGGLES FOR RESPONSES, VOUCHING
@@ -383,22 +364,11 @@ const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
 
 const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
-  // TODO(aguestuser|2019-12-30):
-  //  - we repeat this `allMemberships` -> `bystanderMemberships` bit quite a lot (4 times?)
-  //  - seems like an argument for a `getBystanderMemberships(channel, sender)` helper in `repositories/memberhip`?
-  const allMemberships = getAdminMemberships(channel)
-  const bystanderMemberships = allMemberships.filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber,
-  )
-  const notificationMsg = messagesIn(sender.language).notifications.toggles[toggle.name].success(
-    isOn,
-  )
-  return [
-    ...bystanderMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: notificationMsg,
-    })),
-  ]
+  const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return recipients.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
+  }))
 }
 
 // SET_LANGUAGE
