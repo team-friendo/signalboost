@@ -109,27 +109,34 @@ const maybeAddAdmin = async (db, channel, sender, phoneNumberInput) => {
   return addAdmin(db, channel, sender, phoneNumber, cr)
 }
 
-const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
-  membershipRepository
-    .addAdmin(db, channel.phoneNumber, newAdminNumber)
-    .then(() => ({
+const addAdmin = async (db, channel, sender, newAdminPhoneNumber, cr) => {
+  try {
+    const newAdminMembership = await membershipRepository.addAdmin(
+      db,
+      channel.phoneNumber,
+      newAdminPhoneNumber,
+    )
+    return {
       status: statuses.SUCCESS,
-      message: cr.success(newAdminNumber),
-      notifications: addAdminNotificationsOf(channel, newAdminNumber, sender),
-    }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
+      message: cr.success(newAdminPhoneNumber),
+      notifications: addAdminNotificationsOf(channel, newAdminMembership, sender),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError(newAdminPhoneNumber) }
+  }
+}
 
-const addAdminNotificationsOf = (channel, phoneNumberToAddAsAdmin, sender) => {
+const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
   const allMemberships = getAdminMemberships(channel)
-  const addedMembership = allMemberships.find(m => m.memberPhoneNumber === phoneNumberToAddAsAdmin)
+  const newAdminPhoneNumber = newAdminMembership.memberPhoneNumber
   const bystanderMemberships = allMemberships.filter(
-    m =>
-      m.memberPhoneNumber !== sender.phoneNumber && m.memberPhoneNumber !== phoneNumberToAddAsAdmin,
+    m => m.memberPhoneNumber !== sender.phoneNumber,
   )
   return [
     {
-      recipient: phoneNumberToAddAsAdmin,
-      message: `${messagesIn(addedMembership.language).notifications.welcome(
+      recipient: newAdminPhoneNumber,
+      message: `${messagesIn(newAdminMembership.language).notifications.welcome(
         sender.phoneNumber,
         channel.phoneNumber,
       )}`,
