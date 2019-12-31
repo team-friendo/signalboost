@@ -3,7 +3,7 @@ const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
-const { commands, statuses } = require('./commands/constants')
+const { statuses } = require('./commands/constants')
 const channelRepository = require('../../db/repositories/channel')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
@@ -98,29 +98,32 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
   return handleNotifications({ commandResult, dispatchable })
 }
 
-// ({ CommandResult, Dispatchable )) -> SignalboostStatus
-const handleNotifications = async ({ commandResult, dispatchable }) => {
+// ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
+const handleNotifications = ({ commandResult, dispatchable }) => {
   const { db, sock, channel } = dispatchable
-  const notifyBase = { db, sock, channel }
   const { status, notifications } = commandResult
   // TODO(aguestuser|2019-12-08):
   //  once if/else branch logic has all been moved into new format
-  //  - return this Promise.all
   //  - update the signature of `notify` to
   //    - take one recipient, *not* many recipients
   //    - call signal.sendMessage *not* broadcastMessage
   //    - don't call `format` (to add msg header) in `notify` anymore (?)
-  if (status === 'SUCCESS') {
-    await Promise.all(
-      notifications.map(notification =>
-        notify({
-          ...notifyBase,
-          notification: notification.message,
-          recipients: [notification.recipient],
-        }),
-      ),
-    )
-  }
+  return status === statuses.SUCCESS
+    ? Promise.all(
+        // TODO(aguestuser|2019-12-30):
+        //  return empty arrays from notification-less commands
+        //  to make this defensive `|| []` unnecessary
+        (notifications || []).map(notification =>
+          notify({
+            db,
+            sock,
+            channel,
+            notification: notification.message,
+            recipients: [notification.recipient],
+          }),
+        ),
+      )
+    : Promise.resolve([])
 }
 
 /************

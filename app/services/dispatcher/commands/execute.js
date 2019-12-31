@@ -235,6 +235,9 @@ const removeSender = (db, channel, sender, cr) => {
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
+      // TODO NITPICK(aguestuser|2019-12-30): we could tuck this ternary into `removeSenderNotificationsOf`?
+      //  since `sender` is an argument to that function, we can easily check `sender.type` there, and it makes
+      //  this bit a bit less noisy. (by "pushing the complexity down")
       notifications: sender.type === ADMIN ? removeSenderNotificationsOf(channel, sender) : [],
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
@@ -373,6 +376,9 @@ const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
 
 const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
+  // TODO(aguestuser|2019-12-30):
+  //  - we repeat this `allMemberships` -> `bystanderMemberships` bit quite a lot (4 times?)
+  //  - seems like an argument for a `getBystanderMemberships(channel, sender)` helper in `repositories/memberhip`?
   const allMemberships = getAdminMemberships(channel)
   const bystanderMemberships = allMemberships.filter(
     m => m.memberPhoneNumber !== sender.phoneNumber,

@@ -158,7 +158,7 @@ describe('messenger service', () => {
         })
 
         it('it increments the command count for the channel', () => {
-          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 4])
+          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 6])
         })
       })
 
