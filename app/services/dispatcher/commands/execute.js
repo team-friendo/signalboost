@@ -49,6 +49,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
+    [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
   return { command, ...result }
 }
@@ -276,6 +277,23 @@ const setLanguage = (db, sender, language) => {
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }
+
+// SET_DESCRIPTION
+
+const maybeSetDescription = async (db, channel, sender, newDescription) => {
+  const cr = messagesIn(sender.language).commandResponses.description
+  return sender.type === ADMIN
+    ? setDescription(db, channel, newDescription, cr)
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
+}
+
+const setDescription = (db, channel, newDescription, cr) =>
+  channelRepository
+    .update(db, channel.phoneNumber, { description: newDesc })
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.description, newName) }))
+    .catch(err =>
+      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.description, newName) }),
+    )
 
 // NOOP
 const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
