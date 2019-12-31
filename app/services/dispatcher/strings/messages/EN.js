@@ -301,6 +301,16 @@ Send HELP to list commands I understand.`,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
+  
+  // SET_DESCRIPTION
+
+  description: {
+    success: (oldDesc, newDesc) =>
+      `Channel description changed from "${oldDesc}" to "${newDesc}".`,
+    dbError: (oldDesc, newDesc) =>
+      `Whoops! There was an error changing the channel description from  "${oldDesc}" to "${newDesc}". Try again!`,
+    notAdmin,
+  },
 }
 
 const prefixes = {
