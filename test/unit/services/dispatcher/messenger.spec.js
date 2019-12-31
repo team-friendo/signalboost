@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { times } from 'lodash'
+import { times, values } from 'lodash'
 import { languages } from '../../../../app/constants'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import signal from '../../../../app/services/signal'
@@ -27,6 +27,7 @@ describe('messenger service', () => {
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
+    messageExpiryTime: 60,
     memberships: [
       { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[0] },
       { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[1] },
@@ -108,7 +109,8 @@ describe('messenger service', () => {
       broadcastMessageStub,
       sendMessageStub,
       incrementCommandCountStub,
-      incrementBroadcastCountStub
+      incrementBroadcastCountStub,
+      setExpirationStub
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
@@ -121,6 +123,7 @@ describe('messenger service', () => {
       incrementBroadcastCountStub = sinon
         .stub(messageCountRepository, 'incrementBroadcastCount')
         .returns(Promise.resolve())
+      setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
     })
 
     afterEach(() => {
@@ -130,9 +133,10 @@ describe('messenger service', () => {
       sendMessageStub.restore()
       incrementCommandCountStub.restore()
       incrementBroadcastCountStub.restore()
+      setExpirationStub.restore()
     })
 
-    describe('a hotline message', () => {
+    describe('a broadcast message', () => {
       describe('when sender is a admin', () => {
         beforeEach(
           async () =>
@@ -316,7 +320,7 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when command includes notification(s)', () => {
+    describe('when command result includes notification(s)', () => {
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
@@ -342,6 +346,111 @@ describe('messenger service', () => {
             phoneNumber,
             sdMessageOf(channel, 'foobar'),
           ])
+        })
+      })
+    })
+
+    describe('modifying expiry times', () => {
+      describe('for successful commands originating from a new user', () => {
+        ;[commands.JOIN, commands.ACCEPT].forEach(command => {
+          it(`updates the expiry time between the channel and the sender of a ${command} command`, async () => {
+            await messenger.dispatch({
+              dispatchable: {
+                db,
+                sock,
+                channel,
+                sender: randomSender,
+                sdMessage: sdMessageOf(channel, command),
+              },
+              commandResult: {
+                command,
+                status: statuses.SUCCESS,
+                message: 'fake welcome!',
+              },
+            })
+            expect(setExpirationStub.getCall(0).args).to.eql([
+              sock,
+              channel.phoneNumber,
+              randomSender.phoneNumber,
+              channel.messageExpiryTime,
+            ])
+          })
+        })
+      })
+
+      describe('for successful commands that add a new user', () => {
+        const rawNewMemberPhoneNumber = '+1 (222) 333-4444'
+        const parsedNewMemberPhoneNumber = '+12223334444'
+        ;[commands.ADD, commands.INVITE].forEach(command => {
+          it(`updates the expiry time between the channel and the sender of a ${command} command`, async () => {
+            await messenger.dispatch({
+              dispatchable: {
+                db,
+                sock,
+                channel,
+                sender: randomSender,
+                sdMessage: sdMessageOf(channel, `${command} ${rawNewMemberPhoneNumber}`),
+              },
+              commandResult: {
+                command,
+                status: statuses.SUCCESS,
+                message: 'fake welcome!',
+              },
+            })
+            expect(setExpirationStub.getCall(0).args).to.eql([
+              sock,
+              channel.phoneNumber,
+              parsedNewMemberPhoneNumber,
+              channel.messageExpiryTime,
+            ])
+          })
+        })
+      })
+
+      describe('for all other successful commands', () => {
+        const cs = values(commands).filter(
+          command =>
+            ![commands.JOIN, commands.ACCEPT, commands.ADD, commands.INVITE].includes(command),
+        )
+
+        cs.forEach(command => {
+          it(`does not update expiry times in response to a ${command} command`, async () => {
+            await messenger.dispatch({
+              dispatchable: {
+                db,
+                sock,
+                channel,
+                sender: randomSender,
+                sdMessage: sdMessageOf(channel, command),
+              },
+              commandResult: {
+                command,
+                status: statuses.SUCCESS,
+                message: 'fake command response message!',
+              },
+            })
+            expect(setExpirationStub.callCount).to.eql(0)
+          })
+        })
+      })
+
+      describe('for an unsuccessful command', () => {
+        it('does not modify any expiry times', async () => {
+          await messenger.dispatch({
+            dispatchable: {
+              db,
+              sock,
+              channel,
+              sender: randomSender,
+              sdMessage: sdMessageOf(channel, commands.JOIN),
+            },
+            commandResult: {
+              command: commands.JOIN,
+              status: statuses.ERROR,
+              message: 'fake command response error message!',
+            },
+          })
+          expect(setExpirationStub.callCount).to.eql(0)
         })
       })
     })

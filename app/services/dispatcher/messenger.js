@@ -1,15 +1,16 @@
+const validator = require('../../db/validations/phoneNumber')
 const signal = require('../signal')
+const channelRepository = require('../../db/repositories/channel')
+const messageCountRepository = require('../../db/repositories/messageCount')
+const { parseExecutable } = require('./commands/parse')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
-const { statuses } = require('./commands/constants')
-const channelRepository = require('../../db/repositories/channel')
-const messageCountRepository = require('../../db/repositories/messageCount')
-const { wait } = require('../util')
+const { commands, statuses } = require('./commands/constants')
 const {
   defaultLanguage,
-  signal: { signupPhoneNumber, resendDelay },
+  signal: { signupPhoneNumber },
 } = require('../../config')
 
 /**
@@ -105,8 +106,9 @@ const handleHotlineMessage = dispatchable => {
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, status } = commandResult
+  await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   await respond({ ...dispatchable, message, command, status })
-  await wait(resendDelay)
+  // await wait(resendDelay) // not sure we need this...(if so it would be for re-adding admins after safety # change)
   return handleNotifications({ commandResult, dispatchable })
 }
 
@@ -123,6 +125,47 @@ const handleNotifications = ({ commandResult, dispatchable }) => {
 /************
  * SENDING
  ************/
+
+// ({ CommandResult, Dispatchable }) -> Promise<void>
+const setExpiryTimeForNewUsers = ({ commandResult, dispatchable }) => {
+  // for newly added users, make sure disappearing message timer
+  // is set to channel's default expiry time
+  const { command, status, payload } = commandResult
+  const { sock, channel, sender } = dispatchable
+
+  if (status !== statuses.SUCCESS) return Promise.resolve()
+  switch (command) {
+    case commands.ADD:
+    case commands.INVITE:
+      /*eslint no-case-declarations: 0*/
+
+      // we know we can always successfully parse an e164-formatted phone number from JOIN or ACCEPT
+      // here because the command succeeded (if parsing failed, the command would have failed)
+
+      // TODO(aguestuser|2019-12-31):
+      //  eventually, we want to pull phone number validation into `commands.parse`
+      //  at which point, the payload will already be e164-formatted and we can make the above a one-liner
+
+      const rawPhoneNumber = parseExecutable(dispatchable.sdMessage.messageBody).payload
+      const newMemberPhoneNumber = validator.parseValidPhoneNumber(rawPhoneNumber).phoneNumber
+      return signal.setExpiration(
+        sock,
+        channel.phoneNumber,
+        newMemberPhoneNumber,
+        channel.messageExpiryTime,
+      )
+    case commands.JOIN:
+    case commands.ACCEPT:
+      return signal.setExpiration(
+        sock,
+        channel.phoneNumber,
+        sender.phoneNumber,
+        channel.messageExpiryTime,
+      )
+    default:
+      return Promise.resolve()
+  }
+}
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
