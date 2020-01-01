@@ -188,6 +188,7 @@ INFOS CANAL
 Vous êtes admin de cette canal.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
@@ -203,8 +204,10 @@ INFOS CANAL
 Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+se porter garant: ${onOrOff(channel.vouchingOn)}
 abonnées: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
@@ -216,6 +219,7 @@ INFOS CANAL
 Vous n'êtes pas abonné à cette canal. Envoyez AIDE pour vous abonner.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 abonnées: ${getSubscriberMemberships(channel).length}
 

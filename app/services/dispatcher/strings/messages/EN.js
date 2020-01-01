@@ -182,6 +182,7 @@ CHANNEL INFO
 You are an admin of this channel.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
@@ -212,6 +213,7 @@ CHANNEL INFO
 You are not subscribed to this channel. Send HELLO to subscribe.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 
