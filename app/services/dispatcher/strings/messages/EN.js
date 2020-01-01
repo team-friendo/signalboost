@@ -311,8 +311,8 @@ Send HELP to list valid commands.`,
 
 Please respond with ACCEPT or DECLINE.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) => `
-You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
 
 People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 

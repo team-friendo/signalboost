@@ -323,10 +323,8 @@ AGREGAR ${adminPhoneNumber}
   
 Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
 
-  welcome: (
-    addingAdmin,
-    channelPhoneNumber,
-  ) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
 
 Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
 

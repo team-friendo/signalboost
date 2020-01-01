@@ -324,8 +324,8 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
   unauthorized:
     'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
-  welcome: (addingAdmin, channelPhoneNumber) => `
-Vous êtes maintenant un
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Vous êtes maintenant un
  admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
 
 On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
