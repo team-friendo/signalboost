@@ -52,7 +52,8 @@ const create = phoneNumber =>
       phoneNumber,
       smsMethod: 'POST',
       smsUrl,
-      friendlyName: `signal-boost number ${uuid()}`,
+      // Including the current environment in the registered number's friendlyName makes it simpler to clean up unused numbers originally intended for development.
+      friendlyName: `${process.env.NODE_ENV} signal-boost number ${uuid()}`,
     })
     .catch(err => {
       // TODO(@zig): add prometheus error count here (counter: twilio_purchase_error)

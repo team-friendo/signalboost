@@ -113,6 +113,11 @@ describe('phone number services - purchase module', () => {
         expect(twilioCreateStub.getCall(0).args[0].phoneNumber).to.eql(fakePhoneNumber)
       })
 
+      it("includes the current environment in the registered number's friendlyName", async () => {
+        await purchase({db})
+        expect(twilioCreateStub.getCall(0).args[0].friendlyName).to.match(/^test+ .*$/)
+      })
+
       describe('when twilio number registration succeeds', () => {
         beforeEach(() =>
           twilioCreateStub.returns(
