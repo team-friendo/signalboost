@@ -287,13 +287,14 @@ const maybeSetDescription = async (db, channel, sender, newDescription) => {
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const setDescription = (db, channel, newDescription, cr) =>
-  channelRepository
-    .update(db, channel.phoneNumber, { description: newDesc })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.description, newName) }))
+const setDescription = (db, channel, newDescription, cr) => {
+  return channelRepository
+    .update(db, channel.phoneNumber, { description: newDescription })
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.description, newDescription) })) 
     .catch(err =>
-      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.description, newName) }),
+      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.description, newDescription) }),
     )
+}
 
 // NOOP
 const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
