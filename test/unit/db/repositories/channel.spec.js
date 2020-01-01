@@ -1,12 +1,11 @@
 import chai, { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
-import { channelFactory } from '../../../support/factories/channel'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { initDb } from '../../../../app/db/index'
-import { pick, keys, times } from 'lodash'
+import { omit, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
-import { memberTypes } from '../../../../app/db/repositories/membership'
 import { deepChannelAttrs } from '../../../support/factories/channel'
 
 describe('channel repository', () => {
@@ -22,6 +21,8 @@ describe('channel repository', () => {
       db.channel.destroy({ where: {}, force: true }),
       db.membership.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
+      db.invite.destroy({ where: {}, force: true }),
+      db.deauthorization.destroy({ where: {}, force: true }),
     ])
   })
   after(async () => await db.sequelize.close())
@@ -122,95 +123,72 @@ describe('channel repository', () => {
   })
 
   describe('#findDeep', () => {
-    const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
-    const subscriberNumbers = [genPhoneNumber(), genPhoneNumber()]
+    const attrs = deepChannelFactory()
     let result
 
     beforeEach(async () => {
-      channel = await db.channel.create(
-        {
-          ...channelFactory(),
-          memberships: [
-            ...subscriberNumbers.map(num => ({
-              type: memberTypes.SUBSCRIBER,
-              memberPhoneNumber: num,
-            })),
-            ...adminNumbers.map(num => ({ type: memberTypes.ADMIN, memberPhoneNumber: num })),
-          ],
-        },
-        {
-          include: [{ model: db.membership }],
-        },
-      )
+      channel = await db.channel.create(attrs, {
+        include: [
+          { model: db.deauthorization },
+          { model: db.invite },
+          { model: db.membership },
+          { model: db.messageCount },
+        ],
+      })
       result = await channelRepository.findDeep(db, channel.phoneNumber)
     })
 
-    it('retrieves a channel', () => {
+    it('retrieves all of a  channels nested attrs', () => {
       expect(result.phoneNumber).to.eql(channel.phoneNumber)
       expect(result.name).to.eql(channel.name)
     })
 
-    it("retrieves the channel's memberships", () => {
-      expect(
-        result.memberships.map(a =>
-          pick(a.get(), ['type', 'channelPhoneNumber', 'memberPhoneNumber']),
-        ),
-      ).to.have.deep.members([
-        {
-          type: memberTypes.ADMIN,
-          channelPhoneNumber: channel.phoneNumber,
-          memberPhoneNumber: adminNumbers[0],
-        },
-        {
-          type: memberTypes.ADMIN,
-          channelPhoneNumber: channel.phoneNumber,
-          memberPhoneNumber: adminNumbers[1],
-        },
-        {
-          type: memberTypes.SUBSCRIBER,
-          channelPhoneNumber: channel.phoneNumber,
-          memberPhoneNumber: subscriberNumbers[0],
-        },
-        {
-          type: memberTypes.SUBSCRIBER,
-          channelPhoneNumber: channel.phoneNumber,
-          memberPhoneNumber: subscriberNumbers[1],
-        },
-      ])
+    it('retrieves all of a channels nested attrs', () => {
+      expect(result.memberships.length).to.eql(attrs.memberships.length)
+      expect(result.invites.length).to.eql(attrs.invites.length)
+      expect(result.deauthorizations.length).to.eql(attrs.deauthorizations.length)
+      expect(omit(result.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
+        attrs.messageCount,
+      )
     })
   })
 
   describe('#findAllDeep', () => {
+    const attrs = [deepChannelFactory(), deepChannelFactory()]
     let channels
     beforeEach(async () => {
       await Promise.all(
-        deepChannelAttrs.map(ch =>
-          db.channel.create(
-            { ...ch, phoneNumber: genPhoneNumber() },
-            {
-              include: [{ model: db.membership }, { model: db.messageCount }],
-            },
-          ),
+        attrs.map(x =>
+          db.channel.create(x, {
+            include: [
+              { model: db.deauthorization },
+              { model: db.invite },
+              { model: db.membership },
+              { model: db.messageCount },
+            ],
+          }),
         ),
       )
       channels = await channelRepository.findAllDeep(db)
     })
 
-    it('fetches all channels', () => {
-      expect(channels.length).to.eql(deepChannelAttrs.length)
+    it('fetches each channel', () => {
+      expect(channels.length).to.eql(attrs.length)
     })
 
     it('fetches all attributes and nested resources for each channel', () => {
       channels.forEach(ch => {
-        expect(keys(ch.toJSON())).to.have.deep.members([
+        expect(keys(ch.toJSON())).to.eql([
           'phoneNumber',
           'name',
+          'messageExpiryTime',
           'description',
           'responsesEnabled',
           'vouchingOn',
-          'messageExpiryTime',
           'createdAt',
           'updatedAt',
+          'deauthorizations',
+          'invites',
           'memberships',
           'messageCount',
         ])
@@ -218,7 +196,11 @@ describe('channel repository', () => {
     })
 
     it('orders channels by broadcast out message count (descending)', () => {
-      expect(channels[0].messageCount.broadcastOut).to.eql(100)
+      const bigger = Math.max(
+        attrs[0].messageCount.broadcastOut,
+        attrs[1].messageCount.broadcastOut,
+      )
+      expect(channels[0].messageCount.broadcastOut).to.eql(bigger)
     })
   })
 })

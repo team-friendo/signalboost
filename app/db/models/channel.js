@@ -44,6 +44,11 @@ const channelOf = (sequelize, DataTypes) => {
       onDelete: 'cascade',
     })
 
+    channel.hasMany(db.deauthorization, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
+
     channel.hasMany(db.invite, {
       hooks: true,
       onDelete: 'cascade',
