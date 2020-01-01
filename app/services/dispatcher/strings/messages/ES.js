@@ -193,6 +193,7 @@ INFO DEL CANAL
 Usted es admin de este canal.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
@@ -208,8 +209,10 @@ INFO DEL CANAL
 Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+atestiguando: ${onOrOff(channel.vouchingOn)}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
@@ -221,6 +224,7 @@ INFO DEL CANAL
 Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
