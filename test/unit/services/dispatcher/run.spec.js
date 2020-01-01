@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { times, values, merge } from 'lodash'
+import { times, merge } from 'lodash'
 import { EventEmitter } from 'events'
 import { languages } from '../../../../app/constants'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import { run } from '../../../../app/services/dispatcher/run'
-import channelRepository from '../../../../app/db/repositories/channel'
+import channelRepository, { getAllAdminsExcept } from '../../../../app/db/repositories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
 import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
@@ -18,8 +18,9 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
+import { adminMembershipFactory } from '../../../support/factories/membership'
 const {
-  signal: { defaultMessageExpiryTime },
+  signal: { defaultMessageExpiryTime, signupPhoneNumber },
 } = require('../../../../app/config')
 
 describe('dispatcher service', () => {
@@ -60,7 +61,8 @@ describe('dispatcher service', () => {
     processCommandStub,
     dispatchStub,
     logAndReturnSpy,
-    logErrorSpy
+    logErrorSpy,
+    sendMessageStub
 
   beforeEach(async () => {
     // initialization stubs --v
@@ -99,6 +101,8 @@ describe('dispatcher service', () => {
 
     dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
 
+    sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
+
     logAndReturnSpy = sinon.spy(logger, 'logAndReturn')
     logErrorSpy = sinon.spy(logger, 'error')
     // onReceivedMessage stubs --^
@@ -118,6 +122,7 @@ describe('dispatcher service', () => {
     subscribeStub.restore()
     logAndReturnSpy.restore()
     logErrorSpy.restore()
+    sendMessageStub.restore()
   })
 
   describe('handling an incoming message', () => {
@@ -301,6 +306,57 @@ describe('dispatcher service', () => {
       })
     })
 
+    describe('when message is a rate limit error notification', () => {
+      const signupChannel = deepChannelFactory({
+        phoneNumber: signupPhoneNumber,
+        memberships: ['EN', 'ES', 'FR'].map(language =>
+          adminMembershipFactory({ channelPhoneNumber: signupPhoneNumber, language }),
+        ),
+      })
+      const recipientNumber = genPhoneNumber()
+      const messageBody = '[foo]\nbar'
+      const originalSdMessage = {
+        type: 'send',
+        username: channel.phoneNumber,
+        messageBody,
+        recipientNumber,
+        attachments: [],
+        expiresInSeconds: 0,
+      }
+      const sdErrorMessage = {
+        type: signal.messageTypes.ERROR,
+        data: {
+          msg_number: 0,
+          error: true,
+          message: 'Rate limit exceeded: 413',
+          username: channel.phoneNumber,
+          request: originalSdMessage,
+        },
+      }
+
+      beforeEach(async () => {
+        findDeepStub.returns(Promise.resolve(signupChannel))
+        sock.emit('data', JSON.stringify(sdErrorMessage))
+        await wait(2 * socketDelay)
+      })
+
+      it('notifies admins of the support channel', () => {
+        signupChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
+          expect(sendMessageStub.getCall(idx).args).to.eql([
+            sock,
+            memberPhoneNumber,
+            sdMessageOf(
+              { phoneNumber: signupPhoneNumber },
+              messagesIn(language).notifications.rateLimitOccurred(
+                channel.phoneNumber,
+                recipientNumber,
+              ),
+            ),
+          ]),
+        )
+      })
+    })
+
     describe('when message is an untrusted identity error notification', () => {
       const recipientNumber = genPhoneNumber()
       const messageBody = '[foo]\nbar'
@@ -376,126 +432,44 @@ describe('dispatcher service', () => {
       describe('when intended recipient is an admin', () => {
         beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.ADMIN))
 
-        describe('when message is not a welcome message', () => {
-          it('attempts to deauthorize the admin', async () => {
+        it('attempts to deauthorize the admin', async () => {
+          sock.emit('data', JSON.stringify(sdErrorMessage))
+          await wait(socketDelay)
+
+          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
+          expect(deauthorizeStub.getCall(0).args[2]).to.eql({
+            channelPhoneNumber: channel.phoneNumber,
+            memberPhoneNumber: recipientNumber,
+            fingerprint,
+            sdMessage: originalSdMessage,
+          })
+        })
+
+        describe('when deauth succeeds', () => {
+          // this is the default stub
+          it('logs the success', async () => {
             sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
-            expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-            expect(deauthorizeStub.getCall(0).args.slice(2)).to.eql([
-              channel.phoneNumber,
-              recipientNumber,
+            expect(logAndReturnSpy.getCall(0).args).to.eql([
+              {
+                status: 'SUCCESS',
+                message: 'fake deauthorize success',
+              },
             ])
           })
-
-          describe('when deauth succeeds', () => {
-            // this is the default stub
-            it('logs the success', async () => {
-              sock.emit('data', JSON.stringify(sdErrorMessage))
-              await wait(socketDelay)
-
-              expect(logAndReturnSpy.getCall(0).args).to.eql([
-                {
-                  status: 'SUCCESS',
-                  message: 'fake deauthorize success',
-                },
-              ])
-            })
-          })
-
-          describe('when deauth fails', () => {
-            const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
-            beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
-
-            it('logs the failure', async () => {
-              sock.emit('data', JSON.stringify(sdErrorMessage))
-              await wait(socketDelay)
-
-              expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
-            })
-          })
         })
 
-        values(languages).forEach(language => {
-          describe(`when message is a welcome message from an admin in ${language}`, () => {
-            const welcomeMessage = {
-              type: 'send',
-              username: channel.phoneNumber,
-              messageBody: `[foo]\n\n${messagesIn(language).notifications.welcome(
-                genPhoneNumber(),
-                channel.phoneNumber,
-              )}`,
-              recipientNumber,
-              attachments: [],
-              expiresInSeconds: 0,
-            }
+        describe('when deauth fails', () => {
+          const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
+          beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
 
-            const failedWelcomeMessage = {
-              type: signal.messageTypes.UNTRUSTED_IDENTITY,
-              data: {
-                ...sdErrorMessage.data,
-                request: welcomeMessage,
-              },
-            }
-
-            it('attempts to trust and resend the message', async () => {
-              sock.emit('data', JSON.stringify(failedWelcomeMessage))
-              await wait(socketDelay)
-
-              expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-              expect(trustAndResendStub.getCall(0).args).to.eql([
-                db,
-                sock,
-                {
-                  channelPhoneNumber: channel.phoneNumber,
-                  memberPhoneNumber: recipientNumber,
-                  fingerprint,
-                  sdMessage: welcomeMessage,
-                },
-              ])
-            })
-            // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
-          })
-        })
-
-        describe('when message is a welcome message from a sysadmin', () => {
-          const welcomeMessage = {
-            type: messageTypes.SEND,
-            username: channel.phoneNumber,
-            messageBody: `[foo]\n\n${messagesIn(defaultLanguage).notifications.welcome(
-              messagesIn(defaultLanguage).systemName,
-              channel.phoneNumber,
-            )}`,
-            recipientNumber,
-            attachments: [],
-            expiresInSeconds: 0,
-          }
-
-          const failedWelcomeMessage = {
-            type: signal.messageTypes.UNTRUSTED_IDENTITY,
-            data: {
-              ...sdErrorMessage.data,
-              request: welcomeMessage,
-            },
-          }
-
-          it('attempts to trust and resend the message', async () => {
-            sock.emit('data', JSON.stringify(failedWelcomeMessage))
+          it('logs the failure', async () => {
+            sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
-            expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-            expect(trustAndResendStub.getCall(0).args).to.eql([
-              db,
-              sock,
-              {
-                channelPhoneNumber: channel.phoneNumber,
-                memberPhoneNumber: recipientNumber,
-                fingerprint,
-                sdMessage: welcomeMessage,
-              },
-            ])
+            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
           })
-          // NOTE: we omit testing trust/resend success/failure as that is exhaustively tested above
         })
       })
     })
@@ -510,16 +484,14 @@ describe('dispatcher service', () => {
         },
       })
 
-      let updateStub, setExpirationStub, sendMessageStub
+      let updateStub, setExpirationStub
       beforeEach(() => {
         updateStub = sinon.stub(channelRepository, 'update')
         setExpirationStub = sinon.stub(signal, 'setExpiration')
-        sendMessageStub = sinon.stub(signal, 'sendMessage')
       })
       afterEach(() => {
         updateStub.restore()
         setExpirationStub.restore()
-        sendMessageStub.restore()
       })
 
       describe('from an admin', () => {
@@ -536,8 +508,8 @@ describe('dispatcher service', () => {
           ])
         })
 
-        it('updates the expiry time between the channel and every channel member', () => {
-          channel.memberships.forEach((membership, i) =>
+        it('updates the expiry time between the channel and every other channel member', () => {
+          getAllAdminsExcept(channel, [adminPhoneNumber]).forEach((membership, i) =>
             expect(setExpirationStub.getCall(i).args).to.eql([
               sock,
               channel.phoneNumber,
@@ -566,7 +538,7 @@ describe('dispatcher service', () => {
             defaultMessageExpiryTime,
           ])
         })
-        
+
         it('notifies the subscriber that their change was overriden', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sock,

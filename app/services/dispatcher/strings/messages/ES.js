@@ -13,7 +13,7 @@ const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
-const support = `----------------------------
+const support = `-----channel-----------------------
 CÓMO FUNCIONA
 ----------------------------
 
@@ -62,7 +62,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // DECLINE
 
   decline: {
-    success: 'Invitación rechazada Toda la información sobre la invitación eliminada.',
+    success: 'Invitacichannelón rechazada Toda la información sobre la invitación eliminada.',
     dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
   },
 
@@ -323,18 +323,17 @@ AGREGAR ${adminPhoneNumber}
   
 Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
-
-Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
-
-Responda con AYUDA para más información.`,
-
   noop: '¡Lo siento! Eso no es un comando!',
 
   unauthorized: `¡Lo siento! No entiendo eso.
   
 Envíe AYUDA para ver los comandos que entiendo! :)`,
+
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+    `Un mensaje no se pudo enviar debido a un error de límite de velocidad.
+canal: ${channelPhoneNumber}
+recipiente: ${memberPhoneNumber}
+`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,
@@ -346,6 +345,13 @@ Envíe AYUDA para ver los comandos que entiendo! :)`,
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
+
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
+
+Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
+
+Responda con AYUDA para más información.`,
 }
 
 const prefixes = {

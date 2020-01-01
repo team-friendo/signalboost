@@ -141,7 +141,11 @@ describe('messenger service', () => {
         beforeEach(
           async () =>
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              commandResult: {
+                status: statuses.NOOP,
+                messageBody: messages.notifications.noop,
+                notifications: [],
+              },
               dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
             }),
         )
@@ -172,7 +176,11 @@ describe('messenger service', () => {
 
           beforeEach(async () => {
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              commandResult: {
+                status: statuses.NOOP,
+                messageBody: messages.notifications.noop,
+                notifications: [],
+              },
               dispatchable: { db, sock, channel, sender, sdMessage },
             })
           })
@@ -195,7 +203,11 @@ describe('messenger service', () => {
 
           beforeEach(async () => {
             await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
+              commandResult: {
+                status: statuses.NOOP,
+                messageBody: messages.notifications.noop,
+                notifications: [],
+              },
               dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
             })
           })
@@ -259,13 +271,21 @@ describe('messenger service', () => {
           sender: randomSender,
           sdMessage: sdMessageOf(signupChannel, 'gimme a channel'),
         }
-        const commandResult = { status: commands.NOOP, message: '', notificatioms: [] }
+        const commandResult = { status: commands.NOOP, message: '', notifications: [] }
         await messenger.dispatch({ dispatchable, commandResult })
       })
 
+      it('responds to requester', () => {
+        expect(sendMessageStub.getCall(0).args).to.eql([
+          sock,
+          randomSender.phoneNumber,
+          sdMessageOf(signupChannel, notifications.signupRequestResponse),
+        ])
+      })
+
       it('forwards request to channel admins and appends phone number', () => {
-        adminPhoneNumbers.forEach((adminPhoneNumber, index) => {
-          expect(sendMessageStub.getCall(index).args).to.eql([
+        adminPhoneNumbers.forEach((adminPhoneNumber, idx) => {
+          expect(sendMessageStub.getCall(idx + 1).args).to.eql([
             sock,
             adminPhoneNumber,
             sdMessageOf(
@@ -274,14 +294,6 @@ describe('messenger service', () => {
             ),
           ])
         })
-      })
-
-      it('responds to requester', () => {
-        expect(sendMessageStub.getCall(adminPhoneNumbers.length).args).to.eql([
-          sock,
-          randomSender.phoneNumber,
-          sdMessageOf(signupChannel, notifications.signupRequestResponse),
-        ])
       })
     })
 
@@ -366,6 +378,7 @@ describe('messenger service', () => {
                 command,
                 status: statuses.SUCCESS,
                 message: 'fake welcome!',
+                notifications: [],
               },
             })
             expect(setExpirationStub.getCall(0).args).to.eql([
@@ -395,6 +408,7 @@ describe('messenger service', () => {
                 command,
                 status: statuses.SUCCESS,
                 message: 'fake welcome!',
+                notifications: [],
               },
             })
             expect(setExpirationStub.getCall(0).args).to.eql([
@@ -427,6 +441,7 @@ describe('messenger service', () => {
                 command,
                 status: statuses.SUCCESS,
                 message: 'fake command response message!',
+                notifications: [],
               },
             })
             expect(setExpirationStub.callCount).to.eql(0)

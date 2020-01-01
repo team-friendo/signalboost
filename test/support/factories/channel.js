@@ -1,5 +1,5 @@
 import { adminMembershipFactory, subscriberMembershipFactory } from './membership'
-import { times } from 'lodash'
+import { get, times } from 'lodash'
 import { messageCountFactory } from './messageCount'
 import { memberTypes } from '../../../app/db/repositories/membership'
 import { inviteFactory } from './invite'
@@ -17,8 +17,8 @@ export const channelFactory = attrs => ({
   ...attrs,
 })
 
-export const deepChannelFactory = pNum => {
-  const channelPhoneNumber = pNum || genPhoneNumber()
+export const deepChannelFactory = attrs => {
+  const channelPhoneNumber = get(attrs, 'phoneNumber') || genPhoneNumber()
   return {
     ...channelFactory({ phoneNumber: channelPhoneNumber }),
     memberships: [
@@ -28,6 +28,7 @@ export const deepChannelFactory = pNum => {
     messageCount: messageCountFactory({ channelPhoneNumber }),
     invites: times(2, () => inviteFactory({ channelPhoneNumber })),
     deauthorizations: [deauthorizationFactory({ channelPhoneNumber })],
+    ...attrs,
   }
 }
 

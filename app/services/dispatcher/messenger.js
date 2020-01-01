@@ -10,18 +10,17 @@ const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const {
   defaultLanguage,
-  signal: { signupPhoneNumber },
+  signal: { signupPhoneNumber, defaultMessageExpiryTime },
 } = require('../../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'COMMAND_RESULT' | 'NOTIFICATION'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'SIGNUP_MESSAGE' | 'COMMAND_RESULT'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
   COMMAND_RESULT: 'COMMAND_RESULT',
-  NEW_ADMIN_WELCOME: 'NEW_ADMIN_WELCOME',
   SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
 }
 
@@ -41,10 +40,10 @@ const dispatch = async ({ commandResult, dispatchable }) => {
       return broadcast(dispatchable)
     case HOTLINE_MESSAGE:
       return handleHotlineMessage(dispatchable)
-    case COMMAND_RESULT:
-      return handleCommandResult({ commandResult, dispatchable })
     case SIGNUP_MESSAGE:
       return handleSignupMessage(dispatchable)
+    case COMMAND_RESULT:
+      return handleCommandResult({ commandResult, dispatchable })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
   }
@@ -60,37 +59,6 @@ const parseMessageType = (commandResult, { sender, channel }) => {
   return COMMAND_RESULT
 }
 
-const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
-  const notificationMessages = messagesIn(defaultLanguage).notifications
-  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
-  // TODO(aguestuser|2019-11-09): send this as a disappearing message?
-  // notify admins of signup request
-  await Promise.all(
-    adminPhoneNumbers.map(adminPhoneNumber => {
-      notify({
-        sock,
-        channel,
-        notification: {
-          recipient: adminPhoneNumber,
-          message: notificationMessages.signupRequestReceived(
-            sender.phoneNumber,
-            sdMessage.messageBody,
-          ),
-        },
-      })
-    }),
-  )
-  // respond to signup requester
-  return notify({
-    sock,
-    channel,
-    notification: {
-      message: notificationMessages.signupRequestResponse,
-      recipient: sender.phoneNumber,
-    },
-  })
-}
-
 const handleHotlineMessage = dispatchable => {
   const {
     channel: { responsesEnabled },
@@ -104,16 +72,85 @@ const handleHotlineMessage = dispatchable => {
     : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
 }
 
+const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
+  const notificationMessages = messagesIn(defaultLanguage).notifications
+  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
+  // respond to signup requester
+  await notify({
+    sock,
+    channel,
+    notification: {
+      message: notificationMessages.signupRequestResponse,
+      recipient: sender.phoneNumber,
+    },
+  })
+  // notify admins of signup request
+  return Promise.all(
+    adminPhoneNumbers.map(async adminPhoneNumber => {
+      // these messages contain user phone numbers so they should ALWAYS disappear
+      await signal.setExpiration(
+        sock,
+        channel.phoneNumber,
+        adminPhoneNumber,
+        defaultMessageExpiryTime,
+      )
+      return notify({
+        sock,
+        channel,
+        notification: {
+          recipient: adminPhoneNumber,
+          message: notificationMessages.signupRequestReceived(
+            sender.phoneNumber,
+            sdMessage.messageBody,
+          ),
+        },
+      })
+    }),
+  )
+}
+
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, status } = commandResult
-  await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   await respond({ ...dispatchable, message, command, status })
-  // await wait(resendDelay) // not sure we need this...(if so it would be for re-adding admins after safety # change)
-  return handleNotifications({ commandResult, dispatchable })
+  await sendNotifications({ commandResult, dispatchable })
+  await setExpiryTimeForNewUsers({ commandResult, dispatchable })
+  return Promise.resolve()
+}
+
+/************
+ * SENDING
+ ************/
+
+// Dispatchable -> Promise<void>
+const broadcast = async ({ db, sock, channel, sdMessage }) => {
+  const recipients = channel.memberships.map(m => m.memberPhoneNumber)
+  return signal
+    .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
+    .then(() => countBroacast({ db, channel }))
+}
+
+// Dispatchable -> Promise<void>
+const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => {
+  const { language } = sender
+  const recipients = channelRepository.getAdminPhoneNumbers(channel)
+  const notification = messagesIn(language).notifications.hotlineMessageSent(channel)
+  const outMessage = addHeader({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
+  // TODO(aguestuser|2019-01-04): we should count these as *hotline* messages not broadcast messages
+  return signal
+    .broadcastMessage(sock, recipients, outMessage)
+    .then(() => countBroacast({ db, channel }))
+    .then(() => respond({ db, sock, channel, sender, message: notification }))
+}
+
+// (Database, Socket, Channel, string, Sender) -> Promise<void>
+const respond = ({ db, sock, channel, message, sender }) => {
+  return signal
+    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
+    .then(() => countCommand({ db, channel }))
 }
 
 // ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
-const handleNotifications = ({ commandResult, dispatchable }) => {
+const sendNotifications = ({ commandResult, dispatchable }) => {
   const { sock, channel } = dispatchable
   const { status, notifications } = commandResult
 
@@ -122,15 +159,15 @@ const handleNotifications = ({ commandResult, dispatchable }) => {
     : Promise.resolve([])
 }
 
-/************
- * SENDING
- ************/
+// ({Socket, Channel, Notification}) -> Promise<void>
+const notify = ({ sock, channel, notification }) =>
+  signal.sendMessage(sock, notification.recipient, sdMessageOf(channel, notification.message))
 
 // ({ CommandResult, Dispatchable }) -> Promise<void>
-const setExpiryTimeForNewUsers = ({ commandResult, dispatchable }) => {
+const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   // for newly added users, make sure disappearing message timer
   // is set to channel's default expiry time
-  const { command, status, payload } = commandResult
+  const { command, status } = commandResult
   const { sock, channel, sender } = dispatchable
 
   if (status !== statuses.SUCCESS) return Promise.resolve()
@@ -166,37 +203,6 @@ const setExpiryTimeForNewUsers = ({ commandResult, dispatchable }) => {
       return Promise.resolve()
   }
 }
-
-// Dispatchable -> Promise<void>
-const broadcast = async ({ db, sock, channel, sdMessage }) => {
-  const recipients = channel.memberships.map(m => m.memberPhoneNumber)
-  return signal
-    .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    .then(() => countBroacast({ db, channel }))
-}
-
-// Dispatchable -> Promise<void>
-const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => {
-  const { language } = sender
-  const recipients = channelRepository.getAdminPhoneNumbers(channel)
-  const notification = messagesIn(language).notifications.hotlineMessageSent(channel)
-  const outMessage = addHeader({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
-  return signal
-    .broadcastMessage(sock, recipients, outMessage)
-    .then(() => countBroacast({ db, channel }))
-    .then(() => respond({ db, sock, channel, sender, message: notification }))
-}
-
-// (DbusInterface, string, Sender, string?, string?) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender }) => {
-  return signal
-    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
-    .then(() => countCommand({ db, channel }))
-}
-
-// (Socket, Channel, Notification) -> Promise<void>
-const notify = ({ sock, channel, notification }) =>
-  signal.sendMessage(sock, notification.recipient, sdMessageOf(channel, notification.message))
 
 /**********
  * HELPERS

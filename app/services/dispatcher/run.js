@@ -1,6 +1,6 @@
 const { wait } = require('../util')
 const signal = require('../signal')
-const { sdMessageOf } = signal
+const { sdMessageOf, messageTypes } = signal
 const channelRepository = require('./../../db/repositories/channel')
 const membershipRepository = require('../../db/repositories/membership')
 const { memberTypes } = membershipRepository
@@ -9,10 +9,9 @@ const messenger = require('./messenger')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
-const { get, isEmpty, find, map, values, isNumber } = require('lodash')
-const { languages } = require('../../constants')
+const { get, isEmpty, isNumber } = require('lodash')
 const {
-  signal: { expiryUpdateDelay },
+  signal: { expiryUpdateDelay, signupPhoneNumber },
 } = require('../../config')
 
 /**
@@ -87,6 +86,9 @@ const dispatch = async (db, sock, inboundMsg) => {
     : []
 
   // dispatch system-created messages
+  const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
+  if (rateLimitedMessage) return notifyRateLimitedMessage(db, sock, rateLimitedMessage)
+
   const newFingerprint = detectUpdatableFingerprint(inboundMsg)
   if (newFingerprint) return updateFingerprint(db, sock, newFingerprint)
 
@@ -108,15 +110,36 @@ const relay = async (db, sock, channel, sender, inboundMsg) => {
   }
 }
 
+const notifyRateLimitedMessage = async (db, sock, sdMessage) => {
+  // try {
+  const recipients = channelRepository.getAdminMemberships(
+    await channelRepository.findDeep(db, signupPhoneNumber),
+  )
+  return Promise.all(
+    recipients.map(({ memberPhoneNumber, language }) =>
+      signal.sendMessage(
+        sock,
+        memberPhoneNumber,
+        sdMessageOf(
+          { phoneNumber: signupPhoneNumber },
+          messagesIn(language).notifications.rateLimitOccurred(
+            sdMessage.username,
+            sdMessage.recipientNumber,
+          ),
+        ),
+      ),
+    ),
+  )
+}
+
 const updateFingerprint = async (db, sock, updatableFingerprint) => {
-  const { channelPhoneNumber, memberPhoneNumber, sdMessage } = updatableFingerprint
+  const { channelPhoneNumber, memberPhoneNumber } = updatableFingerprint
   try {
     const recipient = await classifyPhoneNumber(db, channelPhoneNumber, memberPhoneNumber)
     if (recipient.type === memberTypes.NONE) return Promise.resolve()
-    if (recipient.type === memberTypes.ADMIN && !isWelcomeMessage(sdMessage)) {
-      // If it's a welcome message, someone just re-authorized this recipient, we want to re-trust their keys
+    if (recipient.type === memberTypes.ADMIN) {
       return safetyNumberService
-        .deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
+        .deauthorize(db, sock, updatableFingerprint)
         .then(logger.logAndReturn)
         .catch(logger.error)
     }
@@ -150,9 +173,11 @@ const updateExpiryTime = async (db, sock, sender, channel, messageExpiryTime) =>
   // enforce a disappearing message time set by an admin
   await channelRepository.update(db, channel.phoneNumber, { messageExpiryTime })
   return Promise.all(
-    channel.memberships.map(m =>
-      signal.setExpiration(sock, channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
-    ),
+    channel.memberships
+      .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
+      .map(m =>
+        signal.setExpiration(sock, channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
+      ),
   )
 }
 
@@ -177,6 +202,31 @@ const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.message') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
 
+const foo = {
+  type: 'unexpected_error',
+  data: {
+    msg_number: 0,
+    message: 'Rate limit exceeded: 413',
+    error: true,
+    request: {
+      type: 'send',
+      username: '+12013801790',
+      messageBody: '[DEV URRAS]\nhiy',
+      recipientNumber: '+12014310118',
+      attachments: [],
+      expiresInSeconds: 0,
+    },
+  },
+}
+
+// InboundSdMessage -> SdMessage?
+const detectRateLimitedMessage = inboundMsg =>
+  inboundMsg.type === signal.messageTypes.ERROR &&
+  (get(inboundMsg, 'data.message', '').includes('413') ||
+    get(inboundMsg, 'data.message', '').includes('Rate limit'))
+    ? inboundMsg.data.request
+    : null
+
 // (SdMessage, Channel) -> UpdatableExpiryTime?
 const detectUpdatableExpiryTime = (inboundMsg, channel) =>
   _isMessage(inboundMsg) &&
@@ -186,7 +236,7 @@ const detectUpdatableExpiryTime = (inboundMsg, channel) =>
 
 // SdMessage ->  UpdateableFingerprint?
 const detectUpdatableFingerprint = inboundMsg => {
-  if (inboundMsg.type === signal.messageTypes.UNTRUSTED_IDENTITY) {
+  if (inboundMsg.type === messageTypes.UNTRUSTED_IDENTITY) {
     // indicates a failed outbound message (from channel to recipient with new safety number)
     return {
       channelPhoneNumber: inboundMsg.data.username,
@@ -219,25 +269,6 @@ const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) =>
     type,
   )
   return { phoneNumber: senderPhoneNumber, type, language }
-}
-
-const isWelcomeMessage = sdMessage => {
-  const phoneNumberPattern = /\+\d{9,15}/g
-  const headerPattern = /\[.*]\n\n/
-  const strippedMessage = sdMessage.messageBody
-    .replace(headerPattern, '')
-    .replace(phoneNumberPattern, '')
-    .trim()
-  // produce an array of message strings in every language
-  // test if incoming message is a welcome message in each language
-  return Boolean(
-    find(
-      map(values(languages), messagesIn),
-      messages =>
-        strippedMessage === messages.notifications.welcome('', '').trim() || //if added by another admin
-        strippedMessage === messages.notifications.welcome(messages.systemName, '').trim(), //if added by sysadmin
-    ),
-  )
 }
 
 // EXPORTS

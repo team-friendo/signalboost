@@ -2,14 +2,16 @@ const { commands, statuses, toggles } = require('./constants')
 const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
+const deauthorizationRepository = require('../../../db/repositories/deauthorization')
 const validator = require('../../../db/validations/phoneNumber')
+const signal = require('../../signal')
 const logger = require('../logger')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
 const {
-  signal: { signupPhoneNumber },
+  signal: { signupPhoneNumber, resendDelay },
 } = require('../../../config')
 
 /**
@@ -32,12 +34,12 @@ const {
 // (Executable, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
-  const { db, channel, sender } = dispatchable
+  const { db, sock, channel, sender } = dispatchable
   // don't allow command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
-    [commands.ADD]: () => maybeAddAdmin(db, channel, sender, payload),
+    [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
     [commands.DECLINE]: () => decline(db, channel, sender, language),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
@@ -89,30 +91,24 @@ const accept = async (db, channel, sender, language, cr) =>
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 
-// DECLINE
-
-const decline = async (db, channel, sender, language) => {
-  const cr = messagesIn(language).commandResponses.decline
-  return inviteRepository
-    .decline(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
-}
-
 // ADD
 
-const maybeAddAdmin = async (db, channel, sender, phoneNumberInput) => {
+const maybeAddAdmin = async (db, sock, channel, sender, phoneNumberInput) => {
   const cr = messagesIn(sender.language).commandResponses.add
-  if (!(sender.type === ADMIN)) {
+  if (sender.type !== ADMIN)
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-  }
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
   if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
-  return addAdmin(db, channel, sender, phoneNumber, cr)
+  return addAdmin(db, sock, channel, sender, phoneNumber, cr)
 }
 
-const addAdmin = async (db, channel, sender, newAdminPhoneNumber, cr) => {
+const addAdmin = async (db, sock, channel, sender, newAdminPhoneNumber, cr) => {
   try {
+    const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
+    if (deauth) {
+      await signal.trust(sock, channel.phoneNumber, newAdminPhoneNumber, deauth.fingerprint)
+      await deauthorizationRepository.destroy(db, channel.phoneNumber, newAdminPhoneNumber)
+    }
     const newAdminMembership = await membershipRepository.addAdmin(
       db,
       channel.phoneNumber,
@@ -146,6 +142,17 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
     })),
   ]
 }
+
+// DECLINE
+
+const decline = async (db, channel, sender, language) => {
+  const cr = messagesIn(language).commandResponses.decline
+  return inviteRepository
+    .decline(db, channel.phoneNumber, sender.phoneNumber)
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+}
+
 // HELP
 
 const showHelp = async (db, channel, sender) => {

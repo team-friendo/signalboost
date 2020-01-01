@@ -311,12 +311,11 @@ Send HELP to list valid commands.`,
 
 Please respond with ACCEPT or DECLINE.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
-
-People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
-
-Reply with HELP for more info.`,
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+    `Message failed to send due to a rate limit error.
+channel: ${channelPhoneNumber}
+recipient: ${memberPhoneNumber}
+`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
@@ -327,6 +326,13 @@ Reply with HELP for more info.`,
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
+
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+
+People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+
+Reply with HELP for more info.`,
 }
 
 const prefixes = {

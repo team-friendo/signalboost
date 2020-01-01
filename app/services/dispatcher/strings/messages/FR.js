@@ -324,14 +324,6 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
   unauthorized:
     'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `Vous êtes maintenant un
- admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
-
-On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
-
-Commande AIDE pour plus de renseignements.`,
-
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
 
@@ -342,6 +334,20 @@ Commande AIDE pour plus de renseignements.`,
     "Vous venez d'être supprimé en tant qu'administrateur de cette chaîne. Envoyez BONJOUR pour vous réinscrire.",
 
   toggles: commandResponses.toggles,
+
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+    `Un message n'a pas pu être envoyé en raison d'une erreur de limite de débit.
+canal: ${channelPhoneNumber}
+destinataire: ${memberPhoneNumber}
+`,
+
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Vous êtes maintenant un
+ admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
+
+On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
+
+Commande AIDE pour plus de renseignements.`,
 }
 
 const prefixes = {
