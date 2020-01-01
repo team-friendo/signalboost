@@ -319,9 +319,9 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
 
   description: {
     success: (oldDesc, newDesc) =>
-      `Change me - La descripción del canal cambió de "${oldDesc}" a "${newDesc}".`,
+      `La description de le canal est passée de "${oldDesc}" à "${newDesc}".`,
     dbError: (oldDesc, newDesc) =>
-      `Change me Whoops! Se produjo un error al cambiar la descripción del canal de "${oldDesc}" a "${newDesc}". ¡Inténtalo de nuevo!`,
+      `Oups! Une erreur s'est produite lors du changement de la description de la canal "${oldDesc}" à "${newDesc}". ¡Inténtalo de nuevo!`,
     notAdmin,
   },
 }

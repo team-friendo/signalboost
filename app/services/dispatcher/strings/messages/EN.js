@@ -126,6 +126,9 @@ INFO
 RENAME new name
 -> renames channel to "new name"
 
+DESCRIPTION description of channel
+-> adds or updates public description of channel
+
 INVITE +1-555-555-5555
 -> invites +1-555-555-5555 to subscribe to the channel
 
@@ -194,6 +197,7 @@ CHANNEL INFO
 You are subscribed to this channel.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 responses: ${onOrOff(channel.responsesEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
