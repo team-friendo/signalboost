@@ -5,6 +5,7 @@ module.exports = {
     return queryInterface.addColumn('channels', 'description', {
       type: Sequelize.STRING,
       allowNull: true,
+      defaultValue: '',
     })
   },
 
