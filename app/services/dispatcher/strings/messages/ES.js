@@ -140,6 +140,9 @@ INFO
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
+DESCRIPCIÓN descripción del canal
+-> agrega o actualiza la descripción pública del canal
+
 INVITAR +1-555-555-5555
 -> invita a +1-555-555-5555 a suscribirse al canal
 
