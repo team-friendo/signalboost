@@ -138,6 +138,9 @@ INFO
 RENOMMER nouveau nom
 -> renomme le canal au “nouveau nom”
 
+DESCRIPTION description de la canal
+-> ajoute ou met à jour la description publique de la canal
+
 AJOUTER / SUPPRIMER +1-555-555-5555
 -> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de la canal
 
