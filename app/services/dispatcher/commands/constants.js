@@ -27,7 +27,7 @@ const commands = {
   SET_LANGUAGE: 'SET_LANGUAGE',
   VOUCHING_ON: 'VOUCHING_ON',
   VOUCHING_OFF: 'VOUCHING_OFF',
-  SET_DESCRIPTION: 'SET_DESCRIPTION'
+  SET_DESCRIPTION: 'SET_DESCRIPTION',
 }
 
 module.exports = { statuses, toggles, commands }

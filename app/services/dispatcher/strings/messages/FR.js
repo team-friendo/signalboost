@@ -321,14 +321,13 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
-  
+
   // SET_DESCRIPTION
 
   description: {
-    success: (oldDesc, newDesc) =>
-      `La description de le canal est passée de "${oldDesc}" à "${newDesc}".`,
-    dbError: (oldDesc, newDesc) =>
-      `Oups! Une erreur s'est produite lors du changement de la description de la canal "${oldDesc}" à "${newDesc}". ¡Inténtalo de nuevo!`,
+    success: newDescription =>
+      `La description de le canal a été remplacée par "${newDescription}".`,
+    dbError: `Oups! Une erreur s'est produite lors du changement de la description de la canal. ¡Inténtalo de nuevo!`,
     notAdmin,
   },
 }

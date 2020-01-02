@@ -327,14 +327,12 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
   },
-  
+
   // SET_DESCRIPTION
 
   description: {
-    success: (oldDesc, newDesc) =>
-      `La descripción del canal cambió de "${oldDesc}" a "${newDesc}".`,
-    dbError: (oldDesc, newDesc) =>
-      `Whoops! Se produjo un error al cambiar la descripción del canal de "${oldDesc}" a "${newDesc}". ¡Inténtalo de nuevo!`,
+    success: newDescription => `La descripción del canal cambió a "${newDescription}".`,
+    dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtalo de nuevo!`,
     notAdmin,
   },
 }
