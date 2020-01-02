@@ -205,6 +205,7 @@ describe('channel repository', () => {
         expect(keys(ch.toJSON())).to.have.eql([
           'phoneNumber',
           'name',
+          'description',
           'responsesEnabled',
           'vouchingOn',
           'createdAt',
