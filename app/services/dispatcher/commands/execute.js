@@ -52,6 +52,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
   }[command] || (() => noop()))()
+  result.notifications = result.notifications || []
   return { command, ...result }
 }
 
@@ -382,7 +383,8 @@ const setLanguage = (db, sender, language) => {
 }
 
 // NOOP
-const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
+const noop = () =>
+  Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '', notifications: [] })
 
 /**********
  * HELPERS

@@ -245,6 +245,8 @@ describe('messenger service', () => {
     })
 
     describe('when message is a signup request', () => {
+      const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
+
       beforeEach(async () => {
         const dispatchable = {
           db,
@@ -253,24 +255,27 @@ describe('messenger service', () => {
           sender: randomSender,
           sdMessage: sdMessageOf(signupChannel, 'gimme a channel'),
         }
-        const commandResult = { status: commands.NOOP, message: '' }
+        const commandResult = { status: commands.NOOP, message: '', notificatioms: [] }
         await messenger.dispatch({ dispatchable, commandResult })
       })
 
       it('forwards request to channel admins and appends phone number', () => {
-        expect(broadcastMessageStub.getCall(0).args).to.eql([
-          sock,
-          channelRepository.getAdminPhoneNumbers(channel),
-          sdMessageOf(
-            signupChannel,
-            notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
-          ),
-        ])
+        adminPhoneNumbers.forEach((adminPhoneNumber, index) => {
+          expect(sendMessageStub.getCall(index).args).to.eql([
+            sock,
+            adminPhoneNumber,
+            sdMessageOf(
+              signupChannel,
+              notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
+            ),
+          ])
+        })
       })
+
       it('responds to requester', () => {
-        expect(broadcastMessageStub.getCall(1).args).to.eql([
+        expect(sendMessageStub.getCall(adminPhoneNumbers.length).args).to.eql([
           sock,
-          [randomSender.phoneNumber],
+          randomSender.phoneNumber,
           sdMessageOf(signupChannel, notifications.signupRequestResponse),
         ])
       })
@@ -281,7 +286,12 @@ describe('messenger service', () => {
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
-          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
+          commandResult: {
+            command: commands.JOIN,
+            status: statuses.SUCCESS,
+            message: 'yay!',
+            notifications: [],
+          },
         })
       })
 
@@ -338,18 +348,18 @@ describe('messenger service', () => {
         })
 
         it('sends a welcome notification to the newly added admin', () => {
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
+          expect(sendMessageStub.getCall(1).args).to.eql([
             sock,
-            [newAdminPhoneNumber],
+            newAdminPhoneNumber,
             sdMessageOf(channel, welcome),
           ])
         })
 
         it('sends an alert to the other channel admins', () => {
           bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(broadcastMessageStub.getCall(index + 1).args).to.eql([
+            expect(sendMessageStub.getCall(index + 2).args).to.eql([
               sock,
-              [bystanderPhoneNumbers[index]],
+              bystanderPhoneNumbers[index],
               sdMessageOf(channel, notificationMessage),
             ])
           })
@@ -393,22 +403,22 @@ describe('messenger service', () => {
         })
 
         it('notifies the removed admin', () => {
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
+          expect(sendMessageStub.getCall(1).args).to.eql([
             sock,
-            [removedPhoneNumber],
+            removedPhoneNumber,
             sdMessageOf(channel, messages.notifications.toRemovedAdmin),
           ])
         })
 
         it('notifies all other admins', () => {
-          expect(broadcastMessageStub.getCall(1).args).to.eql([
+          expect(sendMessageStub.getCall(2).args).to.eql([
             sock,
-            [bystanderPhoneNumbers[0]],
+            bystanderPhoneNumbers[0],
             sdMessageOf(channel, messages.notifications.adminRemoved),
           ])
-          expect(broadcastMessageStub.getCall(2).args).to.eql([
+          expect(sendMessageStub.getCall(3).args).to.eql([
             sock,
-            [bystanderPhoneNumbers[1]],
+            bystanderPhoneNumbers[1],
             sdMessageOf(channel, messages.notifications.adminRemoved),
           ])
         })
@@ -447,9 +457,9 @@ describe('messenger service', () => {
 
         it('notifies all admins except sender', () => {
           bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(broadcastMessageStub.getCall(index).args).to.eql([
+            expect(sendMessageStub.getCall(index + 1).args).to.eql([
               sock,
-              [phoneNumber],
+              phoneNumber,
               sdMessageOf(channel, notificationMessage),
             ])
           })
@@ -486,9 +496,9 @@ describe('messenger service', () => {
 
         it('notifies all admins except sender', () => {
           bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(broadcastMessageStub.getCall(index).args).to.eql([
+            expect(sendMessageStub.getCall(index + 1).args).to.eql([
               sock,
-              [phoneNumber],
+              phoneNumber,
               sdMessageOf(channel, notificationMessage),
             ])
           })
@@ -513,9 +523,9 @@ describe('messenger service', () => {
 
         it('sends an invite notification to the invitee', async () => {
           await messenger.dispatch({ dispatchable, commandResult })
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
+          expect(sendMessageStub.getCall(1).args).to.eql([
             sock,
-            [inviteePhoneNumber],
+            inviteePhoneNumber,
             sdMessageOf(channel, messages.notifications.inviteReceived(channel.name)),
           ])
         })

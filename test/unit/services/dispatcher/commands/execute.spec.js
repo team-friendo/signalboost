@@ -91,6 +91,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           status: statuses.ERROR,
           message: CR.accept.alreadyMember,
+          notifications: [],
         })
       })
     })
@@ -107,6 +108,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               status: statuses.ERROR,
               message: CR.accept.belowThreshold(channel, 1, 0),
+              notifications: [],
             })
           })
         })
@@ -120,6 +122,7 @@ describe('executing commands', () => {
                 command: commands.ACCEPT,
                 status: statuses.SUCCESS,
                 message: CR.accept.success(channel),
+                notifications: [],
               })
             })
           })
@@ -132,6 +135,7 @@ describe('executing commands', () => {
                 command: commands.ACCEPT,
                 status: statuses.ERROR,
                 message: CR.accept.dbError,
+                notifications: [],
               })
             })
           })
@@ -150,6 +154,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               status: statuses.SUCCESS,
               message: CR.accept.success(channel),
+              notifications: [],
             })
           })
         })
@@ -162,6 +167,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               status: statuses.ERROR,
               message: CR.accept.dbError,
+              notifications: [],
             })
           })
         })
@@ -176,6 +182,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           status: statuses.ERROR,
           message: CR.accept.dbError,
+          notifications: [],
         })
       })
     })
@@ -190,6 +197,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           status: statuses.ERROR,
           message: CR.accept.dbError,
+          notifications: [],
         })
       })
     })
@@ -274,6 +282,7 @@ describe('executing commands', () => {
               command: commands.ADD,
               status: statuses.ERROR,
               message: CR.add.dbError(newAdminPhoneNumber),
+              notifications: [],
             })
           })
         })
@@ -293,6 +302,7 @@ describe('executing commands', () => {
             command: commands.ADD,
             status: statuses.ERROR,
             message: CR.add.invalidNumber('foo'),
+            notifications: [],
           })
         })
       })
@@ -317,6 +327,7 @@ describe('executing commands', () => {
           command: commands.ADD,
           status: statuses.UNAUTHORIZED,
           message: CR.add.notAdmin,
+          notifications: [],
         })
       })
     })
@@ -342,6 +353,7 @@ describe('executing commands', () => {
           command: commands.DECLINE,
           status: statuses.SUCCESS,
           message: CR.decline.success,
+          notifications: [],
         })
       })
     })
@@ -354,6 +366,7 @@ describe('executing commands', () => {
           command: commands.DECLINE,
           status: statuses.ERROR,
           message: CR.decline.dbError,
+          notifications: [],
         })
       })
     })
@@ -370,6 +383,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           status: statuses.SUCCESS,
           message: CR.help.admin,
+          notifications: [],
         })
       })
     })
@@ -382,6 +396,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           status: statuses.SUCCESS,
           message: CR.help.subscriber,
+          notifications: [],
         })
       })
     })
@@ -394,6 +409,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           status: statuses.SUCCESS,
           message: CR.help.subscriber,
+          notifications: [],
         })
       })
     })
@@ -410,6 +426,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.ADMIN](channel),
+          notifications: [],
         })
       })
     })
@@ -422,6 +439,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.SUBSCRIBER](channel),
+          notifications: [],
         })
       })
     })
@@ -434,6 +452,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.NONE](channel),
+          notifications: [],
         })
       })
     })
@@ -464,6 +483,7 @@ describe('executing commands', () => {
             command: commands.INVITE,
             status: statuses.UNAUTHORIZED,
             message: CR.invite.unauthorized,
+            notifications: [],
           })
         })
       })
@@ -482,6 +502,7 @@ describe('executing commands', () => {
               command: commands.INVITE,
               status: statuses.ERROR,
               message: CR.invite.invalidNumber('foo'),
+              notifications: [],
             })
           })
         })
@@ -505,6 +526,7 @@ describe('executing commands', () => {
                 command: commands.INVITE,
                 status: statuses.ERROR,
                 message: CR.invite.success,
+                notifications: [],
               })
             })
           })
@@ -528,6 +550,7 @@ describe('executing commands', () => {
                   command: commands.INVITE,
                   status: statuses.ERROR,
                   message: CR.invite.success,
+                  notifications: [],
                 })
               })
             })
@@ -629,6 +652,7 @@ describe('executing commands', () => {
           command: commands.JOIN,
           status: statuses.ERROR,
           message: CR.join.inviteRequired,
+          notifications: [],
         })
       })
     })
@@ -659,6 +683,7 @@ describe('executing commands', () => {
               command: commands.JOIN,
               status: statuses.SUCCESS,
               message: CR.join.success(channel),
+              notifications: [],
             })
           })
         })
@@ -671,6 +696,7 @@ describe('executing commands', () => {
               command: commands.JOIN,
               status: statuses.ERROR,
               message: CR.join.error,
+              notifications: [],
             })
           })
         })
@@ -690,6 +716,7 @@ describe('executing commands', () => {
             command: commands.JOIN,
             status: statuses.ERROR,
             message: CR.join.alreadyMember,
+            notifications: [],
           })
         })
       })
@@ -708,6 +735,7 @@ describe('executing commands', () => {
             command: commands.JOIN,
             status: statuses.ERROR,
             message: CR.join.alreadyMember,
+            notifications: [],
           })
         })
       })
@@ -753,6 +781,7 @@ describe('executing commands', () => {
             command: commands.LEAVE,
             status: statuses.ERROR,
             message: CR.leave.error,
+            notifications: [],
           })
         })
       })
@@ -772,6 +801,7 @@ describe('executing commands', () => {
           command: commands.LEAVE,
           status: statuses.UNAUTHORIZED,
           message: CR.leave.notSubscriber,
+          notifications: [],
         })
       })
     })
@@ -887,6 +917,7 @@ describe('executing commands', () => {
                 command: commands.REMOVE,
                 status: statuses.ERROR,
                 message: CR.remove.dbError(removalTargetNumber),
+                notifications: [],
               })
             })
           })
@@ -904,6 +935,7 @@ describe('executing commands', () => {
               command: commands.REMOVE,
               status: statuses.ERROR,
               message: CR.remove.targetNotAdmin(removalTargetNumber),
+              notifications: [],
             })
           })
         })
@@ -924,6 +956,7 @@ describe('executing commands', () => {
             command: commands.REMOVE,
             status: statuses.ERROR,
             message: CR.remove.invalidNumber('foo'),
+            notifications: [],
           })
         })
       })
@@ -945,6 +978,7 @@ describe('executing commands', () => {
           command: commands.REMOVE,
           status: statuses.UNAUTHORIZED,
           message: CR.remove.notAdmin,
+          notifications: [],
         })
       })
     })
@@ -996,6 +1030,7 @@ describe('executing commands', () => {
             command: commands.RENAME,
             status: statuses.ERROR,
             message: CR.rename.dbError(channel.name, 'foo'),
+            notifications: [],
           })
         })
       })
@@ -1009,6 +1044,7 @@ describe('executing commands', () => {
           command: commands.RENAME,
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
+          notifications: [],
         })
       })
     })
@@ -1021,6 +1057,7 @@ describe('executing commands', () => {
           command: commands.RENAME,
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
+          notifications: [],
         })
       })
     })
@@ -1105,6 +1142,7 @@ describe('executing commands', () => {
               command,
               status: statuses.ERROR,
               message: CR.toggles[name].dbError(isOn),
+              notifications: [],
             })
           })
         })
@@ -1120,6 +1158,7 @@ describe('executing commands', () => {
             command,
             status: statuses.UNAUTHORIZED,
             message: CR.toggles[name].notAdmin,
+            notifications: [],
           })
         })
       })
@@ -1134,6 +1173,7 @@ describe('executing commands', () => {
             command,
             status: statuses.UNAUTHORIZED,
             message: CR.toggles[name].notAdmin,
+            notifications: [],
           })
         })
       })
@@ -1152,6 +1192,7 @@ describe('executing commands', () => {
         command: commands.NOOP,
         status: statuses.NOOP,
         message: '',
+        notifications: [],
       })
     })
   })
@@ -1168,6 +1209,7 @@ describe('executing commands', () => {
         command: commands.NOOP,
         status: statuses.NOOP,
         message: '',
+        notifications: [],
       })
     })
   })

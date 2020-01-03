@@ -60,21 +60,25 @@ const parseMessageType = (commandResult, { sender, channel }) => {
 }
 
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
-  const notifications = messagesIn(defaultLanguage).notifications
+  const notificationMessages = messagesIn(defaultLanguage).notifications
+  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
   // TODO(aguestuser|2019-11-09): send this as a disappearing message?
   // notify admins of signup request
-  await notify({
-    sock,
-    channel,
-    notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
-    recipients: channelRepository.getAdminPhoneNumbers(channel),
-  })
+  await Promise.all(
+    adminPhoneNumbers.map(adminPhoneNumber => {
+      notify(sock, channel, {
+        recipient: adminPhoneNumber,
+        message: notificationMessages.signupRequestReceived(
+          sender.phoneNumber,
+          sdMessage.messageBody,
+        ),
+      })
+    }),
+  )
   // respond to signup requester
-  return notify({
-    sock,
-    channel,
-    notification: notifications.signupRequestResponse,
-    recipients: [sender.phoneNumber],
+  return notify(sock, channel, {
+    message: notificationMessages.signupRequestResponse,
+    recipient: sender.phoneNumber,
   })
 }
 
@@ -100,29 +104,11 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
 const handleNotifications = ({ commandResult, dispatchable }) => {
-  const { db, sock, channel } = dispatchable
+  const { sock, channel } = dispatchable
   const { status, notifications } = commandResult
-  // TODO(aguestuser|2019-12-08):
-  //  once if/else branch logic has all been moved into new format
-  //  - update the signature of `notify` to
-  //    - take one recipient, *not* many recipients
-  //    - call signal.sendMessage *not* broadcastMessage
-  //    - don't call `format` (to add msg header) in `notify` anymore (?)
+
   return status === statuses.SUCCESS
-    ? Promise.all(
-        // TODO(aguestuser|2019-12-30):
-        //  return empty arrays from notification-less commands
-        //  to make this defensive `|| []` unnecessary
-        (notifications || []).map(notification =>
-          notify({
-            db,
-            sock,
-            channel,
-            notification: notification.message,
-            recipients: [notification.recipient],
-          }),
-        ),
-      )
+    ? Promise.all(notifications.map(notification => notify(sock, channel, notification)))
     : Promise.resolve([])
 }
 
@@ -157,8 +143,8 @@ const respond = ({ db, sock, channel, message, sender }) => {
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = ({ sock, channel, notification, recipients }) =>
-  signal.broadcastMessage(sock, recipients, sdMessageOf(channel, notification))
+const notify = (sock, channel, { recipient, message }) =>
+  signal.sendMessage(sock, recipient, sdMessageOf(channel, message))
 
 /**********
  * HELPERS
