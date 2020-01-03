@@ -3,7 +3,7 @@ const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
-const { commands, statuses } = require('./commands/constants')
+const { statuses } = require('./commands/constants')
 const channelRepository = require('../../db/repositories/channel')
 const messageCountRepository = require('../../db/repositories/messageCount')
 const { wait } = require('../util')
@@ -60,21 +60,25 @@ const parseMessageType = (commandResult, { sender, channel }) => {
 }
 
 const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
-  const notifications = messagesIn(defaultLanguage).notifications
+  const notificationMessages = messagesIn(defaultLanguage).notifications
+  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
   // TODO(aguestuser|2019-11-09): send this as a disappearing message?
   // notify admins of signup request
-  await notify({
-    sock,
-    channel,
-    notification: notifications.signupRequestReceived(sender.phoneNumber, sdMessage.messageBody),
-    recipients: channelRepository.getAdminPhoneNumbers(channel),
-  })
+  await Promise.all(
+    adminPhoneNumbers.map(adminPhoneNumber => {
+      notify(sock, channel, {
+        recipient: adminPhoneNumber,
+        message: notificationMessages.signupRequestReceived(
+          sender.phoneNumber,
+          sdMessage.messageBody,
+        ),
+      })
+    }),
+  )
   // respond to signup requester
-  return notify({
-    sock,
-    channel,
-    notification: notifications.signupRequestResponse,
-    recipients: [sender.phoneNumber],
+  return notify(sock, channel, {
+    message: notificationMessages.signupRequestResponse,
+    recipient: sender.phoneNumber,
   })
 }
 
@@ -92,45 +96,20 @@ const handleHotlineMessage = dispatchable => {
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
-  const { message, command, status } = commandResult
+  const { command, message, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
   await wait(resendDelay)
   return handleNotifications({ commandResult, dispatchable })
 }
 
-// ({ CommandResult, Dispatchable )) -> SignalboostStatus
-const handleNotifications = async ({ commandResult, dispatchable }) => {
-  const { command, status, payload } = commandResult
-  const { db, sock, channel, sender } = dispatchable
-  const notifyBase = { db, sock, channel }
-  if (command === commands.ADD && status === statuses.SUCCESS) {
-    // welcome new admin
-    await notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.welcome(
-        sender.phoneNumber,
-        channel.phoneNumber,
-      ),
-      recipients: [payload],
-    })
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(sender.language).notifications.adminAdded(
-        sender.phoneNumber,
-        payload,
-      ),
-      // don't send to newly added admin, that would mess up safety number re-trusting!
-      recipients: channelRepository.getAdminPhoneNumbers(channel).filter(pNum => pNum !== payload),
-    })
-  }
-  if (command === commands.INVITE && status === statuses.SUCCESS) {
-    // welcome new admin
-    return notify({
-      ...notifyBase,
-      notification: messagesIn(defaultLanguage).notifications.inviteReceived(channel.name),
-      recipients: [payload],
-    })
-  }
+// ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
+const handleNotifications = ({ commandResult, dispatchable }) => {
+  const { sock, channel } = dispatchable
+  const { status, notifications } = commandResult
+
+  return status === statuses.SUCCESS
+    ? Promise.all(notifications.map(notification => notify(sock, channel, notification)))
+    : Promise.resolve([])
 }
 
 /************
@@ -164,8 +143,8 @@ const respond = ({ db, sock, channel, message, sender }) => {
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = ({ sock, channel, notification, recipients }) =>
-  signal.broadcastMessage(sock, recipients, sdMessageOf(channel, notification))
+const notify = (sock, channel, { recipient, message }) =>
+  signal.sendMessage(sock, recipient, sdMessageOf(channel, message))
 
 /**********
  * HELPERS

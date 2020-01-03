@@ -33,52 +33,6 @@ Signalboost responds to commands:
 
 Learn more: https://signalboost.info`
 
-const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) => `New Admin ${addedAdmin} added by ${commandIssuer}`,
-
-  deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} has been removed from this channel because their safety number changed.
-
-This is almost certainly because they reinstalled Signal on a new phone.
-
-However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
-
-Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
-
-ADD ${adminPhoneNumber}
-
-Until then, they will be unable to send messages to or read messages from this channel.`,
-
-  hotlineMessageSent: channel =>
-    `Your message was anonymously forwarded to the admins of [${
-      channel.name
-    }]. Include your phone number if you want admins to respond to you individually.
-
-Send HELP to list valid commands.`,
-
-  hotlineMessagesDisabled: isSubscriber =>
-    isSubscriber
-      ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
-      : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
-
-  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
-
-Please respond with ACCEPT or DECLINE.`,
-
-  welcome: (addingAdmin, channelPhoneNumber) => `
-You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
-
-People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
-
-Reply with HELP for more info.`,
-
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Signup request received from ${senderNumber}:\n ${requestMsg}`,
-
-  signupRequestResponse:
-    'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
-}
-
 const commandResponses = {
   // ACCEPT
 
@@ -289,7 +243,7 @@ Send HELP to list commands I understand.`,
         `Whoops! There was an error trying to set responses to ${onOrOff(isOn)}. Please try again!`,
     },
     vouching: {
-      success: isOn => `Vouching turned ${onOrOff(isOn)}`,
+      success: isOn => `Vouching turned ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
@@ -315,6 +269,62 @@ Send HELP to list commands I understand.`,
     dbError: `Whoops! There was an error changing the channel description. Try again!`,
     notAdmin,
   },
+}
+
+const notifications = {
+  adminAdded: 'A new admin was just added.',
+
+  adminRemoved: 'An admin was just removed.',
+
+  adminLeft: 'An admin just left the channel.',
+
+  channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
+
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} has been removed from this channel because their safety number changed.
+
+This is almost certainly because they reinstalled Signal on a new phone.
+
+However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+
+Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+
+ADD ${adminPhoneNumber}
+
+Until then, they will be unable to send messages to or read messages from this channel.`,
+
+  hotlineMessageSent: channel =>
+    `Your message was anonymously forwarded to the admins of [${
+      channel.name
+    }]. Include your phone number if you want admins to respond to you individually.
+
+Send HELP to list valid commands.`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
+      : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
+
+  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
+
+Please respond with ACCEPT or DECLINE.`,
+
+  welcome: (addingAdmin, channelPhoneNumber) => `
+You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+
+People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+
+Reply with HELP for more info.`,
+
+  signupRequestReceived: (senderNumber, requestMsg) =>
+    `Signup request received from ${senderNumber}:\n ${requestMsg}`,
+
+  signupRequestResponse:
+    'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
+
+  toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
+
+  toggles: commandResponses.toggles,
 }
 
 const prefixes = {

@@ -34,57 +34,6 @@ Signalboost répond aux commandes:
 
 Pour plus de renseignements: https://signalboost.info`
 
-const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
-
-  hotlineMessageSent: channel =>
-    `Votre message a été transmis de manière anonyme aux admins de [${
-      channel.name
-    }]. Indiquez votre numéro de téléphone si vous souhaitez que les administrateurs vous répondent individuellement.'
-
-Send HELP to list valid commands.`,
-
-  hotlineMessagesDisabled: isSubscriber =>
-    isSubscriber
-      ? 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
-      : 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
-
-  inviteReceived: channelName => `Vous avez été invité sur la  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
-
-Veuillez répondre avec ACCEPTER ou REFUSER.`,
-
-  deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
-
-Ceci est presque certainement parce qu’ielles ont réinstallé Signal sur un nouvel appareil.
-
-Cependant, il y a un petit risque que leur téléphone soit compromis et tente de se faire passer pour elleux.
-
-Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
-
-AJOUTER ${adminPhoneNumber}
-
-Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
-  noop: 'Oups! Ceci n’est pas une commande!',
-  unauthorized:
-    'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
-
-  welcome: (addingAdmin, channelPhoneNumber) => `
-Vous êtes maintenant un
- admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
-
-On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
-
-Commande AIDE pour plus de renseignements.`,
-
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
-
-  signupRequestResponse:
-    'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
-}
-
 const commandResponses = {
   // ACCEPT
 
@@ -330,6 +279,68 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: `Oups! Une erreur s'est produite lors du changement de la description de la canal. ¡Inténtalo de nuevo!`,
     notAdmin,
   },
+}
+
+const notifications = {
+  adminAdded: (commandIssuer, addedAdmin) =>
+    `Nouvelle-eau Admin ${addedAdmin} ajouté par ${commandIssuer}`,
+
+  adminRemoved: "Un administrateur vient d'être supprimé.",
+
+  adminLeft: 'Un administrateur vient de quitter la chaîne',
+
+  channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
+
+  hotlineMessageSent: channel =>
+    `Votre message a été transmis de manière anonyme aux admins de [${
+      channel.name
+    }]. Indiquez votre numéro de téléphone si vous souhaitez que les administrateurs vous répondent individuellement.'
+
+Send HELP to list valid commands.`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
+      : 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
+
+  inviteReceived: channelName => `Vous avez été invité sur la  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
+
+Veuillez répondre avec ACCEPTER ou REFUSER.`,
+
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
+
+Ceci est presque certainement parce qu’ielles ont réinstallé Signal sur un nouvel appareil.
+
+Cependant, il y a un petit risque que leur téléphone soit compromis et tente de se faire passer pour elleux.
+
+Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
+
+AJOUTER ${adminPhoneNumber}
+
+Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
+  noop: 'Oups! Ceci n’est pas une commande!',
+  unauthorized:
+    'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
+
+  welcome: (addingAdmin, channelPhoneNumber) => `
+Vous êtes maintenant un
+ admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
+
+On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
+
+Commande AIDE pour plus de renseignements.`,
+
+  signupRequestReceived: (senderNumber, requestMsg) =>
+    `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
+
+  signupRequestResponse:
+    'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
+
+  toRemovedAdmin:
+    "Vous venez d'être supprimé en tant qu'administrateur de cette chaîne. Envoyez BONJOUR pour vous réinscrire.",
+
+  toggles: commandResponses.toggles,
 }
 
 const prefixes = {

@@ -126,7 +126,7 @@ Yay! Thanks for writing code to help the project! To help us keep track of thing
   * prefix commit messages with `[ns]`, eg: `[ns] add lollipops`
   * mention `[nostory]` in the MR title, eg: `[nostory] add lollipops`
 * **tests:** use tests! for everything you possibly can! :)
-  * run the test suite (`yarn test`) before opening an MR. if tests are failing, we will not merge your code, and that would be sad! :(
+  * run the test suite (`make test.all`) before opening an MR. if tests are failing, we will not merge your code, and that would be sad! :(
   * write tests for any new code you write. if you add code with no tests, we will ask you to add tests before merging
 * **rebase** onto master before merging
   * yes, we want you to rebase onto master instead of merging master into your branch.
@@ -135,7 +135,7 @@ Yay! Thanks for writing code to help the project! To help us keep track of thing
 * **linting:** run the linter before opening your MR
   * we have a set of eslint rules so that we can settle boring/fiddly issues about formatting according to an objectively defined set of rules instead of getting into time-wasting not-fun subjective arguments about it
   * if your MR doesn't pass lint rules we will ask you to fix it before merging
-  * to run the linter, use `yarn lint` from the project root
+  * to run the linter, use `make test.lint` from the project root
 * **timely feedback:** you should expect to hear back from a `Team Friendo` member within 24 hours of submitting your request
   * if 48 hours passes and nobody has said anything, feel free to `@team-friendo` in the MR discussion to get our attention! :)
 

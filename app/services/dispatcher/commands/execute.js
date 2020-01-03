@@ -4,6 +4,7 @@ const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const validator = require('../../../db/validations/phoneNumber')
 const logger = require('../logger')
+const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
@@ -19,15 +20,16 @@ const {
  * }
  *
  * type CommandResult = {
- *   status: string,
  *   command: string,
+ *   status: string,
  *   message: string,
+ *   notifications: Array<{ recipient: Array<string>, message: string }>
  * }
  *
  * type Toggle = toggles.RESPONSES | toggles.VOUCHING
  * */
 
-// (Executable, Distpatchable) -> Promise<{dispatchable: Dispatchable, commandResult: CommandResult}>
+// (Executable, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
   const { db, channel, sender } = dispatchable
@@ -51,6 +53,7 @@ const execute = async (executable, dispatchable) => {
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
+  result.notifications = result.notifications || []
   return { command, ...result }
 }
 
@@ -108,16 +111,41 @@ const maybeAddAdmin = async (db, channel, sender, phoneNumberInput) => {
   return addAdmin(db, channel, sender, phoneNumber, cr)
 }
 
-const addAdmin = (db, channel, sender, newAdminNumber, cr) =>
-  membershipRepository
-    .addAdmin(db, channel.phoneNumber, newAdminNumber)
-    .then(() => ({
+const addAdmin = async (db, channel, sender, newAdminPhoneNumber, cr) => {
+  try {
+    const newAdminMembership = await membershipRepository.addAdmin(
+      db,
+      channel.phoneNumber,
+      newAdminPhoneNumber,
+    )
+    return {
       status: statuses.SUCCESS,
-      message: cr.success(newAdminNumber),
-      payload: newAdminNumber,
-    }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(newAdminNumber) }))
+      message: cr.success(newAdminPhoneNumber),
+      notifications: addAdminNotificationsOf(channel, newAdminMembership, sender),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError(newAdminPhoneNumber) }
+  }
+}
 
+const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
+  const newAdminPhoneNumber = newAdminMembership.memberPhoneNumber
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return [
+    {
+      recipient: newAdminPhoneNumber,
+      message: `${messagesIn(newAdminMembership.language).notifications.welcome(
+        sender.phoneNumber,
+        channel.phoneNumber,
+      )}`,
+    },
+    ...bystanders.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.adminAdded,
+    })),
+  ]
+}
 // HELP
 
 const showHelp = async (db, channel, sender) => {
@@ -162,11 +190,24 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
     )
     // We don't return an "already invited" error here to defend side-channel attacks (as above)
     return inviteWasCreated
-      ? { status: statuses.SUCCESS, message: cr.success, payload: inviteePhoneNumber }
+      ? {
+          status: statuses.SUCCESS,
+          message: cr.success,
+          notifications: inviteNotificationsOf(channel, inviteePhoneNumber),
+        }
       : { status: statuses.ERROR, message: cr.success }
   } catch (e) {
     return { status: statuses.ERROR, message: cr.dbError }
   }
+}
+
+const inviteNotificationsOf = (channel, inviteePhoneNumber) => {
+  return [
+    {
+      recipient: inviteePhoneNumber,
+      message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+    },
+  ]
 }
 
 // JOIN
@@ -197,50 +238,102 @@ const removeSender = (db, channel, sender, cr) => {
   const remove =
     sender.type === ADMIN ? membershipRepository.removeAdmin : membershipRepository.removeSubscriber
   return remove(db, channel.phoneNumber, sender.phoneNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success,
+      // TODO NITPICK(aguestuser|2019-12-30): we could tuck this ternary into `removeSenderNotificationsOf`?
+      //  since `sender` is an argument to that function, we can easily check `sender.type` there, and it makes
+      //  this bit a bit less noisy. (by "pushing the complexity down")
+      notifications: sender.type === ADMIN ? removeSenderNotificationsOf(channel, sender) : [],
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
+}
+
+const removeSenderNotificationsOf = (channel, sender) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.adminLeft,
+  }))
 }
 
 // REMOVE
 
-const maybeRemoveAdmin = async (db, channel, sender, adminNumber) => {
+const maybeRemoveAdmin = async (db, channel, sender, adminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
-  const { isValid, phoneNumber: validNumber } = validator.parseValidPhoneNumber(adminNumber)
+  const { isValid, phoneNumber: validAdminNumber } = validator.parseValidPhoneNumber(
+    adminPhoneNumber,
+  )
 
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   if (!isValid) {
-    return { status: statuses.ERROR, message: cr.invalidNumber(adminNumber) }
+    return { status: statuses.ERROR, message: cr.invalidNumber(adminPhoneNumber) }
   }
-  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotAdmin(validNumber) }
+  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validAdminNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotAdmin(validAdminNumber) }
 
-  return removeAdmin(db, channel, validNumber, cr)
+  return removeAdmin(db, channel, validAdminNumber, sender, cr)
 }
 
-const removeAdmin = async (db, channel, adminNumber, cr) =>
-  membershipRepository
-    .removeAdmin(db, channel.phoneNumber, adminNumber)
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(adminNumber) }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminNumber) }))
+const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
+  return membershipRepository
+    .removeAdmin(db, channel.phoneNumber, adminPhoneNumber)
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(adminPhoneNumber),
+      notifications: removalNotificationsOf(channel, adminPhoneNumber, sender),
+    }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminPhoneNumber) }))
+}
+
+const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
+  const removedMember = channel.memberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, adminPhoneNumber])
+  return [
+    {
+      recipient: adminPhoneNumber,
+      message: `${messagesIn(removedMember.language).notifications.toRemovedAdmin}`,
+    },
+    ...bystanders.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.adminRemoved,
+    })),
+  ]
+}
 
 // RENAME
 
-const maybeRenameChannel = async (db, channel, sender, newName) => {
+const maybeRenameChannel = async (db, channel, sender, newChannelName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
   return sender.type === ADMIN
-    ? renameChannel(db, channel, newName, cr)
+    ? renameChannel(db, channel, newChannelName, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const renameChannel = (db, channel, newName, cr) =>
+const renameChannel = (db, channel, newChannelName, sender, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { name: newName })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel.name, newName) }))
+    .update(db, channel.phoneNumber, { name: newChannelName })
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(channel.name, newChannelName),
+      notifications: renameNotificationsOf(channel, newChannelName, sender),
+    }))
     .catch(err =>
-      logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(channel.name, newName) }),
+      logAndReturn(err, {
+        status: statuses.ERROR,
+        message: cr.dbError(channel.name, newChannelName),
+      }),
     )
+
+const renameNotificationsOf = (channel, newChannelName, sender) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.channelRenamed(channel.name, newChannelName),
+  }))
+}
 
 // ON / OFF TOGGLES FOR RESPONSES, VOUCHING
 
@@ -265,8 +358,20 @@ const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
 const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
   channelRepository
     .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(isOn) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(isOn),
+      notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
+
+const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
+  const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return recipients.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
+  }))
+}
 
 // SET_LANGUAGE
 
@@ -295,7 +400,8 @@ const setDescription = (db, channel, newDescription, cr) => {
 }
 
 // NOOP
-const noop = () => Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '' })
+const noop = () =>
+  Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '', notifications: [] })
 
 /**********
  * HELPERS
