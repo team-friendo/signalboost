@@ -49,6 +49,10 @@ const getMemberPhoneNumbers = channel => (channel.memberships || []).map(m => m.
 const getAdminMemberships = channel => channel.memberships.filter(m => m.type === memberTypes.ADMIN)
 const getAdminPhoneNumbers = channel => getAdminMemberships(channel).map(m => m.memberPhoneNumber)
 
+// (Channel, Array<string>) -> Array<Membership>
+const getAllAdminsExcept = (channel, phoneNumbers) =>
+  getAdminMemberships(channel).filter(m => !phoneNumbers.includes(m.memberPhoneNumber))
+
 const getSubscriberMemberships = channel =>
   channel.memberships.filter(m => m.type === memberTypes.SUBSCRIBER)
 const getSubscriberPhoneNumbers = channel =>
@@ -60,6 +64,7 @@ module.exports = {
   findAllDeep,
   findByPhoneNumber,
   findDeep,
+  getAllAdminsExcept,
   getAdminMemberships,
   getAdminPhoneNumbers,
   getMemberPhoneNumbers,

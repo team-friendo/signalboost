@@ -33,62 +33,6 @@ Signalboost responde a comandos:
 
 Para más información: https://signalboost.info`
 
-const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `Nuevo administrador ${addedAdmin} agregado por ${commandIssuer}`,
-
-  hotlineMessageSent: channel =>
-    `Su mensaje se envió de forma anónima a los admins de [${
-      channel.name
-    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
-
-Enviar AYUDA para enumerar comandos válidos.
-`,
-
-  hotlineMessagesDisabled: isSubscriber =>
-    isSubscriber
-      ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
-      : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
-
-  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
-  
-  Responda con ACEPTAR o RECHAZAR.`,
-
-  deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
-    
-Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
-
-Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
-
-Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
-  
-AGREGAR ${adminPhoneNumber}
-  
-Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
-
-  welcome: (
-    addingAdmin,
-    channelPhoneNumber,
-  ) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
-
-Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
-
-Responda con AYUDA para más información.`,
-
-  noop: '¡Lo siento! Eso no es un comando!',
-
-  unauthorized: `¡Lo siento! No entiendo eso.
-  
-Envíe AYUDA para ver los comandos que entiendo! :)`,
-
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,
-
-  signupRequestResponse:
-    '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
-}
-
 const commandResponses = {
   // ACCEPT
 
@@ -320,6 +264,72 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
   },
+}
+
+const notifications = {
+  adminAdded: 'Se acaba de agregar nuevo administrador.',
+
+  adminRemoved: 'Se acaba de eliminar un administrador.',
+
+  adminLeft: 'Un administrador dejó el canal.',
+
+  channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
+
+  hotlineMessageSent: channel =>
+    `Su mensaje se envió de forma anónima a los admins de [${
+      channel.name
+    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+
+Enviar AYUDA para enumerar comandos válidos.
+`,
+
+  hotlineMessagesDisabled: isSubscriber =>
+    isSubscriber
+      ? 'Lo siento, los mensajes entrantes no están habilitados en este canal. Enviar AYUDA para enumerar comandos válidos.'
+      : 'Los siento,  los mensajes entrantes no están habilitados en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
+
+  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Te gustaría suscribirte a los anuncios de este canal?
+  
+  Responda con ACEPTAR o RECHAZAR.`,
+
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
+    
+Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
+
+Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
+
+Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
+  
+AGREGAR ${adminPhoneNumber}
+  
+Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
+
+  welcome: (
+    addingAdmin,
+    channelPhoneNumber,
+  ) => `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
+
+Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
+
+Responda con AYUDA para más información.`,
+
+  noop: '¡Lo siento! Eso no es un comando!',
+
+  unauthorized: `¡Lo siento! No entiendo eso.
+  
+Envíe AYUDA para ver los comandos que entiendo! :)`,
+
+  signupRequestReceived: (senderNumber, requestMsg) =>
+    `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,
+
+  signupRequestResponse:
+    '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
+
+  toRemovedAdmin:
+    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+
+  toggles: commandResponses.toggles,
 }
 
 const prefixes = {

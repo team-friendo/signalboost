@@ -22,23 +22,25 @@ describe('messenger service', () => {
   const notifications = messagesIn(defaultLanguage).notifications
   const [db, sock] = [{}, { write: () => {} }]
   const channelPhoneNumber = genPhoneNumber()
-  const subscriberNumbers = times(2, genPhoneNumber)
-  const adminNumbers = [genPhoneNumber(), genPhoneNumber()]
+  const subscriberPhoneNumbers = times(2, genPhoneNumber)
+  const adminPhoneNumbers = times(4, genPhoneNumber)
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
     memberships: [
-      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[0] },
-      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminNumbers[1] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[0] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[1] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[2] },
+      { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[3] },
       {
         type: memberTypes.SUBSCRIBER,
         channelPhoneNumber,
-        memberPhoneNumber: subscriberNumbers[0],
+        memberPhoneNumber: subscriberPhoneNumbers[0],
       },
       {
         type: memberTypes.SUBSCRIBER,
         channelPhoneNumber,
-        memberPhoneNumber: subscriberNumbers[1],
+        memberPhoneNumber: subscriberPhoneNumbers[1],
       },
     ],
     messageCount: { broadcastIn: 42 },
@@ -58,12 +60,13 @@ describe('messenger service', () => {
     attachments,
   }
   const adminSender = {
-    phoneNumber: adminNumbers[0],
+    phoneNumber: adminPhoneNumbers[0],
     type: memberTypes.ADMIN,
     language: languages.EN,
   }
+
   const subscriberSender = {
-    phoneNumber: subscriberNumbers[0],
+    phoneNumber: subscriberPhoneNumbers[0],
     type: memberTypes.SUBSCRIBER,
     language: languages.EN,
   }
@@ -149,13 +152,13 @@ describe('messenger service', () => {
         it('broadcasts the message to all channel subscribers and admins', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [...adminNumbers, ...subscriberNumbers],
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers],
             { ...sdMessage, messageBody: '[foobar]\nplease help!' },
           ])
         })
 
         it('it increments the command count for the channel', () => {
-          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 4])
+          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 6])
         })
       })
 
@@ -196,7 +199,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              adminNumbers,
+              adminPhoneNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
@@ -225,7 +228,7 @@ describe('messenger service', () => {
           it('forwards the message to channel admins', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
               sock,
-              adminNumbers,
+              adminPhoneNumbers,
               { ...sdMessage, messageBody: `[SUBSCRIBER RESPONSE]\n${sdMessage.messageBody}` },
             ])
           })
@@ -242,6 +245,8 @@ describe('messenger service', () => {
     })
 
     describe('when message is a signup request', () => {
+      const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
+
       beforeEach(async () => {
         const dispatchable = {
           db,
@@ -250,37 +255,43 @@ describe('messenger service', () => {
           sender: randomSender,
           sdMessage: sdMessageOf(signupChannel, 'gimme a channel'),
         }
-        const commandResult = { status: commands.NOOP, message: '' }
+        const commandResult = { status: commands.NOOP, message: '', notificatioms: [] }
         await messenger.dispatch({ dispatchable, commandResult })
       })
 
       it('forwards request to channel admins and appends phone number', () => {
-        expect(broadcastMessageStub.getCall(0).args).to.eql([
-          sock,
-          channelRepository.getAdminPhoneNumbers(channel),
-          sdMessageOf(
-            signupChannel,
-            notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
-          ),
-        ])
+        adminPhoneNumbers.forEach((adminPhoneNumber, index) => {
+          expect(sendMessageStub.getCall(index).args).to.eql([
+            sock,
+            adminPhoneNumber,
+            sdMessageOf(
+              signupChannel,
+              notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
+            ),
+          ])
+        })
       })
+
       it('responds to requester', () => {
-        expect(broadcastMessageStub.getCall(1).args).to.eql([
+        expect(sendMessageStub.getCall(adminPhoneNumbers.length).args).to.eql([
           sock,
-          [randomSender.phoneNumber],
-          sdMessageOf(
-            signupChannel,
-            notifications.signupRequestResponse,
-          ),
+          randomSender.phoneNumber,
+          sdMessageOf(signupChannel, notifications.signupRequestResponse),
         ])
       })
     })
 
     describe('when message is a command response', () => {
+      // TODO(aguestuser|mari): loop over all commands here
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
-          commandResult: { command: commands.JOIN, status: statuses.SUCCESS, message: 'yay!' },
+          commandResult: {
+            command: commands.JOIN,
+            status: statuses.SUCCESS,
+            message: 'yay!',
+            notifications: [],
+          },
         })
       })
 
@@ -305,76 +316,31 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when message is a command notification', () => {
-      describe('for a newly added admin', () => {
-        const newAdmin = genPhoneNumber()
-        const sdMessage = `${commands.ADD} ${newAdmin}`
-        const response = messages.commandResponses.add.success(newAdmin)
-        const welcome = messages.notifications.welcome(adminSender.phoneNumber, channel.phoneNumber)
-        const alert = messages.notifications.adminAdded(adminSender.phoneNumber, newAdmin)
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
-            commandResult: {
-              command: commands.ADD,
-              status: statuses.SUCCESS,
-              message: response,
-              payload: newAdmin,
-            },
-          })
-        })
-
-        it('does not broadcast a message', () => {
-          expect(broadcastSpy.callCount).to.eql(0)
-        })
-
-        it('does not increment the broadcast count', () => {
-          expect(incrementBroadcastCountStub.callCount).to.eql(0)
-        })
-
-        it('sends a response to the command sender', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            sock,
-            adminSender.phoneNumber,
-            sdMessageOf(channel, response),
-          ])
-        })
-
-        it('sends a welcome notification to the newly added admin', () => {
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
-            sock,
-            [newAdmin],
-            sdMessageOf(channel, welcome),
-          ])
-        })
-
-        it('sends an alert to the other channel admins', () => {
-          expect(broadcastMessageStub.getCall(1).args).to.eql([
-            sock,
-            adminNumbers,
-            sdMessageOf(channel, alert),
-          ])
+    describe('when command includes notification(s)', () => {
+      beforeEach(async () => {
+        await messenger.dispatch({
+          dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
+          commandResult: {
+            command: commands.ADD,
+            status: statuses.SUCCESS,
+            message: 'boofar',
+            notifications: [
+              ...adminPhoneNumbers.map(phoneNumber => ({
+                recipient: phoneNumber,
+                message: 'foobar',
+              })),
+            ],
+          },
         })
       })
 
-      describe('for an invitee', () => {
-        const inviteePhoneNumber = genPhoneNumber()
-        const sdMessage = sdMessageOf(channel, `${commands.invite} ${inviteePhoneNumber}`)
-        const dispatchable = { db, sock, channel, sender: adminSender, sdMessage }
-        const commandResult = {
-          command: commands.INVITE,
-          status: statuses.SUCCESS,
-          message: messages.commandResponses.invite.success,
-          payload: inviteePhoneNumber,
-        }
-
-        it('sends an invite notification to the invitee', async () => {
-          await messenger.dispatch({ dispatchable, commandResult })
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
+      // the first call to signal.sendMessage is to send the commandResponse, so start after that
+      it('sends out each notification', () => {
+        adminPhoneNumbers.forEach((phoneNumber, index) => {
+          expect(sendMessageStub.getCall(index + 1).args).to.eql([
             sock,
-            [inviteePhoneNumber],
-            sdMessageOf(channel, messages.notifications.inviteReceived(channel.name)),
+            phoneNumber,
+            sdMessageOf(channel, 'foobar'),
           ])
         })
       })
