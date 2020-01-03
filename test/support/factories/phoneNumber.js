@@ -2,8 +2,7 @@ import { times, random, sample } from 'lodash'
 import { statuses } from '../../../app/db/models/phoneNumber'
 
 export const genPhoneNumber = () => '+1' + times(10, () => random(0, 9).toString()).join('')
-export const parenthesize = pn =>
-  pn.slice(0,2) + '(' + pn.slice(2,5) + ') ' + pn.slice(5)
+export const parenthesize = pn => pn.slice(0, 2) + '(' + pn.slice(2, 5) + ') ' + pn.slice(5)
 
 export const genSid = () =>
   times(34, () =>

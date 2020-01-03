@@ -30,40 +30,42 @@ const {
 
 describe('executing commands', () => {
   const db = {}
-  const admin = {
-    phoneNumber: '+11111111111',
-    type: memberTypes.ADMIN,
-    language: languages.EN,
-  }
   const channel = {
     name: 'foobar',
     phoneNumber: '+13333333333',
     memberships: [
-      adminMembershipFactory({
-        memberPhoneNumber: admin.phoneNumber,
-        channelPhoneNumber: '+13333333333',
-      }),
       ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
       ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
     ],
     messageCount: { broadcastIn: 42 },
   }
-  const bystanderAdminMemberships = channel.memberships.slice(1, 4)
+  const bystanderAdminMemberships = channel.memberships.slice(1, 3)
   const signupChannel = {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,
     publications: channel.publications,
   }
-  const subscriber = {
-    phoneNumber: '+12222222222',
-    type: memberTypes.SUBSCRIBER,
-    language: languages.EN,
+  const admin = {
+    ...channel.memberships[0],
+    phoneNumber: channel.memberships[0].memberPhoneNumber,
   }
+  const subscriber = {
+    ...channel.memberships[3],
+    phoneNumber: channel.memberships[3].memberPhoneNumber,
+  }
+
   const randomPerson = {
-    phoneNumber: '+13333333333',
+    phoneNumber: genPhoneNumber(),
     type: memberTypes.NONE,
     language: languages.EN,
   }
+  const newAdminPhoneNumber = genPhoneNumber()
+  const newAdminMembership = adminMembershipFactory({
+    channelPhoneNumber: channel.phoneNumber,
+    memberPhoneNumber: newAdminPhoneNumber,
+    language: 'FR',
+  })
+  const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
 
   describe('ACCEPT command', () => {
     const dispatchable = {
@@ -212,8 +214,6 @@ describe('executing commands', () => {
       const sender = admin
 
       describe('when payload is a valid phone number', () => {
-        const newAdminPhoneNumber = channel.memberships[1].memberPhoneNumber
-        const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
         const sdMessage = sdMessageOf(channel, `ADD ${rawNewAdminPhoneNumber}`)
         // to simulate situation in which we have not yet added the admin...
         const _channel = { ...channel, memberships: channel.memberships.slice(1) }
@@ -231,16 +231,7 @@ describe('executing commands', () => {
         })
 
         describe('when adding the admin succeeds', () => {
-          beforeEach(() =>
-            addAdminStub.returns(
-              Promise.resolve(
-                adminMembershipFactory({
-                  channelPhoneNumber: channel.phoneNumber,
-                  memberPhoneNumber: newAdminPhoneNumber,
-                }),
-              ),
-            ),
-          )
+          beforeEach(() => addAdminStub.returns(Promise.resolve(newAdminMembership)))
 
           it('returns a SUCCESS status, message, and notifications', async () => {
             expect(await processCommand(dispatchable)).to.eql({
@@ -251,12 +242,12 @@ describe('executing commands', () => {
                 // welcome message to newly added admin
                 {
                   recipient: newAdminPhoneNumber,
-                  message: messagesIn(languages.EN).notifications.welcome(
+                  message: messagesIn(languages.FR).notifications.welcome(
                     sender.phoneNumber,
                     channel.phoneNumber,
                   ),
                 },
-                // notifications for all other bystander admins
+                // notifications for all bystander admins
                 {
                   recipient: channel.memberships[1].memberPhoneNumber,
                   message: messagesIn(channel.memberships[1].language).notifications.adminAdded,
@@ -264,10 +255,6 @@ describe('executing commands', () => {
                 {
                   recipient: channel.memberships[2].memberPhoneNumber,
                   message: messagesIn(channel.memberships[2].language).notifications.adminAdded,
-                },
-                {
-                  recipient: channel.memberships[3].memberPhoneNumber,
-                  message: messagesIn(channel.memberships[3].language).notifications.adminAdded,
                 },
               ],
             })
@@ -832,12 +819,10 @@ describe('executing commands', () => {
           command: commands.LEAVE,
           status: statuses.SUCCESS,
           message: CR.leave.success,
-          notifications: [
-            ...bystanderAdminMemberships.map(membership => ({
-              recipient: membership.memberPhoneNumber,
-              message: messagesIn(membership.language).notifications.adminLeft,
-            })),
-          ],
+          notifications: bystanderAdminMemberships.map(membership => ({
+            recipient: membership.memberPhoneNumber,
+            message: messagesIn(membership.language).notifications.adminLeft,
+          })),
         })
       })
     })
@@ -858,7 +843,7 @@ describe('executing commands', () => {
       removeAdminStub.restore()
     })
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const sender = admin
       beforeEach(() => removeAdminStub.returns(Promise.resolve()))
 
@@ -898,10 +883,6 @@ describe('executing commands', () => {
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: messagesIn(languages.EN).notifications.adminRemoved,
-                  },
-                  {
-                    recipient: channel.memberships[3].memberPhoneNumber,
                     message: messagesIn(languages.EN).notifications.adminRemoved,
                   },
                 ],
