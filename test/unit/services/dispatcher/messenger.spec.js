@@ -316,217 +316,31 @@ describe('messenger service', () => {
       })
     })
 
-    describe('when command requires notification(s)', () => {
-      const bystanderPhoneNumbers = adminPhoneNumbers.slice(1, 4)
-
-      describe('for an ADD command', () => {
-        const newAdminPhoneNumber = genPhoneNumber()
-        const sdMessage = `${commands.ADD} ${newAdminPhoneNumber}`
-        const commandResponse = messages.commandResponses.add.success(newAdminPhoneNumber)
-        const welcome = messages.notifications.welcome(adminSender.phoneNumber, channel.phoneNumber)
-        const notificationMessage = messages.notifications.adminAdded
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
-            commandResult: {
-              command: commands.ADD,
-              status: statuses.SUCCESS,
-              message: commandResponse,
-              notifications: [
-                {
-                  recipient: newAdminPhoneNumber,
-                  message: welcome,
-                },
-                ...bystanderPhoneNumbers.map(phoneNumber => ({
-                  recipient: phoneNumber,
-                  message: notificationMessage,
-                })),
-              ],
-            },
-          })
-        })
-
-        it('sends a welcome notification to the newly added admin', () => {
-          expect(sendMessageStub.getCall(1).args).to.eql([
-            sock,
-            newAdminPhoneNumber,
-            sdMessageOf(channel, welcome),
-          ])
-        })
-
-        it('sends an alert to the other channel admins', () => {
-          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(sendMessageStub.getCall(index + 2).args).to.eql([
-              sock,
-              bystanderPhoneNumbers[index],
-              sdMessageOf(channel, notificationMessage),
-            ])
-          })
+    describe('when command includes notification(s)', () => {
+      beforeEach(async () => {
+        await messenger.dispatch({
+          dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
+          commandResult: {
+            command: commands.ADD,
+            status: statuses.SUCCESS,
+            message: 'boofar',
+            notifications: [
+              ...adminPhoneNumbers.map(phoneNumber => ({
+                recipient: phoneNumber,
+                message: 'foobar',
+              })),
+            ],
+          },
         })
       })
 
-      describe('for a REMOVE command', () => {
-        const remover = adminSender
-        const removedPhoneNumber = adminPhoneNumbers[1]
-        const bystanderPhoneNumbers = [adminPhoneNumbers[2], adminPhoneNumbers[3]]
-        const sdMessage = `${commands.REMOVE} ${removedPhoneNumber}`
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: remover,
-              sdMessage,
-            },
-            commandResult: {
-              command: commands.REMOVE,
-              status: statuses.SUCCESS,
-              notifications: [
-                {
-                  recipient: removedPhoneNumber,
-                  message: messages.notifications.toRemovedAdmin,
-                },
-                {
-                  recipient: bystanderPhoneNumbers[0],
-                  message: messages.notifications.adminRemoved,
-                },
-                {
-                  recipient: bystanderPhoneNumbers[1],
-                  message: messages.notifications.adminRemoved,
-                },
-              ],
-            },
-          })
-        })
-
-        it('notifies the removed admin', () => {
-          expect(sendMessageStub.getCall(1).args).to.eql([
+      // the first call to signal.sendMessage is to send the commandResponse, so start after that
+      it('sends out each notification', () => {
+        adminPhoneNumbers.forEach((phoneNumber, index) => {
+          expect(sendMessageStub.getCall(index + 1).args).to.eql([
             sock,
-            removedPhoneNumber,
-            sdMessageOf(channel, messages.notifications.toRemovedAdmin),
-          ])
-        })
-
-        it('notifies all other admins', () => {
-          expect(sendMessageStub.getCall(2).args).to.eql([
-            sock,
-            bystanderPhoneNumbers[0],
-            sdMessageOf(channel, messages.notifications.adminRemoved),
-          ])
-          expect(sendMessageStub.getCall(3).args).to.eql([
-            sock,
-            bystanderPhoneNumbers[1],
-            sdMessageOf(channel, messages.notifications.adminRemoved),
-          ])
-        })
-      })
-
-      describe('for a RENAME command', () => {
-        const commandResponse = messages.commandResponses.rename.success
-        const sdMessage = `${commands.RENAME} floof`
-        const notificationMessage = `${messages.notifications.channelRenamed(
-          channel.name,
-          'floof',
-        )}`
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: adminSender,
-              sdMessage,
-            },
-            commandResult: {
-              command: commands.RENAME,
-              status: statuses.SUCCESS,
-              message: commandResponse,
-              notifications: [
-                ...bystanderPhoneNumbers.map(phoneNumber => ({
-                  recipient: phoneNumber,
-                  message: notificationMessage,
-                })),
-              ],
-            },
-          })
-        })
-
-        it('notifies all admins except sender', () => {
-          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(sendMessageStub.getCall(index + 1).args).to.eql([
-              sock,
-              phoneNumber,
-              sdMessageOf(channel, notificationMessage),
-            ])
-          })
-        })
-      })
-
-      describe('for LEAVE command (admin only)', () => {
-        const sdMessage = `${commands.LEAVE}`
-        const commandResponse = messages.commandResponses.leave.success
-        const notificationMessage = `${messages.notifications.adminLeft}`
-
-        beforeEach(async () => {
-          await messenger.dispatch({
-            dispatchable: {
-              db,
-              sock,
-              channel,
-              sender: adminSender,
-              sdMessage,
-            },
-            commandResult: {
-              command: commands.LEAVE,
-              status: statuses.SUCCESS,
-              message: commandResponse,
-              notifications: [
-                ...bystanderPhoneNumbers.map(phoneNumber => ({
-                  recipient: phoneNumber,
-                  message: notificationMessage,
-                })),
-              ],
-            },
-          })
-        })
-
-        it('notifies all admins except sender', () => {
-          bystanderPhoneNumbers.forEach((phoneNumber, index) => {
-            expect(sendMessageStub.getCall(index + 1).args).to.eql([
-              sock,
-              phoneNumber,
-              sdMessageOf(channel, notificationMessage),
-            ])
-          })
-        })
-      })
-
-      describe('for an INVITE command', () => {
-        const inviteePhoneNumber = genPhoneNumber()
-        const sdMessage = sdMessageOf(channel, `${commands.invite} ${inviteePhoneNumber}`)
-        const dispatchable = { db, sock, channel, sender: adminSender, sdMessage }
-        const commandResult = {
-          command: commands.INVITE,
-          status: statuses.SUCCESS,
-          message: messages.commandResponses.invite.success,
-          notifications: [
-            {
-              recipient: inviteePhoneNumber,
-              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
-            },
-          ],
-        }
-
-        it('sends an invite notification to the invitee', async () => {
-          await messenger.dispatch({ dispatchable, commandResult })
-          expect(sendMessageStub.getCall(1).args).to.eql([
-            sock,
-            inviteePhoneNumber,
-            sdMessageOf(channel, messages.notifications.inviteReceived(channel.name)),
+            phoneNumber,
+            sdMessageOf(channel, 'foobar'),
           ])
         })
       })
