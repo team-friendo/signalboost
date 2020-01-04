@@ -66,19 +66,27 @@ const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   // notify admins of signup request
   await Promise.all(
     adminPhoneNumbers.map(adminPhoneNumber => {
-      notify(sock, channel, {
-        recipient: adminPhoneNumber,
-        message: notificationMessages.signupRequestReceived(
-          sender.phoneNumber,
-          sdMessage.messageBody,
-        ),
+      notify({
+        sock,
+        channel,
+        notification: {
+          recipient: adminPhoneNumber,
+          message: notificationMessages.signupRequestReceived(
+            sender.phoneNumber,
+            sdMessage.messageBody,
+          ),
+        },
       })
     }),
   )
   // respond to signup requester
-  return notify(sock, channel, {
-    message: notificationMessages.signupRequestResponse,
-    recipient: sender.phoneNumber,
+  return notify({
+    sock,
+    channel,
+    notification: {
+      message: notificationMessages.signupRequestResponse,
+      recipient: sender.phoneNumber,
+    },
   })
 }
 
@@ -108,7 +116,7 @@ const handleNotifications = ({ commandResult, dispatchable }) => {
   const { status, notifications } = commandResult
 
   return status === statuses.SUCCESS
-    ? Promise.all(notifications.map(notification => notify(sock, channel, notification)))
+    ? Promise.all(notifications.map(notification => notify({ sock, channel, notification })))
     : Promise.resolve([])
 }
 
@@ -143,8 +151,9 @@ const respond = ({ db, sock, channel, message, sender }) => {
     .then(() => countCommand({ db, channel }))
 }
 
-const notify = (sock, channel, { recipient, message }) =>
-  signal.sendMessage(sock, recipient, sdMessageOf(channel, message))
+// (Socket, Channel, Notification) -> Promise<void>
+const notify = ({ sock, channel, notification }) =>
+  signal.sendMessage(sock, notification.recipient, sdMessageOf(channel, notification.message))
 
 /**********
  * HELPERS

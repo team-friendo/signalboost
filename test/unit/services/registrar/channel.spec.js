@@ -102,9 +102,8 @@ describe('channel registrar', () => {
 
         it('sends a welcome message to new admins', async () => {
           await create({ db, sock, phoneNumber, name, admins, welcome: notifyStub })
-          expect(notifyStub.getCall(0).args).to.eql([
-            {
-              db,
+          admins.forEach((adminPhoneNumber, idx) => {
+            expect(notifyStub.getCall(idx).args[0]).to.eql({
               sock,
               channel: {
                 phoneNumber,
@@ -122,10 +121,12 @@ describe('channel registrar', () => {
                   },
                 ],
               },
-              notification: welcomeNotification,
-              recipients: admins,
-            },
-          ])
+              notification: {
+                message: welcomeNotification,
+                recipient: adminPhoneNumber,
+              },
+            })
+          })
         })
 
         describe('when sending welcome messages succeeds', () => {
@@ -256,15 +257,14 @@ describe('channel registrar', () => {
 
       it('attempts to send welcome message', async () => {
         await addAdmin({ db, sock, channelPhoneNumber, adminPhoneNumber })
-        expect(notifyStub.getCall(0).args).to.eql([
-          {
-            db,
-            sock,
-            channel: channelInstance,
-            notification: welcomeNotification,
-            recipients: [adminPhoneNumber],
+        expect(notifyStub.getCall(0).args[0]).to.eql({
+          sock,
+          channel: channelInstance,
+          notification: {
+            message: welcomeNotification,
+            recipient: adminPhoneNumber,
           },
-        ])
+        })
       })
 
       describe('when welcome message succeeds', () => {

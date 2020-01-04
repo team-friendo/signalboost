@@ -25,11 +25,12 @@ const addAdmin = async ({ db, sock, channelPhoneNumber, adminPhoneNumber }) => {
   await membershipRepository.addAdmin(db, channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
   await messenger.notify({
-    db,
     sock,
     channel,
-    notification: welcomeNotificationOf(channelPhoneNumber),
-    recipients: [adminPhoneNumber],
+    notification: {
+      message: welcomeNotificationOf(channelPhoneNumber),
+      recipient: adminPhoneNumber,
+    },
   })
   return {
     status: sbStatuses.SUCCESS,
@@ -44,13 +45,15 @@ const create = async ({ db, sock, phoneNumber, name, admins }) => {
     const channel = await channelRepository.create(db, phoneNumber, name, admins)
     await phoneNumberRepository.update(db, phoneNumber, { status: pNumStatuses.ACTIVE })
     await wait(welcomeDelay)
-    await messenger.notify({
-      db,
-      sock,
-      channel,
-      notification: welcomeNotificationOf(channel.phoneNumber),
-      recipients: channelRepository.getAdminPhoneNumbers(channel),
-    })
+    await Promise.all(
+      channelRepository.getAdminPhoneNumbers(channel).map(recipient =>
+        messenger.notify({
+          sock,
+          channel,
+          notification: { recipient, message: welcomeNotificationOf(channel.phoneNumber) },
+        }),
+      ),
+    )
     return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
   } catch (e) {
     logger.error(e)
