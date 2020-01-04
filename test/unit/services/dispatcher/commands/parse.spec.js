@@ -414,23 +414,23 @@ describe('parsing commands', () => {
     it('parses a DESCRIPTION command regardless of casing, spacing, accents, or language', () => {
       const variants = [
         {
-          language: languages.EN,
+          lang: languages.EN,
           messages: ['DESCRIPTION', 'description', ' description '],
         },
         {
-          language: languages.ES,
+          lang: languages.ES,
           messages: ['DESCRIPCIÓN', 'DESCRIPCION', 'descripcion', ' descripcion '],
         },
         {
-          language: languages.FR,
+          lang: languages.FR,
           messages: ['DESCRIPTION', 'description', ' description '],
         },
       ]
-      variants.forEach(({ language, messages }) =>
+      variants.forEach(({ lang, messages }) =>
         messages.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.SET_DESCRIPTION,
-            language: language == languages.FR ? languages.EN : language,
+            language: lang == languages.FR ? languages.EN : lang,
             payload: '',
           }),
         ),
@@ -440,22 +440,22 @@ describe('parsing commands', () => {
     it('parses the payload from a DESCRIPTION command', () => {
       const variants = [
         {
-          language: languages.EN,
+          lang: languages.EN,
           message: 'DESCRIPTION foo channel description',
         },
         {
-          language: languages.ES,
+          lang: languages.ES,
           message: 'DESCRIPCIÓN foo channel description',
         },
          {
-          language: languages.FR,
-          messages: ['DESCRIPTION', 'description', ' description '],
+          lang: languages.FR,
+          messages: 'DESCRIPTION foo channel description',
         },
       ]
-      variants.forEach(({ language, message }) =>
+      variants.forEach(({ lang, message }) =>
         expect(parseExecutable(message)).to.eql({
           command: commands.SET_DESCRIPTION,
-          language: language == languages.FR ? languages.EN : language,
+          language: lang == languages.FR ? languages.EN : lang,
           payload: 'foo channel description',
         }),
       )

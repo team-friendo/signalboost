@@ -10,6 +10,7 @@ const { genPhoneNumber } = require('./phoneNumber')
 export const channelFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
   name: '#red-alert',
+  description: 'the food channel',
   ...attrs,
 })
 
