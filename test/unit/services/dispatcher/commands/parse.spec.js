@@ -430,7 +430,7 @@ describe('parsing commands', () => {
         messages.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.SET_DESCRIPTION,
-            language,
+            language: language == languages.FR ? languages.EN : language,
             payload: '',
           }),
         ),
@@ -446,12 +446,16 @@ describe('parsing commands', () => {
         {
           language: languages.ES,
           message: 'DESCRIPCIÓN foo channel description',
-        }
+        },
+         {
+          language: languages.FR,
+          messages: ['DESCRIPTION', 'description', ' description '],
+        },
       ]
       variants.forEach(({ language, message }) =>
         expect(parseExecutable(message)).to.eql({
           command: commands.SET_DESCRIPTION,
-          language,
+          language: language == languages.FR ? languages.EN : language,
           payload: 'foo channel description',
         }),
       )
