@@ -66,6 +66,7 @@ describe('messages module', () => {
     const n = messagesEN.notifications
     const channel = {
       name: 'foobar',
+      description: 'the foobar channel',
       phoneNumber: '+13333333333',
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -80,6 +81,7 @@ describe('messages module', () => {
           const msg = cr.info[memberTypes.ADMIN](channel)
           expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
+          expect(msg).to.include('description: the foobar channel')
         })
       })
 
@@ -87,6 +89,7 @@ describe('messages module', () => {
         it('shows subscriber count', () => {
           const msg = cr.info[memberTypes.SUBSCRIBER](channel)
           expect(msg).to.include('subscribers: 2')
+          expect(msg).to.include('description: the foobar channel')
         })
       })
     })

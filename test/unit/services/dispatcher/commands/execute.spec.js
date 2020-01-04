@@ -1183,6 +1183,7 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             status: statuses.SUCCESS,
             message: CR.description.success('foo channel description'),
+            notifications: [],
           })
         })
       })
@@ -1198,6 +1199,7 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             status: statuses.ERROR,
             message: CR.description.dbError,
+            notifications: [],
           })
         })
       })
@@ -1210,6 +1212,7 @@ describe('executing commands', () => {
           command: commands.SET_DESCRIPTION,
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
+          notifications: [],
         })
       })
     })
@@ -1221,6 +1224,7 @@ describe('executing commands', () => {
           command: commands.SET_DESCRIPTION,
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
+          notifications: [],
         })
       })
     })
