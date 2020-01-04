@@ -585,7 +585,7 @@ describe('executing commands', () => {
           expect(issueInviteStub.callCount).to.eql(1)
         })
 
-        it('returns SUCCESS and payload for notifying invitee', () => {
+        it('returns SUCCESS with notification for invitee', () => {
           expect(res).to.eql({
             command: commands.INVITE,
             status: statuses.SUCCESS,
