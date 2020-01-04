@@ -38,9 +38,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${
-      channel.name
-    }] canal Signalboost.
+    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
@@ -191,7 +189,7 @@ ${support}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost.
+      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     inviteRequired: `Pardon! Les invitations sont nécessaires pour s'abonner à cette canal. Demandez à un ami de vous inviter!
