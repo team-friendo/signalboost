@@ -81,19 +81,13 @@
       chdir: "{{ homedir }}"
     tags: prepare
 
-  - name: Stop container used for install
-    command: "docker-compose down"
-    args:
-      chdir: "{{ homedir }}"
-    tags: prepare
-
   - name: Setup database, run migrations
     command: "docker-compose run --entrypoint /signalboost/bin/db/setup app"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
 
-  - name: Stop containers used for db setup
+  - name: Stop containers used for install & db setup
     command: "docker-compose down"
     args:
       chdir: "{{ homedir }}"
@@ -104,9 +98,9 @@
   #########
 
   - name: Start app
-    docker_service:
-      project_src: "{{ homedir }}"
-      state: present
+    command: "docker-compose up -d"
+    args:
+      chdir: "{{ homedir }}"
     register: docker_up_result
 
   # - debug:

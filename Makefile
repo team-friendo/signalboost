@@ -45,7 +45,7 @@ docker.build: ## rebuild the signalboost & signald docker images
 	./bin/build-docker
 
 ansible.install: ## removes boost cli files from your path
-	./bin/install-ansible
+	./ansible/install-ansible
 
 
 #######################
