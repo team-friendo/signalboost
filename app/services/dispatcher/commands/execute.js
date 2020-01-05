@@ -248,15 +248,13 @@ const removeSender = (db, channel, sender, cr) => {
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
-      // TODO NITPICK(aguestuser|2019-12-30): we could tuck this ternary into `removeSenderNotificationsOf`?
-      //  since `sender` is an argument to that function, we can easily check `sender.type` there, and it makes
-      //  this bit a bit less noisy. (by "pushing the complexity down")
-      notifications: sender.type === ADMIN ? removeSenderNotificationsOf(channel, sender) : [],
+      notifications: removeSenderNotificationsOf(channel, sender),
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 }
 
 const removeSenderNotificationsOf = (channel, sender) => {
+  if (sender.type !== ADMIN) return []
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
