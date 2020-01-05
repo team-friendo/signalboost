@@ -202,36 +202,12 @@ const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.message') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
 
-const foo = {
-  type: 'unexpected_error',
-  data: {
-    msg_number: 0,
-    message: 'Rate limit exceeded: 413',
-    error: true,
-    request: {
-      type: 'send',
-      username: '+12013801790',
-      messageBody: '[DEV URRAS]\nhiy',
-      recipientNumber: '+12014310118',
-      attachments: [],
-      expiresInSeconds: 0,
-    },
-  },
-}
-
 // InboundSdMessage -> SdMessage?
 const detectRateLimitedMessage = inboundMsg =>
   inboundMsg.type === signal.messageTypes.ERROR &&
   (get(inboundMsg, 'data.message', '').includes('413') ||
     get(inboundMsg, 'data.message', '').includes('Rate limit'))
     ? inboundMsg.data.request
-    : null
-
-// (SdMessage, Channel) -> UpdatableExpiryTime?
-const detectUpdatableExpiryTime = (inboundMsg, channel) =>
-  _isMessage(inboundMsg) &&
-  inboundMsg.data.dataMessage.expiresInSeconds !== channel.messageExpiryTime
-    ? inboundMsg.data.dataMessage.expiresInSeconds
     : null
 
 // SdMessage ->  UpdateableFingerprint?
@@ -254,6 +230,13 @@ const detectUpdatableFingerprint = inboundMsg => {
    **/
   return null
 }
+
+// (SdMessage, Channel) -> UpdatableExpiryTime?
+const detectUpdatableExpiryTime = (inboundMsg, channel) =>
+  _isMessage(inboundMsg) &&
+  inboundMsg.data.dataMessage.expiresInSeconds !== channel.messageExpiryTime
+    ? inboundMsg.data.dataMessage.expiresInSeconds
+    : null
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!
