@@ -29,7 +29,12 @@ const findAllDeep = db =>
   db.channel.findAll({
     order: [[db.messageCount, 'broadcastOut', 'DESC']],
     // order: [[db.messageCount, 'broadcastIn', 'DESC'], [db.messageCount, 'commandIn', 'DESC']],
-    include: [{ model: db.membership }, { model: db.messageCount }],
+    include: [
+      { model: db.deauthorization },
+      { model: db.invite },
+      { model: db.membership },
+      { model: db.messageCount },
+    ],
   })
 
 const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
@@ -37,7 +42,12 @@ const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { pho
 const findDeep = (db, phoneNumber) =>
   db.channel.findOne({
     where: { phoneNumber },
-    include: [{ model: db.membership }, { model: db.invite }, { model: db.messageCount }],
+    include: [
+      { model: db.deauthorization },
+      { model: db.invite },
+      { model: db.membership },
+      { model: db.messageCount },
+    ],
   })
 
 /************

@@ -10,9 +10,11 @@ import {
 } from '../../../../../app/services/dispatcher/commands/constants'
 import { languages } from '../../../../../app/constants'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
+import signal from '../../../../../app/services/signal'
 import channelRepository from '../../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../../app/db/repositories/membership'
+import deauthorizationRepository from '../../../../../app/db/repositories/deauthorization'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../../support/factories/phoneNumber'
@@ -24,6 +26,7 @@ import {
   subscriberMembershipFactory,
 } from '../../../../support/factories/membership'
 import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
+import { deauthorizationFactory } from '../../../../support/factories/deauthorization'
 const {
   signal: { signupPhoneNumber },
 } = require('../../../../../app/config')
@@ -34,6 +37,7 @@ describe('executing commands', () => {
     name: 'foobar',
     description: 'foobar channel description',
     phoneNumber: '+13333333333',
+    deauthorizations: [deauthorizationFactory()],
     memberships: [
       ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
       ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -67,6 +71,7 @@ describe('executing commands', () => {
     language: 'FR',
   })
   const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
+  const deauthorizedPhoneNumber = channel.deauthorizations[0].memberPhoneNumber
 
   describe('ACCEPT command', () => {
     const dispatchable = {
@@ -207,9 +212,17 @@ describe('executing commands', () => {
   })
 
   describe('ADD command', () => {
-    let addAdminStub
-    beforeEach(() => (addAdminStub = sinon.stub(membershipRepository, 'addAdmin')))
-    afterEach(() => addAdminStub.restore())
+    let addAdminStub, trustStub, destroyDeauthStub
+    beforeEach(() => {
+      addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
+      trustStub = sinon.stub(signal, 'trust')
+      destroyDeauthStub = sinon.stub(deauthorizationRepository, 'destroy')
+    })
+    afterEach(() => {
+      addAdminStub.restore()
+      trustStub.restore()
+      destroyDeauthStub.restore()
+    })
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -231,46 +244,94 @@ describe('executing commands', () => {
           ])
         })
 
-        describe('when adding the admin succeeds', () => {
-          beforeEach(() => addAdminStub.returns(Promise.resolve(newAdminMembership)))
+        describe('when new admin has not been previously deauthorized', () => {
+          describe('when adding the admin succeeds', () => {
+            beforeEach(() => addAdminStub.returns(Promise.resolve(newAdminMembership)))
 
-          it('returns a SUCCESS status, message, and notifications', async () => {
-            expect(await processCommand(dispatchable)).to.eql({
-              command: commands.ADD,
-              status: statuses.SUCCESS,
-              message: CR.add.success(newAdminPhoneNumber),
-              notifications: [
-                // welcome message to newly added admin
-                {
-                  recipient: newAdminPhoneNumber,
-                  message: messagesIn(languages.FR).notifications.welcome(
-                    sender.phoneNumber,
-                    channel.phoneNumber,
-                  ),
-                },
-                // notifications for all bystander admins
-                {
-                  recipient: channel.memberships[1].memberPhoneNumber,
-                  message: messagesIn(channel.memberships[1].language).notifications.adminAdded,
-                },
-                {
-                  recipient: channel.memberships[2].memberPhoneNumber,
-                  message: messagesIn(channel.memberships[2].language).notifications.adminAdded,
-                },
-              ],
+            it('returns a SUCCESS status, message, and notifications', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.ADD,
+                status: statuses.SUCCESS,
+                message: CR.add.success(newAdminPhoneNumber),
+                notifications: [
+                  // welcome message to newly added admin
+                  {
+                    recipient: newAdminPhoneNumber,
+                    message: messagesIn(languages.FR).notifications.welcome(
+                      sender.phoneNumber,
+                      channel.phoneNumber,
+                    ),
+                  },
+                  // notifications for all bystander admins
+                  {
+                    recipient: channel.memberships[1].memberPhoneNumber,
+                    message: messagesIn(channel.memberships[1].language).notifications.adminAdded,
+                  },
+                  {
+                    recipient: channel.memberships[2].memberPhoneNumber,
+                    message: messagesIn(channel.memberships[2].language).notifications.adminAdded,
+                  },
+                ],
+              })
+            })
+          })
+
+          describe('when adding the admin fails', () => {
+            beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
+
+            it('returns an ERROR status and message', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.ADD,
+                status: statuses.ERROR,
+                message: CR.add.dbError(newAdminPhoneNumber),
+                notifications: [],
+              })
             })
           })
         })
 
-        describe('when adding the admin fails', () => {
-          beforeEach(() => addAdminStub.callsFake(() => Promise.reject('oh noes!')))
+        describe('when new admin has been previously deauthorized', () => {
+          const sdMessage = sdMessageOf(channel, `ADD ${deauthorizedPhoneNumber}`)
+          const dispatchable = { db, channel, sender, sdMessage }
 
-          it('returns an ERROR status and message', async () => {
-            expect(await processCommand(dispatchable)).to.eql({
-              command: commands.ADD,
-              status: statuses.ERROR,
-              message: CR.add.dbError(newAdminPhoneNumber),
-              notifications: [],
+          it("attempts to trust the admin's new fingerprint", async () => {
+            await processCommand(dispatchable).catch()
+            expect(trustStub.callCount).to.eql(1)
+          })
+
+          describe('when trusting fingerprint succeeds', () => {
+            beforeEach(() => trustStub.returns(Promise.resolve()))
+
+            it('attempts to remove the deauthorization record for the new admin', async () => {
+              await processCommand(dispatchable).catch()
+              expect(destroyDeauthStub.callCount).to.eql(1)
+            })
+
+            describe('when removing deauthorization record succeeds', () => {
+              beforeEach(() => destroyDeauthStub.returns(Promise.resolve(1)))
+
+              describe('when adding new admin succeeds', () => {
+                beforeEach(() =>
+                  addAdminStub.callsFake((_, chPnum, adminPnum) =>
+                    Promise.resolve(
+                      adminMembershipFactory({
+                        channelPhoneNumber: chPnum,
+                        memberPhoneNumber: adminPnum,
+                      }),
+                    ),
+                  ),
+                )
+                // note: we only test the happy path as failure path of this branch is tested exhaustively above
+
+                it('returns a SUCCESS status, message, and notifications', async () => {
+                  const result = await processCommand(dispatchable)
+                  expect(result.status).to.eql(statuses.SUCCESS)
+                  expect(result.message).to.eql(
+                    CR.add.success(deauthorizedPhoneNumber),
+                  )
+                  expect(result.notifications.length).to.eql(3)
+                })
+              })
             })
           })
         })

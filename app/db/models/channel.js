@@ -1,4 +1,7 @@
 const { isPhoneNumber } = require('../validations/phoneNumber')
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../config')
 
 const channelOf = (sequelize, DataTypes) => {
   const channel = sequelize.define('channel', {
@@ -18,6 +21,11 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: '',
     },
+    messageExpiryTime: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: defaultMessageExpiryTime,
+    },
     responsesEnabled: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
@@ -32,6 +40,11 @@ const channelOf = (sequelize, DataTypes) => {
 
   channel.associate = db => {
     channel.hasMany(db.membership, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
+
+    channel.hasMany(db.deauthorization, {
       hooks: true,
       onDelete: 'cascade',
     })

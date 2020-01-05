@@ -5,6 +5,7 @@ const { channelOf } = require('./models/channel')
 const { membershipOf } = require('./models/membership')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { messageCountOf } = require('./models/messageCount')
+const { deauthorizationOf } = require('./models/deauthorization')
 const { inviteOf } = require('./models/invite')
 
 const { wait } = require('../services/util')
@@ -18,6 +19,7 @@ const initDb = () => {
 
   const db = {
     channel: channelOf(sequelize, Sequelize),
+    deauthorization: deauthorizationOf(sequelize, Sequelize),
     membership: membershipOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),

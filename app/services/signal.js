@@ -5,12 +5,7 @@ const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../constants')
 const { isEmpty } = require('lodash')
 const {
-  signal: {
-    connectionInterval,
-    maxConnectionAttempts,
-    verificationTimeout,
-    identityRequestTimeout,
-  },
+  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, trustRequestTimeout },
 } = require('../config')
 
 /**
@@ -75,19 +70,22 @@ const {
 const signaldSocketPath = '/var/run/signald/signald.sock'
 
 const messageTypes = {
-  GET_IDENTITIES: 'get_identities',
   ERROR: 'unexpected_error',
+  GET_IDENTITIES: 'get_identities',
   IDENTITIES: 'identities',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
+  SET_EXPIRATION: 'set_expiration',
   SUBSCRIBE: 'subscribe',
   TRUST: 'trust',
-  VERIFY: 'verify',
-  VERIFICATION_SUCCESS: 'verification_succeeded',
+  TRUSTED_FINGERPRINT: 'trusted_fingerprint',
+  UNTRUSTED_IDENTITY: 'untrusted_identity',
+  UNREADABLE_MESSAGE: 'unreadable_message',
   VERIFICATION_ERROR: 'verification_error',
   VERIFICATION_REQUIRED: 'verification_required',
-  SET_EXPIRATION: 'set_expiration',
+  VERIFICATION_SUCCESS: 'verification_succeeded',
+  VERIFY: 'verify',
 }
 
 const trustLevels = {
@@ -105,6 +103,8 @@ const messages = {
     verificationFailure: (phoneNumber, reason) =>
       `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
     verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
+    trustTimeout: (channelPhoneNumber, memberPhoneNumber) =>
+      `Trust command for member ${memberPhoneNumber} on channel ${channelPhoneNumber} timed out.`,
     identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
   },
   trust: {
@@ -180,14 +180,14 @@ const awaitVerificationResult = async (sock, phoneNumber) => {
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
         reject(new Error(messages.error.invalidJSON(msg)))
-      } else if (isVerificationFailure(type, data, phoneNumber)) {
+      } else if (_isVerificationFailure(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         const reason = get(data, 'message', 'Captcha required: 402')
         reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
-      } else if (isVerificationSuccess(type, data, phoneNumber)) {
+      } else if (_isVerificationSuccess(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         resolve(data)
-      } else if (isVerificationFailure(type, data, phoneNumber)) {
+      } else if (_isVerificationFailure(type, data, phoneNumber)) {
         sock.removeListener('data', handle)
         const reason = get(data, 'message', 'Captcha required: 402')
         reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
@@ -202,10 +202,10 @@ const awaitVerificationResult = async (sock, phoneNumber) => {
   })
 }
 
-const isVerificationSuccess = (type, data, phoneNumber) =>
+const _isVerificationSuccess = (type, data, phoneNumber) =>
   type === messageTypes.VERIFICATION_SUCCESS && get(data, 'username') === phoneNumber
 
-const isVerificationFailure = (type, data, phoneNumber) =>
+const _isVerificationFailure = (type, data, phoneNumber) =>
   type === messageTypes.ERROR && get(data, 'request.username') === phoneNumber
 
 // (Socket, string) -> Promise<void>
@@ -229,85 +229,56 @@ const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSec
     expiresInSeconds,
   })
 
-// (Socket, String, String) -> Promise<Array<TrustResult>>
-const trust = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  const id = await fetchMostRecentId(sock, channelPhoneNumber, memberPhoneNumber)
-  if (id.trust_level !== trustLevels.UNTRUSTED) {
-    // don't try to trust a trusted safety number, will cause signald to throw!
-    return Promise.resolve({
-      status: statuses.NOOP,
-      message: messages.trust.noop(memberPhoneNumber),
-    })
-  }
+// (Socket, String, String, String?) -> Promise<Array<TrustResult>>
+const trust = async (sock, channelPhoneNumber, memberPhoneNumber, fingerprint) => {
   // don't await this write so we can start listening sooner!
   write(sock, {
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
-    fingerprint: id.fingerprint,
+    fingerprint,
   })
-  return await awaitTrustVerification(sock, channelPhoneNumber, memberPhoneNumber)
+  return await _awaitTrustVerification(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
 }
 
 // (Socket, string, string) => Promise<TrustResult>
-const awaitTrustVerification = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  const id = await fetchMostRecentId(sock, channelPhoneNumber, memberPhoneNumber)
-  return id.trust_level === trustLevels.TRUSTED_VERIFIED
-    ? Promise.resolve({
-        status: statuses.SUCCESS,
-        message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
-      })
-    : Promise.reject({
-        status: statuses.ERROR,
-        message: messages.trust.error(channelPhoneNumber, memberPhoneNumber),
-      })
-}
-
-const fetchMostRecentId = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  const ids = await fetchIdentities(sock, channelPhoneNumber, memberPhoneNumber)
-  return last(sortBy(ids, 'added'))
-}
-
-// (Socket, String, String) -> Promise<Array<SignalIdentity>>
-const fetchIdentities = async (sock, channelPhoneNumber, memberPhoneNumber) => {
-  // don't await this write to complete so we can start listening sooner!
-  write(sock, {
-    type: messageTypes.GET_IDENTITIES,
-    username: channelPhoneNumber,
-    recipientNumber: memberPhoneNumber,
-  })
-  return awaitIdentitiesOf(sock, memberPhoneNumber)
-}
-
-const awaitIdentitiesOf = (sock, memberPhoneNumber) => {
-  //TODO(aguestuser|2019-11-09): use signald message ids to make this await call simpler
+const _awaitTrustVerification = async (
+  sock,
+  channelPhoneNumber,
+  memberPhoneNumber,
+  fingerprint,
+) => {
   return new Promise((resolve, reject) => {
     // create handler
     const handle = msg => {
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
+        // ignore bad JSON
+        return Promise.resolve()
+      } else if (
+        type === messageTypes.TRUSTED_FINGERPRINT &&
+        data.request.fingerprint === fingerprint
+      ) {
+        // return success if we get a trust response
         sock.removeListener('data', handle)
-        reject({ status: statuses.ERROR, message: `${messages.error.invalidJSON(msg)}` })
-      } else if (isSignalIdentitiesOf(type, data, memberPhoneNumber)) {
-        sock.removeListener('data', handle)
-        resolve(data.identities)
+        resolve({
+          status: statuses.SUCCESS,
+          message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
+        })
       }
     }
     // register handler
     sock.on('data', handle)
-    // reject and deregister handle after timeout
-    wait(identityRequestTimeout).then(() => {
+    // reject and deregister handle after timeout if no trust response received
+    wait(trustRequestTimeout).then(() => {
       sock.removeListener('data', handle)
       reject({
         status: statuses.ERROR,
-        message: messages.error.identityRequestTimeout(memberPhoneNumber),
+        message: messages.error.trustTimeout(channelPhoneNumber, memberPhoneNumber),
       })
     })
   })
 }
-
-const isSignalIdentitiesOf = (msgType, msgData, memberPhoneNumber) =>
-  msgType === messageTypes.IDENTITIES && get(msgData, 'identities.0.username') === memberPhoneNumber
 
 /*******************
  * MESSAGE PARSING
@@ -360,7 +331,7 @@ module.exports = {
   trustLevels,
   awaitVerificationResult,
   broadcastMessage,
-  fetchIdentities,
+  // fetchIdentities,
   signaldEncode,
   getSocket,
   parseOutboundSdMessage,

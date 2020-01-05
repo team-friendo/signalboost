@@ -1,45 +1,47 @@
 const signal = require('../../services/signal')
 const channelRepository = require('../../db/repositories/channel')
 const membershipRepository = require('../../db/repositories/membership')
-const { wait, loggerOf } = require('../util')
+const deauthorizationRepository = require('../../db/repositories/deauthorization')
+const { loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
-const { defaultErrorOf } = require('../util')
 const { sdMessageOf } = require('../signal')
-const {
-  signal: { resendDelay },
-} = require('../../config')
+const { statuses } = require('../../constants')
 
-/**
- * type TrustResponse =
- *   status: "SUCCESS" | "ERROR"
- *   message: string,
- * }
- **/
-
-// (Database, Socket, string, string, SdMessage) -> Promise<SignalboostStatus>
-const trustAndResend = async (db, sock, channelPhoneNumber, memberPhoneNumber, sdMessage) => {
-  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber)
-  await wait(resendDelay) // to allow key trust to take
-  await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+// (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
+const trustAndResend = async (db, sock, updatableFingerprint) => {
+  const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
+  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
+  if (sdMessage) {
+    await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+  }
   return trustResult
 }
 
-// (Database, socket, string, string) -> Promise<SignalBoostStatus>
-const deauthorize = async (db, sock, channelPhoneNumber, numberToDeauthorize) => {
-  const removalResult = await membershipRepository
-    .removeAdmin(db, channelPhoneNumber, numberToDeauthorize)
-    .catch(e => Promise.reject(defaultErrorOf(e)))
-  const channel = await channelRepository
-    .findDeep(db, channelPhoneNumber)
-    .catch(e => Promise.reject(defaultErrorOf(e)))
-  await _sendDeauthAlerts(
-    sock,
-    channelPhoneNumber,
-    numberToDeauthorize,
-    channelRepository.getAdminMemberships(channel),
-  )
-  return removalResult
+// (Database, Socket, UpdatableFingerprint) -> Promise<SignalBoostStatus>
+const deauthorize = async (db, sock, updatableFingerprint) => {
+  const { channelPhoneNumber, memberPhoneNumber, fingerprint } = updatableFingerprint
+  try {
+    const channel = await channelRepository.findDeep(db, channelPhoneNumber)
+    const removalResult = await membershipRepository.removeAdmin(
+      db,
+      channelPhoneNumber,
+      memberPhoneNumber,
+    )
+    await deauthorizationRepository.create(db, channelPhoneNumber, memberPhoneNumber, fingerprint)
+    await _sendDeauthAlerts(
+      sock,
+      channelPhoneNumber,
+      memberPhoneNumber,
+      channelRepository.getAllAdminsExcept(channel, [memberPhoneNumber]),
+    )
+    return removalResult
+  } catch (e) {
+    return Promise.reject({
+      status: statuses.ERROR,
+      message: `Error deauthorizing ${memberPhoneNumber} on ${channelPhoneNumber}: ${e.message}`,
+    })
+  }
 }
 
 const _sendDeauthAlerts = (sock, channelPhoneNumber, deauthorizedNumber, adminMemberships) =>

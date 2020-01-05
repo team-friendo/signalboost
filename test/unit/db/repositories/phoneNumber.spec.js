@@ -12,7 +12,7 @@ describe('phone number repository', () => {
   let db
 
   before(() => (db = initDb()))
-  afterEach(() => db.phoneNumber.destroy({ where: {} }))
+  afterEach(async () => await db.phoneNumber.destroy({ where: {} }))
   after(async () => await db.sequelize.close())
 
   describe('#update', () => {

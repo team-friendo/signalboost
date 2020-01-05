@@ -5,6 +5,10 @@ import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
 import { inviteFactory } from '../../../support/factories/invite'
+import { deauthorizationFactory } from '../../../support/factories/deauthorization'
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../../../app/config')
 
 describe('channel model', () => {
   let db, channel
@@ -42,6 +46,17 @@ describe('channel model', () => {
       },
     )
 
+  const createChannelWithDeauthorizations = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        deauthorizations: [deauthorizationFactory(), deauthorizationFactory()],
+      },
+      {
+        include: [{ model: db.deauthorization }],
+      },
+    )
+
   before(async () => {
     db = initDb()
   })
@@ -65,6 +80,7 @@ describe('channel model', () => {
       expect(channel.description).to.be.a('string')
       expect(channel.responsesEnabled).to.be.a('boolean')
       expect(channel.vouchingOn).to.be.a('boolean')
+      expect(channel.messageExpiryTime).to.be.a('number')
       expect(channel.createdAt).to.be.a('Date')
       expect(channel.updatedAt).to.be.a('Date')
     })
@@ -72,6 +88,7 @@ describe('channel model', () => {
     it('sets correct defaults', () => {
       expect(channel.responsesEnabled).to.equal(false)
       expect(channel.vouchingOn).to.equal(false)
+      expect(channel.expiryTime).to.equal(defaultMessageExpiryTime)
     })
   })
 
@@ -89,7 +106,7 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, messageCount, memberships, invites
+    let channel, messageCount, memberships, invites, deauthorizations
 
     describe('memberships', () => {
       beforeEach(async () => {
@@ -140,25 +157,46 @@ describe('channel model', () => {
     })
 
     describe('invites', () => {
-      describe('invites', () => {
-        beforeEach(async () => {
-          channel = await createChannelWithInvites()
-          invites = await channel.getInvites()
-        })
+      beforeEach(async () => {
+        channel = await createChannelWithInvites()
+        invites = await channel.getInvites()
+      })
 
-        it('has many invites', async () => {
-          expect(invites).to.have.length(2)
-        })
+      it('has many invites', async () => {
+        expect(invites).to.have.length(2)
+      })
 
-        it('sets the channel phone number as the foreign key in each invite', () => {
-          expect(invites.map(s => s.channelPhoneNumber)).to.eql(times(2, () => channel.phoneNumber))
-        })
+      it('sets the channel phone number as the foreign key in each invite', () => {
+        expect(invites.map(s => s.channelPhoneNumber)).to.eql(times(2, () => channel.phoneNumber))
+      })
 
-        it('deletes invites when it deletes channel', async () => {
-          const inviteCount = await db.invite.count()
-          await channel.destroy()
-          expect(await db.invite.count()).to.eql(inviteCount - 2)
-        })
+      it('deletes invites when it deletes channel', async () => {
+        const inviteCount = await db.invite.count()
+        await channel.destroy()
+        expect(await db.invite.count()).to.eql(inviteCount - 2)
+      })
+    })
+
+    describe('deauthorizations', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithDeauthorizations()
+        deauthorizations = await channel.getDeauthorizations()
+      })
+
+      it('has many invites', async () => {
+        expect(deauthorizations).to.have.length(2)
+      })
+
+      it('sets the channel phone number as the foreign key in each invite', () => {
+        expect(deauthorizations.map(s => s.channelPhoneNumber)).to.eql(
+          times(2, () => channel.phoneNumber),
+        )
+      })
+
+      it('deletes deauthorizations when it deletes channel', async () => {
+        const deauthorizationCount = await db.deauthorization.count()
+        await channel.destroy()
+        expect(await db.deauthorization.count()).to.eql(deauthorizationCount - 2)
       })
     })
   })

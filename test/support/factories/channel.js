@@ -1,21 +1,24 @@
 import { adminMembershipFactory, subscriberMembershipFactory } from './membership'
-
-const { times } = require('lodash')
+import { get, times } from 'lodash'
 import { messageCountFactory } from './messageCount'
-import { welcomeFactory } from './welcome'
 import { memberTypes } from '../../../app/db/repositories/membership'
-import { inviteFactory } from "./invite"
-const { genPhoneNumber } = require('./phoneNumber')
+import { inviteFactory } from './invite'
+import { genPhoneNumber } from './phoneNumber'
+import { deauthorizationFactory } from './deauthorization'
+const {
+  signal: { defaultMessageExpiryTime },
+} = require('../../../app/config')
 
 export const channelFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
   name: '#red-alert',
+  messageExpiryTime: defaultMessageExpiryTime,
   description: 'the food channel',
   ...attrs,
 })
 
-export const deepChannelFactory = pNum => {
-  const channelPhoneNumber = pNum || genPhoneNumber()
+export const deepChannelFactory = attrs => {
+  const channelPhoneNumber = get(attrs, 'phoneNumber') || genPhoneNumber()
   return {
     ...channelFactory({ phoneNumber: channelPhoneNumber }),
     memberships: [
@@ -24,6 +27,8 @@ export const deepChannelFactory = pNum => {
     ],
     messageCount: messageCountFactory({ channelPhoneNumber }),
     invites: times(2, () => inviteFactory({ channelPhoneNumber })),
+    deauthorizations: [deauthorizationFactory({ channelPhoneNumber })],
+    ...attrs,
   }
 }
 
@@ -70,6 +75,14 @@ export const deepChannelAttrs = [
         channelPhoneNumber: '+11111111111',
         inviterPhoneNumber: '+12222222222',
         inviteePhoneNumber: '+12222222224',
+      },
+    ],
+    deauthorizations: [
+      {
+        channelPhoneNumber: '+11111111111',
+        memberPhoneNumber: '+10000000000',
+        fingerprint:
+          '05 6b c5 19 fc aa 44 57 3f 2d 2e 39 c7 73 a4 13 6a 51 3d 95 33 08 9b d3 32 84 01 99 4d ae 63 8c 6f',
       },
     ],
   },

@@ -54,12 +54,12 @@ const loggerOf = prefix =>
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
         logAndReturn: sbStatus => {
-          console.log(`[${prefix} | ${nowTimestamp()}] ${JSON.stringify(sbStatus)}`)
+          console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.status} ${sbStatus.message}`)
           return sbStatus
         },
-        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`),
+        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`),
         fatalError: e => {
-          console.error(`[${prefix} | ${nowTimestamp()}] ${e.stack}`)
+          console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
           console.error('ABORTING.')
           process.exit(1)
         },
