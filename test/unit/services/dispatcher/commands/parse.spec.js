@@ -408,8 +408,7 @@ describe('parsing commands', () => {
       )
     })
   })
-  
-  // margot   
+
   describe('DESCRIPTION command', () => {
     it('parses a DESCRIPTION command regardless of casing, spacing, accents, or language', () => {
       const variants = [
@@ -430,13 +429,13 @@ describe('parsing commands', () => {
         messages.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
             command: commands.SET_DESCRIPTION,
-            language: lang == languages.FR ? languages.EN : lang,
+            language: lang === languages.FR ? languages.EN : lang,
             payload: '',
           }),
         ),
       )
     })
-    
+
     it('parses the payload from a DESCRIPTION command', () => {
       const variants = [
         {
@@ -447,22 +446,21 @@ describe('parsing commands', () => {
           lang: languages.ES,
           message: 'DESCRIPCIÓN foo channel description',
         },
-         {
+        {
           lang: languages.FR,
-          messages: 'DESCRIPTION foo channel description',
+          message: 'DESCRIPTION foo channel description',
         },
       ]
-      variants.forEach(({ lang, message }) =>
+      variants.forEach(({ lang, message }) => {
         expect(parseExecutable(message)).to.eql({
           command: commands.SET_DESCRIPTION,
-          language: lang == languages.FR ? languages.EN : lang,
+          language: lang === languages.FR ? languages.EN : lang,
           payload: 'foo channel description',
-        }),
-      )
+        })
+      })
     })
   })
-  
-  
+
   describe('RESPONSES_ON command', () => {
     it('parses an RESPONSES_ON command regardless of casing, spacing, accents, or language', () => {
       const variants = [
