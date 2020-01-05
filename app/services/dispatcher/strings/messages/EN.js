@@ -37,7 +37,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
@@ -79,6 +79,9 @@ INFO
 
 RENAME new name
 -> renames channel to "new name"
+
+DESCRIPTION description of channel
+-> adds or updates public description of channel
 
 INVITE +1-555-555-5555
 -> invites +1-555-555-5555 to subscribe to the channel
@@ -133,6 +136,7 @@ CHANNEL INFO
 You are an admin of this channel.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
@@ -148,6 +152,7 @@ CHANNEL INFO
 You are subscribed to this channel.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 responses: ${onOrOff(channel.responsesEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
@@ -162,6 +167,7 @@ CHANNEL INFO
 You are not subscribed to this channel. Send HELLO to subscribe.
 
 name: ${channel.name}
+description: ${channel.description}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 
@@ -180,7 +186,7 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -254,6 +260,14 @@ Send HELP to list commands I understand.`,
     notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
+  },
+
+  // SET_DESCRIPTION
+
+  description: {
+    success: newDescription => `Channel description changed to "${newDescription}".`,
+    dbError: `Whoops! There was an error changing the channel description. Try again!`,
+    notAdmin,
   },
 }
 

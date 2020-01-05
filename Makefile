@@ -98,6 +98,10 @@ test.e2e: ## run e2e tests
 test.lint: ## run linter
 	npx eslint app
 
+test.lint-fix: ## run linter with --fix option to automatically fix what can be
+	npx eslint --fix app
+
+
 
 ##################################
 # run and deploy the splash page #

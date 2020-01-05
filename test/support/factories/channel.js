@@ -10,6 +10,7 @@ const { genPhoneNumber } = require('./phoneNumber')
 export const channelFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
   name: '#red-alert',
+  description: 'the food channel',
   ...attrs,
 })
 
@@ -29,6 +30,7 @@ export const deepChannelFactory = pNum => {
 export const deepChannelAttrs = [
   {
     name: 'foo',
+    description: 'the food channel',
     phoneNumber: '+11111111111',
     memberships: [
       {
@@ -74,6 +76,7 @@ export const deepChannelAttrs = [
   {
     name: 'bar',
     phoneNumber: '+19999999999',
+    description: 'the bar channel',
     memberships: [
       {
         type: memberTypes.ADMIN,

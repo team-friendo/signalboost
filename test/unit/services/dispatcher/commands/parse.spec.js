@@ -409,6 +409,58 @@ describe('parsing commands', () => {
     })
   })
 
+  describe('DESCRIPTION command', () => {
+    it('parses a DESCRIPTION command regardless of casing, spacing, accents, or language', () => {
+      const variants = [
+        {
+          lang: languages.EN,
+          messages: ['DESCRIPTION', 'description', ' description '],
+        },
+        {
+          lang: languages.ES,
+          messages: ['DESCRIPCIÓN', 'DESCRIPCION', 'descripcion', ' descripcion '],
+        },
+        {
+          lang: languages.FR,
+          messages: ['DESCRIPTION', 'description', ' description '],
+        },
+      ]
+      variants.forEach(({ lang, messages }) =>
+        messages.forEach(msg =>
+          expect(parseExecutable(msg)).to.eql({
+            command: commands.SET_DESCRIPTION,
+            language: lang === languages.FR ? languages.EN : lang,
+            payload: '',
+          }),
+        ),
+      )
+    })
+
+    it('parses the payload from a DESCRIPTION command', () => {
+      const variants = [
+        {
+          lang: languages.EN,
+          message: 'DESCRIPTION foo channel description',
+        },
+        {
+          lang: languages.ES,
+          message: 'DESCRIPCIÓN foo channel description',
+        },
+        {
+          lang: languages.FR,
+          message: 'DESCRIPTION foo channel description',
+        },
+      ]
+      variants.forEach(({ lang, message }) => {
+        expect(parseExecutable(message)).to.eql({
+          command: commands.SET_DESCRIPTION,
+          language: lang === languages.FR ? languages.EN : lang,
+          payload: 'foo channel description',
+        })
+      })
+    })
+  })
+
   describe('RESPONSES_ON command', () => {
     it('parses an RESPONSES_ON command regardless of casing, spacing, accents, or language', () => {
       const variants = [

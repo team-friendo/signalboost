@@ -11,6 +11,12 @@ const channelOf = (sequelize, DataTypes) => {
     },
     name: {
       type: DataTypes.STRING,
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: '',
     },
     responsesEnabled: {
       type: DataTypes.BOOLEAN,

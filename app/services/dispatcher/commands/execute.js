@@ -51,6 +51,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
+    [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
   result.notifications = result.notifications || []
   return { command, ...result }
@@ -379,6 +380,22 @@ const setLanguage = (db, sender, language) => {
   return membershipRepository
     .updateLanguage(db, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
+}
+
+// SET_DESCRIPTION
+
+const maybeSetDescription = async (db, channel, sender, newDescription) => {
+  const cr = messagesIn(sender.language).commandResponses.description
+  return sender.type === ADMIN
+    ? setDescription(db, channel, newDescription, cr)
+    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
+}
+
+const setDescription = (db, channel, newDescription, cr) => {
+  return channelRepository
+    .update(db, channel.phoneNumber, { description: newDescription })
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newDescription) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }
 

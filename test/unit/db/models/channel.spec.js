@@ -56,12 +56,13 @@ describe('channel model', () => {
     await db.sequelize.close()
   })
 
-  test('fields', async () => {
-    channel = await db.channel.create(channelFactory())
+  describe('fields', async () => {
+	beforeEach(async ()  => channel = await db.channel.create(channelFactory()))   
 
     it('has correct fields', () => {
       expect(channel.phoneNumber).to.be.a('string')
       expect(channel.name).to.be.a('string')
+      expect(channel.description).to.be.a('string')
       expect(channel.responsesEnabled).to.be.a('boolean')
       expect(channel.vouchingOn).to.be.a('boolean')
       expect(channel.createdAt).to.be.a('Date')

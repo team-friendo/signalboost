@@ -32,6 +32,7 @@ describe('executing commands', () => {
   const db = {}
   const channel = {
     name: 'foobar',
+    description: 'foobar channel description',
     phoneNumber: '+13333333333',
     memberships: [
       ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -1161,6 +1162,74 @@ describe('executing commands', () => {
     })
   })
 
+  describe('DESCRIPTION command', () => {
+    const sdMessage = sdMessageOf(channel, 'DESCRIPTION foo channel description')
+    let updateStub
+    beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateStub.restore())
+    
+    describe('when sender is a admin', () => {
+      const dispatchable = { db, channel, sender: admin, sdMessage }
+      let result
+
+      describe('when update of descriptions succeeds', () => {
+        beforeEach(async () => {
+          updateStub.returns(Promise.resolve({ ...channel, description: 'foo channel description' }))
+          result = await processCommand(dispatchable)
+        })
+
+        it('returns SUCCESS status / message', () => {
+          expect(result).to.eql({
+            command: commands.SET_DESCRIPTION,
+            status: statuses.SUCCESS,
+            message: CR.description.success('foo channel description'),
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when update of descriptions fails', () => {
+        beforeEach(async () => {
+          updateStub.callsFake(() => Promise.reject('oh noes!'))
+          result = await processCommand(dispatchable)
+        })
+
+        it('returns ERROR status / message', () => {
+          expect(result).to.eql({
+            command: commands.SET_DESCRIPTION,
+            status: statuses.ERROR,
+            message: CR.description.dbError,
+            notifications: [],
+          })
+        })
+      })
+    })
+    describe('when sender is a subscriber', () => {
+      const dispatchable = { db, channel, sender: subscriber, sdMessage }
+
+      it('returns UNAUTHORIZED status / message', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.SET_DESCRIPTION,
+          status: statuses.UNAUTHORIZED,
+          message: CR.rename.notAdmin,
+          notifications: [],
+        })
+      })
+    })
+    describe('when sender is a random person', () => {
+      const dispatchable = { db, channel, sender: randomPerson, sdMessage }
+
+      it('returns UNAUTHORIZED status / message', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.SET_DESCRIPTION,
+          status: statuses.UNAUTHORIZED,
+          message: CR.rename.notAdmin,
+          notifications: [],
+        })
+      })
+    })
+  })
+ 
   describe('new user attempting to JOIN the signup channel', () => {
     it('returns NOOP', async () => {
       const dispatchable = {

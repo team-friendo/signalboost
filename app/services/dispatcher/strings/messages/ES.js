@@ -37,7 +37,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
@@ -83,6 +83,9 @@ INFO
 
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
+
+DESCRIPCIÓN descripción del canal
+-> agrega o actualiza la descripción pública del canal
 
 INVITAR +1-555-555-5555
 -> invita a +1-555-555-5555 a suscribirse al canal
@@ -137,6 +140,7 @@ INFO DEL CANAL
 Usted es admin de este canal.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
@@ -152,8 +156,10 @@ INFO DEL CANAL
 Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+atestiguando: ${onOrOff(channel.vouchingOn)}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
@@ -165,6 +171,7 @@ INFO DEL CANAL
 Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
 
 nombre: ${channel.name}
+descripción: ${channel.description}
 número de teléfono: ${channel.phoneNumber}
 respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
@@ -205,7 +212,7 @@ ${support}`,
 
   join: {
     success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
@@ -263,6 +270,14 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     notAdmin,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
+  },
+
+  // SET_DESCRIPTION
+
+  description: {
+    success: newDescription => `La descripción del canal cambió a "${newDescription}".`,
+    dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtalo de nuevo!`,
+    notAdmin,
   },
 }
 

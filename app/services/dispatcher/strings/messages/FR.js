@@ -38,9 +38,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à la [${
-      channel.name
-    }] canal Signalboost.
+    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
@@ -87,8 +85,11 @@ INFO
 RENOMMER nouveau nom
 -> renomme le canal au “nouveau nom”
 
+DESCRIPTION description de la canal
+-> ajoute ou met à jour la description publique de le canal
+
 AJOUTER / SUPPRIMER +1-555-555-5555
--> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de la canal
+-> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de le canal
 
 RÉPONSES ACTIVÉES / DÉSACTIVÉES
 -> active ou désactive les messages entrants aux administrateurs
@@ -100,7 +101,7 @@ ESPAÑOL / ENGLISH
 -> change la langue au Español or Anglais
 
 ADIEU
--> désabonnement de la canal`,
+-> désabonnement de le canal`,
 
     subscriber: `----------------------------------------------
 COMMANDES
@@ -115,7 +116,7 @@ INFO
 ----------------------------------------------
 
 INVITER
--> invite + 1-555-555-5555 à s'abonner à la canal
+-> invite + 1-555-555-5555 à s'abonner à le canal
 
 ESPAÑOL / ENGLISH
 -> change la langue au Español or Anglais
@@ -137,6 +138,7 @@ INFOS CANAL
 Vous êtes admin de cette canal.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
@@ -152,8 +154,10 @@ INFOS CANAL
 Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+se porter garant: ${onOrOff(channel.vouchingOn)}
 abonnées: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
@@ -165,6 +169,7 @@ INFOS CANAL
 Vous n'êtes pas abonné à cette canal. Envoyez AIDE pour vous abonner.
 
 nom: ${channel.name}
+description: ${channel.description}
 numéro de téléphone: ${channel.phoneNumber}
 abonnées: ${getSubscriberMemberships(channel).length}
 
@@ -184,13 +189,13 @@ ${support}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonnée au/à la [${channel.name}] canal Signalboost.
+      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     inviteRequired: `Pardon! Les invitations sont nécessaires pour s'abonner à cette canal. Demandez à un ami de vous inviter!
 
 Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
-    dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à la canal. Veuillez essayer de nouveau!`,
+    dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter à le canal. Veuillez essayer de nouveau!`,
     alreadyMember: `Oups! Vous êtes déjà abonnée à ce canal.`,
   },
 
@@ -263,6 +268,15 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
+
+  // SET_DESCRIPTION
+
+  description: {
+    success: newDescription =>
+      `La description de le canal a été remplacée par "${newDescription}".`,
+    dbError: `Oups! Une erreur s'est produite lors du changement de la description de le canal. ¡Inténtalo de nuevo!`,
+    notAdmin,
+  },
 }
 
 const notifications = {
@@ -271,9 +285,9 @@ const notifications = {
 
   adminRemoved: "Un administrateur vient d'être supprimé.",
 
-  adminLeft: 'Un administrateur vient de quitter la chaîne',
+  adminLeft: 'Un administrateur vient de quitter le canal',
 
-  channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
+  channelRenamed: (oldName, newName) => `Canal renommée à partir de "${oldName}" to "${newName}."`,
 
   hotlineMessageSent: channel =>
     `Votre message a été transmis de manière anonyme aux admins de [${
@@ -287,7 +301,7 @@ Send HELP to list valid commands.`,
       ? 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
 
-  inviteReceived: channelName => `Vous avez été invité sur la  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
+  inviteReceived: channelName => `Vous avez été invité sur le  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
 
 Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
