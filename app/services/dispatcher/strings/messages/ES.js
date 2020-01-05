@@ -13,7 +13,7 @@ const invalidNumber = phoneNumber =>
   `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
-const support = `-----channel-----------------------
+const support = `----------------------------
 CÓMO FUNCIONA
 ----------------------------
 
@@ -62,7 +62,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // DECLINE
 
   decline: {
-    success: 'Invitacichannelón rechazada Toda la información sobre la invitación eliminada.',
+    success: 'Invitación rechazada Toda la información sobre la invitación eliminada.',
     dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
   },
 
