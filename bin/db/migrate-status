@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../..
+
+sleep 2
+
+if [ "$NODE_ENV" = "development" ];then
+  echo "----- checking development migration statuses..."
+  npx sequelize db:migrate:status --env development
+
+  echo "----- checking test migration statues..."
+  npx sequelize db:migrate:status --env test
+else
+  echo "----- running production migration statuses..."
+  npx sequelize db:migrate:status --env production
+fi
+
+popd # return to original dir

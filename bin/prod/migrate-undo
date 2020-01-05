@@ -4,9 +4,9 @@ pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- running migrations..."
+echo "--- undoing migrations..."
 
-docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate
+docker-compose exec app /signalboost/bin/db/migrate-undo
 
 echo "--- DONE!"
 

@@ -17,4 +17,4 @@ docker exec -it \
        psql -U postgres -d \
        signalboost_development
 
-popd > /dev/null
+popd > dev/null

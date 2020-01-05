@@ -6,7 +6,7 @@ cd ../.. # cd to project root
 
 echo "--- running migrations..."
 
-docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate
+docker-compose exec app /signalboost/bin/db/migrate
 
 echo "--- DONE!"
 
