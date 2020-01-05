@@ -59,16 +59,16 @@ ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
 # --- Install and Configure Signald (from source)
 # ------------------------------------------------------
 
-# build signald from a given commit hash
-ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
-ENV RELEASE_COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
-ENV BRANCH "master"
+# hack to avoid halting error on (unnecessary) `sudo` invocations
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # if we ever want to build off of an unmerged fork...
 # ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 
-# hack to avoid halting error on (unnecessary) `sudo` invocations
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
+# build signald from a given commit hash
+ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
+ENV RELEASE_COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
+ENV BRANCH "master"
 
 # fetch repo at desired commit
 RUN git init && \
