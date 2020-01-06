@@ -7,12 +7,10 @@ help:  ## print this message
 		| sort \
 		| awk 'BEGIN {FS = ":[^#]*(## )?"}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2 }'
 
-#######################
-# high-level commands #
-#######################
+###########################
+# local workflow commands #
+###########################
 
-_.deploy: # deploy the app to prod
-	./bin/deploy
 
 _.setup: # build docker container, create dbs, run migrations
 	./bin/dev/setup
@@ -47,6 +45,14 @@ docker.build: ## rebuild the signalboost & signald docker images
 ansible.install: ## removes boost cli files from your path
 	./ansible/install-ansible
 
+ansible.deploy: # deploy the app to prod
+	./bin/deploy
+
+ansible.provision: # deploy the app to prod
+	cd ansible && ansible-playbook -i inventory playbooks/provision.yml
+
+ansible.harden: # deploy the app to prod
+	cd ansible && ansible-playbook -i inventory playbooks/harden.yml
 
 #######################
 # db-related commands #
@@ -63,6 +69,9 @@ db.migrate.up: # run all migrations
 
 db.migrate.down: # undo last migration
 	./bin/dev/migrate-undo
+
+db.migrate.status: # check migration statuses
+	./bin/dev/migrate-status
 
 
 ##########################

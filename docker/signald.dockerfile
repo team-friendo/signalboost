@@ -63,6 +63,12 @@ ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
 # --- Install and Configure Signald (from source)
 # ------------------------------------------------------
 
+# store most recent HEAD of master...
+ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
+
+# hack to avoid halting error on (unnecessary) `sudo` invocations
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
+
 # if we ever want to build off of an unmerged fork...
 # ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 

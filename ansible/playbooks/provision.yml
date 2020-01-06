@@ -61,34 +61,6 @@
         - emacs-nox
     tags: packages
 
-  ######################
-  # ENABLE SWAP MEMORY #
-  ######################
-
-  - name: Allocate 2GB to /swapfile
-    command: dd if=/dev/zero of=/swapfile bs=1M count=2048
-    register: write_swapfile
-    args:
-      creates: /swapfile
-
-  - name: Set swapfile permissions
-    file: path=/swapfile mode=600
-
-  - name: Create swapfile
-    command: mkswap /swapfile
-    register: create_swapfile
-    when: write_swapfile.changed
-
-  - name: Enable swapfile
-    command: swapon /swapfile
-    when: create_swapfile.changed
-
-  - name: Add swapfile to /etc/fstab
-    lineinfile:
-      path: /etc/fstab
-      line: "/swapfile   none    swap    sw    0   0"
-      state: present
-
   ##########
   # ADMINS #
   ##########
@@ -215,3 +187,36 @@
   - name: Ensure fail2ban is started
     service: name=fail2ban state=started
     tags: hardening
+
+  ######################
+  # ENABLE SWAP MEMORY #
+  ######################
+
+  - name: Allocate 2GB to /swapfile
+    tags: swap
+    command: dd if=/dev/zero of=/swapfile bs=1M count=2048
+    register: write_swapfile
+    args:
+      creates: /swapfile
+
+  - name: Set swapfile permissions
+    file: path=/swapfile mode=600
+    tags: swap
+
+  - name: Create swapfile
+    tags: swap
+    command: mkswap /swapfile
+    register: create_swapfile
+    when: write_swapfile.changed
+
+  - name: Enable swapfile
+    tags: swap
+    command: swapon /swapfile
+    when: create_swapfile.changed
+
+  - name: Add swapfile to /etc/fstab
+    tags: swap
+    lineinfile:
+      path: /etc/fstab
+      line: "/swapfile   none    swap    sw    0   0"
+      state: present
