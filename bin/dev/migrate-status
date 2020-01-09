@@ -4,9 +4,15 @@ pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- checking migration status..."
-
-docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate-status
+if [ -z $(docker ps -qf name=signalboost_app) ];then
+  echo "--- starting app and checking migration status..."
+  docker-compose -f docker-compose-dev.yml run --entrypoint /signalboost/bin/db/migrate-status app
+  echo "--- shutting down app"
+  docker-compose -f docker-compose-dev.yml down
+else
+  echo "--- checking migration status..."
+  docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate-status
+fi
 
 echo "--- DONE!"
 

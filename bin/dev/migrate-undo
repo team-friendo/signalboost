@@ -4,9 +4,15 @@ pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- undoing migrations..."
-
-docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate-undo
+if [ -z $(docker ps -qf name=signalboost_app) ];then
+  echo "--- starting app and undoing migrations..."
+  docker-compose -f docker-compose-dev.yml run --entrypoint /signalboost/bin/db/migrate-undo app
+  echo "--- shutting down app"
+  docker-compose -f docker-compose-dev.yml down
+else
+  echo "--- undoing migrations..."
+  docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate-undo
+fi
 
 echo "--- DONE!"
 
