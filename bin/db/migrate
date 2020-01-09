@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-pushd `pwd` # store current dir
+pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../..
 
@@ -17,4 +17,4 @@ else
   npx sequelize db:migrate --env production
 fi
 
-popd # return to original dir
+popd > /dev/null # return to original dir
