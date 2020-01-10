@@ -126,20 +126,37 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
   return signal
     .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    .then(() => countBroacast({ db, channel }))
+    .then(() => countBroadcast({ db, channel }))
 }
 
 // Dispatchable -> Promise<void>
 const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => {
   const { language } = sender
-  const recipients = channelRepository.getAdminPhoneNumbers(channel)
-  const notification = messagesIn(language).notifications.hotlineMessageSent(channel)
-  const outMessage = addHeader({ channel, sdMessage, messageType: HOTLINE_MESSAGE, language })
+  const recipients = channelRepository.getAdminMemberships(channel)
+  const response = messagesIn(language).notifications.hotlineMessageSent(channel)
   // TODO(aguestuser|2019-01-04): we should count these as *hotline* messages not broadcast messages
-  return signal
-    .broadcastMessage(sock, recipients, outMessage)
-    .then(() => countBroacast({ db, channel }))
-    .then(() => respond({ db, sock, channel, sender, message: notification }))
+
+  await Promise.all(
+    recipients.map(recipient => {
+      const outMessage = addHeader({
+        channel,
+        sdMessage,
+        messageType: HOTLINE_MESSAGE,
+        language: recipient.language,
+      })
+      notify({
+        sock,
+        channel,
+        notification: {
+          recipient: recipient.memberPhoneNumber,
+          message: outMessage,
+        },
+      })
+      countBroadcast({ db, channel })
+    }),
+  )
+
+  return respond({ db, sock, channel, sender, message: response })
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
@@ -217,7 +234,7 @@ const addHeader = ({ channel, sdMessage, messageType, language }) => {
   return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
 }
 
-const countBroacast = ({ db, channel }) =>
+const countBroadcast = ({ db, channel }) =>
   // TODO(@zig): add prometheus counter increment here
   messageCountRepository.incrementBroadcastCount(
     db,
