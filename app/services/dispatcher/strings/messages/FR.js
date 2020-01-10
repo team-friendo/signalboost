@@ -298,6 +298,8 @@ const notifications = {
   adminLeft: 'Un administrateur vient de quitter le canal',
 
   channelRenamed: (oldName, newName) => `Canal renommée à partir de "${oldName}" to "${newName}."`,
+  
+  setDescription: newDescription => `Description de le canal définie sur "${newDescription}."`,
 
   expiryUpdateNotAuthorized:
     "Désolé, seuls les admins peuvent régler l'horloge des messages disparus.",

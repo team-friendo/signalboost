@@ -299,6 +299,8 @@ const notifications = {
   adminLeft: 'Un administrador dejó el canal.',
 
   channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
+  
+  setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
 
   expiryUpdateNotAuthorized:
     'Lo sentimos, solo los admins pueden configurar el temporizador de mensajes desaparecidos',
