@@ -391,11 +391,11 @@ const maybeSetDescription = async (db, channel, sender, newDescription) => {
 const setDescription = (db, channel, newDescription, sender, cr) => {
   return channelRepository
     .update(db, channel.phoneNumber, { description: newDescription })
-    .then(() => ({ 
-	    status: statuses.SUCCESS, 
-	    message: cr.success(newDescription),
-	    notifications: descriptionNotificationsOf(channel, newDescription, sender), 
-	}))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(newDescription),
+      notifications: descriptionNotificationsOf(channel, newDescription, sender),
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }
 

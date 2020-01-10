@@ -289,7 +289,7 @@ const notifications = {
   adminLeft: 'An admin just left the channel.',
 
   channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
-  
+
   setDescription: newDescription => `Channel description set to "${newDescription}."`,
 
   deauthorization: adminPhoneNumber => `
