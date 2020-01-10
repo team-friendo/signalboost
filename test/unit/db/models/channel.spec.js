@@ -93,6 +93,7 @@ describe('channel model', () => {
       expect(channel.description).to.equal('')
     })
   })
+  
 
   describe('validations', () => {
     it('does not allow null phone numbers', async () => {

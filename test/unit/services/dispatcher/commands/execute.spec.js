@@ -1417,7 +1417,14 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             status: statuses.SUCCESS,
             message: CR.description.success('foo channel description'),
-            notifications: [],
+           notifications: [
+              ...bystanderAdminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: messagesIn(membership.language).notifications.setDescription(
+                  'foo channel description',
+                ),
+              })),
+            ],
           })
         })
       })
