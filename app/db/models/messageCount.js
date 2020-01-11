@@ -21,6 +21,16 @@ const messageCountOf = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
       },
+      hotlineIn: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      hotlineOut: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       commandIn: {
         type: DataTypes.INTEGER,
         allowNull: false,
