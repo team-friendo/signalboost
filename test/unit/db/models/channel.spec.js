@@ -88,7 +88,7 @@ describe('channel model', () => {
     it('sets correct defaults', () => {
       expect(channel.responsesEnabled).to.equal(false)
       expect(channel.vouchingOn).to.equal(false)
-      expect(channel.expiryTime).to.equal(defaultMessageExpiryTime)
+      expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     })
   })
 
