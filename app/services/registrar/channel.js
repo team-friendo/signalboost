@@ -73,7 +73,8 @@ const list = db =>
       status: sbStatuses.SUCCESS,
       data: {
         count: chs.length,
-        channels: chs.map(_formatForList).sort((a, b) => b - a), // sort by subs, desc
+        // sort by subscribers, desc
+        channels: chs.map(_formatForList).sort((a, b) => b.subscribers - a.subscribers),
       },
     }))
     .catch(error => ({ status: sbStatuses.ERROR, data: { error } }))
