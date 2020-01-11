@@ -319,7 +319,7 @@ describe('channel registrar', () => {
     describe('when db fetch succeeds', () => {
       beforeEach(() => findAllDeepStub.returns(Promise.resolve(channels)))
 
-      it('presents a list of formatted phone numbers and a count', async () => {
+      it('presents a list of formatted phone numbers and a count (sorted by subscribers)', async () => {
         expect(await list({})).to.eql({
           status: 'SUCCESS',
           data: {
@@ -330,14 +330,14 @@ describe('channel registrar', () => {
                 phoneNumber: '+11111111111',
                 admins: 2,
                 subscribers: 2,
-                messageCount: { broadcastOut: 4, commandIn: 5 },
+                messageCount: { broadcastIn: 2, commandIn: 5, hotlineIn: 4 },
               },
               {
                 name: 'bar',
                 phoneNumber: '+19999999999',
                 admins: 1,
                 subscribers: 1,
-                messageCount: { broadcastOut: 100, commandIn: 20 },
+                messageCount: { broadcastIn: 100, commandIn: 20, hotlineIn: 2 },
               },
             ],
           },

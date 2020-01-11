@@ -193,13 +193,5 @@ describe('channel repository', () => {
         ])
       })
     })
-
-    it('orders channels by broadcast out message count (descending)', () => {
-      const bigger = Math.max(
-        attrs[0].messageCount.broadcastOut,
-        attrs[1].messageCount.broadcastOut,
-      )
-      expect(channels[0].messageCount.broadcastOut).to.eql(bigger)
-    })
   })
 })

@@ -25,12 +25,12 @@ describe('messageCount model', () => {
       'channelPhoneNumber',
       'broadcastIn',
       'broadcastOut',
+      'hotlineIn',
+      'hotlineOut',
       'commandIn',
       'commandOut',
       'updatedAt',
       'createdAt',
-      'hotlineIn',
-      'hotlineOut',
     ])
   })
 
