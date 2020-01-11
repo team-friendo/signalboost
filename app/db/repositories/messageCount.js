@@ -1,13 +1,32 @@
-// (Database, string, number) -> Promise<MessageCount>
-const incrementBroadcastCount = async (db, channelPhoneNumber, subscriberCount) =>
+const { getAdminMemberships } = require('./channel')
+
+//TODO(auguestuser|2020-01-10): tally all these in prometheus once implemented
+
+// (Database, Channel) -> Promise<MessageCount>
+const countBroadcast = async (db, channel) =>
   db.messageCount
-    .increment({ broadcastIn: 1, broadcastOut: subscriberCount }, { where: { channelPhoneNumber } })
+    .increment(
+      { broadcastIn: 1, broadcastOut: channel.memberships.length },
+      { where: { channelPhoneNumber: channel.phoneNumber } },
+    )
     .then(x => x[0][0][0])
 
-// (Database, string) -> Promise<MessageCount>
-const incrementCommandCount = async (db, channelPhoneNumber) =>
+// (Database, Channel) -> Promise<MessageCount>
+const countCommand = async (db, channel) =>
   db.messageCount
-    .increment({ commandIn: 1, commandOut: 1 }, { where: { channelPhoneNumber } })
+    .increment(
+      { commandIn: 1, commandOut: 1 },
+      { where: { channelPhoneNumber: channel.phoneNumber } },
+    )
     .then(x => x[0][0][0])
 
-module.exports = { incrementBroadcastCount, incrementCommandCount }
+// (Database, Channel) -> Promise<MessageCount>
+const countHotline = async (db, channel) =>
+  db.messageCount
+    .increment(
+      { hotlineIn: 1, hotlineOut: getAdminMemberships(channel).length },
+      { where: { channelPhoneNumber: channel.phoneNumber } },
+    )
+    .then(x => x[0][0][0])
+
+module.exports = { countBroadcast, countCommand, countHotline }
