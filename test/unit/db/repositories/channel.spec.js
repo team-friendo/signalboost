@@ -1,12 +1,11 @@
 import chai, { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
-import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
+import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { initDb } from '../../../../app/db/index'
 import { omit, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
-import { deepChannelAttrs } from '../../../support/factories/channel'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -181,8 +180,8 @@ describe('channel repository', () => {
         expect(keys(ch.toJSON())).to.eql([
           'phoneNumber',
           'name',
-          'messageExpiryTime',
           'description',
+          'messageExpiryTime',
           'responsesEnabled',
           'vouchingOn',
           'createdAt',
