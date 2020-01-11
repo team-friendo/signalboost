@@ -1,0 +1,53 @@
+---
+- name: Add new admin user to a box
+  become: true
+  hosts: signalboost
+
+# usage:
+# cd ansible
+# ansible-playbook -i inventory -e "username=<some_username> ssh_key='<ssh_pubkey>'" playbooks/add_admin.yml
+
+  vars:
+    username: ''
+    ssh_key: ''
+
+  handlers:
+    - name: restart ssh
+      service: name=ssh state=restarted
+
+  tasks:
+
+  - name: Make sure we have a sshusers groups
+    group:
+      name: sshusers
+      state: present
+
+  - name: Add admin users
+    user:
+      name: "{{ username }}"
+      groups:
+        - sudo
+        - sshusers
+      append: yes
+      shell: /bin/bash
+
+  - name: Set authorized keys
+    authorized_key:
+      user: "{{ username }}"
+      state: present
+      key: "{{ ssh_key }}"
+
+  - name: Allow sudo group to have passwordless sudo
+    lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%sudo'
+        line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+        validate: visudo -cf %s
+
+  - name: unlock user
+    become: yes
+    command: "usermod -p '*' {{ username }}"
+    ignore_errors: True
+    changed_when: False
+    notify: restart ssh
