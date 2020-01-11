@@ -126,7 +126,7 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
   return signal
     .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    .then(() => countBroadcast({ db, channel }))
+    .then(() => messageCountRepository.countBroadcast(db, channel))
 }
 
 // Dispatchable -> Promise<void>
@@ -152,16 +152,17 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
       }),
     ),
   )
-  // TODO(aguestuser|2019-01-04): we should count these as *hotline* messages not broadcast messages
-  await countBroadcast({ db, channel })
-  return respond({ db, sock, channel, sender, message: response })
+
+  return signal
+    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, response))
+    .then(() => messageCountRepository.countHotline(db, channel))
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
 const respond = ({ db, sock, channel, message, sender }) => {
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
-    .then(() => countCommand({ db, channel }))
+    .then(() => messageCountRepository.countCommand(db, channel))
 }
 
 // ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
@@ -231,18 +232,6 @@ const addHeader = ({ channel, sdMessage, messageType, language }) => {
       : `[${channel.name}]\n`
   return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
 }
-
-const countBroadcast = ({ db, channel }) =>
-  // TODO(@zig): add prometheus counter increment here
-  messageCountRepository.incrementBroadcastCount(
-    db,
-    channel.phoneNumber,
-    channel.memberships.length,
-  )
-
-const countCommand = ({ db, channel }) =>
-  // TODO(@zig): add prometheus counter increment here
-  messageCountRepository.incrementCommandCount(db, channel.phoneNumber)
 
 module.exports = {
   messageTypes,

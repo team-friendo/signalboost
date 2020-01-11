@@ -27,8 +27,6 @@ const findAll = db => db.channel.findAll()
 
 const findAllDeep = db =>
   db.channel.findAll({
-    order: [[db.messageCount, 'broadcastOut', 'DESC']],
-    // order: [[db.messageCount, 'broadcastIn', 'DESC'], [db.messageCount, 'commandIn', 'DESC']],
     include: [
       { model: db.deauthorization },
       { model: db.invite },

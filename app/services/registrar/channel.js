@@ -3,7 +3,7 @@ const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const signal = require('../signal')
 const messenger = require('../dispatcher/messenger')
-const { pick } = require('lodash')
+const { pick, map, sortBy } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../../config')
 const { statuses: pNumStatuses } = require('../../db/models/phoneNumber')
@@ -73,7 +73,7 @@ const list = db =>
       status: sbStatuses.SUCCESS,
       data: {
         count: chs.length,
-        channels: chs.map(_formatForList),
+        channels: chs.map(_formatForList).sort((a, b) => b - a), // sort by subs, desc
       },
     }))
     .catch(error => ({ status: sbStatuses.ERROR, data: { error } }))
@@ -82,7 +82,7 @@ const _formatForList = ch => ({
   ...pick(ch, ['name', 'phoneNumber']),
   admins: channelRepository.getAdminMemberships(ch).length,
   subscribers: channelRepository.getSubscriberMemberships(ch).length,
-  messageCount: pick(ch.messageCount, ['broadcastOut', 'commandIn']),
+  messageCount: pick(ch.messageCount, ['broadcastIn', 'commandIn', 'hotlineIn']),
 })
 
 module.exports = {

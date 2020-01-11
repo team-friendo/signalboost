@@ -2,14 +2,13 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, afterEach, after } from 'mocha'
 import { initDb } from '../../../../app/db/index'
 import { messageCountFactory } from '../../../support/factories/messageCount'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import { channelFactory } from '../../../support/factories/channel'
-import { subscriptionFactory } from '../../../support/factories/subscription'
-import { times } from 'lodash'
+import { deepChannelFactory } from '../../../support/factories/channel'
+import { getAdminMemberships } from '../../../../app/db/repositories/channel'
 
 describe('message count repository', () => {
-  const channelPhoneNumber = genPhoneNumber()
+  const channel = deepChannelFactory()
+  const channelPhoneNumber = channel.phoneNumber
   let db, countBefore, countAfter
 
   before(() => (db = initDb()))
@@ -20,33 +19,25 @@ describe('message count repository', () => {
   })
   after(async () => await db.sequelize.close())
 
-  describe('#incrementBroadcastCount', () => {
+  describe('#countBroadcast', () => {
     beforeEach(async () => {
-      db.channel.create(
-        { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
-        { include: [{ model: db.membership }] },
-      )
       countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
-      countAfter = await messageCountRepository.incrementBroadcastCount(db, channelPhoneNumber, 4)
+      countAfter = await messageCountRepository.countBroadcast(db, channel)
     })
 
     it('updates the broadcastIn count by 1', () => {
       expect(countAfter.broadcastIn).to.eql(countBefore.broadcastIn + 1)
     })
 
-    it('updates the broadcastOutCount by N, where N is number of channel subscribers', () => {
-      expect(countAfter.broadcastOut).to.eql(countBefore.broadcastOut + 4)
+    it('updates the broadcastOutCount by N, where N is number of channel members', () => {
+      expect(countAfter.broadcastOut).to.eql(countBefore.broadcastOut + channel.memberships.length)
     })
   })
 
-  describe('#incrementBroadcastCount', () => {
+  describe('#countCommand', () => {
     beforeEach(async () => {
-      db.channel.create(
-        { ...channelFactory(), subscriptions: times(3, subscriptionFactory) },
-        { include: [{ model: db.membership }] },
-      )
       countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
-      countAfter = await messageCountRepository.incrementCommandCount(db, channelPhoneNumber)
+      countAfter = await messageCountRepository.countCommand(db, channel)
     })
 
     it('updates the commandIn count by 1', () => {
@@ -55,6 +46,23 @@ describe('message count repository', () => {
 
     it('updates the commandOut count by 1', () => {
       expect(countAfter.commandOut).to.eql(countBefore.commandOut + 1)
+    })
+  })
+
+  describe('#countHotline', () => {
+    beforeEach(async () => {
+      countBefore = await db.messageCount.create(messageCountFactory({ channelPhoneNumber }))
+      countAfter = await messageCountRepository.countHotline(db, channel)
+    })
+
+    it('updates the hotlineIn count by 1', () => {
+      expect(countAfter.hotlineIn).to.eql(countBefore.hotlineIn + 1)
+    })
+
+    it('updates the hotlineOutCount by N, where N is number of channel admins', () => {
+      expect(countAfter.hotlineOut).to.eql(
+        countBefore.hotlineOut + getAdminMemberships(channel).length,
+      )
     })
   })
 })

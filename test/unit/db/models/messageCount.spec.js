@@ -19,17 +19,42 @@ describe('messageCount model', () => {
     await db.sequelize.close()
   })
 
-  test('fields', async () => {
+  it('has correct fields', async () => {
     messageCount = await db.messageCount.create(messageCountFactory())
-    expect(keys(messageCount.get())).to.have.deep.members([
+    expect(keys(messageCount.get())).to.eql([
       'channelPhoneNumber',
       'broadcastIn',
       'broadcastOut',
+      'hotlineIn',
+      'hotlineOut',
       'commandIn',
       'commandOut',
-      'createdAt',
       'updatedAt',
+      'createdAt',
     ])
+  })
+
+  describe('defaults', () => {
+    it('sets all counts to 0 if no value is provided', async () => {
+      messageCount = await db.messageCount.create(
+        messageCountFactory({
+          broadcastIn: undefined,
+          broadcastOut: undefined,
+          hotlineIn: undefined,
+          hotlineOut: undefined,
+          commandIn: undefined,
+          commandOut: undefined,
+        }),
+      )
+      ;[
+        'broadcastIn',
+        'broadcastOut',
+        'hotlineIn',
+        'hotlineOut',
+        'commandIn',
+        'commandOut',
+      ].forEach(attr => expect(messageCount[attr]).to.eql(0))
+    })
   })
 
   describe('validations', () => {

@@ -114,8 +114,9 @@ describe('messenger service', () => {
       respondSpy,
       broadcastMessageStub,
       sendMessageStub,
-      incrementCommandCountStub,
-      incrementBroadcastCountStub,
+      countCommandStub,
+      countBroadcastStub,
+      countHotlineStub,
       setExpirationStub
 
     beforeEach(() => {
@@ -123,11 +124,14 @@ describe('messenger service', () => {
       respondSpy = sinon.spy(messenger, 'respond')
       broadcastMessageStub = sinon.stub(signal, 'broadcastMessage').returns(Promise.resolve())
       sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
-      incrementCommandCountStub = sinon
-        .stub(messageCountRepository, 'incrementCommandCount')
+      countCommandStub = sinon
+        .stub(messageCountRepository, 'countCommand')
         .returns(Promise.resolve())
-      incrementBroadcastCountStub = sinon
-        .stub(messageCountRepository, 'incrementBroadcastCount')
+      countBroadcastStub = sinon
+        .stub(messageCountRepository, 'countBroadcast')
+        .returns(Promise.resolve())
+      countHotlineStub = sinon
+        .stub(messageCountRepository, 'countHotline')
         .returns(Promise.resolve())
       setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
     })
@@ -137,8 +141,9 @@ describe('messenger service', () => {
       respondSpy.restore()
       broadcastMessageStub.restore()
       sendMessageStub.restore()
-      incrementCommandCountStub.restore()
-      incrementBroadcastCountStub.restore()
+      countCommandStub.restore()
+      countBroadcastStub.restore()
+      countHotlineStub.restore()
       setExpirationStub.restore()
     })
 
@@ -160,7 +165,7 @@ describe('messenger service', () => {
         })
 
         it('does not increment the command count for the channel', () => {
-          expect(incrementCommandCountStub.callCount).to.eql(0)
+          expect(countCommandStub.callCount).to.eql(0)
         })
 
         it('broadcasts the message to all channel subscribers and admins', () => {
@@ -172,7 +177,7 @@ describe('messenger service', () => {
         })
 
         it('it increments the command count for the channel', () => {
-          expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 6])
+          expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
         })
       })
     })
@@ -238,13 +243,17 @@ describe('messenger service', () => {
             })
           })
 
-          it('responds to sender with a broadcast response notification in the correct language', () => {
+          it('responds to sender with a hotline message notification in the correct language', () => {
             const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
             expect(sendMessageStub.getCall(adminMemberships.length).args).to.eql([
               sock,
               sender.phoneNumber,
               sdMessageOf(channel, response),
             ])
+          })
+
+          it('counts the hotline message', () => {
+            expect(countHotlineStub.callCount).to.eql(1)
           })
         })
       })
@@ -345,7 +354,7 @@ describe('messenger service', () => {
       })
 
       it('does not increment the broadcast count', () => {
-        expect(incrementBroadcastCountStub.callCount).to.eql(0)
+        expect(countBroadcastStub.callCount).to.eql(0)
       })
 
       it('sends a command result to the message sender', () => {
@@ -357,7 +366,7 @@ describe('messenger service', () => {
       })
 
       it('increments the command count for the channel', () => {
-        expect(incrementCommandCountStub.getCall(0).args).to.eql([db, channel.phoneNumber])
+        expect(countCommandStub.getCall(0).args).to.eql([db, channel])
       })
     })
 

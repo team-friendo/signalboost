@@ -62,6 +62,8 @@ export const deepChannelAttrs = [
     messageCount: {
       broadcastIn: 2,
       broadcastOut: 4,
+      hotlineIn: 4,
+      hotlineOut: 2,
       commandIn: 5,
       commandOut: 6,
     },
@@ -105,6 +107,8 @@ export const deepChannelAttrs = [
     messageCount: {
       broadcastIn: 100,
       broadcastOut: 100,
+      hotlineIn: 2,
+      hotlineOut: 4,
       commandIn: 20,
       commandOut: 20,
     },
