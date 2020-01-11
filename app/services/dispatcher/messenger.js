@@ -134,28 +134,26 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
   const { language } = sender
   const recipients = channelRepository.getAdminMemberships(channel)
   const response = messagesIn(language).notifications.hotlineMessageSent(channel)
-  // TODO(aguestuser|2019-01-04): we should count these as *hotline* messages not broadcast messages
 
   await Promise.all(
-    recipients.map(recipient => {
-      const outMessage = addHeader({
-        channel,
-        sdMessage,
-        messageType: HOTLINE_MESSAGE,
-        language: recipient.language,
-      })
+    recipients.map(recipient =>
       notify({
         sock,
         channel,
         notification: {
           recipient: recipient.memberPhoneNumber,
-          message: outMessage,
+          message: addHeader({
+            channel,
+            sdMessage,
+            messageType: HOTLINE_MESSAGE,
+            language: recipient.language,
+          }).messageBody,
         },
-      })
-      countBroadcast({ db, channel })
-    }),
+      }),
+    ),
   )
-
+  // TODO(aguestuser|2019-01-04): we should count these as *hotline* messages not broadcast messages
+  await countBroadcast({ db, channel })
   return respond({ db, sock, channel, sender, message: response })
 }
 

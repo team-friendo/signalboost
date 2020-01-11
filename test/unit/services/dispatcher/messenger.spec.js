@@ -175,7 +175,9 @@ describe('messenger service', () => {
           expect(incrementBroadcastCountStub.getCall(0).args).to.eql([db, channel.phoneNumber, 6])
         })
       })
+    })
 
+    describe('a hotline message', () => {
       describe('when sender is a subscriber', () => {
         describe('and responses are disabled', () => {
           const sender = subscriberSender
@@ -227,7 +229,7 @@ describe('messenger service', () => {
                 sdMessage,
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
-              })
+              }).messageBody
               expect(sendMessageStub.getCall(index).args).to.eql([
                 sock,
                 membership.memberPhoneNumber,
@@ -265,7 +267,7 @@ describe('messenger service', () => {
                 sdMessage,
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
-              })
+              }).messageBody
 
               expect(sendMessageStub.getCall(index).args).to.eql([
                 sock,
