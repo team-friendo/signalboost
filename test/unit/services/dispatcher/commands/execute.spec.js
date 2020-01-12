@@ -209,6 +209,18 @@ describe('executing commands', () => {
         })
       })
     })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'accept my life') }
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
+        })
+      })
+    })
   })
 
   describe('ADD command', () => {
@@ -326,9 +338,7 @@ describe('executing commands', () => {
                 it('returns a SUCCESS status, message, and notifications', async () => {
                   const result = await processCommand(dispatchable)
                   expect(result.status).to.eql(statuses.SUCCESS)
-                  expect(result.message).to.eql(
-                    CR.add.success(deauthorizedPhoneNumber),
-                  )
+                  expect(result.message).to.eql(CR.add.success(deauthorizedPhoneNumber))
                   expect(result.notifications.length).to.eql(3)
                 })
               })
@@ -350,7 +360,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.ADD,
             status: statuses.ERROR,
-            message: CR.add.invalidNumber('foo'),
+            message: CR.add.invalidPhoneNumber('foo'),
             notifications: [],
           })
         })
@@ -362,7 +372,7 @@ describe('executing commands', () => {
         db,
         channel,
         sender: subscriber,
-        sdMessage: sdMessageOf(channel, 'ADD me'),
+        sdMessage: sdMessageOf(channel, 'ADD +12223334444'),
       }
       let result
       beforeEach(async () => (result = await processCommand(dispatchable)))
@@ -419,6 +429,18 @@ describe('executing commands', () => {
         })
       })
     })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'decline this') }
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
+        })
+      })
+    })
   })
 
   describe('HELP command', () => {
@@ -458,6 +480,23 @@ describe('executing commands', () => {
           command: commands.HELP,
           status: statuses.SUCCESS,
           message: CR.help.subscriber,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(channel, 'help me find the march'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
           notifications: [],
         })
       })
@@ -505,7 +544,26 @@ describe('executing commands', () => {
         })
       })
     })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(channel, 'info wars did it'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
+        })
+      })
+    })
   })
+
+  // INVITE
 
   describe('INVITE command', () => {
     const inviteePhoneNumber = genPhoneNumber()
@@ -550,7 +608,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.INVITE,
               status: statuses.ERROR,
-              message: CR.invite.invalidNumber('foo'),
+              message: messagesIn('EN').parseErrors.invalidPhoneNumber('foo'),
               notifications: [],
             })
           })
@@ -789,6 +847,23 @@ describe('executing commands', () => {
         })
       })
     })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(channel, 'join us tomorrow!'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
+        })
+      })
+    })
   })
 
   describe('LEAVE command', () => {
@@ -885,6 +960,23 @@ describe('executing commands', () => {
             recipient: membership.memberPhoneNumber,
             message: messagesIn(membership.language).notifications.adminLeft,
           })),
+        })
+      })
+    })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(channel, 'leave that to us'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
         })
       })
     })
@@ -998,7 +1090,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.REMOVE,
             status: statuses.ERROR,
-            message: CR.remove.invalidNumber('foo'),
+            message: CR.remove.invalidPhoneNumber('foo'),
             notifications: [],
           })
         })
@@ -1100,6 +1192,66 @@ describe('executing commands', () => {
           command: commands.RENAME,
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
+          notifications: [],
+        })
+      })
+    })
+  })
+
+  describe('SET_LANGUAGE commands', () => {
+    const dispatchable = {
+      db,
+      channel,
+      sender: subscriber,
+      sdMessage: sdMessageOf(channel, 'francais'),
+    }
+
+    let updateLanguageStub
+    beforeEach(() => (updateLanguageStub = sinon.stub(membershipRepository, 'updateLanguage')))
+    afterEach(() => updateLanguageStub.restore())
+
+    describe('when update call succeeds', () => {
+      beforeEach(() => {
+        updateLanguageStub.returns(Promise.resolve({ ...subscriber, language: languages.FR }))
+      })
+
+      it('returns a SUCCESS status in new language', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.SET_LANGUAGE,
+          status: statuses.SUCCESS,
+          message: messagesIn(languages.FR).commandResponses.setLanguage.success,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when update call fails', () => {
+      beforeEach(() => {
+        updateLanguageStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+      })
+
+      it('returns an error status in new language', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.SET_LANGUAGE,
+          status: statuses.ERROR,
+          message: messagesIn(languages.FR).commandResponses.setLanguage.dbError,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when followed by a payload', () => {
+      it('returns a NOOP', async () => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: randomPerson,
+          sdMessage: sdMessageOf(channel, 'english muffins are ready!'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          status: statuses.NOOP,
+          message: '',
           notifications: [],
         })
       })
@@ -1228,14 +1380,16 @@ describe('executing commands', () => {
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateStub.restore())
-    
+
     describe('when sender is a admin', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }
       let result
 
       describe('when update of descriptions succeeds', () => {
         beforeEach(async () => {
-          updateStub.returns(Promise.resolve({ ...channel, description: 'foo channel description' }))
+          updateStub.returns(
+            Promise.resolve({ ...channel, description: 'foo channel description' }),
+          )
           result = await processCommand(dispatchable)
         })
 
@@ -1290,7 +1444,7 @@ describe('executing commands', () => {
       })
     })
   })
- 
+
   describe('new user attempting to JOIN the signup channel', () => {
     it('returns NOOP', async () => {
       const dispatchable = {

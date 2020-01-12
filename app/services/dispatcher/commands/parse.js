@@ -1,14 +1,33 @@
 const { map, flattenDeep, isEmpty, get } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
+const validator = require('../../../db/validations/phoneNumber')
+const { messagesIn } = require('../strings/messages')
 const { defaultLanguage } = require('../../../config')
 
 /**
+ *
+ * ExecutableOrParseError = Executable | ParseError
+ *
+ * type Executable = {
+ *   command: string,
+ *   payload: string,
+ *   language: 'EN' | 'ES' | 'FR'
+ * }
+ *
+ * type ParseError = {
+ *   command: string,
+ *   error: string,
+ * }
+ *
  * type CommandMatch = {
  *   command: string,
  *   language: string,
+ *   error: string?
  *   matches: Array<string>?
  * }
+ *
+ * `error` field shows an error string if a payload validation fails, is null otherwise
  *
  * `matches` field is the result of command regex applied to an input message
  * - if regex matches, it an array containing the matched message, followed by capturing groups
@@ -16,14 +35,16 @@ const { defaultLanguage } = require('../../../config')
  *
  **/
 
-// string -> Executable
+// string -> ParseExecutableResult
 const parseExecutable = msg => {
-  const { command, language, matches } = findCommandMatch(msg) || {}
-  return {
-    command: command || commands.NOOP,
-    language: language || defaultLanguage,
-    payload: !isEmpty(matches) ? matches[2] : '',
-  }
+  const { command, language, error, matches } = findCommandMatch(msg) || {}
+  return error
+    ? { command, error }
+    : {
+        command: command || commands.NOOP,
+        language: language || defaultLanguage,
+        payload: !isEmpty(matches) ? matches[2] : '',
+      }
 }
 
 // string -> CommandMatch
@@ -64,14 +85,34 @@ const validatePayload = commandMatch => {
     case commands.LEAVE:
     case commands.SET_LANGUAGE:
       return validateNoPayload(commandMatch)
+    case commands.ADD:
+    case commands.INVITE:
+    case commands.REMOVE:
+      return validatePhoneNumber(commandMatch)
     default:
       return commandMatch
   }
 }
 
+// CommandMatch -> CommandMatch
 const validateNoPayload = commandMatch => {
+  // substitutes a NOOP command (signaling a broadcast message) if payload found for a no-payload command
+  // so that (e.g) "hello everyone on the channel!" is not interpreted as a command
   const { language, matches } = commandMatch
   return isEmpty(matches[2]) ? commandMatch : { command: commands.NOOP, language, matches: null }
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validatePhoneNumber = commandMatch => {
+  // tries to parse a valid e164-formatted phone number (see: https://www.twilio.com/docs/glossary/what-e164)
+  // - returns commandMatch with valid, parsed number if it can
+  // - returns parse error if it cannot
+  const { command, language, matches } = commandMatch
+  const rawPhoneNumber = matches[2]
+  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
+  return !isValid
+    ? { command, error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber) }
+    : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
 }
 
 module.exports = { parseExecutable }

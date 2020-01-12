@@ -3,7 +3,6 @@ const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const deauthorizationRepository = require('../../../db/repositories/deauthorization')
-const validator = require('../../../db/validations/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
@@ -11,15 +10,10 @@ const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
 const {
-  signal: { signupPhoneNumber, resendDelay },
+  signal: { signupPhoneNumber },
 } = require('../../../config')
 
 /**
- * type Executable = {
- *   command: string,
- *   payload: string,
- *   language: 'EN' | 'ES'
- * }
  *
  * type CommandResult = {
  *   command: string,
@@ -29,14 +23,20 @@ const {
  * }
  *
  * type Toggle = toggles.RESPONSES | toggles.VOUCHING
- * */
+ **/
 
-// (Executable, Dispatchable) -> Promise<CommandResult>
+// (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
   const { db, sock, channel, sender } = dispatchable
-  // don't allow command execution on the signup channel for non-admins
+
+  // don't allow ANY command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
+
+  // if payload parse error occured return early and notify sender
+  if (executable.error) return { command, status: statuses.ERROR, message: executable.error, notifications: [] }
+
+  // otherwise, dispatch on the command issued, and process it!
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
@@ -55,6 +55,7 @@ const execute = async (executable, dispatchable) => {
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
+
   result.notifications = result.notifications || []
   return { command, ...result }
 }
@@ -93,12 +94,10 @@ const accept = async (db, channel, sender, language, cr) =>
 
 // ADD
 
-const maybeAddAdmin = async (db, sock, channel, sender, phoneNumberInput) => {
+const maybeAddAdmin = async (db, sock, channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.add
   if (sender.type !== ADMIN)
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(phoneNumberInput)
-  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(phoneNumberInput) }
   return addAdmin(db, sock, channel, sender, phoneNumber, cr)
 }
 
@@ -172,19 +171,16 @@ const showInfo = async (db, channel, sender) => {
 
 // INVITE
 
-const maybeInvite = async (db, channel, sender, rawInviteePhoneNumber) => {
+const maybeInvite = async (db, channel, sender, inviteePhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.invite
-
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawInviteePhoneNumber)
-  if (!isValid) return { status: statuses.ERROR, message: cr.invalidNumber(rawInviteePhoneNumber) }
-  if (await membershipRepository.isMember(db, channel.phoneNumber, phoneNumber)) {
+  if (await membershipRepository.isMember(db, channel.phoneNumber, inviteePhoneNumber)) {
     // We don't return an "already member" error message here to defend side-channel attacks on membership lists.
     // But we *do* return an error status so messenger won't send out an invite notification!
     return { status: statuses.ERROR, message: cr.success }
   }
 
-  return invite(db, channel, sender.phoneNumber, phoneNumber, cr)
+  return invite(db, channel, sender.phoneNumber, inviteePhoneNumber, cr)
 }
 
 const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) => {
@@ -266,20 +262,14 @@ const removeSenderNotificationsOf = (channel, sender) => {
 
 const maybeRemoveAdmin = async (db, channel, sender, adminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
-  const { isValid, phoneNumber: validAdminNumber } = validator.parseValidPhoneNumber(
-    adminPhoneNumber,
-  )
 
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  if (!isValid) {
-    return { status: statuses.ERROR, message: cr.invalidNumber(adminPhoneNumber) }
-  }
-  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, validAdminNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotAdmin(validAdminNumber) }
+  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, adminPhoneNumber)))
+    return { status: statuses.ERROR, message: cr.targetNotAdmin(adminPhoneNumber) }
 
-  return removeAdmin(db, channel, validAdminNumber, sender, cr)
+  return removeAdmin(db, channel, adminPhoneNumber, sender, cr)
 }
 
 const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {

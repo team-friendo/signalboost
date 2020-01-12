@@ -4,7 +4,7 @@ import { commands } from '../../../../../app/services/dispatcher/commands/consta
 import { parseExecutable } from '../../../../../app/services/dispatcher/commands/parse'
 import { languages } from '../../../../../app/constants'
 import { defaultLanguage } from '../../../../../app/config'
-import { messagesIn } from "../../../../../app/services/dispatcher/strings/messages"
+import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 
 describe('parse module', () => {
   const rawPhoneNumber = '+1 (222) 333-4444'

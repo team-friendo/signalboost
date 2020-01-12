@@ -9,8 +9,6 @@ const notAdmin =
   'Lo sentimos, solo los admins pueden emitir ese comando. Envíe AYUDA para obtener una lista de comandos válidos.'
 const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
-const invalidNumber = phoneNumber =>
-  `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
 const support = `----------------------------
@@ -32,6 +30,13 @@ Signalboost responde a comandos:
 -> Enviar AYUDA para ver la lista de comandos.
 
 Para más información: https://signalboost.info`
+
+const parseErrors = {
+  invalidPhoneNumber: phoneNumber =>
+    `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
+}
+
+const invalidPhoneNumber = parseErrors.invalidPhoneNumber
 
 const commandResponses = {
   // ACCEPT
@@ -55,7 +60,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     notAdmin,
     dbError: num =>
       `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
-    invalidNumber: num =>
+    invalidPhoneNumber: num =>
       `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
   },
 
@@ -183,7 +188,7 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidNumber: input => `¡Ay! No se pudo emitir la invitación. ${invalidNumber(input)}`,
+    invalidPhoneNumber: input => `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
     success: `Invitación emitida.`,
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtalo de nuevo. :)',
   },
@@ -194,7 +199,7 @@ ${support}`,
     success: num => `${num} eliminado como administrador.`,
     notAdmin,
     dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
-    invalidNumber: num =>
+    invalidPhoneNumber: num =>
       `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
     targetNotAdmin: num => `¡Ay! ${num} no es un administrador. No puedo eliminarle.`,
   },
@@ -266,7 +271,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     success: phoneNumber => `Número de seguridad actualizado para ${phoneNumber}`,
     error: phoneNumber =>
       `Error al actualizar el número de seguridad para ${phoneNumber}. ¡Inténtelo de nuevo o contacta a un mantenedor!`,
-    invalidNumber,
+    invalidPhoneNumber,
     notAdmin,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
@@ -362,5 +367,6 @@ module.exports = {
   systemName,
   commandResponses,
   notifications,
+  parseErrors,
   prefixes,
 }
