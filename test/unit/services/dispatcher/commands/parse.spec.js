@@ -575,6 +575,10 @@ describe('parse module', () => {
               'leave foo',
               'goodbye foo',
               'english foo',
+              'responses on now',
+              'responses off now',
+              'vouching on now',
+              'vouching off now',
             ],
           },
           {
@@ -586,6 +590,10 @@ describe('parse module', () => {
               'hola foo',
               'adios foo',
               'espanol foo',
+              'respuestas activadas ahora',
+              'respuestas desactivadas ahora',
+              'atestiguando activada ahora',
+              'atestiguando desactivada ahora',
             ],
           },
           {
@@ -597,6 +605,10 @@ describe('parse module', () => {
               'allo foo',
               'adieu foo',
               'francais foo',
+              'reponses activees maintenant',
+              'reponses desactivees maintenant',
+              'se porter garant activees maintenant',
+              'se porter garant desactivees maintenant',
             ],
           },
         ]

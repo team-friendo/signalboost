@@ -1373,6 +1373,25 @@ describe('executing commands', () => {
         })
       })
     })
+
+    describe('when toggle is followed by a payload', () => {
+      scenarios.forEach(({ commandStr }) => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: admin,
+          sdMessage: sdMessageOf(channel, `${commandStr} foo`),
+        }
+        it('returns a NOOP', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NOOP,
+            status: statuses.NOOP,
+            message: '',
+            notifications: [],
+          })
+        })
+      })
+    })
   })
 
   describe('DESCRIPTION command', () => {
