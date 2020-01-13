@@ -1,6 +1,6 @@
 const net = require('net')
 const fs = require('fs-extra')
-const { pick, get, sortBy, last } = require('lodash')
+const { pick, get } = require('lodash')
 const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../constants')
 const { isEmpty } = require('lodash')

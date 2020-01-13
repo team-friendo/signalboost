@@ -10,8 +10,6 @@ const notAdmin =
 const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette canal. Envoyez BONJOUR pour vous abonner."
 
-const invalidNumber = phoneNumber =>
-  `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
 const onOrOff = isOn => (isOn ? 'activées' : 'désactivées')
 
 const support = `----------------------------------------------
@@ -34,11 +32,20 @@ Signalboost répond aux commandes:
 
 Pour plus de renseignements: https://signalboost.info`
 
+const parseErrrors = {
+  invalidPhoneNumber: phoneNumber =>
+    `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
+}
+
+const invalidPhoneNumber = parseErrrors.invalidPhoneNumber
+
 const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
+    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${
+      channel.name
+    }] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
@@ -57,7 +64,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     notAdmin,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
-    invalidNumber,
+    invalidPhoneNumber,
   },
 
   // DECLINE
@@ -180,7 +187,8 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidNumber: input => `Oups! Échec de l'émission de l'invitation. ${invalidNumber(input)}`,
+    invalidPhoneNumber: input =>
+      `Oups! Échec de l'émission de l'invitation. ${invalidPhoneNumber(input)}`,
     success: `Invitation émise.`,
     dbError: `Oups! Échec de l'émission de l'invitation. Veuillez réessayer. :)`,
   },
@@ -189,7 +197,9 @@ ${support}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
+      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${
+        channel.description
+      }
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     inviteRequired: `Pardon! Les invitations sont nécessaires pour s'abonner à cette canal. Demandez à un ami de vous inviter!
@@ -214,7 +224,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     notAdmin,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression ${num}. Veuillez essayer de nouveau.`,
-    invalidNumber,
+    invalidPhoneNumber,
     targetNotAdmin: num => `Oups! ${num} n’est pas une admin. Ielle ne peut être supprimée.`,
   },
 
@@ -263,7 +273,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     success: phoneNumber => `Mise à jour du numéro de sécurité à ${phoneNumber}`,
     error: phoneNumber =>
       `La mise à jour du numéro de sécurité à ${phoneNumber} a échoué. Veuillez essayer à nouveau ou contactez une mainteneur!`,
-    invalidNumber,
+    invalidPhoneNumber,
     notAdmin,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
@@ -357,6 +367,7 @@ const prefixes = {
 module.exports = {
   commandResponses,
   notifications,
+  parseErrrors,
   prefixes,
   systemName,
 }

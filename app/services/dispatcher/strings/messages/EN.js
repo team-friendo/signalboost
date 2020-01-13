@@ -9,8 +9,6 @@ const notAdmin =
   'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
 const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
-const invalidNumber = phoneNumber =>
-  `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const support = `----------------------------
@@ -33,11 +31,20 @@ Signalboost responds to commands:
 
 Learn more: https://signalboost.info`
 
+const parseErrors = {
+  invalidPhoneNumber: phoneNumber =>
+    `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`,
+}
+
+const invalidPhoneNumber = parseErrors.invalidPhoneNumber
+
 const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
+      channel.description
+    }
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
@@ -52,7 +59,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     success: num => `${num} added as an admin.`,
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
-    invalidNumber,
+    invalidPhoneNumber,
   },
 
   // DECLINE
@@ -178,7 +185,7 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidNumber: input => `Whoops! Failed to issue invitation. ${invalidNumber(input)}`,
+    invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
     success: `Issued invitation.`,
     dbError: 'Whoops! Failed to issue invitation. Please try again. :)',
   },
@@ -186,7 +193,9 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
+      channel.description
+    }
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -210,7 +219,7 @@ If you already have an invite, try sending ACCEPT`,
     success: num => `${num} removed as an admin.`,
     notAdmin,
     dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-    invalidNumber,
+    invalidPhoneNumber,
     targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
   },
 
@@ -256,7 +265,7 @@ Send HELP to list commands I understand.`,
     success: phoneNumber => `Updated safety number for ${phoneNumber}`,
     error: phoneNumber =>
       `Failed to update safety number for ${phoneNumber}. Try again or contact a maintainer!`,
-    invalidNumber,
+    invalidPhoneNumber,
     notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
@@ -342,6 +351,7 @@ const prefixes = {
 
 module.exports = {
   commandResponses,
+  parseErrors,
   notifications,
   prefixes,
   systemName,
