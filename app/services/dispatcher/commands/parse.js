@@ -83,7 +83,11 @@ const validatePayload = commandMatch => {
     case commands.INFO:
     case commands.JOIN:
     case commands.LEAVE:
+    case commands.RESPONSES_ON:
+    case commands.RESPONSES_OFF:
     case commands.SET_LANGUAGE:
+    case commands.VOUCHING_ON:
+    case commands.VOUCHING_OFF:
       return validateNoPayload(commandMatch)
     case commands.ADD:
     case commands.INVITE:

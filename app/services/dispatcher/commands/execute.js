@@ -34,7 +34,8 @@ const execute = async (executable, dispatchable) => {
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
 
   // if payload parse error occured return early and notify sender
-  if (executable.error) return { command, status: statuses.ERROR, message: executable.error, notifications: [] }
+  if (executable.error)
+    return { command, status: statuses.ERROR, message: executable.error, notifications: [] }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({

@@ -34,7 +34,7 @@ Pour plus de renseignements: https://signalboost.info`
 
 const parseErrrors = {
   invalidPhoneNumber: phoneNumber =>
-    `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`
+    `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
 }
 
 const invalidPhoneNumber = parseErrrors.invalidPhoneNumber
@@ -43,7 +43,9 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
+    success: channel => `Bonjour! Vous êtes maintenant abonnée au/à le [${
+      channel.name
+    }] canal Signalboost. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
@@ -185,7 +187,8 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidPhoneNumber: input => `Oups! Échec de l'émission de l'invitation. ${invalidPhoneNumber(input)}`,
+    invalidPhoneNumber: input =>
+      `Oups! Échec de l'émission de l'invitation. ${invalidPhoneNumber(input)}`,
     success: `Invitation émise.`,
     dbError: `Oups! Échec de l'émission de l'invitation. Veuillez réessayer. :)`,
   },
@@ -194,7 +197,9 @@ ${support}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${channel.description}
+      `Bonjour! Vous êtes maintenant abonnée au/à le [${channel.name}] canal Signalboost. ${
+        channel.description
+      }
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     inviteRequired: `Pardon! Les invitations sont nécessaires pour s'abonner à cette canal. Demandez à un ami de vous inviter!

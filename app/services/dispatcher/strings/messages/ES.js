@@ -42,7 +42,9 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${
+      channel.name
+    }] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
@@ -188,7 +190,8 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidPhoneNumber: input => `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
+    invalidPhoneNumber: input =>
+      `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
     success: `Invitación emitida.`,
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtalo de nuevo. :)',
   },
@@ -217,7 +220,9 @@ ${support}`,
 
   join: {
     success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
+        channel.description
+      }
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
