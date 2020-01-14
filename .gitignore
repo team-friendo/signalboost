@@ -41,9 +41,10 @@ signal_data
 /.env
 /bin/get-machine
 /ansible/files/deploy_keys/signalboost_gpg_privkey.asc
-/ansible/files/deploy_keys/signalboost_ssh_key
-/ansible/files/deploy_keys/signalboost_ssh_key.pub
 /ansible/inventory.tmpl
 /splash/ansible/inventory.tmpl
 /splash/.env
 /splash/ansible/inventory
+/ansible/files/deploy_keys/.ssh/id_sb_deploy
+/ansible/files/deploy_keys/.ssh/id_sb_deploy.pub
+/ansible/files/deploy_keys/.ssh/config

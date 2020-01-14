@@ -1,7 +1,8 @@
 .env
+ansible/files/deploy_keys/.ssh/config
+ansible/files/deploy_keys/.ssh/id_sb_deploy
+ansible/files/deploy_keys/.ssh/id_sb_deploy.pub
 ansible/files/deploy_keys/signalboost_gpg_privkey.asc
-ansible/files/deploy_keys/signalboost_ssh_key
-ansible/files/deploy_keys/signalboost_ssh_key.pub
 ansible/inventory.tmpl
 bin/get-machine
 splash/.env
