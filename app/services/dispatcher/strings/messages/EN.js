@@ -143,12 +143,13 @@ CHANNEL INFO
 You are an admin of this channel.
 
 name: ${channel.name}
-description: ${channel.description}
+
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 responses: ${onOrOff(channel.responsesEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
+description: ${channel.description}
 
 ${support}`,
 
@@ -159,11 +160,11 @@ CHANNEL INFO
 You are subscribed to this channel.
 
 name: ${channel.name}
-description: ${channel.description}
 phone number: ${channel.phoneNumber}
 responses: ${onOrOff(channel.responsesEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
 subscribers: ${getSubscriberMemberships(channel).length}
+description: ${channel.description}
 
 ${support}`,
 
@@ -174,9 +175,9 @@ CHANNEL INFO
 You are not subscribed to this channel. Send HELLO to subscribe.
 
 name: ${channel.name}
-description: ${channel.description}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
+description: ${channel.description}
 
 ${support}`,
   },
@@ -288,6 +289,8 @@ const notifications = {
   adminLeft: 'An admin just left the channel.',
 
   channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
+
+  setDescription: newDescription => `Channel description set to "${newDescription}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} has been removed from this channel because their safety number changed.

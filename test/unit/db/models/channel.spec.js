@@ -71,25 +71,33 @@ describe('channel model', () => {
     await db.sequelize.close()
   })
 
-  describe('fields', async () => {
-	beforeEach(async ()  => channel = await db.channel.create(channelFactory()))   
+  it('has correct fields', async () => {
+    channel = await db.channel.create(channelFactory())
 
-    it('has correct fields', () => {
-      expect(channel.phoneNumber).to.be.a('string')
-      expect(channel.name).to.be.a('string')
-      expect(channel.description).to.be.a('string')
-      expect(channel.responsesEnabled).to.be.a('boolean')
-      expect(channel.vouchingOn).to.be.a('boolean')
-      expect(channel.messageExpiryTime).to.be.a('number')
-      expect(channel.createdAt).to.be.a('Date')
-      expect(channel.updatedAt).to.be.a('Date')
-    })
+    expect(channel.phoneNumber).to.be.a('string')
+    expect(channel.name).to.be.a('string')
+    expect(channel.description).to.be.a('string')
+    expect(channel.responsesEnabled).to.be.a('boolean')
+    expect(channel.vouchingOn).to.be.a('boolean')
+    expect(channel.messageExpiryTime).to.be.a('number')
+    expect(channel.createdAt).to.be.a('Date')
+    expect(channel.updatedAt).to.be.a('Date')
+  })
 
-    it('sets correct defaults', () => {
-      expect(channel.responsesEnabled).to.equal(false)
-      expect(channel.vouchingOn).to.equal(false)
-      expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
-    })
+  it('sets correct defaults', async () => {
+    channel = await db.channel.create(
+      channelFactory({
+        responsesEnabled: undefined,
+        vouchingOn: undefined,
+        messageExpiryTime: undefined,
+        description: undefined,
+      }),
+    )
+
+    expect(channel.responsesEnabled).to.equal(false)
+    expect(channel.vouchingOn).to.equal(false)
+    expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
+    expect(channel.description).to.equal('')
   })
 
   describe('validations', () => {

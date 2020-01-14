@@ -384,15 +384,27 @@ const setLanguage = (db, sender, language) => {
 const maybeSetDescription = async (db, channel, sender, newDescription) => {
   const cr = messagesIn(sender.language).commandResponses.description
   return sender.type === ADMIN
-    ? setDescription(db, channel, newDescription, cr)
+    ? setDescription(db, channel, newDescription, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const setDescription = (db, channel, newDescription, cr) => {
+const setDescription = (db, channel, newDescription, sender, cr) => {
   return channelRepository
     .update(db, channel.phoneNumber, { description: newDescription })
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(newDescription) }))
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(newDescription),
+      notifications: descriptionNotificationsOf(channel, newDescription, sender),
+    }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
+}
+
+const descriptionNotificationsOf = (channel, newDescription, sender) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.setDescription(newDescription),
+  }))
 }
 
 // NOOP
