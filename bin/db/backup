@@ -1,86 +1,74 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-pushd `pwd` > /dev/null # store current dir
-cd `dirname "$0"` # cd to script path
-cd ../..
+set -euo pipefail
 
+###################
+# throat-clearing #
+###################
+
+# time
 timestamp=`date "+%Y-%m-%d"`
 
-backup_dir=backups/${timestamp}
+# gpg
+keyring_path="/srv/signalboost/keyrings/live/pubring.kbx"
+gpg="gpg --keyring ${keyring_path} --trust-model always -r 8DEA5441 -r 97B47404"
+
+# paths
+project_root="/srv/signalboost"
+backup_dir="/srv/signalboost/backups/${timestamp}"
+
+# make the folder for this backup
 mkdir -p ${backup_dir}
 
-psql_backup_path=${backup_dir}/sb_psql_backup_${timestamp}.tar
-db_volume_backup_path=${backup_dir}/sb_db_volume_backup_${timestamp}.tar
-keystore_volume_backup_path=${backup_dir}/sb_keystore_volume_backup_${timestamp}.tar
+#############
+# backup db #
+#############
 
-#####################
+pg_dump="docker-compose --file ${project_root}/docker-compose.yml exec -T db pg_dump -U postgres signalboost"
+psql_backup_path="${backup_dir}/sb_psql_backup_${timestamp}.tar.gpg"
+$pg_dump | $gpg > $psql_backup_path
 
-echo "--- making psql backup..."
-docker-compose exec db pg_dump -U postgres -F t signalboost -f /${psql_backup_path}
+###################
+# backup keystore #
+###################
 
-echo '---encrypting psql backup...'
-gpg --trust-model always \
-    -r 97B47404 -r 8DEA5441 \
-    -e /srv/signalboost/${psql_backup_path}
+down="docker-compose --file ${project_root}/docker-compose.yml down"
+tar="tar cf /srv/signalboost/${db_volume_backup_path} /var/lib/docker/volumes/signalboost_postgres_data/_data"
+keystore_backup_path="${backup_dir}/sb_keystore_backup_${timestamp}.tar.gpg"
+down="docker-compose up -d"
 
-echo "-- removing unencrypted psql packup..."
-rm /srv/signalboost/${psql_backup_path}
-
-echo "=== psql backup done."
-
-#####################
-
-echo "--- making db volume backup..."
-tar cf /srv/signalboost/${db_volume_backup_path} \
-    /var/lib/docker/volumes/signalboost_postgres_data/_data
-
-echo "--- encrypting db volume backup..."
-gpg --trust-model always \
-    -r 97B47404 -r 8DEA5441 \
-    -e /srv/signalboost/${db_volume_backup_path}
-
-echo "--- removing unencrypted db volume backup..."
-rm /srv/signalboost/${db_volume_backup_path}
-
-echo "=== db volume backup done."
-
-#####################
-
-echo "--- making keystore volume backup..."
-tar cf /srv/signalboost/${keystore_volume_backup_path} \
-    /var/lib/docker/volumes/signalboost_signal_data/_data
-
-echo "--- encrypting keystore volume backup..."
-gpg --trust-model always \
-    -r 97B47404 -r 8DEA5441 \
-    -e --yes /srv/signalboost/${keystore_volume_backup_path}
-
-echo "--- removing unencrypted keystoere volume backup..."
-rm /srv/signalboost/${keystore_volume_backup_path}
-
-echo "=== keystore backup done."
-
-#####################
-
-echo "=== ALL DONE! Find backups in:"
-echo ""
-echo "    /srv/signalboost/${backup_dir}"
-echo ""
+$down
+$tar | $gpg > $keystore_backup_path
+$up
 
 
-# TODO(aguestuser|2019-01--05):
-# create a step to push the backup to backup server via scp
-# one possible design:
-# - create an sb_deploy user on the backup target machine
-# - create a key controlled by that user on this machine
-#   with something like:
-#   ssh-keygen -t ed25519 -o -a 100 -f /root/.ssh/id_sb_deploy
-# - then scp to the backup target with something like:
-#   scp -i /root/.ssh/id_sb_deploy ${backup_path} sb_deploy@$BACKUP_IP:/home/sb_deploy/backups/
-# - and do all of that in a chron job that we can deploy to new machines with ansible!
+######################### 
+# scp backups to target #
+#########################
 
-# for now, aguestuser does this from the backup target:
-# scp -i ~/.ssh/id_tikva_aguestuser signalboost:/srv/signalboost/${backup_path} /home/aguestuser/-/team-friendo/backups/
+# here, we use the `sb_backup` host defined in /root/.ssh/config
+scp /srv/signalboost/${backup_path} sb_backup:/srv/signalboost/backups/
 
+# remove old backups on remote
+ssh "rm -rf /srv/signalboost/backups/!($timestamp)"
 
-popd > /dev/null
+# remove local backup
+rm ${backup_dir}
+
+# alternately (to be more explicit?), we could do this for the push step:
+# source project/root/.env # <-- which contains $BACKUP_IP
+# scp -i /home/sb_deploy/.ssh/id_sb_deploy sb_deploy@${$BACKUP_IP}:/srv/signalboost/backups
+
+# TODO(aguestuser|2020-01-15)
+# 
+# (preferably via new tasks in provision.yml or a new provision_backup.yml
+#  but scp calls would suit in a pinch!)
+# 
+# * load /ansible/files/crontab/root to signalboost:/var/spool/cront/crontab/root
+# * load /ansible/files/deploy_keys/.ssh to signalboost:/root/.ssh
+# * create sb_deploy user on signalboost prod 
+#   * maybe restrict the directories it can read from? since it has a passwordless ssh key?
+# * add sb_deploy on sb_backup and add `id_sb_deploy.pub` to its authorized keys
+#   * such already exists on sb_backup, but it has root and probably should not?
+#   * we only want it to be able to write to one dir!)
+#   *whatever permissions it has, it needs to be able to write to /srv/signalboost/backups
