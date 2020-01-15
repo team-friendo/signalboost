@@ -26,7 +26,7 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: defaultMessageExpiryTime,
     },
-    responsesEnabled: {
+    hotlineEnabled: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false,
