@@ -148,7 +148,7 @@ nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
-réponses: ${onOrOff(channel.responsesEnabled)}
+réponses: ${onOrOff(channel.hotlineEnabled)}
 se porter garant: ${onOrOff(channel.vouchingOn)}
 description: ${channel.description}
 
@@ -162,7 +162,7 @@ Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
-réponses: ${channel.responsesEnabled ? 'ON' : 'OFF'}
+réponses: ${channel.hotlineEnabled ? 'ON' : 'OFF'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
 abonnées: ${getSubscriberMemberships(channel).length}
 description: ${channel.description}
@@ -246,10 +246,10 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     dbError: 'Oups! Votre langage de préférence n’a pas été conservé. Veuillez essayer de nouveau!',
   },
 
-  // TOGGLES (RESPONSES, VOUCHING)
+  // TOGGLES (HOTLINE, VOUCHING)
 
   toggles: {
-    responses: {
+    hotline: {
       success: isOn => `Réponses des abonnées maintenant ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>

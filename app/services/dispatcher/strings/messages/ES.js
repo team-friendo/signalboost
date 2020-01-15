@@ -150,7 +150,7 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
-respuestas: ${onOrOff(channel.responsesEnabled)}
+respuestas: ${onOrOff(channel.hotlineEnabled)}
 atestiguando: ${onOrOff(channel.vouchingOn)}
 descripción: ${channel.description}
 
@@ -164,7 +164,7 @@ Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+respuestas: ${channel.hotlineEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 atestiguando: ${onOrOff(channel.vouchingOn)}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 descripción: ${channel.description}
@@ -179,7 +179,7 @@ Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-respuestas: ${channel.responsesEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
+respuestas: ${channel.hotlineEnabled ? 'ACTIVADAS' : 'DESACTIVADAS'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 descripción: ${channel.description}
 
@@ -249,10 +249,10 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
   },
 
-  // TOGGLES (RESPONSES, VOUCHING)
+  // TOGGLES (HOTLINE, VOUCHING)
 
   toggles: {
-    responses: {
+    hotline: {
       success: isOn => `Respuestas del suscriptor configurado en ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>

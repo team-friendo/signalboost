@@ -1265,16 +1265,16 @@ describe('executing commands', () => {
 
     const scenarios = [
       {
-        ...toggles.RESPONSES,
+        ...toggles.HOTLINE,
         isOn: true,
-        command: commands.RESPONSES_ON,
-        commandStr: 'RESPONSES ON',
+        command: commands.HOTLINE_ON,
+        commandStr: 'HOTLINE ON',
       },
       {
-        ...toggles.RESPONSES,
+        ...toggles.HOTLINE,
         isOn: false,
-        command: commands.RESPONSES_OFF,
-        commandStr: 'RESPONSES OFF',
+        command: commands.HOTLINE_OFF,
+        commandStr: 'HOTLINE OFF',
       },
       {
         ...toggles.VOUCHING,
@@ -1297,7 +1297,7 @@ describe('executing commands', () => {
         const sdMessage = sdMessageOf(channel, commandStr)
         const dispatchable = { db, channel, sender, sdMessage }
 
-        it('attempts to update the responsesEnabled field on the channel', async () => {
+        it('attempts to update the hotlineEnabled field on the channel', async () => {
           updateChannelStub.returns(Promise.resolve())
           await processCommand(dispatchable)
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([
@@ -1417,7 +1417,7 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             status: statuses.SUCCESS,
             message: CR.description.success('foo channel description'),
-           notifications: [
+            notifications: [
               ...bystanderAdminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
                 message: messagesIn(membership.language).notifications.setDescription(
