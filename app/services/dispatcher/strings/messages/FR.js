@@ -19,7 +19,7 @@ COMMENT ÇA FONCTIONNE
 Signalboost dispose de canaux avec des administrateurs et des abonnés:
 
 -> Lorsque les adminis transmettent des messages, ces messages sont envoyés à toutes les abonnées.
--> Si activé, les abonnées peuvent envoyer des réponses que seules les admins peuvent lire.
+-> Si activé, les abonnés peuvent envoyer des messages anonymes à la hotline.
 
 Signalboost protège votre vie privée:
 
@@ -98,8 +98,8 @@ DESCRIPTION description de le canal
 AJOUTER / SUPPRIMER +1-555-555-5555
 -> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de le canal
 
-RÉPONSES ACTIVÉES / DÉSACTIVÉES
--> active ou désactive les messages entrants aux administrateurs
+HOTLINE ACTIVÉES / DÉSACTIVÉES
+-> active ou désactive hotline
 
 SE PORTER GARANT ACTIVÉES / DÉSACTIVÉES
 -> active ou désactive l'exigence de recevoir une invitation à s'abonner
@@ -148,9 +148,9 @@ nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
-réponses: ${onOrOff(channel.hotlineEnabled)}
+hotline: ${channel.hotlineEnabled ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -162,10 +162,10 @@ Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
-réponses: ${channel.hotlineEnabled ? 'ON' : 'OFF'}
+hotline: ${channel.hotlineEnabled ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
 abonnées: ${getSubscriberMemberships(channel).length}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -178,7 +178,7 @@ Vous n'êtes pas abonné à cette canal. Envoyez AIDE pour vous abonner.
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 abonnées: ${getSubscriberMemberships(channel).length}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -250,10 +250,10 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Réponses des abonnées maintenant ${onOrOff(isOn)}.`,
+      success: isOn => `Hotline ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
-        `Oups! Une erreur s’est produite en tentant de changer les réponses à ${onOrOff(
+        `Oups! Une erreur s’est produite en tentant de changer la hotline à ${onOrOff(
           isOn,
         )}. Veuillez essayer de nouveau!`,
     },
@@ -313,8 +313,8 @@ Send HELP to list valid commands.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
-      ? 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
-      : 'Désolé, les messages entrants ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
+      ? 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
+      : 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
 
   inviteReceived: channelName => `Vous avez été invité sur le  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
 
@@ -334,7 +334,7 @@ AJOUTER ${adminPhoneNumber}
 Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
   noop: 'Oups! Ceci n’est pas une commande!',
   unauthorized:
-    'Oups! Les réponses d’abonnées sont désactivées. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
+    'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
@@ -367,7 +367,7 @@ Commande AIDE pour plus de renseignements.`,
 }
 
 const prefixes = {
-  hotlineMessage: `RÉPONSES ABONNÉeS`,
+  hotlineMessage: `HOTLINE`,
 }
 
 module.exports = {

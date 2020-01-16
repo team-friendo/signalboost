@@ -18,7 +18,7 @@ HOW IT WORKS
 Signalboost has channels with admins and subscribers:
 
 -> When admins send announcements, they are broadcast to all subscribers.
--> If enabled, subscriber messages will be forwarded anonymously to admins.
+-> If enabled, subscribers can send anonymous messages to the hotline.
 
 Signalboost protects your privacy:
 
@@ -97,7 +97,7 @@ ADD / REMOVE +1-555-555-5555
 -> adds or removes +1-555-555-5555 as an admin of the channel
 
 HOTLINE ON / OFF
--> enables or disables incoming messages to admins
+-> enables or disables hotline
 
 VOUCHING ON / OFF
 -> enables or disables requirement to receive an invite to subscribe
@@ -149,7 +149,7 @@ admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -164,7 +164,7 @@ phone number: ${channel.phoneNumber}
 hotline: ${onOrOff(channel.hotlineEnabled)}
 vouching: ${onOrOff(channel.vouchingOn)}
 subscribers: ${getSubscriberMemberships(channel).length}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -177,7 +177,7 @@ You are not subscribed to this channel. Send HELLO to subscribe.
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
-description: ${channel.description}
+${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -247,16 +247,16 @@ Send HELP to list commands I understand.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Subscriber hotline turned ${onOrOff(isOn)}.`,
+      success: isOn => `Hotline turned ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
-        `Whoops! There was an error trying to set hotline to ${onOrOff(isOn)}. Please try again!`,
+        `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,
     },
     vouching: {
       success: isOn => `Vouching turned ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
-        `Whoops! There was an error trying to set vouching to ${onOrOff(isOn)}. Please try again!`,
+        `Whoops! There was an error trying to turn vouching ${onOrOff(isOn)}. Please try again!`,
     },
   },
 
@@ -316,8 +316,8 @@ Send HELP to list valid commands.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
-      ? 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands.'
-      : 'Sorry, incoming messages are not enabled on this channel. Send HELP to list valid commands or HELLO to subscribe.',
+      ? 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands.'
+      : 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands or HELLO to subscribe.',
 
   inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
 
