@@ -36,6 +36,11 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false,
     },
+    vouchThreshold: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 2,
+    },
   })
 
   channel.associate = db => {

@@ -78,8 +78,9 @@ describe('channel model', () => {
     expect(channel.name).to.be.a('string')
     expect(channel.description).to.be.a('string')
     expect(channel.hotlineOn).to.be.a('boolean')
-    expect(channel.vouchingOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
+    expect(channel.vouchingOn).to.be.a('boolean')
+    expect(channel.vouchThreshold).to.be.a('number')
     expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
   })
@@ -91,13 +92,15 @@ describe('channel model', () => {
         vouchingOn: undefined,
         messageExpiryTime: undefined,
         description: undefined,
+        vouchThreshold: undefined,
       }),
     )
 
     expect(channel.hotlineOn).to.equal(false)
-    expect(channel.vouchingOn).to.equal(false)
-    expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     expect(channel.description).to.equal('')
+    expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
+    expect(channel.vouchingOn).to.equal(false)
+    expect(channel.vouchThreshold).to.equal(2)
   })
 
   describe('validations', () => {
