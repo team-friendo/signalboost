@@ -1,4 +1,3 @@
-const { wait } = require('../util')
 const signal = require('../signal')
 const { sdMessageOf, messageTypes } = signal
 const channelRepository = require('./../../db/repositories/channel')
@@ -11,7 +10,7 @@ const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const {
-  signal: { expiryUpdateDelay, signupPhoneNumber },
+  signal: { signupPhoneNumber },
 } = require('../../config')
 
 /**
@@ -156,18 +155,11 @@ const updateFingerprint = async (db, sock, updatableFingerprint) => {
 const updateExpiryTime = async (db, sock, sender, channel, messageExpiryTime) => {
   if (sender.type !== memberTypes.ADMIN) {
     // override a disappearing message time set by a subscriber or rando
-    await signal.setExpiration(
+    return signal.setExpiration(
       sock,
       channel.phoneNumber,
       sender.phoneNumber,
       channel.messageExpiryTime,
-    )
-    // wait 200ms for less jarring UX for sender
-    await wait(expiryUpdateDelay)
-    return signal.sendMessage(
-      sock,
-      sender.phoneNumber,
-      sdMessageOf(channel, messagesIn(sender.language).notifications.expiryUpdateNotAuthorized),
     )
   }
   // enforce a disappearing message time set by an admin
