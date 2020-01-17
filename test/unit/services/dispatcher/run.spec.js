@@ -17,7 +17,6 @@ import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
-import { defaultLanguage } from '../../../../app/config'
 import { adminMembershipFactory } from '../../../support/factories/membership'
 const {
   signal: { defaultMessageExpiryTime, signupPhoneNumber },
@@ -536,17 +535,6 @@ describe('dispatcher service', () => {
             channel.phoneNumber,
             subscriberPhoneNumber,
             defaultMessageExpiryTime,
-          ])
-        })
-
-        it('notifies the subscriber that their change was overriden', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            sock,
-            subscriberPhoneNumber,
-            sdMessageOf(
-              channel,
-              messagesIn(defaultLanguage).notifications.expiryUpdateNotAuthorized,
-            ),
           ])
         })
       })
