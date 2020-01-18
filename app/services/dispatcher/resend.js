@@ -5,14 +5,14 @@ const {
   signal: { minResendInterval, maxResendInterval },
 } = require('../../config')
 
-// (Socket, ResendQueue, SdMessage) -> void
-const enqueueResend = async (sock, resendQueue, sdMessage) => {
-  // impelements a queue for resending messages that are not sent due to rate-limit errors
-  // with exponential backoff between resend attempts up to a `maxResendInterval` limit
+// (Socket, ResendQueue, SdMessage) -> number?
+const enqueueResend = (sock, resendQueue, sdMessage) => {
+  // - impelements a queue for resending messages that are droped due to rate-limiting by signal
+  // - uses exponential backoff between resend attempts up to a `maxResendInterval` limit
+  // - returns the interval after which the message will be resent, or null if it will not be resent
   const msgHash = hash(sdMessage)
 
-  // if message has already been resent, pick the new resend interval
-  // by multiplying the last resend interval by 2
+  // if message already resent, increase the resend interval by power of 2
   const newResendInterval = resendQueue[msgHash]
     ? resendQueue[msgHash].lastResendInterval * 2
     : minResendInterval
@@ -20,16 +20,19 @@ const enqueueResend = async (sock, resendQueue, sdMessage) => {
   // don't resend anymore if message has exceeded max resend threshold
   if (newResendInterval > maxResendInterval) {
     delete resendQueue[msgHash]
-    return
+    return null
   }
-
-  // TODO: notify admins that a message is being enqueed for resending...
-
-  // after waiting the new interval, send message and record interval we just waited
-  // (we record the interval just before sending to ensure the queue is in a correct state
-  //  in the case that the resend fails almost instantaneously)
-  await wait(newResendInterval)
+  // okay! we're going to resend! let's...
+  // record the interval we are about to wait
   resendQueue[msgHash] = { sdMessage, lastResendInterval: newResendInterval }
+  // enqueue the message for resending after waiting the new interval
+  _resendAfter(sock, sdMessage, newResendInterval)
+  // end by returning the interval we are about to wait
+  return newResendInterval
+}
+
+const _resendAfter = async (sock, sdMessage, resendInterval) => {
+  await wait(resendInterval)
   signal.sendMessage(sock, sdMessage.recipientNumber, sdMessage)
 }
 

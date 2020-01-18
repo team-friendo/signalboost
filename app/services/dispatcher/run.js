@@ -5,6 +5,7 @@ const membershipRepository = require('../../db/repositories/membership')
 const { memberTypes } = membershipRepository
 const executor = require('./commands')
 const messenger = require('./messenger')
+const resend = require('./resend')
 const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
@@ -65,17 +66,20 @@ const run = async (db, sock) => {
   logger.log(`--- Dispatcher running!`)
 }
 
-const listenForInboundMessages = async (db, sock, channels) =>
-  Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber))).then(listening => {
-    sock.on('data', inboundMsg => dispatch(db, sock, parseMessage(inboundMsg)).catch(logger.error))
-    return listening
-  })
+const listenForInboundMessages = async (db, sock, channels) => {
+  const resendQueue = {}
+  const numListening = await Promise.all(channels.map(ch => signal.subscribe(sock, ch.phoneNumber)))
+  sock.on('data', inboundMsg =>
+    dispatch(db, sock, resendQueue, parseMessage(inboundMsg)).catch(logger.error),
+  )
+  return numListening
+}
 
 /********************
  * MESSAGE DISPATCH
  *******************/
 
-const dispatch = async (db, sock, inboundMsg) => {
+const dispatch = async (db, sock, resendQueue, inboundMsg) => {
   // retrieve db info we need for dispatching...
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
@@ -85,8 +89,11 @@ const dispatch = async (db, sock, inboundMsg) => {
     : []
 
   // dispatch system-created messages
-  const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
-  if (rateLimitedMessage) return notifyRateLimitedMessage(db, sock, rateLimitedMessage)
+  const rateLimitedMessage = detectRateLimitedMessage(inboundMsg, resendQueue)
+  if (rateLimitedMessage) {
+    const resendInterval = resend.enqueueResend(sock, resendQueue, rateLimitedMessage)
+    return notifyRateLimitedMessage(db, sock, rateLimitedMessage, resendInterval)
+  }
 
   const newFingerprint = detectUpdatableFingerprint(inboundMsg)
   if (newFingerprint) return updateFingerprint(db, sock, newFingerprint)
@@ -109,8 +116,7 @@ const relay = async (db, sock, channel, sender, inboundMsg) => {
   }
 }
 
-const notifyRateLimitedMessage = async (db, sock, sdMessage) => {
-  // try {
+const notifyRateLimitedMessage = async (db, sock, sdMessage, resendInterval) => {
   const recipients = channelRepository.getAdminMemberships(
     await channelRepository.findDeep(db, signupPhoneNumber),
   )
@@ -124,6 +130,7 @@ const notifyRateLimitedMessage = async (db, sock, sdMessage) => {
           messagesIn(language).notifications.rateLimitOccurred(
             sdMessage.username,
             sdMessage.recipientNumber,
+            resendInterval,
           ),
         ),
       ),

@@ -347,11 +347,15 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
 
   toggles: commandResponses.toggles,
 
-  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber, resendInterval) =>
     `Un message n'a pas pu être envoyé en raison d'une erreur de limite de débit.
 canal: ${channelPhoneNumber}
 destinataire: ${memberPhoneNumber}
-`,
+${
+  resendInterval
+    ? `tentative sera faite pour renvoyer le message en: ${resendInterval.toString().slice(0, -3)}s`
+    : `le message a dépassé le seuil de renvoi et ne sera pas renvoyé`
+}`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Vous êtes maintenant un

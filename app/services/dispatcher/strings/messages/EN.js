@@ -323,11 +323,15 @@ Send HELP to list valid commands.`,
 
 Please respond with ACCEPT or DECLINE.`,
 
-  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber, resendInterval) =>
     `Message failed to send due to a rate limit error.
 channel: ${channelPhoneNumber}
 recipient: ${memberPhoneNumber}
-`,
+${
+  resendInterval
+    ? `next resend attempt in: ${resendInterval.toString().slice(0, -3)} sec`
+    : `message has exceeded resend threshold and will not be resent`
+}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:\n ${requestMsg}`,
