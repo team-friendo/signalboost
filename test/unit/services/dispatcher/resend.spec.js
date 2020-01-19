@@ -18,7 +18,27 @@ describe('resend module', () => {
     username: genPhoneNumber(),
     recipientNumber: genPhoneNumber(),
     messageBody: 'foo',
-    attachments: ['bar', 'baz'],
+    attachments: [
+      {
+        // including all fields here for documentation purposes
+        contentType: 'image/jpeg',
+        id: 8471834496431694721,
+        size: 3146573,
+        storedFilename: '/var/lib/signald/attachments/8471834496431694721',
+        width: 3024,
+        height: 4032,
+        voiceNote: false,
+        preview: { present: false },
+        key:
+          'eil4wxAcA3p3g8Lqllns5HjFM1YL3mcml/X4VKsvjWj7tkIhJ05WE0OkizGDadx3ob0fPID/v52pc5JuAj5dqQ==',
+        digest: 'TT0XlSEFzvqqHDEQDoTaKZ3EwXcC83cYCMfMQ/cuM8E=',
+        blurhash: 'LYF~N,?bofj[~ps,WVof?aaxWBWB',
+      },
+      {
+        // omitting non-hashed fields
+        digest: 'a+2pMS19lPsy26comR7S3sShP7mRHEUnb3xCafDoWEk=',
+      },
+    ],
   }
 
   describe('enqueueResend', () => {
@@ -161,7 +181,7 @@ describe('resend module', () => {
       expect(hash(sdMessage)).not.to.equal(
         hash({
           ...sdMessage,
-          attachments: ['baz', 'bar'],
+          attachments: [{ digest: 'foo' }],
         }),
       )
     })
