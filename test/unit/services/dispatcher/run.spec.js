@@ -11,6 +11,7 @@ import membershipRepository from '../../../../app/db/repositories/membership'
 import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
 import messenger from '../../../../app/services/dispatcher/messenger'
+import resend from '../../../../app/services/dispatcher/resend'
 import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import logger from '../../../../app/services/dispatcher/logger'
 import { deepChannelFactory } from '../../../support/factories/channel'
@@ -19,7 +20,7 @@ import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { adminMembershipFactory } from '../../../support/factories/membership'
 const {
-  signal: { defaultMessageExpiryTime, signupPhoneNumber },
+  signal: { defaultMessageExpiryTime, signupPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
 
 describe('dispatcher service', () => {
@@ -61,7 +62,8 @@ describe('dispatcher service', () => {
     dispatchStub,
     logAndReturnSpy,
     logErrorSpy,
-    sendMessageStub
+    sendMessageStub,
+    enqueueResendStub
 
   beforeEach(async () => {
     // initialization stubs --v
@@ -102,6 +104,8 @@ describe('dispatcher service', () => {
 
     sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
 
+    enqueueResendStub = sinon.stub(resend, 'enqueueResend')
+
     logAndReturnSpy = sinon.spy(logger, 'logAndReturn')
     logErrorSpy = sinon.spy(logger, 'error')
     // onReceivedMessage stubs --^
@@ -122,6 +126,7 @@ describe('dispatcher service', () => {
     logAndReturnSpy.restore()
     logErrorSpy.restore()
     sendMessageStub.restore()
+    enqueueResendStub.restore()
   })
 
   describe('handling an incoming message', () => {
@@ -276,35 +281,6 @@ describe('dispatcher service', () => {
       })
     })
 
-    describe('when message is a rate limit notification', () => {
-      beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
-
-      const rateLimitWarning = {
-        type: signal.messageTypes.ERROR,
-        data: {
-          msg_number: 0,
-          error: true,
-          message: 'Rate limit exceeded: you are in big trouble!',
-          request: {
-            type: 'send',
-            username: channel.phoneNumber,
-            messageBody: 'hiya',
-            recipientNumber: genPhoneNumber(),
-            attachments: [],
-            expiresInSeconds: 0,
-          },
-        },
-      }
-
-      it('drops the message', async () => {
-        sock.emit('data', JSON.stringify(rateLimitWarning))
-        await wait(socketDelay)
-
-        expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-        expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
-      })
-    })
-
     describe('when message is a rate limit error notification', () => {
       const signupChannel = deepChannelFactory({
         phoneNumber: signupPhoneNumber,
@@ -335,8 +311,13 @@ describe('dispatcher service', () => {
 
       beforeEach(async () => {
         findDeepStub.returns(Promise.resolve(signupChannel))
+        enqueueResendStub.returns(minResendInterval)
         sock.emit('data', JSON.stringify(sdErrorMessage))
         await wait(2 * socketDelay)
+      })
+
+      it('enqueues the message for resending', () => {
+        expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
       })
 
       it('notifies admins of the support channel', () => {
@@ -349,6 +330,7 @@ describe('dispatcher service', () => {
               messagesIn(language).notifications.rateLimitOccurred(
                 channel.phoneNumber,
                 recipientNumber,
+                minResendInterval,
               ),
             ),
           ]),

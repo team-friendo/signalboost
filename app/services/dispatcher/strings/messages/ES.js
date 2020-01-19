@@ -341,11 +341,15 @@ Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
   
 Envíe AYUDA para ver los comandos que entiendo! :)`,
 
-  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber) =>
+  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber, resendInterval) =>
     `Un mensaje no se pudo enviar debido a un error de límite de velocidad.
 canal: ${channelPhoneNumber}
 recipiente: ${memberPhoneNumber}
-`,
+${
+  resendInterval
+    ? `se intentará reenviar el mensaje en: ${resendInterval.toString().slice(0, -3)}s`
+    : `el mensaje ha excedido el umbral de reenvío y no se reenviará`
+}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,

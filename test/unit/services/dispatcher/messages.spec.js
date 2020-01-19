@@ -11,6 +11,7 @@ import {
   adminMembershipFactory,
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 
 describe('messages module', () => {
   describe('translations', () => {
@@ -61,9 +62,8 @@ describe('messages module', () => {
     })
   })
 
-  describe('parsing command responses', () => {
+  describe('command responses with logic', () => {
     const cr = messagesEN.commandResponses
-    const n = messagesEN.notifications
     const channel = {
       name: 'foobar',
       description: 'the foobar channel',
@@ -93,18 +93,41 @@ describe('messages module', () => {
         })
       })
     })
+  })
 
-    describe('for incoming message when incoming messages are disabled', () => {
+  describe('notifications with logic', () => {
+    const n = messagesEN.notifications
+
+    describe('#hotlineMessagesDisabled', () => {
       describe('when sender is a subscriber', () => {
         it('prompts HELP', () => {
           expect(n.hotlineMessagesDisabled(true)).to.include('HELP')
         })
       })
-      describe('when hotline message sender is not a subscriber', () => {
+
+      describe('when sender is not a subscriber', () => {
         it('prompts HELP and HELLO', () => {
           const notification = n.hotlineMessagesDisabled(false)
           expect(notification).to.include('HELP')
           expect(notification).to.include('HELLO')
+        })
+      })
+    })
+
+    describe('#rateLimitOccured', () => {
+      const [channelPhoneNumber, memberPhoneNumber] = times(2, genPhoneNumber)
+
+      describe('when resend interval is not null', () => {
+        it('notifies user of next resend interval', () => {
+          expect(n.rateLimitOccurred(channelPhoneNumber, memberPhoneNumber, 2000)).to.include(
+            '2 sec',
+          )
+        })
+
+        it('does not notify user of next resend interval', () => {
+          expect(n.rateLimitOccurred(channelPhoneNumber, memberPhoneNumber, null)).not.to.include(
+            '2 sec',
+          )
         })
       })
     })
