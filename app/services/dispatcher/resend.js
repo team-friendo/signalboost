@@ -42,7 +42,7 @@ const hash = sdMessage => {
   const { messageBody, username, recipientNumber, attachments } = sdMessage
   return crypto
     .createHash('sha1')
-    .update(messageBody + username + recipientNumber + attachments.join(''))
+    .update(messageBody + username + recipientNumber + attachments.map(a => a.digest).join(''))
     .digest('hex')
 }
 
