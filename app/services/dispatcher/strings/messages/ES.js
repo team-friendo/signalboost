@@ -100,7 +100,7 @@ INVITAR +1-555-555-5555
 AGREGAR / QUITAR + 1-555-555-5555
 -> agrega or quita + 1-555-555-5555 como admin de este canal
 
-LíNEA DIRECTA ACTIVADA / DESACTIVADA
+LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 -> habilita o deshabilita mensajes anónimos a los admins
 
 ATESTIGUANDO ACTIVADA / DESACTIVADA
@@ -150,7 +150,7 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
-línea directa: ${onOrOff(channel.hotlineEnabled)}
+línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${onOrOff(channel.vouchingOn)}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
@@ -164,7 +164,7 @@ Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-línea directa: ${channel.hotlineEnabled ? 'activada' : 'desactivadta'}
+línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${onOrOff(channel.vouchingOn)}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 ${channel.description ? `descripción: ${channel.description}` : ''}
@@ -179,7 +179,7 @@ Usted no es suscriptor de este canal. Envía HOLA para suscribirse.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-línea directa: ${channel.hotlineEnabled ? 'activada' : 'desactivada'}
+línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
@@ -256,9 +256,9 @@ Envíe AYUDA para ver los comandos que comprendo.`,
       success: isOn => `Línea directa ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
-        `¡Lo siento! Se produjo un error al intentar ${onOrOff(
-          isOn,
-        )}r la línea directa . ¡Inténtelo de nuevo!`,
+        `¡Lo siento! Se produjo un error al intentar ${
+          isOn ? 'activar' : 'desactivar'
+        } la línea directa. ¡Inténtelo de nuevo!`,
     },
     vouching: {
       success: isOn => `Atestiguando configurado en ${onOrOff(isOn)}.`,
@@ -316,7 +316,7 @@ Enviar AYUDA para enumerar comandos válidos.
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
-      : 'Lo siento, línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
+      : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
   inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Usted le gustaría suscribirse a los anuncios de este canal?
   
@@ -371,7 +371,7 @@ Responda con AYUDA para más información.`,
 }
 
 const prefixes = {
-  hotlineMessage: `LíNEA DIRECTA`,
+  hotlineMessage: `LÍNEA DIRECTA`,
 }
 
 module.exports = {

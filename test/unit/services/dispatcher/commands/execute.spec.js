@@ -1297,7 +1297,7 @@ describe('executing commands', () => {
         const sdMessage = sdMessageOf(channel, commandStr)
         const dispatchable = { db, channel, sender, sdMessage }
 
-        it('attempts to update the hotlineEnabled field on the channel', async () => {
+        it('attempts to update the hotlineOn field on the channel', async () => {
           updateChannelStub.returns(Promise.resolve())
           await processCommand(dispatchable)
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([

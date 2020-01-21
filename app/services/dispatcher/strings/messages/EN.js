@@ -147,7 +147,7 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
-hotline: ${onOrOff(channel.hotlineEnabled)}
+hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
 ${channel.description ? `description: ${channel.description}` : ''}
 
@@ -161,7 +161,7 @@ You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
-hotline: ${onOrOff(channel.hotlineEnabled)}
+hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
 subscribers: ${getSubscriberMemberships(channel).length}
 ${channel.description ? `description: ${channel.description}` : ''}

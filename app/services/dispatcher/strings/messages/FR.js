@@ -148,7 +148,7 @@ nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
-hotline: ${channel.hotlineEnabled ? 'activée' : 'désactivée'}
+hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
 ${channel.description ? `description: ${channel.description}` : ''}
 
@@ -162,7 +162,7 @@ Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
-hotline: ${channel.hotlineEnabled ? 'activée' : 'désactivée'}
+hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
 abonnées: ${getSubscriberMemberships(channel).length}
 ${channel.description ? `description: ${channel.description}` : ''}

@@ -51,7 +51,7 @@ describe('messenger service', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
-  const hotlineEnabledChannel = { ...channel, hotlineEnabled: true }
+  const hotlineEnabledChannel = { ...channel, hotlineOn: true }
   const signupChannel = {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,

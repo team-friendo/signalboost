@@ -6,7 +6,7 @@ const statuses = {
 }
 
 const toggles = {
-  HOTLINE: { dbField: 'hotlineEnabled', name: 'hotline' },
+  HOTLINE: { dbField: 'hotlineOn', name: 'hotline' },
   VOUCHING: { dbField: 'vouchingOn', name: 'vouching' },
 }
 
