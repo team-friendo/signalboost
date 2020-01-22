@@ -308,11 +308,11 @@ Until then, they will be unable to send messages to or read messages from this c
   expiryUpdateNotAuthorized: 'Sorry, only admins can set the disappearing message timer.',
 
   hotlineMessageSent: channel =>
-    `Your message was anonymously forwarded to the admins of [${
-      channel.name
-    }]. Include your phone number if you want admins to respond to you individually.
+    `Your message was forwarded to the admins of [${channel.name}].
 
-Send HELP to list valid commands.`,
+Send HELP to list valid commands. Send HELLO to subscribe.
+
+(Note: all messages are forwarded anonymously. Include your phone number if you want admins to respond to you individually.)`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber

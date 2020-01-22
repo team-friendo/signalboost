@@ -306,12 +306,11 @@ const notifications = {
     'Lo sentimos, solo los admins pueden configurar el temporizador de mensajes desaparecidos',
 
   hotlineMessageSent: channel =>
-    `Su mensaje se envió de forma anónima a los admins de [${
-      channel.name
-    }]. Incluya su número de teléfono si desea que los administradores le respondan individualmente.
+    `Su mensaje se envió de forma anónima a los admins de [${channel.name}].
+    
+Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
 
-Enviar AYUDA para enumerar comandos válidos.
-`,
+(Nota: todos los mensajes se reenvían de forma anónima. Incluya su número de teléfono si desea que los administradores le respondan individualmente).`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
