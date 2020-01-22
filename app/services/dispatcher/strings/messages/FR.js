@@ -305,16 +305,16 @@ const notifications = {
     "Désolé, seuls les admins peuvent régler l'horloge des messages disparus.",
 
   hotlineMessageSent: channel =>
-    `Votre message a été transmis de manière anonyme aux admins de [${
-      channel.name
-    }]. Indiquez votre numéro de téléphone si vous souhaitez que les administrateurs vous répondent individuellement.'
+    `Votre message a été transmis de manière anonyme aux admins de [${channel.name}].
 
-Send HELP to list valid commands.`,
+Envoyez HELP pour répertorier les commandes valides. Envoyez ALLÔ pour vous abonner.
+
+(Remarque: tous les messages sont transmis de manière anonyme. Indiquez votre numéro de téléphone si vous souhaitez que les administrateurs vous répondent individuellement.)`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
-      : 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou BONJOUR pour vous abonner.',
+      : 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou ALLÔ pour vous abonner.',
 
   inviteReceived: channelName => `Vous avez été invité sur le  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
 
