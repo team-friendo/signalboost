@@ -5,7 +5,7 @@ module.exports = {
   HELP: ['HELP'],
   INFO: ['INFO'],
   INVITE: ['INVITE'],
-  JOIN: ['HELLO', 'JOIN'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
+  JOIN: ['HELLO', 'JOIN', 'HI', 'HEY', 'HEYA', 'HEY THERE', 'WHASSUP'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
   LEAVE: ['GOODBYE', 'LEAVE'],
   REMOVE: ['REMOVE'],
   RENAME: ['RENAME'],

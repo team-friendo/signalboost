@@ -58,7 +58,7 @@ const findCommandMatch = msg => {
         map(commandStrings, commandStr => ({
           language,
           command,
-          matches: new RegExp(`^(${commandStr})\\s?(.*)`, 'i').exec(msg.trim()),
+          matches: new RegExp(`^(${commandStr})[.|!]*\\s?(.*)`, 'i').exec(msg.trim()),
         })),
       ),
     ),

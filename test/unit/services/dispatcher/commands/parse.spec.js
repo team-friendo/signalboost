@@ -235,7 +235,19 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['HELLO', ' hello ', 'JOIN', '  join '],
+            messages: [
+              'HELLO',
+              ' hello ',
+              'hello.',
+              'hello!',
+              'hello!!!',
+              'JOIN',
+              ' join ',
+              ' hi ',
+              ' heya ',
+              ' hey there ',
+              ' whassup ',
+            ],
           },
           {
             language: languages.ES,
