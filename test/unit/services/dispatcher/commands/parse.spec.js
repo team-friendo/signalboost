@@ -24,8 +24,8 @@ describe('parse module', () => {
           'the INVITE',
           'the HELLO',
           'the GOODBYE',
-          'the RESPONSES ON',
-          'the RESPONSES OFF',
+          'the HOTLINE ON',
+          'the HOTLINE OFF',
           'the VOUCHING ON',
           'the VOUCHING OFF',
           'the ENGLISH',
@@ -418,12 +418,12 @@ describe('parse module', () => {
       })
     })
 
-    describe('RESPONSES_ON command', () => {
-      it('parses an RESPONSES_ON command regardless of casing, spacing, accents, or language', () => {
+    describe('HOTLINE_ON command', () => {
+      it('parses an HOTLINE_ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['RESPONSES ON', 'responses on', ' responses on '],
+            messages: ['HOTLINE ON', 'hotline on', ' hotline on '],
           },
           {
             language: languages.ES,
@@ -437,7 +437,7 @@ describe('parse module', () => {
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
             expect(parseExecutable(msg)).to.eql({
-              command: commands.RESPONSES_ON,
+              command: commands.HOTLINE_ON,
               language,
               payload: '',
             }),
@@ -446,12 +446,12 @@ describe('parse module', () => {
       })
     })
 
-    describe('RESPONSES_OFF command', () => {
-      it('parses an RESPONSES_OFF command regardless of casing, spacing, accents, or language', () => {
+    describe('HOTLINE_OFF command', () => {
+      it('parses an HOTLINE_OFF command regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['RESPONSES OFF', ' responses off '],
+            messages: ['HOTLINE OFF', ' hotline off '],
           },
           {
             language: languages.ES,
@@ -465,7 +465,7 @@ describe('parse module', () => {
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
             expect(parseExecutable(msg)).to.eql({
-              command: commands.RESPONSES_OFF,
+              command: commands.HOTLINE_OFF,
               language,
               payload: '',
             }),
@@ -575,8 +575,8 @@ describe('parse module', () => {
               'leave foo',
               'goodbye foo',
               'english foo',
-              'responses on now',
-              'responses off now',
+              'hotline on now',
+              'hotline off now',
               'vouching on now',
               'vouching off now',
             ],

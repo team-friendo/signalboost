@@ -6,7 +6,7 @@ const statuses = {
 }
 
 const toggles = {
-  RESPONSES: { dbField: 'responsesEnabled', name: 'responses' },
+  HOTLINE: { dbField: 'hotlineOn', name: 'hotline' },
   VOUCHING: { dbField: 'vouchingOn', name: 'vouching' },
 }
 
@@ -22,8 +22,8 @@ const commands = {
   NOOP: 'NOOP',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
-  RESPONSES_OFF: 'RESPONSES_OFF',
-  RESPONSES_ON: 'RESPONSES_ON',
+  HOTLINE_OFF: 'HOTLINE_OFF',
+  HOTLINE_ON: 'HOTLINE_ON',
   SET_LANGUAGE: 'SET_LANGUAGE',
   VOUCHING_ON: 'VOUCHING_ON',
   VOUCHING_OFF: 'VOUCHING_OFF',

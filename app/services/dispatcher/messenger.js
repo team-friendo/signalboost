@@ -61,13 +61,13 @@ const parseMessageType = (commandResult, { sender, channel }) => {
 
 const handleHotlineMessage = dispatchable => {
   const {
-    channel: { responsesEnabled },
+    channel: { hotlineOn },
     sender: { language, type },
   } = dispatchable
   const disabledMessage = messagesIn(language).notifications.hotlineMessagesDisabled(
     type === memberTypes.SUBSCRIBER,
   )
-  return responsesEnabled
+  return hotlineOn
     ? relayHotlineMessage(dispatchable)
     : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
 }

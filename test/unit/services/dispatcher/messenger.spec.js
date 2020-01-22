@@ -51,7 +51,7 @@ describe('messenger service', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
-  const responseEnabledChannel = { ...channel, responsesEnabled: true }
+  const hotlineEnabledChannel = { ...channel, hotlineOn: true }
   const signupChannel = {
     name: 'SB_SIGNUP',
     phoneNumber: signupPhoneNumber,
@@ -184,7 +184,7 @@ describe('messenger service', () => {
 
     describe('a hotline message', () => {
       describe('when sender is a subscriber', () => {
-        describe('and responses are disabled', () => {
+        describe('and hotline is disabled', () => {
           const sender = subscriberSender
 
           beforeEach(async () => {
@@ -213,7 +213,7 @@ describe('messenger service', () => {
           })
         })
 
-        describe('and responses are enabled', () => {
+        describe('and hotline is enabled', () => {
           const sender = subscriberSender
 
           beforeEach(async () => {
@@ -223,7 +223,7 @@ describe('messenger service', () => {
                 messageBody: messages.notifications.noop,
                 notifications: [],
               },
-              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
+              dispatchable: { db, sock, channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -261,11 +261,11 @@ describe('messenger service', () => {
       describe('when sender is a random person', () => {
         const sender = randomSender
 
-        describe('and responses are enabled', () => {
+        describe('and hotline is enabled', () => {
           beforeEach(async () => {
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { db, sock, channel: responseEnabledChannel, sender, sdMessage },
+              dispatchable: { db, sock, channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -517,9 +517,8 @@ describe('messenger service', () => {
       })
     })
 
-    describe('hotline responses', () => {
-      it('adds an INCOMING MESSAGE header', () => {
-        // TODO(aguestuser|2019-12-21): make naming consistent here (hotline v. incoming)
+    describe('hotline message', () => {
+      it('adds an HOTLINE MESSAGE header', () => {
         const msg = {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
