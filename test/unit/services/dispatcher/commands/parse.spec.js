@@ -27,6 +27,7 @@ describe('parse module', () => {
           'the GOODBYE',
           'the HOTLINE ON',
           'the HOTLINE OFF',
+          'the VOUCH LEVEL',
           'the VOUCHING ON',
           'the VOUCHING OFF',
           'the ENGLISH',
@@ -41,8 +42,9 @@ describe('parse module', () => {
           'la ELIMINAR',
           'la RECHAZAR',
           'la RENOMBRAR',
-          'la RESPUESTAS ACTIVADAS',
-          'la RESPUESTAS DESACTIVADAS',
+          'la LÍNEA DIRECTA',
+          'la LÍNEA DIRECTA',
+          'la NIVEL DE ATESTIGUAR',
           'la ESPAÑOL',
 
           'le AJOUTER',
@@ -55,8 +57,9 @@ describe('parse module', () => {
           'le ADIEU',
           'le SUPPRIMER',
           'le RENOMMER',
-          'le RÉPONSES ACTIVÉES',
-          'le RÉPONSES DÉSACTIVÉES',
+          'le HOTLINE ACTIVÉE',
+          'le HOTLINE DÉSACTIVÉE',
+          'le NIVEAU DE GARANTIE',
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
           'le FRENCH',
@@ -593,6 +596,36 @@ describe('parse module', () => {
               command: commands.VOUCHING_OFF,
               language,
               payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('VOUCH_LEVEL command', () => {
+      const vouchLevel = 3
+
+      it('parses a VOUCH LEVEL regardless of spacing, accents, casing, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: [`VOUCH LEVEL ${vouchLevel}`, ` vouch Level  ${vouchLevel}`],
+          },
+          {
+            language: languages.ES,
+            messages: [`NIVEL DE ATESTIGUAR ${vouchLevel}`, ` nivel de atestiguar ${vouchLevel}`],
+          },
+          {
+            language: languages.FR,
+            messages: [`NIVEAU DE GARANTIE ${vouchLevel}`, ` niveau de garantie${vouchLevel}`],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.VOUCH_LEVEL,
+              language,
+              payload: vouchLevel,
             }),
           ),
         )

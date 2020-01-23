@@ -78,11 +78,11 @@ const validatePayload = commandMatch => {
     case commands.DECLINE:
     case commands.DESTROY:
     case commands.HELP:
+    case commands.HOTLINE_ON:
+    case commands.HOTLINE_OFF:
     case commands.INFO:
     case commands.JOIN:
     case commands.LEAVE:
-    case commands.HOTLINE_ON:
-    case commands.HOTLINE_OFF:
     case commands.SET_LANGUAGE:
     case commands.VOUCHING_ON:
     case commands.VOUCHING_OFF:
