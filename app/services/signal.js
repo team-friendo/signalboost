@@ -335,6 +335,7 @@ module.exports = {
   signaldEncode,
   getSocket,
   parseOutboundSdMessage,
+  parseOutboundAttachment,
   parseVerificationCode,
   register,
   sendMessage,
