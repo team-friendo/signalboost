@@ -34,6 +34,8 @@ Para más información: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
+  invalidVouchLevel: vouchLevel =>
+    `${vouchLevel} no es un nivel de atestiguando válido. Use un número entre 1 y 10, por favor.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber

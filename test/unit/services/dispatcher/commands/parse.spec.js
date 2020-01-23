@@ -463,7 +463,7 @@ describe('parse module', () => {
     })
 
     describe('HOTLINE_ON command', () => {
-      it('parses an HOTLINE_ON command regardless of casing, spacing, accents, or language', () => {
+      it('parses a HOTLINE ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
@@ -471,11 +471,15 @@ describe('parse module', () => {
           },
           {
             language: languages.ES,
-            messages: ['RESPUESTAS ACTIVADAS', 'respuestas activadas', ' respuestas activadas '],
+            messages: [
+              'LÍNEA DIRECTA ACTIVADA',
+              'línea directa activada',
+              ' linea directa activada ',
+            ],
           },
           {
             language: languages.FR,
-            messages: ['RÉPONSES ACTIVÉES', 'REPONSES ACTIVEES', ' reponses activees '],
+            messages: ['HOTLINE ACTIVÉE', 'hotline activée', ' hotline activee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -499,11 +503,15 @@ describe('parse module', () => {
           },
           {
             language: languages.ES,
-            messages: ['RESPUESTAS DESACTIVADAS', ' respuestas desactivadas '],
+            messages: [
+              'LÍNEA DIRECTA DESACTIVADA',
+              'línea directa desactivada',
+              ' Linea directa desactivada ',
+            ],
           },
           {
             language: languages.FR,
-            messages: ['RÉPONSES DÉSACTIVÉES', 'REPONSES DESACTIVEES', ' reponses desactivees '],
+            messages: ['HOTLINE DÉSACTIVÉE', 'hotline désactivée', ' hotline desactivee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -559,7 +567,7 @@ describe('parse module', () => {
           },
           {
             language: languages.FR,
-            messages: ['SE PORTER GARANT ACTIVÉES', ' se porter garant activees '],
+            messages: ['SE PORTER GARANT ACTIVÉE', ' se porter garant activee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -587,7 +595,7 @@ describe('parse module', () => {
           },
           {
             language: languages.FR,
-            messages: ['SE PORTER GARANT DÉSACTIVÉES', ' se porter garant desactivees '],
+            messages: ['SE PORTER GARANT DÉSACTIVÉE', ' se porter garant desactivee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -664,8 +672,8 @@ describe('parse module', () => {
               'hola foo',
               'adios foo',
               'espanol foo',
-              'respuestas activadas ahora',
-              'respuestas desactivadas ahora',
+              'línea directa activada ahora',
+              'línea directa desactivada ahora',
               'atestiguando activada ahora',
               'atestiguando desactivada ahora',
             ],
@@ -679,8 +687,8 @@ describe('parse module', () => {
               'allo foo',
               'adieu foo',
               'francais foo',
-              'reponses activees maintenant',
-              'reponses desactivees maintenant',
+              'hotline activee maintenant',
+              'hotline desactivee maintenant',
               'se porter garant activees maintenant',
               'se porter garant desactivees maintenant',
             ],

@@ -10,7 +10,7 @@ const notAdmin =
 const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette canal. Envoyez BONJOUR pour vous abonner."
 
-const onOrOff = isOn => (isOn ? 'activées' : 'désactivées')
+const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
 
 const support = `----------------------------------------------
 COMMENT ÇA FONCTIONNE
@@ -35,6 +35,8 @@ Pour plus de renseignements: https://signalboost.info`
 const parseErrrors = {
   invalidPhoneNumber: phoneNumber =>
     `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
+  invalidVouchLevel: vouchLevel =>
+    `${vouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et 10.`,
 }
 
 const invalidPhoneNumber = parseErrrors.invalidPhoneNumber
@@ -103,10 +105,10 @@ DESCRIPTION description de le canal
 AJOUTER / SUPPRIMER +1-555-555-5555
 -> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de le canal
 
-HOTLINE ACTIVÉES / DÉSACTIVÉES
+HOTLINE ACTIVÉE / DÉSACTIVÉE
 -> active ou désactive hotline
 
-SE PORTER GARANT ACTIVÉES / DÉSACTIVÉES
+SE PORTER GARANT ACTIVÉE / DÉSACTIVÉE
 -> active ou désactive l'exigence de recevoir une invitation à s'abonner
 
 ESPAÑOL / ENGLISH
