@@ -126,6 +126,18 @@ const IndexPage = () => (
         new feature, report a bug, or become a contributor!
       </li>
     </ul>
+    <h1>FAQ</h1>
+    
+    <a href="#why">Why should I use Signalboost?</a><br />
+    <a href="#signal">Do I need to be using Signal to use a Signalboost channel?</a>
+    
+    <h2 name="why">Why should I use Signalboost?</h2>
+    <p>You should use Signalboost if you or your community are already using the secure text messaging app Signal and want to use it to send Signal messages to large groups of other Signal users, but dont feel comfortable with the way Signal groups expose all group members phone numbers (often a very personal and identifying bit of information) to all other group members. Effectively Signalboost offers free text blasting that is secured over Signal.
+    <a href="/">Learn more about different Signalboost channel modes ></a>
+    </p>
+    <h2 name="signal">Do I need to be using Signal to use a Signalboost channel?</h2>
+    <p>Yes. All participants in a Signalboost channel must be using Signal. Signal provides both the encryption and delivery mechanism for your Signalboost messages. 
+    <a href="/">Learn more about Signal and how to install it here ></a>
   </Layout>
 )
 
