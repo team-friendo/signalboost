@@ -1,3 +1,11 @@
+a {
+	text-decoration: none;
+}
+
+a:hover, a:active {
+	text-decoration: underline;
+}
+
 h3 { 
 	position:relative;
 }
