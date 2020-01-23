@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
 import { get, last } from 'lodash'
-import signal from '../../../../app/services/signal'
+import signal, { parseOutboundAttachment } from '../../../../app/services/signal'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { enqueueResend, hash } from '../../../../app/services/dispatcher/resend'
@@ -51,11 +51,15 @@ describe('resend module', () => {
     })
 
     describe('given a message that has never been resent', () => {
-      const _sdMessage = { ...sdMessage, messageBody: 'first time' }
+      const inSdMessage = { ...sdMessage, messageBody: 'first time' }
+      const outSdMessage = {
+        ...inSdMessage,
+        attachments: inSdMessage.attachments.map(parseOutboundAttachment),
+      }
       beforeEach(() => {
         sendCount = sendStub.callCount
         resendQueue = {}
-        resendInterval = enqueueResend(sock, resendQueue, _sdMessage)
+        resendInterval = enqueueResend(sock, resendQueue, inSdMessage)
       })
 
       it('resends the message in minResendInverval seconds', async () => {
@@ -65,14 +69,14 @@ describe('resend module', () => {
         expect(sendStub.callCount).to.eql(sendCount + 1)
         expect(last(sendStub.getCalls()).args).to.eql([
           sock,
-          _sdMessage.recipientNumber,
-          _sdMessage,
+          outSdMessage.recipientNumber,
+          outSdMessage,
         ])
       })
 
       it('it adds the message to the resendQueue', async () => {
-        expect(resendQueue[hash(_sdMessage)]).to.eql({
-          sdMessage: _sdMessage,
+        expect(resendQueue[hash(inSdMessage)]).to.eql({
+          sdMessage: outSdMessage,
           lastResendInterval: minResendInterval,
         })
       })
@@ -83,16 +87,21 @@ describe('resend module', () => {
     })
 
     describe('given a message that has already been resent', () => {
-      const _sdMessage = { ...sdMessage, messageBody: 'second time' }
+      const outSdMessage = {
+        ...sdMessage,
+        messageBody: 'second time',
+        attachments: sdMessage.attachments.map(parseOutboundAttachment),
+      }
+
       beforeEach(() => {
         sendCount = sendStub.callCount
         resendQueue = {
-          [hash(_sdMessage)]: {
-            sdMessage: _sdMessage,
+          [hash(outSdMessage)]: {
+            sdMessage: outSdMessage,
             lastResendInterval: minResendInterval,
           },
         }
-        enqueueResend(sock, resendQueue, _sdMessage)
+        enqueueResend(sock, resendQueue, outSdMessage)
       })
 
       it('resends the message in <2 * last resend interval> seconds', async () => {
@@ -102,35 +111,40 @@ describe('resend module', () => {
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
         expect(last(sendStub.getCalls()).args).to.eql([
           sock,
-          _sdMessage.recipientNumber,
-          _sdMessage,
+          outSdMessage.recipientNumber,
+          outSdMessage,
         ])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {
-        expect(resendQueue[hash(_sdMessage)]).to.eql({
-          sdMessage: _sdMessage,
+        expect(resendQueue[hash(outSdMessage)]).to.eql({
+          sdMessage: outSdMessage,
           lastResendInterval: 2 * minResendInterval,
         })
       })
     })
 
     describe('given a message that has reached the max resend interval threshold', () => {
-      const _sdMessage = { ...sdMessage, messageBody: 'too many times' }
+      const outSdMessage = {
+        ...sdMessage,
+        attachments: sdMessage.attachments.map(parseOutboundAttachment),
+        messageBody: 'too many times',
+      }
+
       beforeEach(() => {
         sendCount = sendStub.callCount
         resendQueue = {
-          [hash(_sdMessage)]: {
-            sdMessage: _sdMessage,
+          [hash(outSdMessage)]: {
+            sdMessage: outSdMessage,
             lastResendInterval: maxResendInterval,
           },
         }
-        enqueueResend(sock, resendQueue, _sdMessage)
+        enqueueResend(sock, resendQueue, outSdMessage)
       })
 
       it('does not resend the message', async () => {
         await wait(2 * maxResendInterval)
-        expect(get(sendStub.getCall(0), 'args.2')).not.to.eql(_sdMessage)
+        expect(get(sendStub.getCall(0), 'args.2')).not.to.eql(outSdMessage)
       })
 
       it('it deletes the message from the resend queue', async () => {
@@ -148,6 +162,12 @@ describe('resend module', () => {
 
     it('produces the same hash for messages with same body, sender, receiver', () => {
       expect(hash(sdMessage)).to.equal(hash(sdMessage))
+    })
+
+    it('produces the same hash for equivalent inbound and outbound messages', () => {
+      expect(hash(sdMessage)).to.equal(
+        hash({ ...sdMessage, attachments: sdMessage.attachments.map(parseOutboundAttachment) }),
+      )
     })
 
     it('produces the different hash for different body', () => {
