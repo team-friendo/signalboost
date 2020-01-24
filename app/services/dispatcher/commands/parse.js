@@ -91,6 +91,8 @@ const validatePayload = commandMatch => {
     case commands.INVITE:
     case commands.REMOVE:
       return validatePhoneNumber(commandMatch)
+    case commands.VOUCH_LEVEL:
+      return validateVouchLevel(commandMatch)
     default:
       return commandMatch
   }
@@ -119,6 +121,21 @@ const validatePhoneNumber = commandMatch => {
         error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber),
       }
     : { command, matches: [...matches.slice(0, 2), phoneNumber], language }
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validateVouchLevel = commandMatch => {
+  const { command, language, matches } = commandMatch
+  const vouchLevel = Number(matches[2].trim())
+  const isValidVouchLevel = Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= 10
+  matches[2] = vouchLevel
+
+  return isValidVouchLevel
+    ? commandMatch
+    : {
+        command,
+        error: messagesIn(language).parseErrors.invalidVouchLevel(vouchLevel),
+      }
 }
 
 module.exports = { parseExecutable }
