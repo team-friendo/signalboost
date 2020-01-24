@@ -57,6 +57,12 @@ a:active,
 a:hover {
   outline-width: 0;
 }
+a {
+	text-decoration: none;
+}
+a:hover, a:active {
+	text-decoration: underline;
+}
 abbr[title] {
   border-bottom: none;
   text-decoration: underline;
@@ -627,7 +633,14 @@ pre tt:before,
 pre tt:after {
   content: "";
 }
-
+h3 { 
+	position:relative;
+}
+span.anchor { 
+	position:absolute; 
+	top: -110px;
+	z-index: 1;
+}
 h2 {
 	color: rgb(189, 147, 249);
 }
