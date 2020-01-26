@@ -160,24 +160,28 @@ const updateFingerprint = async (db, sock, updatableFingerprint) => {
 
 // (Database, Socket, Channel, number) -> Promise<void>
 const updateExpiryTime = async (db, sock, sender, channel, messageExpiryTime) => {
-  if (sender.type !== memberTypes.ADMIN) {
-    // override a disappearing message time set by a subscriber or rando
-    return signal.setExpiration(
-      sock,
-      channel.phoneNumber,
-      sender.phoneNumber,
-      channel.messageExpiryTime,
-    )
+  switch (sender.type) {
+    case memberTypes.NONE:
+      return Promise.resolve()
+    case memberTypes.SUBSCRIBER:
+      // override a disappearing message time set by a subscriber or rando
+      return signal.setExpiration(
+        sock,
+        channel.phoneNumber,
+        sender.phoneNumber,
+        channel.messageExpiryTime,
+      )
+    case memberTypes.ADMIN:
+      // enforce a disappearing message time set by an admin
+      await channelRepository.update(db, channel.phoneNumber, { messageExpiryTime })
+      return Promise.all(
+        channel.memberships
+          .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
+          .map(m =>
+            signal.setExpiration(sock, channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
+          ),
+      )
   }
-  // enforce a disappearing message time set by an admin
-  await channelRepository.update(db, channel.phoneNumber, { messageExpiryTime })
-  return Promise.all(
-    channel.memberships
-      .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
-      .map(m =>
-        signal.setExpiration(sock, channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
-      ),
-  )
 }
 
 /******************

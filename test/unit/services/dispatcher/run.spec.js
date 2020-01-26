@@ -30,6 +30,7 @@ describe('dispatcher service', () => {
   const channel = channels[0]
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
   const subscriberPhoneNumber = channels[0].memberships[2].memberPhoneNumber
+  const randoPhoneNumber = genPhoneNumber()
   const sender = {
     phoneNumber: adminPhoneNumber,
     language: languages.EN,
@@ -518,6 +519,21 @@ describe('dispatcher service', () => {
             subscriberPhoneNumber,
             defaultMessageExpiryTime,
           ])
+        })
+      })
+
+      describe('from a rando', () => {
+        const randoExpiryUpdate = merge({}, expiryUpdate, {
+          data: { source: randoPhoneNumber },
+        })
+        beforeEach(async () => {
+          resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
+          sock.emit('data', JSON.stringify(randoExpiryUpdate))
+          await wait(socketDelay)
+        })
+
+        it('sets the expiry time btw/ channel and sender back to original expiry time', () => {
+          expect(setExpirationStub.callCount).to.eql(0)
         })
       })
     })
