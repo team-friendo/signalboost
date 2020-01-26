@@ -8,9 +8,10 @@ const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
+const { wait } = require('../util')
 const {
   defaultLanguage,
-  signal: { signupPhoneNumber, defaultMessageExpiryTime },
+  signal: { signupPhoneNumber, defaultMessageExpiryTime, minResendInterval },
 } = require('../../config')
 
 /**
@@ -113,6 +114,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
   await sendNotifications({ commandResult, dispatchable })
+  await wait(minResendInterval) // paranoid pause to ward off rate-limiting demons
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   return Promise.resolve()
 }
