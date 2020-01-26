@@ -26,18 +26,18 @@ https://www.recurse.com/social-rules
 
 # The Basics of Contributing <a name="basics"></a>
 
-Carefully reading the entire contributor guide below will greatly increase the chances that we can accept your merge request but to get you started here's the basics of what ask of you.
+Carefully reading the entire contributor guide below will greatly increase the chances that we can accept your merge request, but to get you started here's the basics of what ask of you.
 
 * Contact us if you've got questions, we are friendly. Open an [issue](https://0xacab.org/team-friendo/signalboost/-/boards) or email us email: `team-friendo [at] riseup [dot] net`, gpg fingerprint: 2EEAFF8BD61D568E2A3168AAE726A156229F56F1
-* Open a feature or bug report issue for your code so we can support you and be prepared for the coming merge request. Please tag either @aguestuser or @margot so we see it. We provide ideal helpful issue/bug report templates below.
+* Open a feature or bug report [issue](https://0xacab.org/team-friendo/signalboost/-/boards) for your code so we can support you and be prepared for the coming merge request. Please tag either @aguestuser or @margot so we see it. We provide ideal helpful issue/bug report templates below.
 * Use your issue id in your branch naming and commit messages eg: 99-add-lollipops-branch / "[99] adds the red pops in cherry flavor"
-* Please rebase in master before you create a Merge Request, we prefer rebase to merge.
+* Please rebase master into your branch before you create a merge request, we prefer rebase to merge.
 * If possible please write or extend exiting unit tests. 
 * Please use ES6 style JS and features: https://ponyfoo.com/articles/es6
-* Please run tests before submitting your merge request (see `make test.all` and other `make test.x` utilities) this will also run a lint, run `make test.lint-fix` to automatically tidy formatting.
+* Please run tests before submitting your merge request (see `make test.all` and other `make test.x` utilities) this will also run a lint, run `make test.lint-fix` to just automatically tidy formatting.
 * Make a merge request and tag either @aguestuser or @fdbk -- we will try to review as soon as we can.
 
-Details about each of these points are below.
+Details about each of these points are below. 
 
 # Opening Issues <a name="issues"></a>
 
