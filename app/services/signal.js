@@ -308,7 +308,7 @@ const parseOutboundSdMessage = inboundSdMessage => {
 }
 
 const parseOutboundAttachment = inAttachment => ({
-  filename: inAttachment.storedFilename,
+  filename: inAttachment.storedFilename || inAttachment.filename || '',
   ...pick(inAttachment, ['width', 'height', 'voiceNote']),
 })
 
