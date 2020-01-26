@@ -331,7 +331,7 @@ describe('signal module', () => {
         contentType: 'image/jpeg',
         id: 1461823935771385721,
         size: 1756017,
-        storedFilename: '/var/lib/signald/attachments/1461823935771385721',
+        storedFilename: 'foo',
         width: 4032,
         height: 3024,
         voiceNote: false,
@@ -358,7 +358,7 @@ describe('signal module', () => {
       })
 
       it('parses a filename from a storedFilename', () => {
-        signal.parseOutboundAttachment(inboundAttachment).filename.to.eql('foo')
+        expect(signal.parseOutboundAttachment(inboundAttachment).filename).to.eql('foo')
       })
 
       it('parses a filename from a filename', () => {
