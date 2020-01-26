@@ -3,8 +3,13 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import net from 'net'
+import { keys } from 'lodash'
 import { wait } from '../../../app/services/util'
-import signal, { messageTypes, parseVerificationCode } from '../../../app/services/signal'
+import signal, {
+  messageTypes,
+  parseOutboundAttachment,
+  parseVerificationCode,
+} from '../../../app/services/signal'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
@@ -318,6 +323,61 @@ describe('signal module', () => {
             voiceNote: false,
           },
         ],
+      })
+    })
+
+    describe('parsing the filename for an outbound message attachment', () => {
+      const inboundAttachment = {
+        contentType: 'image/jpeg',
+        id: 1461823935771385721,
+        size: 1756017,
+        storedFilename: '/var/lib/signald/attachments/1461823935771385721',
+        width: 4032,
+        height: 3024,
+        voiceNote: false,
+        preview: { present: false },
+        key:
+          'cpdTsaYm9fsE+T29HtCl8qWW2LZPhM32zy82K4VYjTcsqtCIsRxYivSEnxvP6qHD9VwZPrAjFlzZtw6DYWAiig==',
+        digest: 'UYm6uzLlrw2xEezccQtb0jqE4jSDq0+09JvySk+EzrQ=',
+      }
+
+      it('keeps the width, height, and voiceNote fields', () => {
+        expect(keys(parseOutboundAttachment(inboundAttachment))).to.eql([
+          'filename',
+          'width',
+          'height',
+          'voiceNote',
+        ])
+      })
+
+      it('discards all other fields', () => {
+        const members = keys(parseOutboundAttachment(inboundAttachment))
+        ;['contentType', 'id', 'size', 'preview', 'key', 'digest'].forEach(member =>
+          expect(members).not.to.include(member),
+        )
+      })
+
+      it('parses a filename from a storedFilename', () => {
+        signal.parseOutboundAttachment(inboundAttachment).filename.to.eql('foo')
+      })
+
+      it('parses a filename from a filename', () => {
+        expect(
+          signal.parseOutboundAttachment({
+            ...inboundAttachment,
+            storedFilename: undefined,
+            filename: 'bar',
+          }).filename,
+        ).to.eql('bar')
+      })
+
+      it('parses an empty string if neither storedFilename or filename found', () => {
+        expect(
+          signal.parseOutboundAttachment({
+            ...inboundAttachment,
+            storedFilename: undefined,
+          }).filename,
+        ).to.eql('')
       })
     })
 
