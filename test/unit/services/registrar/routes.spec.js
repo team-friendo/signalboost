@@ -295,6 +295,58 @@ describe('routes', () => {
     })
   })
 
+  describe('POST to /phoneNumbers/recycling', () => {
+    let recycleStub
+    beforeEach(() => (recycleStub = sinon.stub(phoneNumberService, 'recycle')))
+    afterEach(() => recycleStub.restore())
+
+    describe('when recycling succeeds', () => {
+      beforeEach(() =>
+        recycleStub.returns(
+          Promise.resolve([
+            {
+              status: 'SUCCESS',
+              data: {
+                status: 'VERIFIED',
+                phoneNumber: '+19382223543',
+                twilioSid: 'PNc505ce2a87c34bfbe598c54120865bcf',
+              },
+            },
+          ]),
+        ),
+      )
+
+      it('returns success status', async () => {
+        await request(server)
+          .post('/phoneNumbers/recycle')
+          .set('Token', registrar.authToken)
+          .send({ phoneNumbers: '+19382223543' })
+          .expect(200)
+      })
+    })
+
+    describe('when recycling fails', () => {
+      beforeEach(() =>
+        recycleStub.returns(
+          Promise.resolve([
+            {
+              status: 'ERROR',
+              message: 'Channel not found for +16154804259',
+            },
+          ]),
+        ),
+      )
+
+      it('returns error status', async () => {
+        await request(server)
+          .post('/phoneNumbers/recycle')
+          .set('Token', registrar.authToken)
+          .send({ phoneNumbers: '+16154804259' })
+          .expect(500)
+      })
+    })
+  })
+
   describe('POST to /twilioSms', () => {
     let verifyStub
     beforeEach(() => (verifyStub = sinon.stub(phoneNumberService, 'verify')))

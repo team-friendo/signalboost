@@ -3,7 +3,7 @@
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command provisions phone numbers in an area code. valid options are:"
   echo ""
-  echo "-n : number of phone number to provision (default: 1)";
+  echo "-n : number of phone numbers to provision (default: 1)";
   echo "-a : area code to provision numbers in (default: 929)";
   echo "-u : url to target (default: prod ip address; in dev, use signalboost.ngrok.io)";
   echo ""

@@ -298,6 +298,9 @@ const notifications = {
 
   adminLeft: 'Un administrador dejó el canal.',
 
+  channelRecycled:
+    'Canal desactivado por falta de uso. Para crear un nuevo canal, visite https://signalboost.info',
+
   channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
   setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
@@ -349,6 +352,9 @@ ${
     ? `se intentará reenviar el mensaje en: ${resendInterval.toString().slice(0, -3)}s`
     : `el mensaje ha excedido el umbral de reenvío y no se reenviará`
 }`,
+
+  recycleChannelFailed: phoneNumber =>
+    `Error al reciclar el canal para el número de teléfono: ${phoneNumber}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,

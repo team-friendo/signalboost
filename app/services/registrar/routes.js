@@ -52,6 +52,17 @@ const routesOf = (router, db, sock) => {
     ctx.body = phoneNumberStatuses
   })
 
+  router.post('/phoneNumbers/recycle', async ctx => {
+    const { phoneNumbers } = ctx.request.body
+    const result = await phoneNumberService.recycle({
+      db,
+      sock,
+      phoneNumbers,
+    })
+    ctx.status = httpStatusOfMany(result)
+    ctx.body = result
+  })
+
   router.post(`/${smsEndpoint}`, async ctx => {
     const { To: phoneNumber, Body: verificationMessage } = ctx.request.body
     await phoneNumberService
