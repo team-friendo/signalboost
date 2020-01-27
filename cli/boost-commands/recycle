@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "This command recycles phone numbers to be used with new channels. usage:"
+  echo ""
+  echo "  boost recycle -n +12223334444,+15556667777"
+  echo ""
+  echo "Valid options are:"
+  echo "  -u : url to target (in dev, use signalboost.ngrok.io)"
+  echo "  -n : phone numbers to be recycled"
+  echo ""
+  echo "Warning: This will delete all channel/membership data related to these phone numbers!"
+  exit 1
+fi
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+source ../../.env # source env vars
+
+while getopts ":u:n:" opt; do
+    case "$opt" in
+        u)
+            url="$OPTARG"
+            ;;
+        n)
+            phoneNumbers="$OPTARG"
+            ;;
+    esac
+done
+
+if [ -z "$phoneNumbers" ]
+then
+  echo "> ERROR: you must provide at least one phone number after the -n flag to recycle"
+  exit 1
+elif [[ ! $phoneNumbers =~ ^(\+[0-9]{9,15}(,?))+$ ]];then
+  echo "> ERROR: -n must be a comma-delimited list of valid phone numbers prefixed by a country code"
+  exit 1
+fi
+
+if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
+
+curl -s -X POST \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNALBOOST_API_TOKEN" \
+     -d "{ \"phoneNumbers\": \"$phoneNumbers\" }" \
+     https://${url}/phoneNumbers/recycle | jq
+
+popd > /dev/null # return to starting directory

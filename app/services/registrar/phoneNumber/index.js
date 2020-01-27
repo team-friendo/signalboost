@@ -3,6 +3,7 @@ const { filters } = require('../../../db/repositories/phoneNumber')
 const { errors } = require('./common')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
+const { recycle } = require('./recycle')
 const { register, registerAllPurchased, registerAllUnregistered, verify } = require('./register')
 const { purchase, purchaseN } = require('./purchase')
 
@@ -18,6 +19,7 @@ module.exports = {
   provisionN,
   purchase,
   purchaseN,
+  recycle,
   register,
   registerAllPurchased,
   registerAllUnregistered,

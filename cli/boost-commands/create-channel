@@ -70,7 +70,6 @@ else
     else # we are in linux and may use -re
        admins="[\"$(echo $admins | sed -re "s/,/\", \"/g")\"]"
   fi
-
 fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
