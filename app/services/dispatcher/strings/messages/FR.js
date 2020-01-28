@@ -290,10 +290,12 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
   },
 
   // VOUCH_LEVEL
+
   vouchLevel: {
     success: level =>
       `Le niveau de porter garant est passé à ${level}; Des invitations ${level} sont désormais requises pour rejoindre cette chaîne.`,
-    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
     dbError:
       'Une erreur s’est produite lors de la mise à le niveau de porter garant. Veuillez essayer à nouveau!',
   },

@@ -380,7 +380,7 @@ describe('executing commands', () => {
       })
     })
 
-    describe('when sender is not a admin', () => {
+    describe('when sender is not an admin', () => {
       const dispatchable = {
         db,
         channel,
@@ -502,7 +502,7 @@ describe('executing commands', () => {
   describe('HELP command', () => {
     const sdMessage = sdMessageOf(channel, 'HELP')
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }
 
       it('sends a help message to sender', async () => {
@@ -566,7 +566,7 @@ describe('executing commands', () => {
   describe('INFO command', () => {
     const sdMessage = sdMessageOf(channel, 'INFO')
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }
 
       it('sends an info message with more information', async () => {
@@ -1010,7 +1010,7 @@ describe('executing commands', () => {
       })
     })
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const sender = admin
       let result, removeAdminStub
       const dispatchable = { db, channel, sender, sdMessage }
@@ -1089,7 +1089,7 @@ describe('executing commands', () => {
         const dispatchable = { db, channel, sender, sdMessage }
         beforeEach(() => validateStub.returns(true))
 
-        describe('when removal target is a admin', () => {
+        describe('when removal target is an admin', () => {
           beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
 
           it("attempts to remove the human from the chanel's admins", async () => {
@@ -1141,7 +1141,7 @@ describe('executing commands', () => {
           })
         })
 
-        describe('when removal target is not a admin', () => {
+        describe('when removal target is not an admin', () => {
           beforeEach(() => isAdminStub.returns(Promise.resolve(false)))
 
           it('does not attempt to remove admin', () => {
@@ -1182,7 +1182,7 @@ describe('executing commands', () => {
       })
     })
 
-    describe('when sender is not a admin', () => {
+    describe('when sender is not an admin', () => {
       const sdMessage = sdMessageOf(channel, `REMOVE ${removalTargetNumber}`)
       const dispatchable = { db, channel, sender: randomPerson, sdMessage }
       let result
@@ -1384,13 +1384,17 @@ describe('executing commands', () => {
     ]
 
     scenarios.forEach(({ name, dbField, isOn, command, commandStr }) => {
-      describe('when sender is a admin', () => {
+      describe('when sender is an admin', () => {
         const sender = admin
 
         const sdMessage = sdMessageOf(channel, commandStr)
         const dispatchable = { db, channel, sender, sdMessage }
 
+<<<<<<< HEAD
         it('attempts to update the toggle field on the channel db record', async () => {
+=======
+        it('attempts to update the channel field', async () => {
+>>>>>>> [137] write tests for VOUCH LEVEL command
           updateChannelStub.returns(Promise.resolve())
           await processCommand(dispatchable)
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([
@@ -1492,13 +1496,89 @@ describe('executing commands', () => {
     })
   })
 
+  describe('VOUCH_LEVEL command', () => {
+    const validVouchLevel = 4
+    const invalidVouchLevel = 15
+
+    let updateStub
+    beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateStub.restore())
+
+    describe('when sender is an admin', () => {
+      const sender = admin
+      let result
+
+      describe('when sender sets a valid vouch level', async () => {
+        const sdMessage = sdMessageOf(channel, `VOUCH LEVEL ${validVouchLevel}`)
+        const dispatchable = { db, channel, sender, sdMessage }
+
+        beforeEach(async () => {
+          updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: validVouchLevel }))
+          result = await processCommand(dispatchable)
+        })
+
+        it('returns a SUCCESS status/message, and notifications', () => {
+          expect(result).to.eql({
+            command: commands.VOUCH_LEVEL,
+            status: statuses.SUCCESS,
+            message: messagesIn(channel.language).commandResponses.vouchLevel.success(
+              validVouchLevel,
+            ),
+            notifications: [
+              ...bystanderAdminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: messagesIn(membership.language).notifications.vouchLevelChanged(
+                  validVouchLevel,
+                ),
+              })),
+            ],
+          })
+        })
+      })
+
+      describe('when sender sets an invalid vouch level', () => {
+        const sdMessage = sdMessageOf(channel, `VOUCH LEVEL ${invalidVouchLevel}`)
+        const dispatchable = { db, channel, sender, sdMessage }
+
+        beforeEach(async () => {
+          updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: invalidVouchLevel }))
+          result = await processCommand(dispatchable)
+        })
+        it('returns an ERROR status/message', () => {
+          expect(result).to.eql({
+            command: commands.VOUCH_LEVEL,
+            status: statuses.ERROR,
+            message: messagesIn(channel.language).commandResponses.vouchLevel.invalid(
+              invalidVouchLevel,
+            ),
+          })
+        })
+      })
+    })
+
+    describe('when sender is not an admin', () => {
+      const sender = randomPerson
+
+      const sdMessage = sdMessageOf(channel, `VOUCH LEVEL ${validVouchLevel}`)
+      const dispatchable = { db, channel, sender, sdMessage }
+
+      it('returns an UNAUTHORIZED status/message', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.VOUCH_LEVEL,
+          status: statuses.UNAUTHORIZED,
+          message: CR.vouchLevel.notAdmin,
+        })
+      })
+    })
+  })
+
   describe('DESCRIPTION command', () => {
     const sdMessage = sdMessageOf(channel, 'DESCRIPTION foo channel description')
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateStub.restore())
 
-    describe('when sender is a admin', () => {
+    describe('when sender is an admin', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }
       let result
 

@@ -295,10 +295,12 @@ Envíe AYUDA para ver los comandos que comprendo.`,
   },
 
   // VOUCH_LEVEL
+
   vouchLevel: {
     success: level =>
       `Nivel de atestiguando cambiado a ${level}; ahora se requieren ${level} invitaciones para unirse a este canal.`,
-    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
     dbError:
       'Se produjo un error al actualizar el nivel de atestiguando. Inténtelo de nuevo, por favor.',
   },

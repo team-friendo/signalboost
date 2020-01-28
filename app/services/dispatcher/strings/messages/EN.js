@@ -286,7 +286,8 @@ Send HELP to list commands I understand.`,
   vouchLevel: {
     success: level =>
       `Vouching level changed to ${level}; ${level} invites are now required to join this channel.`,
-    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
     dbError: 'There was an error updating the vouching level. Please try again.',
   },
 
