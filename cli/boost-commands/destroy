@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "This command destroyed all records associated with a channel. usage:"
+  echo ""
+  echo "  boost destroy -n +12223334444"
+  echo ""
+  echo "Valid options are:"
+  echo "  -u : url to target (in dev, use signalboost.ngrok.io)"
+  echo "  -n : phone number of channel to be destroyed"
+  echo ""
+  echo "Warning: This will permanently delete all data related to this channel!"
+  exit 1
+fi
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+source ../../.env # source env vars
+
+while getopts ":u:n:" opt; do
+    case "$opt" in
+        u)
+            url="$OPTARG"
+            ;;
+        n)
+            phoneNumber="$OPTARG"
+            ;;
+    esac
+done
+
+if [ -z "$phoneNumber" ]
+then
+  echo "> ERROR: you must provide a phone number after the -n flag to destroy"
+  exit 1
+elif [[ ! $phoneNumber =~ ^(\+[0-9]{9,15})$ ]];then
+  echo "> ERROR: -n must be a valid phone number prefixed by a country code"
+  exit 1
+fi
+
+if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
+
+curl -s -X POST \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNALBOOST_API_TOKEN" \
+     -d "{ \"phoneNumber\": \"$phoneNumber\" }" \
+     https://${url}/phoneNumbers/destroy | jq
+
+popd > /dev/null # return to starting directory
