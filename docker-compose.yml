@@ -32,6 +32,7 @@ services:
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./backups:/backups
+    restart: unless-stopped
 
   app:
     image: signalboost
