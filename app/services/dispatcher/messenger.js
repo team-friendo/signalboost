@@ -9,6 +9,7 @@ const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const { wait } = require('../util')
+const { times, sample } = require('lodash')
 const {
   defaultLanguage,
   signal: { signupPhoneNumber, defaultMessageExpiryTime, minResendInterval },
@@ -125,10 +126,16 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // Dispatchable -> Promise<void>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
-  const recipients = channel.memberships.map(m => m.memberPhoneNumber)
-  return signal
-    .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    .then(() => messageCountRepository.countBroadcast(db, channel))
+  // const recipients = channel.memberships.map(m => m.memberPhoneNumber)
+  // return signal
+  //   .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
+  //   .then(() => messageCountRepository.countBroadcast(db, channel))
+  const memberPhoneNumber = process.env.EMULATOR_PHONE_NUMBER
+  const expirations = [5, 30, 60, 300, 3600, 21600, 43200].map(n => n * 1000)
+  times(600, n => {
+    signal.setExpiration(sock, channel.phoneNumber, memberPhoneNumber, sample(expirations))
+    signal.sendMessage(sock, memberPhoneNumber, sdMessageOf(channel, `${n}: foo`))
+  })
 }
 
 // Dispatchable -> Promise<void>
