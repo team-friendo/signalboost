@@ -20,7 +20,7 @@ Signalboost tiene canales con administradores y suscriptores.
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar mensajes a la línea directa.
 
-Signalboost intenta preservar su privacidad:
+Signalboost intenta a preservar su privacidad:
 
 -> Los usuarios de Signalboost no pueden ver los números de otros usuarios. (¡Los policías tampoco no pueden!)
 -> Signalboost no lee ni almacena los mensajes de nadie.
@@ -294,6 +294,15 @@ Envíe AYUDA para ver los comandos que comprendo.`,
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
   },
 
+  // VOUCH_LEVEL
+  vouchLevel: {
+    success: level =>
+      `Nivel de atestiguando cambiado a ${level}; ahora se requieren ${level} invitaciones para unirse a este canal.`,
+    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    dbError:
+      'Se produjo un error al actualizar el nivel de atestiguando. Inténtelo de nuevo, por favor.',
+  },
+
   // SET_DESCRIPTION
 
   description: {
@@ -381,6 +390,9 @@ ${
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
+
+  vouchLevelChanged: vouchLevel =>
+    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requieren ${vouchLevel} invitaciones para unirse a este canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!

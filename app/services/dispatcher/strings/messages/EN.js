@@ -282,6 +282,14 @@ Send HELP to list commands I understand.`,
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
 
+  // VOUCH_LEVEL
+  vouchLevel: {
+    success: level =>
+      `Vouching level changed to ${level}; ${level} invites are now required to join this channel.`,
+    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    dbError: 'There was an error updating the vouching level. Please try again.',
+  },
+
   // SET_DESCRIPTION
 
   description: {
@@ -360,6 +368,9 @@ ${
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
+
+  vouchLevelChanged: vouchLevel =>
+    `An admin just changed the vouching level to ${vouchLevel}; ${vouchLevel} invites will now be required to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!

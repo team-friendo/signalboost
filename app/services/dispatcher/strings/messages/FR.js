@@ -32,14 +32,14 @@ Signalboost répond aux commandes:
 
 Pour plus de renseignements: https://signalboost.info`
 
-const parseErrrors = {
+const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
   invalidVouchLevel: vouchLevel =>
     `${vouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et 10.`,
 }
 
-const invalidPhoneNumber = parseErrrors.invalidPhoneNumber
+const invalidPhoneNumber = parseErrors.invalidPhoneNumber
 
 const commandResponses = {
   // ACCEPT
@@ -289,6 +289,15 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
 
+  // VOUCH_LEVEL
+  vouchLevel: {
+    success: level =>
+      `Le niveau de porter garant est passé à ${level}; Des invitations ${level} sont désormais requises pour rejoindre cette chaîne.`,
+    invalidVouchLevel: parseErrors.invalidVouchLevel,
+    dbError:
+      'Une erreur s’est produite lors de la mise à le niveau de porter garant. Veuillez essayer à nouveau!',
+  },
+
   // SET_DESCRIPTION
 
   description: {
@@ -377,6 +386,9 @@ ${
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
+  vouchLevelChanged: vouchLevel =>
+    `Un administrateur vient de changer le niveau du garant en ${vouchLevel}; Des invitations ${vouchLevel} seront désormais nécessaires pour rejoindre cette chaîne.`,
+
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Vous êtes maintenant un
  admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
@@ -393,7 +405,7 @@ const prefixes = {
 module.exports = {
   commandResponses,
   notifications,
-  parseErrrors,
+  parseErrors,
   prefixes,
   systemName,
 }
