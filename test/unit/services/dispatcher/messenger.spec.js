@@ -189,7 +189,8 @@ describe('messenger service', () => {
           ])
         })
 
-        it('it increments the command count for the channel', () => {
+        it('it increments the broadcast count for the channel exactly once', () => {
+          expect(countBroadcastStub.callCount).to.eql(1)
           expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
         })
 
