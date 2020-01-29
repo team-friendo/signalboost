@@ -14,8 +14,9 @@ import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 import channelRepository from '../../../../app/db/repositories/channel'
+import { wait } from '../../../../app/services/util'
 const {
-  signal: { signupPhoneNumber },
+  signal: { signupPhoneNumber, broadcastBatchSize },
 } = require('../../../../app/config')
 
 describe('messenger service', () => {
@@ -168,16 +169,34 @@ describe('messenger service', () => {
           expect(countCommandStub.callCount).to.eql(0)
         })
 
-        it('broadcasts the message to all channel subscribers and admins', () => {
+        it('broadcasts the message to all channel subscribers and admins in batches', () => {
           expect(broadcastMessageStub.getCall(0).args).to.eql([
             sock,
-            [...adminPhoneNumbers, ...subscriberPhoneNumbers],
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(0, 2),
+            { ...sdMessage, messageBody: '[foobar]\nplease help!' },
+          ])
+
+          expect(broadcastMessageStub.getCall(1).args).to.eql([
+            sock,
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(2, 2),
+            { ...sdMessage, messageBody: '[foobar]\nplease help!' },
+          ])
+
+          expect(broadcastMessageStub.getCall(2).args).to.eql([
+            sock,
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(4, 2),
             { ...sdMessage, messageBody: '[foobar]\nplease help!' },
           ])
         })
 
         it('it increments the command count for the channel', () => {
           expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
+        })
+
+        it('attempts to broadcast in batches of broadcastBatchSize', async () => {
+          expect(broadcastMessageStub.callCount).to.eql(
+            [...adminPhoneNumbers, ...subscriberPhoneNumbers].length / broadcastBatchSize,
+          )
         })
       })
     })

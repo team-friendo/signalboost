@@ -14,6 +14,8 @@ const defaults = {
   expiryUpdateDelay: 200, // 200 millis
   minResendInterval: 2000, // 2 seconds
   maxResendInterval: 256000, // 256 seconds / ~4.25 minutes
+  broadcastBatchSize: 50,
+  broadcastBatchInterval: 60000, // 1 minute
 }
 
 const test = {
@@ -29,7 +31,9 @@ const test = {
   signupPhoneNumber: '+15555555555',
   expiryUpdateDelay: 1, // 1 milli
   minResendInterval: 2, // 20 millis
-  maxResendInterval: 256, // ~ 2.5 sec
+  maxResendInterval: 256, // ~ 2.5 sec,
+  broadcastBatchSize: 2,
+  broadcastBatchInterval: 10, // 10 millis
 }
 
 const development = {
