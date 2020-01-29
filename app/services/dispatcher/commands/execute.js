@@ -62,6 +62,7 @@ const execute = async (executable, dispatchable) => {
     [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
+    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
@@ -437,6 +438,43 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: messagesIn(sender.language).notifications.setDescription(newDescription),
+  }))
+}
+
+// VOUCH LEVEL
+
+const maybeSetVouchLevel = (db, channel, sender, newVouchLevel) => {
+  const cr = messagesIn(sender.language).commandResponses.vouchLevel
+  if (sender.type !== ADMIN)
+    return {
+      status: statuses.UNAUTHORIZED,
+      message: cr.notAdmin,
+    }
+
+  return setVouchLevel(db, channel, newVouchLevel, sender, cr)
+}
+
+const setVouchLevel = async (db, channel, newVouchLevel, sender, cr) => {
+  try {
+    await channelRepository.update(db, channel.phoneNumber, { vouchThreshold: newVouchLevel })
+
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(newVouchLevel),
+      notifications: vouchLevelNotificationsOf(channel, newVouchLevel, sender),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.vouchLevelChanged(newVouchLevel),
   }))
 }
 

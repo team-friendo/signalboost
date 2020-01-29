@@ -371,7 +371,7 @@ ${
   toggles: commandResponses.toggles,
 
   vouchLevelChanged: vouchLevel =>
-    `An admin just changed the vouching level to ${vouchLevel}; ${vouchLevel} invites will now be required to join this channel.`,
+    `An admin just set the vouching level to ${vouchLevel}; ${vouchLevel} invites will now be required to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!

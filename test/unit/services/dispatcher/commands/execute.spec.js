@@ -1508,30 +1508,45 @@ describe('executing commands', () => {
       const sender = admin
       let result
 
-      describe('when sender sets a valid vouch level', async () => {
+      describe('when sender sets a valid vouch level', () => {
         const sdMessage = sdMessageOf(channel, `VOUCH LEVEL ${validVouchLevel}`)
         const dispatchable = { db, channel, sender, sdMessage }
 
-        beforeEach(async () => {
-          updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: validVouchLevel }))
-          result = await processCommand(dispatchable)
+        describe('when updating the db succeeds', () => {
+          beforeEach(async () => {
+            updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: validVouchLevel }))
+            result = await processCommand(dispatchable)
+          })
+
+          it('returns a SUCCESS status/message, and notifications', () => {
+            expect(result).to.eql({
+              command: commands.VOUCH_LEVEL,
+              status: statuses.SUCCESS,
+              message: messagesIn(channel.language).commandResponses.vouchLevel.success(
+                validVouchLevel,
+              ),
+              notifications: [
+                ...bystanderAdminMemberships.map(membership => ({
+                  recipient: membership.memberPhoneNumber,
+                  message: messagesIn(membership.language).notifications.vouchLevelChanged(
+                    validVouchLevel,
+                  ),
+                })),
+              ],
+            })
+          })
         })
 
-        it('returns a SUCCESS status/message, and notifications', () => {
-          expect(result).to.eql({
-            command: commands.VOUCH_LEVEL,
-            status: statuses.SUCCESS,
-            message: messagesIn(channel.language).commandResponses.vouchLevel.success(
-              validVouchLevel,
-            ),
-            notifications: [
-              ...bystanderAdminMemberships.map(membership => ({
-                recipient: membership.memberPhoneNumber,
-                message: messagesIn(membership.language).notifications.vouchLevelChanged(
-                  validVouchLevel,
-                ),
-              })),
-            ],
+        describe('when updating the db fails', () => {
+          beforeEach(() => updateStub.callsFake(() => Promise.reject(new Error('flooooof'))))
+
+          it('returns an ERROR status/message', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.VOUCH_LEVEL,
+              status: statuses.ERROR,
+              message: CR.vouchLevel.dbError,
+              notifications: [],
+            })
           })
         })
       })
@@ -1544,6 +1559,7 @@ describe('executing commands', () => {
           updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: invalidVouchLevel }))
           result = await processCommand(dispatchable)
         })
+
         it('returns an ERROR status/message', () => {
           expect(result).to.eql({
             command: commands.VOUCH_LEVEL,
@@ -1551,6 +1567,7 @@ describe('executing commands', () => {
             message: messagesIn(channel.language).commandResponses.vouchLevel.invalid(
               invalidVouchLevel,
             ),
+            notifications: [],
           })
         })
       })
@@ -1567,6 +1584,7 @@ describe('executing commands', () => {
           command: commands.VOUCH_LEVEL,
           status: statuses.UNAUTHORIZED,
           message: CR.vouchLevel.notAdmin,
+          notifications: [],
         })
       })
     })
