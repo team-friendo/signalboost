@@ -1,6 +1,7 @@
 # Table of Contents
 
 * [Community Guidelines](#guidelines)
+* [The Basics of Contributing](#basics)
 * [Opening Issues](#issues)
   * [Feature Requests](#features)
   * [Bug Reports](#bugs)
@@ -23,6 +24,21 @@ As a baseline set of norms, we would also encourage you to read and abide by the
 
 https://www.recurse.com/social-rules
 
+# The Basics of Contributing <a name="basics"></a>
+
+Carefully reading the entire contributor guide below will greatly increase the chances that we can accept your merge request, but to get you started here's the basics of what ask of you.
+
+* Contact us if you've got questions, we are friendly. Open an [issue](https://0xacab.org/team-friendo/signalboost/-/boards) or email us email: `team-friendo [at] riseup [dot] net`, gpg fingerprint: 2EEAFF8BD61D568E2A3168AAE726A156229F56F1
+* Open a feature or bug report [issue](https://0xacab.org/team-friendo/signalboost/-/boards) for your code so we can support you and be prepared for the coming merge request. Please tag either @aguestuser or @margot so we see it. We provide ideal helpful issue/bug report templates below.
+* Use your issue id in your branch naming and commit messages eg: 99-add-lollipops-branch / "[99] adds the red pops in cherry flavor"
+* Please rebase master into your branch before you create a merge request, we prefer rebase to merge.
+* If possible please write or extend exiting unit tests. 
+* Please use ES6 style JS and features: https://ponyfoo.com/articles/es6
+* Please run tests before submitting your merge request (see `make test.all` and other `make test.x` utilities) this will also run a lint, run `make test.lint-fix` to just automatically tidy formatting.
+* Make a merge request and tag either @aguestuser or @fdbk -- we will try to review as soon as we can.
+
+Details about each of these points are below. 
+
 # Opening Issues <a name="issues"></a>
 
 Before opening any issue, please check the project's [issue board](https://0xacab.org/team-friendo/signalboost/-/boards) to make sure somebody hasn't already requested the same thing. Maybe you could get the same effect by giving a :thumbs_up: to an already existing issue, or by adding your voice to the discussion about whether or not to implement another request! :)
@@ -31,7 +47,7 @@ Before opening any issue, please check the project's [issue board](https://0xaca
 
 If you are reporting a feature request, please:
 
-* tag the issue with a `Feature Request` tag so we can prioritize it alongside other feature requests
+* Tag the issue with a `Feature Request` tag so we can prioritize it alongside other feature requests
 * Explain in as much detail as you can the social circumstances that cause you to want to have this feature
   * What goal were you trying to accomplish in the world?
   * Why was signalboost as designed incapable of accomplishing those goals?
@@ -102,7 +118,7 @@ GIVEN {{ some preexisting set of conditions }}
 
 As with feature requests, the "Desired Behavior" section should be written in exclusively user-facing terms as much as possible.
 
-# Submitting MRs <a name="mrs"></a>
+# Submitting Merg Requests <a name="mrs"></a>
 
 Yay! Thanks for writing code to help the project! To help us keep track of things, please observe the following git conventions:
 
