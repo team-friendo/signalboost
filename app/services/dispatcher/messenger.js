@@ -8,10 +8,18 @@ const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
 const { values } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
-const { wait } = require('../util')
+const { wait, sequence, batchesOfN } = require('../util')
+const { loggerOf } = require('../util')
+const logger = loggerOf('messenger')
 const {
   defaultLanguage,
-  signal: { signupPhoneNumber, defaultMessageExpiryTime, minResendInterval },
+  signal: {
+    signupPhoneNumber,
+    defaultMessageExpiryTime,
+    minResendInterval,
+    broadcastBatchSize,
+    broadcastBatchInterval,
+  },
 } = require('../../config')
 
 /**
@@ -123,12 +131,22 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  * SENDING
  ************/
 
-// Dispatchable -> Promise<void>
+// Dispatchable -> Promise<MessageCount>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
-  return signal
-    .broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    .then(() => messageCountRepository.countBroadcast(db, channel))
+  const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
+
+  try {
+    await sequence(
+      recipientBatches.map(recipientBatch => () =>
+        signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage }))
+      ),
+      broadcastBatchInterval,
+    )
+    return messageCountRepository.countBroadcast(db, channel)
+  } catch (e) {
+    logger.error(e)
+  }
 }
 
 // Dispatchable -> Promise<void>
