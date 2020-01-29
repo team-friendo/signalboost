@@ -1390,11 +1390,7 @@ describe('executing commands', () => {
         const sdMessage = sdMessageOf(channel, commandStr)
         const dispatchable = { db, channel, sender, sdMessage }
 
-<<<<<<< HEAD
         it('attempts to update the toggle field on the channel db record', async () => {
-=======
-        it('attempts to update the channel field', async () => {
->>>>>>> [137] write tests for VOUCH LEVEL command
           updateChannelStub.returns(Promise.resolve())
           await processCommand(dispatchable)
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([

@@ -115,6 +115,9 @@ LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 ATESTIGUANDO ACTIVADA / DESACTIVADA
 -> activa o desactiva el requisito de recibir una invitación para suscribirse
 
+NIVEL DE ATESTIGUAR nivel
+-> cambia el numero de invitaciónes requeridos para unirse a este canal 
+
 ENGLISH / FRANÇAIS
 -> cambia idiomas a Inglés o Francés
 
@@ -241,7 +244,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
 
 Si ya tiene usted una invitación, intente enviar ACEPTAR`,
     dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
-    alreadyMember: `¡Ay! Ya eres miembro del canal.`,
+    alreadyMember: `¡Ay! Ya usted es miembro del canal.`,
   },
 
   // LEAVE
@@ -273,7 +276,10 @@ Envíe AYUDA para ver los comandos que comprendo.`,
         } la línea directa. ¡Inténtelo de nuevo!`,
     },
     vouching: {
-      success: isOn => `Atestiguando configurado en ${onOrOff(isOn)}.`,
+      success: isOn =>
+        `Atestiguando configurado en ${onOrOff(
+          isOn,
+        )}. Ahora, 2 invitaciónes están requiridos para unirse a este canal. Para invitar a alguien, use el comando INVITAR:\nINVITAR +12345551234\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR:\n"NIVEL DE ATESTIGUAR 3"`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
@@ -348,9 +354,15 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
-  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Usted le gustaría suscribirse a los anuncios de este canal?
-  
-  Responda con ACEPTAR o RECHAZAR.`,
+  inviteReceived: (
+    channelName,
+    invitesReceived,
+    invitesNeeded,
+  ) => `Hola! Usted ha recibido ${invitesReceived}/${invitesNeeded} invitaciónes necesarios para unirse al canal Signalboost de [${channelName}]. 
+      ${invitesReceived === invitesNeeded ? `Por favor, responda con ACEPTAR o RECHAZAR.` : ''}
+    `,
+
+  inviteAccepted: `¡Felicidades! Alguien ha aceptado su invitación y ahora está suscrito a este canal.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.

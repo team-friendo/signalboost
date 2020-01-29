@@ -59,7 +59,7 @@ describe('parse module', () => {
           'le RENOMMER',
           'le HOTLINE ACTIVÉE',
           'le HOTLINE DÉSACTIVÉE',
-          'le NIVEAU DE GARANTIE',
+          'le NIVEAU DE PORTER GARANT',
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
           'le FRENCH',
@@ -625,7 +625,10 @@ describe('parse module', () => {
           },
           {
             language: languages.FR,
-            messages: [`NIVEAU DE GARANTIE ${vouchLevel}`, ` niveau de garantie${vouchLevel}`],
+            messages: [
+              `NIVEAU DE PORTER GARANT ${vouchLevel}`,
+              ` niveau de porter garant${vouchLevel}`,
+            ],
           },
         ]
         variants.forEach(({ language, messages }) =>

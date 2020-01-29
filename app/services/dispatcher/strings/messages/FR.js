@@ -111,6 +111,9 @@ HOTLINE ACTIVÉE / DÉSACTIVÉE
 SE PORTER GARANT ACTIVÉE / DÉSACTIVÉE
 -> active ou désactive l'exigence de recevoir une invitation à s'abonner
 
+NIVEAU DE PORTER GARANT niveau
+-> modifie le nombre d'invitations nécessaires pour rejoindre la chaîne
+
 ESPAÑOL / ENGLISH
 -> change la langue au Español or Anglais
 
@@ -268,7 +271,10 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
         )}. Veuillez essayer de nouveau!`,
     },
     vouching: {
-      success: isOn => `se porter garant maintenant ${onOrOff(isOn)}.`,
+      success: isOn =>
+        `se porter garant maintenant ${onOrOff(
+          isOn,
+        )}. 2 invitations sont désormais nécessaires pour rejoindre cette chaîne. \n Pour inviter quelqu'un, utilisez la commande INVITER: \n "INVITER +12345551234" \n Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT: \n "NIVEAU DE PORTER GARANT 3"`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer se porter garant à ${onOrOff(
@@ -346,9 +352,12 @@ Envoyez HELP pour répertorier les commandes valides. Envoyez ALLÔ pour vous ab
       ? 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou ALLÔ pour vous abonner.',
 
-  inviteReceived: channelName => `Vous avez été invité sur le  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
+  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
+       ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
+     `,
 
-Veuillez répondre avec ACCEPTER ou REFUSER.`,
+  inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette chaîne.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
