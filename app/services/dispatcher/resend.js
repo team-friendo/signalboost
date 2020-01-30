@@ -20,9 +20,10 @@ const enqueueResend = (sock, resendQueue, inSdMessage) => {
 
   // if message not already resent, reformat the attachments field from the inbound format to outbound format
   // (see typings in services/signal for more on this FRUSTRATINGLY different formats)
-  const outSdMessage = msgAlreadyResent
-    ? inSdMessage
-    : { ...inSdMessage, attachments: inSdMessage.attachments.map(signal.parseOutboundAttachment) }
+  const outSdMessage = {
+    ...inSdMessage,
+    attachments: inSdMessage.attachments.map(signal.parseOutboundAttachment),
+  }
 
   // don't resend anymore if message has exceeded max resend threshold
   if (newResendInterval > maxResendInterval) {
