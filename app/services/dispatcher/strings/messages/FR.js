@@ -350,10 +350,8 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
 
   toggles: commandResponses.toggles,
 
-  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber, resendInterval) =>
-    `Un message n'a pas pu être envoyé en raison d'une erreur de limite de débit.
-canal: ${channelPhoneNumber}
-destinataire: ${memberPhoneNumber}
+  rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
+    `Erreur de limite de débit sur le canal: ${channelPhoneNumber}.
 ${
   resendInterval
     ? `tentative sera faite pour renvoyer le message en: ${resendInterval.toString().slice(0, -3)}s`
