@@ -134,19 +134,15 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 // Dispatchable -> Promise<MessageCount>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
-
   try {
-    if (isEmpty(sdMessage.attachments)) {
-      await signal.broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
-    } else {
-      const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
-      await sequence(
-        recipientBatches.map(recipientBatch => () =>
-          signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage })),
-        ),
-        broadcastBatchInterval,
-      )
-    }
+    const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
+    await sequence(
+      recipientBatches.map(recipientBatch => () =>
+        signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage })),
+      ),
+      broadcastBatchInterval,
+    )
+
     return messageCountRepository.countBroadcast(db, channel)
   } catch (e) {
     logger.error(e)

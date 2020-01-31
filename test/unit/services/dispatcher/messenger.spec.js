@@ -201,7 +201,7 @@ describe('messenger service', () => {
           })
         })
 
-        describe('when message has attachments', () => {
+        describe('when message has no attachments', () => {
           const noAttachmentSdMessage = { ...sdMessage, attachments: [] }
           beforeEach(
             async () =>
@@ -221,8 +221,10 @@ describe('messenger service', () => {
               }),
           )
 
-          it('sends all messages without batching', () => {
-            expect(broadcastMessageStub.callCount).to.eql(1)
+          it('sends all messages in batches', () => {
+            expect(broadcastMessageStub.callCount).to.eql(
+              [...adminPhoneNumbers, ...subscriberPhoneNumbers].length / broadcastBatchSize,
+            )
           })
 
           it('it increments the broadcast count for the channel exactly once', () => {
