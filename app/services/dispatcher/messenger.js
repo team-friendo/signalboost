@@ -6,7 +6,7 @@ const { parseExecutable } = require('./commands/parse')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
-const { values } = require('lodash')
+const { values, isEmpty } = require('lodash')
 const { commands, statuses } = require('./commands/constants')
 const { wait, sequence, batchesOfN } = require('../util')
 const { loggerOf } = require('../util')
@@ -134,15 +134,19 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 // Dispatchable -> Promise<MessageCount>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
   const recipients = channel.memberships.map(m => m.memberPhoneNumber)
-  const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
 
   try {
-    await sequence(
-      recipientBatches.map(recipientBatch => () =>
-        signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage }))
-      ),
-      broadcastBatchInterval,
-    )
+    if (isEmpty(sdMessage.attachments)) {
+      await signal.broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
+    } else {
+      const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
+      await sequence(
+        recipientBatches.map(recipientBatch => () =>
+          signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage })),
+        ),
+        broadcastBatchInterval,
+      )
+    }
     return messageCountRepository.countBroadcast(db, channel)
   } catch (e) {
     logger.error(e)

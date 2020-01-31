@@ -14,7 +14,6 @@ import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 import channelRepository from '../../../../app/db/repositories/channel'
-import { wait } from '../../../../app/services/util'
 const {
   signal: { signupPhoneNumber, broadcastBatchSize },
 } = require('../../../../app/config')
@@ -150,54 +149,85 @@ describe('messenger service', () => {
 
     describe('a broadcast message', () => {
       describe('when sender is a admin', () => {
-        beforeEach(
-          async () =>
-            await messenger.dispatch({
-              commandResult: {
-                status: statuses.NOOP,
-                messageBody: messages.notifications.noop,
-                notifications: [],
-              },
-              dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
-            }),
-        )
-        it('does not respond to the sender', () => {
-          expect(respondSpy.callCount).to.eql(0)
-        })
-
-        it('does not increment the command count for the channel', () => {
-          expect(countCommandStub.callCount).to.eql(0)
-        })
-
-        it('broadcasts the message to all channel subscribers and admins in batches', () => {
-          expect(broadcastMessageStub.getCall(0).args).to.eql([
-            sock,
-            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(0, 2),
-            { ...sdMessage, messageBody: '[foobar]\nplease help!' },
-          ])
-
-          expect(broadcastMessageStub.getCall(1).args).to.eql([
-            sock,
-            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(2, 2),
-            { ...sdMessage, messageBody: '[foobar]\nplease help!' },
-          ])
-
-          expect(broadcastMessageStub.getCall(2).args).to.eql([
-            sock,
-            [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(4, 2),
-            { ...sdMessage, messageBody: '[foobar]\nplease help!' },
-          ])
-        })
-
-        it('it increments the broadcast count for the channel exactly once', () => {
-          expect(countBroadcastStub.callCount).to.eql(1)
-          expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
-        })
-
-        it('attempts to broadcast in batches of broadcastBatchSize', async () => {
-          expect(broadcastMessageStub.callCount).to.eql(
-            [...adminPhoneNumbers, ...subscriberPhoneNumbers].length / broadcastBatchSize,
+        describe('when message has attachments', () => {
+          beforeEach(
+            async () =>
+              await messenger.dispatch({
+                commandResult: {
+                  status: statuses.NOOP,
+                  messageBody: messages.notifications.noop,
+                  notifications: [],
+                },
+                dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
+              }),
           )
+          it('does not respond to the sender', () => {
+            expect(respondSpy.callCount).to.eql(0)
+          })
+
+          it('does not increment the command count for the channel', () => {
+            expect(countCommandStub.callCount).to.eql(0)
+          })
+
+          it('broadcasts the message to all channel subscribers and admins in batches', () => {
+            expect(broadcastMessageStub.getCall(0).args).to.eql([
+              sock,
+              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(0, 2),
+              { ...sdMessage, messageBody: '[foobar]\nplease help!' },
+            ])
+
+            expect(broadcastMessageStub.getCall(1).args).to.eql([
+              sock,
+              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(2, 2),
+              { ...sdMessage, messageBody: '[foobar]\nplease help!' },
+            ])
+
+            expect(broadcastMessageStub.getCall(2).args).to.eql([
+              sock,
+              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(4, 2),
+              { ...sdMessage, messageBody: '[foobar]\nplease help!' },
+            ])
+          })
+
+          it('it increments the broadcast count for the channel exactly once', () => {
+            expect(countBroadcastStub.callCount).to.eql(1)
+            expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
+          })
+
+          it('attempts to broadcast in batches of broadcastBatchSize', async () => {
+            expect(broadcastMessageStub.callCount).to.eql(
+              [...adminPhoneNumbers, ...subscriberPhoneNumbers].length / broadcastBatchSize,
+            )
+          })
+        })
+
+        describe('when message has attachments', () => {
+          const noAttachmentSdMessage = { ...sdMessage, attachments: [] }
+          beforeEach(
+            async () =>
+              await messenger.dispatch({
+                commandResult: {
+                  status: statuses.NOOP,
+                  messageBody: messages.notifications.noop,
+                  notifications: [],
+                },
+                dispatchable: {
+                  db,
+                  sock,
+                  channel,
+                  sender: adminSender,
+                  sdMessage: noAttachmentSdMessage,
+                },
+              }),
+          )
+
+          it('sends all messages without batching', () => {
+            expect(broadcastMessageStub.callCount).to.eql(1)
+          })
+
+          it('it increments the broadcast count for the channel exactly once', () => {
+            expect(countBroadcastStub.callCount).to.eql(1)
+          })
         })
       })
     })
