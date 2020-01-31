@@ -326,10 +326,8 @@ Send HELP to list valid commands. Send HELLO to subscribe.
 
 Please respond with ACCEPT or DECLINE.`,
 
-  rateLimitOccurred: (channelPhoneNumber, memberPhoneNumber, resendInterval) =>
-    `Message failed to send due to a rate limit error.
-channel: ${channelPhoneNumber}
-recipient: ${memberPhoneNumber}
+  rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
+    `Message rate limited on channel: ${channelPhoneNumber}.
 ${
   resendInterval
     ? `next resend attempt in: ${resendInterval.toString().slice(0, -3)} sec`

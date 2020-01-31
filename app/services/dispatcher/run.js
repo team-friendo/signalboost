@@ -127,11 +127,7 @@ const notifyRateLimitedMessage = async (db, sock, sdMessage, resendInterval) => 
         memberPhoneNumber,
         sdMessageOf(
           { phoneNumber: signupPhoneNumber },
-          messagesIn(language).notifications.rateLimitOccurred(
-            sdMessage.username,
-            sdMessage.recipientNumber,
-            resendInterval,
-          ),
+          messagesIn(language).notifications.rateLimitOccurred(sdMessage.username, resendInterval),
         ),
       ),
     ),
