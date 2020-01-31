@@ -14,8 +14,8 @@ const defaults = {
   expiryUpdateDelay: 200, // 200 millis
   minResendInterval: 60 * 1000, // 1 min
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
-  broadcastBatchSize: 50,
-  broadcastBatchInterval: 60000, // 1 minute
+  broadcastBatchSize: 1,
+  broadcastBatchInterval: 1300, // 1.3 seconds
 }
 
 const test = {
