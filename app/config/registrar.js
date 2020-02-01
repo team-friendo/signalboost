@@ -1,5 +1,5 @@
 const defaults = {
-  host: 'signalboost.ngrok.io',
+  host: `${process.env.NGROK_SUBDOMAIN}.ngrok.io`,
   port: 3000,
   authToken: process.env.SIGNALBOOST_API_TOKEN,
 }
