@@ -42,7 +42,6 @@ const addSubscriber = async (
   memberPhoneNumber,
   language = defaultLanguage,
 ) =>
-  // TODO: use findOrCreate here to make this idempotent!
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe member to', async () => {
     const [membership] = await db.membership.findOrCreate({
       where: {
