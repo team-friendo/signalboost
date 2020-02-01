@@ -679,6 +679,7 @@ describe('parse module', () => {
         it('returns a parse error', () => {
           expect(parseExecutable(`ADD ${invalidPhoneNumber}`)).to.eql({
             command: commands.ADD,
+            payload: invalidPhoneNumber,
             error: messagesIn(languages.EN).parseErrors.invalidPhoneNumber(invalidPhoneNumber),
           })
         })

@@ -97,6 +97,7 @@ describe('executing commands', () => {
       it('returns an ERROR status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.ACCEPT,
+          payload: '',
           status: statuses.ERROR,
           message: CR.accept.alreadyMember,
           notifications: [],
@@ -114,6 +115,7 @@ describe('executing commands', () => {
           it('returns an ERROR status', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ACCEPT,
+              payload: '',
               status: statuses.ERROR,
               message: CR.accept.belowThreshold(channel, 1, 0),
               notifications: [],
@@ -128,6 +130,7 @@ describe('executing commands', () => {
             it('returns SUCCESS status', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.ACCEPT,
+                payload: '',
                 status: statuses.SUCCESS,
                 message: CR.accept.success(channel),
                 notifications: [],
@@ -141,6 +144,7 @@ describe('executing commands', () => {
             it('returns ERROR status', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.ACCEPT,
+                payload: '',
                 status: statuses.ERROR,
                 message: CR.accept.dbError,
                 notifications: [],
@@ -160,6 +164,7 @@ describe('executing commands', () => {
           it('returns SUCCESS status', async () => {
             expect(await processCommand(_dispatchable)).to.eql({
               command: commands.ACCEPT,
+              payload: '',
               status: statuses.SUCCESS,
               message: CR.accept.success(channel),
               notifications: [],
@@ -173,6 +178,7 @@ describe('executing commands', () => {
           it('returns ERROR status', async () => {
             expect(await processCommand(_dispatchable)).to.eql({
               command: commands.ACCEPT,
+              payload: '',
               status: statuses.ERROR,
               message: CR.accept.dbError,
               notifications: [],
@@ -188,6 +194,7 @@ describe('executing commands', () => {
       it('returns ERROR status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.ACCEPT,
+          payload: '',
           status: statuses.ERROR,
           message: CR.accept.dbError,
           notifications: [],
@@ -203,6 +210,7 @@ describe('executing commands', () => {
       it('returns ERROR status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.ACCEPT,
+          payload: '',
           status: statuses.ERROR,
           message: CR.accept.dbError,
           notifications: [],
@@ -215,6 +223,7 @@ describe('executing commands', () => {
         const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'accept my life') }
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -263,6 +272,7 @@ describe('executing commands', () => {
             it('returns a SUCCESS status, message, and notifications', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.ADD,
+                payload: newAdminPhoneNumber,
                 status: statuses.SUCCESS,
                 message: CR.add.success(newAdminPhoneNumber),
                 notifications: [
@@ -294,6 +304,7 @@ describe('executing commands', () => {
             it('returns an ERROR status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.ADD,
+                payload: newAdminPhoneNumber,
                 status: statuses.ERROR,
                 message: CR.add.dbError(newAdminPhoneNumber),
                 notifications: [],
@@ -359,6 +370,7 @@ describe('executing commands', () => {
         it('returns a ERROR status/message', () => {
           expect(result).to.eql({
             command: commands.ADD,
+            payload: 'foo',
             status: statuses.ERROR,
             message: CR.add.invalidPhoneNumber('foo'),
             notifications: [],
@@ -372,7 +384,7 @@ describe('executing commands', () => {
         db,
         channel,
         sender: subscriber,
-        sdMessage: sdMessageOf(channel, 'ADD +12223334444'),
+        sdMessage: sdMessageOf(channel, `ADD ${newAdminPhoneNumber}`),
       }
       let result
       beforeEach(async () => (result = await processCommand(dispatchable)))
@@ -384,6 +396,7 @@ describe('executing commands', () => {
       it('returns an UNAUTHORIZED status/message', () => {
         expect(result).to.eql({
           command: commands.ADD,
+          payload: newAdminPhoneNumber,
           status: statuses.UNAUTHORIZED,
           message: CR.add.notAdmin,
           notifications: [],
@@ -410,6 +423,7 @@ describe('executing commands', () => {
       it('returns a SUCCESS status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.DECLINE,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.decline.success,
           notifications: [],
@@ -423,6 +437,7 @@ describe('executing commands', () => {
       it('returns an ERROR status', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.DECLINE,
+          payload: '',
           status: statuses.ERROR,
           message: CR.decline.dbError,
           notifications: [],
@@ -435,6 +450,7 @@ describe('executing commands', () => {
         const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'decline this') }
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -452,6 +468,7 @@ describe('executing commands', () => {
       it('sends a help message to sender', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.HELP,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.help.admin,
           notifications: [],
@@ -465,6 +482,7 @@ describe('executing commands', () => {
       it('sends a help message to sender', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.HELP,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.help.subscriber,
           notifications: [],
@@ -478,6 +496,7 @@ describe('executing commands', () => {
       it('sends a subscriber help message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.HELP,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.help.subscriber,
           notifications: [],
@@ -495,6 +514,7 @@ describe('executing commands', () => {
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -512,6 +532,7 @@ describe('executing commands', () => {
       it('sends an info message with more information', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.ADMIN](channel),
           notifications: [],
@@ -525,6 +546,7 @@ describe('executing commands', () => {
       it('sends an info message with less information', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.SUBSCRIBER](channel),
           notifications: [],
@@ -538,6 +560,7 @@ describe('executing commands', () => {
       it('sends a subscriber info message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.info[memberTypes.NONE](channel),
           notifications: [],
@@ -555,6 +578,7 @@ describe('executing commands', () => {
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -588,6 +612,7 @@ describe('executing commands', () => {
         it('returns UNAUTHORIZED', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.INVITE,
+            payload: inviteePhoneNumber,
             status: statuses.UNAUTHORIZED,
             message: CR.invite.unauthorized,
             notifications: [],
@@ -607,6 +632,7 @@ describe('executing commands', () => {
           it('returns ERROR', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.INVITE,
+              payload: 'foo',
               status: statuses.ERROR,
               message: messagesIn('EN').parseErrors.invalidPhoneNumber('foo'),
               notifications: [],
@@ -631,6 +657,7 @@ describe('executing commands', () => {
             it('returns ERROR status, success message, and no payload', () => {
               expect(res).to.eql({
                 command: commands.INVITE,
+                payload: inviteePhoneNumber,
                 status: statuses.ERROR,
                 message: CR.invite.success,
                 notifications: [],
@@ -655,6 +682,7 @@ describe('executing commands', () => {
               it('returns ERROR and no payload', () => {
                 expect(res).to.eql({
                   command: commands.INVITE,
+                  payload: inviteePhoneNumber,
                   status: statuses.ERROR,
                   message: CR.invite.success,
                   notifications: [],
@@ -676,6 +704,7 @@ describe('executing commands', () => {
               it('returns SUCCESS, message, and notification for invitee', () => {
                 expect(res).to.eql({
                   command: commands.INVITE,
+                  payload: inviteePhoneNumber,
                   status: statuses.SUCCESS,
                   message: CR.invite.success,
                   notifications: [
@@ -708,6 +737,7 @@ describe('executing commands', () => {
         it('returns SUCCESS with notification for invitee', () => {
           expect(res).to.eql({
             command: commands.INVITE,
+            payload: inviteePhoneNumber,
             status: statuses.SUCCESS,
             message: CR.invite.success,
             notifications: [
@@ -730,6 +760,7 @@ describe('executing commands', () => {
         issueInviteStub.returns(Promise.resolve(true))
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INVITE,
+          payload: inviteePhoneNumber,
           status: statuses.SUCCESS,
           message: CR.invite.success,
           notifications: [
@@ -757,6 +788,7 @@ describe('executing commands', () => {
       it('responds with an ERROR', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.JOIN,
+          payload: '',
           status: statuses.ERROR,
           message: CR.join.inviteRequired,
           notifications: [],
@@ -788,6 +820,7 @@ describe('executing commands', () => {
           it('returns SUCCESS status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.JOIN,
+              payload: '',
               status: statuses.SUCCESS,
               message: CR.join.success(channel),
               notifications: [],
@@ -801,6 +834,7 @@ describe('executing commands', () => {
           it('returns ERROR status/message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.JOIN,
+              payload: '',
               status: statuses.ERROR,
               message: CR.join.error,
               notifications: [],
@@ -821,6 +855,7 @@ describe('executing commands', () => {
         it('returns "already member" status/message', () => {
           expect(result).to.eql({
             command: commands.JOIN,
+            payload: '',
             status: statuses.ERROR,
             message: CR.join.alreadyMember,
             notifications: [],
@@ -840,6 +875,7 @@ describe('executing commands', () => {
         it('returns "already member" status/message', () => {
           expect(result).to.eql({
             command: commands.JOIN,
+            payload: '',
             status: statuses.ERROR,
             message: CR.join.alreadyMember,
             notifications: [],
@@ -858,6 +894,7 @@ describe('executing commands', () => {
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -891,6 +928,7 @@ describe('executing commands', () => {
         it('returns SUCCESS status/message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.LEAVE,
+            payload: '',
             status: statuses.SUCCESS,
             message: CR.leave.success,
             notifications: [],
@@ -903,6 +941,7 @@ describe('executing commands', () => {
         it('returns ERROR status/message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.LEAVE,
+            payload: '',
             status: statuses.ERROR,
             message: CR.leave.error,
             notifications: [],
@@ -923,6 +962,7 @@ describe('executing commands', () => {
       it('returns UNAUTHORIZED status/message', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
+          payload: '',
           status: statuses.UNAUTHORIZED,
           message: CR.leave.notSubscriber,
           notifications: [],
@@ -954,6 +994,7 @@ describe('executing commands', () => {
       it('returns SUCCESS status, message, and notifications', () => {
         expect(result).to.eql({
           command: commands.LEAVE,
+          payload: '',
           status: statuses.SUCCESS,
           message: CR.leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
@@ -974,6 +1015,7 @@ describe('executing commands', () => {
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -983,6 +1025,7 @@ describe('executing commands', () => {
   })
 
   describe('REMOVE command', () => {
+    const removalTargetNumber = channel.memberships[1].memberPhoneNumber
     let validateStub, isAdminStub, removeAdminStub
 
     beforeEach(() => {
@@ -1002,9 +1045,7 @@ describe('executing commands', () => {
       beforeEach(() => removeAdminStub.returns(Promise.resolve()))
 
       describe('when payload is a valid phone number', () => {
-        const removalTargetNumber = channel.memberships[1].memberPhoneNumber
-        const rawRemovalTargetNumber = parenthesize(removalTargetNumber)
-        const sdMessage = sdMessageOf(channel, `REMOVE ${rawRemovalTargetNumber}`)
+        const sdMessage = sdMessageOf(channel, `REMOVE ${removalTargetNumber}`)
         const dispatchable = { db, channel, sender, sdMessage }
         beforeEach(() => validateStub.returns(true))
 
@@ -1026,6 +1067,7 @@ describe('executing commands', () => {
             it('returns a SUCCESS status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
+                payload: removalTargetNumber,
                 status: statuses.SUCCESS,
                 message: CR.remove.success(removalTargetNumber),
                 notifications: [
@@ -1050,6 +1092,7 @@ describe('executing commands', () => {
             it('returns an ERROR status/message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.REMOVE,
+                payload: removalTargetNumber,
                 status: statuses.ERROR,
                 message: CR.remove.dbError(removalTargetNumber),
                 notifications: [],
@@ -1068,6 +1111,7 @@ describe('executing commands', () => {
           it('returns a SUCCESS status / NOOP message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REMOVE,
+              payload: removalTargetNumber,
               status: statuses.ERROR,
               message: CR.remove.targetNotAdmin(removalTargetNumber),
               notifications: [],
@@ -1089,6 +1133,7 @@ describe('executing commands', () => {
         it('returns a SUCCESS status / NOOP message', () => {
           expect(result).to.eql({
             command: commands.REMOVE,
+            payload: 'foo',
             status: statuses.ERROR,
             message: CR.remove.invalidPhoneNumber('foo'),
             notifications: [],
@@ -1098,7 +1143,7 @@ describe('executing commands', () => {
     })
 
     describe('when sender is not a admin', () => {
-      const sdMessage = sdMessageOf(channel, `REMOVE ${genPhoneNumber()}`)
+      const sdMessage = sdMessageOf(channel, `REMOVE ${removalTargetNumber}`)
       const dispatchable = { db, channel, sender: randomPerson, sdMessage }
       let result
 
@@ -1111,6 +1156,7 @@ describe('executing commands', () => {
       it('returns an SUCCESS status / NOT_NOOP message', () => {
         expect(result).to.eql({
           command: commands.REMOVE,
+          payload: removalTargetNumber,
           status: statuses.UNAUTHORIZED,
           message: CR.remove.notAdmin,
           notifications: [],
@@ -1139,6 +1185,7 @@ describe('executing commands', () => {
         it('returns SUCCESS status, message, and notifications', () => {
           expect(result).to.eql({
             command: commands.RENAME,
+            payload: 'foo',
             status: statuses.SUCCESS,
             message: CR.rename.success(channel.name, 'foo'),
             notifications: [
@@ -1163,6 +1210,7 @@ describe('executing commands', () => {
         it('returns ERROR status / message', () => {
           expect(result).to.eql({
             command: commands.RENAME,
+            payload: 'foo',
             status: statuses.ERROR,
             message: CR.rename.dbError(channel.name, 'foo'),
             notifications: [],
@@ -1177,6 +1225,7 @@ describe('executing commands', () => {
       it('returns UNAUTHORIZED status / message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RENAME,
+          payload: 'foo',
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
           notifications: [],
@@ -1190,6 +1239,7 @@ describe('executing commands', () => {
       it('returns UNAUTHORIZED status / message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RENAME,
+          payload: 'foo',
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
           notifications: [],
@@ -1218,6 +1268,7 @@ describe('executing commands', () => {
       it('returns a SUCCESS status in new language', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.SET_LANGUAGE,
+          payload: '',
           status: statuses.SUCCESS,
           message: messagesIn(languages.FR).commandResponses.setLanguage.success,
           notifications: [],
@@ -1233,6 +1284,7 @@ describe('executing commands', () => {
       it('returns an error status in new language', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.SET_LANGUAGE,
+          payload: '',
           status: statuses.ERROR,
           message: messagesIn(languages.FR).commandResponses.setLanguage.dbError,
           notifications: [],
@@ -1250,6 +1302,7 @@ describe('executing commands', () => {
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.NOOP,
+          payload: '',
           status: statuses.NOOP,
           message: '',
           notifications: [],
@@ -1297,7 +1350,7 @@ describe('executing commands', () => {
         const sdMessage = sdMessageOf(channel, commandStr)
         const dispatchable = { db, channel, sender, sdMessage }
 
-        it('attempts to update the hotlineOn field on the channel', async () => {
+        it('attempts to update the toggle field on the channel db record', async () => {
           updateChannelStub.returns(Promise.resolve())
           await processCommand(dispatchable)
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([
@@ -1318,6 +1371,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command,
               status: statuses.SUCCESS,
+              payload: '',
               message: CR.toggles[name].success(isOn),
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
@@ -1335,6 +1389,7 @@ describe('executing commands', () => {
           it('returns an ERROR status', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command,
+              payload: '',
               status: statuses.ERROR,
               message: CR.toggles[name].dbError(isOn),
               notifications: [],
@@ -1351,6 +1406,7 @@ describe('executing commands', () => {
         it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command,
+            payload: '',
             status: statuses.UNAUTHORIZED,
             message: CR.toggles[name].notAdmin,
             notifications: [],
@@ -1366,6 +1422,7 @@ describe('executing commands', () => {
         it('returns an UNAUTHORIZED status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command,
+            payload: '',
             status: statuses.UNAUTHORIZED,
             message: CR.toggles[name].notAdmin,
             notifications: [],
@@ -1385,6 +1442,7 @@ describe('executing commands', () => {
         it('returns a NOOP', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NOOP,
+            payload: '',
             status: statuses.NOOP,
             message: '',
             notifications: [],
@@ -1416,6 +1474,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.SET_DESCRIPTION,
             status: statuses.SUCCESS,
+            payload: 'foo channel description',
             message: CR.description.success('foo channel description'),
             notifications: [
               ...bystanderAdminMemberships.map(membership => ({
@@ -1438,6 +1497,7 @@ describe('executing commands', () => {
         it('returns ERROR status / message', () => {
           expect(result).to.eql({
             command: commands.SET_DESCRIPTION,
+            payload: 'foo channel description',
             status: statuses.ERROR,
             message: CR.description.dbError,
             notifications: [],
@@ -1451,6 +1511,7 @@ describe('executing commands', () => {
       it('returns UNAUTHORIZED status / message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.SET_DESCRIPTION,
+          payload: 'foo channel description',
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
           notifications: [],
@@ -1463,6 +1524,7 @@ describe('executing commands', () => {
       it('returns UNAUTHORIZED status / message', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.SET_DESCRIPTION,
+          payload: 'foo channel description',
           status: statuses.UNAUTHORIZED,
           message: CR.rename.notAdmin,
           notifications: [],
@@ -1498,6 +1560,7 @@ describe('executing commands', () => {
       }
       expect(await processCommand(dispatchable)).to.eql({
         command: commands.NOOP,
+        payload: '',
         status: statuses.NOOP,
         message: '',
         notifications: [],

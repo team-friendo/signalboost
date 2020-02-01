@@ -115,17 +115,17 @@ describe('messages module', () => {
     })
 
     describe('#rateLimitOccured', () => {
-      const [channelPhoneNumber, memberPhoneNumber] = times(2, genPhoneNumber)
+      const [channelPhoneNumber] = times(2, genPhoneNumber)
 
       describe('when resend interval is not null', () => {
         it('notifies user of next resend interval', () => {
-          expect(n.rateLimitOccurred(channelPhoneNumber, memberPhoneNumber, 2000)).to.include(
+          expect(n.rateLimitOccurred(channelPhoneNumber, 2000)).to.include(
             '2 sec',
           )
         })
 
         it('does not notify user of next resend interval', () => {
-          expect(n.rateLimitOccurred(channelPhoneNumber, memberPhoneNumber, null)).not.to.include(
+          expect(n.rateLimitOccurred(channelPhoneNumber, null)).not.to.include(
             '2 sec',
           )
         })

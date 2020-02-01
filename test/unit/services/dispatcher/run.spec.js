@@ -310,32 +310,50 @@ describe('dispatcher service', () => {
         },
       }
 
-      beforeEach(async () => {
-        findDeepStub.returns(Promise.resolve(signupChannel))
-        enqueueResendStub.returns(minResendInterval)
-        sock.emit('data', JSON.stringify(sdErrorMessage))
-        await wait(2 * socketDelay)
-      })
+      beforeEach(() => enqueueResendStub.returns(minResendInterval))
 
-      it('enqueues the message for resending', () => {
-        expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
-      })
+      describe('and there is a signup channel', () => {
+        beforeEach(async () => {
+          findDeepStub.returns(Promise.resolve(signupChannel))
+          sock.emit('data', JSON.stringify(sdErrorMessage))
+          await wait(2 * socketDelay)
+        })
 
-      it('notifies admins of the support channel', () => {
-        signupChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
-          expect(sendMessageStub.getCall(idx).args).to.eql([
-            sock,
-            memberPhoneNumber,
-            sdMessageOf(
-              { phoneNumber: signupPhoneNumber },
-              messagesIn(language).notifications.rateLimitOccurred(
-                channel.phoneNumber,
-                recipientNumber,
-                minResendInterval,
+        it('enqueues the message for resending', () => {
+          expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
+        })
+
+        it('notifies admins of the support channel', () => {
+          signupChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
+            expect(sendMessageStub.getCall(idx).args).to.eql([
+              sock,
+              memberPhoneNumber,
+              sdMessageOf(
+                { phoneNumber: signupPhoneNumber },
+                messagesIn(language).notifications.rateLimitOccurred(
+                  channel.phoneNumber,
+                  minResendInterval,
+                ),
               ),
-            ),
-          ]),
-        )
+            ]),
+          )
+        })
+      })
+
+      describe('and there is not a signup channel', () => {
+        beforeEach(async () => {
+          findDeepStub.returns(Promise.resolve(null))
+          sock.emit('data', JSON.stringify(sdErrorMessage))
+          await wait(2 * socketDelay)
+        })
+
+        it('enqueues the message for resending', () => {
+          expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
+        })
+
+        it('does not send any notifications', () => {
+          expect(sendMessageStub.callCount).to.eql(0)
+        })
       })
     })
 

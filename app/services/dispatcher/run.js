@@ -116,10 +116,12 @@ const relay = async (db, sock, channel, sender, inboundMsg) => {
   }
 }
 
+// (Database, Socket, SdMessage, number) -> Promise<void>
 const notifyRateLimitedMessage = async (db, sock, sdMessage, resendInterval) => {
-  const recipients = channelRepository.getAdminMemberships(
-    await channelRepository.findDeep(db, signupPhoneNumber),
-  )
+  const channel = await channelRepository.findDeep(db, signupPhoneNumber)
+  if (!channel) return Promise.resolve()
+
+  const recipients = channelRepository.getAdminMemberships(channel)
   return Promise.all(
     recipients.map(({ memberPhoneNumber, language }) =>
       signal.sendMessage(

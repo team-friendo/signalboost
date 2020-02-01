@@ -386,7 +386,6 @@ describe('messenger service', () => {
     })
 
     describe('when message is a command response', () => {
-      // TODO(aguestuser|mari): loop over all commands here
       beforeEach(async () => {
         await messenger.dispatch({
           dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
@@ -494,6 +493,7 @@ describe('messenger service', () => {
               },
               commandResult: {
                 command,
+                payload: parsedNewMemberPhoneNumber,
                 status: statuses.SUCCESS,
                 message: 'fake welcome!',
                 notifications: [],
@@ -527,6 +527,7 @@ describe('messenger service', () => {
               },
               commandResult: {
                 command,
+                payload: '',
                 status: statuses.SUCCESS,
                 message: 'fake command response message!',
                 notifications: [],
