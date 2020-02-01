@@ -16,7 +16,7 @@ const {
   signal: {
     signupPhoneNumber,
     defaultMessageExpiryTime,
-    minResendInterval,
+    setExpiryInterval,
     broadcastBatchSize,
     broadcastBatchInterval,
   },
@@ -122,7 +122,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
   await sendNotifications({ commandResult, dispatchable })
-  await wait(minResendInterval) // paranoid pause to ward off rate-limiting demons
+  await wait(setExpiryInterval) // to ensure welcome notification arrives first
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   return Promise.resolve()
 }
