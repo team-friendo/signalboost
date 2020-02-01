@@ -330,7 +330,6 @@ describe('dispatcher service', () => {
               { phoneNumber: signupPhoneNumber },
               messagesIn(language).notifications.rateLimitOccurred(
                 channel.phoneNumber,
-                recipientNumber,
                 minResendInterval,
               ),
             ),

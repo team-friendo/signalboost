@@ -17,6 +17,7 @@ const {
  *
  * type CommandResult = {
  *   command: string,
+ *   payload: string,
  *   status: string,
  *   message: string,
  *   notifications: Array<{ recipient: Array<string>, message: string }>
@@ -35,7 +36,7 @@ const execute = async (executable, dispatchable) => {
 
   // if payload parse error occured return early and notify sender
   if (executable.error)
-    return { command, status: statuses.ERROR, message: executable.error, notifications: [] }
+    return { command, payload, status: statuses.ERROR, message: executable.error, notifications: [] }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
@@ -58,7 +59,7 @@ const execute = async (executable, dispatchable) => {
   }[command] || (() => noop()))()
 
   result.notifications = result.notifications || []
-  return { command, ...result }
+  return { command, payload, ...result }
 }
 
 /********************

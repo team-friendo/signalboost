@@ -17,14 +17,14 @@ const { defaultLanguage } = require('../../../config')
  *
  * type ParseError = {
  *   command: string,
+ *   payload: string,
  *   error: string,
  * }
  *
  * type CommandMatch = {
  *   command: string,
  *   language: string,
- *   error: string?
- *   matches: Array<string>?
+ *   matches: Array<string>,
  * }
  *
  * `error` field shows an error string if a payload validation fails, is null otherwise
@@ -38,13 +38,8 @@ const { defaultLanguage } = require('../../../config')
 // string -> ParseExecutableResult
 const parseExecutable = msg => {
   const { command, language, error, matches } = findCommandMatch(msg) || {}
-  return error
-    ? { command, error }
-    : {
-        command: command || commands.NOOP,
-        language: language || defaultLanguage,
-        payload: !isEmpty(matches) ? matches[2] : '',
-      }
+  const payload = !isEmpty(matches) ? matches[2] : ''
+  return error ? { command, payload, error } : { command, payload, language }
 }
 
 // string -> CommandMatch
@@ -68,10 +63,12 @@ const findCommandMatch = msg => {
 
 // Array<CommandMatch> -> CommandMatch
 const pickLongestMatch = matchResults => {
-  // filter out empty matches, and return null if none found
-  const hits = matchResults.filter(({ matches }) => !isEmpty(matches))
+  // filter out empty matches, and return NOOP if none found
   // return the longest match (so that, eg, INVITER will get preference over INVITE)
-  return isEmpty(hits) ? null : hits.sort((a, b) => b.matches[1].length - a.matches[1].length)[0]
+  const hits = matchResults.filter(({ matches }) => !isEmpty(matches))
+  return isEmpty(hits)
+    ? { command: commands.NOOP, language: defaultLanguage }
+    : hits.sort((a, b) => b.matches[1].length - a.matches[1].length)[0]
 }
 
 // CommandMatch -> CommandMatch
@@ -103,7 +100,7 @@ const validateNoPayload = commandMatch => {
   // substitutes a NOOP command (signaling a broadcast message) if payload found for a no-payload command
   // so that (e.g) "hello everyone on the channel!" is not interpreted as a command
   const { language, matches } = commandMatch
-  return isEmpty(matches[2]) ? commandMatch : { command: commands.NOOP, language, matches: null }
+  return isEmpty(matches[2]) ? commandMatch : { command: commands.NOOP, language, matches: [] }
 }
 
 // CommandMatch -> CommandMatch | ParseError
@@ -115,8 +112,12 @@ const validatePhoneNumber = commandMatch => {
   const rawPhoneNumber = matches[2]
   const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
   return !isValid
-    ? { command, error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber) }
-    : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
+    ? {
+        command,
+        matches,
+        error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber),
+      }
+    : { command, matches: [...matches.slice(0, 2), phoneNumber], language }
 }
 
 module.exports = { parseExecutable }
