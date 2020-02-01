@@ -33,6 +33,8 @@
   # SYSTEM DEPENDENCIES #
   #######################
 
+# ssh_max_auth_retries: 3
+
   - name: update apt packages
     apt:
       update_cache: yes
@@ -125,6 +127,7 @@
       name: dev-sec.ssh-hardening
     vars:
       ssh_allow_groups: sshusers
+      ssh_max_auth_retries: 3
 
   - name: unlock admin users
     become: yes
