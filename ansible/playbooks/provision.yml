@@ -33,8 +33,6 @@
   # SYSTEM DEPENDENCIES #
   #######################
 
-# ssh_max_auth_retries: 3
-
   - name: update apt packages
     apt:
       update_cache: yes
