@@ -12,6 +12,7 @@ const defaults = {
   signupPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER,
   defaultMessageExpiryTime: 60 * 60 * 24, // 1 week
   expiryUpdateDelay: 200, // 200 millis
+  setExpiryInterval: 2000, // 2 sec
   minResendInterval: 60 * 1000, // 1 min
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
   broadcastBatchSize: 1,
@@ -30,6 +31,7 @@ const test = {
   welcomeDelay: 0.0001, // .0001 millis
   signupPhoneNumber: '+15555555555',
   expiryUpdateDelay: 1, // 1 milli
+  setExpiryInterval: 1, // 1 milli
   minResendInterval: 2, // 20 millis
   maxResendInterval: 256, // ~ 2.5 sec,
   broadcastBatchSize: 2,
