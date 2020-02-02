@@ -317,9 +317,6 @@ Note that to use the `boost` cli tool against your local dev server, you will al
 If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
 
 
-
-
-
 ###(7) Seed Data
 
 Once you've got the CLI installed, you can use the following to create 2 Twillio numbers. Please note that this is specific to our local development setup as it uses the -u to specify the ngrok tunnel domain you created, for Team Friendo we use signalboost.ngrok.io but your Ngrok reserved domain will be different:
@@ -409,33 +406,18 @@ make db.psql
 
 ### Using the Boost CLI 
 
-<<<<<<< HEAD
+
 ## Installing boost
 
-Assuming you have already provided secrets in `.env` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)), you can proceed to...
+Assuming you have already provided secrets in `.env` or `.env.dev` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)) and have already installed the CLI with:
 
-Install* the CLI with:
-=======
-Assuming you have already installed the CLI with:
->>>>>>> [211] initial rewrite of the readme to support more step by step approach
 
 ```shell
 make cli.install
 ```
 
-<<<<<<< HEAD
-(*NOTE: this puts the commands in `signalboost/cli/boost-commands` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
-
-You can uninstall it later with:
-
-``` shell
-make cli.uninstall
-```
-
 ## Using boost
 
-=======
->>>>>>> [211] initial rewrite of the readme to support more step by step approach
 You can administer any running signalboost instance with:
 
 ``` shell
@@ -478,8 +460,6 @@ For more detailed instructions on any of the commands, run:
 ``` shell
 boost <command> -h
 ```
-
-<<<<<<< HEAD
 ## A note on .env files and boost
 
 ### Using multiple environments
@@ -513,8 +493,6 @@ boost list-channels
 
 To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
 
-=======
->>>>>>> [211] initial rewrite of the readme to support more step by step approach
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
 
@@ -622,23 +600,10 @@ shell
 SIGNALBOOST_HOST_URL=%DOMAIN NAME FOR PROD SERVER%
 SIGNALBOOST_API_TOKEN=%HEX STRING%
 
-<<<<<<< HEAD
 # letsencrypt/nginx proxy configs
 
 VIRTUAL_HOST=%DOMAIN NAME FOR PROD SERVER%
 LETSENCRYPT_HOST=%DOMAIN NAME FOR PROD SERVER%
-=======
-# signal-cli
-
-SIGNAL_CLI_VERSION=0.6.2
-SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
-SIGNAL_CLI_PASSWORD=%SOME STRONG PASSWORD%
-
-# letsencrypt/nginx proxy configs
-
-VIRTUAL_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
-LETSENCRYPT_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
->>>>>>> [211] initial rewrite of the readme to support more step by step approach
 LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
 
 # twilio
@@ -776,6 +741,7 @@ We have a cli tool for performing common sysadmin tasks on running signalboost i
 ``` shell
 make cli.install
 ```
+
 To learn more about how the CLI tool works, see [Using the CLI](#cli)
 
 **(5) List existing numbers/channels:**
