@@ -1,4 +1,4 @@
-# signalboost
+# Signalboost
 
 Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
 
@@ -115,7 +115,7 @@ Let's Encrypt [here](https://letsencrypt.org/) does not require you to create an
 
 If you want to run signalboost in your local development environment a paid "basic" ngrok account is needed (https://ngrok.com/) so you can create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. 
 
-**Generate a Signalboost API Token**
+**Signalboost API Token**
 
 You will need a hex string for the Signalboost API Token for both a production deploy and local development. To generate a decently random 32-byte hex string you could do the following on the command line of any *nix system running python3:
 
@@ -133,7 +133,7 @@ We're so happy you want to help write code for signalboost! If you have not alre
 
 Please also read our `CONTRIBUTING.md` file, located here:
 
-https://0xacab.org/Team Friendo/signalboost/blob/master/CONTRIBUTING.md
+https://0xacab.org/team-friendo/signalboost/blob/master/CONTRIBUTING.md
 
 
 ## Setting up your local development environment 
@@ -200,7 +200,7 @@ You will need to provide your own values for credentials listed in `.env.dev`. A
 
 Configuration for development basically involves creating your initial .env.dev file and loading it with the details you created in the [System and Service Requirements](#services)  section above.
 
-**If you are member of Team Friendo we povide these for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section.** 
+> If you are member of Team Friendo we povide these for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
 
 #### Secrets for General Public
 
@@ -263,7 +263,7 @@ make _.unlock
 
 which runs `./bin/blackbox/decrypt_all_files` to upack our .env and other configuration files to get you what you need. 
 
-**GOTCHA WARNING:** if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`
+> GOTCHA WARNING: if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`
 
 
 ### (4) Run Setup 
