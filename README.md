@@ -6,11 +6,12 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 
 * [Overview](#overview)
 * [Application Design](#design)
+* [System and Service Requirements](#services)
 * [Developer Guide](#developer-guide)
-* [Using the CLI](#cli)
 * [Sysadmin Guide](#sysadmin-guide)
   * [Deploy Instructions for General Public](#deploy-public)
   * [Deploy Instructions for Team Friendo](#deploy-Team Friendo)
+* [Using the Signalboost App, Makefile and Boost CLI](#app-details)
 
 # Overview <a name="overview"></a>
 
@@ -76,23 +77,23 @@ Signalboost relies on a few external service and tools both in production and so
 
 ## Getting started
 
-To host your own instance of Signalboost need:
+To host your own instance of Signalboost you need:
 
 * A server running Debian or Ubuntu GNU/Linux distributions with a static IP address as your host server.
 * A local computer able to run Ansible to deploy the code to your signalboost host server.
 * A domain with an A record pointing to the host server’s static IP address.
 * A Twillio account (https://www.twilio.com/) that provides the phone numbers that signalboost will use. 
 * An email address to provide to Let's Encrypt (https://letsencrypt.org/) for easy, seamless ssl support.
-* A signalboost API Token, a hex key created by you to authenticate on your new signalboost API.
+* A Signalboost API Token created by you to authenticate on your Signalboost API.
 
-To do local development for Signalboost you only need: 
+To do local development for Signalboost you need: 
 
 * A local computer able to run node and docker, git and the development tools of your choice. 
 * A Twillio account (https://www.twilio.com/) that provides the phone numbers that signalboost will use. 
 * A paid Ngrok account https://dashboard.ngrok.com/billing/plan that allows secure tunnelling to your localhost's signalboost API.
-* A signalboost API Token, a hex key created by you to authenticate on your new signalboost API.
+* A Signalboost API Token created by you to authenticate on your Signalboost API.
 
-We'll address the setup of host and development systems in the Developer and Sysadmin guides later, but for now the next step is to make sure you have the services and authentication details you need to proceed for the configuration you want to do.
+We'll address the setup of host and development systems in the Developer and Sysadmin guides later, but for now the next step is to make sure you have the services and authentication details you need for the configuration you want to do.
 
 
 ## Setup third party services and other details
@@ -129,7 +130,7 @@ python
 
 # Developer Guide <a name="#developer-guide"></a>
 
-We're so happy you want to help write code for signalboost! If you have not already reviewed the [System and Service Requirements](#services) section above please start there.  
+We're so happy you want to help write code for Signalboost! If you have not already reviewed the [System and Service Requirements](#services) section above please start there.  
 
 Please also read our `CONTRIBUTING.md` file, located here:
 
@@ -147,6 +148,7 @@ First you'll need to clone the repo:
 git clone git@0xacab.org:Team Friendo/signalboost
 cd signalboost
 ```
+
 
 ### (2) Install dependancies
 
@@ -200,7 +202,7 @@ You will need to provide your own values for credentials listed in `.env.dev`. A
 
 Configuration for development basically involves creating your initial .env.dev file and loading it with the details you created in the [System and Service Requirements](#services)  section above.
 
-> If you are member of Team Friendo we povide these for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
+> If you are member of Team Friendo we povide these service details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
 
 #### Secrets for General Public
 
@@ -245,6 +247,7 @@ NGROK_AUTH_TOKEN=%43_BYTE_HEX STRING%
 NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
 ```
 
+
 #### Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
@@ -260,7 +263,6 @@ Now that you are whitelisted, you can use blackbox to decrypt secrets and source
 ``` shell
 make _.unlock
 ```
-
 which runs `./bin/blackbox/decrypt_all_files` to upack our .env and other configuration files to get you what you need. 
 
 > GOTCHA WARNING: if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`
@@ -273,7 +275,6 @@ This will build Signalboost's docker containers, install its node dependencies, 
 ``` shell
 make _.setup
 ```
-
 It will take a moment the first time it runs as it downloads the docker images and other resources. 
 
 
@@ -287,7 +288,7 @@ Run the app in dev mode with:
 make dev.up
 ```
 
-Assuming everything worked as expect so far you should see a log output as the docker container start up and towards the end you should see Something like `[Signalboost  xxxxxx] > Signalboost running!`
+Assuming everything worked as expect so far you should see a log output as the docker containers start up and towards the end you should see something like `[Signalboost  xxxxxx] > Signalboost running!`.
 
 To shut the app down gracefully (can take a while for all containers to spin down):
 
@@ -301,15 +302,18 @@ To force all containers to shutdown immediately:
 make dev.abort
 ```
 
-### (6) Install the Boost CLI you will use to administer channels <a name="cli"></a>
+### (6) Install the Boost CLI <a name="cli"></a>
 
-Install* the CLI with:
+You need the Boost CLI to create and administer channels.
+
+Install the CLI with:
 
 ```shell
 make cli.install
 ```
 
-This puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`.
+This puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
+
 
 You can uninstall it later with:
 
@@ -322,6 +326,7 @@ Note that to use the `boost` cli tool against your local dev server, you will al
 If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
 
 Learn more about how the CLI tools works in [Using the Boost CLI] (#boost-cli).
+
 
 
 ### (7) Create Seed Data
@@ -346,7 +351,6 @@ boost create-channel \
     -a <your_actual_phone_number> \
     -u signalboost.ngrok.io
 ```
-
 Congrats! you should now have your first channel running on your local development instance of signalboost. 
 
 ## Using the App and Tools
@@ -528,11 +532,11 @@ If you need help finding a server, we'd recommend shopping for a VPS from one th
 
 With your new server login as root and:
 
-- ensure (for now) that root login works and add your SSH key to root 
+- ensure (for now) that root login works and add your local users SSH key to root 
 - run `apt update` to update apt
 - install python with `apt install python3`
 
-During the Ansible configuration steps additional users will be created and the root login locked down but we need it for now. 
+> During the Ansible configuration steps additional users will be created and the root login locked down, but we need it for now. Do not lock down ssh for the root login at this point, if you do ansible's setup later will fail.
 
 ### (2) Get signalboost
 
@@ -581,12 +585,13 @@ cp .env.example .env
 cp ansible/inventory.example ansible/inventory
 ```
 
+#### Configure .env
+
 You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS` with your own values from the System and Service Requirements section above as well as the static IP address of your production host server. 
 
 For production deploy only these need to be set... 
 
-Provide your servers domain name the signalboost API Token you generated for:
-
+Provide your server's domain name the Signalboost API Token you generated:
 ```
 # Signalboost API service //  Used in Production mode only these should be the details of your production server
 # URL is used by the Boost cli as the default url for the API, overrode with -u to specify ngrok host locally. 
@@ -599,19 +604,17 @@ SIGNALBOOST_HOST_URL=%FULL DOMAIN NAME FOR PROD SERVER%
 SIGNALBOOST_API_TOKEN=%HEX STRING%
 ```
 
+Provide your Twillio SID and Auth Token:
 ```
-# Signup channel number // Optional Phone number used by Signalboost for the special "signup channel" 
-# Use Boost cli to create these, you only need the one specific to the mode you are running in
-# Format must be e164 (https://www.twilio.com/docs/glossary/what-e164), with the + and with no special characters
-
-SIGNUP_CHANNEL_NUMBER=%+15554445555%
-SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
-
 # Twilio // Required in all modes to create channel numbers. Signup at https://www.twilio.com/  
 # Free accounts work but are limited to one phone number which will limit your ability to create channels
 
 TWILIO_ACCOUNT_SID=%HEX STRING%
 TWILIO_AUTH_TOKEN=%HEX STRING%
+```
+
+Provide your server's domain name for both the `VIRTUAL_HOST` and `LETSENCRYPT_HOST` options. Then provide a working email address for Let's Encrypt to use:
+```
 
 # letsencrypt/nginx proxy configs // Used in Production mode only. Works magically if you provide a valid email, no registration needed
 # Automatically creates and refreshes the SSL cert for the Nginx proxy server in production. https://letsencrypt.org/ 
@@ -619,13 +622,41 @@ TWILIO_AUTH_TOKEN=%HEX STRING%
 VIRTUAL_HOST=%FULL DOMAIN NAME FOR PROD SERVER%
 LETSENCRYPT_HOST=%FULL DOMAIN NAME FOR PROD SERVER%
 LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
-
 ```
 
-include ansible/inventory
+For now we'll skip this optional item because we need the Boost CLI to creat this channel on twillio:
+```
+# Signup channel number // Optional Phone number used by Signalboost for the special "signup channel" 
+# Use Boost cli to create these, you only need the one specific to the mode you are running in
+# Format must be e164 (https://www.twilio.com/docs/glossary/what-e164), with the + and with no special characters
+
+SIGNUP_CHANNEL_NUMBER=%+15554445555%
+SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
+```
+
+#### Configure ansible/inventory
+
+In the  ansible `inventory` file we created we will define the intial credentials ansible will create and use to setup Signalboost.  You will need the static `{{ IP ADDRESS OF YOUR REMOTE HOST }}`, `{{ A USERNAME TO BE CREATED BY ANSIBLE, NOT ROOT }}` and the local `{{ PATH TO YOUR SSH PRIVATE KEY }}`.
+
+You must add at least one `admin`, that matches the ansible_user you defined  `{{ USERNAME OF YOUR ANSIBLE_USER ABOVE }}`. Add additional admins if you need additional users on your server:
+
+```
+signalboost:
+  hosts:
+    {{ IP ADDRESS OF YOUR REMOTE HOST }}
+  vars:
+    ansible_user: {{ A USERNAME TO BE CREATED BY ANSIBLE, NOT ROOT }}
+    ansible_ssh_private_key_file: {{ PATH TO YOUR SSH PRIVATE KEY }}
+    ansible_ssh_common_args: '-o IdentitiesOnly=yes'
+    admins:
+      - name: {{ USERNAME OF YOUR ANSIBLE_USER ABOVE }}
+        ssh_key: {{ SSH PUBKEY OF AN ADMIN }}
+      - name: {{ USERNAME OF ANOTHER ADMIN }}
+        ssh_key: {{ SSH PUBKEY OF ANOTHER ADMIN }}
+```
 
 
-**(3) Provision and deploy signalboost:**
+### (3) Provision and deploy Signalboost 
 
 This step uses ansible to provision a server, install signalboost and all of its dependencies, then deploy and run signalboost.
 
@@ -655,18 +686,19 @@ cd ansible
 ansible-playbook -i inventory -e "sb_host=antarctica env_file=/path/to/.env.antarctica" playbooks/main.yml
 ```
 
-**(4) Install the `boost` CLI tool:**
+### (4) Install the `boost` CLI tool
 
-signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
+Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
 
 Install it with:
 
 ``` shell
 make cli.install
 ```
-Learn more about how the CLI tools works in [Using the CLI](#cli).
+Learn more about how the CLI tools works in [Using the Boost CLI](#cli)
 
-**(6) Provision new twilio phone numbers:**
+
+### (6) Provision new Twilio phone numbers
 
 The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
 
@@ -674,17 +706,20 @@ The below will provision 2 phone numbers in area code 510. (If you omit the `-n`
 boost new_numbers -n 2 -a 510
 ```
 
-**(7) Provision new signalboost channels:**
+### (7) Provision new Signalboost channels
+
 
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a new channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+
 
 ``` shell
 boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
-For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
+For more commands supported by the Boost CLI tool see the [Administering](#administering) section below.
 
-**(8) Deploy updates to signalboost:**
+
+### (8) Deploy updates to Signalboost
 
 On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
@@ -693,11 +728,12 @@ cd ansible
 ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
+
 ## Deploy Instructions for Team Friendo <a name="deploy-Team Friendo"></a>
 
 If you are a member of `Team Friendo`, here are instructions on how to provision, deploy, and maintain a running signalboost instance. :)
 
-*NOTE: If you are administering an already-existent signalboost instance, you can omit steps 3 and 4.*
+> NOTE: If you are administering an already-existent signalboost instance, you can omit steps 3 and 4.
 
 #### Initial Deployment
 
@@ -751,7 +787,7 @@ We have a cli tool for performing common sysadmin tasks on running signalboost i
 make cli.install
 ```
 
-To learn more about how the CLI tool works, see [Using the CLI](#cli)
+To learn more about how the CLI tool works, see [Using the Boost CLI](#cli)
 
 **(5) List existing numbers/channels:**
 
@@ -799,7 +835,7 @@ make _.deploy
 ```
 
 
-## Using the Signalboost App and Tools
+## Using the Signalboost App, Makefile and Boost CLI <a href="app-details"></a>
 
 With the app running...
 
@@ -813,7 +849,8 @@ Any admin should be able to:
 * Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
 * Receive all messages broadcast to the channel
 
-### Our Makefile
+
+### Makefile
 
 We have a lot of scripts to help run the app that are all defined in the repo's `Makefile`. You can list them all with:
 
