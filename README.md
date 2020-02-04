@@ -9,8 +9,6 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 * [System and Service Requirements](#services)
 * [Developer Guide](#developer-guide)
 * [Sysadmin Guide](#sysadmin-guide)
-  * [Deploy Instructions for General Public](#deploy-public)
-  * [Deploy Instructions for Team Friendo](#deploy-Team Friendo)
 * [Using the Signalboost App, Makefile and Boost CLI](#app-details)
 
 # Overview <a name="overview"></a>
@@ -138,7 +136,6 @@ https://0xacab.org/team-friendo/signalboost/blob/master/CONTRIBUTING.md
 
 
 ## Setting up your local development environment 
-
 
 ### (1) Get Signalboost
 
@@ -507,10 +504,12 @@ To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you coul
 
 Want to deploy an instance of Signalboost on the official Team Friendo server or your own server? Great! This section is for you!
 
-It contains guides on system requirements you'll need to get started and two separate guides for people who want to run their own instances of Signalboost ([Deploy Instructions for General Public](#deploy-public)) and Team Friendo members trying to learn how we deploy the mainline instance ([Deploy Instructions for Maintainers](#deploy-Team Friendo))
+If you are a member of Team Friendo look for details here about how to use [blackbox](https://github.com/StackExchange/blackbox) to access our shared configuration files.
+
+If you have not already reviewed the [System and Service Requirements](#services) section above please start there to ensure you have the configuration details you'll need. 
 
 
-## Deploy Instructions for General Public <a name="deploy-public"></a>
+## Deploy Instructions <a name="deploy-guide"></a>
 
 If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
 
@@ -528,6 +527,12 @@ If you need help finding a server, we'd recommend shopping for a VPS from one th
 - [Mayfirst](https://mayfirst.org)
 
 *NOTE: We do not recommend DigitalOcean, as a matter of fact it absolutely will not work at all as Signal blocks traffic from this service.*
+
+If you are a member of Team Friendo you can:
+
+``` shell
+./bin/get-machine
+```
 
 With your new server login as root and:
 
@@ -576,13 +581,20 @@ ansible-galaxy install dev-sec.ssh-hardening
 
 ### (4) Complete configuration 
 
-You will need to customize two files with the service and system details. Copy those files that with:
+If you are member of Team Friendo we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another admin for install you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with 
+
+``` shell
+make _.unlock
+```
+
+If you are not a member of Team Friendo you will need to customize two files with the service and system details. Copy those files that with:
 
 ``` shell
 cd path/to/signalboost
 cp .env.example .env
 cp ansible/inventory.example ansible/inventory
 ```
+And complete these steps to get the files configured. 
 
 #### Configure .env
 
@@ -637,7 +649,7 @@ SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
 
 In the  ansible `inventory` file we created we will define the intial credentials ansible will create and use to setup Signalboost.  You will need the static `{{ IP ADDRESS OF YOUR REMOTE HOST }}`, `{{ A USERNAME TO BE CREATED BY ANSIBLE, NOT ROOT }}` and the local `{{ PATH TO YOUR SSH PRIVATE KEY }}`.
 
-You must add at least one `admin`, that matches the ansible_user you defined  `{{ USERNAME OF YOUR ANSIBLE_USER ABOVE }}`. Add additional admins if you need additional users on your server:
+You must add at least one `admin`, that matches the ansible_user you defined above. Add additional admins if you need additional users on your server. The `{{ SSH PUBKEY OF AN ADMIN }}` in this case expects a full pub key contained in single quotes: 
 
 ```
 signalboost:
@@ -657,12 +669,12 @@ signalboost:
 
 ### (5) Provision and deploy Signalboost 
 
-This step uses ansible to provision a server, install signalboost and all of its dependencies, then deploy and run signalboost.
+This step uses ansible to provision a server, install Signalboost and all of its dependencies, then deploy and run Signalboost.
 
 It uses four playbooks (all of which can be found in the `ansible/playbooks` directory):
 
 1. `provision.yml` (sets up users and system dependencies, performs basic server hardening)
-1. `deploy.yml` (builds signalboost docker containers, installs and runs signalboost inside of them)
+1. `deploy.yml` (builds Signalboost docker containers, installs and runs Signalboost inside of them)
 1. `harden.yml` (performs advanced server hardening -- takes a long time!)
 
 You can run all playbooks with one command:
@@ -685,7 +697,7 @@ cd ansible
 ansible-playbook -i inventory -e "sb_host=antarctica env_file=/path/to/.env.antarctica" playbooks/main.yml
 ```
 
-### (6) Install the `boost` CLI tool
+### (6) Install the Boost CLI tool
 
 Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
 
@@ -697,69 +709,46 @@ make cli.install
 Learn more about how the CLI tools works in [Using the Boost CLI](#cli)
 
 
-### (7) Provision new Twilio phone numbers
+### (7) Channel setup with the Boost CLI
 
-The below will provision 2 phone numbers in area code 510. (If you omit the `-n` and `-a` flag, boost will provision 1 number in area code 929.)
+Your local instance of the Boost CLI will read the .env file and use the remote production server details you defined there, so these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
+
+
+#### Provision two Twillio numbers
+
+The below will provision 2 phone numbers in area code 510:
 
 ``` shell
-boost new_numbers -n 2 -a 510
+boost create-number -n 2 -a 510
 ```
 
-### (8) Provision new Signalboost channels
+> NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.
 
 
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a new channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+#### Provision a new Signalboost channel
 
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
 boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
-For more commands supported by the Boost CLI tool see the [Administering](#administering) section below.
+#### List existing numbers and channels
 
+You can check out what numbers and channels already exist with:
 
-### (9) Deploy updates to Signalboost
+```shell
+boost list-numbers
+boost list-channels
+```
+
+### (9) Deploy later updates to Signalboost
 
 On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
 
 ``` shell
 cd ansible
 ansible-playbook -i inventory playbooks/deploy.yml
-```
-
-
-## Deploy Instructions for Team Friendo <a name="deploy-Team Friendo"></a>
-
-If you are a member of `Team Friendo`, here are instructions on how to provision, deploy, and maintain a running signalboost instance. :)
-
-> NOTE: If you are administering an already-existent signalboost instance, you can omit steps 3 and 4.
-
-#### (1) Initial Deployment
-
-**(1) Load secrets:**
-
-``` shell
-make _.unlock
-```
-
-*NOTE: we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. It is provided in `signalboost/bin/` as a convenience.
-
-
-**(2) Obtain a server:**
-
-*NOTE: If you are administering an already-existing Signalboost instance, omit this step and skip straight to Step 5  ! :)*
-
-``` shell
-./bin/get-machine
-```
-
-**(3) Provision and deploy Signalboost:**
-
-*NOTE: If you are administering an already-existing Signalboost instance, omit this step and skip straight to Step 5  ! :)*
-
-``` shell
-cd ansible
-ansible-playbook -i inventory playbooks/main.yml
 ```
 
 *Variation 1:* The above will deploy secrets by copying them from `<PROJECT_ROOT>/.env` on your local machine. If you would like to copy them from elsewhere, provide alternate path to the `deploy_file` ansible variable (specified with an `-e deploy_file=<...>` flag). For example, to copy environment variables from `/path/to/development.env`, run:
@@ -769,7 +758,7 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml -e env_file /path/to/development.env
 ```
 
-*Variation 2:*: If you would like to deploy secrets by decrypting the copy of `.env.gpg` under version control (and thus more likely to be up-to-date), add the `-e "deploy_method=blackbox"` flag. For example:
+*Variation 2:*: If you are a member of Team Friendo and you would like to deploy secrets by decrypting the copy of `.env.gpg` under version control (and thus more likely to be up-to-date), add the `-e "deploy_method=blackbox"` flag. For example:
 
 ``` shell
 cd ansible
@@ -778,6 +767,7 @@ ansible-playbook -i inventory playbooks/main.yml -e deploy
 
 *Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy signalboost`) to complete, and proceed to the following steps...
 
+<<<<<<< HEAD
 **(4) Install the `boost` cli tool:**
 
 We have a cli tool for performing common sysadmin tasks on running Signalboost instances. You can install it with:
@@ -825,6 +815,8 @@ On subsequent (re)deployments, you do not need to run the `provision`, `configur
 cd ansible
 ansible-playbook -i inventory playbooks/deploy.yml
 ```
+=======
+>>>>>>> [211] now with merged team friendo details and more cleanup
 
 If you would like an easier way to do this (and are okay with the `env_file` location being set to `<PROJECT_ROOT>/.env` and the `secrets_mode` set to `copy`), you can simply run:
 
@@ -833,8 +825,7 @@ cd <PROJECT_ROOT>
 make _.deploy
 ```
 
-
-## Using the Signalboost App, Makefile and Boost CLI <a href="app-details"></a>
+# Using the Signalboost App, Makefile and Boost CLI <a href="app-details"></a>
 
 With the app running...
 
