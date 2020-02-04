@@ -110,11 +110,11 @@ To get Twilio credentials, sign up for a Twilio account [here](https://www.twili
 
 **Let's Encrypt Account** 
 
-Let's Encrypt [here](https://letsencrypt.org/) does not require you to create an account, but it will require you to provide an email address in our configuration files so decided what address you want to use here.
+[Let's Encrypt] (https://letsencrypt.org/) does not require you to create an account, but it will require you to provide an email address in our configuration files so decided what address you want to use here.
 
 **NGROK Tunnel**
 
-If you want to run signalboost in your local development environment a paid "basic" ngrok account is needed (https://ngrok.com/) so you can create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. 
+To run Signalboost in your local development environment you need a paid "basic" ngrok account is needed (https://ngrok.com/). Only the paid account will allow you to create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. 
 
 **Signalboost API Token**
 
@@ -145,7 +145,7 @@ https://0xacab.org/team-friendo/signalboost/blob/master/CONTRIBUTING.md
 First you'll need to clone the repo:
 
 ``` shell
-git clone git@0xacab.org:Team Friendo/signalboost
+git clone git@0xacab.org:team-friendo/signalboost
 cd signalboost
 ```
 
@@ -518,7 +518,7 @@ We've designed our deploy process so that you should be able to use it with your
 
 ### (1) Setup your production host server
 
-Signup for a server and note its static IP. 
+Signup for a server running either the Debian or Ubuntu GNU/Linux distributions and note its static IP. 
 
 If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
 
@@ -527,11 +527,11 @@ If you need help finding a server, we'd recommend shopping for a VPS from one th
 - [1984](https://1984.is)
 - [Mayfirst](https://mayfirst.org)
 
-*NOTE: We do not recommend DigitalOcean, as a matter of fact it will not work at all as Signal blocks traffic from this service.*
+*NOTE: We do not recommend DigitalOcean, as a matter of fact it absolutely will not work at all as Signal blocks traffic from this service.*
 
 With your new server login as root and:
 
-- ensure (for now) that root login works and add your local users SSH key to root 
+- ensure (for now) that root login works and add your local users SSH key to root if it is not already added.
 - run `apt update` to update apt
 - install python with `apt install python3`
 
@@ -541,12 +541,12 @@ With your new server login as root and:
 
 On the system you plan to use to deploy Signalboost from you'll first need to clone the repo:
 
-`git clone git@0xacab.org:Team Friendo/signalboost.git`
+`git clone git@0xacab.org:team-friendo/signalboost.git`
 
 
 ### (3) Install dependancies on your local deploy system
 
-#### Install Ansible**
+#### Install Ansible
 
 To deploy a signalboost instance, you will need to have installed:
 
