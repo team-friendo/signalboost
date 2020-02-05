@@ -36,6 +36,16 @@ const {
  *   digest: string, (base64)
  * }
  *
+ * type ResendRequest = {
+ *   type: "send",
+ *   username: string,
+ *   recipientNumber, ?string, (must include either recipientId or recipientGroupId)
+ *   recipientGroupId: ?string,
+ *   messageBody: string,
+ *   attachments: Array<InAttachment>,
+ *   quote: ?QuoteObject, (ingoring)
+ * }
+ *
  * type OutboundSignaldMessage = {
  *   type: "send",
  *   username: string,
@@ -292,17 +302,31 @@ const safeJsonParse = msg => {
   }
 }
 
-// InboundMessage -> OutboundMessage
+// InboundMessage|ResendRequest -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
   const {
     data: { username, dataMessage },
-  } = inboundSdMessage
+  } = transformToInboundMessage(inboundSdMessage)
   return {
     type: messageTypes.SEND,
     username,
     recipientNumber: null,
     messageBody: dataMessage.message,
     attachments: dataMessage.attachments.map(parseOutboundAttachment),
+  }
+}
+
+const transformToInboundMessage = message => {
+  const { type } = message
+  if (type === 'message') {
+    return message
+  } else {
+    return {
+      data: {
+        username: message.username,
+        dataMessage: { message: message.messageBody, attachments: message.attachments },
+      },
+    }
   }
 }
 

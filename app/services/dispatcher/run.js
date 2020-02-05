@@ -219,7 +219,7 @@ const detectUpdatableFingerprint = inboundMsg => {
       channelPhoneNumber: inboundMsg.data.username,
       memberPhoneNumber: inboundMsg.data.number,
       fingerprint: inboundMsg.data.fingerprint,
-      sdMessage: inboundMsg.data.request,
+      sdMessage: signal.parseOutboundSdMessage(inboundMsg.data.request),
     }
   }
   /**

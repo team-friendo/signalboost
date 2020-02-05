@@ -326,6 +326,44 @@ describe('signal module', () => {
       })
     })
 
+    it('transforms a resend request message successfully', () => {
+      const resendRequestMessage = {
+        type: messageTypes.SEND,
+        username: '+14049486063',
+        messageBody: 'hello world!',
+        attachments: [
+          {
+            contentType: 'image/jpeg',
+            id: 1461823935771385721,
+            size: 1756017,
+            storedFilename: '/var/lib/signald/attachments/1461823935771385721',
+            width: 4032,
+            height: 3024,
+            voiceNote: false,
+            preview: { present: false },
+            key:
+              'cpdTsaYm9fsE+T29HtCl8qWW2LZPhM32zy82K4VYjTcsqtCIsRxYivSEnxvP6qHD9VwZPrAjFlzZtw6DYWAiig==',
+            digest: 'UYm6uzLlrw2xEezccQtb0jqE4jSDq0+09JvySk+EzrQ=',
+          },
+        ],
+      }
+
+      expect(signal.parseOutboundSdMessage(resendRequestMessage)).to.eql({
+        type: messageTypes.SEND,
+        username: '+14049486063',
+        recipientNumber: null,
+        messageBody: 'hello world!',
+        attachments: [
+          {
+            filename: '/var/lib/signald/attachments/1461823935771385721',
+            width: 4032,
+            height: 3024,
+            voiceNote: false,
+          },
+        ],
+      })
+    })
+
     describe('parsing the filename for an outbound message attachment', () => {
       const inboundAttachment = {
         contentType: 'image/jpeg',

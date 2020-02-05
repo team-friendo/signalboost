@@ -396,7 +396,13 @@ describe('dispatcher service', () => {
               channelPhoneNumber: channel.phoneNumber,
               memberPhoneNumber: recipientNumber,
               fingerprint,
-              sdMessage: originalSdMessage,
+              sdMessage: {
+                type: 'send',
+                username: channel.phoneNumber,
+                messageBody,
+                attachments: [],
+                recipientNumber: null,
+              },
             },
           ])
         })
@@ -441,7 +447,13 @@ describe('dispatcher service', () => {
             channelPhoneNumber: channel.phoneNumber,
             memberPhoneNumber: recipientNumber,
             fingerprint,
-            sdMessage: originalSdMessage,
+            sdMessage: {
+              type: 'send',
+              username: channel.phoneNumber,
+              messageBody,
+              attachments: [],
+              recipientNumber: null,
+            },
           })
         })
 
