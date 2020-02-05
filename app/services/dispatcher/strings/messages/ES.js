@@ -34,8 +34,8 @@ Para más información: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
-  invalidVouchLevel: vouchLevel =>
-    `${vouchLevel} no es un nivel de atestiguando válido. Use un número entre 1 y 10, por favor.`,
+  invalidVouchLevel: invalidVouchLevel =>
+    `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y 10, por favor.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -167,6 +167,7 @@ admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -179,9 +180,10 @@ Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
+suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${onOrOff(channel.vouchingOn)}
-suscriptorxs: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -277,9 +279,11 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     },
     vouching: {
       success: isOn =>
-        `Atestiguando configurado en ${onOrOff(
-          isOn,
-        )}. Ahora, 2 invitaciónes están requiridos para unirse a este canal. Para invitar a alguien, use el comando INVITAR:\nINVITAR +12345551234\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR:\n"NIVEL DE ATESTIGUAR 3"`,
+        `${
+          isOn
+            ? `Atestiguando activada. Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:\n\n"INVITAR +12345551234"\n\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR: Por ejemplo:\n\n"NIVEL DE ATESTIGUAR 3"`
+            : `Atestiguando desactivada.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
@@ -304,7 +308,9 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   vouchLevel: {
     success: level =>
-      `Nivel de atestiguando cambiado a ${level}; ahora se requieren ${level} invitaciones para unirse a este canal.`,
+      `Nivel de atestiguando cambiado a ${level}; ahora se requieren ${level} ${
+        level > 1 ? 'invitaciones' : 'invitación'
+      } para unirse a este canal.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:

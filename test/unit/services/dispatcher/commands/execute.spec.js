@@ -1521,6 +1521,7 @@ describe('executing commands', () => {
               message: messagesIn(channel.language).commandResponses.vouchLevel.success(
                 validVouchLevel,
               ),
+              payload: validVouchLevel,
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
@@ -1541,6 +1542,7 @@ describe('executing commands', () => {
               command: commands.VOUCH_LEVEL,
               status: statuses.ERROR,
               message: CR.vouchLevel.dbError,
+              payload: validVouchLevel,
               notifications: [],
             })
           })
@@ -1563,6 +1565,7 @@ describe('executing commands', () => {
             message: messagesIn(channel.language).commandResponses.vouchLevel.invalid(
               invalidVouchLevel,
             ),
+            payload: '',
             notifications: [],
           })
         })
@@ -1580,6 +1583,7 @@ describe('executing commands', () => {
           command: commands.VOUCH_LEVEL,
           status: statuses.UNAUTHORIZED,
           message: CR.vouchLevel.notAdmin,
+          payload: validVouchLevel,
           notifications: [],
         })
       })

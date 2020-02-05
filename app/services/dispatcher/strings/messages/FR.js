@@ -35,8 +35,8 @@ Pour plus de renseignements: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
-  invalidVouchLevel: vouchLevel =>
-    `${vouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et 10.`,
+  invalidVouchLevel: invalidVouchLevel =>
+    `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et 10.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -163,6 +163,7 @@ admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -175,9 +176,10 @@ Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
+abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
-abonnées: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -272,9 +274,11 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     },
     vouching: {
       success: isOn =>
-        `se porter garant maintenant ${onOrOff(
-          isOn,
-        )}. 2 invitations sont désormais nécessaires pour rejoindre cette chaîne. \n Pour inviter quelqu'un, utilisez la commande INVITER: \n "INVITER +12345551234" \n Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT: \n "NIVEAU DE PORTER GARANT 3"`,
+        `${
+          isOn
+            ? `Se porter garant activée.\nPour inviter quelqu'un, utilisez la commande INVITER: \n\n"INVITER +12345551234" \n\nPour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT: \n\n "NIVEAU DE PORTER GARANT 3"`
+            : `Se porter garant desactivée.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer se porter garant à ${onOrOff(
@@ -299,7 +303,9 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
 
   vouchLevel: {
     success: level =>
-      `Le niveau de porter garant est passé à ${level}; Des invitations ${level} sont désormais requises pour rejoindre cette chaîne.`,
+      `Le niveau de porter garant est passé à ${level}; Des 
+      ${level} ${+level > 1 ? 'invitations' : 'invitation'}
+       sont désormais requises pour rejoindre cette chaîne.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:

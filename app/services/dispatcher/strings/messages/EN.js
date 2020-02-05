@@ -34,8 +34,9 @@ Learn more: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`,
+  // TODO @mari: read vouch levels from config file?
   invalidVouchLevel: vouchLevel =>
-    `Sorry, ${vouchLevel} is not a valid vouch level. Please use a level between 1 and 10.`,
+    `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and 10.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -162,6 +163,7 @@ admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `vouch level: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -174,9 +176,10 @@ You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
+subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
-subscribers: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `vouch level: ${channel.vouchThreshold}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -267,9 +270,11 @@ Send HELP to list commands I understand.`,
     },
     vouching: {
       success: isOn =>
-        `Vouching turned ${onOrOff(
-          isOn,
-        )}. 2 invites are now required to join this channel. \nTo invite someone, use the INVITE command:\n"INVITE +12345551234"\n To change the vouching level, use the VOUCH LEVEL command:\n"VOUCH LEVEL 3"`,
+        `${
+          isOn
+            ? `Vouching turned on.\nTo vouch for someone, use the INVITE command. For example:\n\n"INVITE +12345551234"\n To change the vouching level, use the VOUCH LEVEL command. For example:\n\n"VOUCH LEVEL 3"`
+            : `Vouching turned off.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to turn vouching ${onOrOff(isOn)}. Please try again!`,
@@ -291,7 +296,9 @@ Send HELP to list commands I understand.`,
   // VOUCH_LEVEL
   vouchLevel: {
     success: level =>
-      `Vouching level changed to ${level}; ${level} invites are now required to join this channel.`,
+      `Vouching level changed to ${level}; joining this channel now requires ${level} ${
+        level > 1 ? 'invites' : 'invite'
+      }.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError: 'There was an error updating the vouching level. Please try again.',

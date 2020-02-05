@@ -127,6 +127,7 @@ const validatePhoneNumber = commandMatch => {
 const validateVouchLevel = commandMatch => {
   const { command, language, matches } = commandMatch
   const vouchLevel = Number(matches[2].trim())
+  // TODO: put valid vouch levels in /config?
   const isValidVouchLevel = Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= 10
   matches[2] = vouchLevel
 
