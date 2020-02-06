@@ -19,6 +19,10 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { adminMembershipFactory } from '../../../support/factories/membership'
+import {
+  inboundAttachmentFactory,
+  outboundAttachmentFactory,
+} from '../../../support/factories/sdMessage'
 const {
   signal: { defaultMessageExpiryTime, signupPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
@@ -360,12 +364,13 @@ describe('dispatcher service', () => {
     describe('when message is an untrusted identity error notification', () => {
       const recipientNumber = genPhoneNumber()
       const messageBody = '[foo]\nbar'
+      const inboundAttachment = inboundAttachmentFactory()
       const originalSdMessage = {
         type: 'send',
         username: channel.phoneNumber,
         messageBody,
         recipientNumber,
-        attachments: [],
+        attachments: [inboundAttachment],
         expiresInSeconds: 0,
       }
       const fingerprint =
@@ -396,7 +401,7 @@ describe('dispatcher service', () => {
               channelPhoneNumber: channel.phoneNumber,
               memberPhoneNumber: recipientNumber,
               fingerprint,
-              sdMessage: originalSdMessage,
+              sdMessage: signal.parseOutboundSdMessage(originalSdMessage),
             },
           ])
         })
@@ -441,7 +446,7 @@ describe('dispatcher service', () => {
             channelPhoneNumber: channel.phoneNumber,
             memberPhoneNumber: recipientNumber,
             fingerprint,
-            sdMessage: originalSdMessage,
+            sdMessage: signal.parseOutboundSdMessage(originalSdMessage),
           })
         })
 

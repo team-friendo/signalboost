@@ -13,6 +13,10 @@ import signal, {
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
+import {
+  inboundAttachmentFactory,
+  outboundAttachmentFactory,
+} from '../../support/factories/sdMessage'
 
 describe('signal module', () => {
   const sock = new EventEmitter()
@@ -267,14 +271,18 @@ describe('signal module', () => {
   })
 
   describe('message parsing', () => {
+    const channelPhoneNumber = genPhoneNumber()
+    const adminPhoneNumber = genPhoneNumber()
+    const subscriberPhoneNumber = genPhoneNumber()
+
     it('parses an output signald message from an inbound signald message', () => {
       const inMessage = {
         type: messageTypes.MESSAGE,
         data: {
-          username: '+14049486063',
+          username: channelPhoneNumber,
           hasUuid: false,
           hasSource: true,
-          source: '+18319176400',
+          source: adminPhoneNumber,
           hasSourceDevice: true,
           sourceDevice: 1,
           type: 1,
@@ -292,54 +300,39 @@ describe('signal module', () => {
             timestamp: 1556592441767,
             message: 'hello world!',
             expiresInSeconds: 0,
-            attachments: [
-              {
-                contentType: 'image/jpeg',
-                id: 1461823935771385721,
-                size: 1756017,
-                storedFilename: '/var/lib/signald/attachments/1461823935771385721',
-                width: 4032,
-                height: 3024,
-                voiceNote: false,
-                preview: { present: false },
-                key:
-                  'cpdTsaYm9fsE+T29HtCl8qWW2LZPhM32zy82K4VYjTcsqtCIsRxYivSEnxvP6qHD9VwZPrAjFlzZtw6DYWAiig==',
-                digest: 'UYm6uzLlrw2xEezccQtb0jqE4jSDq0+09JvySk+EzrQ=',
-              },
-            ],
+            attachments: [inboundAttachmentFactory()],
           },
         },
       }
       expect(signal.parseOutboundSdMessage(inMessage)).to.eql({
         type: messageTypes.SEND,
-        username: '+14049486063',
-        recipientNumber: null,
+        username: channelPhoneNumber,
+        recipientNumber: undefined,
         messageBody: 'hello world!',
-        attachments: [
-          {
-            filename: '/var/lib/signald/attachments/1461823935771385721',
-            width: 4032,
-            height: 3024,
-            voiceNote: false,
-          },
-        ],
+        attachments: [outboundAttachmentFactory()],
+      })
+    })
+
+    it('transforms a resend request message successfully', () => {
+      const resendRequestMessage = {
+        type: messageTypes.SEND,
+        username: channelPhoneNumber,
+        recipientNumber: subscriberPhoneNumber,
+        messageBody: 'hello world!',
+        attachments: [inboundAttachmentFactory()],
+      }
+
+      expect(signal.parseOutboundSdMessage(resendRequestMessage)).to.eql({
+        type: messageTypes.SEND,
+        username: channelPhoneNumber,
+        recipientNumber: subscriberPhoneNumber,
+        messageBody: 'hello world!',
+        attachments: [outboundAttachmentFactory()],
       })
     })
 
     describe('parsing the filename for an outbound message attachment', () => {
-      const inboundAttachment = {
-        contentType: 'image/jpeg',
-        id: 1461823935771385721,
-        size: 1756017,
-        storedFilename: 'foo',
-        width: 4032,
-        height: 3024,
-        voiceNote: false,
-        preview: { present: false },
-        key:
-          'cpdTsaYm9fsE+T29HtCl8qWW2LZPhM32zy82K4VYjTcsqtCIsRxYivSEnxvP6qHD9VwZPrAjFlzZtw6DYWAiig==',
-        digest: 'UYm6uzLlrw2xEezccQtb0jqE4jSDq0+09JvySk+EzrQ=',
-      }
+      const inboundAttachment = inboundAttachmentFactory()
 
       it('keeps the width, height, and voiceNote fields', () => {
         expect(keys(parseOutboundAttachment(inboundAttachment))).to.eql([
@@ -358,7 +351,9 @@ describe('signal module', () => {
       })
 
       it('parses a filename from a storedFilename', () => {
-        expect(signal.parseOutboundAttachment(inboundAttachment).filename).to.eql('foo')
+        expect(signal.parseOutboundAttachment(inboundAttachment).filename).to.eql(
+          inboundAttachment.storedFilename,
+        )
       })
 
       it('parses a filename from a filename', () => {

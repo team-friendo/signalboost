@@ -52,10 +52,7 @@ describe('resend module', () => {
 
     describe('given a message that has never been resent', () => {
       const inSdMessage = { ...sdMessage, messageBody: 'first time' }
-      const outSdMessage = {
-        ...inSdMessage,
-        attachments: inSdMessage.attachments.map(parseOutboundAttachment),
-      }
+      const outSdMessage = signal.parseOutboundSdMessage(inSdMessage)
       beforeEach(() => {
         sendCount = sendStub.callCount
         resendQueue = {}
@@ -87,11 +84,10 @@ describe('resend module', () => {
     })
 
     describe('given a message that has already been resent', () => {
-      const outSdMessage = {
+      const outSdMessage = signal.parseOutboundSdMessage({
         ...sdMessage,
         messageBody: 'second time',
-        attachments: sdMessage.attachments.map(parseOutboundAttachment),
-      }
+      })
 
       beforeEach(() => {
         sendCount = sendStub.callCount
