@@ -271,14 +271,18 @@ describe('signal module', () => {
   })
 
   describe('message parsing', () => {
+    const channelPhoneNumber = genPhoneNumber()
+    const adminPhoneNumber = genPhoneNumber()
+    const subscriberPhoneNumber = genPhoneNumber()
+
     it('parses an output signald message from an inbound signald message', () => {
       const inMessage = {
         type: messageTypes.MESSAGE,
         data: {
-          username: '+14049486063',
+          username: channelPhoneNumber,
           hasUuid: false,
           hasSource: true,
-          source: '+18319176400',
+          source: adminPhoneNumber,
           hasSourceDevice: true,
           sourceDevice: 1,
           type: 1,
@@ -302,8 +306,8 @@ describe('signal module', () => {
       }
       expect(signal.parseOutboundSdMessage(inMessage)).to.eql({
         type: messageTypes.SEND,
-        username: '+14049486063',
-        recipientNumber: null,
+        username: channelPhoneNumber,
+        recipientNumber: undefined,
         messageBody: 'hello world!',
         attachments: [outboundAttachmentFactory()],
       })
@@ -312,15 +316,16 @@ describe('signal module', () => {
     it('transforms a resend request message successfully', () => {
       const resendRequestMessage = {
         type: messageTypes.SEND,
-        username: '+14049486063',
+        username: channelPhoneNumber,
+        recipientNumber: subscriberPhoneNumber,
         messageBody: 'hello world!',
         attachments: [inboundAttachmentFactory()],
       }
 
       expect(signal.parseOutboundSdMessage(resendRequestMessage)).to.eql({
         type: messageTypes.SEND,
-        username: '+14049486063',
-        recipientNumber: null,
+        username: channelPhoneNumber,
+        recipientNumber: subscriberPhoneNumber,
         messageBody: 'hello world!',
         attachments: [outboundAttachmentFactory()],
       })

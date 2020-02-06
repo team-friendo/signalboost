@@ -18,13 +18,6 @@ const enqueueResend = (sock, resendQueue, inSdMessage) => {
     ? resendQueue[msgHash].lastResendInterval * 2
     : minResendInterval
 
-  // if message not already resent, reformat the attachments field from the inbound format to outbound format
-  // (see typings in services/signal for more on this FRUSTRATINGLY different formats)
-  const outSdMessage = {
-    ...inSdMessage,
-    attachments: inSdMessage.attachments.map(signal.parseOutboundAttachment),
-  }
-
   // don't resend anymore if message has exceeded max resend threshold
   if (newResendInterval > maxResendInterval) {
     delete resendQueue[msgHash]
@@ -33,6 +26,8 @@ const enqueueResend = (sock, resendQueue, inSdMessage) => {
 
   // okay! we're going to resend! let's...
 
+  // format a proper outbound message
+  const outSdMessage = signal.parseOutboundSdMessage(inSdMessage)
   // record the interval we are about to wait and the outbound-formatted sd message
   resendQueue[msgHash] = { sdMessage: outSdMessage, lastResendInterval: newResendInterval }
   // enqueue the message for resending after waiting the new interval

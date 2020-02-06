@@ -305,12 +305,13 @@ const safeJsonParse = msg => {
 // InboundMessage|ResendRequest -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
   const {
+    recipientNumber,
     data: { username, dataMessage },
   } = transformToInboundMessage(inboundSdMessage)
   return {
     type: messageTypes.SEND,
     username,
-    recipientNumber: null,
+    recipientNumber,
     messageBody: dataMessage.message,
     attachments: dataMessage.attachments.map(parseOutboundAttachment),
   }
@@ -323,6 +324,7 @@ const transformToInboundMessage = message => {
     return message
   } else {
     return {
+      recipientNumber: message.recipientNumber,
       data: {
         username: message.username,
         dataMessage: { message: message.messageBody, attachments: message.attachments },
