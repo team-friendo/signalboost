@@ -316,6 +316,7 @@ const parseOutboundSdMessage = inboundSdMessage => {
   }
 }
 
+// InboundMessage|ResendRequest -> InboundMessage
 const transformToInboundMessage = message => {
   const { type } = message
   if (type === 'message') {
