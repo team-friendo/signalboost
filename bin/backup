@@ -11,7 +11,7 @@ timestamp=`date "+%Y-%m-%d"`
 
 # gpg
 keyring_path="/srv/signalboost/keyrings/live/pubring.kbx"
-gpg="gpg --encrypt --keyring ${keyring_path} --trust-model always -r 8DEA5441 -r 97B47404"
+gpg="gpg --encrypt --keyring ${keyring_path} --trust-model always -r 8DEA5441 -r 97B47404 -r 0C8F192B"
 
 # paths
 project_root="/srv/signalboost"
