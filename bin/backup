@@ -62,17 +62,17 @@ target_dir="/srv/backups"
 echo "--- making target backup dir..."
 
 # make target backup directory
-ssh -o StrictHostKeyChecking=no -i $keypath sb_backup "mkdir -p ${target_dir}"
+ssh -i $keypath sb_backup "mkdir -p ${target_dir}"
 
 echo "--- scp-ing to backup dir..."
 
 # here, we use the `sb_backup` host defined in /root/.ssh/config
-scp -o StrictHostKeyChecking=no -i $keypath -rp ${backup_dir} sb_backup:${target_dir}
+scp -i $keypath -rp ${backup_dir} sb_backup:${target_dir}
 
 echo "--- removing old backups from remote..."
 
 # remove old backups on remote
-ssh -o StrictHostKeyChecking=no -i $keypath sb_backup "find $target_dir/* -type d -not -name ${timestamp} -delete"
+ssh -i $keypath sb_backup "find $target_dir/* -type d -not -name ${timestamp} -exec rm -rv {} +"
 
 # remove local backup
 rm -rf ${backup_dir}

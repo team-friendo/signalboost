@@ -2,6 +2,7 @@
 ansible/files/deploy_keys/.ssh/config
 ansible/files/deploy_keys/.ssh/id_sb_deploy
 ansible/files/deploy_keys/.ssh/id_sb_deploy.pub
+ansible/files/deploy_keys/.ssh/known_hosts
 ansible/files/deploy_keys/signalboost_gpg_privkey.asc
 ansible/inventory.tmpl
 bin/get-machine
