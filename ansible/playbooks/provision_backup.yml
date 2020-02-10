@@ -1,21 +1,12 @@
 ---
 - name: Provision system dependencies & users, perform basic hardening
   become: true
-  hosts: signalboost
+  hosts: sb_backup
 
   vars:
     ansible_user: aguestuser
     secrets_method: copy
     backup_dir: /srv/backups
-    # docker dependencies (pip packages)
-    pip_install_packages:
-      - name: docker
-      - name: docker-compose
-
-  # docker dependencies (ansible roles)
-  roles:
-    - geerlingguy.pip
-    - geerlingguy.docker
 
   handlers:
     - name: restart fail2ban
@@ -140,12 +131,6 @@
       group: sb_deploy
       mode: 700
     tags: deploy_user
-
-  - name: Load crontab
-    copy:
-      src: files/crontab/root
-      dest: /var/spool/cron/crontabs/root
-    tags: deploy_user, crontab
 
   - name: Load GPG Deploy Key
     copy:
