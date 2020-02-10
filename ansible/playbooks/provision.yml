@@ -118,12 +118,13 @@
     copy:
       src: files/deploy_keys/.ssh/{{ item }}
       dest: /root/.ssh/
-      mode: 500
+      mode: 0600
     with_items:
       - config
       - id_sb_deploy
       - id_sb_deploy.pub
-    tags: deploy_user_2
+      - known_hosts
+    tags: deploy_user, root_ssh
 
   - name: Set authorized key for deploy user
     authorized_key:
@@ -138,7 +139,7 @@
       state: directory
       owner: sb_deploy
       group: sb_deploy
-      mode: 700
+      mode: 0700
     tags: deploy_user
 
   - name: Load crontab
