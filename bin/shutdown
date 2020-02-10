@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
