@@ -617,7 +617,7 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: [`VOUCH LEVEL ${vouchLevel}`, ` vouch Level  ${vouchLevel}`],
+            messages: [`VOUCH LEVEL ${vouchLevel}`, ` vouch Level ${vouchLevel}`],
           },
           {
             language: languages.ES,
@@ -636,7 +636,7 @@ describe('parse module', () => {
             expect(parseExecutable(msg)).to.eql({
               command: commands.VOUCH_LEVEL,
               language,
-              payload: vouchLevel,
+              payload: `${vouchLevel}`,
             }),
           ),
         )

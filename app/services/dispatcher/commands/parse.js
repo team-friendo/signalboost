@@ -126,16 +126,17 @@ const validatePhoneNumber = commandMatch => {
 // CommandMatch -> CommandMatch | ParseError
 const validateVouchLevel = commandMatch => {
   const { command, language, matches } = commandMatch
-  const vouchLevel = Number(matches[2].trim())
-  // TODO: put valid vouch levels in /config?
+  const vouchLevel = Number(matches[2])
+
+  // TODO @mari: put valid vouch levels in /config?
   const isValidVouchLevel = Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= 10
-  matches[2] = vouchLevel
 
   return isValidVouchLevel
     ? commandMatch
     : {
         command,
-        error: messagesIn(language).parseErrors.invalidVouchLevel(vouchLevel),
+        matches,
+        error: messagesIn(language).parseErrors.invalidVouchLevel(matches[2]),
       }
 }
 
