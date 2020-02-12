@@ -50,7 +50,7 @@ const commandResponses = {
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Lo sentimos, ${
         channel.name
       } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
@@ -308,9 +308,9 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   vouchLevel: {
     success: level =>
-      `Nivel de atestiguando cambiado a ${level}; ahora se requieren ${level} ${
+      `Nivel de atestiguando cambiado a ${level}. Ahora se requieren ${level} ${
         level > 1 ? 'invitaciones' : 'invitación'
-      } para unirse a este canal.`,
+      } para nuevos suscriptores unirse a este canal.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:

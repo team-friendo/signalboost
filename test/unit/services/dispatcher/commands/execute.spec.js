@@ -77,7 +77,7 @@ describe('executing commands', () => {
   describe('ACCEPT command', () => {
     const dispatchable = {
       db,
-      channel: { ...channel, vouchingOn: true },
+      channel: { ...channel, vouchingOn: true, vouchLevel: 1 },
       sender: randomPerson,
       sdMessage: sdMessageOf(channel, 'ACCEPT'),
     }
@@ -111,6 +111,7 @@ describe('executing commands', () => {
 
       describe('when vouching is on', () => {
         describe('when sender lacks sufficient invites', () => {
+          // vouching level is 1 by default; accepter possesses 0 invites
           beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
 
           it('returns an ERROR status', async () => {
@@ -118,7 +119,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.ERROR,
-              message: CR.accept.belowThreshold(channel, 1, 0),
+              message: CR.accept.belowVouchLevel(channel, 1, 0),
               notifications: [],
             })
           })

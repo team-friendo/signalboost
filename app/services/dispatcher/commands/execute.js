@@ -79,16 +79,19 @@ const execute = async (executable, dispatchable) => {
 
 const maybeAccept = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.accept
-  const THRESHOLD = 1 // TODO read threshold from channel when playing #137
+  const vouchLevel = channel.vouchLevel
   try {
     // don't accept invite if sender is already a member
     if (await membershipRepository.isMember(db, channel.phoneNumber, sender.phoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyMember }
 
-    // don't accept invite if sender does not have enough invites to pass vouch threshold
+    // don't accept invite if sender doesn't have sufficient invites
     const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
-    if (channel.vouchingOn && inviteCount < THRESHOLD)
-      return { status: statuses.ERROR, message: cr.belowThreshold(channel, THRESHOLD, inviteCount) }
+    if (channel.vouchingOn && inviteCount < vouchLevel)
+      return {
+        status: statuses.ERROR,
+        message: cr.belowVouchLevel(channel, vouchLevel, inviteCount),
+      }
 
     // okay, fine: accept the invite! :)
     return accept(db, channel, sender, language, cr)

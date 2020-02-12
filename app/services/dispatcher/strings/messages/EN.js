@@ -34,7 +34,7 @@ Learn more: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`,
-  // TODO @mari: read vouch levels from config file?
+  // TODO @mari: read valid vouch levels from config file?
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and 10.`,
 }
@@ -51,7 +51,7 @@ const commandResponses = {
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
     dbError: 'Whoops! There was an error accepting your invite. Please try again!',
   },
@@ -296,9 +296,9 @@ Send HELP to list commands I understand.`,
   // VOUCH_LEVEL
   vouchLevel: {
     success: level =>
-      `Vouching level changed to ${level}; joining this channel now requires ${level} ${
+      `Vouching level set to ${level}. It will now take ${level} ${
         level > 1 ? 'invites' : 'invite'
-      }.`,
+      } for new subscribers to join this channel.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError: 'There was an error updating the vouching level. Please try again.',

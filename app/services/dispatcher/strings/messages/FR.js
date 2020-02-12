@@ -51,7 +51,7 @@ const commandResponses = {
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Désolé, ${
         channel.name
       } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
@@ -305,7 +305,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     success: level =>
       `Le niveau de porter garant est passé à ${level}; Des 
       ${level} ${+level > 1 ? 'invitations' : 'invitation'}
-       sont désormais requises pour rejoindre cette chaîne.`,
+       sont désormais requises pour nouveaux abonnés rejoindre cette chaîne.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:
