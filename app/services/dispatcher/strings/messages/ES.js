@@ -167,7 +167,7 @@ admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -183,7 +183,7 @@ número de teléfono: ${channel.phoneNumber}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,

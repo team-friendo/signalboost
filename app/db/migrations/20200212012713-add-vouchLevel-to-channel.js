@@ -2,14 +2,14 @@
 
 module.exports = {
   up: (queryInterface, DataTypes) => {
-    return queryInterface.addColumn('channels', 'vouchThreshold', {
+    return queryInterface.addColumn('channels', 'vouchLevel', {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 2,
+      defaultValue: 1,
     })
   },
 
   down: (queryInterface) => {
-    return queryInterface.removeColumn('channels', 'vouchThreshold')
+    return queryInterface.removeColumn('channels', 'vouchLevel')
   }
 };

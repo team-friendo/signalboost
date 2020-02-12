@@ -184,7 +184,7 @@ describe('channel repository', () => {
           'messageExpiryTime',
           'hotlineOn',
           'vouchingOn',
-          'vouchThreshold',
+          'vouchLevel',
           'createdAt',
           'updatedAt',
           'deauthorizations',

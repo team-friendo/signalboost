@@ -456,7 +456,7 @@ const maybeSetVouchLevel = (db, channel, sender, newVouchLevel) => {
 
 const setVouchLevel = async (db, channel, newVouchLevel, sender, cr) => {
   try {
-    await channelRepository.update(db, channel.phoneNumber, { vouchThreshold: newVouchLevel })
+    await channelRepository.update(db, channel.phoneNumber, { vouchLevel: newVouchLevel })
 
     return {
       status: statuses.SUCCESS,

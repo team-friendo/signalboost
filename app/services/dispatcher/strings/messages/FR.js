@@ -163,7 +163,7 @@ admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -179,7 +179,7 @@ numéro de téléphone: ${channel.phoneNumber}
 abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,

@@ -36,10 +36,10 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false,
     },
-    vouchThreshold: {
+    vouchLevel: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 2,
+      defaultValue: 1,
     },
   })
 

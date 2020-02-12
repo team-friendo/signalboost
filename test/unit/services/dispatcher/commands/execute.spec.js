@@ -1510,7 +1510,7 @@ describe('executing commands', () => {
 
         describe('when updating the db succeeds', () => {
           beforeEach(async () => {
-            updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: validVouchLevel }))
+            updateStub.returns(Promise.resolve({ ...channel, vouchLevel: validVouchLevel }))
             result = await processCommand(dispatchable)
           })
 
@@ -1554,7 +1554,7 @@ describe('executing commands', () => {
         const dispatchable = { db, channel, sender, sdMessage }
 
         beforeEach(async () => {
-          updateStub.returns(Promise.resolve({ ...channel, vouchThreshold: invalidVouchLevel }))
+          updateStub.returns(Promise.resolve({ ...channel, vouchLevel: invalidVouchLevel }))
           result = await processCommand(dispatchable)
         })
 

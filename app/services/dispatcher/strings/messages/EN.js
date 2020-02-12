@@ -163,7 +163,7 @@ admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `vouch level: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -179,7 +179,7 @@ phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `vouch level: ${channel.vouchThreshold}` : ''}
+${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
