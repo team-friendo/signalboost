@@ -39,10 +39,10 @@ fi
 
 if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
 
-curl -s -X POST \
+curl -s -X DELETE \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
      -d "{ \"phoneNumber\": \"$phoneNumber\" }" \
-     https://${url}/phoneNumbers/destroy | jq
+     https://${url}/phoneNumbers | jq
 
 popd > /dev/null # return to starting directory

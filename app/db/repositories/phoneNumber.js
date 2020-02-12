@@ -6,6 +6,8 @@ const filters = {
   INACTIVE: 'INACTIVE',
 }
 
+const find = (db, phoneNumber) => db.phoneNumber.findOne({ where: { phoneNumber } })
+
 const findAll = db => db.phoneNumber.findAll()
 
 const findAllPurchased = db => db.phoneNumber.findAll({ where: { status: statuses.PURCHASED } })
@@ -29,4 +31,4 @@ const update = (db, phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, findAll, findAllPurchased, list, update }
+module.exports = { filters, find, findAll, findAllPurchased, list, update }

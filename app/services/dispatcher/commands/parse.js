@@ -76,6 +76,7 @@ const validatePayload = commandMatch => {
   switch (get(commandMatch, 'command')) {
     case commands.ACCEPT:
     case commands.DECLINE:
+    case commands.DESTROY:
     case commands.HELP:
     case commands.INFO:
     case commands.JOIN:

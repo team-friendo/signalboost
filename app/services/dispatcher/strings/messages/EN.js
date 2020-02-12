@@ -69,6 +69,11 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     dbError: 'Whoops! There was an error declining the invite. Please try again!',
   },
 
+  destroy: {
+    success: 'Channel and all associated records have been permanently destroyed.',
+    error: 'Whoops! There was an error destroying the channel. Please try again!',
+  },
+
   // HELP
 
   help: {
@@ -106,7 +111,10 @@ ESPAÑOL / FRANÇAIS
 -> switches language to Spanish or French
 
 GOODBYE
--> leaves this channel`,
+-> leaves this channel
+
+DESTROY
+-> permanently destroys this channel and all associated records`,
 
     subscriber: `----------------------------------------------
 COMMANDS
@@ -287,6 +295,11 @@ const notifications = {
   adminRemoved: 'An admin was just removed.',
 
   adminLeft: 'An admin just left the channel.',
+
+  channelDestroyed: 'Channel and all associated records have been permanently destroyed.',
+
+  channelDestructionFailed: phoneNumber =>
+    `Failed to destroy channel for phone number: ${phoneNumber}`,
 
   channelRecycled:
     'Channel deactivated due to lack of use. To create a new channel, visit https://signalboost.info',

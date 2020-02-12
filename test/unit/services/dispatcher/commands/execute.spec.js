@@ -15,6 +15,7 @@ import channelRepository from '../../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../../app/db/repositories/deauthorization'
+import phoneNumberService from '../../../../../app/services/registrar/phoneNumber'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../../support/factories/phoneNumber'
@@ -453,6 +454,45 @@ describe('executing commands', () => {
           payload: '',
           status: statuses.NOOP,
           message: '',
+          notifications: [],
+        })
+      })
+    })
+  })
+
+  describe('DESTROY command', () => {
+    const dispatchable = {
+      db,
+      channel,
+      sender: randomPerson,
+      sdMessage: sdMessageOf(channel, 'DESTROY'),
+    }
+
+    let destroyStub
+    beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
+    afterEach(() => destroyStub.restore())
+
+    describe('when destroy succeeds', () => {
+      it('returns a SUCCESS status', async () => {
+        destroyStub.returns({ status: 'SUCCESS' })
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DESTROY,
+          payload: '',
+          status: statuses.SUCCESS,
+          message: CR.destroy.success,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when a failure occurs', () => {
+      it('returns a ERROR status', async () => {
+        destroyStub.returns({ status: 'ERROR' })
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DESTROY,
+          payload: '',
+          status: statuses.ERROR,
+          message: CR.destroy.error,
           notifications: [],
         })
       })

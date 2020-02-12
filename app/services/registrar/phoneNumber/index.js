@@ -1,6 +1,7 @@
 const { statuses } = require('../../../db/models/phoneNumber')
 const { filters } = require('../../../db/repositories/phoneNumber')
 const { errors } = require('./common')
+const { destroy } = require('./destroy')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
 const { recycle } = require('./recycle')
@@ -15,6 +16,7 @@ module.exports = {
   statuses,
   filters,
   /*functions*/
+  destroy,
   list,
   provisionN,
   purchase,

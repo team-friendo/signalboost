@@ -3,6 +3,7 @@ const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const deauthorizationRepository = require('../../../db/repositories/deauthorization')
+const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
@@ -36,13 +37,20 @@ const execute = async (executable, dispatchable) => {
 
   // if payload parse error occured return early and notify sender
   if (executable.error)
-    return { command, payload, status: statuses.ERROR, message: executable.error, notifications: [] }
+    return {
+      command,
+      payload,
+      status: statuses.ERROR,
+      message: executable.error,
+      notifications: [],
+    }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
     [commands.DECLINE]: () => decline(db, channel, sender, language),
+    [commands.DESTROY]: () => maybeDestroy(db, sock, channel, sender),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload),
@@ -152,6 +160,30 @@ const decline = async (db, channel, sender, language) => {
     .decline(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+}
+
+// DESTROY
+
+const maybeDestroy = async (db, sock, channel, sender) => {
+  const cr = messagesIn(sender.language).commandResponses.destroy
+  const result = await phoneNumberService.destroy({
+    db,
+    sock,
+    phoneNumber: channel.phoneNumber,
+    sender: sender.phoneNumber,
+  })
+
+  if (result.status === statuses.SUCCESS) {
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success,
+    }
+  } else {
+    return {
+      status: statuses.ERROR,
+      message: cr.error,
+    }
+  }
 }
 
 // HELP

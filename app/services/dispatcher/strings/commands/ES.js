@@ -2,6 +2,7 @@ module.exports = {
   ADD: ['AGREGAR'],
   ACCEPT: ['ACEPTAR'],
   DECLINE: ['RECHAZAR'],
+  DESTROY: ['DESTRUIR'],
   HELP: ['AYUDA'],
   INFO: ['INFO'],
   INVITE: ['INVITAR'],

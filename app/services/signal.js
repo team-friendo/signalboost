@@ -92,6 +92,7 @@ const messageTypes = {
   TRUSTED_FINGERPRINT: 'trusted_fingerprint',
   UNTRUSTED_IDENTITY: 'untrusted_identity',
   UNREADABLE_MESSAGE: 'unreadable_message',
+  UNSUBSCRIBE: 'unsubscribe',
   VERIFICATION_ERROR: 'verification_error',
   VERIFICATION_REQUIRED: 'verification_required',
   VERIFICATION_SUCCESS: 'verification_succeeded',
@@ -220,6 +221,9 @@ const _isVerificationFailure = (type, data, phoneNumber) =>
 // (Socket, string) -> Promise<void>
 const subscribe = (sock, phoneNumber) =>
   write(sock, { type: messageTypes.SUBSCRIBE, username: phoneNumber })
+
+const unsubscribe = (sock, phoneNumber) =>
+  write(sock, { type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
 const sendMessage = (sock, recipientNumber, outboundMessage) =>
   write(sock, { ...outboundMessage, recipientNumber })
@@ -370,4 +374,5 @@ module.exports = {
   trust,
   verify,
   setExpiration,
+  unsubscribe,
 }

@@ -74,6 +74,11 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     dbError: `Oups! Une erreur s'est produite lors du refus de l'invitation. Veuillez réessayer!`,
   },
 
+  destroy: {
+    success: `La chaîne et tous les enregistrements associés ont été définitivement détruits.`,
+    error: `Oups! Une erreur s'est produite lors de la destruction de la chaîne. Veuillez réessayer!`,
+  },
+
   // HELP
 
   help: {
@@ -296,6 +301,12 @@ const notifications = {
   adminRemoved: "Un administrateur vient d'être supprimé.",
 
   adminLeft: 'Un administrateur vient de quitter le canal',
+
+  channelDestroyed:
+    'La chaîne et tous les enregistrements associés ont été définitivement détruits.',
+
+  channelDestructionFailed: phoneNumber =>
+    `Impossible de détruire la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
   channelRecycled:
     "Chaîne désactivée par manque d'utilisation. Pour créer une nouvelle chaîne, visitez https://signalboost.info",

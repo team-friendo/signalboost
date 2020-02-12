@@ -73,6 +73,11 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
   },
 
+  destroy: {
+    success: 'El canal y todos los registros asociados se han destruido permanentemente.',
+    error: '¡Ay! Se produjo un error al destruir el canal. ¡Inténtalo de nuevo!',
+  },
+
   // HELP
 
   help: {
@@ -297,6 +302,11 @@ const notifications = {
   adminRemoved: 'Se acaba de eliminar un administrador.',
 
   adminLeft: 'Un administrador dejó el canal.',
+
+  channelDestroyed: 'El canal y todos los registros asociados se han destruido permanentemente.',
+
+  channelDestructionFailed: phoneNumber =>
+    `Error al destruir el canal para el número de teléfono:  ${phoneNumber}`,
 
   channelRecycled:
     'Canal desactivado por falta de uso. Para crear un nuevo canal, visite https://signalboost.info',
