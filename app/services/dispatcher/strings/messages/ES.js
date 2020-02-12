@@ -281,7 +281,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
       success: isOn =>
         `${
           isOn
-            ? `Atestiguando activada. Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:\n\n"INVITAR +12345551234"\n\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR: Por ejemplo:\n\n"NIVEL DE ATESTIGUAR 3"`
+            ? `Atestiguando activada.\n\nPara atestiguar para alguien, use el comando INVITAR. Por ejemplo:\n"INVITAR +12345551234"\n\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por ejemplo:\n"NIVEL DE ATESTIGUAR 3"`
             : `Atestiguando desactivada.`
         }`,
       notAdmin,

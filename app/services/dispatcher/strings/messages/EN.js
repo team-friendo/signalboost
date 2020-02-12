@@ -272,7 +272,7 @@ Send HELP to list commands I understand.`,
       success: isOn =>
         `${
           isOn
-            ? `Vouching turned on.\nTo vouch for someone, use the INVITE command. For example:\n\n"INVITE +12345551234"\n To change the vouching level, use the VOUCH LEVEL command. For example:\n\n"VOUCH LEVEL 3"`
+            ? `Vouching turned on. Joining this channel will now require an invite.\n\nTo vouch for someone, use the INVITE command. For example:\n"INVITE +12345551234"\n\nTo change the vouching level, use the VOUCH LEVEL command. For example:\n"VOUCH LEVEL 3"`
             : `Vouching turned off.`
         }`,
       notAdmin,

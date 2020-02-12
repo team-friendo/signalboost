@@ -276,7 +276,7 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
       success: isOn =>
         `${
           isOn
-            ? `Se porter garant activée.\nPour inviter quelqu'un, utilisez la commande INVITER: \n\n"INVITER +12345551234" \n\nPour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT: \n\n "NIVEAU DE PORTER GARANT 3"`
+            ? `Se porter garant activée.\n\nPour inviter quelqu'un, utilisez la commande INVITER:\n"INVITER +12345551234"\n\nPour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT:\n"NIVEAU DE PORTER GARANT 3"`
             : `Se porter garant desactivée.`
         }`,
       notAdmin,
