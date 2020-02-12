@@ -115,11 +115,12 @@ describe('executing commands', () => {
           beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
 
           it('returns an ERROR status', async () => {
+            const { channel } = dispatchable
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.ACCEPT,
               payload: '',
               status: statuses.ERROR,
-              message: CR.accept.belowVouchLevel(channel, 1, 0),
+              message: CR.accept.belowVouchLevel(channel, channel.vouchLevel, 0),
               notifications: [],
             })
           })
@@ -634,18 +635,20 @@ describe('executing commands', () => {
     const inviteePhoneNumber = genPhoneNumber()
     const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumber}`)
 
-    let isMemberStub, issueInviteStub
+    let isMemberStub, issueInviteStub, countInvitesStub
     beforeEach(() => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       issueInviteStub = sinon.stub(inviteRepository, 'issue')
+      countInvitesStub = sinon.stub(inviteRepository, 'count')
     })
     afterEach(() => {
       isMemberStub.restore()
       issueInviteStub.restore()
+      countInvitesStub.restore()
     })
 
     describe('when vouching mode is on', () => {
-      const vouchingChannel = { ...channel, vouchingOn: true }
+      const vouchingChannel = { ...channel, vouchingOn: true, vouchLevel: 1 }
 
       describe('when sender is not a member of channel', () => {
         const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: randomPerson }
@@ -735,6 +738,7 @@ describe('executing commands', () => {
               let res
               beforeEach(async () => {
                 issueInviteStub.returns(Promise.resolve(true))
+                countInvitesStub.returns(Promise.resolve(1))
                 res = await processCommand(dispatchable)
               })
 
@@ -753,6 +757,8 @@ describe('executing commands', () => {
                       recipient: inviteePhoneNumber,
                       message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
                         vouchingChannel.name,
+                        1,
+                        vouchingChannel.vouchLevel,
                       ),
                     },
                   ],
@@ -768,6 +774,7 @@ describe('executing commands', () => {
         let res
         beforeEach(async () => {
           issueInviteStub.returns(Promise.resolve(true))
+          countInvitesStub.returns(Promise.resolve(1))
           res = await processCommand(dispatchable)
         })
 
@@ -786,6 +793,8 @@ describe('executing commands', () => {
                 recipient: inviteePhoneNumber,
                 message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
                   vouchingChannel.name,
+                  1,
+                  vouchingChannel.vouchLevel,
                 ),
               },
             ],

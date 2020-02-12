@@ -229,12 +229,22 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
       inviterPhoneNumber,
       inviteePhoneNumber,
     )
+    const invitesReceived = await inviteRepository.count(
+      db,
+      channel.phoneNumber,
+      inviteePhoneNumber,
+    )
     // We don't return an "already invited" error here to defend side-channel attacks (as above)
     return inviteWasCreated
       ? {
           status: statuses.SUCCESS,
           message: cr.success,
-          notifications: inviteNotificationsOf(channel, inviteePhoneNumber),
+          notifications: inviteNotificationsOf(
+            channel,
+            inviteePhoneNumber,
+            invitesReceived,
+            channel.vouchLevel,
+          ),
         }
       : { status: statuses.ERROR, message: cr.success }
   } catch (e) {
@@ -242,11 +252,15 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
   }
 }
 
-const inviteNotificationsOf = (channel, inviteePhoneNumber) => {
+const inviteNotificationsOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
   return [
     {
       recipient: inviteePhoneNumber,
-      message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+      message: messagesIn(channel.language).notifications.inviteReceived(
+        channel.name,
+        invitesReceived,
+        invitesNeeded,
+      ),
     },
   ]
 }

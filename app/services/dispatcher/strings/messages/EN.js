@@ -363,8 +363,9 @@ Send HELP to list valid commands. Send HELLO to subscribe.
     channelName,
     invitesReceived,
     invitesNeeded,
-  ) => `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. 
-      ${invitesReceived === invitesNeeded ? `Please respond with ACCEPT or DECLINE.` : ''}
+  ) => `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel.\n ${
+    invitesReceived === invitesNeeded ? `Please respond with ACCEPT or DECLINE.` : ''
+  }
     `,
 
   inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
