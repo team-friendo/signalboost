@@ -113,7 +113,10 @@ ESPAÑOL / ENGLISH
 -> change la langue au Español or Anglais
 
 ADIEU
--> désabonnement de le canal`,
+-> désabonnement de le canal
+
+DÉTRUIRE
+-> détruit définitivement ce canal et tous les enregistrements associés`,
 
     subscriber: `----------------------------------------------
 COMMANDES

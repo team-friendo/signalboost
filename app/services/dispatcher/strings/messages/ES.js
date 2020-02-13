@@ -115,7 +115,10 @@ ENGLISH / FRANÇAIS
 -> cambia idiomas a Inglés o Francés
 
 ADIÓS
--> le saca del canal`,
+-> le saca del canal
+
+DESTRUIR
+-> destruye permanentemente este canal y todos los registros asociados`,
 
     subscriber: `----------------------------------------------
 COMANDOS
