@@ -52,6 +52,17 @@ const routesOf = (router, db, sock) => {
     ctx.body = phoneNumberStatuses
   })
 
+  router.delete('/phoneNumbers', async ctx => {
+    const { phoneNumber } = ctx.request.body
+    const result = await phoneNumberService.destroy({
+      db,
+      sock,
+      phoneNumber,
+    })
+    ctx.status = httpStatusOf(result.status)
+    ctx.body = result
+  })
+
   router.post('/phoneNumbers/recycle', async ctx => {
     const { phoneNumbers } = ctx.request.body
     const result = await phoneNumberService.recycle({

@@ -15,6 +15,9 @@ boost cli supports the following commands:
   create-number -a <area_code> -n <numbers_desired> -u <api_url>
     - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
 
+  destroy -n <phone_number> -u <api_url>
+    - permanently deletes the provided phone number
+
   list-channels -u <api_url>
     - lists all channels active on the signalboost instance at the given url (defaults to prod!)
 

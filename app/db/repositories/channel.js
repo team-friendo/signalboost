@@ -54,6 +54,9 @@ const findDeep = (db, phoneNumber) =>
 
 // all selectors assume you are operating on an already deeply-fetched channel (with all nested attrs avail)
 const getMemberPhoneNumbers = channel => (channel.memberships || []).map(m => m.memberPhoneNumber)
+const getMemberPhoneNumbersExcept = (channel, phoneNumbers) =>
+  getMemberPhoneNumbers(channel).filter(pn => !phoneNumbers.includes(pn))
+
 const getAdminMemberships = channel => channel.memberships.filter(m => m.type === memberTypes.ADMIN)
 const getAdminPhoneNumbers = channel => getAdminMemberships(channel).map(m => m.memberPhoneNumber)
 
@@ -76,6 +79,7 @@ module.exports = {
   getAdminMemberships,
   getAdminPhoneNumbers,
   getMemberPhoneNumbers,
+  getMemberPhoneNumbersExcept,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
   update,

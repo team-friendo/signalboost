@@ -52,7 +52,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
       `Lo sentimos, ${
         channel.name
       } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
-    dbError: '¡Ay! Se produjo un error al aceptar tu invitación. ¡Inténtalo de nuevo!',
+    dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
   },
 
   // ADD
@@ -70,7 +70,14 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
 
   decline: {
     success: 'Invitación rechazada. Toda la información sobre la invitación fue eliminada.',
-    dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtalo de nuevo!',
+    dbError: '¡Ay! Se produjo un error al rechazar la invitación. ¡Inténtelo de nuevo!',
+  },
+
+  // DESTROY
+
+  destroy: {
+    success: 'El canal ha sido destruido permanentamente por sus admins.',
+    error: '¡Ay! Se produjo un error al destruir el canal. ¡Inténtelo de nuevo!',
   },
 
   // HELP
@@ -110,7 +117,10 @@ ENGLISH / FRANÇAIS
 -> cambia idiomas a Inglés o Francés
 
 ADIÓS
--> le saca del canal`,
+-> le saca del canal
+
+DESTRUIR
+-> destruye permanentemente este canal y todos los registros asociados`,
 
     subscriber: `----------------------------------------------
 COMANDOS
@@ -193,7 +203,7 @@ ${support}`,
     invalidPhoneNumber: input =>
       `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
     success: `Invitación emitida.`,
-    dbError: '¡Ay! No se pudo emitir la invitación. Inténtalo de nuevo. :)',
+    dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
   },
 
   // REMOVE
@@ -286,7 +296,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   description: {
     success: newDescription => `La descripción del canal cambió a "${newDescription}".`,
-    dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtalo de nuevo!`,
+    dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtelo de nuevo!`,
     notAdmin,
   },
 }
@@ -297,6 +307,11 @@ const notifications = {
   adminRemoved: 'Se acaba de eliminar un administrador.',
 
   adminLeft: 'Un administrador dejó el canal.',
+
+  channelDestroyed: 'El canal ha sido destruido permanentemente por sus admins.',
+
+  channelDestructionFailed: phoneNumber =>
+    `Error al destruir el canal para el número de teléfono:  ${phoneNumber}`,
 
   channelRecycled:
     'Canal desactivado por falta de uso. Para crear un nuevo canal, visite https://signalboost.info',

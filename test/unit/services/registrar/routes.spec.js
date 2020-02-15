@@ -295,7 +295,35 @@ describe('routes', () => {
     })
   })
 
-  describe('POST to /phoneNumbers/recycling', () => {
+  describe('DELETE to /phoneNumbers', () => {
+    let destroyStub
+    beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
+    afterEach(() => destroyStub.restore())
+
+    describe('destroy service is successful', () => {
+      it('returns a success status', async () => {
+        destroyStub.returns({ status: 'SUCCESS' })
+        await request(server)
+          .delete('/phoneNumbers')
+          .set('Token', registrar.authToken)
+          .send({ phoneNumber: '+12223334444' })
+          .expect(200)
+      })
+    })
+
+    describe('destroy service is unsuccessful', () => {
+      it('returns an error status', async () => {
+        destroyStub.returns({ status: 'ERROR' })
+        await request(server)
+          .delete('/phoneNumbers')
+          .set('Token', registrar.authToken)
+          .send({ phoneNumber: '+12223334444' })
+          .expect(500)
+      })
+    })
+  })
+
+  describe('POST to /phoneNumbers/recycle', () => {
     let recycleStub
     beforeEach(() => (recycleStub = sinon.stub(phoneNumberService, 'recycle')))
     afterEach(() => recycleStub.restore())

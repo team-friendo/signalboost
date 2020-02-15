@@ -109,6 +109,14 @@ describe('signal module', () => {
       )
     })
 
+    it('sends an unsubscribe command', () => {
+      signal.unsubscribe(sock, channelPhoneNumber)
+
+      expect(sock.write.getCall(0).args[0]).to.eql(
+        `{"type":"unsubscribe","username":"${channelPhoneNumber}"}\n`,
+      )
+    })
+
     it('sends a signal message', () => {
       const sdMessage = {
         type: 'send',

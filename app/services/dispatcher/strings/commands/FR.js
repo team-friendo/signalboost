@@ -2,6 +2,7 @@ module.exports = {
   ADD: ['AJOUTER'],
   ACCEPT: ['ACCEPTER'],
   DECLINE: ['REFUSER'],
+  DESTROY: ['DÉTRUIRE'],
   HELP: ['AIDE'],
   INFO: ['INFO'],
   INVITE: ['INVITER'],

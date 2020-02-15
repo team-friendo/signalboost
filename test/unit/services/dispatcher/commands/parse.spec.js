@@ -18,6 +18,7 @@ describe('parse module', () => {
           'the ADD foo',
           'the ACCEPT',
           'the DECLINE',
+          'the DESTROY',
           'the REMOVE foo',
           'the HELP',
           'the INFO',
@@ -146,6 +147,34 @@ describe('parse module', () => {
           messages.forEach(msg =>
             expect(parseExecutable(msg)).to.eql({
               command: commands.DECLINE,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('DESTROY command', () => {
+      it('parses an DESTROY command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['DESTROY', ' destroy '],
+          },
+          {
+            language: languages.ES,
+            messages: ['DESTRUIR', ' destruir '],
+          },
+          {
+            language: languages.FR,
+            messages: ['DÉTRUIRE', ' détruire '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.DESTROY,
               language,
               payload: '',
             }),
