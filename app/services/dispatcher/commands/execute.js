@@ -79,7 +79,7 @@ const execute = async (executable, dispatchable) => {
 
 const maybeAccept = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.accept
-  const vouchLevel = channel.vouchLevel
+
   try {
     // don't accept invite if sender is already a member
     if (await membershipRepository.isMember(db, channel.phoneNumber, sender.phoneNumber))
@@ -87,10 +87,10 @@ const maybeAccept = async (db, channel, sender, language) => {
 
     // don't accept invite if sender doesn't have sufficient invites
     const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
-    if (channel.vouchingOn && inviteCount < vouchLevel)
+    if (channel.vouchingOn && inviteCount < channel.vouchLevel)
       return {
         status: statuses.ERROR,
-        message: cr.belowVouchLevel(channel, vouchLevel, inviteCount),
+        message: cr.belowVouchLevel(channel, channel.vouchLevel, inviteCount),
       }
 
     // okay, fine: accept the invite! :)

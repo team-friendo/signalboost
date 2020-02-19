@@ -3,7 +3,10 @@ const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const validator = require('../../../db/validations/phoneNumber')
 const { messagesIn } = require('../strings/messages')
-const { defaultLanguage } = require('../../../config')
+const {
+  defaultLanguage,
+  signal: { maxVouchLevel },
+} = require('../../../config')
 
 /**
  *
@@ -128,8 +131,8 @@ const validateVouchLevel = commandMatch => {
   const { command, language, matches } = commandMatch
   const vouchLevel = Number(matches[2])
 
-  // TODO @mari: put valid vouch levels in /config?
-  const isValidVouchLevel = Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= 10
+  const isValidVouchLevel =
+    Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= maxVouchLevel
 
   return isValidVouchLevel
     ? commandMatch

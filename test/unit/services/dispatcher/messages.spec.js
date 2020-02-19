@@ -68,6 +68,8 @@ describe('messages module', () => {
       name: 'foobar',
       description: 'the foobar channel',
       phoneNumber: '+13333333333',
+      vouchingOn: true,
+      vouchLevel: 1,
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
         ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -77,11 +79,19 @@ describe('messages module', () => {
 
     describe('for INFO command', () => {
       describe('for admin', () => {
+        const msg = cr.info[memberTypes.ADMIN](channel)
+
         it('shows admin and subscriber counts', () => {
-          const msg = cr.info[memberTypes.ADMIN](channel)
           expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
           expect(msg).to.include('description: the foobar channel')
+        })
+
+        describe('when vouching is on', () => {
+          it('shows the admin the vouch level', () => {
+            expect(msg).to.include('vouching: on')
+            expect(msg).to.include('vouch level: 1')
+          })
         })
       })
 
@@ -114,20 +124,32 @@ describe('messages module', () => {
       })
     })
 
+    describe('#inviteReceived', () => {
+      describe('when invitee has received enough invites', () => {
+        const notification = n.inviteReceived('foobar', 1, 1)
+        it('prompts them with ACCEPT or DECLINE', () => {
+          expect(notification).to.include('ACCEPT or DECLINE')
+        })
+      })
+
+      describe("when invitee hasn't received enough invites", () => {
+        const notification = n.inviteReceived('foobar', 0, 1)
+        it("doesn't prompt them with ACCEPT or DECLINE", () => {
+          expect(notification).not.to.include('ACCEPT or DECLINE')
+        })
+      })
+    })
+
     describe('#rateLimitOccured', () => {
       const [channelPhoneNumber] = times(2, genPhoneNumber)
 
       describe('when resend interval is not null', () => {
         it('notifies user of next resend interval', () => {
-          expect(n.rateLimitOccurred(channelPhoneNumber, 2000)).to.include(
-            '2 sec',
-          )
+          expect(n.rateLimitOccurred(channelPhoneNumber, 2000)).to.include('2 sec')
         })
 
         it('does not notify user of next resend interval', () => {
-          expect(n.rateLimitOccurred(channelPhoneNumber, null)).not.to.include(
-            '2 sec',
-          )
+          expect(n.rateLimitOccurred(channelPhoneNumber, null)).not.to.include('2 sec')
         })
       })
     })

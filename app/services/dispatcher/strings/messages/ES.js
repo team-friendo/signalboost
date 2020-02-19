@@ -3,6 +3,9 @@ const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
+const {
+  signal: { maxVouchLevel },
+} = require('../../../../config')
 
 const systemName = 'El administrador del sistema de Signalboost'
 const notAdmin =
@@ -35,7 +38,7 @@ const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
   invalidVouchLevel: invalidVouchLevel =>
-    `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y 10, por favor.`,
+    `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -227,7 +230,8 @@ ${support}`,
   // RENAME
 
   rename: {
-    success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
+    success: (oldName, newName) => `[${newName}]
+    Canal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
       `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     notAdmin,
@@ -281,7 +285,13 @@ Envíe AYUDA para ver los comandos que comprendo.`,
       success: isOn =>
         `${
           isOn
-            ? `Atestiguando activada.\n\nPara atestiguar para alguien, use el comando INVITAR. Por ejemplo:\n"INVITAR +12345551234"\n\nPara cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por ejemplo:\n"NIVEL DE ATESTIGUAR 3"`
+            ? `Atestiguando activada.
+
+Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:
+"INVITAR +12345551234"
+
+Para cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por ejemplo:
+"NIVEL DE ATESTIGUAR 3"`
             : `Atestiguando desactivada.`
         }`,
       notAdmin,
@@ -401,10 +411,11 @@ ${
     `Error al reciclar el canal para el número de teléfono: ${phoneNumber}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,
+    `Solicitud de registro recibida de ${senderNumber}:
+${requestMsg}`,
 
-  signupRequestResponse:
-    '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
+  signupRequestResponse: `¡Gracias por registrarse en Signalboost! 
+En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
 
   toRemovedAdmin:
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',

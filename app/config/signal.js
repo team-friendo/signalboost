@@ -17,6 +17,7 @@ const defaults = {
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
   broadcastBatchSize: 1,
   broadcastBatchInterval: 1300, // 1.3 seconds
+  maxVouchLevel: 10,
 }
 
 const test = {
@@ -36,6 +37,7 @@ const test = {
   maxResendInterval: 256, // ~ 2.5 sec,
   broadcastBatchSize: 2,
   broadcastBatchInterval: 10, // 10 millis
+  maxVouchLevel: 10,
 }
 
 const development = {

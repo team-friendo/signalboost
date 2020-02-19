@@ -3,6 +3,9 @@ const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
+const {
+  signal: { maxVouchLevel },
+} = require('../../../../config')
 
 const systemName = 'le maintenant du système Signalboost'
 const notAdmin =
@@ -36,7 +39,7 @@ const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
   invalidVouchLevel: invalidVouchLevel =>
-    `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et 10.`,
+    `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et ${maxVouchLevel}.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -246,9 +249,11 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
   // RENAME
 
   rename: {
-    success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
+    success: (oldName, newName) => `[${newName}]
+Canal nom changé de "${oldName}" à "${newName}”.`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
+      `[${oldName}]
+Oups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
     notAdmin,
   },
 
@@ -276,7 +281,12 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
       success: isOn =>
         `${
           isOn
-            ? `Se porter garant activée.\n\nPour inviter quelqu'un, utilisez la commande INVITER:\n"INVITER +12345551234"\n\nPour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT:\n"NIVEAU DE PORTER GARANT 3"`
+            ? `Se porter garant activée.
+Pour inviter quelqu'un, utilisez la commande INVITER:
+"INVITER +12345551234"
+
+Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT:
+"NIVEAU DE PORTER GARANT 3"`
             : `Se porter garant desactivée.`
         }`,
       notAdmin,
@@ -382,7 +392,8 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
+    `Demande d’abonnement reçu provenant de ${senderNumber}:
+${requestMsg}`,
 
   signupRequestResponse:
     'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
