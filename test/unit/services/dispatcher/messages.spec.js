@@ -7,6 +7,7 @@ import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times, keys } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { languages } from '../../../../app/constants'
+import { toggles } from '../../../../app/services/dispatcher/commands/constants'
 import {
   adminMembershipFactory,
   subscriberMembershipFactory,
@@ -101,6 +102,16 @@ describe('messages module', () => {
           expect(msg).to.include('subscribers: 2')
           expect(msg).to.include('description: the foobar channel')
         })
+      })
+    })
+
+    describe('VOUCHING_ON command', () => {
+      it('should include the vouch level in the command response', () => {
+        const msg = cr.toggles[toggles.VOUCHING.name].success(
+          channel.vouchingOn,
+          channel.vouchLevel,
+        )
+        expect(msg).to.include(1)
       })
     })
   })

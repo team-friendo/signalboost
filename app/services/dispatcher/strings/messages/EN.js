@@ -274,10 +274,12 @@ Send HELP to list commands I understand.`,
         `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,
     },
     vouching: {
-      success: (isOn, invitesNeeded) =>
+      success: (isOn, vouchLevel) =>
         `${
           isOn
-            ? `Vouching turned on. Joining this channel will now require ${invitesNeeded} invite.
+            ? `Vouching turned on. Joining this channel will now require ${vouchLevel} ${
+                vouchLevel > 1 ? 'invites' : 'invite'
+              }.
 
 To vouch for someone, use the INVITE command. For example:
 "INVITE +12345551234"
@@ -399,7 +401,9 @@ ${requestMsg}`,
   toggles: commandResponses.toggles,
 
   vouchLevelChanged: vouchLevel =>
-    `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} invites.`,
+    `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${
+      vouchLevel > 1 ? 'invites' : 'invite'
+    }.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!

@@ -278,10 +278,13 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
         )}. Veuillez essayer de nouveau!`,
     },
     vouching: {
-      success: isOn =>
+      success: (isOn, vouchLevel) =>
         `${
           isOn
-            ? `Se porter garant activée.
+            ? `Se porter garant activée. ${vouchLevel} ${
+                vouchLevel > 1 ? 'invitations' : 'invitation'
+              } seront désormais nécessaires pour rejoindre cette chaîne.
+
 Pour inviter quelqu'un, utilisez la commande INVITER:
 "INVITER +12345551234"
 
@@ -415,7 +418,9 @@ ${
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
   vouchLevelChanged: vouchLevel =>
-    `Un administrateur vient de changer le niveau du garant en ${vouchLevel}; Des invitations ${vouchLevel} seront désormais nécessaires pour rejoindre cette chaîne.`,
+    `Un administrateur vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
+      vouchLevel > 1 ? 'invitations' : 'invitation'
+    } seront désormais nécessaires pour rejoindre cette chaîne.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Vous êtes maintenant un

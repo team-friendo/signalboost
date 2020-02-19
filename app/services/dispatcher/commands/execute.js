@@ -24,7 +24,7 @@ const {
  *   notifications: Array<{ recipient: Array<string>, message: string }>
  * }
  *
- * type Toggle = toggles.RESPONSES | toggles.VOUCHING
+ * type Toggle = toggles.HOTLINE | toggles.VOUCHING
  **/
 
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
@@ -407,7 +407,7 @@ const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
     .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(isOn),
+      message: cr.success(isOn, channel.vouchLevel),
       notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
@@ -416,7 +416,10 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(
+      isOn,
+      channel.vouchLevel,
+    ),
   }))
 }
 

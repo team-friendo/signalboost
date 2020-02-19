@@ -282,10 +282,12 @@ Envíe AYUDA para ver los comandos que comprendo.`,
         } la línea directa. ¡Inténtelo de nuevo!`,
     },
     vouching: {
-      success: isOn =>
+      success: (isOn, vouchLevel) =>
         `${
           isOn
-            ? `Atestiguando activada.
+            ? `Atestiguando activada. Ahore se require ${vouchLevel} ${
+                vouchLevel > 1 ? 'invitaciones' : 'invitación'
+              } para unirse a este canal.
 
 Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:
 "INVITAR +12345551234"
@@ -423,7 +425,9 @@ En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
   toggles: commandResponses.toggles,
 
   vouchLevelChanged: vouchLevel =>
-    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requieren ${vouchLevel} invitaciones para unirse a este canal.`,
+    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requiere ${vouchLevel} ${
+      vouchLevel > 1 ? 'invitaciones' : 'invitación'
+    } para unirse a este canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!
