@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, test, before, after } from 'mocha'
+import { describe, it, before, after } from 'mocha'
 import { keys, values, pick } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'

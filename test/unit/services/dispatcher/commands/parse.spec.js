@@ -27,6 +27,7 @@ describe('parse module', () => {
           'the GOODBYE',
           'the HOTLINE ON',
           'the HOTLINE OFF',
+          'the VOUCH LEVEL',
           'the VOUCHING ON',
           'the VOUCHING OFF',
           'the ENGLISH',
@@ -41,8 +42,9 @@ describe('parse module', () => {
           'la ELIMINAR',
           'la RECHAZAR',
           'la RENOMBRAR',
-          'la RESPUESTAS ACTIVADAS',
-          'la RESPUESTAS DESACTIVADAS',
+          'la LÍNEA DIRECTA',
+          'la LÍNEA DIRECTA',
+          'la NIVEL DE ATESTIGUAR',
           'la ESPAÑOL',
 
           'le AJOUTER',
@@ -55,8 +57,9 @@ describe('parse module', () => {
           'le ADIEU',
           'le SUPPRIMER',
           'le RENOMMER',
-          'le RÉPONSES ACTIVÉES',
-          'le RÉPONSES DÉSACTIVÉES',
+          'le HOTLINE ACTIVÉE',
+          'le HOTLINE DÉSACTIVÉE',
+          'le NIVEAU DE PORTER GARANT',
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
           'le FRENCH',
@@ -460,7 +463,7 @@ describe('parse module', () => {
     })
 
     describe('HOTLINE_ON command', () => {
-      it('parses an HOTLINE_ON command regardless of casing, spacing, accents, or language', () => {
+      it('parses a HOTLINE ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
@@ -468,11 +471,15 @@ describe('parse module', () => {
           },
           {
             language: languages.ES,
-            messages: ['RESPUESTAS ACTIVADAS', 'respuestas activadas', ' respuestas activadas '],
+            messages: [
+              'LÍNEA DIRECTA ACTIVADA',
+              'línea directa activada',
+              ' linea directa activada ',
+            ],
           },
           {
             language: languages.FR,
-            messages: ['RÉPONSES ACTIVÉES', 'REPONSES ACTIVEES', ' reponses activees '],
+            messages: ['HOTLINE ACTIVÉE', 'hotline activée', ' hotline activee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -496,11 +503,15 @@ describe('parse module', () => {
           },
           {
             language: languages.ES,
-            messages: ['RESPUESTAS DESACTIVADAS', ' respuestas desactivadas '],
+            messages: [
+              'LÍNEA DIRECTA DESACTIVADA',
+              'línea directa desactivada',
+              ' Linea directa desactivada ',
+            ],
           },
           {
             language: languages.FR,
-            messages: ['RÉPONSES DÉSACTIVÉES', 'REPONSES DESACTIVEES', ' reponses desactivees '],
+            messages: ['HOTLINE DÉSACTIVÉE', 'hotline désactivée', ' hotline desactivee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -556,7 +567,7 @@ describe('parse module', () => {
           },
           {
             language: languages.FR,
-            messages: ['SE PORTER GARANT ACTIVÉES', ' se porter garant activees '],
+            messages: ['SE PORTER GARANT ACTIVÉE', ' se porter garant activee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -584,7 +595,7 @@ describe('parse module', () => {
           },
           {
             language: languages.FR,
-            messages: ['SE PORTER GARANT DÉSACTIVÉES', ' se porter garant desactivees '],
+            messages: ['SE PORTER GARANT DÉSACTIVÉE', ' se porter garant desactivee '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -593,6 +604,39 @@ describe('parse module', () => {
               command: commands.VOUCHING_OFF,
               language,
               payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('VOUCH_LEVEL command', () => {
+      const vouchLevel = 3
+
+      it('parses a VOUCH LEVEL regardless of spacing, accents, casing, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: [`VOUCH LEVEL ${vouchLevel}`, ` vouch Level ${vouchLevel}`],
+          },
+          {
+            language: languages.ES,
+            messages: [`NIVEL DE ATESTIGUAR ${vouchLevel}`, ` nivel de atestiguar ${vouchLevel}`],
+          },
+          {
+            language: languages.FR,
+            messages: [
+              `NIVEAU DE PORTER GARANT ${vouchLevel}`,
+              ` niveau de porter garant${vouchLevel}`,
+            ],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.VOUCH_LEVEL,
+              language,
+              payload: `${vouchLevel}`,
             }),
           ),
         )
@@ -631,8 +675,8 @@ describe('parse module', () => {
               'hola foo',
               'adios foo',
               'espanol foo',
-              'respuestas activadas ahora',
-              'respuestas desactivadas ahora',
+              'línea directa activada ahora',
+              'línea directa desactivada ahora',
               'atestiguando activada ahora',
               'atestiguando desactivada ahora',
             ],
@@ -646,8 +690,8 @@ describe('parse module', () => {
               'allo foo',
               'adieu foo',
               'francais foo',
-              'reponses activees maintenant',
-              'reponses desactivees maintenant',
+              'hotline activee maintenant',
+              'hotline desactivee maintenant',
               'se porter garant activees maintenant',
               'se porter garant desactivees maintenant',
             ],

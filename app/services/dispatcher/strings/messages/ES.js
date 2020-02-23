@@ -3,6 +3,9 @@ const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
+const {
+  signal: { maxVouchLevel },
+} = require('../../../../config')
 
 const systemName = 'El administrador del sistema de Signalboost'
 const notAdmin =
@@ -20,7 +23,7 @@ Signalboost tiene canales con administradores y suscriptores.
 -> Cuando los administradores envían mensajes, se transmiten a todos los suscriptores.
 -> Si está habilitado, los suscriptores pueden enviar mensajes a la línea directa.
 
-Signalboost intenta preservar su privacidad:
+Signalboost intenta a preservar su privacidad:
 
 -> Los usuarios de Signalboost no pueden ver los números de otros usuarios. (¡Los policías tampoco no pueden!)
 -> Signalboost no lee ni almacena los mensajes de nadie.
@@ -34,6 +37,8 @@ Para más información: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
+  invalidVouchLevel: invalidVouchLevel =>
+    `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -48,7 +53,7 @@ const commandResponses = {
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Lo sentimos, ${
         channel.name
       } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
@@ -113,6 +118,9 @@ LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 ATESTIGUANDO ACTIVADA / DESACTIVADA
 -> activa o desactiva el requisito de recibir una invitación para suscribirse
 
+NIVEL DE ATESTIGUAR nivel
+-> cambia el numero de invitaciónes requeridos para unirse a este canal 
+
 ENGLISH / FRANÇAIS
 -> cambia idiomas a Inglés o Francés
 
@@ -162,6 +170,7 @@ admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -174,9 +183,10 @@ Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
+suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${onOrOff(channel.vouchingOn)}
-suscriptorxs: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -220,7 +230,8 @@ ${support}`,
   // RENAME
 
   rename: {
-    success: (oldName, newName) => `[${newName}]\nCanal renombrado de "${oldName}" a "${newName}".`,
+    success: (oldName, newName) => `[${newName}]
+    Canal renombrado de "${oldName}" a "${newName}".`,
     dbError: (oldName, newName) =>
       `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     notAdmin,
@@ -239,7 +250,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
 
 Si ya tiene usted una invitación, intente enviar ACEPTAR`,
     dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
-    alreadyMember: `¡Ay! Ya eres miembro del canal.`,
+    alreadyMember: `¡Ay! Ya usted es miembro del canal.`,
   },
 
   // LEAVE
@@ -271,7 +282,20 @@ Envíe AYUDA para ver los comandos que comprendo.`,
         } la línea directa. ¡Inténtelo de nuevo!`,
     },
     vouching: {
-      success: isOn => `Atestiguando configurado en ${onOrOff(isOn)}.`,
+      success: (isOn, vouchLevel) =>
+        `${
+          isOn
+            ? `Atestiguando activada. Ahore se require ${vouchLevel} ${
+                vouchLevel > 1 ? 'invitaciones' : 'invitación'
+              } para unirse a este canal.
+
+Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:
+"INVITAR +12345551234"
+
+Para cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por ejemplo:
+"NIVEL DE ATESTIGUAR 3"`
+            : `Atestiguando desactivada.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
@@ -290,6 +314,19 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     notAdmin,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
+  },
+
+  // VOUCH_LEVEL
+
+  vouchLevel: {
+    success: level =>
+      `Nivel de atestiguando cambiado a ${level}. Ahora se requieren ${level} ${
+        level > 1 ? 'invitaciones' : 'invitación'
+      } para nuevos suscriptores unirse a este canal.`,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
+    dbError:
+      'Se produjo un error al actualizar el nivel de atestiguando. Inténtelo de nuevo, por favor.',
   },
 
   // SET_DESCRIPTION
@@ -335,9 +372,15 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
-  inviteReceived: channelName => `Ha sido invitado al [${channelName}] canal de Signalboost. ¿Usted le gustaría suscribirse a los anuncios de este canal?
-  
-  Responda con ACEPTAR o RECHAZAR.`,
+  inviteReceived: (
+    channelName,
+    invitesReceived,
+    invitesNeeded,
+  ) => `Hola! Usted ha recibido ${invitesReceived}/${invitesNeeded} invitaciónes necesarios para unirse al canal Signalboost de [${channelName}]. 
+      ${invitesReceived === invitesNeeded ? `Por favor, responda con ACEPTAR o RECHAZAR.` : ''}
+    `,
+
+  inviteAccepted: `¡Felicidades! Alguien ha aceptado su invitación y ahora está suscrito a este canal.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -370,15 +413,21 @@ ${
     `Error al reciclar el canal para el número de teléfono: ${phoneNumber}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Solicitud de registro recibida de ${senderNumber}: \n ${requestMsg}`,
+    `Solicitud de registro recibida de ${senderNumber}:
+${requestMsg}`,
 
-  signupRequestResponse:
-    '¡Gracias por registrarse en Signalboost! \nEn breve recibirá un mensaje de bienvenida en su nuevo canal...',
+  signupRequestResponse: `¡Gracias por registrarse en Signalboost! 
+En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
 
   toRemovedAdmin:
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
+
+  vouchLevelChanged: vouchLevel =>
+    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requiere ${vouchLevel} ${
+      vouchLevel > 1 ? 'invitaciones' : 'invitación'
+    } para unirse a este canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Acabas de convertirte en administrador de este canal Signalboost por ${addingAdmin}. ¡Bienvenido!

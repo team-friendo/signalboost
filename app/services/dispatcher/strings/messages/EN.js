@@ -3,6 +3,9 @@ const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
+const {
+  signal: { maxVouchLevel },
+} = require('../../../../config')
 
 const systemName = 'the signalboost system administrator'
 const notAdmin =
@@ -34,6 +37,9 @@ Learn more: https://signalboost.info`
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`,
+
+  invalidVouchLevel: vouchLevel =>
+    `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and ${maxVouchLevel}.`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -48,7 +54,7 @@ const commandResponses = {
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
     dbError: 'Whoops! There was an error accepting your invite. Please try again!',
   },
@@ -107,6 +113,9 @@ HOTLINE ON / OFF
 VOUCHING ON / OFF
 -> enables or disables requirement to receive an invite to subscribe
 
+VOUCH LEVEL level
+-> changes the number of invites needed to join the channel
+
 ESPAÑOL / FRANÇAIS
 -> switches language to Spanish or French
 
@@ -157,6 +166,7 @@ admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -169,9 +179,10 @@ You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
+subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${onOrOff(channel.vouchingOn)}
-subscribers: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -236,9 +247,11 @@ If you already have an invite, try sending ACCEPT`,
 
   rename: {
     success: (oldName, newName) =>
-      `[${newName}]\nChannel renamed from "${oldName}" to "${newName}".`,
+      `[${newName}]
+Channel renamed from "${oldName}" to "${newName}".`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nWhoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
+      `[${oldName}]
+Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
     notAdmin,
   },
 
@@ -261,7 +274,20 @@ Send HELP to list commands I understand.`,
         `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,
     },
     vouching: {
-      success: isOn => `Vouching turned ${onOrOff(isOn)}.`,
+      success: (isOn, vouchLevel) =>
+        `${
+          isOn
+            ? `Vouching turned on. Joining this channel will now require ${vouchLevel} ${
+                vouchLevel > 1 ? 'invites' : 'invite'
+              }.
+
+To vouch for someone, use the INVITE command. For example:
+"INVITE +12345551234"
+
+To change the vouching level, use the VOUCH LEVEL command. For example:
+"VOUCH LEVEL 3"`
+            : `Vouching turned off.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to turn vouching ${onOrOff(isOn)}. Please try again!`,
@@ -278,6 +304,17 @@ Send HELP to list commands I understand.`,
     notAdmin,
     dbError: phoneNumber =>
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
+  },
+
+  // VOUCH_LEVEL
+  vouchLevel: {
+    success: level =>
+      `Vouching level set to ${level}. It will now take ${level} ${
+        level > 1 ? 'invites' : 'invite'
+      } for new subscribers to join this channel.`,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
+    dbError: 'There was an error updating the vouching level. Please try again.',
   },
 
   // SET_DESCRIPTION
@@ -335,9 +372,12 @@ Send HELP to list valid commands. Send HELLO to subscribe.
       ? 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands.'
       : 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands or HELLO to subscribe.',
 
-  inviteReceived: channelName => `You have been invited to the [${channelName}] Signalboost channel. Would you like to subscribe to announcements from this channel?
+  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+    `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
+      invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
+    }`,
 
-Please respond with ACCEPT or DECLINE.`,
+  inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
 
   rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
     `Message rate limited on channel: ${channelPhoneNumber}.
@@ -350,7 +390,8 @@ ${
   recycleChannelFailed: phoneNumber => `Failed to recycle channel for phone number: ${phoneNumber}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Signup request received from ${senderNumber}:\n ${requestMsg}`,
+    `Signup request received from ${senderNumber}:
+${requestMsg}`,
 
   signupRequestResponse:
     'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
@@ -358,6 +399,11 @@ ${
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
+
+  vouchLevelChanged: vouchLevel =>
+    `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${
+      vouchLevel > 1 ? 'invites' : 'invite'
+    }.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
     `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!

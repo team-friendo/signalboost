@@ -3,7 +3,10 @@ const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const validator = require('../../../db/validations/phoneNumber')
 const { messagesIn } = require('../strings/messages')
-const { defaultLanguage } = require('../../../config')
+const {
+  defaultLanguage,
+  signal: { maxVouchLevel },
+} = require('../../../config')
 
 /**
  *
@@ -78,11 +81,11 @@ const validatePayload = commandMatch => {
     case commands.DECLINE:
     case commands.DESTROY:
     case commands.HELP:
+    case commands.HOTLINE_ON:
+    case commands.HOTLINE_OFF:
     case commands.INFO:
     case commands.JOIN:
     case commands.LEAVE:
-    case commands.HOTLINE_ON:
-    case commands.HOTLINE_OFF:
     case commands.SET_LANGUAGE:
     case commands.VOUCHING_ON:
     case commands.VOUCHING_OFF:
@@ -91,6 +94,8 @@ const validatePayload = commandMatch => {
     case commands.INVITE:
     case commands.REMOVE:
       return validatePhoneNumber(commandMatch)
+    case commands.VOUCH_LEVEL:
+      return validateVouchLevel(commandMatch)
     default:
       return commandMatch
   }
@@ -119,6 +124,23 @@ const validatePhoneNumber = commandMatch => {
         error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber),
       }
     : { command, matches: [...matches.slice(0, 2), phoneNumber], language }
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validateVouchLevel = commandMatch => {
+  const { command, language, matches } = commandMatch
+  const vouchLevel = Number(matches[2])
+
+  const isValidVouchLevel =
+    Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= maxVouchLevel
+
+  return isValidVouchLevel
+    ? commandMatch
+    : {
+        command,
+        matches,
+        error: messagesIn(language).parseErrors.invalidVouchLevel(matches[2]),
+      }
 }
 
 module.exports = { parseExecutable }

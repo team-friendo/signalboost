@@ -24,7 +24,7 @@ const {
  *   notifications: Array<{ recipient: Array<string>, message: string }>
  * }
  *
- * type Toggle = toggles.RESPONSES | toggles.VOUCHING
+ * type Toggle = toggles.HOTLINE | toggles.VOUCHING
  **/
 
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
@@ -62,6 +62,7 @@ const execute = async (executable, dispatchable) => {
     [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
+    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
   }[command] || (() => noop()))()
@@ -78,16 +79,19 @@ const execute = async (executable, dispatchable) => {
 
 const maybeAccept = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.accept
-  const THRESHOLD = 1 // TODO read threshold from channel when playing #137
+
   try {
     // don't accept invite if sender is already a member
     if (await membershipRepository.isMember(db, channel.phoneNumber, sender.phoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyMember }
 
-    // don't accept invite if sender does not have enough invites to pass vouch threshold
+    // don't accept invite if sender doesn't have sufficient invites
     const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
-    if (channel.vouchingOn && inviteCount < THRESHOLD)
-      return { status: statuses.ERROR, message: cr.belowThreshold(channel, THRESHOLD, inviteCount) }
+    if (channel.vouchingOn && inviteCount < channel.vouchLevel)
+      return {
+        status: statuses.ERROR,
+        message: cr.belowVouchLevel(channel, channel.vouchLevel, inviteCount),
+      }
 
     // okay, fine: accept the invite! :)
     return accept(db, channel, sender, language, cr)
@@ -225,12 +229,22 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
       inviterPhoneNumber,
       inviteePhoneNumber,
     )
+    const invitesReceived = await inviteRepository.count(
+      db,
+      channel.phoneNumber,
+      inviteePhoneNumber,
+    )
     // We don't return an "already invited" error here to defend side-channel attacks (as above)
     return inviteWasCreated
       ? {
           status: statuses.SUCCESS,
           message: cr.success,
-          notifications: inviteNotificationsOf(channel, inviteePhoneNumber),
+          notifications: inviteNotificationsOf(
+            channel,
+            inviteePhoneNumber,
+            invitesReceived,
+            channel.vouchLevel,
+          ),
         }
       : { status: statuses.ERROR, message: cr.success }
   } catch (e) {
@@ -238,11 +252,15 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
   }
 }
 
-const inviteNotificationsOf = (channel, inviteePhoneNumber) => {
+const inviteNotificationsOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
   return [
     {
       recipient: inviteePhoneNumber,
-      message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+      message: messagesIn(channel.language).notifications.inviteReceived(
+        channel.name,
+        invitesReceived,
+        invitesNeeded,
+      ),
     },
   ]
 }
@@ -389,7 +407,7 @@ const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
     .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(isOn),
+      message: cr.success(isOn, channel.vouchLevel),
       notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
@@ -398,7 +416,10 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(
+      isOn,
+      channel.vouchLevel,
+    ),
   }))
 }
 
@@ -437,6 +458,46 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: messagesIn(sender.language).notifications.setDescription(newDescription),
+  }))
+}
+
+// VOUCH LEVEL
+
+const maybeSetVouchLevel = (db, channel, sender, newVouchLevel) => {
+  const cr = messagesIn(sender.language).commandResponses.vouchLevel
+  if (sender.type !== ADMIN)
+    return {
+      status: statuses.UNAUTHORIZED,
+      message: cr.notAdmin,
+    }
+
+  return setVouchLevel(db, channel, newVouchLevel, sender, cr)
+}
+
+const setVouchLevel = async (db, channel, newVouchLevel, sender, cr) => {
+  try {
+    await channelRepository.update(db, channel.phoneNumber, {
+      vouchLevel: newVouchLevel,
+      vouchingOn: true,
+    })
+
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(newVouchLevel),
+      notifications: vouchLevelNotificationsOf(channel, newVouchLevel, sender),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.vouchLevelChanged(newVouchLevel),
   }))
 }
 

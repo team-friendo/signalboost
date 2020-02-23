@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, test, before, beforeEach, after, afterEach } from 'mocha'
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { times } from 'lodash'
 import { initDb } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
@@ -78,8 +78,9 @@ describe('channel model', () => {
     expect(channel.name).to.be.a('string')
     expect(channel.description).to.be.a('string')
     expect(channel.hotlineOn).to.be.a('boolean')
-    expect(channel.vouchingOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
+    expect(channel.vouchingOn).to.be.a('boolean')
+    expect(channel.vouchLevel).to.be.a('number')
     expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
   })
@@ -91,13 +92,15 @@ describe('channel model', () => {
         vouchingOn: undefined,
         messageExpiryTime: undefined,
         description: undefined,
+        vouchLevel: undefined,
       }),
     )
 
     expect(channel.hotlineOn).to.equal(false)
-    expect(channel.vouchingOn).to.equal(false)
-    expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     expect(channel.description).to.equal('')
+    expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
+    expect(channel.vouchingOn).to.equal(false)
+    expect(channel.vouchLevel).to.equal(1)
   })
 
   describe('validations', () => {

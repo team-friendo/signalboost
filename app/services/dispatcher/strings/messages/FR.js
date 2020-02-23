@@ -3,6 +3,9 @@ const {
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../../../db/repositories/channel')
+const {
+  signal: { maxVouchLevel },
+} = require('../../../../config')
 
 const systemName = 'le maintenant du système Signalboost'
 const notAdmin =
@@ -10,7 +13,7 @@ const notAdmin =
 const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné à cette canal. Envoyez BONJOUR pour vous abonner."
 
-const onOrOff = isOn => (isOn ? 'activées' : 'désactivées')
+const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
 
 const support = `----------------------------------------------
 COMMENT ÇA FONCTIONNE
@@ -32,12 +35,14 @@ Signalboost répond aux commandes:
 
 Pour plus de renseignements: https://signalboost.info`
 
-const parseErrrors = {
+const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
     `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre le code pays précédé par un «+».`,
+  invalidVouchLevel: invalidVouchLevel =>
+    `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et ${maxVouchLevel}.`,
 }
 
-const invalidPhoneNumber = parseErrrors.invalidPhoneNumber
+const invalidPhoneNumber = parseErrors.invalidPhoneNumber
 
 const commandResponses = {
   // ACCEPT
@@ -49,7 +54,7 @@ const commandResponses = {
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de cette canal',
-    belowThreshold: (channel, required, actual) =>
+    belowVouchLevel: (channel, required, actual) =>
       `Désolé, ${
         channel.name
       } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
@@ -103,11 +108,14 @@ DESCRIPTION description de le canal
 AJOUTER / SUPPRIMER +1-555-555-5555
 -> ajoute ou supprime + 1-555-555-5555 en tant qu'administrateur de le canal
 
-HOTLINE ACTIVÉES / DÉSACTIVÉES
+HOTLINE ACTIVÉE / DÉSACTIVÉE
 -> active ou désactive hotline
 
-SE PORTER GARANT ACTIVÉES / DÉSACTIVÉES
+SE PORTER GARANT ACTIVÉE / DÉSACTIVÉE
 -> active ou désactive l'exigence de recevoir une invitation à s'abonner
+
+NIVEAU DE PORTER GARANT niveau
+-> modifie le nombre d'invitations nécessaires pour rejoindre la chaîne
 
 ESPAÑOL / ENGLISH
 -> change la langue au Español or Anglais
@@ -158,6 +166,7 @@ admins: ${getAdminMemberships(channel).length}
 abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -170,9 +179,10 @@ Vous êtes abonné a cette canal.
 
 nom: ${channel.name}
 numéro de téléphone: ${channel.phoneNumber}
+abonnées: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${onOrOff(channel.vouchingOn)}
-abonnées: ${getSubscriberMemberships(channel).length}
+${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -239,9 +249,11 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
   // RENAME
 
   rename: {
-    success: (oldName, newName) => `[${newName}]\nCanal nom changé de "${oldName}" à "${newName}”.`,
+    success: (oldName, newName) => `[${newName}]
+Canal nom changé de "${oldName}" à "${newName}”.`,
     dbError: (oldName, newName) =>
-      `[${oldName}]\nOups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
+      `[${oldName}]
+Oups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
     notAdmin,
   },
 
@@ -266,7 +278,20 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
         )}. Veuillez essayer de nouveau!`,
     },
     vouching: {
-      success: isOn => `se porter garant maintenant ${onOrOff(isOn)}.`,
+      success: (isOn, vouchLevel) =>
+        `${
+          isOn
+            ? `Se porter garant activée. ${vouchLevel} ${
+                vouchLevel > 1 ? 'invitations' : 'invitation'
+              } seront désormais nécessaires pour rejoindre cette chaîne.
+
+Pour inviter quelqu'un, utilisez la commande INVITER:
+"INVITER +12345551234"
+
+Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT:
+"NIVEAU DE PORTER GARANT 3"`
+            : `Se porter garant desactivée.`
+        }`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer se porter garant à ${onOrOff(
@@ -285,6 +310,19 @@ Commande AIDE pour le menu des commandes que je maîtrise.`,
     notAdmin,
     dbError: phoneNumber =>
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité à ${phoneNumber}. Veuillez essayer à nouveau!`,
+  },
+
+  // VOUCH_LEVEL
+
+  vouchLevel: {
+    success: level =>
+      `Le niveau de porter garant est passé à ${level}; Des 
+      ${level} ${+level > 1 ? 'invitations' : 'invitation'}
+       sont désormais requises pour nouveaux abonnés rejoindre cette chaîne.`,
+    invalid: parseErrors.invalidVouchLevel,
+    notAdmin,
+    dbError:
+      'Une erreur s’est produite lors de la mise à le niveau de porter garant. Veuillez essayer à nouveau!',
   },
 
   // SET_DESCRIPTION
@@ -333,9 +371,12 @@ Envoyez HELP pour répertorier les commandes valides. Envoyez ALLÔ pour vous ab
       ? 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, la hotline ne sont pas activés sur cette canal. Envoyez AIDE pour lister les commandes valides ou ALLÔ pour vous abonner.',
 
-  inviteReceived: channelName => `Vous avez été invité sur le  [${channelName}] canal Signalboost. Souhaitez-vous vous abonner aux annonces de cette canal?
+  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
+       ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
+     `,
 
-Veuillez répondre avec ACCEPTER ou REFUSER.`,
+  inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette chaîne.`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
@@ -354,7 +395,8 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes que je maîtrise!',
 
   signupRequestReceived: (senderNumber, requestMsg) =>
-    `Demande d’abonnement reçu provenant de ${senderNumber}:\n ${requestMsg}`,
+    `Demande d’abonnement reçu provenant de ${senderNumber}:
+${requestMsg}`,
 
   signupRequestResponse:
     'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
@@ -375,6 +417,11 @@ ${
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
+  vouchLevelChanged: vouchLevel =>
+    `Un administrateur vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
+      vouchLevel > 1 ? 'invitations' : 'invitation'
+    } seront désormais nécessaires pour rejoindre cette chaîne.`,
+
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Vous êtes maintenant un
  admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
@@ -391,7 +438,7 @@ const prefixes = {
 module.exports = {
   commandResponses,
   notifications,
-  parseErrrors,
+  parseErrors,
   prefixes,
   systemName,
 }
