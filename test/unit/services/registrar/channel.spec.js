@@ -11,11 +11,14 @@ import { deepChannelAttrs } from '../../../support/factories/channel'
 import { statuses } from '../../../../app/constants'
 import { create, addAdmin, list } from '../../../../app/services/registrar/channel'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
-import { defaultLanguage } from '../../../../app/config'
+const {
+  signal: { defaultMessageExpiryTime },
+  defaultLanguage,
+} = require('../../../../app/config')
 
 describe('channel registrar', () => {
   const db = {}
-  const sock = {}
+  const sock = { write: () => null }
   const phoneNumber = genPhoneNumber()
   const channelPhoneNumber = phoneNumber
   const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
@@ -44,7 +47,8 @@ describe('channel registrar', () => {
     updatePhoneNumberStub,
     notifyStub,
     findAllDeepStub,
-    findByNumberStub
+    findByNumberStub,
+    setExpirationStub
 
   beforeEach(() => {
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
@@ -56,6 +60,7 @@ describe('channel registrar', () => {
     findByNumberStub = sinon
       .stub(channelRepository, 'findByPhoneNumber')
       .returns(Promise.resolve(channelInstance))
+    setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
   })
 
   afterEach(() => {
@@ -66,6 +71,7 @@ describe('channel registrar', () => {
     notifyStub.restore()
     findAllDeepStub.restore()
     findByNumberStub.restore()
+    setExpirationStub.restore()
   })
 
   describe('#create', () => {
@@ -132,6 +138,18 @@ describe('channel registrar', () => {
         describe('when sending welcome messages succeeds', () => {
           beforeEach(() => {
             notifyStub.returns(Promise.resolve())
+          })
+
+          it('sets the expiry time on the channel', async () => {
+            await create({ db, sock, phoneNumber, name, admins })
+            admins.forEach((adminPhoneNumber, idx) => {
+              expect(setExpirationStub.getCall(idx).args).to.eql([
+                sock,
+                channelPhoneNumber,
+                adminPhoneNumber,
+                defaultMessageExpiryTime,
+              ])
+            })
           })
 
           it('returns a success message', async function() {

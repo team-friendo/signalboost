@@ -11,7 +11,7 @@ const { statuses: sbStatuses } = require('../../constants')
 const { loggerOf, wait } = require('../util')
 const logger = loggerOf()
 const {
-  signal: { welcomeDelay },
+  signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval },
 } = require('../../config')
 
 const welcomeNotificationOf = channelPhoneNumber =>
@@ -44,16 +44,7 @@ const create = async ({ db, sock, phoneNumber, name, admins }) => {
     await signal.subscribe(sock, phoneNumber)
     const channel = await channelRepository.create(db, phoneNumber, name, admins)
     await phoneNumberRepository.update(db, phoneNumber, { status: pNumStatuses.ACTIVE })
-    await wait(welcomeDelay)
-    await Promise.all(
-      channelRepository.getAdminPhoneNumbers(channel).map(recipient =>
-        messenger.notify({
-          sock,
-          channel,
-          notification: { recipient, message: welcomeNotificationOf(channel.phoneNumber) },
-        }),
-      ),
-    )
+    await _welcomeAdmins(sock, channel)
     return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
   } catch (e) {
     logger.error(e)
@@ -63,6 +54,30 @@ const create = async ({ db, sock, phoneNumber, name, admins }) => {
       request: { phoneNumber, name, admins },
     }
   }
+}
+
+// (Socket, Channel) -> Promise<SignalboostStatus>
+const _welcomeAdmins = async (sock, channel) => {
+  await wait(welcomeDelay)
+  return Promise.all(
+    channelRepository.getAdminPhoneNumbers(channel).map(async adminPhoneNumber => {
+      await messenger.notify({
+        sock,
+        channel,
+        notification: {
+          recipient: adminPhoneNumber,
+          message: welcomeNotificationOf(channel.phoneNumber),
+        },
+      })
+      await wait(setExpiryInterval)
+      return signal.setExpiration(
+        sock,
+        channel.phoneNumber,
+        adminPhoneNumber,
+        defaultMessageExpiryTime,
+      )
+    }),
+  )
 }
 
 // (Database) -> Promise<Array<Channel>>
