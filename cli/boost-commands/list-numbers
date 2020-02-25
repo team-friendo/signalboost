@@ -48,6 +48,8 @@ if [[ $1 == "--inactive" ]] || [[ $2 == "--inactive" ]];then
   filter="INACTIVE"
 fi
 
+selector='.'
+
 if [[ $1 == "--len" ]] || [[ $2 == "--len" ]];then
   selector='.count'
 fi
