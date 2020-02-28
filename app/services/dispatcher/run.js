@@ -98,8 +98,18 @@ const dispatch = async (db, sock, resendQueue, inboundMsg) => {
   const newFingerprint = detectUpdatableFingerprint(inboundMsg)
   if (newFingerprint) return updateFingerprint(db, sock, newFingerprint)
 
+  /***** GOTCHA WARNING!!! *****
+   *
+   * We don't return early from calling `updateExpiryTime` b/c that would cause
+   * messages from new users (who likely have disapparing messages to 0) to channels with
+   * disappearing messages enabled to return early here and never be considered for execution
+   * or relay.
+   *
+   * In particular, it would cause HELLO messages frompeople trying to subscribe to channels
+   * with disappearing messages enabled to be dropped!
+   **/
   const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
-  if (isNumber(newExpiryTime)) return updateExpiryTime(db, sock, sender, channel, newExpiryTime)
+  if (isNumber(newExpiryTime)) await updateExpiryTime(db, sock, sender, channel, newExpiryTime)
 
   // dispatch user-created messages
   if (shouldRelay(inboundMsg)) return relay(db, sock, channel, sender, inboundMsg)
