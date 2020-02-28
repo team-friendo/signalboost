@@ -36,7 +36,7 @@ Mehr infos gibts auf: https://signalboost.info`
 
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
-    `"${phoneNumber}" ist keine gültige Telefonnummer. Telefonnummen müssen mit Ländercodes und einem vorangestellten '+' beginnen`,
+    `"${phoneNumber}" ist keine gültige Telefonnummer. Telefonnummern müssen mit Ländercodes und einem vorangestellten '+' beginnen`,
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
@@ -48,7 +48,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal. [${channel.name}] angemeldet. ${
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${channel.name}] angemeldet. ${
       channel.description
     }
 
@@ -166,7 +166,7 @@ Admins: ${getAdminMemberships(channel).length}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
+${channel.vouchingOn ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
@@ -251,7 +251,7 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
 Du hast erfolgreich den Kanal von "${oldName}" zu "${newName}" umbenannt.`,
     dbError: (oldName, newName) =>
       `[${oldName}]
-Uups! Es gab einen Fehler beim Umbennen des Kanals [${oldName}] zu [${newName}]. Versuchs nochmal!`,
+Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}]. Versuchs nochmal!`,
     notAdmin,
   },
 
@@ -364,7 +364,7 @@ Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch
 
 Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.
 
-(Hinweis: alle Nachrichten weren anonym weitergeleitet. Wenn du möchtest, dass dir ein Admin antwortet kann, schreibe deine Nummer in die Nachricht)`,
+(Hinweis: alle Nachrichten weren anonym weitergeleitet. Wenn du möchtest, dass dir ein Admin antworten kann, schreibe deine Nummer in die Nachricht)`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
@@ -372,7 +372,7 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
 
   inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen dem [${channelName}] Signalboost Kanal beizutreten. ${
+    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, dem [${channelName}] Signalboost Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
     }`,
 
