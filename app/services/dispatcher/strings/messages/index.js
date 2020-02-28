@@ -9,6 +9,8 @@ const messagesIn = lang => {
       return require('./ES')
     case languages.FR:
       return require('./FR')
+    case languages.DE:
+      return require('./DE')
     default:
       return require(`./${defaultLanguage}`)
   }
