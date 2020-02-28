@@ -19,10 +19,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { adminMembershipFactory } from '../../../support/factories/membership'
-import {
-  inboundAttachmentFactory,
-  outboundAttachmentFactory,
-} from '../../../support/factories/sdMessage'
+import { inboundAttachmentFactory } from '../../../support/factories/sdMessage'
 const {
   signal: { defaultMessageExpiryTime, signupPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
@@ -479,7 +476,7 @@ describe('dispatcher service', () => {
       })
     })
 
-    describe('when the message is a expiry time update', () => {
+    describe('expiry time updates', () => {
       const expiryUpdate = merge({}, sdInMessage, {
         data: {
           dataMessage: {
@@ -555,8 +552,29 @@ describe('dispatcher service', () => {
           await wait(socketDelay)
         })
 
-        it('sets the expiry time btw/ channel and sender back to original expiry time', () => {
+        it('is ignored', () => {
           expect(setExpirationStub.callCount).to.eql(0)
+        })
+      })
+
+      describe('with a message body', () => {
+        const expiryUpdateWithBody = merge({}, expiryUpdate, {
+          data: {
+            source: randoPhoneNumber,
+            dataMessage: {
+              message: 'HELLO',
+            },
+          },
+        })
+
+        beforeEach(async () => {
+          resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
+          sock.emit('data', JSON.stringify(expiryUpdateWithBody))
+          await wait(socketDelay)
+        })
+
+        it('still relays message', async () => {
+          expect(processCommandStub.getCall(0).args[0].sdMessage.messageBody).to.eql('HELLO')
         })
       })
     })
