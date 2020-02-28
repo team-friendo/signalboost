@@ -116,8 +116,8 @@ VOUCHING ON / OFF
 VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
 
-ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French
+ESPAÑOL / FRANÇAIS / DEUTSCH
+-> switches language to Spanish, French or German
 
 GOODBYE
 -> leaves this channel
@@ -140,8 +140,8 @@ INFO
 INVITE +1-555-555-5555
 -> invites +1-555-555-5555 to subscribe to the channel
 
-ESPAÑOL / FRANÇAIS
--> switches language to Spanish or French
+ESPAÑOL / FRANÇAIS / DEUTSCH
+-> switches language to Spanish, French or German
 
 HELLO
 -> subscribes you to announcements

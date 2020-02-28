@@ -117,8 +117,8 @@ SE PORTER GARANT ACTIVÉE / DÉSACTIVÉE
 NIVEAU DE PORTER GARANT niveau
 -> modifie le nombre d'invitations nécessaires pour rejoindre la chaîne
 
-ESPAÑOL / ENGLISH
--> change la langue au Español or Anglais
+ESPAÑOL / ENGLISH / DEUTSCH
+-> change la langue au Español, Anglais ou Allemand
 
 ADIEU
 -> désabonnement de le canal
@@ -141,8 +141,8 @@ INFO
 INVITER
 -> invite + 1-555-555-5555 à s'abonner à le canal
 
-ESPAÑOL / ENGLISH
--> change la langue au Español or Anglais
+ESPAÑOL / ENGLISH / DEUTSCH
+-> change la langue au Español, Anglais ou Allemand
 
 ALLÔ
 -> abonnement aux avis
