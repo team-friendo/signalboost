@@ -1,6 +1,8 @@
+const twilio = require('twilio')
+const { smsUrl } = require('../../registrar/phoneNumber/common')
 const {
   registrar: { authToken },
-  twilio: { smsEndpoint },
+  twilio: { smsEndpoint, authToken: twilioAuthToken },
 } = require('../../../config')
 
 const configureAuthenticator = app => app.use(authenticator)
@@ -8,10 +10,20 @@ const configureAuthenticator = app => app.use(authenticator)
 const authenticator = async (ctx, next) =>
   isAuthorized(ctx) ? await next() : respondNotAuthorized(ctx)
 
-// TODO(aguestuser): only allow twilio to make requests to this url...
-// see: https://0xacab.org/team-friendo/signalboost/issues/202
 const isAuthorized = ctx =>
-  ctx.path === `/${smsEndpoint}` || ctx.request.headers.token === authToken
+  ctx.path === `/${smsEndpoint}`
+    ? isValidTwilioRequest(ctx)
+    : ctx.request.headers.token === authToken
+
+const isValidTwilioRequest = ctx =>
+  // validate signature according to scheme given here:
+  // https://www.twilio.com/docs/usage/security#validating-requests
+  twilio.validateRequest(
+    twilioAuthToken,
+    ctx.request.header['x-twilio-signature'],
+    smsUrl,
+    ctx.request.body,
+  )
 
 const respondNotAuthorized = ctx => {
   ctx.status = 401

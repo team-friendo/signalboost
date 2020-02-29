@@ -15,7 +15,7 @@ describe('utility module', () => {
       const elapsed = new Date().getTime() - start
 
       expect(result).to.eql([1, 2, 3])
-      expect(elapsed).to.be.above(200)
+      expect(elapsed).to.be.at.least(200)
     })
   })
 

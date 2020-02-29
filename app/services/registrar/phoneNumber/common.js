@@ -2,10 +2,9 @@ const { pick } = require('lodash')
 const { statuses } = require('../../../db/models/phoneNumber')
 const channelRepository = require('../../../db/repositories/channel')
 const signal = require('../../signal')
-const { defaultLanguage } = require('../../../config')
-const { messagesIn } = require('../../dispatcher/strings/messages')
 const {
-  twilio: { accountSid, authToken },
+  twilio: { accountSid, authToken, smsEndpoint },
+  registrar: { host },
   signal: { signupPhoneNumber },
 } = require('../../../config')
 
@@ -17,7 +16,6 @@ const errors = {
   dbWriteFailed: err => `database write failed: ${err}`,
   purchaseFailed: err => `twilio phone number purchase failed: ${err}`,
   registrationFailed: err => `signal registration failed: ${err}`,
-  verificationFailed: err => `signal verification failed: ${err}`,
   verificationTimeout: 'signal verification timed out',
   invalidIncomingSms: (phoneNumber, msg) => `invalid incoming sms on ${phoneNumber}: ${msg}`,
 }
@@ -59,6 +57,8 @@ const destroyChannel = async (db, sock, channel, message) => {
 // () -> TwilioInstance
 const getTwilioClient = () => require('twilio')(accountSid, authToken)
 
+const smsUrl = `https://${host}/${smsEndpoint}`
+
 module.exports = {
   errors,
   statuses,
@@ -68,4 +68,5 @@ module.exports = {
   notifyMembersExcept,
   destroyChannel,
   getTwilioClient,
+  smsUrl,
 }
