@@ -21,7 +21,7 @@ HOW IT WORKS
 Signalboost has channels with admins and subscribers:
 
 -> When admins send announcements, they are broadcast to all subscribers.
--> If enabled, subscribers can send anonymous messages to the hotline.
+-> If hotline mode is enabled, anyone can send anonymous messages to the admins.
 
 Signalboost protects your privacy:
 

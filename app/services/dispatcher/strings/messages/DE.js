@@ -20,7 +20,7 @@ WIE ES FUNKTIONIERT
 
 Signalboost hat Kanäle mit Admins und Teilnehmern:
 
--> Wenn ein Publisher eine Signal Nachricht an ${phoneNumber} sendet, wird diese Nachricht allen Teilnehmern (und Admins) dieses Kanals übermittelt.
+-> Wenn Admins Ankündigungen senden, werden diese an alle Teilnehmern gesendet.
 -> Wenn die Hotline Funktion eingeschaltet ist können alle Teilnehmer anonym Nachrichten an die Hotline schicken
 
 Signalboost beschützt deine Privatsphäre:
