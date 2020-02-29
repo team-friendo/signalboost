@@ -1,9 +1,8 @@
 const uuid = require('uuid/v4')
 const { isEmpty, times, identity } = require('lodash')
-const { errors, statuses, extractStatus, errorStatus } = require('./common')
+const { errors, statuses, smsUrl, extractStatus, errorStatus } = require('./common')
 const {
-  twilio: { accountSid, authToken, smsEndpoint },
-  registrar: { host },
+  twilio: { accountSid, authToken },
 } = require('../../../config/index')
 
 /**
@@ -21,10 +20,6 @@ const {
 
 const twilioClient = require('twilio')(accountSid, authToken)
 const availableTwilioNumbers = twilioClient.availablePhoneNumbers('US').local
-
-// CONSTANTS
-
-const smsUrl = `https://${host}/${smsEndpoint}`
 
 // MAIN FUNCTION
 

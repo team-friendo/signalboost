@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import request from 'supertest'
+import twilio from 'twilio'
 import { times, keys, pick } from 'lodash'
 import { startServer } from '../../../../app/services/registrar/api'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
@@ -376,9 +377,16 @@ describe('routes', () => {
   })
 
   describe('POST to /twilioSms', () => {
-    let verifyStub
-    beforeEach(() => (verifyStub = sinon.stub(phoneNumberService, 'verify')))
-    afterEach(() => verifyStub.restore())
+    let verifyStub, validateSignatureStub
+    beforeEach(() => {
+      verifyStub = sinon.stub(phoneNumberService, 'verify')
+      validateSignatureStub = sinon.stub(twilio, 'validateRequest').returns(true)
+    })
+
+    afterEach(() => {
+      verifyStub.restore()
+      validateSignatureStub.restore()
+    })
 
     describe('in all cases', () => {
       beforeEach(() => verifyStub.returns(Promise.resolve({})))
