@@ -63,6 +63,25 @@ describe('parse module', () => {
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
           'le FRENCH',
+
+          'foo ANNEHMEN',
+          'foo HINZUFÜGEN',
+          'foo ABLEHNEN',
+          'foo VERNICHTEN',
+          'foo HILFE',
+          'foo HOTLINE AN',
+          'foo HOTLINE AUS',
+          'foo EINLADEN',
+          'foo HALLO',
+          'foo TSCHÜSS',
+          'foo ENTFERNEN',
+          'foo UMBENENNEN',
+          'foo BESCHREIBUNG',
+          'foo VERTRAUENS-LEVEL',
+          'foo VERTRAUEN AN',
+          'foo VERTRAUEN EIN',
+          'foo VERTRAUEN AUS',
+          'foo DEUTSCH',
         ]
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
@@ -88,6 +107,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['ACCEPTER', ' accepter '],
+          },
+          {
+            language: languages.DE,
+            messages: ['ANNEHMEN', ' annehmen '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -117,6 +140,16 @@ describe('parse module', () => {
             language: languages.FR,
             messages: [`AJOUTER ${e164PhoneNumber}`, ` ajouter ${e164PhoneNumber}`],
           },
+          {
+            language: languages.DE,
+            messages: [
+              `HINZUFÜGEN ${e164PhoneNumber}`,
+              `HINZUFUEGEN ${e164PhoneNumber}`,
+              `HINZUFUGEN ${e164PhoneNumber}`,
+              `DAZU ${e164PhoneNumber}`,
+              ` dazu ${e164PhoneNumber} `,
+            ],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -144,6 +177,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['REFUSER', ' refuser '],
+          },
+          {
+            language: languages.DE,
+            messages: ['ABLEHNEN', ' ablehnen '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -173,6 +210,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: ['DÉTRUIRE', ' détruire '],
           },
+          {
+            language: languages.DE,
+            messages: ['VERNICHTEN', ' vernichten '],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -200,6 +241,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['AIDE', 'aide', ' aide '],
+          },
+          {
+            language: languages.DE,
+            messages: ['HILFE', ' hilfe '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -249,6 +294,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: [`INVITER ${e164PhoneNumber}`, ` inviter ${e164PhoneNumber}`],
           },
+          {
+            language: languages.DE,
+            messages: [`EINLADEN ${e164PhoneNumber}`, ` einladen ${e164PhoneNumber} `],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -289,6 +338,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: ['ALLÔ', 'ALLO', ' allo '],
           },
+          {
+            language: languages.DE,
+            messages: ['HALLO', ' hallo '],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -316,6 +369,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['ADIEU', 'adieu', ' adieu '],
+          },
+          {
+            language: languages.DE,
+            messages: ['TSCHÜSS', 'TSCHUESS', 'TSCHÜß', 'TSCHUSS', 'TSCHUß', 'CIAO', ' tschuss '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -345,6 +402,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: [`SUPPRIMER ${e164PhoneNumber}`, ` supprimer ${e164PhoneNumber}`],
           },
+          {
+            language: languages.DE,
+            messages: [`ENTFERNEN ${e164PhoneNumber}`, ` entfernen ${e164PhoneNumber} `],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -373,6 +434,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: ['RENOMMER', 'renommer', ' renommer '],
           },
+          {
+            language: languages.DE,
+            messages: ['UMBENENNEN', ' umbenennen '],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -398,6 +463,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             message: 'RENOMMER foo',
+          },
+          {
+            language: languages.DE,
+            message: 'UMBENENNEN foo',
           },
         ]
         variants.forEach(({ language, message }) =>
@@ -425,6 +494,10 @@ describe('parse module', () => {
             lang: languages.FR,
             messages: ['DESCRIPTION', 'description', ' description '],
           },
+          {
+            lang: languages.DE,
+            messages: ['BESCHREIBUNG', ' beschreibung '],
+          },
         ]
         variants.forEach(({ lang, messages }) =>
           messages.forEach(msg =>
@@ -450,6 +523,10 @@ describe('parse module', () => {
           {
             lang: languages.FR,
             message: 'DESCRIPTION foo channel description',
+          },
+          {
+            lang: languages.DE,
+            message: 'BESCHREIBUNG foo channel description',
           },
         ]
         variants.forEach(({ lang, message }) => {
@@ -480,6 +557,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['HOTLINE ACTIVÉE', 'hotline activée', ' hotline activee '],
+          },
+          {
+            language: languages.DE,
+            messages: ['HOTLINE AN', ' hotline an '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -513,6 +594,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: ['HOTLINE DÉSACTIVÉE', 'hotline désactivée', ' hotline desactivee '],
           },
+          {
+            language: languages.DE,
+            messages: ['HOTLINE AUS', ' hotline aus '],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -531,15 +616,27 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['ENGLISH', 'INGLÉS', 'INGLES', 'ANGLAIS', 'english', 'inglés', 'ingles'],
+            messages: ['ENGLISH', 'INGLÉS', 'INGLES', 'ANGLAIS', 'ENGLISCH', ' english '],
           },
           {
             language: languages.ES,
-            messages: ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'español', 'espanol', 'spanish'],
+            messages: ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'SPANISCH', ' spanish '],
           },
           {
             language: languages.FR,
-            messages: ['FRENCH', 'FRANÇAIS', 'FRANCAIS', 'FRANCESA'],
+            messages: [
+              'FRENCH',
+              'FRANÇAIS',
+              'FRANCAIS',
+              'FRANCESA',
+              'FRANZÖSISCH',
+              'FRANZOESISCH',
+              ' french ',
+            ],
+          },
+          {
+            language: languages.DE,
+            messages: ['GERMAN', 'DEUTSCH', 'ALLEMAND', 'ALEMAN', 'ALEMÁN', ' german '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -569,6 +666,10 @@ describe('parse module', () => {
             language: languages.FR,
             messages: ['SE PORTER GARANT ACTIVÉE', ' se porter garant activee '],
           },
+          {
+            language: languages.DE,
+            messages: ['VERTRAUEN AN', 'VERTRAUEN EIN', ' vertrauen an '],
+          },
         ]
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg =>
@@ -596,6 +697,10 @@ describe('parse module', () => {
           {
             language: languages.FR,
             messages: ['SE PORTER GARANT DÉSACTIVÉE', ' se porter garant desactivee '],
+          },
+          {
+            language: languages.DE,
+            messages: ['VERTRAUEN AUS', ' vertrauen aus '],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -629,6 +734,10 @@ describe('parse module', () => {
               `NIVEAU DE PORTER GARANT ${vouchLevel}`,
               ` niveau de porter garant${vouchLevel}`,
             ],
+          },
+          {
+            language: languages.DE,
+            messages: [`VERTRAUENS-LEVEL ${vouchLevel}`, ` vertrauens-level ${vouchLevel}`],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -696,6 +805,22 @@ describe('parse module', () => {
               'se porter garant desactivees maintenant',
             ],
           },
+          {
+            language: languages.DE,
+            messages: [
+              'ANNEHMEN foo',
+              'ABLEHNEN foo',
+              'HILFE foo',
+              'HALLO foo',
+              'TSCHÜSS foo',
+              'DEUTSCH foo',
+              'HOTLINE AN foo',
+              'HOTLINE AUS foo',
+              'VERTRAUEN AN foo',
+              'VERTRAUEN EIN foo',
+              'VERTRAUEN AUS foo',
+            ],
+          },
         ]
 
         variants.forEach(({ language, messages }) =>
@@ -736,6 +861,14 @@ describe('parse module', () => {
                 `ajouter ${rawPhoneNumber}`,
                 `inviter ${rawPhoneNumber}`,
                 `supprimer ${rawPhoneNumber}`,
+              ],
+            },
+            {
+              language: languages.DE,
+              messages: [
+                `HINZUFÜGEN ${rawPhoneNumber}`,
+                `EINLADEN ${rawPhoneNumber}`,
+                `ENTFERNEN ${rawPhoneNumber}`,
               ],
             },
           ]

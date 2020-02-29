@@ -3,6 +3,7 @@ import { describe, it } from 'mocha'
 import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
 import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
 import messagesFR from '../../../../app/services/dispatcher/strings/messages/FR'
+import messagesDE from '../../../../app/services/dispatcher/strings/messages/DE'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times, keys } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
@@ -33,6 +34,9 @@ describe('messages module', () => {
             it(`translates ${key}.${subKey}.${subSubKey} command response to FR`, () => {
               expect(messagesFR.commandResponses[key][subKey][subSubKey]).to.exist
             })
+            it(`translates ${key}.${subKey}.${subSubKey} command response to DE`, () => {
+              expect(messagesDE.commandResponses[key][subKey][subSubKey]).to.exist
+            })
           })
         } else {
           it(`translates ${key}.${subKey} command response to ES`, () => {
@@ -40,6 +44,9 @@ describe('messages module', () => {
           })
           it(`translates ${key}.${subKey} command response to FR`, () => {
             expect(messagesFR.commandResponses[key][subKey]).to.exist
+          })
+          it(`translates ${key}.${subKey} command response to DE`, () => {
+            expect(messagesDE.commandResponses[key][subKey]).to.exist
           })
         }
       })
@@ -52,6 +59,9 @@ describe('messages module', () => {
       it(`translates ${key} notification to FR`, () => {
         expect(messagesFR.notifications[key]).to.exist
       })
+      it(`translates ${key} notification to DE`, () => {
+        expect(messagesDE.notifications[key]).to.exist
+      })
     })
     keys(messagesEN.prefixes).forEach(key => {
       it(`translates ${key} prefix to ES`, () => {
@@ -59,6 +69,9 @@ describe('messages module', () => {
       })
       it(`translates ${key} prefix to FR`, () => {
         expect(messagesFR.prefixes[key]).to.exist
+      })
+      it(`translates ${key} prefix to DE`, () => {
+        expect(messagesDE.prefixes[key]).to.exist
       })
     })
   })
@@ -181,6 +194,9 @@ describe('messages module', () => {
 
     it('resolves messages for FR flag', () => {
       expect(messagesIn(languages.FR)).to.eql(messagesFR)
+    })
+    it('resolves messages for DE flag', () => {
+      expect(messagesIn(languages.DE)).to.eql(messagesDE)
     })
   })
 })

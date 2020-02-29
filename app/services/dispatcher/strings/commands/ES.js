@@ -1,6 +1,6 @@
 module.exports = {
-  ADD: ['AGREGAR'],
   ACCEPT: ['ACEPTAR'],
+  ADD: ['AGREGAR'],
   DECLINE: ['RECHAZAR'],
   DESTROY: ['DESTRUIR'],
   HELP: ['AYUDA'],

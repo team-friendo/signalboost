@@ -1,6 +1,6 @@
 module.exports = {
-  ADD: ['AJOUTER'],
   ACCEPT: ['ACCEPTER'],
+  ADD: ['AJOUTER'],
   DECLINE: ['REFUSER'],
   DESTROY: ['DÉTRUIRE'],
   HELP: ['AIDE'],
