@@ -18,6 +18,7 @@ services:
     environment:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "test"
+      DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
     depends_on:
       - db
     ports:

@@ -121,8 +121,8 @@ ATESTIGUANDO ACTIVADA / DESACTIVADA
 NIVEL DE ATESTIGUAR nivel
 -> cambia el numero de invitaciónes requeridos para unirse a este canal 
 
-ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés
+ENGLISH / FRANÇAIS / DEUTSCH
+-> cambia idiomas a Inglés, Francés o Alemán
 
 ADIÓS
 -> le saca del canal
@@ -145,8 +145,8 @@ INFO
 INVITAR +1-555-555-5555
 -> invita a +1-555-555-5555 a suscribirse al canal
 
-ENGLISH / FRANÇAIS
--> cambia idiomas a Inglés o Francés
+ENGLISH / FRANÇAIS / DEUTSCH
+-> cambia idiomas a Inglés, Francés o Alemán
 
 HOLA
 -> para subscribirse a un canal
