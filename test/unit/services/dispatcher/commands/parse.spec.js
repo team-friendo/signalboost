@@ -460,6 +460,16 @@ describe('parse module', () => {
           })
         })
       })
+
+      it('parses a multi-line description', () => {
+        const message = 'DESCRIPTION foo channel\ndescription'
+
+        expect(parseExecutable(message)).to.eql({
+          command: commands.SET_DESCRIPTION,
+          language: languages.EN,
+          payload: 'foo channel\ndescription',
+        })
+      })
     })
 
     describe('HOTLINE_ON command', () => {
