@@ -1,3 +1,4 @@
+/* layout styles */
 html {
   font-family: "DejaVu Sans Mono", Monaco, monospace;
   -ms-text-size-adjust: 100%;
@@ -10,6 +11,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #f8f8f2;
+}
+header {
+  background-color: #bd93f9;
+  padding: 12px 0;
+  margin-bottom: 30px;
 }
 p {
   color: #f8f8f2;
@@ -633,17 +639,13 @@ pre tt:before,
 pre tt:after {
   content: "";
 }
-h3 { 
-	position:relative;
+/* custom styles */
+.container {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 0 15px;
 }
-span.anchor { 
-	position:absolute; 
-	top: -110px;
-	z-index: 1;
-}
-h2 {
-	color: rgb(189, 147, 249);
-}
+
 @media only screen and (max-width: 480px) {
   html {
     font-size: 100%;

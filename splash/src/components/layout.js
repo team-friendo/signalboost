@@ -13,17 +13,10 @@ const Layout = ({ children }) => {
   return (
     <>
       <Header siteTitle="Signalboost" />
-      <div
-        style={{
-          margin: `8rem auto 0 auto`, // TRBL
-          maxWidth: 960,
-          padding: `0px 1.0875rem 1.45rem`,
-          paddingTop: 0,
-        }}
-      >
-        <main>{children}</main>
-        <footer />
-      </div>
+      <main>
+        <div className="container">{children}</div>
+      </main>
+      <footer />
     </>
   )
 }
