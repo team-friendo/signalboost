@@ -44,7 +44,8 @@ echo "--- backed up db!"
 echo "--- backing up keystore..."
 
 keystore_backup_path="${backup_dir}/sb_keystore_backup_${timestamp}.tar.gpg"
-tar="tar cf ${keystore_backup_path} /var/lib/docker/volumes/signalboost_postgres_data/_data"
+keystore_volume_path="/var/lib/docker/volumes/signalboost_signal_data/_data"
+tar="tar cf ${keystore_backup_path} ${keystore_volume_path}"
 
 $tar | $gpg > $keystore_backup_path
 
