@@ -3,7 +3,7 @@
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "This command destroyed all records associated with a channel. usage:"
   echo ""
-  echo "  boost destroy -n +12223334444"
+  echo "  boost destroy -p +12223334444"
   echo ""
   echo "Valid options are:"
   echo "  -p : phone number of channel to be destroyed"
@@ -33,10 +33,10 @@ check-env ${env_file}
 
 if [[ -z ${phone_number} ]]
 then
-  echo "> ERROR: you must provide a phone number after the -n flag to destroy"
+  echo "> ERROR: you must provide a phone number after the -p flag to destroy"
   exit 1
 elif [[ ! ${phone_number} =~ ^(\+[0-9]{9,15})$ ]];then
-  echo "> ERROR: -n must be a valid phone number prefixed by a country code"
+  echo "> ERROR: -p must be a valid phone number prefixed by a country code"
   exit 1
 fi
 
