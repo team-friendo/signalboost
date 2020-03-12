@@ -1,12 +1,13 @@
-nextcloud:
+signalboost:
   hosts:
     {{ IP ADDRESS OF YOUR REMOTE HOST }}
   vars:
-    ansible_user: {{ YOUR USERNAME }}
+    ansible_user: {{ A USERNAME TO BE CREATED BY ANSIBLE, NOT ROOT }}
     ansible_ssh_private_key_file: {{ PATH TO YOUR SSH PRIVATE KEY }}
     ansible_ssh_common_args: '-o IdentitiesOnly=yes'
     admins:
-      - name: {{ USERNAME OF AN ADMIN }}
+      - name: {{ USERNAME OF YOUR ANSIBLE_USER ABOVE }}
         ssh_key: {{ SSH PUBKEY OF AN ADMIN }}
-      - name: {{ USERNAME OF ANOTHER ADMIN }}
+        #remove the additional admin definition if not needed.
+      - name: {{ USERNAME OF ANOTHER ADMIN IF NEEDED }}
         ssh_key: {{ SSH PUBKEY OF ANOTHER ADMIN }}
