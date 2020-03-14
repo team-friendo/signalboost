@@ -10,9 +10,13 @@
   margin: 5px;
   border-radius: 10px;
 }
-.title {
-  margin-top: 15px;
-}
+
 .active {
   background-color: rgba(40, 42, 54, 0.8);
+}
+
+@media only screen and (max-width: 768px) {
+  .title {
+    font-size: 25px;
+  }
 }
