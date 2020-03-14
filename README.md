@@ -19,13 +19,13 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/Team Friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/Team Friendo/signalboost/boards).
 
-**Want to use signalboost for social justice work?**  Send us a signal message at `+1 (938) 444-8536` or email us at `Team Friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
+**Want to use Signalboost for social justice work?**  Send us a signal message at `+1 (938) 444-8536` or email us at `Team Friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
 
 **NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie, Trevor, and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
 
 <a name="txtmob_joke"></a>
-[1] *If you are a child of the (anarchist) 90's, you might usefully think of signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."*
+[1] *If you are a child of the (anarchist) 90's, you might usefully think of Signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."*
 
 # Application Design <a name="design"></a>
 
@@ -44,8 +44,8 @@ Data flows through the application in (roughly) the following manner:
   * messages are free to send! (thanks m0xie!)
   * messages are encrypted between admins and the application and between the application and subscribers (NOTE: they are decrypted and reencrypted momentarily by the application but are not stored permanetly on disk)
   * admins may send attachments to subscribers
-* notably: the list of subscribers is currently stored on disk on the signalboost server. if this makes you nervous, you can:
-  * host your own instance of signalboost (see docs below)
+* notably: the list of subscribers is currently stored on disk on the Signalboost server. if this makes you nervous, you can:
+  * host your own instance of Signalboost (see docs below)
   * register your desire for us to implement encrypted subscriber tables in the [issue tracker](https://0xacab.org/Team Friendo/signalboost/issues/68)
 
 ## Architecture
@@ -68,7 +68,7 @@ The application has the following components:
    
 # System and Service Requirements <a name="services"></a>
 
-Signalboost relies on a few external service and tools both in production and some specifically for local development. If you are just getting started with signalboost we recommend you walk through this section to get those ready. 
+Signalboost relies on a few external service and tools both in production and some specifically for local development. If you are just getting started with Signalboost we recommend you walk through this section to get those ready. 
 
 **If you are a member of Team Friendo we provide accesss to the exsiting servers and services listed here. Checkout the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. Otherwise this section will walk you through the setup of services, both for host servers or/and your local development system.** 
 
@@ -78,17 +78,17 @@ Signalboost relies on a few external service and tools both in production and so
 To host your own instance of Signalboost you need:
 
 * A server running Debian or Ubuntu GNU/Linux distributions with a static IP address as your host server.
-* A local computer able to run Ansible to deploy the code to your signalboost host server.
+* A local computer able to run Ansible to deploy the code to your Signalboost host server.
 * A domain with an A record pointing to the host server’s static IP address.
-* A Twillio account (https://www.twilio.com/) that provides the phone numbers that signalboost will use. 
+* A Twillio account (https://www.twilio.com/) that provides the phone numbers that Signalboost will use. 
 * An email address to provide to Let's Encrypt (https://letsencrypt.org/) for easy, seamless ssl support.
 * A Signalboost API Token created by you to authenticate on your Signalboost API.
 
 To do local development for Signalboost you need: 
 
 * A local computer able to run node and docker, git and the development tools of your choice. 
-* A Twillio account (https://www.twilio.com/) that provides the phone numbers that signalboost will use. 
-* A paid Ngrok account https://dashboard.ngrok.com/billing/plan that allows secure tunnelling to your localhost's signalboost API.
+* A Twillio account (https://www.twilio.com/) that provides the phone numbers that Signalboost will use. 
+* A paid Ngrok account https://dashboard.ngrok.com/billing/plan that allows secure tunnelling to your localhost's Signalboost API.
 * A Signalboost API Token created by you to authenticate on your Signalboost API.
 
 We'll address the setup of host and development systems in the Developer and Sysadmin guides later, but for now the next step is to make sure you have the services and authentication details you need for the configuration you want to do.
@@ -203,7 +203,7 @@ Configuration for development basically involves creating your initial .env.dev 
 
 #### Secrets for General Public
 
-Copy the `.env.example` file to just `.env` in the root of your signalboost repo.
+Copy the `.env.example` file to just `.env` in the root of your Signalboost repo.
 
 ``` shell
 cd path/to/signlaboost/
@@ -214,10 +214,10 @@ You will need to provide your own values for credentials listed in `.env`. You s
 
 For local development only these need to be set... 
 
-Provide the signalboost API Token you generated for:
+Provide the Signalboost API Token you generated for:
 
 ``` shell
-# signalboost API authentication // Required for authentication in all modes 
+# Signalboost API authentication // Required for authentication in all modes 
 # See the README for details on how to generate a suitable HEX string
 
 SIGNALBOOST_API_TOKEN=%HEX STRING%
@@ -236,7 +236,7 @@ TWILIO_AUTH_TOKEN=%HEX STRING%
 Add the Ngrok auth token and the subdomain part of your reservered domain to:
 
 ``` shell
-# Ngrok // Used in Development mode only. Provides secure tunnel to your localhost's signalboost API
+# Ngrok // Used in Development mode only. Provides secure tunnel to your localhost's Signalboost API
 # A paid "basic" ngrok account is needed https://ngrok.com/ so you can create a "reservered domain" https://dashboard.ngrok.com/reserved
 # From the reservered domain we get the subdomain (eg our reserved domain is signalboost.ngrok.io so the subdomain is just signalboost)
 
@@ -253,7 +253,7 @@ To be able to use it, you first need to whitelist your gpg key:
 
 * [make a working pgp key](http://irtfweb.ifa.hawaii.edu/~lockhart/gpg/) if you don't have one already
 * obtain your public key fingerprint (with e.g., `gpg -K`)
-* send your pgp public key fingerprint to a signalboost maintainer and ask them to add you to the blackbox whitelist of trusted pgp keys
+* send your pgp public key fingerprint to a Signalboost maintainer and ask them to add you to the blackbox whitelist of trusted pgp keys
 
 Now that you are whitelisted, you can use blackbox to decrypt secrets and source them with:
 
@@ -309,7 +309,7 @@ Install the CLI with:
 make cli.install
 ```
 
-This puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
+This puts the commands in `signalboost/cli/boost-commands` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
 
 
 You can uninstall it later with:
@@ -553,7 +553,7 @@ On the system you plan to use to deploy Signalboost from you'll first need to cl
 
 #### Install Ansible
 
-To deploy a signalboost instance, you will need to have installed:
+To deploy a Signalboost instance, you will need to have installed:
 
 * ansible
 * ansible-playbook
@@ -765,7 +765,7 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml -e deploy
 ```
 
-*Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy signalboost`) to complete, and proceed to the following steps...
+*Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps...
 
 <<<<<<< HEAD
 **(4) Install the `boost` cli tool:**
@@ -909,19 +909,19 @@ Where `<command>` is one of the following:
     - shows this dialogue
 
   add-admin -c <channel phone number> -a <admin phone number> -u <url>
-    - adds an admin to a channel on the signalboost instance at url (defaults to prod!)
+    - adds an admin to a channel on the Signalboost instance at url (defaults to prod!)
 
   create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - creates a channel with provied phone number, name, and admins on signalboost instance at url (defaults to prod!)
+    - creates a channel with provied phone number, name, and admins on Signalboost instance at url (defaults to prod!)
 
   create-number -a <area_code> -n <numbers_desired> -u <api_url>
     - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
 
   list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given url (defaults to prod!)
+    - lists all channels active on the Signalboost instance at the given url (defaults to prod!)
 
   list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at url (defaults to prod!)
+    - lists all numbers purchased from twilio on the Signalboost instance at url (defaults to prod!)
 
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
