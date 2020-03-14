@@ -319,9 +319,9 @@ const maybeRemoveNumber = async (db, channel, sender, phoneNumber) => {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, phoneNumber))) {
-	return  removeSubscriber(db, channel, phoneNumber, sender, cr)
+    return removeSubscriber(db, channel, phoneNumber, sender, cr)
   }
-    
+
   return removeAdmin(db, channel, phoneNumber, sender, cr)
 }
 
@@ -346,7 +346,6 @@ const removeSubscriber = async (db, channel, phoneNumber, sender, cr) => {
     }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(phoneNumber) }))
 }
-
 
 const removalNotificationsOfAdmin = (channel, adminPhoneNumber, sender) => {
   const removedMember = channel.memberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
@@ -373,7 +372,7 @@ const removalNotificationsOfSubscriber = (channel, phoneNumber, sender) => {
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-	      message: messagesIn(membership.language).notifications.subscriberRemoved,
+      message: messagesIn(membership.language).notifications.subscriberRemoved,
     })),
   ]
 }

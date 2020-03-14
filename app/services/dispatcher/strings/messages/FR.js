@@ -247,7 +247,6 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression de ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,
-    targetNotAdmin: num => `Oups! ${num} n’est pas un-e admin. Ielle ne peut être supprimée.`,
   },
 
   // RENAME

@@ -240,7 +240,6 @@ If you already have an invite, try sending ACCEPT`,
     notAdmin,
     dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
     invalidPhoneNumber,
-    targetNotAdmin: num => `Whoops! ${num} is not an admin. Can't remove them.`,
   },
 
   // RENAME
@@ -330,7 +329,7 @@ const notifications = {
   adminAdded: 'A new admin was just added.',
 
   adminRemoved: 'An admin was just removed.',
-  
+
   subscriberRemoved: 'An subscriber was just removed.',
 
   adminLeft: 'An admin just left the channel.',
@@ -399,8 +398,9 @@ ${requestMsg}`,
     'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
 
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
-  
-  toRemovedSubscriber: 'You were just removed from this channel by an Admin. Send HELLO to resubscribe.',
+
+  toRemovedSubscriber:
+    'You were just removed from this channel by an Admin. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
 

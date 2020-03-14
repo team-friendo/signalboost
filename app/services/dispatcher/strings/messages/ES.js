@@ -224,7 +224,6 @@ ${support}`,
     dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidPhoneNumber: num =>
       `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
-    targetNotAdmin: num => `¡Ay! ${num} no es un administrador. No puedo eliminarle.`,
   },
 
   // RENAME
@@ -342,7 +341,7 @@ const notifications = {
   adminAdded: 'Se acaba de agregar nuevo administrador.',
 
   adminRemoved: 'Se acaba de eliminar un administrador.',
-  
+
   subscriberRemoved: 'Un suscriptor acaba de ser eliminado.',
 
   adminLeft: 'Un administrador dejó el canal.',
@@ -423,8 +422,9 @@ En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
 
   toRemovedAdmin:
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
-    
-  toRemovedSubscriber: 'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
+
+  toRemovedSubscriber:
+    'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
 
