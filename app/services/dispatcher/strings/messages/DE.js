@@ -236,7 +236,7 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
   // REMOVE
 
   remove: {
-    success: num => `${num} wurde als Admin entfernt.`,
+    success: num => `${num} wurde entfernt.`,
     notAdmin,
     dbError: num => `Ooops! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
     invalidPhoneNumber,
@@ -330,6 +330,8 @@ const notifications = {
   adminAdded: 'Soeben wurde ein neuer Admin hinzugefügt.',
 
   adminRemoved: 'Soeben wurde ein Admin entfernt.',
+  
+  subscriberRemoved: 'Ein Abonnent wurde gerade entfernt.',
 
   adminLeft: 'Ein Admin hat den Kanal verlassen.',
 
@@ -395,7 +397,9 @@ ${requestMsg}`,
   signupRequestResponse:
     'Danke fürs anmelden bei Signalboost! In kürze erhälst du eine Willkommens-Nachricht auf deinem neuen Kanal...',
 
-  toRemovedAdmin: 'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke Hallo um dich wieder anzumelden.',
+  toRemovedAdmin: 'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
+  
+   toRemovedSubscriber: 'Sie wurden gerade von einem Administrator aus diesem Kanal entfernt. Senden Sie HALLO, um sich erneut anzumelden.',
 
   toggles: commandResponses.toggles,
 

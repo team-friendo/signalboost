@@ -219,7 +219,7 @@ ${support}`,
   // REMOVE
 
   remove: {
-    success: num => `${num} eliminado como administrador.`,
+    success: num => `${num} fue eliminado.`,
     notAdmin,
     dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidPhoneNumber: num =>
@@ -342,6 +342,8 @@ const notifications = {
   adminAdded: 'Se acaba de agregar nuevo administrador.',
 
   adminRemoved: 'Se acaba de eliminar un administrador.',
+  
+  subscriberRemoved: 'Un suscriptor acaba de ser eliminado.',
 
   adminLeft: 'Un administrador dejó el canal.',
 
@@ -421,6 +423,8 @@ En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
 
   toRemovedAdmin:
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+    
+  toRemovedSubscriber: 'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
 
