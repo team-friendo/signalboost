@@ -511,7 +511,7 @@ If you have not already reviewed the [System and Service Requirements](#services
 
 ## Deploy Instructions <a name="deploy-guide"></a>
 
-If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
+If you are a person who is not maintaining this repo, we want you to be able to install and maintain your own version of Signalboost too! We just can't share our account credentials or server infrastructure with you -- sorry!
 
 We've designed our deploy process so that you should be able to use it with your own credentials and infrastructure with some minor modifications. (If any of these steps don't work, please don't hesitate to post an issue so we can fix it!)
 
