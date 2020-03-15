@@ -1158,13 +1158,24 @@ describe('executing commands', () => {
             expect(removeAdminStub.callCount).to.eql(0)
           })
 
-          it('returns a SUCCESS status / NOOP message', async () => {
+          it('returns a SUCCESS status / message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REMOVE,
               payload: removalTargetNumber,
-              status: statuses.ERROR,
-              message: CR.remove.targetNotAdmin(removalTargetNumber),
-              notifications: [],
+              status: statuses.SUCCESS,
+              message: CR.remove.success(removalTargetNumber),
+			  notifications: [
+				  // removed
+				  {
+				    recipient: removalTargetNumber,
+				    message: messagesIn(languages.EN).notifications.toRemovedSubscriber,
+				  },
+				  // bystanders
+				  {
+				    recipient: channel.memberships[2].memberPhoneNumber,
+				    message: messagesIn(languages.EN).notifications.subscriberRemoved,
+				  },
+			  ],
             })
           })
         })
