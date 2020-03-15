@@ -11,6 +11,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #f8f8f2;
 }
+header {
+  background-color: #bd93f9;
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+
+main {
+  margin-top: 7rem;
+}
+
+@media only screen and (max-width: 600px) {
+  main {
+    margin-top: 6rem;
+  }
+}
+
 p {
   color: #f8f8f2;
 }
@@ -245,7 +262,7 @@ h1 {
   padding-left: 0;
   padding-right: 0;
   padding-top: 0;
-  margin-bottom: 1.45rem;
+  margin: 1.25rem 0;
   /*font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,*/
   /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
   font-weight: bold;
@@ -254,6 +271,24 @@ h1 {
   line-height: 1.1;
 }
 h2 {
+  color: #50fa7b;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  margin-bottom: 1.45rem;
+  /* color: inherit; */
+  /*font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,*/
+  /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
+  font-weight: bold;
+  text-rendering: optimizeLegibility;
+  font-size: 1.62671rem;
+  line-height: 1.1;
+}
+h3 {
   color: #ff79c6;
   margin-left: 0;
   margin-right: 0;
@@ -263,25 +298,7 @@ h2 {
   padding-right: 0;
   padding-top: 0;
   margin-bottom: 1.45rem;
-  color: inherit;
-  /*font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,*/
-  /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
-  font-weight: bold;
-  text-rendering: optimizeLegibility;
-  font-size: 1.62671rem;
-  line-height: 1.1;
-}
-h3 {
-  color: #ff79c6!important;
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
-  margin-bottom: 1.45rem;
-  color: inherit;
+  /* color: inherit; */
   /*font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,*/
   /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
   font-weight: bold;
@@ -298,7 +315,7 @@ h4 {
   padding-right: 0;
   padding-top: 0;
   margin-bottom: 1.45rem;
-  color: inherit;
+  color: #ff79c6;
   /*font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,*/
   /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
   font-weight: bold;
@@ -633,17 +650,13 @@ pre tt:before,
 pre tt:after {
   content: "";
 }
-h3 { 
-	position:relative;
+
+.container {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 0 15px;
 }
-span.anchor { 
-	position:absolute; 
-	top: -110px;
-	z-index: 1;
-}
-h2 {
-	color: rgb(189, 147, 249);
-}
+
 @media only screen and (max-width: 480px) {
   html {
     font-size: 100%;

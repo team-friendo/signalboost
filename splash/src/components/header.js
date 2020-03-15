@@ -1,39 +1,31 @@
-import { Link } from "gatsby"
-import PropTypes from "prop-types"
-import React from "react"
+import React from 'react'
+import PropTypes from 'prop-types'
+import { Link } from 'gatsby'
+import headerStyles from './header.module.css'
 
 const Header = ({ siteTitle }) => (
-  <header
-    style={{
-      background: '#bd93f9',
-      // background: '#ff79c6',
-      marginBottom: `1.45rem`,
-      position: 'fixed',
-      top: 0,
-      width: '100%',
-      zIndex: 2,
-    }}
-  >
-    <div
-      style={{
-        margin: `0 auto`,
-        maxWidth: 960,
-        padding: `1.45rem 1.0875rem`,
-      }}
-    >
-      <h1 style={{ margin: 0 }}>
+  <header>
+    <nav className={`container ${headerStyles.nav}`}>
+      <Link to="/">
+        <h1 className={headerStyles.title}>{siteTitle}</h1>
+      </Link>
+      <div>
         <Link
-          to="/"
-          style={{
-            color: '#50fa7b',
-            // color: '#bd93f9',
-            textDecoration: 'none',
-          }}
+          to="/faq"
+          className={headerStyles.nav__link}
+          activeClassName={headerStyles.active}
         >
-          {siteTitle}
+          FAQ
         </Link>
-      </h1>
-    </div>
+        <Link
+          to="/how-to"
+          className={headerStyles.nav__link}
+          activeClassName={headerStyles.active}
+        >
+          How-to
+        </Link>
+      </div>
+    </nav>
   </header>
 )
 
