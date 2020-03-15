@@ -4,7 +4,7 @@
   hosts: signalboost
 
   vars:
-    ansible_user: aguestuser
+    ansible_user: root
     secrets_method: copy
     backup_dir: /srv/backups
     # docker dependencies (pip packages)
@@ -100,65 +100,6 @@
         validate: visudo -cf %s
     tags: admins
 
-  ################
-  # DEPLOY USER  #
-  ################
-
-  - name: Add deploy user
-    user:
-      name: sb_deploy
-      groups:
-        - sshusers
-        - sudo
-      append: yes
-      shell: /bin/bash
-    tags: deploy_user
-
-  - name: Load deploy user SSH Directory
-    copy:
-      src: files/deploy_keys/.ssh/{{ item }}
-      dest: /root/.ssh/
-      mode: 0600
-    with_items:
-      - config
-      - id_sb_deploy
-      - id_sb_deploy.pub
-      - known_hosts
-    tags: deploy_user, root_ssh
-
-  - name: Set authorized key for deploy user
-    authorized_key:
-      user: sb_deploy
-      state: present
-      key: "{{ sb_deploy_ssh_key }}"
-    tags: deploy_user
-
-  - name: Create backup dir
-    file:
-      path: "{{ backup_dir }}"
-      state: directory
-      owner: sb_deploy
-      group: sb_deploy
-      mode: 0700
-    tags: deploy_user
-
-  - name: Load crontab
-    copy:
-      src: files/crontab/root
-      dest: /var/spool/cron/crontabs/root
-    tags: deploy_user, crontab
-
-  - name: Load GPG Deploy Key
-    copy:
-      src: files/deploy_keys/signalboost_gpg_privkey.asc
-      dest: /keys/
-    tags: deploy_user
-
-  - name: Import GPG deploy key to keystore
-    command: gpg --import signalboost_gpg_privkey.asc
-    args:
-      chdir: /keys
-    tags: deploy_user
 
 
   ###################

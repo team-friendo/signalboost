@@ -1,10 +1,10 @@
 ---
-- name: Provision system dependencies & users, perform basic hardening
+- name: Provision a remote server to store backups generated on prod
   become: true
   hosts: sb_backup
 
   vars:
-    ansible_user: aguestuser
+    ansible_user: root
     secrets_method: copy
     backup_dir: /srv/backups
 
