@@ -13,9 +13,21 @@ body {
 }
 header {
   background-color: #bd93f9;
-  padding: 12px 0;
-  margin-bottom: 30px;
+  position: fixed;
+  top: 0;
+  width: 100%;
 }
+
+main {
+  margin-top: 7rem;
+}
+
+@media only screen and (max-width: 600px) {
+  main {
+    margin-top: 6rem;
+  }
+}
+
 p {
   color: #f8f8f2;
 }

@@ -5,10 +5,17 @@
   align-items: center;
 }
 .nav__link {
+  font-size: x-large;
   color: #50fa7b;
   padding: 10px;
   margin: 5px;
   border-radius: 10px;
+}
+
+@media only screen and (max-width: 600px) {
+  .nav__link {
+    font-size: large;
+  }
 }
 
 .active {
