@@ -1,15 +1,15 @@
 import React from 'react'
 import Layout from '../components/layout'
 import SEO from '../components/seo'
+import { Link } from '@reach/router'
 
 const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: Secure Textblasts and Hotlines for Activists" />
     <p>
       Signalboost lets activists use Signal to send text blasts and receive
-      hotline tips on their phones without revealing their identity or spending
-      money. <br />
-      It is <em style={{ color: '#ff79c6' }}>secure, simple, and free.</em>
+      hotline tips without revealing their identity or spending money. It is{' '}
+      <em style={{ color: '#ff79c6' }}>secure, simple, and free.</em>
     </p>
     <h3>Secure:</h3>
     <ul>
@@ -19,12 +19,12 @@ const IndexPage = () => (
       </li>
       <li>
         It does not display phone numbers or names. People can send and receive
-        messages without sharing their identity -- and feel safer if anyone's
-        phone is stolen.
+        messages without sharing their identity and be safer if anyone's phone
+        is stolen or seized.
       </li>
       <li>
         Signalboost retains the minimal user metadata necessary to route
-        messages. Its maintainers, Team Friendo, will resist any attempt to
+        messages. Its maintainers, team-friendo, will resist any attempt to
         compel us disclose it, and are working on{' '}
         <a href="https://0xacab.org/team-friendo/signalboost/issues/68">
           updates
@@ -71,27 +71,36 @@ const IndexPage = () => (
     <h3>Once you have a channel:</h3>
     <ul>
       <li>
-        There will be a signal phone number associated with your channel.
-        Anytime you send a message to it, anyone who is subscribed will get that
-        message.
+        There will be a Signal phone number associated with your channel.
+        Anytime you send an announcement to your channel's phone number, anyone
+        who is subscribed will get the announcement.
       </li>
       <li>
-        People can subscribe to announcements by sending a Signal message to
-        this phone number that says "HELLO", "HOLA", "ALLÔ", or "HALLO" and
-        leave by sending "GOOBYE", "ADIÓS", "ADIEU", or "TSCHÜSS".
-      </li>
-      <li>
-        Signalboost speaks English, Spanish, French, and German and language
-        preference is specific to each user. Send a Signal message to the
-        channel that says "HELP" to see the command options.
+        Your friends can subscribe to announcements by sending a Signal message
+        to your channel phone number that says "HELLO." ("HOLA", "SALUT", or
+        "HALLO" also work!) They can unsubscribe by sending "GOOBYE." ("ADIÓS",
+        "AREVOIR", or "TSCHÜSS" also work!)
       </li>
       <li>
         You can convert the channel into a hotline by sending a message that
-        says "HOTLINE ON" to your channel number.
+        says "HOTLINE ON" to channel number.
+      </li>
+      <li>
+        Signalboost speaks English, Spanish, French, and German. Each user can
+        specify their own personal language preference by sending a message with
+        the name of the language they want to use to the channel. (E.g., to
+        change the channel language to Spanish, you would send "ESPAÑOL.")
+      </li>
+      <li>
+        All users can send a message to the channel that says "HELP" to list all
+        command options or "INFO" to learn basic information about the channel.
       </li>
     </ul>
     <h1>Got questions?</h1>
     <ul>
+      <li>
+        Check out the <Link to="/how-to">How-To Manual</Link>
+      </li>
       <li>
         Send us a signal message at{' '}
         <span style={{ color: '#bd93f9' }}>+1-938-444-8536</span>
