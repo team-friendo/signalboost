@@ -2,7 +2,7 @@
 
 Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
 
-_Read this in another language:_ [Deutsch](https://0xacab.org/divan/signalboost/-/blob/177-german-localization-of-Readme/README.de.md)
+_Read this in another language:_ [Deutsch](./README.de.md)
 
 ## Table Of Contents:
 
