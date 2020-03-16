@@ -2,6 +2,8 @@
 
 Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
 
+_Read this in another language:_ [Deutsch](https://0xacab.org/divan/signalboost/-/blob/177-german-localization-of-Readme/README.de.md)
+
 ## Table Of Contents:
 
 * [Overview](#overview)
@@ -257,8 +259,8 @@ With the app running...
 
 Any human should be able to:
 
-* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
-* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
+* Join the channel by sending a signal message with contents "Hello" to `$CHANNEL_PHONE_NUMBER`
+* Leave the channel by sending a signal message with contents "BYE" to `$CHANNEL_PHONE_NUMBER`
 
 Any admin should be able to:
 
@@ -297,7 +299,7 @@ Install* the CLI with:
 make cli.install
 ```
 
-(*NOTE: this puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
+(*NOTE: this puts the commands in `signalboost/cli/boost-commands` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
 
 Uninstall it later with:
 
