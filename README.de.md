@@ -1,9 +1,9 @@
 # Signalboost
 
-Hi! Dieses Dokument dient primär als Entwickler orientiertes Dokument. 
+Hi! Dieses Dokument dient primär als Entwickler orientiertes Dokument.  
 Wenn du weniger Jargon bevorzugst, wirf einen Blick auf [https://signalboost.info](https://signalboost.info)
 
-_In einer anderen Sprache lesen:_ [English](https://0xacab.org/divan/signalboost/-/blob/master/README.md)
+_In einer anderen Sprache lesen:_ [English](https://0xacab.org/divan/signalboost/-/blob/master/README.md) 
 _Diese Übersetzung basiert auf Revision 3c37f174 des englischen Readme's_
 
 ## Inhaltsverzeichnis:
