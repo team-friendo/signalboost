@@ -1,6 +1,6 @@
 # Signalboost
 
-Hi! Dieses Dokument dient primär als Entwickler orientiertes Dokument. Wenn du weniger Jargon bevorzugst, wirf einen blick auf [https://signalboost.info](https://signalboost.info)
+Hi! Dieses Dokument dient primär als Entwickler orientiertes Dokument. Wenn du weniger Jargon bevorzugst, wirf einen Blick auf [https://signalboost.info](https://signalboost.info)
 
 _In einer anderen Sprache lesen:_ [English](https://0xacab.org/divan/signalboost/-/blob/master/README.md)
 
@@ -32,7 +32,7 @@ __________________
 
 # Application Design <a name="design"></a>
 
-##Datenfluss
+## Datenfluss
 
 Das folgende ist im groben der Datenfluss durch die App:
 
@@ -52,7 +52,7 @@ Benutzer können sich für einen Kanal als Teilnehmer hinzufügen oder entfernen
   * deine eigene signalboost Instanz hosten (siehe Anleitung unten)
   * dein Bedürfnis nach der implementierung von verschlüsselten Teilnehmerlisten im Problemmanagement[7](https://0xacab.org/team-friendo/signalboost/issues/68) anmelden
 
-##Architektur
+## Architektur
 
 Die Anwendung besteht aus den folgenden Komponenten:
 
@@ -69,7 +69,7 @@ Die Anwendung besteht aus den folgenden Komponenten:
   *  dem `messenger`Unterdienst bedient den output des executor. Wenn er eine Antwortnachricht sieht schickt er sie an die Befehlsabsenderin. Sonst schickt er eingehende Nachrichten an alle Kanalteilnehmer , solange die Zugangsregeln das erlauben.
 
 
- Mitentwickeln <a name="#developer-guide"></a>
+# Mitentwickeln <a name="#developer-guide"></a>
 
 Wir freuen uns sehr dass du mithelfen möchtest Code für Signalboost zu schreiben!
 
@@ -289,7 +289,7 @@ Auf einen psql shell zugreifen (innerhalb des postgres docker containers für si
 make db.psql
 ```
 
-#Benutzung des CLI <a name="cli"></a>
+# Das Signalboost CLI Tool <a name="cli"></a>
 
 Davon ausgehend das bereits Geheimnisse in `.env` hinterlegt sind (wie im Abschnitt [Geheimnisse
 
@@ -352,7 +352,7 @@ It contains guides on system requirements you'll need to get started and two sep
 
 The below is the shakiest part of this README! If you try anything below and it doesn't work, or you'd prefer it run a different way! Please open an issue/MR to help us fix it! We'd really appreciate the help!
 
-## System Requirements
+## System Anforderungen
 
 Um als sysadmin für eine Signalboost Instanz agieren zu können, brauchst du folgendes:
 
