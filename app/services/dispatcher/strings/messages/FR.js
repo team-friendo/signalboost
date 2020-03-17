@@ -242,7 +242,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
   // REMOVE
 
   remove: {
-    success: num => `${num} a été supprimé.`,
+    success: num => `${num} a été supprimé-e.`,
     notAdmin,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression de ${num}. Veuillez essayer de nouveau.`,
@@ -344,7 +344,7 @@ const notifications = {
 
   adminRemoved: "Un-e admin vient d'être supprimé.",
     
-  subscriberRemoved: "Un abonné vient d'être supprimé.",
+  subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
 
   adminLeft: 'Un-e admin vient de quitter le canal',
 

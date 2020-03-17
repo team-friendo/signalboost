@@ -411,7 +411,7 @@ ${requestMsg}`,
     'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
 
   toRemovedSubscriber:
-    'Sie wurden gerade von einem Administrator aus diesem Kanal entfernt. Senden Sie HALLO, um sich erneut anzumelden.',
+    'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
   toggles: commandResponses.toggles,
 
