@@ -56,7 +56,7 @@ fi
 
 if [ -z "$admins" ]
 then
-  echo "> ERROR: you must provide at least one sender phone number after the -s flag to create a channel"
+  echo "> ERROR: you must provide at least one admin phone number after the -a flag to create a channel"
   exit 1
 elif [[ ! $admins =~ ^(\+[0-9]{9,15}(,?))+$ ]];then
   echo "> ERROR: -a must be a  comma-delimited list of valid phone numbers prefixed by a country code"
