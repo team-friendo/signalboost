@@ -11,7 +11,7 @@ timestamp=`date "+%Y-%m-%d"`
 
 # gpg
 keyring_path="/srv/signalboost/keyrings/live/pubring.kbx"
-gpg="gpg --encrypt --keyring ${keyring_path} --trust-model always -r 8DEA5441 -r 97B47404 -r 0C8F192B"
+encrypt="gpg --encrypt --keyring ${keyring_path} --trust-model always -r 8DEA5441 -r 97B47404 -r 0C8F192B"
 
 # paths
 project_root="/srv/signalboost"
@@ -29,11 +29,11 @@ echo "--- backing up db..."
 down="docker-compose -f ${project_root}/docker-compose.yml down"
 up="docker-compose --file ${project_root}/docker-compose.yml up -d db"
 pg_dump="docker-compose --file ${project_root}/docker-compose.yml exec -T db pg_dump -U postgres signalboost"
-psql_backup_path="${backup_dir}/sb_psql_backup_${timestamp}.gpg"
+db_backup_path="${backup_dir}/sb_db_backup_${timestamp}.gpg"
 
-$down
-$up
-$pg_dump | $gpg > $psql_backup_path
+${down}
+${up}
+${pg_dump} | ${encrypt} > ${db_backup_path}
 
 echo "--- backed up db!"
 
@@ -45,9 +45,9 @@ echo "--- backing up keystore..."
 
 keystore_backup_path="${backup_dir}/sb_keystore_backup_${timestamp}.tar.gpg"
 keystore_volume_path="/var/lib/docker/volumes/signalboost_signal_data/_data"
-tar="tar cf ${keystore_backup_path} ${keystore_volume_path}"
 
-$tar | $gpg > $keystore_backup_path
+cd ${keystore_volume_path}
+tar cz . | ${encrypt} > ${keystore_backup_path}
 
 echo "--- backed up keystore!"
 
@@ -63,17 +63,17 @@ target_dir="/srv/backups"
 echo "--- making target backup dir..."
 
 # make target backup directory
-ssh -i $keypath sb_backup "mkdir -p ${target_dir}"
+ssh -i ${keypath} sb_backup "mkdir -p ${target_dir}"
 
 echo "--- scp-ing to backup dir..."
 
 # here, we use the `sb_backup` host defined in /root/.ssh/config
-scp -i $keypath -rp ${backup_dir} sb_backup:${target_dir}
+scp -i ${keypath} -rp ${backup_dir} sb_backup:${target_dir}
 
 echo "--- removing old backups from remote..."
 
 # remove old backups on remote
-ssh -i $keypath sb_backup "find $target_dir/* -type d -not -name ${timestamp} -exec rm -rv {} +"
+ssh -i ${keypath} sb_backup "find $target_dir/* -type d -not -name ${timestamp} -exec rm -rv {} +"
 
 # remove local backup
 rm -rf ${backup_dir}
@@ -87,6 +87,6 @@ echo "--- backups moved to target!"
 echo "--- restarting app..."
 
 up="docker-compose --file ${project_root}/docker-compose.yml up -d"
-$up
+${up}
 
 echo "--- app restarted!"

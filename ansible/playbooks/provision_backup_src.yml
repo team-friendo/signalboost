@@ -7,6 +7,8 @@
     secrets_method: copy
     backup_dir: /srv/backups
 
+  tasks:
+
   - name: Add deploy user
     user:
       name: sb_deploy
