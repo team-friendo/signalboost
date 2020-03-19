@@ -266,7 +266,8 @@ Oups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}
     success: `Je vous parlerai maintenant en français!
     
 Envoyez AIDE pour avoir accès au menu des commandes valides.`,
-    dbError: 'Oups! Votre préférence de langue n’a pas été enregistrée. Veuillez essayer de nouveau!',
+    dbError:
+      'Oups! Votre préférence de langue n’a pas été enregistrée. Veuillez essayer de nouveau!',
   },
 
   // TOGGLES (HOTLINE, VOUCHING)
@@ -331,8 +332,7 @@ Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER 
   // SET_DESCRIPTION
 
   description: {
-    success: newDescription =>
-      `La description du canal a été remplacée par "${newDescription}".`,
+    success: newDescription => `La description du canal a été remplacée par "${newDescription}".`,
     dbError: `Oups! Une erreur s'est produite lors du changement de la description du canal. Veuillez essayer à nouveau!`,
     notAdmin,
   },
@@ -343,7 +343,7 @@ const notifications = {
     `Un-e nouvel-le admin ${addedAdmin} a été ajouté e par ${commandIssuer}`,
 
   adminRemoved: "Un-e admin vient d'être supprimé.",
-    
+
   subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
 
   adminLeft: 'Un-e admin vient de quitter le canal',
@@ -359,7 +359,8 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Le canal a été renommé de "${oldName}" à "${newName}."`,
 
-  setDescription: newDescription => `La description de ce canal est désormais: "${newDescription}."`,
+  setDescription: newDescription =>
+    `La description de ce canal est désormais: "${newDescription}."`,
 
   expiryUpdateNotAuthorized:
     "Désolé, seul-e-s les admins peuvent régler l'horloge des messages disparus.",
@@ -408,7 +409,7 @@ ${requestMsg}`,
 
   toRemovedAdmin:
     "Vous venez d'être supprimé e en tant qu'admin de cette chaîne. Envoyez SALUT pour vous réinscrire.",
-    
+
   toRemovedSubscriber:
     "Vous venez d'être supprimé de cette chaîne par un administrateur. Envoyez SALUT pour vous réinscrire.",
 

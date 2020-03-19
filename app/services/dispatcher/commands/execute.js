@@ -57,7 +57,7 @@ const execute = async (executable, dispatchable) => {
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemoveNumber(db, channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
     [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
@@ -312,7 +312,7 @@ const removeSenderNotificationsOf = (channel, sender) => {
 
 // REMOVE
 
-const maybeRemoveNumber = async (db, channel, sender, phoneNumber) => {
+const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
 
   if (!(sender.type === ADMIN)) {
