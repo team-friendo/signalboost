@@ -16,7 +16,7 @@ if [ -z $SIGNALBOOST_HOST_URL ];then
   exit 1
 fi
 
-echo "--- checking if nextcloud instance available..."
+echo "--- checking if instance available..."
 
 check-until-available(){
   echo "--- check #$1"
