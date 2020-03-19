@@ -20,6 +20,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
+    # as per https://github.com/docker-library/postgres/issues/692
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
     restart: unless-stopped
 
   signald:

@@ -28,7 +28,7 @@ check-until-available(){
     status=$(curl -s -H "Token: $SIGNALBOOST_API_TOKEN" \
                      -I https://${SIGNALBOOST_HOST_URL}/hello \
                      | sed -n 1p | awk '{print $2}')
-    if [ ${status} != "200" ] && [ ${status} != "302" ];then
+    if [[ ${status} != "200" ]] && [[ ${status} != "302" ]];then
       echo  "--- instance not available. checking again in 5sec..."
       let new_count=$count+1
       sleep 5
