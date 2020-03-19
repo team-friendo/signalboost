@@ -87,6 +87,15 @@
       chdir: "{{ homedir }}"
     tags: prepare
 
+  # to ensure ACMEv2 compatibility
+  # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
+  - name: Ensure we are running latest version of letsencrypt companion
+    command: "docker-compose pull letsencrypt"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
+
+
   - name: Stop containers used for install & db setup
     command: "docker-compose down"
     args:
