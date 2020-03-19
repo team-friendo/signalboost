@@ -1,0 +1,72 @@
+#!/bin/bash
+set -euo pipefail
+
+###################
+# throat-clearing #
+###################
+
+project_root="/srv/signalboost"
+docker_compose="docker-compose -f ${project_root}/docker-compose.yml"
+
+####################
+# retrieve backups #
+####################
+
+echo "--- copying backups from remote server..."
+
+ssh_key_path=/root/.ssh/id_sb_deploy
+remote_backup_dir="/srv/backups"
+local_backup_dir="${project_root}/backups"
+
+# here, we use the `sb_backup` host defined in /root/.ssh/config
+scp -i ${ssh_key_path} -rp sb_backup:${remote_backup_dir} ${project_root}
+
+keyring_path="/srv/signalboost/keyrings/live/pubring.kbx"
+decrypt="gpg --decrypt --keyring ${keyring_path}"
+
+db_backup_path="${local_backup_dir}/db_backup.sql"
+keystore_backup_path="${local_backup_dir}/_data"
+keystore_backup_tar_path="${keystore_backup_path}.tar"
+
+echo "--- decrypting and extracting db backups..."
+${decrypt} `find ${local_backup_dir} -name *sb_db*` > ${db_backup_path}
+
+echo "--- decrypting and extracting keystore backups..."
+${decrypt} `find ${local_backup_dir} -name *sb_keystore*` > ${keystore_backup_tar_path}
+mkdir -p ${keystore_backup_path}
+tar xzf ${keystore_backup_tar_path} -C ${keystore_backup_path}
+
+################
+# load backups #
+################
+
+echo "--- loading db backup..."
+
+echo "--- spinning down docker containers..."
+${docker_compose} down
+
+echo "--- preparing up db container..."
+${docker_compose} run --entrypoint /signalboost/bin/db/setup app
+${docker_compose} down
+${docker_compose} up -d db
+sleep 3 # to allow db to spin up before trying to use it
+
+echo "--- running db..."
+${docker_compose} exec -T db psql -U postgres -d signalboost < ${db_backup_path}
+${docker_compose} down
+
+echo "--- loading keystore backup..."
+keystore_volume_path="/var/lib/docker/volumes/signalboost_signal_data"
+mkdir -p ${keystore_volume_path}
+cp -R ${keystore_backup_path} ${keystore_volume_path}
+
+echo "--- deleting backups"
+rm -rf ${local_backup_dir}/*
+
+##########
+# finish #
+##########
+
+echo "--- DONE!"
+echo ""
+echo "--- next likely step: make ansible.deploy"

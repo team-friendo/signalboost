@@ -51,8 +51,21 @@ ansible.deploy: # deploy the app to prod
 ansible.provision: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision.yml
 
+ansible.provision_backup_src: # deploy the app to prod
+	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_src.yml
+
+ansible.provision_backup_dst: # deploy the app to prod
+	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_dst.yml
+
 ansible.harden: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/harden.yml
+
+ansible.backup: # backup the app from prod to sb_backup host
+	cd ansible && ansible-playbook -i inventory playbooks/backup.yml
+
+ansible.restore: # restore from backup on sb_backup host to prod
+	cd ansible && ansible-playbook -i inventory playbooks/restore.yml
+
 
 #######################
 # db-related commands #
