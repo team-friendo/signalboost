@@ -10,11 +10,11 @@ _Diese Übersetzung basiert auf Revision 3c37f174 des englischen Readme's_
 
 * [Übersicht](#übersicht)
 * [Application Design](#design)
-* [Mitentwickeln] (#developer-guide)
+* [Mitentwickeln](#developer-guide)
 * [Das Signalboost CLI Tool](#cli)
 * [Systemadmin Guide](#sysadmin-guide)
   * [Generelle Deployment Anleitung](#deploy-public)
-  * [Deployment Anleitung für Team Friendo]#deploy-team-friendo)
+  * [Deployment Anleitung für Team Friendo](#deploy-team-friendo)
 
 # Übersicht <a name="übersicht"></a>
 
