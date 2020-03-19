@@ -890,6 +890,10 @@ make db.psql
 
 ### Using the Boost CLI  <a href="boost-cli"></a>
 
+The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local .env file and uses the SIGNALBOOST_HOST_URL value as it's target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command.
+
+Note: Our development setup steps encourage you to install jq on your localhost, which is needed for `boost` command output. Ansible does not install this on production servers and it will need to be installed manually if you wish to run boost directly on your production server.
+
 Assuming you have already installed the CLI with:
 
 ```shell
@@ -920,7 +924,7 @@ Where `<command>` is one of the following:
   list-channels -u <api_url>
     - lists all channels active on the Signalboost instance at the given url (defaults to prod!)
 
-  list-numbers -u <api_url>
+  list-numbers -u
     - lists all numbers purchased from twilio on the Signalboost instance at url (defaults to prod!)
 
   release-numbers <path>
