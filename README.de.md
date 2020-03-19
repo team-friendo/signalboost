@@ -40,16 +40,16 @@ Das folgende ist im groben der Datenfluss durch die App:
 
 * ein Anwendungsserver kontrolliert mehrere signal nummern, die jeweils als ein "kanal" fungieren
 * Admins und Teilnehmer können mit dem Kanal interagieren in dem sie Befehle in form einer Signalnachricht schicken zB:
-Benutzer können sich für einen Kanal als Teilnehmer hinzufügen oder entfernen indem sie eine Signal Nachricht mit dem Text "HALLO" oder respektive "TSCHÜSS" senden. **Publisher** können andere **Publisher** hinzufügen indem sie eine nachricht mit dem Text "ADD +491701234567" , usw. senden
-* wenn ein Publisher eine Nachricht die kein Befehl ist an einen Kanal sendet , wird diese Nachricht allen Teilnehmern dieses Kanals übermittelt.
+Benutzer können sich für einen Kanal als Teilnehmer hinzufügen oder entfernen indem sie eine Signal Nachricht mit dem Text "HALLO" oder respektive "TSCHÜSS" senden. Admins können andere Admins hinzufügen indem sie eine nachricht mit dem Text "ADD +491701234567" , usw. senden
+* wenn ein Admin eine Nachricht die kein Befehl ist an einen Kanal sendet , wird diese Nachricht allen Teilnehmern dieses Kanals übermittelt.
 * anders als mit Signal Gruppen:
-  * erscheint die Nachricht bei den Teilnehmern unter der mit dem Kanal assozierten Nummer (nicht der Nummer des Publishers)
+  * erscheint die Nachricht bei den Teilnehmern unter der mit dem Kanal assozierten Nummer (nicht der Nummer des Admins)
   * können Teilnehmer nicht die Nummern der anderen Teilnehmer sehen
   * können Teilnehmer nicht auf Nachrichten antworten
 * anders als mit anderen Verteilern:
   * ist der Nachrichtenversand gratis (danke m0xie!)
-  * sind alle Nachrichten zwischen **Publishern** und der Anwendungs und zwischen der Anwendung und den Teilnehmern verschlüsselt (ANMERKUNG: sie werden kurzzeitig in der Anwendung entschlüsselt und neuverschlüsselt aber nicht permanent auf der Festplatte gespeichert
-  * können **Publisher** Teilnehmern Anhänge schicken
+  * sind alle Nachrichten zwischen Admin und der Anwendungs und zwischen der Anwendung und den Teilnehmern verschlüsselt (ANMERKUNG: sie werden kurzzeitig in der Anwendung entschlüsselt und neuverschlüsselt aber nicht permanent auf der Festplatte gespeichert
+  * können Admins Teilnehmern Anhänge schicken
 + anzumerken ist dass zur Zeit die Liste der Teilnehmer auf der Festplatte des Signalboost Servers hinterlegt ist: wenn dich das nervös macht kannst du:
   * deine eigene signalboost Instanz hosten (siehe Anleitung unten)
   * dein Bedürfnis nach der implementierung von verschlüsselten Teilnehmerlisten im Problemmanagement[7](https://0xacab.org/team-friendo/signalboost/issues/68) anmelden
@@ -65,7 +65,7 @@ Die Anwendung besteht aus den folgenden Komponenten:
   * nach Twilio Nummern sucht und diese kauft
   * twillio Nummern mit Signal registrier
   * Verifizierungs Codes zum Signal server schickt (nachdem sie als sms Nachricht vom signal server and twilio geschickt, und an die app über einen eingehenden `/twilioSms` webhook weitergeleitet wurden
-  *  erstellt Kanäle und fügt Telefonnummern, **Publisher**, und Teilnehmer hinzu/entfernt sie von diesen
+  *  erstellt Kanäle und fügt Telefonnummern, Admins, und Teilnehmer hinzu/entfernt sie von diesen
 3. ein `dispatcher` Dienst der eingehende Nachrichten auf jedem Kanal über eine unix socket Verbindung zu `signald` liest, und dann die jeweiligen Nachrichten bearbeitet mit:
   * dem `executor` Unterdienst, dieser analysiert nachrichten auf der suche nach Befehlen (z.B.: `ADD` admin ( füge admin zu Kanal hinzu) , wenn es einen findet, führt es den Befehl aus und schickt eine Antwort zurück
   *  dem `messenger`Unterdienst bedient den output des executor. Wenn er eine Antwortnachricht sieht schickt er sie an die Befehlsabsenderin. Sonst schickt er eingehende Nachrichten an alle Kanalteilnehmer , solange die Zugangsregeln das erlauben.
