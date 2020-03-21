@@ -15,7 +15,7 @@ boost cli supports the following commands:
   create-number -a <area_code> -n <numbers_desired> -u <api_url>
     - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
 
-  destroy -n <phone_number> -u <api_url>
+  destroy -p <phone_number> -u <api_url>
     - permanently deletes the provided phone number
 
   list-channels -u <api_url>
@@ -27,7 +27,7 @@ boost cli supports the following commands:
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
 
-  recycle -n <phone_numbers> -u <api_url>
+  recycle -p <phone_numbers> -u <api_url>
     - recycles provided phone numbers in order to be used with new channels
 
 for more detailed instructions on any command, run:
