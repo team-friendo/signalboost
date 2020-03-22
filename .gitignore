@@ -50,3 +50,4 @@ signal_data
 /ansible/files/deploy_keys/.ssh/config
 /ansible/files/deploy_keys/.ssh/known_hosts
 /.env.dev
+/.env.pentest
