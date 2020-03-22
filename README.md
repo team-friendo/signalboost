@@ -517,7 +517,7 @@ We've designed our deploy process so that you should be able to use it with your
 
 ### (1) Setup your production host server
 
-Signup for a server running either the Debian or Ubuntu GNU/Linux distributions and note its static IP. 
+Signup for a server running either the Debian or Ubuntu GNU/Linux distributions, note the static IP and configure a domain to the new server.
 
 If you need help finding a server, we'd recommend shopping for a VPS from one the following lovely social-justice oriented groups:
 
@@ -581,13 +581,13 @@ ansible-galaxy install dev-sec.ssh-hardening
 
 ### (4) Complete configuration 
 
-If you are member of Team Friendo we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another admin for install you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with 
+**If you are member of Team Friendo** we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another admin for install you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with 
 
 ``` shell
 make _.unlock
 ```
 
-If you are not a member of Team Friendo you will need to customize two files with the service and system details. Copy those files that with:
+**If you are not a member of Team Friendo** you will need to customize two files with the service and system details. Copy those files that with:
 
 ``` shell
 cd path/to/signalboost
@@ -730,7 +730,7 @@ boost create-number -n 2 -a 510
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
-boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+boost create-channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
 #### List existing numbers and channels
