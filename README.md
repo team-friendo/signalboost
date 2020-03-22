@@ -164,7 +164,7 @@ Or... if you prefer something easier to remember than `./bin/blackbox/blah-blah-
 make _.unlock
 ```
 
-**GOTCHA WARNING:** if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files**
+**GOTCHA WARNING:** if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`
 
 ## Makefile
 
@@ -494,7 +494,7 @@ boost new_numbers -n 2 -a 510
 
 **(7) Provision new signalboost channels:**
 
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channenewl called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
+Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a new channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
 boost new_channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
