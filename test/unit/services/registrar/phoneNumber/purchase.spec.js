@@ -104,9 +104,7 @@ describe('phone number services - purchase module', () => {
 
   describe('purchasing a phone number', () => {
     describe('when twilio number search succeeds', () => {
-      beforeEach(() =>
-        twilioListStub.returns(Promise.resolve([{ phoneNumber: fakePhoneNumber }])),
-      )
+      beforeEach(() => twilioListStub.returns(Promise.resolve([{ phoneNumber: fakePhoneNumber }])))
 
       it('attempts to register the number returned by search with twilio', async () => {
         await purchase({ db })
@@ -114,14 +112,18 @@ describe('phone number services - purchase module', () => {
       })
 
       it("includes the current environment in the registered number's friendlyName", async () => {
-        await purchase({db})
+        await purchase({ db })
         expect(twilioCreateStub.getCall(0).args[0].friendlyName).to.match(/^test+ .*$/)
       })
 
       describe('when twilio number registration succeeds', () => {
         beforeEach(() =>
           twilioCreateStub.returns(
-            Promise.resolve({ ...twilioNumberCreationResponse, phoneNumber: fakePhoneNumber, sid: twilioSid }),
+            Promise.resolve({
+              ...twilioNumberCreationResponse,
+              phoneNumber: fakePhoneNumber,
+              sid: twilioSid,
+            }),
           ),
         )
 

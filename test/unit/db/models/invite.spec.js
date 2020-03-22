@@ -28,7 +28,6 @@ describe('invite model', () => {
   })
 
   describe('validations', () => {
-
     it('does not allow dupe invites on same channel', async () => {
       const channelPhoneNumber = genPhoneNumber()
       const inviterPhoneNumber = genPhoneNumber()

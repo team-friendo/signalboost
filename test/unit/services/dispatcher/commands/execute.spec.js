@@ -1164,18 +1164,18 @@ describe('executing commands', () => {
               payload: removalTargetNumber,
               status: statuses.SUCCESS,
               message: CR.remove.success(removalTargetNumber),
-			  notifications: [
-				  // removed
-				  {
-				    recipient: removalTargetNumber,
-				    message: messagesIn(languages.EN).notifications.toRemovedSubscriber,
-				  },
-				  // bystanders
-				  {
-				    recipient: channel.memberships[2].memberPhoneNumber,
-				    message: messagesIn(languages.EN).notifications.subscriberRemoved,
-				  },
-			  ],
+              notifications: [
+                // removed
+                {
+                  recipient: removalTargetNumber,
+                  message: messagesIn(languages.EN).notifications.toRemovedSubscriber,
+                },
+                // bystanders
+                {
+                  recipient: channel.memberships[2].memberPhoneNumber,
+                  message: messagesIn(languages.EN).notifications.subscriberRemoved,
+                },
+              ],
             })
           })
         })
