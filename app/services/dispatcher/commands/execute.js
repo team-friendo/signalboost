@@ -318,11 +318,21 @@ const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, phoneNumber))) {
-    return removeSubscriber(db, channel, phoneNumber, sender, cr)
-  }
 
-  return removeAdmin(db, channel, phoneNumber, sender, cr)
+  const payloadMemberType = await membershipRepository.resolveSenderType(
+    db,
+    channel.phoneNumber,
+    phoneNumber,
+  )
+
+  switch (payloadMemberType) {
+    case memberTypes.ADMIN:
+      return removeAdmin(db, channel, phoneNumber, sender, cr)
+    case memberTypes.SUBSCRIBER:
+      return removeSubscriber(db, channel, phoneNumber, sender, cr)
+    default:
+      return Promise.resolve()
+  }
 }
 
 const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
