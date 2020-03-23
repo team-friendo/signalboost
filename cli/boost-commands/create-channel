@@ -26,14 +26,14 @@ while getopts ":p:n:a:e:" opt; do
       admins="$OPTARG"
       ;;
     e)
-      env_path="$OPTARG"
+      env_file="$OPTARG"
       ;;
   esac
 done
 
 # check env vars are properly defined
 source ./_check-env
-check-env ${env_path}
+check-env ${env_file}
 
 if [[ ! $phone_number =~ ^\+[0-9]{9,15}$ ]];then
   echo "> ERROR: -p must be a valid phone number prefixed by a country code"

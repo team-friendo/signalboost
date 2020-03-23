@@ -1,7 +1,7 @@
 ---
 - name: Add new admin user to a box
   become: true
-  hosts: signalboost
+  hosts: "{{ sb_host | default('signalboost') }}"
 
 # usage:
 # cd ansible

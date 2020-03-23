@@ -22,14 +22,14 @@ while getopts ":c:a:e:" opt; do
       admin_phone_number="$OPTARG"
       ;;
     e)
-      env_path="$OPTARG"
+      env_file="$OPTARG"
       ;;
   esac
 done
 
 # check env vars are properly defined
 source ./_check-env
-check-env ${env_path}
+check-env ${env_file}
 
 if [[ ! ${channel_phone_number} =~ ^\+(1|52)[0-9]{10}$ ]];then
   echo "> ERROR: -c must be a 10 digit phone number prefixed by a country code (+1 or +52)"

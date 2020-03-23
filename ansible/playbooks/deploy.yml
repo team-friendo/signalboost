@@ -1,7 +1,7 @@
 ---
 - name: Deploy Signalboost
   become: true
-  hosts: signalboost
+  hosts: "{{ sb_host | default('signalboost') }}"
 
   environment:
     NODE_ENV: production

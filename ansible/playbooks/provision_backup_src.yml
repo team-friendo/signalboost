@@ -1,7 +1,7 @@
 ---
 - name: Provision prod to send backups to a remote backup server
   become: true
-  hosts: signalboost
+  hosts: "{{ sb_host | default('signalboost') }}"
 
   vars:
     secrets_method: copy
