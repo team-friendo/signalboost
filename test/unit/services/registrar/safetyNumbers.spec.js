@@ -25,12 +25,12 @@ describe('safety numbers registrar module', () => {
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
   const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
   const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage }
-  let trustStub, sendMessageStub, removeAdminStub, findDeepStub, createDeauthStub
+  let trustStub, sendMessageStub, removeMemberStub, findDeepStub, createDeauthStub
 
   beforeEach(() => {
     trustStub = sinon.stub(signal, 'trust')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
-    removeAdminStub = sinon.stub(membershipRepository, 'removeAdmin')
+    removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
     createDeauthStub = sinon.stub(deauthorizationRepository, 'create')
 
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(
@@ -55,7 +55,7 @@ describe('safety numbers registrar module', () => {
   afterEach(() => {
     trustStub.restore()
     sendMessageStub.restore()
-    removeAdminStub.restore()
+    removeMemberStub.restore()
     findDeepStub.restore()
     createDeauthStub.restore()
   })
@@ -142,12 +142,12 @@ describe('safety numbers registrar module', () => {
     const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint }
     it('attempts to remove a admin from a channel', async () => {
       await deauthorize(db, sock, updatableFingerprint).catch(a => a)
-      expect(removeAdminStub.getCall(0).args).to.eql([db, channelPhoneNumber, memberPhoneNumber])
+      expect(removeMemberStub.getCall(0).args).to.eql([db, channelPhoneNumber, memberPhoneNumber])
     })
 
     describe('if removal succeeds', () => {
       beforeEach(() =>
-        removeAdminStub.returns(
+        removeMemberStub.returns(
           Promise.resolve({
             status: statuses.SUCCESS,
             message: 'fake removal success message',
@@ -219,7 +219,7 @@ describe('safety numbers registrar module', () => {
 
     describe('if removal fails', () => {
       beforeEach(() =>
-        removeAdminStub.callsFake(() =>
+        removeMemberStub.callsFake(() =>
           Promise.reject({
             status: statuses.ERROR,
             message: 'fake removal error message',

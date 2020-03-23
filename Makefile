@@ -118,10 +118,10 @@ test.e2e: ## run e2e tests
 	./bin/test/e2e
 
 test.lint: ## run linter
-	npx eslint app
+	npx eslint app && npx eslint test
 
 test.lint-fix: ## run linter with --fix option to automatically fix what can be
-	npx eslint --fix app
+	npx eslint --fix app && npx eslint --fix test
 
 
 

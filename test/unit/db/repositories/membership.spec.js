@@ -174,7 +174,7 @@ describe('membership repository', () => {
     })
   })
 
-  describe('#removeAdmin', () => {
+  describe('#removeMember', () => {
     describe('when given the number of an existing admin', () => {
       let result
       beforeEach(async () => {
@@ -182,7 +182,7 @@ describe('membership repository', () => {
         await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-        result = await membershipRepository.removeAdmin(db, channel.phoneNumber, adminPhoneNumbers)
+        result = await membershipRepository.removeMember(db, channel.phoneNumber, adminPhoneNumbers)
       })
 
       it('deletes a membership record', async () => {
@@ -201,7 +201,7 @@ describe('membership repository', () => {
         await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count()
 
-        result = await membershipRepository.removeAdmin(db, channel.phoneNumber, '+11111111111')
+        result = await membershipRepository.removeMember(db, channel.phoneNumber, '+11111111111')
       })
 
       it('does not create a membership record', async () => {
@@ -283,7 +283,7 @@ describe('membership repository', () => {
     })
   })
 
-  describe('#removeSubscriber', () => {
+  describe('#removeMember', () => {
     const [subscriberPhone, unsubscribedPhone] = subscriberPhoneNumbers
 
     beforeEach(async () => {
@@ -296,7 +296,7 @@ describe('membership repository', () => {
       describe('when asked to remove a number that is subscribed to the channel', () => {
         let result
         beforeEach(async () => {
-          result = await membershipRepository.removeSubscriber(
+          result = await membershipRepository.removeMember(
             db,
             channel.phoneNumber,
             subscriberPhone,
@@ -313,7 +313,7 @@ describe('membership repository', () => {
       describe('when asked to remove a number that is not subscribed to the channel', () => {
         it('resolves with a deletion count of 0', async () => {
           expect(
-            await membershipRepository.removeSubscriber(db, channel.phoneNumber, unsubscribedPhone),
+            await membershipRepository.removeMember(db, channel.phoneNumber, unsubscribedPhone),
           ).to.eql(0)
         })
       })
@@ -322,7 +322,7 @@ describe('membership repository', () => {
     describe('when given the phone number of a non-existent channel', () => {
       it('it rejects with an error', async () => {
         expect(
-          await membershipRepository.removeSubscriber(db, genPhoneNumber(), null).catch(e => e),
+          await membershipRepository.removeMember(db, genPhoneNumber(), null).catch(e => e),
         ).to.contain('non-existent channel')
       })
     })
@@ -363,7 +363,7 @@ describe('membership repository', () => {
     })
   })
 
-  describe('#resolveSenderType', () => {
+  describe('#resolveMemberType', () => {
     beforeEach(async () => {
       channel = await db.channel.create(
         {
@@ -385,7 +385,7 @@ describe('membership repository', () => {
     describe('when sender is admin on channel', () => {
       it('returns ADMIN', async () => {
         expect(
-          await membershipRepository.resolveSenderType(
+          await membershipRepository.resolveMemberType(
             db,
             channelPhoneNumber,
             adminPhoneNumbers[0],
@@ -397,7 +397,7 @@ describe('membership repository', () => {
     describe('when sender is subscribed to channel', () => {
       it('returns SUBSCRIBER', async () => {
         expect(
-          await membershipRepository.resolveSenderType(
+          await membershipRepository.resolveMemberType(
             db,
             channelPhoneNumber,
             subscriberPhoneNumbers[0],
@@ -409,7 +409,7 @@ describe('membership repository', () => {
     describe('when sender is neither admin nor subscriber', () => {
       it('returns RANDOM', async () => {
         expect(
-          await membershipRepository.resolveSenderType(db, channelPhoneNumber, genPhoneNumber()),
+          await membershipRepository.resolveMemberType(db, channelPhoneNumber, genPhoneNumber()),
         ).to.eql(memberTypes.NONE)
       })
     })

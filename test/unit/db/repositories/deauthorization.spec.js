@@ -30,12 +30,7 @@ describe('deauthorization repository', () => {
   })
 
   it('destroys a deauhtorization record', async () => {
-    await deauthorizationRepository.create(
-      db,
-      channelPhoneNumber,
-      memberPhoneNumber,
-      fingerprint,
-    )
+    await deauthorizationRepository.create(db, channelPhoneNumber, memberPhoneNumber, fingerprint)
     await deauthorizationRepository.destroy(db, channelPhoneNumber, memberPhoneNumber)
     expect(await db.deauthorization.count()).to.eql(deauthCount)
   })

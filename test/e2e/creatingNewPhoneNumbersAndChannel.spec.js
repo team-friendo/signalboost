@@ -50,7 +50,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
     messageCountCount = await db.messageCount.count()
   })
 
-  after(async function(){
+  after(async function() {
     this.timeout(30000)
     await Promise.all([
       ...phoneNumberResponse.body.map(({ phoneNumber }) => destroyPhoneNumber(phoneNumber)),

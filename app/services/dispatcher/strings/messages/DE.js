@@ -9,7 +9,7 @@ const {
 
 const systemName = 'Signalboost Systemadministrator*in'
 const notAdmin =
-  'Tut uns leid, nur Admins können diesen Befehl ausführen. Sende HILFE um eine Liste an gültigen Befehlen zu erhalten.' 
+  'Tut uns leid, nur Admins können diesen Befehl ausführen. Sende HILFE um eine Liste an gültigen Befehlen zu erhalten.'
 const notSubscriber =
   'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
@@ -48,15 +48,16 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${channel.name}] angemeldet. ${
-      channel.description
-    }
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${
+      channel.name
+    }] angemeldet. ${channel.description}
 
 Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     alreadyMember: 'Ups! Du bist schon Teilnehmer an diesem Kanal.',
     belowVouchLevel: (channel, required, actual) =>
       `Sorry, für ${channel.name} brauchst du ${required} Einladung(en). Du hast ${actual}.`,
-    dbError: 'Tut uns Leid! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!',
+    dbError:
+      'Tut uns Leid! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!',
   },
 
   // ADD
@@ -64,7 +65,8 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   add: {
     success: num => `${num} als Admin hinzugefügt.`,
     notAdmin,
-    dbError: num => `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
+    dbError: num =>
+      `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
     invalidPhoneNumber,
   },
 
@@ -205,7 +207,8 @@ ${support}`,
 
   invite: {
     notSubscriber,
-    invalidPhoneNumber: input => `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
+    invalidPhoneNumber: input =>
+      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
     success: `Einladung versandt.`,
     dbError: 'Upsi! Einladung konnte nicht verschickt werden.Bitte versuche es erneut :)',
   },
@@ -213,9 +216,9 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${channel.name}] Signalboost Kanal angemeldet. ${
-      channel.description
-    }
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${
+      channel.name
+    }] Signalboost Kanal angemeldet. ${channel.description}
 
 Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzumelden.`,
     inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freunde nach einer Einladung!
@@ -236,11 +239,12 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
   // REMOVE
 
   remove: {
-    success: num => `${num} wurde als Admin entfernt.`,
+    success: num => `${num} wurde entfernt.`,
     notAdmin,
-    dbError: num => `Ooops! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
+    targetNotMember: num => `Ups! ${num} ist kein Teilnehmer an diesem Kanal.`,
+    dbError: num =>
+      `Ups! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
     invalidPhoneNumber,
-    targetNotAdmin: num => `Upsi! ${num} ist kein Admin. ${num} kann nicht entfernt werden.`,
   },
 
   // RENAME
@@ -271,7 +275,9 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
       success: isOn => `Hotline Funktion ${onOrOff(isOn)} geschaltet.`,
       notAdmin,
       dbError: isOn =>
-        `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(isOn)} zu schalten. Bitte versuche es erneut!`,
+        `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(
+          isOn,
+        )} zu schalten. Bitte versuche es erneut!`,
     },
     vouching: {
       success: (isOn, vouchLevel) =>
@@ -290,7 +296,9 @@ Nutze den VERTRAUENS-LEVEL Befehl um die Zahl der benötigten Einladungen zu ver
         }`,
       notAdmin,
       dbError: isOn =>
-        `Oh! Es gab einen Fehler beim Versuch Vertrauen ${onOrOff(isOn)} zu schalten. Bitte versuchs nochmal!`,
+        `Oh! Es gab einen Fehler beim Versuch Vertrauen ${onOrOff(
+          isOn,
+        )} zu schalten. Bitte versuchs nochmal!`,
     },
   },
 
@@ -314,7 +322,8 @@ Nutze den VERTRAUENS-LEVEL Befehl um die Zahl der benötigten Einladungen zu ver
       } um diesem Kanal als Teilnehmer beizutreten.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
-    dbError: 'Es gab einen Fehler beim Versuch das Vertrauens-Level umzustellen. Bitte versuchs nochmal.',
+    dbError:
+      'Es gab einen Fehler beim Versuch das Vertrauens-Level umzustellen. Bitte versuchs nochmal.',
   },
 
   // SET_DESCRIPTION
@@ -330,6 +339,8 @@ const notifications = {
   adminAdded: 'Soeben wurde ein neuer Admin hinzugefügt.',
 
   adminRemoved: 'Soeben wurde ein Admin entfernt.',
+
+  subscriberRemoved: 'Ein Abonnent wurde gerade entfernt.',
 
   adminLeft: 'Ein Admin hat den Kanal verlassen.',
 
@@ -357,7 +368,8 @@ HINZUFÜGEN ${adminPhoneNumber}
 
 Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch welche verschicken`,
 
-  expiryUpdateNotAuthorized: 'Sorry, nur Admins können den Timer für verschwindende Nachrichten umstellen.',
+  expiryUpdateNotAuthorized:
+    'Sorry, nur Admins können den Timer für verschwindende Nachrichten umstellen.',
 
   hotlineMessageSent: channel =>
     `Deine Nachricht wurde an die Admins des [${channel.name}] Kanals weitergeleitet.
@@ -386,7 +398,8 @@ ${
     : `Nachricht hat das Limit der Sendeversuche erreicht, es folgen keine weiteren Versuche`
 }`,
 
-  recycleChannelFailed: phoneNumber => `Fehler beim Recyclen des Kanals für die Telefonnummer: ${phoneNumber}`,
+  recycleChannelFailed: phoneNumber =>
+    `Fehler beim Recyclen des Kanals für die Telefonnummer: ${phoneNumber}`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Bitte um Anmeldung erhalten von: ${senderNumber}:
@@ -395,7 +408,11 @@ ${requestMsg}`,
   signupRequestResponse:
     'Danke fürs anmelden bei Signalboost! In kürze erhälst du eine Willkommens-Nachricht auf deinem neuen Kanal...',
 
-  toRemovedAdmin: 'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke Hallo um dich wieder anzumelden.',
+  toRemovedAdmin:
+    'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
+
+  toRemovedSubscriber:
+    'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
   toggles: commandResponses.toggles,
 

@@ -57,7 +57,7 @@ const execute = async (executable, dispatchable) => {
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemoveAdmin(db, channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
     [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
@@ -291,7 +291,7 @@ const maybeRemoveSender = async (db, channel, sender) => {
 
 const removeSender = (db, channel, sender, cr) => {
   const remove =
-    sender.type === ADMIN ? membershipRepository.removeAdmin : membershipRepository.removeSubscriber
+    sender.type === ADMIN ? membershipRepository.removeMember : membershipRepository.removeMember
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
@@ -312,30 +312,39 @@ const removeSenderNotificationsOf = (channel, sender) => {
 
 // REMOVE
 
-const maybeRemoveAdmin = async (db, channel, sender, adminPhoneNumber) => {
+const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
 
   if (!(sender.type === ADMIN)) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  if (!(await membershipRepository.isAdmin(db, channel.phoneNumber, adminPhoneNumber)))
-    return { status: statuses.ERROR, message: cr.targetNotAdmin(adminPhoneNumber) }
 
-  return removeAdmin(db, channel, adminPhoneNumber, sender, cr)
+  const payloadMemberType = await membershipRepository.resolveMemberType(
+    db,
+    channel.phoneNumber,
+    phoneNumber,
+  )
+  return payloadMemberType === memberTypes.NONE
+    ? { status: statuses.ERROR, message: cr.targetNotMember(phoneNumber) }
+    : removeMember(db, channel, phoneNumber, payloadMemberType, sender, cr)
 }
 
-const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
+const removeMember = async (db, channel, memberPhoneNumber, memberType, sender, cr) => {
+  const notifications =
+    memberType === memberTypes.ADMIN
+      ? removalNotificationsOfAdmin(channel, memberPhoneNumber, sender)
+      : removalNotificationsOfSubscriber(channel, memberPhoneNumber, sender)
   return membershipRepository
-    .removeAdmin(db, channel.phoneNumber, adminPhoneNumber)
+    .removeMember(db, channel.phoneNumber, memberPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(adminPhoneNumber),
-      notifications: removalNotificationsOf(channel, adminPhoneNumber, sender),
+      message: cr.success(memberPhoneNumber),
+      notifications,
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminPhoneNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(memberPhoneNumber) }))
 }
 
-const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
+const removalNotificationsOfAdmin = (channel, adminPhoneNumber, sender) => {
   const removedMember = channel.memberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, adminPhoneNumber])
   return [
@@ -346,6 +355,21 @@ const removalNotificationsOf = (channel, adminPhoneNumber, sender) => {
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: messagesIn(membership.language).notifications.adminRemoved,
+    })),
+  ]
+}
+
+const removalNotificationsOfSubscriber = (channel, phoneNumber, sender) => {
+  const removedMember = channel.memberships.find(m => m.memberPhoneNumber === phoneNumber)
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, phoneNumber])
+  return [
+    {
+      recipient: phoneNumber,
+      message: `${messagesIn(removedMember.language).notifications.toRemovedSubscriber}`,
+    },
+    ...bystanders.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: messagesIn(membership.language).notifications.subscriberRemoved,
     })),
   ]
 }

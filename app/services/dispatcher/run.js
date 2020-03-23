@@ -251,7 +251,7 @@ const detectUpdatableExpiryTime = (inboundMsg, channel) =>
 
 const classifyPhoneNumber = async (db, channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!
-  const type = await membershipRepository.resolveSenderType(
+  const type = await membershipRepository.resolveMemberType(
     db,
     channelPhoneNumber,
     senderPhoneNumber,

@@ -955,17 +955,17 @@ describe('executing commands', () => {
 
   describe('LEAVE command', () => {
     const sdMessage = sdMessageOf(channel, 'LEAVE')
-    let removeSubscriberStub
-    beforeEach(() => (removeSubscriberStub = sinon.stub(membershipRepository, 'removeSubscriber')))
-    afterEach(() => removeSubscriberStub.restore())
+    let removeMemberStub
+    beforeEach(() => (removeMemberStub = sinon.stub(membershipRepository, 'removeMember')))
+    afterEach(() => removeMemberStub.restore())
 
     describe('when sender is subscribed to channel', () => {
       const dispatchable = { db, channel, sender: subscriber, sdMessage }
-      beforeEach(() => removeSubscriberStub.returns(Promise.resolve()))
+      beforeEach(() => removeMemberStub.returns(Promise.resolve()))
 
       it('attempts to remove subscriber', async () => {
         await processCommand(dispatchable)
-        expect(removeSubscriberStub.getCall(0).args).to.eql([
+        expect(removeMemberStub.getCall(0).args).to.eql([
           db,
           channel.phoneNumber,
           subscriber.phoneNumber,
@@ -973,7 +973,7 @@ describe('executing commands', () => {
       })
 
       describe('when removing subscriber succeeds', () => {
-        beforeEach(() => removeSubscriberStub.returns(Promise.resolve(1)))
+        beforeEach(() => removeMemberStub.returns(Promise.resolve(1)))
 
         it('returns SUCCESS status/message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
@@ -985,8 +985,9 @@ describe('executing commands', () => {
           })
         })
       })
+
       describe('when removing subscriber fails', () => {
-        beforeEach(() => removeSubscriberStub.callsFake(() => Promise.reject('boom!')))
+        beforeEach(() => removeMemberStub.callsFake(() => Promise.reject('boom!')))
 
         it('returns ERROR status/message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
@@ -1006,7 +1007,7 @@ describe('executing commands', () => {
       beforeEach(async () => (result = await processCommand(dispatchable)))
 
       it('does not try to remove subscriber', () => {
-        expect(removeSubscriberStub.callCount).to.eql(0)
+        expect(removeMemberStub.callCount).to.eql(0)
       })
 
       it('returns UNAUTHORIZED status/message', () => {
@@ -1022,19 +1023,16 @@ describe('executing commands', () => {
 
     describe('when sender is an admin', () => {
       const sender = admin
-      let result, removeAdminStub
+      let result
       const dispatchable = { db, channel, sender, sdMessage }
 
       beforeEach(async () => {
-        removeAdminStub = sinon
-          .stub(membershipRepository, 'removeAdmin')
-          .returns(Promise.resolve([1, 1]))
+        removeMemberStub.returns(Promise.resolve([1, 1]))
         result = await processCommand(dispatchable)
       })
-      afterEach(() => removeAdminStub.restore())
 
-      it('removes sender as admin of channel', () => {
-        expect(removeAdminStub.getCall(0).args).to.eql([
+      it('removes sender as admin of channel', async () => {
+        expect(removeMemberStub.getCall(0).args).to.eql([
           db,
           channel.phoneNumber,
           sender.phoneNumber,
@@ -1076,23 +1074,25 @@ describe('executing commands', () => {
 
   describe('REMOVE command', () => {
     const removalTargetNumber = channel.memberships[1].memberPhoneNumber
-    let validateStub, isAdminStub, removeAdminStub
+    let validateStub, isAdminStub, removeMemberStub, resolveMemberTypeStub
 
     beforeEach(() => {
       validateStub = sinon.stub(validator, 'validatePhoneNumber')
       isAdminStub = sinon.stub(membershipRepository, 'isAdmin')
-      removeAdminStub = sinon.stub(membershipRepository, 'removeAdmin')
+      removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
+      resolveMemberTypeStub = sinon.stub(membershipRepository, 'resolveMemberType')
     })
 
     afterEach(() => {
       validateStub.restore()
       isAdminStub.restore()
-      removeAdminStub.restore()
+      removeMemberStub.restore()
+      resolveMemberTypeStub.restore()
     })
 
     describe('when sender is an admin', () => {
       const sender = admin
-      beforeEach(() => removeAdminStub.returns(Promise.resolve()))
+      beforeEach(() => removeMemberStub.returns(Promise.resolve()))
 
       describe('when payload is a valid phone number', () => {
         const sdMessage = sdMessageOf(channel, `REMOVE ${removalTargetNumber}`)
@@ -1100,11 +1100,11 @@ describe('executing commands', () => {
         beforeEach(() => validateStub.returns(true))
 
         describe('when removal target is an admin', () => {
-          beforeEach(() => isAdminStub.returns(Promise.resolve(true)))
+          beforeEach(() => resolveMemberTypeStub.returns(Promise.resolve(memberTypes.ADMIN)))
 
-          it("attempts to remove the human from the chanel's admins", async () => {
+          it("attempts to remove the admin from the chanel's admins", async () => {
             await processCommand(dispatchable)
-            expect(removeAdminStub.getCall(0).args).to.eql([
+            expect(removeMemberStub.getCall(0).args).to.eql([
               db,
               channel.phoneNumber,
               removalTargetNumber,
@@ -1112,7 +1112,7 @@ describe('executing commands', () => {
           })
 
           describe('when removing the admin succeeds', () => {
-            beforeEach(() => removeAdminStub.returns(Promise.resolve([1, 1])))
+            beforeEach(() => removeMemberStub.returns(Promise.resolve([1, 1])))
 
             it('returns a SUCCESS status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
@@ -1137,7 +1137,7 @@ describe('executing commands', () => {
           })
 
           describe('when removing the admin fails', () => {
-            beforeEach(() => removeAdminStub.callsFake(() => Promise.reject('oh noes!')))
+            beforeEach(() => removeMemberStub.callsFake(() => Promise.reject('oh noes!')))
 
             it('returns an ERROR status/message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
@@ -1151,19 +1151,58 @@ describe('executing commands', () => {
           })
         })
 
-        describe('when removal target is not an admin', () => {
-          beforeEach(() => isAdminStub.returns(Promise.resolve(false)))
+        describe('when removal target is a subscriber', () => {
+          beforeEach(() => resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER)))
 
-          it('does not attempt to remove admin', () => {
-            expect(removeAdminStub.callCount).to.eql(0)
+          it('attempts to remove them', async () => {
+            await processCommand(dispatchable)
+            expect(removeMemberStub.getCall(0).args).to.eql([
+              db,
+              channel.phoneNumber,
+              removalTargetNumber,
+            ])
           })
 
-          it('returns a SUCCESS status / NOOP message', async () => {
+          describe('when removing subscriber succeeds', () => {
+            beforeEach(() => removeMemberStub.returns(Promise.resolve([1, 1])))
+
+            it('returns a SUCCESS status / message', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.REMOVE,
+                payload: removalTargetNumber,
+                status: statuses.SUCCESS,
+                message: CR.remove.success(removalTargetNumber),
+                notifications: [
+                  // removed
+                  {
+                    recipient: removalTargetNumber,
+                    message: messagesIn(languages.EN).notifications.toRemovedSubscriber,
+                  },
+                  // bystanders
+                  {
+                    recipient: channel.memberships[2].memberPhoneNumber,
+                    message: messagesIn(languages.EN).notifications.subscriberRemoved,
+                  },
+                ],
+              })
+            })
+          })
+        })
+
+        describe('when removal target is a rando', () => {
+          beforeEach(() => resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE)))
+
+          it('does not attempt to remove anyone', async () => {
+            await processCommand(dispatchable)
+            expect(removeMemberStub.callCount).to.eql(0)
+          })
+
+          it('returns an ERROR status / message', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REMOVE,
               payload: removalTargetNumber,
               status: statuses.ERROR,
-              message: CR.remove.targetNotAdmin(removalTargetNumber),
+              message: CR.remove.targetNotMember(removalTargetNumber),
               notifications: [],
             })
           })
@@ -1177,7 +1216,7 @@ describe('executing commands', () => {
         beforeEach(async () => (result = await processCommand(dispatchable)))
 
         it('does not attempt to remove admin', () => {
-          expect(removeAdminStub.callCount).to.eql(0)
+          expect(removeMemberStub.callCount).to.eql(0)
         })
 
         it('returns a SUCCESS status / NOOP message', () => {
@@ -1200,7 +1239,7 @@ describe('executing commands', () => {
       beforeEach(async () => (result = await processCommand(dispatchable)))
 
       it('does not attempt to add admin', () => {
-        expect(removeAdminStub.callCount).to.eql(0)
+        expect(removeMemberStub.callCount).to.eql(0)
       })
 
       it('returns an SUCCESS status / NOT_NOOP message', () => {
