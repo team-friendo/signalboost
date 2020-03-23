@@ -231,7 +231,7 @@ You will need the `boost` cli tool installed to create seed numbers and channels
 
 See the [Using the Cli](#cli) section for instructions on installing and using it!
 
-Note that to use the `boost` cli tool against your local dev server, you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell boost to talk to your local server instead of prod. 
+Note that to use the `boost` cli tool against your local dev server, you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell boost to talk to your local server instead of prod.
 
 If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
 
@@ -369,13 +369,13 @@ Then, to list all the channels in your Antarctic instance, you would use:
 
 ```shell
 boost -e .env.antarctic list-channels
-``` 
+```
 
 To list all the channels in your Arctic instance, you would use:
 
 ```shell
 boost -e .env.arctic list-channels
-``` 
+```
 
 ### Setting default environments
 
@@ -500,15 +500,17 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml
 ```
 
-*Variation with different .env files:*
+*Variation to accomodate multiple remote hosts and .env files:*
 
-By default the secrets needed to run signalboost (including ip addresses and hostnames) are read from `<PROJECT_ROOT>/.env>` If you would like to provide an alternate set of secrets (for example, for a staging server), you can configure the location where ansible will look for the `.env` file by setting the `env_file` ansible variable (specified with an `-e env_file=<some_path>` flag). 
+By default the deploy tooling described aboe assumes you are deploying to one single server, with a `host` listed as `signalboost` in `ansible/inventory` and credentials listed in `.env`. But perhaps you would like to deploy signalboost to multiple servers, each with different credentials!
 
-For example, to read secrets from `/path/to/staging.env`, you would issue the following command:
+ To do this, we can leverage ansible's "extra-vars" feature, defining a `sb_host` and `env_file` variable that we pass to `ansible-playbook` at deploy-time to override the defaults we have encoded in `inventory.signalboost` and `.env`.
+
+For example, to deploy to a host listed as `antarctica` in `ansible/hosts` and credentials defined in`.env.antarctica`, you would issue the following command:
 
 ``` shell
 cd ansible
-ansible-playbook -e "env_file=/path/to/staging.env" playbooks/main.yml
+ansible-playbook -i inventory -e "sb_host=antarctica env_file=/path/to/.env.antarctica" playbooks/main.yml
 ```
 
 **(4) Install the `boost` CLI tool:**

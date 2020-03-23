@@ -1,7 +1,7 @@
 ---
 - name: Provision a remote server to store backups generated on prod
   become: true
-  hosts: sb_backup
+  hosts: "{{ sb_host | default('sb_backup') }}"
 
   vars:
     ansible_user: root

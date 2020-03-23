@@ -1,7 +1,7 @@
 ---
 - name: Perform Advanced Hardening
-  hosts: signalboost
   become: true
+  hosts: "{{ sb_host | default('signalboost') }}"
 
   tasks:
     - name: Run dev-sec os-hardening role
