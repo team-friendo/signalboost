@@ -238,6 +238,7 @@ If you already have an invite, try sending ACCEPT`,
   remove: {
     success: num => `${num} was removed.`,
     notAdmin,
+    targetNotMember: num => `Ooops! ${num} is not a member of this channel!`,
     dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
     invalidPhoneNumber,
   },

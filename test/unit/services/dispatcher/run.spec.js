@@ -83,7 +83,7 @@ describe('dispatcher service', () => {
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
     resolveMemberTypeStub = sinon
-      .stub(membershipRepository, 'resolveSenderType')
+      .stub(membershipRepository, 'resolveMemberType')
       .returns(Promise.resolve(memberTypes.ADMIN))
 
     resolveSenderLanguageStub = sinon

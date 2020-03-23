@@ -244,6 +244,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
   remove: {
     success: num => `${num} a été supprimé-e.`,
     notAdmin,
+    targetNotMember: num => `Oups! ${num} n'est pas membre de cette chaîne`,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression de ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,

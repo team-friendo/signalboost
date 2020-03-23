@@ -291,7 +291,7 @@ const maybeRemoveSender = async (db, channel, sender) => {
 
 const removeSender = (db, channel, sender, cr) => {
   const remove =
-    sender.type === ADMIN ? membershipRepository.removeAdmin : membershipRepository.removeSubscriber
+    sender.type === ADMIN ? membershipRepository.removeMember : membershipRepository.removeMember
   return remove(db, channel.phoneNumber, sender.phoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
@@ -319,42 +319,29 @@ const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
 
-  const payloadMemberType = await membershipRepository.resolveSenderType(
+  const payloadMemberType = await membershipRepository.resolveMemberType(
     db,
     channel.phoneNumber,
     phoneNumber,
   )
-
-  switch (payloadMemberType) {
-    case memberTypes.ADMIN:
-      return removeAdmin(db, channel, phoneNumber, sender, cr)
-    case memberTypes.SUBSCRIBER:
-      return removeSubscriber(db, channel, phoneNumber, sender, cr)
-    default:
-      return Promise.resolve()
-  }
+  return payloadMemberType === memberTypes.NONE
+    ? { status: statuses.ERROR, message: cr.targetNotMember(phoneNumber) }
+    : removeMember(db, channel, phoneNumber, payloadMemberType, sender, cr)
 }
 
-const removeAdmin = async (db, channel, adminPhoneNumber, sender, cr) => {
+const removeMember = async (db, channel, memberPhoneNumber, memberType, sender, cr) => {
+  const notifications =
+    memberType === memberTypes.ADMIN
+      ? removalNotificationsOfAdmin(channel, memberPhoneNumber, sender)
+      : removalNotificationsOfSubscriber(channel, memberPhoneNumber, sender)
   return membershipRepository
-    .removeAdmin(db, channel.phoneNumber, adminPhoneNumber)
+    .removeMember(db, channel.phoneNumber, memberPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(adminPhoneNumber),
-      notifications: removalNotificationsOfAdmin(channel, adminPhoneNumber, sender),
+      message: cr.success(memberPhoneNumber),
+      notifications,
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(adminPhoneNumber) }))
-}
-
-const removeSubscriber = async (db, channel, phoneNumber, sender, cr) => {
-  return membershipRepository
-    .removeAdmin(db, channel.phoneNumber, phoneNumber)
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(phoneNumber),
-      notifications: removalNotificationsOfSubscriber(channel, phoneNumber, sender),
-    }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(phoneNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(memberPhoneNumber) }))
 }
 
 const removalNotificationsOfAdmin = (channel, adminPhoneNumber, sender) => {

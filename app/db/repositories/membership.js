@@ -32,10 +32,6 @@ const addAdmin = async (db, channelPhoneNumber, memberPhoneNumber) => {
   return membership.update({ type: memberTypes.ADMIN })
 }
 
-const removeAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
-  // TODO: use performOpIfChannelExists here
-  db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } })
-
 const addSubscriber = async (
   db,
   channelPhoneNumber,
@@ -54,12 +50,12 @@ const addSubscriber = async (
     return membership
   })
 
-const removeSubscriber = async (db, channelPhoneNumber, memberPhoneNumber) =>
+const removeMember = async (db, channelPhoneNumber, memberPhoneNumber) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe member from', async () =>
     db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } }),
   )
 
-const resolveSenderType = async (db, channelPhoneNumber, memberPhoneNumber) => {
+const resolveMemberType = async (db, channelPhoneNumber, memberPhoneNumber) => {
   const member = await db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } })
   return member ? member.type : memberTypes.NONE
 }
@@ -104,9 +100,9 @@ module.exports = {
   isMember,
   isAdmin,
   isSubscriber,
-  removeAdmin,
-  removeSubscriber,
-  resolveSenderType,
+  removeMember,
+  removeMember,
+  resolveMemberType,
   resolveSenderLanguage,
   updateLanguage,
   memberTypes,

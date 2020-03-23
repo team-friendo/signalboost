@@ -221,6 +221,7 @@ ${support}`,
   remove: {
     success: num => `${num} fue eliminado.`,
     notAdmin,
+    targetNotMember: num => `¡Ay! ${num} no es miembro de este canal.`,
     dbError: num => `¡Ay! Se produjo un error al intentar eliminar a ${num}. ¡Inténtelo de nuevo!`,
     invalidPhoneNumber: num =>
       `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,

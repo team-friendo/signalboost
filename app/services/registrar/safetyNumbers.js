@@ -23,7 +23,7 @@ const deauthorize = async (db, sock, updatableFingerprint) => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint } = updatableFingerprint
   try {
     const channel = await channelRepository.findDeep(db, channelPhoneNumber)
-    const removalResult = await membershipRepository.removeAdmin(
+    const removalResult = await membershipRepository.removeMember(
       db,
       channelPhoneNumber,
       memberPhoneNumber,

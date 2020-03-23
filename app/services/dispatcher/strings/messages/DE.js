@@ -241,8 +241,9 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
   remove: {
     success: num => `${num} wurde entfernt.`,
     notAdmin,
+    targetNotMember: num => `Ups! ${num} ist kein Teilnehmer an diesem Kanal.`,
     dbError: num =>
-      `Ooops! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
+      `Ups! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
     invalidPhoneNumber,
   },
 
