@@ -22,14 +22,14 @@ while getopts ":p:e:" opt; do
       phone_number="$OPTARG"
       ;;
     e)
-      env_path="$OPTARG"
+      env_file="$OPTARG"
       ;;
   esac
 done
 
 # check env vars are properly defined
 source ./_check-env
-check-env ${env_path}
+check-env ${env_file}
 
 if [[ -z ${phone_number} ]]
 then

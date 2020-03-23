@@ -21,14 +21,14 @@ while getopts ":a:n:e:" opt; do
       num="$OPTARG"
       ;;
     e)
-      env_path="$OPTARG"
+      env_file="$OPTARG"
       ;;
   esac
 done
 
 # check env vars are properly defined
 source ./_check-env
-check-env ${env_path}
+check-env ${env_file}
 
 if [[ -z ${num} ]];then num=1; fi
 if [[ ! ${num} =~ ^[0-9]*$ ]];then

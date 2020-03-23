@@ -24,14 +24,14 @@ cd `dirname "$0"` # cd to script path
 while getopts ":e:" opt; do
   case "$opt" in
     e)
-      env_path="$OPTARG"
+      env_file="$OPTARG"
       ;;
   esac
 done
 
 # check env vars are properly defined
 source ./_check-env
-check-env ${env_path}
+check-env ${env_file}
 
 if [[ $1 == "--active" ]] || [[ $2 == "--active" ]];then
   filter="ACTIVE"

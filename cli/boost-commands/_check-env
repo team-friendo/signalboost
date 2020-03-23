@@ -5,48 +5,48 @@ set -e
 check-env(){
   echo "--- checking environment.."
 
-  env_path=$1
+  env_file=$1
 
   if [[ -z $(which jq) ]];then
     echo "--- ERROR: you need the jq program installed to run this command!"
     exit 1
   fi
 
-  if [[ -z ${env_path} ]];then
-    if [[ -z ${SIGNALBOOST_ENV_PATH} ]];then
+  if [[ -z ${env_file} ]];then
+    if [[ -z ${SIGNALBOOST_ENV_FILE} ]];then
       echo "--- ERROR: no .env path provided."
       echo ""
       echo "    To use the boost utility, you must:"
       echo "    -> define credentials in an .env file in the signalboost project root folder"
       echo "    -> provide a path to the .env file (relative to signalboost project root folder) by either:"
       echo "       -> passing it as an argument to the -e flag"
-      echo "       -> assigning it to the \$SIGNALBOOST_ENV_PATH env var"
+      echo "       -> assigning it to the \$SIGNALBOOST_ENV_FILE env var"
       echo ""
       exit 1
     else
-      env_path=${SIGNALBOOST_ENV_PATH}
+      env_file=${SIGNALBOOST_ENV_FILE}
     fi
   fi
 
-  source ../../${env_path}
+  source ../../${env_file}
 
   if [[ -z ${SIGNALBOOST_API_TOKEN} ]];then
-      echo "--- ERROR: no SIGNALBOOST_API_TOKEN found in the .env file in ${env_path}"
+      echo "--- ERROR: no SIGNALBOOST_API_TOKEN found in the .env file in ${env_file}"
       exit 1
   fi
 
   if [[ -z ${SIGNALBOOST_HOST_URL} ]];then
-    echo "--- ERROR: no SIGNALBOOST_HOST_URL found in the .env file in ${env_path}"
+    echo "--- ERROR: no SIGNALBOOST_HOST_URL found in the .env file in ${env_file}"
     exit 1
   fi
 
   if [[ -z ${TWILIO_ACCOUNT_SID} ]];then
-    echo "--- ERROR: no TWILIO_ACCOUNT_SID found in the .env file in ${env_path}"
+    echo "--- ERROR: no TWILIO_ACCOUNT_SID found in the .env file in ${env_file}"
     exit 1
   fi
 
   if [[ -z ${TWILIO_AUTH_TOKEN} ]];then
-    echo "--- ERROR: no TWILIO_AUTH_TOKEN found in the .env file in ${env_path}"
+    echo "--- ERROR: no TWILIO_AUTH_TOKEN found in the .env file in ${env_file}"
     exit 1
   fi
 }

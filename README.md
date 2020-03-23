@@ -233,7 +233,7 @@ See the [Using the Cli](#cli) section for instructions on installing and using i
 
 Note that to use the `boost` cli tool against your local dev server, you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell boost to talk to your local server instead of prod. 
 
-If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_PATH=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
+If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
 
 Once you've got the CLI installed, you can use the following to create 2 twillio numbers and verifiy them with signal on a local dev server running signalboost:
 
@@ -379,16 +379,16 @@ boost -e .env.arctic list-channels
 
 ### Setting default environments
 
-You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_PATH` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_PATH` is always in scope whenever you invoke boost.)
+You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_FILE` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_FILE` is always in scope whenever you invoke boost.)
 
 To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctcic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
 
 ```
-export SIGNALBOOST_ENV_PATH=.env.arctic
+export SIGNALBOOST_ENV_FILE=.env.arctic
 boost list-channels
 ```
 
-To avoid having to export `SIGNALBOOST_ENV_PATH` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
+To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
 
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
@@ -500,9 +500,11 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml
 ```
 
-*Variation:*
+*Variation with different .env files:*
 
-By default the secrets needed to run signalboost (including ip addresses and hostnames) are read from `<PROJECT_ROOT>/.env>` If you would like to provide an alternate set of secrets (for example, for a staging server), you can configure the location where ansible will look for the `.env` file by setting the `env_file` ansible variable (specified with an `-e env_file=<some_path>` flag). For example, to read secrets from `/path/to/staging.env`, you would issue the following command:
+By default the secrets needed to run signalboost (including ip addresses and hostnames) are read from `<PROJECT_ROOT>/.env>` If you would like to provide an alternate set of secrets (for example, for a staging server), you can configure the location where ansible will look for the `.env` file by setting the `env_file` ansible variable (specified with an `-e env_file=<some_path>` flag). 
+
+For example, to read secrets from `/path/to/staging.env`, you would issue the following command:
 
 ``` shell
 cd ansible
