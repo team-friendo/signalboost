@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "This command retrieves active phone numbers. You may find it useful for:"
   echo ""
@@ -10,35 +12,26 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo ""
   echo "--active : filter for active phone numbers"
   echo "--inactive : filter for inactive phone numbers"
-  echo "--len : only show phone number list lenght (omit list itself)"
-  echo "-u : url to target (in dev, use signalboost.ngrok.io)";
+  echo "--count : only show phone number count (omit list itself)"
+  echo "-e : path to .env file (in dev, use .env.dev)";
   echo ""
   exit 1
 fi
 
-echo "--- checking environment..."
-
 pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
-source ../../.env # source env vars
 
-if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make _.unlock\` then run again."
-  exit 1
-fi
-
-if [ -z $(which jq) ];then
-  echo "--- ERROR: you need the jq program installed to run this command!"
-  exit 1
-fi
-
-while getopts ":u:" opt; do
+while getopts ":e:" opt; do
   case "$opt" in
-    u)
-      url="$OPTARG"
+    e)
+      env_path="$OPTARG"
       ;;
   esac
 done
+
+# check env vars are properly defined
+source ./_check-env
+check-env ${env_path}
 
 if [[ $1 == "--active" ]] || [[ $2 == "--active" ]];then
   filter="ACTIVE"
@@ -50,24 +43,22 @@ fi
 
 selector='.'
 
-if [[ $1 == "--len" ]] || [[ $2 == "--len" ]];then
+if [[ $1 == "--count" ]] || [[ $2 == "--count" ]];then
   selector='.count'
 fi
 
-if [ -z $filter ]
+if [[ -z $filter ]]
 then
   query_string=""
 else
   query_string="?filter=$filter"
 fi
 
-if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
-
 echo "--- fetching numbers..."
 
 curl -s \
      -H "Content-Type: application/json" \
-     -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/phoneNumbers${query_string} | jq ${selector}
+     -H "Token: ${SIGNALBOOST_API_TOKEN}" \
+     https://${SIGNALBOOST_HOST_URL}/phoneNumbers${query_string} | jq ${selector}
 
-popd > /dev/null # return to starting directory
+popd > /dev/null # return to original dir

@@ -1,44 +1,35 @@
 #!/usr/bin/env bash
 
+set -e
+
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "This command retrieves active channels. Valid options are:"
   echo ""
-  echo "-u : url to target (in dev, use signalboost.ngrok.io)";
+  echo "-e : path to .env file (for dev, use .env.dev)";
   echo ""
   exit 1
 fi
 
-echo "--- checking environment..."
-
 pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
-source ../../.env # source env vars
 
-if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make _.unlock\` then run again."
-  exit 1
-fi
-
-if [ -z $(which jq) ];then
-  echo "--- ERROR: you need the jq program installed to run this command!"
-  exit 1
-fi
-
-while getopts ":u:" opt; do
+while getopts ":e:" opt; do
   case "$opt" in
-    u)
-      url="$OPTARG"
+    e)
+      env_path="$OPTARG"
       ;;
   esac
 done
 
-if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
+# check env vars are properly defined
+source ./_check-env
+check-env ${env_path}
 
 echo "--- fetching numbers..."
 
 curl -s \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     https://${url}/channels | jq '.'
+     https://"$SIGNALBOOST_HOST_URL"/channels | jq '.'
 
 popd > /dev/null # return to starting directory

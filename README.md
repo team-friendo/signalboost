@@ -135,7 +135,7 @@ Upon cloning the repo, do either of the following to provide missing env vars ne
 
 ### Secrets for General Public
 
-You will need to provide your own values for credentials listed in `.env`. A sample of the values needed is listed in `.env.example`. You should replace all values in `%TEMPLATE_STRINGS` with your own values.
+You will need to provide your own values for credentials listed in `.env.dev`. A sample of the values needed is listed in `.env.dev.example`. You should replace all values in `%TEMPLATE_STRINGS%` with your own values.
 
 We realize that some of these secrets require paid accounts to work. And that contributing to this project shouldn't require paid accounts! We're trying to come up with a workaround... For example: https://0xacab.org/team-friendo/signalboost/issues/118
 
@@ -231,11 +231,15 @@ You will need the `boost` cli tool installed to create seed numbers and channels
 
 See the [Using the Cli](#cli) section for instructions on installing and using it!
 
+Note that to use the `boost` cli tool against your local dev server, you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell boost to talk to your local server instead of prod. 
+
+If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_PATH=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
+
 Once you've got the CLI installed, you can use the following to create 2 twillio numbers and verifiy them with signal on a local dev server running signalboost:
 
 ``` shell
 make dev.up
-boost create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
+boost -e .env.dev create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
 ```
 
 Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
@@ -245,6 +249,7 @@ You can use the following to use a channel that uses <channel_phone_number> as i
 
 ```shell
 boost create-channel \
+    -e .env.dev \
     -p <channel_phone_number> \
     -n "my new channel" \
     -a <your_actual_phone_number> \
@@ -289,6 +294,8 @@ make db.psql
 
 # Using the CLI <a name="cli"></a>
 
+## Installing boost
+
 Assuming you have already provided secrets in `.env` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)), you can proceed to...
 
 Install* the CLI with:
@@ -297,18 +304,20 @@ Install* the CLI with:
 make cli.install
 ```
 
-(*NOTE: this puts the commands in `signalboost/cli/boost-commanbds` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
+(*NOTE: this puts the commands in `signalboost/cli/boost-commands` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
 
-Uninstall it later with:
+You can uninstall it later with:
 
 ``` shell
 make cli.uninstall
 ```
 
+## Using boost
+
 You can administer any running signalboost instance with:
 
 ``` shell
-boost <command> <options>
+boost <command> <options> -e <path to .env file>
 ```
 
 Where `<command>` is one of the following:
@@ -317,23 +326,29 @@ Where `<command>` is one of the following:
   help
     - shows this dialogue
 
-  add-admin -c <channel phone number> -a <admin phone number> -u <url>
-    - adds an admin to a channel on the signalboost instance at url (defaults to prod!)
+  add-admin -c <channel phone number> -a <admin phone number> -e <path to .env file>
+    - adds an admin to a channel on the signalboost instance specified in .env file
 
-  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - creates a channel with provied phone number, name, and admins on signalboost instance at url (defaults to prod!)
+  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -e <path to .env file>
+    - creates a channel with provied phone number, name, and admins on signalboost instance specified in .env file
 
-  create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
+  create-number -a <area_code> -n <numbers_desired> -e <path to .env file>
+    - purchases n new twilio numbers and registers them w/ signal via registrar on instance specified in .env file
 
-  list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given url (defaults to prod!)
+  destroy -p <phone_number> -e <path to .env file>
+    - permanently deletes the provided phone number on instance specified in .env file
 
-  list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at url (defaults to prod!)
+  list-channels -e <path to .env file>
+    - lists all channels active on the signalboost instance specified in .env file
+
+  list-numbers -e <path to .env file>
+    - lists all numbers purchased from twilio on the signalboost instance specified in .env file
 
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
+
+  recycle -p <phone_numbers> -e <path to .env file>
+    - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
 ```
 
 For more detailed instructions on any of the commands, run:
@@ -341,6 +356,40 @@ For more detailed instructions on any of the commands, run:
 ``` shell
 boost <command> -h
 ```
+
+## A note on .env files and boost
+
+### Using multiple environments
+
+If you would like to use `boost` to administer multiple different environments, you may provide create credentials in multiple different .env files, and then pass different values to the `-e` flag each time you invoke `boost`.
+
+For example, assume you had two different servers, one in The Arctic Sea, and one in Antarctica. You could create an `.env` file for the Arctic Sea instance in the signalboost project root, and call it `.env.arctic` and similarly create `.env.antarctic` for the instance in Antarctica.
+
+Then, to list all the channels in your Antarctic instance, you would use:
+
+```shell
+boost -e .env.antarctic list-channels
+``` 
+
+To list all the channels in your Arctic instance, you would use:
+
+```shell
+boost -e .env.arctic list-channels
+``` 
+
+### Setting default environments
+
+You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_PATH` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_PATH` is always in scope whenever you invoke boost.)
+
+To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctcic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
+
+```
+export SIGNALBOOST_ENV_PATH=.env.arctic
+boost list-channels
+```
+
+To avoid having to export `SIGNALBOOST_ENV_PATH` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
+
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
 
@@ -389,32 +438,19 @@ Create an .env file like the one provided in `.env.example`, but fill in all the
 ``` shell
 # signal boost api service
 
-SIGNALBOOST_HOST_IP=%IP ADDRESS OF PROD SERVER%
-SIGNALBOOST_HOST_URL=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+SIGNALBOOST_HOST_URL=%DOMAIN NAME FOR PROD SERVER%
 SIGNALBOOST_API_TOKEN=%HEX STRING%
 
 # letsencrypt/nginx proxy configs
 
-VIRTUAL_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
-LETSENCRYPT_HOST=%TOP LEVEL DOMAIN NAME FOR PROD SERVER%
+VIRTUAL_HOST=%DOMAIN NAME FOR PROD SERVER%
+LETSENCRYPT_HOST=%DOMAIN NAME FOR PROD SERVER%
 LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
-
-# signal-cli
-
-SIGNAL_CLI_VERSION=0.6.2
-SIGNAL_CLI_PATH=/opt/signal-cli-0.6.2
-SIGNAL_CLI_PASSWORD=%SOME STRONG PASSWORD%
 
 # twilio
 
 TWILIO_ACCOUNT_SID=%HEX STRING%
 TWILIO_AUTH_TOKEN=%HEX STRING%
-
-
-# ngrok (only needed to run on a local dev machine, skip if you just want to run in prod)
-
-NGROK_AUTH_TOKEN=%HEX_STRING%
-NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
 
 ```
 

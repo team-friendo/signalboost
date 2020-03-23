@@ -33,7 +33,8 @@ services:
       - db
       - signald
     entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env
+    #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
+    env_file: .env.dev
     environment:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "${NODE_ENV:-development}"
@@ -59,7 +60,8 @@ services:
     image: wernight/ngrok
     links:
       - app
-    env_file: .env
+    #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
+    env_file: .env.dev
     environment:
       - NGROK_AUTH=$NGROK_AUTH_TOKEN
       - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
@@ -70,7 +72,8 @@ services:
     image: signalboost
     container_name: signalboost_test_runner
     entrypoint: /signalboost/bin/entrypoint/test-e2e
-    env_file: .env
+    #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
+    env_file: .env.dev
     environment:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "${NODE_ENV:-development}"

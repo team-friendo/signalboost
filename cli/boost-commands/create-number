@@ -2,31 +2,17 @@
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command provisions phone numbers in an area code. valid options are:"
-  echo ""
-  echo "-n : number of phone numbers to provision (default: 1)";
-  echo "-a : area code to provision numbers in (default: 929)";
-  echo "-u : url to target (default: prod ip address; in dev, use signalboost.ngrok.io)";
+  echo "  -n : number of phone numbers to provision (default: 1)";
+  echo "  -a : area code to provision numbers in (default: 929)";
+  echo "  -e : path to .env file (in dev, use .env.dev)";
   echo ""
   exit 1
 fi
-
-echo "--- checking environment..."
 
 pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
-source ../../.env # source env vars
 
-if [ -z $SIGNALBOOST_API_TOKEN ];then
-  echo "--- ERROR: no SIGNALBOOST_API_TOKEN found. Try \`make _.unlock\` then run again."
-  exit 1
-fi
-
-if [ -z $(which jq) ];then
-  echo "--- ERROR: you need the jq program installed to run this command!"
-  exit 1
-fi
-
-while getopts ":a:n:u:" opt; do
+while getopts ":a:n:e:" opt; do
   case "$opt" in
     a)
       area_code="$OPTARG"
@@ -34,38 +20,40 @@ while getopts ":a:n:u:" opt; do
     n)
       num="$OPTARG"
       ;;
-    u)
-      url="$OPTARG"
+    e)
+      env_path="$OPTARG"
       ;;
   esac
 done
 
-if [ -z $num ];then num=1; fi
-if [[ ! $num =~ ^[0-9]*$ ]];then
+# check env vars are properly defined
+source ./_check-env
+check-env ${env_path}
+
+if [[ -z ${num} ]];then num=1; fi
+if [[ ! ${num} =~ ^[0-9]*$ ]];then
   echo "> ERROR: -n must be a number"
   exit 1;
 fi
 
 
-if [ -z $area_code ]
+if [[ -z ${area_code} ]]
 then
   area_code_kv="\"areaCode\": null"
   area_code="(unspecified)"
-elif [[ ! $area_code =~ ^[0-9]{3}$ ]];then
+elif [[ ! ${area_code} =~ ^[0-9]{3}$ ]];then
   echo "> ERROR: -a must be a 3 digit number"
   exit 1
 else
   area_code_kv="\"areaCode\": \"$area_code\""
 fi
 
-if [ -z $url ];then url=${SIGNALBOOST_HOST_URL}; fi
-
-echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${url}"
+echo "--- provisioning ${num} number(s) with area code ${area_code} at url ${SIGNALBOOST_HOST_URL}"
 
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
      -d "{ $area_code_kv, \"num\": $num }" \
-     https://${url}/phoneNumbers | jq
+     https://${SIGNALBOOST_HOST_URL}/phoneNumbers | jq
 
 popd > /dev/null # return to starting directory

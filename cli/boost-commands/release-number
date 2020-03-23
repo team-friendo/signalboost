@@ -8,28 +8,25 @@ if [[ $1 == "-h" ]];then
   exit 1
 fi
 
-
-echo "--- checking environment..."
-
 pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
-source ../../.env # source env vars
+source ./_check-env # check env vars are properly defined
 
 phone_number_sid=$1
 
 if [ -z $phone_number_sid ];then
   echo "--- ERROR: no phone number sid provided"
-  echo "--- USAGE: `./bin/release-number <phone_number_sid>`";
+  echo "--- USAGE: \`./bin/release-number <phone_number_sid>\`"
   exit 1
 fi
 
 
-if [ -z $TWILIO_ACCOUNT_SID ];then
+if [[ -z $TWILIO_ACCOUNT_SID ]];then
   echo "--- ERROR: no TWILIO_ACCOUNT_SID found. Try \`make _.unlock\` then run again. :)"
   exit 1
 fi
 
-if [ -z $TWILIO_AUTH_TOKEN ];then
+if [[ -z $TWILIO_AUTH_TOKEN ]];then
   echo "--- ERROR: no TWILIO_AUTH_TOKEN found. Try \`make _.unlock\` then run again. :)"
   exit 1
 fi

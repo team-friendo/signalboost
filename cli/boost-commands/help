@@ -6,29 +6,29 @@ boost cli supports the following commands:
   help
     - shows this dialogue
 
-  add-admin -c <channel phone number> -a <admin phone number> -u <url>
-    - adds an admin to a channel on the signalboost instance at url (defaults to prod!)
+  add-admin -c <channel phone number> -a <admin phone number> -e <path to .env file>
+    - adds an admin to a channel on the signalboost instance specified in .env file
 
-  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - creates a channel with provied phone number, name, and admins on signalboost instance at url (defaults to prod!)
+  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -e <path to .env file>
+    - creates a channel with provied phone number, name, and admins on signalboost instance specified in .env file
 
-  create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
+  create-number -a <area_code> -n <numbers_desired> -e <path to .env file>
+    - purchases n new twilio numbers and registers them w/ signal via registrar on instance specified in .env file
 
-  destroy -n <phone_number> -u <api_url>
-    - permanently deletes the provided phone number
+  destroy -p <phone_number> -e <path to .env file>
+    - permanently deletes the provided phone number on instance specified in .env file
 
-  list-channels -u <api_url>
-    - lists all channels active on the signalboost instance at the given url (defaults to prod!)
+  list-channels -e <path to .env file>
+    - lists all channels active on the signalboost instance specified in .env file
 
-  list-numbers -u <api_url>
-    - lists all numbers purchased from twilio on the signalboost instance at url (defaults to prod!)
+  list-numbers -e <path to .env file>
+    - lists all numbers purchased from twilio on the signalboost instance specified in .env file
 
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
 
-  recycle -n <phone_numbers> -u <api_url>
-    - recycles provided phone numbers in order to be used with new channels
+  recycle -p <phone_numbers> -e <path to .env file>
+    - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
 
 for more detailed instructions on any command, run:
 

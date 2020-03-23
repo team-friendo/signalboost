@@ -1,16 +1,11 @@
 const defaults = {
-  host: `${process.env.NGROK_SUBDOMAIN}.ngrok.io`,
+  host: process.env.SIGNALBOOST_HOST_URL,
   port: 3000,
   authToken: process.env.SIGNALBOOST_API_TOKEN,
-}
-
-const production = {
-  ...defaults,
-  host: process.env.SIGNALBOOST_HOST_URL,
 }
 
 module.exports = {
   development: defaults,
   test: defaults,
-  production,
+  production: defaults,
 }
