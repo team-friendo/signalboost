@@ -19,7 +19,7 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/Team Friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/Team Friendo/signalboost/boards).
 
-**Want to use Signalboost for social justice work?**  Send us a signal message at `+1 (938) 444-8536` or email us at `Team Friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
+**Want to use Signalboost for social justice work?**  Send us a Signal message at `+1 (938) 444-8536` or email us at `Team Friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
 
 **NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie, Trevor, and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
@@ -68,18 +68,18 @@ The application has the following components:
    
 # System and Service Requirements <a name="services"></a>
 
-Signalboost relies on a few external service and tools both in production and some specifically for local development. If you are just getting started with Signalboost we recommend you walk through this section to get those ready. 
+Signalboost relies on a few external services and tools. These dependancies and setup vary slightly between a production/deploy setup and local development. If you are just getting started with Signalboost we recommend you walk through this section to get those ready. 
 
-**If you are a member of Team Friendo we provide accesss to the exsiting servers and services listed here. Checkout the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. Otherwise this section will walk you through the setup of services, both for host servers or/and your local development system.** 
+**If you are a member of Team Friendo we provide accesss to the exsiting servers and services listed here. Checkout the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. Otherwise this section will walk you through the setup of services, both for production servers or/and your local development system.** 
 
 
 ## Getting started
 
 To host your own instance of Signalboost you need:
 
-* A server running Debian or Ubuntu GNU/Linux distributions with a static IP address as your host server.
-* A local computer able to run Ansible to deploy the code to your Signalboost host server.
-* A domain with an A record pointing to the host server’s static IP address.
+* A server running Debian or Ubuntu GNU/Linux distributions with a static IP address as your production server.
+* A local development setup able to run Ansible to deploy the code to your Signalboost production server.
+* A domain with an A record pointing to the production server’s static IP address.
 * A Twillio account (https://www.twilio.com/) that provides the phone numbers that Signalboost will use. 
 * An email address to provide to Let's Encrypt (https://letsencrypt.org/) for easy, seamless ssl support.
 * A Signalboost API Token created by you to authenticate on your Signalboost API.
@@ -88,10 +88,11 @@ To do local development for Signalboost you need:
 
 * A local computer able to run node and docker, git and the development tools of your choice. 
 * A Twillio account (https://www.twilio.com/) that provides the phone numbers that Signalboost will use. 
-* A paid Ngrok account https://dashboard.ngrok.com/billing/plan that allows secure tunnelling to your localhost's Signalboost API.
+* A paid ngrok account (https://dashboard.ngrok.com/billing/plan) that allows secure tunnelling to your localhost's Signalboost API.
 * A Signalboost API Token created by you to authenticate on your Signalboost API.
 
-We'll address the setup of host and development systems in the Developer and Sysadmin guides later, but for now the next step is to make sure you have the services and authentication details you need for the configuration you want to do.
+
+We'll address the setup of production and development systems in the Developer and Sysadmin guides later, but for now here's some details on how to get the services and authentication details you need for the configuration you want to do.
 
 
 ## Setup third party services and other details
@@ -100,19 +101,19 @@ Identify above what credentials and services are needed for your setup and use t
 
 **Domain**
 
-If you want to run a production version of Signalboost you will need a domain. If you already have one you can use great, if not register one for your new instance and create an A record for the IP address of your host server. For domain name registration we think that [Njal.la](https://njal.la) is hands down the best option. 
+If you want to run a production version of Signalboost you will need a domain. If you already have one you can use great, if not register one for your new instance and create an A record for the IP address of your production server. For domain name registration we think that [Njal.la](https://njal.la) is hands down the best option. 
 
 **Twillio Account**
 
-To get Twilio credentials, sign up for a Twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page. You will need these for configuration later.  A free account only provides one phone number, but might be enough to get you started. You will need a number for ever channel you want to host.
+To get Twilio credentials, sign up for a Twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page. You will need these for configuration later.  A free account only provides one phone number, but might be enough to get you started. You will need a number for ever channel you want to host. Besides any hosting costs Twillio numbers, at $1 a month, are the main additional cost of hosting a Signalboost server. 
 
 **Let's Encrypt Account** 
 
-[Let's Encrypt] (https://letsencrypt.org/) does not require you to create an account, but it will require you to provide an email address in our configuration files so decided what address you want to use here.
+[Let's Encrypt] (https://letsencrypt.org/) does not require you to create an account, but it will require you to provide an email address in our configuration files so decided what address you want to use here. 
 
-**NGROK Tunnel**
+**Ngrok Tunnel**
 
-To run Signalboost in your local development environment you need a paid "basic" ngrok account is needed (https://ngrok.com/). Only the paid account will allow you to create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. 
+To run Signalboost in your local development environment you need a paid "basic" ngrok account is needed (https://ngrok.com/). Only the paid account will allow you to create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. The NGROK tunnel allows us to do requests to your localhost's Signalboost API. 
 
 **Signalboost API Token**
 
@@ -124,6 +125,8 @@ python
 >>> import secrets
 >>> secrets.token_hex(32)
 ```
+
+Errors doing this usually relate to systems with multiple python versions installed so sometimes specifiying `python3` solves for that. 
 
 
 # Developer Guide <a name="#developer-guide"></a>
@@ -199,7 +202,7 @@ You will need to provide your own values for credentials listed in `.env.dev`. A
 
 Configuration for development basically involves creating your initial .env.dev file and loading it with the details you created in the [System and Service Requirements](#services)  section above.
 
-> If you are member of Team Friendo we povide these service details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
+> *Team Friendo:* If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
 
 #### Secrets for General Public
 
@@ -210,7 +213,7 @@ cd path/to/signlaboost/
 cp .env.example .env
 ```
 
-You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS` with your own values.
+You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS%` with your own values.
 
 For local development only these need to be set... 
 
@@ -245,7 +248,7 @@ NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
 ```
 
 
-#### Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
+#### **Team Friendo:** Configuration Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
@@ -273,6 +276,8 @@ This will build Signalboost's docker containers, install its node dependencies, 
 make _.setup
 ```
 It will take a moment the first time it runs as it downloads the docker images and other resources. 
+
+Signalboost has a extensive and handy `make` file, learn more about it [here](#makefile). But don't let that distract you, you are almost there!
 
 
 ### (5) Stop and start the Signalboost App in dev mode 
@@ -324,10 +329,12 @@ If you find it annoying to type this over and over again, consider adding `expor
 
 Learn more about how the CLI tools works in [Using the Boost CLI] (#boost-cli).
 
+> NOTE: because this is a symlink if you move or rename your signalboost directory it will break. It will also not work in any secondary directory you create because it will run in the initial one so be use the uninstall command to clean up and re-install.
+
 
 ### (7) Create Seed Data
 
-Once you've got the CLI installed, you can use the following to create 2 Twillio numbers. Please note that this is specific to our local development setup as it uses the -u to specify the ngrok tunnel reservered domain you created, for Team Friendo we use signalboost.ngrok.io but your ngrok reserved domain will be different:
+Once you've got the CLI installed, you can use the following to create some Twillio numbers for use in your channels and emulators etc. Please note that this is specific to our local development setup as it uses the -u to specify the ngrok tunnel reservered domain you created, **for Team Friendo we use signalboost.ngrok.io but your ngrok reserved domain will be different**:
 
 ``` shell
 make dev.up
@@ -336,7 +343,7 @@ boost -e .env.dev create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngro
 
 Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
 
-You can use the following to create a channel that uses <channel_phone_number> as its number and uses <your_actual_phone_number> as an admin of the channel, again using the Ngrok reserved domain you created rather than signalboost.ngrok.io:
+You can use the following to create a channel that uses <channel_phone_number> as its number and uses <your_actual_phone_number> as an Admin of the channel, again using the ngrok reserved domain you created rather than signalboost.ngrok.io:
 
 
 ```shell
@@ -473,6 +480,7 @@ boost <command> -h
 
 If you would like to use `boost` to administer multiple different environments, you may provide create credentials in multiple different .env files, and then pass different values to the `-e` flag each time you invoke `boost`.
 
+
 For example, assume you had two different servers, one in The Arctic Sea, and one in Antarctica. You could create an `.env` file for the Arctic Sea instance in the signalboost project root, and call it `.env.arctic` and similarly create `.env.antarctic` for the instance in Antarctica.
 
 Then, to list all the channels in your Antarctic instance, you would use:
@@ -502,9 +510,9 @@ To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you coul
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
 
-Want to deploy an instance of Signalboost on the official Team Friendo server or your own server? Great! This section is for you!
+Want to deploy an instance of Signalboost on the official Team Friendo server or your own production server? Great! This section is for you!
 
-If you are a member of Team Friendo look for details here about how to use [blackbox](https://github.com/StackExchange/blackbox) to access our shared configuration files.
+> **Team Friendo:**  If you are a member of Team Friendo look for details here about how to use [blackbox](https://github.com/StackExchange/blackbox) to access our shared configuration files.
 
 If you have not already reviewed the [System and Service Requirements](#services) section above please start there to ensure you have the configuration details you'll need. 
 
@@ -515,7 +523,7 @@ If you are a person who is not maintaining this repo, we want you to be able to 
 
 We've designed our deploy process so that you should be able to use it with your own credentials and infrastructure with some minor modifications. (If any of these steps don't work, please don't hesitate to post an issue so we can fix it!)
 
-### (1) Setup your production host server
+### (1) Setup your production server
 
 Signup for a server running either the Debian or Ubuntu GNU/Linux distributions, note the static IP and configure a domain to the new server.
 
@@ -528,17 +536,11 @@ If you need help finding a server, we'd recommend shopping for a VPS from one th
 
 *NOTE: We do not recommend DigitalOcean, as a matter of fact it absolutely will not work at all as Signal blocks traffic from this service.*
 
-If you are a member of Team Friendo you can:
-
-``` shell
-./bin/get-machine
-```
-
 With your new server login as root and:
 
 - ensure (for now) that root login works and add your local users SSH key to root if it is not already added.
 - run `apt update` to update apt
-- install python with `apt install python3`
+- install python3 with `apt install python3`
 
 > During the Ansible configuration steps additional users will be created and the root login locked down, but we need it for now. Do not lock down ssh for the root login at this point, if you do ansible's setup later will fail.
 
@@ -568,7 +570,7 @@ cd path/to/signalboost
 make ansible.install
 ```
 
-...our `make` file will then install the Ansible dependancies.
+and our `make` file will then install the Ansible dependancies.
 
 If you are on another system, first [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html). Then run these commands to install the Ansible dependancies manually:
 
@@ -581,7 +583,7 @@ ansible-galaxy install dev-sec.ssh-hardening
 
 ### (4) Complete configuration 
 
-**If you are member of Team Friendo** we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another admin for install you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with 
+**Team Friendo:** we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another Friendo and it has been added you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with:
 
 ``` shell
 make _.unlock
@@ -598,7 +600,7 @@ And complete these steps to get the files configured.
 
 #### Configure .env
 
-You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS` with your own values from the System and Service Requirements section above as well as the static IP address of your production host server. 
+You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS` with your own values from the System and Service Requirements section above as well as the static IP address of your production server. 
 
 For production deploy only these need to be set... 
 
@@ -767,7 +769,7 @@ ansible-playbook -i inventory playbooks/main.yml -e deploy
 
 *Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps...
 
-<<<<<<< HEAD
+
 **(4) Install the `boost` cli tool:**
 
 We have a cli tool for performing common sysadmin tasks on running Signalboost instances. You can install it with:
@@ -815,8 +817,6 @@ On subsequent (re)deployments, you do not need to run the `provision`, `configur
 cd ansible
 ansible-playbook -i inventory playbooks/deploy.yml
 ```
-=======
->>>>>>> [211] now with merged team friendo details and more cleanup
 
 If you would like an easier way to do this (and are okay with the `env_file` location being set to `<PROJECT_ROOT>/.env` and the `secrets_mode` set to `copy`), you can simply run:
 
