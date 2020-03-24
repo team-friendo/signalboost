@@ -75,7 +75,7 @@ Signalboost relies on a few external services and tools. These dependancies and 
 
 ## Getting started
 
-To host your own instance of Signalboost you need:
+To host your own production instance of Signalboost you need:
 
 * A server running Debian or Ubuntu GNU/Linux distributions with a static IP address as your production server.
 * A local development setup able to run Ansible to deploy the code to your Signalboost production server.
@@ -97,7 +97,7 @@ We'll address the setup of production and development systems in the Developer a
 
 ## Setup third party services and other details
 
-Identify above what credentials and services are needed for your setup and use these details to get what you need:
+Identify above what credentials and services are needed for your taget setup and use these details to get what you need:
 
 **Domain**
 
@@ -126,7 +126,7 @@ python
 >>> secrets.token_hex(32)
 ```
 
-Errors doing this usually relate to systems with multiple python versions installed so sometimes specifiying `python3` solves for that. 
+> Hint: Errors doing this usually relate to systems with multiple python versions installed so sometimes specifiying `python3` solves for that. 
 
 
 # Developer Guide <a name="#developer-guide"></a>
@@ -198,24 +198,28 @@ brew cask install docker
 
 ### (3) Complete configuration 
 
-You will need to provide your own values for credentials listed in `.env.dev`. A sample of the values needed is listed in `.env.dev.example`. You should replace all values in `%TEMPLATE_STRINGS%` with your own values.
-
-Configuration for development basically involves creating your initial .env.dev file and loading it with the details you created in the [System and Service Requirements](#services)  section above.
+Configuration for development basically involves creating your initial `.env.dev` file and loading it with the details you created in the [System and Service Requirements](#services) section above.
 
 > *Team Friendo:* If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
 
 #### Secrets for General Public
 
-Copy the `.env.example` file to just `.env` in the root of your Signalboost repo.
+Copy the `.env.dev.example` file to just `.env.dev` in the root of your Signalboost repo.
 
 ``` shell
 cd path/to/signlaboost/
-cp .env.example .env
+cp .env.dev.example .env.dev
 ```
 
 You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS%` with your own values.
 
-For local development only these need to be set... 
+Provide the ngrok subdomain you created: 
+
+```shell
+# URL is used by the Boost cli as the default url for the API
+  
+SIGNALBOOST_HOST_URL=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
+```
 
 Provide the Signalboost API Token you generated for:
 
@@ -316,6 +320,7 @@ make cli.install
 
 This puts the commands in `signalboost/cli/boost-commands` on your $PATH by symlinking `cli/boost` to `/usr/bin/boost`. If that feels intrusive to you, you are welcome to put `boost` on your $PATH in another way, or by just invoking it as `signalboost/cli/boost`)
 
+> NOTE: because this is a symlink if you move or rename your signalboost directory it will break. It will also not work in any secondary directory you create because it will run in the initial one so be use the uninstall command to clean up and re-install.
 
 You can uninstall it later with:
 
@@ -323,13 +328,11 @@ You can uninstall it later with:
 make cli.uninstall
 ```
 
-Note that to use the `boost` cli tool against your local dev server, you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell boost to talk to your local server instead of prod.
+To use the `boost` cli tool for development you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell `boost` to talk to your local system instead of production. 
 
 If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
 
 Learn more about how the CLI tools works in [Using the Boost CLI] (#boost-cli).
-
-> NOTE: because this is a symlink if you move or rename your signalboost directory it will break. It will also not work in any secondary directory you create because it will run in the initial one so be use the uninstall command to clean up and re-install.
 
 
 ### (7) Create Seed Data
@@ -354,159 +357,9 @@ boost create-channel \
     -a <your_actual_phone_number> \
     -u signalboost.ngrok.io
 ```
-Congrats! you should now have your first channel running on your local development instance of signalboost. 
 
-## Using the App and Tools
+Congrats! you should now have your first channel running on your local development instance of Signalboost. 
 
-With the app running...
-
-Any human should be able to:
-
-* Join the channel by sending a signal message with contents "JOIN" to `$CHANNEL_PHONE_NUMBER`
-* Leave the channel by sending a signal message with contents "LEAVE" to `$CHANNEL_PHONE_NUMBER`
-
-Any admin should be able to:
-
-* Broadcast a message to all channel subscribers by sending it to `$CHANNEL_PHONE_NUMBER`
-* Receive all messages broadcast to the channel
-
-### Makefile
-
-We have a lot of scripts to help run the app that are all defined in the repo's `Makefile`. You can list them all with:
-
-``` shell
-make help
-```
-
-If you type `make` and then hit `TAB`, you will get autocomplete suggestions for whatever you have typed so far.
-
-### Run Tests
-
-``` shell
-make test.all
-```
-
-If you want, you can run unit and e2e tests separately:
-
-``` shell
-make test.unit
-```
-
-``` shell
-make test.e2e
-```
-
-### Database scripts
-
-There are a few scripts to do things with the db:
-
-To run all pending migrations (useful if another dev created migrations you haven't run yet):
-
-```shell
-make db.migrate.up
-```
-
-To drop the database (you will need to recreate seed data after this):
-
-```shell
-make db.drop
-```
-
-To get a psql shell (inside the postgres docker container for signalboost):
-
-```shell
-make db.psql
-```
-
-### Using the Boost CLI 
-
-
-## Installing boost
-
-Assuming you have already provided secrets in `.env` or `.env.dev` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)) and have already installed the CLI with:
-
-
-```shell
-make cli.install
-```
-
-## Using boost
-
-You can administer any running signalboost instance with:
-
-``` shell
-boost <command> <options> -e <path to .env file>
-```
-
-Where `<command>` is one of the following:
-
-``` shell
-  help
-    - shows this dialogue
-
-  add-admin -c <channel phone number> -a <admin phone number> -e <path to .env file>
-    - adds an admin to a channel on the signalboost instance specified in .env file
-
-  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -e <path to .env file>
-    - creates a channel with provied phone number, name, and admins on signalboost instance specified in .env file
-
-  create-number -a <area_code> -n <numbers_desired> -e <path to .env file>
-    - purchases n new twilio numbers and registers them w/ signal via registrar on instance specified in .env file
-
-  destroy -p <phone_number> -e <path to .env file>
-    - permanently deletes the provided phone number on instance specified in .env file
-
-  list-channels -e <path to .env file>
-    - lists all channels active on the signalboost instance specified in .env file
-
-  list-numbers -e <path to .env file>
-    - lists all numbers purchased from twilio on the signalboost instance specified in .env file
-
-  release-numbers <path>
-    - releases all phone numbers with twilio ids listed at given path
-
-  recycle -p <phone_numbers> -e <path to .env file>
-    - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
-```
-
-For more detailed instructions on any of the commands, run:
-
-``` shell
-boost <command> -h
-```
-## A note on .env files and boost
-
-### Using multiple environments
-
-If you would like to use `boost` to administer multiple different environments, you may provide create credentials in multiple different .env files, and then pass different values to the `-e` flag each time you invoke `boost`.
-
-
-For example, assume you had two different servers, one in The Arctic Sea, and one in Antarctica. You could create an `.env` file for the Arctic Sea instance in the signalboost project root, and call it `.env.arctic` and similarly create `.env.antarctic` for the instance in Antarctica.
-
-Then, to list all the channels in your Antarctic instance, you would use:
-
-```shell
-boost -e .env.antarctic list-channels
-```
-
-To list all the channels in your Arctic instance, you would use:
-
-```shell
-boost -e .env.arctic list-channels
-```
-
-### Setting default environments
-
-You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_FILE` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_FILE` is always in scope whenever you invoke boost.)
-
-To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctcic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
-
-```
-export SIGNALBOOST_ENV_FILE=.env.arctic
-boost list-channels
-```
-
-To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
 
@@ -686,11 +539,24 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml
 ```
 
+But initially we recommend running each one, one at a time to monitor the outcome:
+
+``` shell
+cd ansible
+ansible-playbook -i inventory playbooks/provision.yml
+ansible-playbook -i inventory playbooks/deploy.yml
+ansible-playbook -i inventory playbooks/harden.yml
+```
+
+Because the last playbook (`harden.yml`) can take as long as 2 hours to run! But after `deploy.yml` is finished thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete and you can proceed to the next steps.
+
+It is not unsual to have to run `provision.yml` multiple times with small errors that are resolves by a re-run. 
+
 *Variation to accomodate multiple remote hosts and .env files:*
 
-By default the deploy tooling described aboe assumes you are deploying to one single server, with a `host` listed as `signalboost` in `ansible/inventory` and credentials listed in `.env`. But perhaps you would like to deploy signalboost to multiple servers, each with different credentials!
+By default the deploy tooling described above assumes you are deploying to one single server, with a `host` listed as `signalboost` in `ansible/inventory` and credentials listed in `.env`. But perhaps you would like to deploy Signalboost to multiple servers, each with different credentials!
 
- To do this, we can leverage ansible's "extra-vars" feature, defining a `sb_host` and `env_file` variable that we pass to `ansible-playbook` at deploy-time to override the defaults we have encoded in `inventory.signalboost` and `.env`.
+To do this, we can leverage ansible's "extra-vars" feature, defining a `sb_host` and `env_file` variable that we pass to `ansible-playbook` at deploy-time to override the defaults we have encoded in `inventory.signalboost` and `.env`.
 
 For example, to deploy to a host listed as `antarctica` in `ansible/hosts` and credentials defined in`.env.antarctica`, you would issue the following command:
 
@@ -699,6 +565,9 @@ cd ansible
 ansible-playbook -i inventory -e "sb_host=antarctica env_file=/path/to/.env.antarctica" playbooks/main.yml
 ```
 
+Once your all the playbooks complete you should have a running Signalboost server available at the API domain you defined in your `.env` file and can proceed to use the `boost` cli to generate numbers and create new channels with them. 
+
+ 
 ### (6) Install the Boost CLI tool
 
 Signalboost ships with a cli tool for adding phone numbers, channels, and admins to the service.
@@ -708,12 +577,13 @@ Install it with:
 ``` shell
 make cli.install
 ```
+
 Learn more about how the CLI tools works in [Using the Boost CLI](#cli)
 
 
 ### (7) Channel setup with the Boost CLI
 
-Your local instance of the Boost CLI will read the .env file and use the remote production server details you defined there, so these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
+Your local instance of the `boost` CLI will read the local `.env` file and use the remote production server details you defined there. So these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
 
 
 #### Provision two Twillio numbers
@@ -767,63 +637,6 @@ cd ansible
 ansible-playbook -i inventory playbooks/main.yml -e deploy
 ```
 
-*Timing Note:* The last playbook (`harden.yml`) can take as long as 2 hours to run. After `deploy.yml` is finished. Thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete, and proceed to the following steps...
-
-
-**(4) Install the `boost` cli tool:**
-
-We have a cli tool for performing common sysadmin tasks on running Signalboost instances. You can install it with:
-
-``` shell
-make cli.install
-```
-
-To learn more about how the CLI tool works, see [Using the Boost CLI](#cli)
-
-**(5) List existing numbers/channels:**
-
-You can check out what numbers and channels already exist with:
-
-```shell
-boost list-numbers
-boost list-channels
-```
-
-**(6) Provision new twilio phone numbers:**
-
-The below will provision 2 phone numbers in area code 510:
-
-``` shell
-boost create-number -n 2 -a 510
-```
-
-*NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.*
-
-**(7) Provision new Signalboost channels:**
-
-Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, and set the phone numbers `+151066666666` and `+15107777777`as senders on the channel.
-
-``` shell
-boost create-channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
-```
-
-For more commands supported by the `boost` cli tool see the [Administering](#administering) section below.
-
-**(8) Deploy updates to Signalboost:**
-
-On subsequent (re)deployments, you do not need to run the `provision`, `configure`, or `harden` playbooks. Instead you can just run:
-
-``` shell
-cd ansible
-ansible-playbook -i inventory playbooks/deploy.yml
-```
-
-If you would like an easier way to do this (and are okay with the `env_file` location being set to `<PROJECT_ROOT>/.env` and the `secrets_mode` set to `copy`), you can simply run:
-
-``` shell
-cd <PROJECT_ROOT>
-make _.deploy
-```
 
 # Using the Signalboost App, Makefile and Boost CLI <a href="app-details"></a>
 
@@ -890,11 +703,11 @@ make db.psql
 
 ### Using the Boost CLI  <a href="boost-cli"></a>
 
-The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local .env file and uses the SIGNALBOOST_HOST_URL value as it's target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command.
+The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as it's target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command. 
 
-Note: Our development setup steps encourage you to install jq on your localhost, which is needed for `boost` command output. Ansible does not install this on production servers and it will need to be installed manually if you wish to run boost directly on your production server.
+You can also run `boost` directly on your production server where it will use the local `.env` file it finds there. Our development setup steps encourage you to install jq on your localhost, which is needed for `boost` command output. Ansible does not install this on production servers and it will need to be installed manually if you wish to run `boost` directly on your production server.
 
-Assuming you have already installed the CLI with:
+Assuming you have already provided secrets in `.env` or `.env.dev` (as described in the [Secrets](#secrets) section of the [Developer Guide](#developer-guide)) and have already installed the CLI with:
 
 ```shell
 make cli.install
@@ -912,23 +725,29 @@ Where `<command>` is one of the following:
   help
     - shows this dialogue
 
-  add-admin -c <channel phone number> -a <admin phone number> -u <url>
-    - adds an admin to a channel on the Signalboost instance at url (defaults to prod!)
+  add-admin -c <channel phone number> -a <admin phone number> -e <path to .env file>
+    - adds an admin to a channel on the signalboost instance specified in .env file
 
-  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -u <api_url>
-    - creates a channel with provied phone number, name, and admins on Signalboost instance at url (defaults to prod!)
+  create-channel -p <chan_phone_number> -n <chan_name> -a <admins> -e <path to .env file>
+    - creates a channel with provied phone number, name, and admins on signalboost instance specified in .env file
 
-  create-number -a <area_code> -n <numbers_desired> -u <api_url>
-    - purchases n new twilio numbers and registers them w/ signal via registrar at url (defaults to prod!)
+  create-number -a <area_code> -n <numbers_desired> -e <path to .env file>
+    - purchases n new twilio numbers and registers them w/ signal via registrar on instance specified in .env file
 
-  list-channels -u <api_url>
-    - lists all channels active on the Signalboost instance at the given url (defaults to prod!)
+  destroy -p <phone_number> -e <path to .env file>
+    - permanently deletes the provided phone number on instance specified in .env file
 
-  list-numbers -u
-    - lists all numbers purchased from twilio on the Signalboost instance at url (defaults to prod!)
+  list-channels -e <path to .env file>
+    - lists all channels active on the signalboost instance specified in .env file
+
+  list-numbers -e <path to .env file>
+    - lists all numbers purchased from twilio on the signalboost instance specified in .env file
 
   release-numbers <path>
     - releases all phone numbers with twilio ids listed at given path
+
+  recycle -p <phone_numbers> -e <path to .env file>
+    - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
 ```
 
 For more detailed instructions on any of the commands, run:
@@ -936,3 +755,34 @@ For more detailed instructions on any of the commands, run:
 ``` shell
 boost <command> -h
 ```
+
+### Using multiple .env files to managed different servers
+
+If you would like to use `boost` to administer multiple different servers, you may provide credentials in multiple different .env files, and then pass different values to the `-e` flag each time you invoke `boost` to access the API for each server.
+
+For example, assume you had two different servers, one in The Arctic Sea, and one in Antarctica. You could create an `.env` file for the Arctic Sea instance in the signalboost project root, and call it `.env.arctic` and similarly create `.env.antarctic` for the instance in Antarctica.
+
+Then, to list all the channels in your Antarctic instance, you would use:
+
+```shell
+boost -e .env.antarctic list-channels
+```
+
+To list all the channels in your Arctic instance, you would use:
+
+```shell
+boost -e .env.arctic list-channels
+```
+
+### Setting a default .env file
+
+You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_FILE` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_FILE` is always in scope whenever you invoke boost.)
+
+To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctcic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
+
+```
+export SIGNALBOOST_ENV_FILE=.env.arctic
+boost list-channels
+```
+
+To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
