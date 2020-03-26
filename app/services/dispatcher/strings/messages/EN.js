@@ -382,7 +382,10 @@ Send HELP to list valid commands. Send HELLO to subscribe.
       ? 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands.'
       : 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands or HELLO to subscribe.',
 
-  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+  inviteReceived: channelName =>
+    `Hello! You have received an invite to join the [${channelName}] Signalboost channel. Please respond with ACCEPT or DECLINE.`,
+
+  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
       invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
     }`,

@@ -269,14 +269,16 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) =
 }
 
 const inviteNotificationsOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
+  const notifications = messagesIn(channel.language).notifications
+  const inviteMessage =
+    channel.vouchingOn && channel.vouchLevel > 1
+      ? notifications.vouchedInviteReceived(channel.name, invitesReceived, invitesNeeded)
+      : notifications.inviteReceived(channel.name)
+
   return [
     {
       recipient: inviteePhoneNumber,
-      message: messagesIn(channel.language).notifications.inviteReceived(
-        channel.name,
-        invitesReceived,
-        invitesNeeded,
-      ),
+      message: inviteMessage,
     },
   ]
 }

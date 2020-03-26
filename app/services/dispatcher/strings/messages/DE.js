@@ -391,7 +391,10 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
       ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
 
-  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+  inviteReceived: channelName =>
+    `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
+
+  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, dem [${channelName}] Signalboost Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
     }`,

@@ -383,7 +383,10 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
-  inviteReceived: (
+  inviteReceived: channelName =>
+    `Hola! Usted ha recibido una invitación para unirse al canal Signalboost de [${channelName}]. Por favor, responda con ACEPTAR o RECHAZAR.`,
+
+  vouchedInviteReceived: (
     channelName,
     invitesReceived,
     invitesNeeded,

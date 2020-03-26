@@ -148,16 +148,16 @@ describe('messages module', () => {
       })
     })
 
-    describe('#inviteReceived', () => {
+    describe('#vouchedInviteReceived', () => {
       describe('when invitee has received enough invites', () => {
-        const notification = n.inviteReceived('foobar', 1, 1)
+        const notification = n.vouchedInviteReceived('foobar', 2, 2)
         it('prompts them with ACCEPT or DECLINE', () => {
           expect(notification).to.include('ACCEPT or DECLINE')
         })
       })
 
       describe("when invitee hasn't received enough invites", () => {
-        const notification = n.inviteReceived('foobar', 0, 1)
+        const notification = n.vouchedInviteReceived('foobar', 1, 2)
         it("doesn't prompt them with ACCEPT or DECLINE", () => {
           expect(notification).not.to.include('ACCEPT or DECLINE')
         })
