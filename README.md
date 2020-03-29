@@ -196,7 +196,7 @@ brew cask install docker
 (Note: The `cask` version of docker allows you to run docker from Applications folder, avoid some permissions complexity and get a nice systray icon. Some devs report needing to do that to get dev env working! :))
 
 
-### (3) Complete configuration 
+### (3) Complete development configuration 
 
 Configuration for development basically involves creating your initial `.env.dev` file and loading it with the details you created in the [System and Service Requirements](#services) section above.
 
@@ -211,33 +211,23 @@ cd path/to/signlaboost/
 cp .env.dev.example .env.dev
 ```
 
-You will need to provide your own values for credentials listed in `.env`. You should replace the values in `%TEMPLATE_STRINGS%` with your own values.
+You will need to provide values for the credentials listed in `.env.dev`. You should replace the values in `%TEMPLATE_STRINGS%` with your own values.
 
-Provide the ngrok subdomain you created: 
+Provide the ngrok subdomain you created as the API url: 
 
 ```shell
 # URL is used by the Boost cli as the default url for the API
   
-SIGNALBOOST_HOST_URL=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
+SIGNALBOOST_HOST_URL=%FULL CUSTOM SUBDOMAIN REGISTERED WITH NGROK%.ngrok.io
 ```
 
-Provide the Signalboost API Token you generated for:
+Provide the Signalboost API Token you generated:
 
 ``` shell
 # Signalboost API authentication // Required for authentication in all modes 
 # See the README for details on how to generate a suitable HEX string
 
 SIGNALBOOST_API_TOKEN=%HEX STRING%
-```
-
-Add your Twillio credentials to:
-
-``` shell
-# Twilio // Required in all modes to create channel numbers. Signup at https://www.twilio.com/  
-# Free accounts work but are limited to one phone number which will limit your ability to create channels
-
-TWILIO_ACCOUNT_SID=%HEX STRING%
-TWILIO_AUTH_TOKEN=%HEX STRING%
 ```
 
 Add the Ngrok auth token and the subdomain part of your reservered domain to:
@@ -249,6 +239,16 @@ Add the Ngrok auth token and the subdomain part of your reservered domain to:
 
 NGROK_AUTH_TOKEN=%43_BYTE_HEX STRING%
 NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
+```
+
+Add your Twillio credentials:
+
+``` shell
+# Twilio // Required in all modes to create channel numbers. Signup at https://www.twilio.com/  
+# Free accounts work but are limited to one phone number which will limit your ability to create channels
+
+TWILIO_ACCOUNT_SID=%HEX STRING%
+TWILIO_AUTH_TOKEN=%HEX STRING%
 ```
 
 
@@ -267,7 +267,7 @@ Now that you are whitelisted, you can use blackbox to decrypt secrets and source
 ``` shell
 make _.unlock
 ```
-which runs `./bin/blackbox/decrypt_all_files` to upack our .env and other configuration files to get you what you need. 
+which runs `./bin/blackbox/decrypt_all_files` to upack our .env.dev and other configuration files to get you what you need. 
 
 > GOTCHA WARNING: if you are running an older version of debian or ubuntu (which defaults to gpg v1 instead of gpg v2), you will get inscrutable errors when trying to invoke blackbox. This can be fixed by installing `gpg2` and then invoking blackbox with `GPG=gpg2 ./bin/blackbox/decrypt_all_files`
 
@@ -434,7 +434,7 @@ ansible-galaxy install dev-sec.os-hardening
 ansible-galaxy install dev-sec.ssh-hardening
 ```
 
-### (4) Complete configuration 
+### (4) Complete production configuration 
 
 **Team Friendo:** we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another Friendo and it has been added you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with:
 
@@ -457,20 +457,24 @@ You will need to provide your own values for credentials listed in `.env`. You s
 
 For production deploy only these need to be set... 
 
-Provide your server's domain name the Signalboost API Token you generated:
+Provide your server's domain name for the API:
 ```
 # Signalboost API service //  Used in Production mode only these should be the details of your production server
 # URL is used by the Boost cli as the default url for the API, overrode with -u to specify ngrok host locally. 
 
 SIGNALBOOST_HOST_URL=%FULL DOMAIN NAME FOR PROD SERVER%
+```
 
+Provide the Signalboost API Token you generated for:
+
+```
 # Signalboost API authentication // Required for authentication in all modes 
 # See the README for details on how to generate a suitable HEX string
 
 SIGNALBOOST_API_TOKEN=%HEX STRING%
 ```
 
-Provide your Twillio SID and Auth Token:
+Add your Twillio credentials:
 ```
 # Twilio // Required in all modes to create channel numbers. Signup at https://www.twilio.com/  
 # Free accounts work but are limited to one phone number which will limit your ability to create channels
@@ -479,7 +483,7 @@ TWILIO_ACCOUNT_SID=%HEX STRING%
 TWILIO_AUTH_TOKEN=%HEX STRING%
 ```
 
-Provide your server's domain name for both the `VIRTUAL_HOST` and `LETSENCRYPT_HOST` options. Then provide a working email address for Let's Encrypt to use:
+Provide your server's API domain name for both the `VIRTUAL_HOST` and `LETSENCRYPT_HOST` options. Then provide a working email address for Let's Encrypt to use:
 ```
 
 # letsencrypt/nginx proxy configs // Used in Production mode only. Works magically if you provide a valid email, no registration needed
@@ -490,14 +494,14 @@ LETSENCRYPT_HOST=%FULL DOMAIN NAME FOR PROD SERVER%
 LETSENCRYPT_EMAIL=%EMAIL ADDRESS FOR TEAM SYSADMIN%
 ```
 
-For now we'll skip this optional item because we need the Boost CLI to creat this channel on twillio:
+For now we'll comment out this optional item because we need the Boost CLI to creat this channel on twillio:
 ```
 # Signup channel number // Optional Phone number used by Signalboost for the special "signup channel" 
 # Use Boost cli to create these, you only need the one specific to the mode you are running in
 # Format must be e164 (https://www.twilio.com/docs/glossary/what-e164), with the + and with no special characters
 
-SIGNUP_CHANNEL_NUMBER=%+15554445555%
-SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
+#SIGNUP_CHANNEL_NUMBER=%+15554445555%
+#SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
 ```
 
 #### Configure ansible/inventory
@@ -583,7 +587,7 @@ Learn more about how the CLI tools works in [Using the Boost CLI](#cli)
 
 ### (7) Channel setup with the Boost CLI
 
-Your local instance of the `boost` CLI will read the local `.env` file and use the remote production server details you defined there. So these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
+By default your local instance of the `boost` CLI will read the local `.env` file and use the remote production server details you defined there. So these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
 
 
 #### Provision two Twillio numbers
@@ -703,7 +707,7 @@ make db.psql
 
 ### Using the Boost CLI  <a href="boost-cli"></a>
 
-The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as it's target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command. 
+The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as its target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command. 
 
 You can also run `boost` directly on your production server where it will use the local `.env` file it finds there. Our development setup steps encourage you to install jq on your localhost, which is needed for `boost` command output. Ansible does not install this on production servers and it will need to be installed manually if you wish to run `boost` directly on your production server.
 
