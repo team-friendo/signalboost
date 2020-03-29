@@ -51,7 +51,8 @@ const execute = async (executable, dispatchable) => {
     [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
     [commands.DECLINE]: () => decline(db, channel, sender, language),
-    [commands.DESTROY]: () => maybeDestroy(db, sock, channel, sender),
+    [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
+    [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload),
@@ -168,6 +169,15 @@ const decline = async (db, channel, sender, language) => {
 }
 
 // DESTROY
+
+const maybeConfirmDestroy = async (db, sock, channel, sender) => {
+  const cr = messagesIn(sender.language).commandResponses.destroy
+
+  if (!(sender.type === ADMIN)) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+  return { status: statuses.SUCCESS, message: cr.confirm }
+}
 
 const maybeDestroy = async (db, sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy

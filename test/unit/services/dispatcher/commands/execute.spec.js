@@ -463,11 +463,44 @@ describe('executing commands', () => {
   })
 
   describe('DESTROY command', () => {
+    const _dispatchable = { db, channel, sdMessage: sdMessageOf(channel, 'DESTROY') }
+
+    describe('when issuer is an admin', () => {
+      const dispatchable = { ..._dispatchable, sender: admin }
+
+      it('responds with a confirmation prompt', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DESTROY,
+          status: statuses.SUCCESS,
+          message: CR.destroy.confirm,
+          payload: '',
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when issuer is a subscriber or rando', () => {
+      ;[subscriber, randomPerson].forEach(sender => {
+        const dispatchable = { ..._dispatchable, sender }
+
+        it('responds with UNAUTHORIZED', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.DESTROY,
+            status: statuses.UNAUTHORIZED,
+            message: CR.destroy.notAdmin,
+            payload: '',
+            notifications: [],
+          })
+        })
+      })
+    })
+  })
+
+  describe('DESTROY_CONFIRM command', () => {
     const _dispatchable = {
       db,
       channel,
-      sender: randomPerson,
-      sdMessage: sdMessageOf(channel, 'DESTROY'),
+      sdMessage: sdMessageOf(channel, 'CONFIRM DESTROY'),
     }
 
     let destroyStub
@@ -492,7 +525,7 @@ describe('executing commands', () => {
 
         it('returns a SUCCESS status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.DESTROY,
+            command: commands.DESTROY_CONFIRM,
             payload: '',
             status: statuses.SUCCESS,
             message: CR.destroy.success,
@@ -506,7 +539,7 @@ describe('executing commands', () => {
 
         it('returns a ERROR status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.DESTROY,
+            command: commands.DESTROY_CONFIRM,
             payload: '',
             status: statuses.ERROR,
             message: CR.destroy.error,
@@ -532,7 +565,7 @@ describe('executing commands', () => {
 
         it('returns an UNAUTHORIZED message', () => {
           expect(res).to.eql({
-            command: commands.DESTROY,
+            command: commands.DESTROY_CONFIRM,
             status: statuses.UNAUTHORIZED,
             payload: '',
             message: CR.destroy.notAdmin,

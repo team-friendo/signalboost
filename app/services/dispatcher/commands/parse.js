@@ -80,6 +80,7 @@ const validatePayload = commandMatch => {
     case commands.ACCEPT:
     case commands.DECLINE:
     case commands.DESTROY:
+    case commands.DESTROY_CONFIRM:
     case commands.HELP:
     case commands.HOTLINE_ON:
     case commands.HOTLINE_OFF:

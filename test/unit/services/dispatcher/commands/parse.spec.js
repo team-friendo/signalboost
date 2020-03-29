@@ -227,6 +227,38 @@ describe('parse module', () => {
       })
     })
 
+    describe('DESTROY_CONFIRM command', () => {
+      it('parses an DESTROY_CONFIRM command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['CONFIRM DESTROY', ' confirm destroy '],
+          },
+          {
+            language: languages.ES,
+            messages: ['CONFIRMAR DESTRUIR', ' confirmar destruir '],
+          },
+          {
+            language: languages.FR,
+            messages: ['CONFIRMER DÉTRUIRE', ' confirmer détruire '],
+          },
+          {
+            language: languages.DE,
+            messages: ['BESTÄTIGEN VERNICHTEN', ' bestätigen vernichten '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.DESTROY_CONFIRM,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
     describe('HELP command', () => {
       it('parses an HELP command regardless of casing, spacing, accents, or language', () => {
         const variants = [

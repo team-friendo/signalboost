@@ -80,8 +80,16 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   },
 
   destroy: {
+    confirm: `Êtes-vous sûr?
+
+Si vous continuez, vous détruirez définitivement cette chaîne et tous les enregistrements qui lui sont associés.
+
+Pour continuer, répondez avec:
+
+ CONFIRMER DESTROY`,
     success: `La chaîne et tous les enregistrements associés ont été définitivement détruits.`,
     error: `Oups! Une erreur s'est produite lors de la destruction de la chaîne. Veuillez réessayer!`,
+    notAdmin,
   },
 
   // HELP
