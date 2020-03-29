@@ -81,8 +81,17 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // DESTROY
 
   destroy: {
+    confirm: `¿Está seguro?
+
+Si continúa, destruirá permanentemente este canal y todos los registros asociados con él.
+
+Para continuar, responda con:
+
+CONFIRMAR DESTRUIR`,
+
     success: 'El canal ha sido destruido permanentamente por sus admins.',
     error: '¡Ay! Se produjo un error al destruir el canal. ¡Inténtelo de nuevo!',
+    notAdmin,
   },
 
   // HELP

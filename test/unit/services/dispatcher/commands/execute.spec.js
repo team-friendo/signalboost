@@ -463,39 +463,114 @@ describe('executing commands', () => {
   })
 
   describe('DESTROY command', () => {
-    const dispatchable = {
+    const _dispatchable = { db, channel, sdMessage: sdMessageOf(channel, 'DESTROY') }
+
+    describe('when issuer is an admin', () => {
+      const dispatchable = { ..._dispatchable, sender: admin }
+
+      it('responds with a confirmation prompt', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.DESTROY,
+          status: statuses.SUCCESS,
+          message: CR.destroy.confirm,
+          payload: '',
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when issuer is a subscriber or rando', () => {
+      ;[subscriber, randomPerson].forEach(sender => {
+        const dispatchable = { ..._dispatchable, sender }
+
+        it('responds with UNAUTHORIZED', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.DESTROY,
+            status: statuses.UNAUTHORIZED,
+            message: CR.destroy.notAdmin,
+            payload: '',
+            notifications: [],
+          })
+        })
+      })
+    })
+  })
+
+  describe('DESTROY_CONFIRM command', () => {
+    const _dispatchable = {
       db,
       channel,
-      sender: randomPerson,
-      sdMessage: sdMessageOf(channel, 'DESTROY'),
+      sdMessage: sdMessageOf(channel, 'CONFIRM DESTROY'),
     }
 
     let destroyStub
     beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
     afterEach(() => destroyStub.restore())
 
-    describe('when destroy succeeds', () => {
-      it('returns a SUCCESS status', async () => {
-        destroyStub.returns({ status: 'SUCCESS' })
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.DESTROY,
-          payload: '',
-          status: statuses.SUCCESS,
-          message: CR.destroy.success,
-          notifications: [],
+    describe('when issuer is an admin', () => {
+      const dispatchable = { ..._dispatchable, sender: admin }
+
+      describe('in all cases', () => {
+        beforeEach(() => destroyStub.returns(Promise.resolve()))
+
+        it('attempts to destroy the channel', async () => {
+          const count = destroyStub.callCount
+          await processCommand(dispatchable)
+          expect(destroyStub.callCount).to.above(count)
+        })
+      })
+
+      describe('when destroy succeeds', () => {
+        beforeEach(() => destroyStub.returns(Promise.resolve({ status: 'SUCCESS' })))
+
+        it('returns a SUCCESS status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.DESTROY_CONFIRM,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: CR.destroy.success,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when a failure occurs', () => {
+        beforeEach(() => destroyStub.returns(Promise.resolve({ status: 'ERROR' })))
+
+        it('returns a ERROR status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.DESTROY_CONFIRM,
+            payload: '',
+            status: statuses.ERROR,
+            message: CR.destroy.error,
+            notifications: [],
+          })
         })
       })
     })
 
-    describe('when a failure occurs', () => {
-      it('returns a ERROR status', async () => {
-        destroyStub.returns({ status: 'ERROR' })
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.DESTROY,
-          payload: '',
-          status: statuses.ERROR,
-          message: CR.destroy.error,
-          notifications: [],
+    describe('when issuer is a subscriber or rando', () => {
+      ;[subscriber, randomPerson].forEach(sender => {
+        const dispatchable = { ..._dispatchable, sender }
+        let callCount, res
+
+        beforeEach(async () => {
+          callCount = destroyStub.callCount
+          res = await processCommand(dispatchable)
+        })
+
+        it('does not attempt to destroy the channel', () => {
+          expect(destroyStub.callCount).to.eql(callCount)
+        })
+
+        it('returns an UNAUTHORIZED message', () => {
+          expect(res).to.eql({
+            command: commands.DESTROY_CONFIRM,
+            status: statuses.UNAUTHORIZED,
+            payload: '',
+            message: CR.destroy.notAdmin,
+            notifications: [],
+          })
         })
       })
     })

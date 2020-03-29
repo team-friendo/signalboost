@@ -6,6 +6,7 @@ const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../../db/repositories/channel')
 const del = require('del')
+const logger = require('../logger')
 const {
   signal: { keystorePath },
 } = require('../../../config')
@@ -73,9 +74,13 @@ const destroyPhoneNumber = async (db, sock, phoneNumberInstance) => {
 }
 
 // (String, String) -> SignalboostStatus
-const handleDestroyFailure = (err, phoneNumber) => ({
-  status: 'ERROR',
-  message: `Failed to destroy channel for ${phoneNumber}. Error: ${err}`,
-})
+const handleDestroyFailure = (err, phoneNumber) => {
+  logger.log(`Error destroying channel: ${phoneNumber}:`)
+  logger.error(err)
+  return {
+    status: 'ERROR',
+    message: `Failed to destroy channel for ${phoneNumber}. Error: ${err}`,
+  }
+}
 
 module.exports = { destroy }

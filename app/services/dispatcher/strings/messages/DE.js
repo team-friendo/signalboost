@@ -78,8 +78,16 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   },
 
   destroy: {
+    confirm: `Bist du sicher?
+
+ Wenn Sie fortfahren, werden Sie diesen Kanal und alle damit verbundenen Datensätze dauerhaft zerstören.
+
+ Um fortzufahren, antworten Sie mit:
+
+ BESTÄTIGEN VERNICHTEN`,
     success: 'Der Kanal und alle zugehörigen Aufzeichnungen wurden unwiderrufbar gelöscht.',
     error: 'OH! Es gab einen Fehler beim Vernichten des Kanals! Bitte versuchs nochmal!',
+    notAdmin,
   },
 
   // HELP
@@ -110,7 +118,7 @@ HINZUFÜGEN / ENTFERNEN +491701234567
 -> Fügt +491701234567 hinzu, oder entfernt diese als Admin des Kanals
 
 HOTLINE AN / AUS
--> Schaltet die Hotline Funktion an oder aus 
+-> Schaltet die Hotline Funktion an oder aus
 
 VERTRAUEN AN / AUS
 -> Bestimmt ob es einer Einladung bedarf um sich beim Kanal anzumelden
@@ -262,8 +270,8 @@ Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}
   // SET_LANGUAGE
 
   setLanguage: {
-    success: `Ab jetzt spreche ich mit dir auf Deutsch und du kannst deutsche Befehle schicken! 
-    
+    success: `Ab jetzt spreche ich mit dir auf Deutsch und du kannst deutsche Befehle schicken!
+
 Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
     dbError: 'Upsi! Fehler beim speichern der Sprachwahl. Bitte versuchs nochmal!',
   },

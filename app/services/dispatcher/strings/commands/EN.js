@@ -3,6 +3,7 @@ module.exports = {
   ADD: ['ADD'],
   DECLINE: ['DECLINE'],
   DESTROY: ['DESTROY'],
+  DESTROY_CONFIRM: ['CONFIRM DESTROY'],
   HELP: ['HELP'],
   HOTLINE_ON: ['HOTLINE ON'],
   HOTLINE_OFF: ['HOTLINE OFF'],

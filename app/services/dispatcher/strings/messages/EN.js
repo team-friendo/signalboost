@@ -76,8 +76,16 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   },
 
   destroy: {
+    confirm: `Are you sure?
+
+If you continue, you will permanently destroy this channel and all records associated with it.
+
+To continue, respond with:
+
+CONFIRM DESTROY`,
     success: 'Channel and all associated records have been permanently destroyed.',
-    error: 'Whoops! There was an error destroying the channel. Please try again!',
+    notAdmin,
+    error: 'Oops! There was an error destroying the channel. Please try again!',
   },
 
   // HELP
