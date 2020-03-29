@@ -245,7 +245,7 @@ const detectUpdatableFingerprint = inboundMsg => {
 // (SdMessage, Channel) -> UpdatableExpiryTime?
 const detectUpdatableExpiryTime = (inboundMsg, channel) =>
   _isMessage(inboundMsg) &&
-  inboundMsg.data.dataMessage.expiresInSeconds !== channel.messageExpiryTime
+  inboundMsg.data.dataMessage.expiresInSeconds !== get(channel, 'messageExpiryTime')
     ? inboundMsg.data.dataMessage.expiresInSeconds
     : null
 
