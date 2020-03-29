@@ -200,7 +200,7 @@ brew cask install docker
 
 Configuration for development basically involves creating your initial `.env.dev` file and loading it with the details you created in the [System and Service Requirements](#services) section above.
 
-> *Team Friendo:* If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. 
+**Team Friendo: If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. **
 
 #### Secrets for General Public
 
@@ -365,7 +365,7 @@ Congrats! you should now have your first channel running on your local developme
 
 Want to deploy an instance of Signalboost on the official Team Friendo server or your own production server? Great! This section is for you!
 
-> **Team Friendo:**  If you are a member of Team Friendo look for details here about how to use [blackbox](https://github.com/StackExchange/blackbox) to access our shared configuration files.
+**Team Friendo:  If you are a member of Team Friendo look for details here about how to use [blackbox](https://github.com/StackExchange/blackbox) to access our shared configuration files.**
 
 If you have not already reviewed the [System and Service Requirements](#services) section above please start there to ensure you have the configuration details you'll need. 
 
@@ -436,7 +436,7 @@ ansible-galaxy install dev-sec.ssh-hardening
 
 ### (4) Complete production configuration 
 
-**Team Friendo:** we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management. If you have provided your PGP key to another Friendo and it has been added you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with:
+**Team Friendo we use [blackbox](https://github.com/StackExchange/blackbox) for pgp-based credentials management.** If you have provided your PGP key to another Friendo and it has been added you can simply use blackbox to decrypt the mostly pre-configured files outlined below. Do this with:
 
 ``` shell
 make _.unlock
@@ -552,9 +552,11 @@ ansible-playbook -i inventory playbooks/deploy.yml
 ansible-playbook -i inventory playbooks/harden.yml
 ```
 
-Because the last playbook (`harden.yml`) can take as long as 2 hours to run! But after `deploy.yml` is finished thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete and you can proceed to the next steps.
-
 It is not unsual to have to run `provision.yml` multiple times with small errors that are resolves by a re-run. 
+
+> GOTCHA WARNING: `harden.yml` has been a source of ongoing problems with deployment, you may find that running it will not work because of package issues. You can absolutely run Signalboost without using it but it's going to make your server more secure. 
+
+Because the last playbook (`harden.yml`) can take as long as 2 hours to run! But after `deploy.yml` is finished thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete and you can proceed to the next steps.
 
 *Variation to accomodate multiple remote hosts and .env files:*
 
