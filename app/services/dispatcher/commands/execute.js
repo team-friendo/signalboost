@@ -173,7 +173,7 @@ const decline = async (db, channel, sender, language) => {
 const maybeConfirmDestroy = async (db, sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
 
-  if (!(sender.type === ADMIN)) {
+  if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   return { status: statuses.SUCCESS, message: cr.confirm }
@@ -182,7 +182,7 @@ const maybeConfirmDestroy = async (db, sock, channel, sender) => {
 const maybeDestroy = async (db, sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
 
-  if (!(sender.type === ADMIN)) {
+  if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
 
@@ -331,7 +331,7 @@ const removeSenderNotificationsOf = (channel, sender) => {
 const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
 
-  if (!(sender.type === ADMIN)) {
+  if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
 
@@ -435,7 +435,7 @@ const maybeToggleSettingOff = (db, channel, sender, toggle) =>
 // (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
 const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
   const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
-  if (!(sender.type === ADMIN)) {
+  if (sender.type !== ADMIN) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
   return _toggleSetting(db, channel, sender, toggle, isOn, cr)
