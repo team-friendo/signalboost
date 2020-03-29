@@ -386,7 +386,10 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
       ? 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour lister les commandes valides ou SALUT pour vous abonner.',
 
-  inviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+  inviteReceived: channelName =>
+    `Bonjour! Vous avez reçu le invitation pour rejoindre la chaîne Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
+
+  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
        ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
      `,
