@@ -6,6 +6,7 @@ const deauthorizationRepository = require('../../../db/repositories/deauthorizat
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
+const { get } = require('lodash')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
@@ -170,6 +171,11 @@ const decline = async (db, channel, sender, language) => {
 
 const maybeDestroy = async (db, sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
+
+  if (!(sender.type === ADMIN)) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+
   const result = await phoneNumberService.destroy({
     db,
     sock,
@@ -177,7 +183,7 @@ const maybeDestroy = async (db, sock, channel, sender) => {
     sender: sender.phoneNumber,
   })
 
-  if (result.status === statuses.SUCCESS) {
+  if (get(result, 'status') === statuses.SUCCESS) {
     return {
       status: statuses.SUCCESS,
       message: cr.success,
