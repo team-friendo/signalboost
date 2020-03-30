@@ -92,9 +92,10 @@ const validatePayload = commandMatch => {
     case commands.VOUCHING_OFF:
       return validateNoPayload(commandMatch)
     case commands.ADD:
-    case commands.INVITE:
     case commands.REMOVE:
       return validatePhoneNumber(commandMatch)
+    case commands.INVITE:
+      return validatePhoneNumberList(commandMatch)
     case commands.VOUCH_LEVEL:
       return validateVouchLevel(commandMatch)
     default:
@@ -112,8 +113,8 @@ const validateNoPayload = commandMatch => {
 
 // CommandMatch -> CommandMatch | ParseError
 const validatePhoneNumber = commandMatch => {
-  // tries to parse a valid e164-formatted phone number (see: https://www.twilio.com/docs/glossary/what-e164)
-  // - returns commandMatch with valid, parsed number if it can
+  // tries to parse a valid e164 phone number...
+  // - returns commandMatch with valid/parsed number if it can
   // - returns parse error if it cannot
   const { command, language, matches } = commandMatch
   const parseErrors = messagesIn(language).parseErrors
@@ -124,6 +125,28 @@ const validatePhoneNumber = commandMatch => {
   return !phoneNumber
     ? { command, matches, error: parseErrors.invalidPhoneNumber(rawPhoneNumber) }
     : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validatePhoneNumberList = commandMatch => {
+  const { command, language, matches } = commandMatch
+  const parseErrors = messagesIn(language).parseErrors
+
+  const rawPhoneNumbers = matches[2].replace(/\s/g, '').split(',')
+  const parsedPhoneNumbers = rawPhoneNumbers.map(validator.parseValidPhoneNumber)
+  const invalidNumbers = parsedPhoneNumbers.filter(pn => !pn.phoneNumber).map(pn => pn.input)
+
+  if (invalidNumbers.length > 1) {
+    return { command, matches, error: parseErrors.invalidPhoneNumbers(invalidNumbers) }
+  }
+  if (invalidNumbers.length === 1) {
+    return { command, matches, error: parseErrors.invalidPhoneNumber(invalidNumbers[0]) }
+  }
+  return {
+    command,
+    language,
+    matches: [...matches.slice(0, 2), parsedPhoneNumbers.map(pn => pn.phoneNumber)],
+  }
 }
 
 // CommandMatch -> CommandMatch | ParseError

@@ -35,9 +35,17 @@ Signalboost répond aux commandes:
 
 Pour plus de renseignements: https://signalboost.info`
 
+const validPhoneNumberHint = `Les numéros de téléphone doivent comprendre l’indicatifs téléphonique du pays précédé par un «+».`
+
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
-    `Oups! "${phoneNumber}" n’est pas un numéro de téléphone valide. Les numéros de téléphone doivent comprendre l’indicatifs téléphonique du pays précédé par un «+».`,
+    `"${phoneNumber}" n’est pas un numéro de téléphone valide. ${validPhoneNumberHint}`,
+
+  invalidPhoneNumbers: phoneNumbers =>
+    `"${phoneNumbers.join(
+      ', ',
+    )}" ce ne sont pas des numéros de téléphone valides. ${validPhoneNumberHint}`,
+
   invalidVouchLevel: invalidVouchLevel =>
     `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et ${maxVouchLevel}.`,
 }
@@ -113,8 +121,8 @@ RENOMMER nouveau nom
 DESCRIPTION description du canal
 -> Ajouter ou mettre à jour la description publique du canal
 
-INVITE +33612345678
--> Inviter +33612345678 à s’inscrire au canal
+INVITE +33612345678, +336187654321
+-> Inviter +33612345678 et +336187654321 à s’inscrire au canal
 
 AJOUTER / SUPPRIMER +33612345678
 -> Ajouter ou supprimer +33612345678 en tant qu'admin du canal
@@ -149,8 +157,8 @@ INFO
 
 ----------------------------------------------
 
-INVITER
--> Inviter +33612345678 à s’inscrire au canal
+INVITE +33612345678, +336187654321
+-> Inviter +33612345678 et +336187654321 à s’inscrire au canal
 
 ESPAÑOL / ENGLISH / DEUTSCH
 -> Changer la langue pour l'espagnol, l'anglais ou l'allemand
@@ -221,6 +229,14 @@ ${support}`,
       `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
     success: `Invitation envoyée.`,
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
+    dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
+      `Oups! Échec de l'envoi des invitations pour ${
+        failedPhoneNumbers.length
+      } numéros de téléphone sur ${allPhoneNumbers.length}.
+
+Veuillez réessayer d'émettre INVITER pour les numéros suivants:
+
+${failedPhoneNumbers.join(',')}`,
   },
 
   // JOIN

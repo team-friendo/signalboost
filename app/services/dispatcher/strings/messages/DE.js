@@ -34,9 +34,15 @@ Signalboost antwortet auf Befehle:
 
 Mehr infos gibts auf: https://signalboost.info`
 
+const validPhoneNumberHint =
+  'Telefonnummern müssen mit Ländercodes und einem vorangestellten ' + ' beginnen`'
+
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
-    `"${phoneNumber}" ist keine gültige Telefonnummer. Telefonnummern müssen mit Ländercodes und einem vorangestellten '+' beginnen`,
+    `"${phoneNumber}" ist keine gültige Telefonnummer. ${validPhoneNumberHint}`,
+
+  invalidPhoneNumbers: phoneNumbers =>
+    `"${phoneNumbers.join(', ')}" sind keine gültigen Telefonnummern. ${validPhoneNumberHint}`,
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
@@ -111,8 +117,8 @@ UMBENENNEN neuer name
 BESCHREIBUNG beschreibung des kanals
 -> Fügt eine öffentliche Beschreibung des Kanals hinzu oder erneuert diese
 
-EINLADEN +491701234567
--> Lädt +491701234567 ein sich beim Kanal anzumelden
+EINLADEN +491701234567, +491707654321
+-> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
 
 HINZUFÜGEN / ENTFERNEN +491701234567
 -> Fügt +491701234567 hinzu, oder entfernt diese als Admin des Kanals
@@ -147,8 +153,8 @@ INFO
 
 ----------------------------------------------
 
-EINLADEN +491701234567
--> Lädt +491701234567 ein sich beim Kanal anzumelden
+EINLADEN +491701234567, +491707654321
+-> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
 
 ESPAÑOL / FRANÇAIS / ENGLISH
 -> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
@@ -218,7 +224,15 @@ ${support}`,
     invalidPhoneNumber: input =>
       `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
     success: `Einladung versandt.`,
-    dbError: 'Upsi! Einladung konnte nicht verschickt werden.Bitte versuche es erneut :)',
+    dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
+    dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
+      `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
+        allPhoneNumbers.length
+      } Telefonnummern.
+      
+  Bitte versuchen Sie erneut, EINLADEN für die folgenden Telefonnummern auszugeben:
+  
+  ${failedPhoneNumbers.join(',')}`,
   },
 
   // JOIN
