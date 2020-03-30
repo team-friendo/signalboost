@@ -8,6 +8,7 @@ describe('#parseValidPhoneNumber', () => {
       expect(validator.parseValidPhoneNumber('+14042023333')).to.eql({
         isValid: true,
         phoneNumber: '+14042023333',
+        input: '+14042023333',
       })
     })
   })
@@ -18,6 +19,7 @@ describe('#parseValidPhoneNumber', () => {
       expect(validator.parseValidPhoneNumber('"+ 1- (404) 202.3333"')).to.eql({
         isValid: true,
         phoneNumber: '+14042023333',
+        input: '"+ 1- (404) 202.3333"',
       })
     })
   })
@@ -27,6 +29,7 @@ describe('#parseValidPhoneNumber', () => {
       expect(validator.parseValidPhoneNumber('"+221 70 111 11 11"')).to.eql({
         isValid: true,
         phoneNumber: '+221701111111',
+        input: '"+221 70 111 11 11"',
       })
     })
   })
@@ -35,7 +38,8 @@ describe('#parseValidPhoneNumber', () => {
     it('returns invalid tuple', () => {
       expect(validator.parseValidPhoneNumber('+1404')).to.eql({
         isValid: false,
-        phoneNumber: '+1404',
+        phoneNumber: null,
+        input: '+1404',
       })
     })
   })
@@ -44,7 +48,8 @@ describe('#parseValidPhoneNumber', () => {
     it('returns invalid tuple', () => {
       expect(validator.parseValidPhoneNumber('+1234567890123456')).to.eql({
         isValid: false,
-        phoneNumber: '+1234567890123456',
+        phoneNumber: null,
+        input: '+1234567890123456',
       })
     })
   })
@@ -53,7 +58,8 @@ describe('#parseValidPhoneNumber', () => {
     it('returns invalid tuple', () => {
       expect(validator.parseValidPhoneNumber('(404)-202.3333')).to.eql({
         isValid: false,
-        phoneNumber: '4042023333',
+        phoneNumber: null,
+        input: '(404)-202.3333',
       })
     })
   })
@@ -62,7 +68,8 @@ describe('#parseValidPhoneNumber', () => {
     it('returns invalid tuple', () => {
       expect(validator.parseValidPhoneNumber('+1(foobar)')).to.eql({
         isValid: false,
-        phoneNumber: '+1foobar',
+        phoneNumber: null,
+        input: '+1(foobar)',
       })
     })
   })

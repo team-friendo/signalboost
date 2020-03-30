@@ -11,11 +11,17 @@ const isPhoneNumber = {
 const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(phoneNumberPattern))
 
 // string -> { isValid: boolean, phoneNumber: string }
-const parseValidPhoneNumber = userInput => {
-  const stripped = (userInput || '').replace(/["\-().\s]/g, '')
+const parseValidPhoneNumber = input => {
+  const stripped = (input || '').replace(/["\-().\s]/g, '')
+  const isValid = validatePhoneNumber(stripped)
+  // TODO(aguestuser|2020-03-30):
+  //  we could probably cut the `isValid` field from this return type
+  //  since the phoneNumber field being null signals !isValid
+  //  (at which point we could also inline the `isValid` evaluation below)
   return {
-    isValid: validatePhoneNumber(stripped),
-    phoneNumber: stripped,
+    isValid,
+    phoneNumber: isValid ? stripped : null,
+    input,
   }
 }
 
