@@ -1,4 +1,4 @@
-const { map, flattenDeep, isEmpty, get } = require('lodash')
+const { map, flattenDeep, isEmpty, get, every } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const validator = require('../../../db/validations/phoneNumber')
@@ -27,7 +27,7 @@ const {
  * type CommandMatch = {
  *   command: string,
  *   language: string,
- *   matches: Array<string>,
+ *   matches: Array<string | Array<string>>
  * }
  *
  * `error` field shows an error string if a payload validation fails, is null otherwise
@@ -116,32 +116,28 @@ const validatePhoneNumber = commandMatch => {
   // - returns commandMatch with valid, parsed number if it can
   // - returns parse error if it cannot
   const { command, language, matches } = commandMatch
+  const parseErrors = messagesIn(language).parseErrors
+
   const rawPhoneNumber = matches[2]
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
-  return !isValid
-    ? {
-        command,
-        matches,
-        error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber),
-      }
-    : { command, matches: [...matches.slice(0, 2), phoneNumber], language }
+  const { phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
+
+  return !phoneNumber
+    ? { command, matches, error: parseErrors.invalidPhoneNumber(rawPhoneNumber) }
+    : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
 }
 
 // CommandMatch -> CommandMatch | ParseError
 const validateVouchLevel = commandMatch => {
   const { command, language, matches } = commandMatch
-  const vouchLevel = Number(matches[2])
+  const parseErrors = messagesIn(language).parseErrors
 
+  const vouchLevel = Number(matches[2])
   const isValidVouchLevel =
     Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= maxVouchLevel
 
-  return isValidVouchLevel
-    ? commandMatch
-    : {
-        command,
-        matches,
-        error: messagesIn(language).parseErrors.invalidVouchLevel(matches[2]),
-      }
+  return !isValidVouchLevel
+    ? { command, matches, error: parseErrors.invalidVouchLevel(matches[2]) }
+    : commandMatch
 }
 
 module.exports = { parseExecutable }

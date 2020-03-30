@@ -10,19 +10,12 @@ const isPhoneNumber = {
 // string -> boolean
 const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(phoneNumberPattern))
 
-// string -> { isValid: boolean, phoneNumber: string }
+// string -> { input: string, phoneNumber: string? }
 const parseValidPhoneNumber = input => {
+  // `phoneNumber` field is a string if valid e164 number can be parsed from input, null otherwise
+  //  see: https://www.twilio.com/docs/glossary/what-e164 for e164 definition
   const stripped = (input || '').replace(/["\-().\s]/g, '')
-  const isValid = validatePhoneNumber(stripped)
-  // TODO(aguestuser|2020-03-30):
-  //  we could probably cut the `isValid` field from this return type
-  //  since the phoneNumber field being null signals !isValid
-  //  (at which point we could also inline the `isValid` evaluation below)
-  return {
-    isValid,
-    phoneNumber: isValid ? stripped : null,
-    input,
-  }
+  return { input, phoneNumber: validatePhoneNumber(stripped) ? stripped : null }
 }
 
 module.exports = { isPhoneNumber, phoneNumberPattern, validatePhoneNumber, parseValidPhoneNumber }
