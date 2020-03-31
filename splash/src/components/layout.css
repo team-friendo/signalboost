@@ -657,6 +657,10 @@ pre tt:after {
   padding: 0 15px;
 }
 
+.purple {
+  color: #bd93f9;
+}
+
 @media only screen and (max-width: 480px) {
   html {
     font-size: 100%;
