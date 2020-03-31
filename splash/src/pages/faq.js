@@ -3,7 +3,7 @@ import Layout from '../components/layout'
 
 export default () => (
   <Layout>
-    <h1>FAQ</h1>
+    <h2>FAQ</h2>
     <ul>
       <li>
         <a href="#why">Why should I use Signalboost?</a>

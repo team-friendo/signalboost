@@ -54,7 +54,7 @@ const IndexPage = () => (
         profit. We do not charge money for it and never will.
       </li>
     </ul>
-    <h1>Getting Started</h1>
+    <h2>Getting Started</h2>
     <h3>Try joining a channel:</h3>
     <p>
       Send HELLO to <span className="purple">+1-938-222-9889</span> to join our
@@ -97,7 +97,7 @@ const IndexPage = () => (
         command options or "INFO" to learn basic information about the channel.
       </li>
     </ul>
-    <h1>Got questions?</h1>
+    <h2>Got questions?</h2>
     <ul>
       <li>
         Check out the <Link to="/how-to">How-To Manual</Link>
