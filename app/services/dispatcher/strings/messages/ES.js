@@ -34,9 +34,15 @@ Signalboost responde a comandos:
 
 Para más información: https://signalboost.info`
 
+const validPhoneNumberHint = `Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
+
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
-    `¡Lo siento! "${phoneNumber}" no es un número de teléfono válido. Los números de teléfono deben incluir códigos del país con el prefijo '+'.`,
+    `"${phoneNumber}" no es un número de teléfono válido. ${validPhoneNumberHint}`,
+
+  invalidPhoneNumbers: phoneNumbers =>
+    `"${phoneNumbers.join(', ')}" no son números de teléfono válidos. ${validPhoneNumberHint}`,
+
   invalidVouchLevel: invalidVouchLevel =>
     `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
 }
@@ -115,8 +121,8 @@ RENOMBRAR nuevo nombre
 DESCRIPCIÓN descripción del canal
 -> agrega o actualiza la descripción pública del canal
 
-INVITAR +1-555-555-5555
--> invita a +1-555-555-5555 a suscribirse al canal
+INVITAR +1-555-555-5555, +1-444-444-4444
+-> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
 
 AGREGAR / QUITAR + 1-555-555-5555
 -> agrega or quita + 1-555-555-5555 como admin de este canal
@@ -151,8 +157,8 @@ INFO
 
 ----------------------------------------------
 
-INVITAR +1-555-555-5555
--> invita a +1-555-555-5555 a suscribirse al canal
+INVITAR +1-555-555-5555, +1-444-444-4444
+-> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
 
 ENGLISH / FRANÇAIS / DEUTSCH
 -> cambia idiomas a Inglés, Francés o Alemán
@@ -223,6 +229,14 @@ ${support}`,
       `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
     success: `Invitación emitida.`,
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
+    dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
+      `¡Ay! No se pudo emitir las invitaciónes para ${
+        failedPhoneNumbers.length
+      } de ${allPhoneNumbers} números de teléfono.
+
+Intenta emitir nuevamente INVITAR para los siguientes números:
+      
+${failedPhoneNumbers.join(',')}`,
   },
 
   // REMOVE

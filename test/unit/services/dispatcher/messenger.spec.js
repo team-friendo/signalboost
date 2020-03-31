@@ -493,7 +493,10 @@ describe('messenger service', () => {
               },
               commandResult: {
                 command,
-                payload: parsedNewMemberPhoneNumber,
+                payload:
+                  command === commands.ADD
+                    ? parsedNewMemberPhoneNumber
+                    : [parsedNewMemberPhoneNumber],
                 status: statuses.SUCCESS,
                 message: 'fake welcome!',
                 notifications: [],

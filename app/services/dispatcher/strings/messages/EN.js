@@ -34,9 +34,14 @@ Signalboost responds to commands:
 
 Learn more: https://signalboost.info`
 
+const validPhoneNumberHint = `Phone numbers must include country codes prefixed by a '+'.`
+
 const parseErrors = {
   invalidPhoneNumber: phoneNumber =>
-    `"${phoneNumber}" is not a valid phone number. Phone numbers must include country codes prefixed by a '+'.`,
+    `"${phoneNumber}" is not a valid phone number. ${validPhoneNumberHint}`,
+
+  invalidPhoneNumbers: phoneNumbers =>
+    `"${phoneNumbers.join(', ')}" are not valid phone numbers. ${validPhoneNumberHint}`,
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and ${maxVouchLevel}.`,
@@ -109,8 +114,8 @@ RENAME new name
 DESCRIPTION description of channel
 -> adds or updates public description of channel
 
-INVITE +1-555-555-5555
--> invites +1-555-555-5555 to subscribe to the channel
+INVITE +1-555-555-5555, +1-444-444-4444
+-> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to the channel
 
 ADD / REMOVE +1-555-555-5555
 -> adds or removes +1-555-555-5555 as an admin of the channel
@@ -145,8 +150,8 @@ INFO
 
 ----------------------------------------------
 
-INVITE +1-555-555-5555
--> invites +1-555-555-5555 to subscribe to the channel
+INVITE +1-555-555-5555, +1-444-444-4444
+-> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to the channel
 
 ESPAÑOL / FRANÇAIS / DEUTSCH
 -> switches language to Spanish, French or German
@@ -214,8 +219,15 @@ ${support}`,
   invite: {
     notSubscriber,
     invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
-    success: `Issued invitation.`,
-    dbError: 'Whoops! Failed to issue invitation. Please try again. :)',
+    success: n => `Issued ${n} invitation(s).`,
+    dbError: 'Oops! Failed to issue invitation. Please try again. :)',
+    dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
+      failedPhoneNumbers.length
+    } out of ${inviteCount} phone numbers.
+
+Please trying issuing INVITE again for the following numbers:
+
+${failedPhoneNumbers.join(',')}`,
   },
 
   // JOIN

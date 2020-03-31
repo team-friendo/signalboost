@@ -707,8 +707,8 @@ describe('executing commands', () => {
   // INVITE
 
   describe('INVITE command', () => {
-    const inviteePhoneNumber = genPhoneNumber()
-    const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumber}`)
+    const inviteePhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+    const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumbers.join(',')}`)
 
     let isMemberStub, issueInviteStub, countInvitesStub
     beforeEach(() => {
@@ -731,7 +731,7 @@ describe('executing commands', () => {
         it('returns UNAUTHORIZED', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.INVITE,
-            payload: inviteePhoneNumber,
+            payload: inviteePhoneNumbers,
             status: statuses.UNAUTHORIZED,
             message: CR.invite.unauthorized,
             notifications: [],
@@ -740,10 +740,10 @@ describe('executing commands', () => {
       })
 
       describe('when sender is an admin', () => {
-        describe('when invitee phone number is invalid', () => {
+        describe('when at least one invitee phone number is invalid', () => {
           const dispatchable = {
             db,
-            sdMessage: sdMessageOf(channel, 'INVITE foo'),
+            sdMessage: sdMessageOf(channel, `INVITE foo, ${inviteePhoneNumbers[0]}`),
             channel: vouchingChannel,
             sender: admin,
           }
@@ -751,7 +751,7 @@ describe('executing commands', () => {
           it('returns ERROR', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.INVITE,
-              payload: 'foo',
+              payload: `foo, ${inviteePhoneNumbers[0]}`,
               status: statuses.ERROR,
               message: messagesIn('EN').parseErrors.invalidPhoneNumber('foo'),
               notifications: [],
@@ -759,57 +759,85 @@ describe('executing commands', () => {
           })
         })
 
-        describe('when invitee number is valid', () => {
+        describe('when all invitee numbers are valid (and unique)', () => {
           const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: admin }
 
-          describe('when invitee is already member of channel', () => {
+          describe('when all invitees are already subscribers', () => {
             let res
             beforeEach(async () => {
               isMemberStub.returns(Promise.resolve(true))
               res = await processCommand(dispatchable)
             })
 
-            it('does not attempt to issue invite', () => {
+            it('does not attempt to issue invites', () => {
               expect(issueInviteStub.callCount).to.eql(0)
             })
 
-            it('returns ERROR status, success message, and no payload', () => {
+            it('returns SUCCESS status/message, but no notifications', () => {
               expect(res).to.eql({
                 command: commands.INVITE,
-                payload: inviteePhoneNumber,
-                status: statuses.ERROR,
-                message: CR.invite.success,
+                payload: inviteePhoneNumbers,
+                status: statuses.SUCCESS,
+                message: CR.invite.success(2),
                 notifications: [],
               })
             })
           })
 
-          describe('when invitee is not already member of channel', () => {
+          describe('when all invitees are not yet subscribers', () => {
             beforeEach(() => isMemberStub.returns(Promise.resolve(false)))
 
-            describe('when invitee has already been invited to channel', () => {
-              let res
-              beforeEach(async () => {
-                issueInviteStub.returns(Promise.resolve(false))
-                res = await processCommand(dispatchable)
+            describe('when all invitees have already been invited to channel', () => {
+              describe('when sending invites succeeds', () => {
+                let res
+                beforeEach(async () => {
+                  issueInviteStub.returns(Promise.resolve(false))
+                  res = await processCommand(dispatchable)
+                })
+
+                it('attempts to issue invites', () => {
+                  expect(issueInviteStub.callCount).to.eql(2)
+                })
+
+                it('returns SUCCESS but no payload', () => {
+                  expect(res).to.eql({
+                    command: commands.INVITE,
+                    payload: inviteePhoneNumbers,
+                    status: statuses.SUCCESS,
+                    message: CR.invite.success(2),
+                    notifications: [],
+                  })
+                })
               })
 
-              it('attempts to issue an invite', () => {
-                expect(issueInviteStub.callCount).to.eql(1)
-              })
+              describe('when db errors occur issuing invites', () => {
+                let res
+                beforeEach(async () => {
+                  issueInviteStub.onCall(0).returns(Promise.resolve(1))
+                  issueInviteStub.onCall(1).callsFake(() => Promise.reject(new Error('boom!')))
+                  res = await processCommand(dispatchable)
+                })
 
-              it('returns ERROR and no payload', () => {
-                expect(res).to.eql({
-                  command: commands.INVITE,
-                  payload: inviteePhoneNumber,
-                  status: statuses.ERROR,
-                  message: CR.invite.success,
-                  notifications: [],
+                it('returns ERROR specifying which phone numbers failed but still notifies successful invites', () => {
+                  expect(res).to.eql({
+                    command: commands.INVITE,
+                    payload: inviteePhoneNumbers,
+                    status: statuses.ERROR,
+                    message: CR.invite.dbErrors([inviteePhoneNumbers[1]], inviteePhoneNumbers.length),
+                    notifications: [
+                      {
+                        recipient: inviteePhoneNumbers[0],
+                        message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                          vouchingChannel.name,
+                        ),
+                      },
+                    ],
+                  })
                 })
               })
             })
 
-            describe('when invitee has not already been invited', () => {
+            describe('when all invitees are not yet invited', () => {
               let res
               beforeEach(async () => {
                 issueInviteStub.returns(Promise.resolve(true))
@@ -817,27 +845,82 @@ describe('executing commands', () => {
                 res = await processCommand(dispatchable)
               })
 
-              it('attempts to issue an invite', () => {
-                expect(issueInviteStub.callCount).to.eql(1)
+              it('attempts to issue invites', () => {
+                expect(issueInviteStub.callCount).to.eql(2)
               })
 
-              it('returns SUCCESS, message, and notification for invitee', () => {
+              it('returns SUCCESS and notifications for each invitee', () => {
                 expect(res).to.eql({
                   command: commands.INVITE,
-                  payload: inviteePhoneNumber,
+                  payload: inviteePhoneNumbers,
                   status: statuses.SUCCESS,
-                  message: CR.invite.success,
+                  message: CR.invite.success(2),
                   notifications: [
                     {
-                      recipient: inviteePhoneNumber,
+                      recipient: inviteePhoneNumbers[0],
                       message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
                         vouchingChannel.name,
-                        1,
-                        vouchingChannel.vouchLevel,
+                      ),
+                    },
+                    {
+                      recipient: inviteePhoneNumbers[1],
+                      message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                        vouchingChannel.name,
                       ),
                     },
                   ],
                 })
+              })
+            })
+          })
+        })
+
+        describe('when given duplicate invitee phone numbers', () => {
+          const _sdMessage = {
+            ...sdMessage,
+            messageBody: `INVITE ${inviteePhoneNumbers.join(', ')}, ${inviteePhoneNumbers.join(
+              ', ',
+            )}`,
+          }
+          const dispatchable = {
+            db,
+            sdMessage: _sdMessage,
+            channel: vouchingChannel,
+            sender: admin,
+          }
+
+          describe('when all invitees are not yet subscribed or invited', () => {
+            let res
+            beforeEach(async () => {
+              issueInviteStub.returns(Promise.resolve(true))
+              countInvitesStub.returns(Promise.resolve(1))
+              res = await processCommand(dispatchable)
+            })
+
+            it('only issues one invite per phone number', () => {
+              expect(issueInviteStub.callCount).to.eql(2)
+            })
+
+            it('only sends one notification per phone number', () => {
+              expect(res).to.eql({
+                command: commands.INVITE,
+                payload: [...inviteePhoneNumbers, ...inviteePhoneNumbers],
+                status: statuses.SUCCESS,
+                message: CR.invite.success(2),
+                notifications: [
+                  {
+                    recipient: inviteePhoneNumbers[0],
+                    message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                      vouchingChannel.name,
+                    ),
+                  },
+                  {
+                    recipient: inviteePhoneNumbers[1],
+                    message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                      vouchingChannel.name,
+                    ),
+                  },
+                ],
               })
             })
           })
@@ -854,23 +937,63 @@ describe('executing commands', () => {
         })
 
         it('creates an invite record', () => {
-          expect(issueInviteStub.callCount).to.eql(1)
+          expect(issueInviteStub.callCount).to.eql(2)
         })
 
         it('returns SUCCESS with notification for invitee', () => {
           expect(res).to.eql({
             command: commands.INVITE,
-            payload: inviteePhoneNumber,
+            payload: inviteePhoneNumbers,
             status: statuses.SUCCESS,
-            message: CR.invite.success,
+            message: CR.invite.success(2),
             notifications: [
               {
-                recipient: inviteePhoneNumber,
+                recipient: inviteePhoneNumbers[0],
                 message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
                   vouchingChannel.name,
-                  1,
-                  vouchingChannel.vouchLevel,
                 ),
+              },
+              {
+                recipient: inviteePhoneNumbers[1],
+                message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
+                  vouchingChannel.name,
+                ),
+              },
+            ],
+          })
+        })
+      })
+    })
+
+    describe('when vouching mode is on and set to greater than 1', () => {
+      describe('sender is an admin and invitees are not yet subscribers or invited', () => {
+        const extraVouchedChannel = { ...channel, vouchingOn: true, vouchLevel: 2 }
+        const dispatchable = { db, sdMessage, channel: extraVouchedChannel, sender: admin }
+        let res
+        beforeEach(async () => {
+          issueInviteStub.returns(Promise.resolve(true))
+          countInvitesStub.returns(Promise.resolve(1))
+          res = await processCommand(dispatchable)
+        })
+
+        it('returns success and sends vouch-level-aware notifications', () => {
+          expect(res).to.eql({
+            command: commands.INVITE,
+            payload: inviteePhoneNumbers,
+            status: statuses.SUCCESS,
+            message: CR.invite.success(2),
+            notifications: [
+              {
+                recipient: inviteePhoneNumbers[0],
+                message: messagesIn(
+                  extraVouchedChannel.language,
+                ).notifications.vouchedInviteReceived(extraVouchedChannel.name, 1, 2),
+              },
+              {
+                recipient: inviteePhoneNumbers[1],
+                message: messagesIn(
+                  extraVouchedChannel.language,
+                ).notifications.vouchedInviteReceived(extraVouchedChannel.name, 1, 2),
               },
             ],
           })
@@ -885,12 +1008,16 @@ describe('executing commands', () => {
         issueInviteStub.returns(Promise.resolve(true))
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INVITE,
-          payload: inviteePhoneNumber,
+          payload: inviteePhoneNumbers,
           status: statuses.SUCCESS,
-          message: CR.invite.success,
+          message: CR.invite.success(2),
           notifications: [
             {
-              recipient: inviteePhoneNumber,
+              recipient: inviteePhoneNumbers[0],
+              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+            },
+            {
+              recipient: inviteePhoneNumbers[1],
               message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
             },
           ],

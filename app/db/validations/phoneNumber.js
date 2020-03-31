@@ -10,13 +10,12 @@ const isPhoneNumber = {
 // string -> boolean
 const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(phoneNumberPattern))
 
-// string -> { isValid: boolean, phoneNumber: string }
-const parseValidPhoneNumber = userInput => {
-  const stripped = (userInput || '').replace(/["\-().\s]/g, '')
-  return {
-    isValid: validatePhoneNumber(stripped),
-    phoneNumber: stripped,
-  }
+// string -> { input: string, phoneNumber: string? }
+const parseValidPhoneNumber = input => {
+  // `phoneNumber` field is a string if valid e164 number can be parsed from input, null otherwise
+  //  see: https://www.twilio.com/docs/glossary/what-e164 for e164 definition
+  const stripped = (input || '').replace(/["\-().\s]/g, '')
+  return { input, phoneNumber: validatePhoneNumber(stripped) ? stripped : null }
 }
 
 module.exports = { isPhoneNumber, phoneNumberPattern, validatePhoneNumber, parseValidPhoneNumber }

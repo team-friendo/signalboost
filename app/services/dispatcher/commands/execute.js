@@ -6,7 +6,7 @@ const deauthorizationRepository = require('../../../db/repositories/deauthorizat
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
-const { get } = require('lodash')
+const { get, isEmpty, isString, uniq } = require('lodash')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
@@ -225,62 +225,85 @@ const showInfo = async (db, channel, sender) => {
 
 // INVITE
 
-const maybeInvite = async (db, channel, sender, inviteePhoneNumber) => {
+const maybeInvite = async (db, channel, sender, inviteePhoneNumbers) => {
   const cr = messagesIn(sender.language).commandResponses.invite
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
-  if (await membershipRepository.isMember(db, channel.phoneNumber, inviteePhoneNumber)) {
-    // We don't return an "already member" error message here to defend side-channel attacks on membership lists.
-    // But we *do* return an error status so messenger won't send out an invite notification!
-    return { status: statuses.ERROR, message: cr.success }
+
+  const inviteResults = await Promise.all(
+    uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>
+      invite(db, channel, sender.phoneNumber, inviteePhoneNumber, cr),
+    ),
+  )
+
+  // return an error status if ANY invites failed
+  const errors = inviteResults.filter(ir => ir.status === statuses.ERROR)
+  // but return notifications for all successful invites in all cases
+  const notifications = inviteResults.map(ir => ir.notification).filter(Boolean)
+
+  if (!isEmpty(errors)) {
+    return {
+      status: statuses.ERROR,
+      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
+      notifications,
+    }
   }
 
-  return invite(db, channel, sender.phoneNumber, inviteePhoneNumber, cr)
+  return { status: statuses.SUCCESS, message: cr.success(inviteResults.length), notifications }
 }
 
-const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, cr) => {
+const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber) => {
+  // SECURITY NOTE:
+  //
+  // There are 2 cases in which inviting might fail due to a logical error:
+  // (1) invitee is already a member
+  // (2) invitee has already been invited but not yet accepted
+  //
+  // In both cases, we might reasonably return an "already member" or "already invited"
+  // error to the invite issuer. However, this would leak information about who is already
+  // subscribed (or likely to soon subscribe to the channel), which would allow an attacker
+  // with a list of targeted numbers to mount a side-channel attack that would allow them to
+  // guess which numbers are subscribers by attempting to invite them all and seeing which ones
+  // were already subscribed or invited.
+  //
+  // To avoid this attack, we simply report "invite issued" in all cases but DB write errors.
+
+  const { issue, count } = inviteRepository
+
+  if (await membershipRepository.isMember(db, channel.phoneNumber, inviteePhoneNumber)) {
+    return { status: statuses.NOOP, notifications: [] }
+  }
+
   try {
-    const inviteWasCreated = await inviteRepository.issue(
-      db,
-      channel.phoneNumber,
-      inviterPhoneNumber,
-      inviteePhoneNumber,
-    )
-    const invitesReceived = await inviteRepository.count(
-      db,
-      channel.phoneNumber,
-      inviteePhoneNumber,
-    )
-    // We don't return an "already invited" error here to defend side-channel attacks (as above)
-    return inviteWasCreated
-      ? {
+    const wasCreated = await issue(db, channel.phoneNumber, inviterPhoneNumber, inviteePhoneNumber)
+    const totalReceived = await count(db, channel.phoneNumber, inviteePhoneNumber)
+
+    return !wasCreated
+      ? { status: statuses.NOOP, notifications: [] }
+      : {
           status: statuses.SUCCESS,
-          message: cr.success,
-          notifications: inviteNotificationsOf(
+          notification: inviteNotificationOf(
             channel,
             inviteePhoneNumber,
-            invitesReceived,
+            totalReceived,
             channel.vouchLevel,
           ),
         }
-      : { status: statuses.ERROR, message: cr.success }
   } catch (e) {
-    return { status: statuses.ERROR, message: cr.dbError }
+    return { status: statuses.ERROR, inviteePhoneNumber }
   }
 }
 
-const inviteNotificationsOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
+const inviteNotificationOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
   const notifications = messagesIn(channel.language).notifications
   const inviteMessage =
     channel.vouchingOn && channel.vouchLevel > 1
       ? notifications.vouchedInviteReceived(channel.name, invitesReceived, invitesNeeded)
       : notifications.inviteReceived(channel.name)
 
-  return [
-    {
-      recipient: inviteePhoneNumber,
-      message: inviteMessage,
-    },
-  ]
+  return {
+    recipient: inviteePhoneNumber,
+    message: inviteMessage,
+  }
 }
 
 // JOIN

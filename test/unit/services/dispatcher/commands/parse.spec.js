@@ -9,6 +9,9 @@ import { messagesIn } from '../../../../../app/services/dispatcher/strings/messa
 describe('parse module', () => {
   const rawPhoneNumber = '+1 (222) 333-4444'
   const e164PhoneNumber = '+12223334444'
+  const rawPhoneNumber2 = '+1 (444) 333-2222'
+  const e164PhoneNumber2 = '+14443332222'
+  const invalidPhoneNumber = '222-333-4444'
 
   describe('parsing commands', () => {
     describe('NOOP', () => {
@@ -316,19 +319,31 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: [`INVITE ${e164PhoneNumber}`, ` invite ${e164PhoneNumber}`],
+            messages: [
+              `INVITE ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` invite ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
           },
           {
             language: languages.ES,
-            messages: [`INVITAR ${e164PhoneNumber}`, ` invitar ${e164PhoneNumber}`],
+            messages: [
+              `INVITAR ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` invitar ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
           },
           {
             language: languages.FR,
-            messages: [`INVITER ${e164PhoneNumber}`, ` inviter ${e164PhoneNumber}`],
+            messages: [
+              `INVITER ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` inviter ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
           },
           {
             language: languages.DE,
-            messages: [`EINLADEN ${e164PhoneNumber}`, ` einladen ${e164PhoneNumber} `],
+            messages: [
+              `EINLADEN ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` einladen ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
           },
         ]
         variants.forEach(({ language, messages }) =>
@@ -336,7 +351,7 @@ describe('parse module', () => {
             expect(parseExecutable(msg)).to.eql({
               command: commands.INVITE,
               language,
-              payload: e164PhoneNumber,
+              payload: [e164PhoneNumber, e164PhoneNumber2],
             }),
           ),
         )
@@ -879,13 +894,12 @@ describe('parse module', () => {
 
     describe('a phone number payload', () => {
       describe('when phone number is valid', () => {
-        it('returns a command match with e164-formatted number in matches array', () => {
+        it('returns a command match with e164-formatted number in payload', () => {
           const variants = [
             {
               language: languages.EN,
               messages: [
                 `add ${rawPhoneNumber}`,
-                `invite ${rawPhoneNumber}`,
                 `remove ${rawPhoneNumber}`,
               ],
             },
@@ -893,7 +907,6 @@ describe('parse module', () => {
               language: languages.ES,
               messages: [
                 `agregar ${rawPhoneNumber}`,
-                `invitar ${rawPhoneNumber}`,
                 `eliminar ${rawPhoneNumber}`,
               ],
             },
@@ -901,7 +914,6 @@ describe('parse module', () => {
               language: languages.FR,
               messages: [
                 `ajouter ${rawPhoneNumber}`,
-                `inviter ${rawPhoneNumber}`,
                 `supprimer ${rawPhoneNumber}`,
               ],
             },
@@ -909,7 +921,6 @@ describe('parse module', () => {
               language: languages.DE,
               messages: [
                 `HINZUFÜGEN ${rawPhoneNumber}`,
-                `EINLADEN ${rawPhoneNumber}`,
                 `ENTFERNEN ${rawPhoneNumber}`,
               ],
             },
@@ -922,14 +933,70 @@ describe('parse module', () => {
           )
         })
       })
+
       describe('when phone number is invalid', () => {
-        const invalidPhoneNumber = '222-333-4444'
         it('returns a parse error', () => {
           expect(parseExecutable(`ADD ${invalidPhoneNumber}`)).to.eql({
             command: commands.ADD,
             payload: invalidPhoneNumber,
             error: messagesIn(languages.EN).parseErrors.invalidPhoneNumber(invalidPhoneNumber),
           })
+        })
+      })
+    })
+
+    describe('a list of phone numbers payload', () => {
+      const variantsOf = phoneNumbers => [
+        { language: languages.EN, message: `invite ${phoneNumbers}` },
+        { language: languages.ES, message: `invitar ${phoneNumbers}` },
+        { language: languages.FR, message: `inviter ${phoneNumbers}` },
+        { language: languages.DE, message: `einladen ${phoneNumbers}` },
+      ]
+
+      describe('with a single valid phone number', () => {
+        it('returns a command match with an array containing one e164 phone number as payload', () => {
+          variantsOf(`${rawPhoneNumber}`).forEach(({ message }) =>
+            expect(parseExecutable(message).payload).to.eql([e164PhoneNumber]),
+          )
+        })
+      })
+
+      describe('with many valid phone numbers', () => {
+        it('returns a command match with an array of e164 phone numbers as payload', () => {
+          variantsOf(`${rawPhoneNumber}, ${rawPhoneNumber2}`).forEach(({ message }) =>
+            expect(parseExecutable(message).payload).to.eql([e164PhoneNumber, e164PhoneNumber2]),
+          )
+        })
+      })
+
+      describe('with one invalid phone number', () => {
+        it('returns a parse error', () => {
+          variantsOf(`foo`).forEach(({ message, language }) =>
+            expect(parseExecutable(message).error).to.eql(
+              messagesIn(language).parseErrors.invalidPhoneNumber('foo'),
+            ),
+          )
+        })
+      })
+
+      describe('with many invalid phone numbers', () => {
+        it('returns a parse error', () => {
+          variantsOf(`foo, ${invalidPhoneNumber}`).forEach(({ message, language }) =>
+            expect(parseExecutable(message).error).to.eql(
+              messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
+            ),
+          )
+        })
+      })
+
+      describe('with a mix of invalid and valid phone numbers', () => {
+        it('returns a parse error', () => {
+          variantsOf(`foo, ${rawPhoneNumber}, ${invalidPhoneNumber}, ${rawPhoneNumber2}`).forEach(
+            ({ message, language }) =>
+              expect(parseExecutable(message).error).to.eql(
+                messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
+              ),
+          )
         })
       })
     })

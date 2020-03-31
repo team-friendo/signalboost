@@ -1,4 +1,4 @@
-const { map, flattenDeep, isEmpty, get } = require('lodash')
+const { map, flattenDeep, isEmpty, get, every } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const validator = require('../../../db/validations/phoneNumber')
@@ -27,7 +27,7 @@ const {
  * type CommandMatch = {
  *   command: string,
  *   language: string,
- *   matches: Array<string>,
+ *   matches: Array<string | Array<string>>
  * }
  *
  * `error` field shows an error string if a payload validation fails, is null otherwise
@@ -92,9 +92,10 @@ const validatePayload = commandMatch => {
     case commands.VOUCHING_OFF:
       return validateNoPayload(commandMatch)
     case commands.ADD:
-    case commands.INVITE:
     case commands.REMOVE:
       return validatePhoneNumber(commandMatch)
+    case commands.INVITE:
+      return validatePhoneNumberList(commandMatch)
     case commands.VOUCH_LEVEL:
       return validateVouchLevel(commandMatch)
     default:
@@ -112,36 +113,54 @@ const validateNoPayload = commandMatch => {
 
 // CommandMatch -> CommandMatch | ParseError
 const validatePhoneNumber = commandMatch => {
-  // tries to parse a valid e164-formatted phone number (see: https://www.twilio.com/docs/glossary/what-e164)
-  // - returns commandMatch with valid, parsed number if it can
+  // tries to parse a valid e164 phone number...
+  // - returns commandMatch with valid/parsed number if it can
   // - returns parse error if it cannot
   const { command, language, matches } = commandMatch
+  const parseErrors = messagesIn(language).parseErrors
+
   const rawPhoneNumber = matches[2]
-  const { isValid, phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
-  return !isValid
-    ? {
-        command,
-        matches,
-        error: messagesIn(language).parseErrors.invalidPhoneNumber(rawPhoneNumber),
-      }
-    : { command, matches: [...matches.slice(0, 2), phoneNumber], language }
+  const { phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
+
+  return !phoneNumber
+    ? { command, matches, error: parseErrors.invalidPhoneNumber(rawPhoneNumber) }
+    : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validatePhoneNumberList = commandMatch => {
+  const { command, language, matches } = commandMatch
+  const parseErrors = messagesIn(language).parseErrors
+
+  const rawPhoneNumbers = matches[2].replace(/\s/g, '').split(',')
+  const parsedPhoneNumbers = rawPhoneNumbers.map(validator.parseValidPhoneNumber)
+  const invalidNumbers = parsedPhoneNumbers.filter(pn => !pn.phoneNumber).map(pn => pn.input)
+
+  if (invalidNumbers.length > 1) {
+    return { command, matches, error: parseErrors.invalidPhoneNumbers(invalidNumbers) }
+  }
+  if (invalidNumbers.length === 1) {
+    return { command, matches, error: parseErrors.invalidPhoneNumber(invalidNumbers[0]) }
+  }
+  return {
+    command,
+    language,
+    matches: [...matches.slice(0, 2), parsedPhoneNumbers.map(pn => pn.phoneNumber)],
+  }
 }
 
 // CommandMatch -> CommandMatch | ParseError
 const validateVouchLevel = commandMatch => {
   const { command, language, matches } = commandMatch
-  const vouchLevel = Number(matches[2])
+  const parseErrors = messagesIn(language).parseErrors
 
+  const vouchLevel = Number(matches[2])
   const isValidVouchLevel =
     Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= maxVouchLevel
 
-  return isValidVouchLevel
-    ? commandMatch
-    : {
-        command,
-        matches,
-        error: messagesIn(language).parseErrors.invalidVouchLevel(matches[2]),
-      }
+  return !isValidVouchLevel
+    ? { command, matches, error: parseErrors.invalidVouchLevel(matches[2]) }
+    : commandMatch
 }
 
 module.exports = { parseExecutable }
