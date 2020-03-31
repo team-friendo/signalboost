@@ -94,7 +94,7 @@ Si vous continuez, vous détruirez définitivement cette chaîne et tous les enr
 
 Pour continuer, répondez avec:
 
- CONFIRMER DESTROY`,
+ CONFIRMER DÉTRUIRE`,
     success: `La chaîne et tous les enregistrements associés ont été définitivement détruits.`,
     error: `Oups! Une erreur s'est produite lors de la destruction de la chaîne. Veuillez réessayer!`,
     notAdmin,
