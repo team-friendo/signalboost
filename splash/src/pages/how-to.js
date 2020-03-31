@@ -99,6 +99,10 @@ export default () => (
 
     <h4>DESCRIPTION description of channel</h4>
     <p>Adds or updates public description of channel.</p>
+    <p>
+      Example: DESCRIPTION This is the _super cool activist_ signalboost
+      channel! We'll use it to make announcements for the upcoming protest.
+    </p>
 
     <h4>VOUCHING ON / OFF</h4>
     <p>
@@ -114,6 +118,11 @@ export default () => (
       the vouch level must be between 1 and 10.
     </p>
 
+    <p>Example: VOUCH LEVEL 3</p>
+    <p>
+      After executing this command, anyone who wants to join the channel will
+      need 3 invites.
+    </p>
     <h4>GOODBYE</h4>
     <p>
       Leaves the channel. If you're an admin, you will lose your admin access to
