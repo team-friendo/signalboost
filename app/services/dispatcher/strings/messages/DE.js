@@ -120,8 +120,11 @@ BESCHREIBUNG beschreibung des kanals
 EINLADEN +491701234567, +491707654321
 -> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
 
-HINZUFÜGEN / ENTFERNEN +491701234567
--> Fügt +491701234567 hinzu, oder entfernt diese als Admin des Kanals
+HINZUFÜGEN +491701234567
+-> Fügt +491701234567 als Admin des Kanals hinzu
+
+ENTFERNEN +491701234567
+-> Entfernt +491701234567 aus dem Kanal
 
 HOTLINE AN / AUS
 -> Schaltet die Hotline Funktion an oder aus

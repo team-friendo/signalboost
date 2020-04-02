@@ -124,8 +124,11 @@ DESCRIPTION description du canal
 INVITE +33612345678, +336187654321
 -> Inviter +33612345678 et +336187654321 à s’inscrire au canal
 
-AJOUTER / SUPPRIMER +33612345678
--> Ajouter ou supprimer +33612345678 en tant qu'admin du canal
+AJOUTER +33612345678
+-> Ajouter +33612345678 en tant qu'admin du canal
+
+SUPPRIMER +33612345678
+-> Supprimer +33612345678 del canal
 
 HOTLINE ON / OFF
 -> Activer ou désactiver la hotline
