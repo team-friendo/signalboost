@@ -200,7 +200,7 @@ brew cask install docker
 
 Configuration for development basically involves creating your initial `.env.dev` file and loading it with the details you created in the [System and Service Requirements](#services) section above.
 
-**Team Friendo: If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. **
+**Team Friendo: If you are a member of Team Friendo we povide these service configuration details for you and an easy way to unlock them, jump to the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section.**
 
 #### Secrets for General Public
 
@@ -252,7 +252,7 @@ TWILIO_AUTH_TOKEN=%HEX STRING%
 ```
 
 
-#### **Team Friendo:** Configuration Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
+#### Team Friendo: Configuration Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
 
 We use [blackbox](https://github.com/StackExchange/blackbox) to keep secrets under encrypted version control.
 
@@ -644,7 +644,7 @@ ansible-playbook -i inventory playbooks/main.yml -e deploy
 ```
 
 
-# Using the Signalboost App, Makefile and Boost CLI <a href="app-details"></a>
+# Using the Signalboost App, Makefile and Boost CLI <a name="app-details"></a>
 
 With the app running...
 
@@ -707,7 +707,7 @@ To get a psql shell (inside the postgres docker container for Signalboost):
 make db.psql
 ```
 
-### Using the Boost CLI  <a href="boost-cli"></a>
+### Using the Boost CLI  <a name="boost-cli"></a>
 
 The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as its target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command. 
 
