@@ -54,20 +54,21 @@ const IndexPage = () => (
         profit. We do not charge money for it and never will.
       </li>
     </ul>
-    <h1>Getting Started</h1>
-    <h3>To get a Signalboost channel:</h3>
-    <ul>
-      <li>
-        Send a Signal message to{' '}
-        <span style={{ color: '#bd93f9' }}>+1-938-444-8536</span>.
-      </li>
-      <li>
-        Include a name for the channel and the phone numbers of all admins.
-      </li>
-      <li>
-        You will receive a welcome message as soon as your channel is created.
-      </li>
-    </ul>
+    <h2>Getting Started</h2>
+    <h3>Try joining a channel:</h3>
+    <p>
+      Send HELLO to <span className="purple">+1-938-222-9889</span> to join our
+      Signalboost playground channel.
+    </p>
+    <p>Send HELP to see the commands you can use and GOODBYE to leave.</p>
+    <h3>Get your own channel:</h3>
+    <p>
+      Send a Signal message to <span className="purple">+1-938-444-8536</span>{' '}
+      that includes a name for the channel and the phone numbers of all admins.
+    </p>
+    <p>
+      You will receive a welcome message as soon as your channel is created.
+    </p>
     <h3>Once you have a channel:</h3>
     <ul>
       <li>
@@ -78,7 +79,7 @@ const IndexPage = () => (
       <li>
         Your friends can subscribe to announcements by sending a Signal message
         to your channel phone number that says "HELLO." ("HOLA", "SALUT", or
-        "HALLO" also work!) They can unsubscribe by sending "GOOBYE." ("ADIÓS",
+        "HALLO" also work!) They can unsubscribe by sending "GOODBYE." ("ADIÓS",
         "AREVOIR", or "TSCHÜSS" also work!)
       </li>
       <li>
@@ -96,14 +97,14 @@ const IndexPage = () => (
         command options or "INFO" to learn basic information about the channel.
       </li>
     </ul>
-    <h1>Got questions?</h1>
+    <h2>Got questions?</h2>
     <ul>
       <li>
         Check out the <Link to="/how-to">How-To Manual</Link>
       </li>
       <li>
-        Send us a signal message at{' '}
-        <span style={{ color: '#bd93f9' }}>+1-938-444-8536</span>
+        Try out commands by sending messages to the playground channel:
+        <span className="purple">+1-938-222-9889</span>
       </li>
       <li>
         Send us an email at{' '}

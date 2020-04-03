@@ -2,7 +2,7 @@ html {
   font-family: "DejaVu Sans Mono", Monaco, monospace;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
-  background-color: #282a36	;
+  background-color: #181920	;
   color: #f8f8f2;
 }
 body {
@@ -285,7 +285,7 @@ h2 {
   /*  Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;*/
   font-weight: bold;
   text-rendering: optimizeLegibility;
-  font-size: 1.62671rem;
+  font-size: 2rem;
   line-height: 1.1;
 }
 h3 {
@@ -655,6 +655,10 @@ pre tt:after {
   margin: 0 auto;
   max-width: 960px;
   padding: 0 15px;
+}
+
+.purple {
+  color: #bd93f9;
 }
 
 @media only screen and (max-width: 480px) {
