@@ -595,7 +595,7 @@ Learn more about how the CLI tools works in [Using the Boost CLI](#cli)
 
 ### (7) Channel setup with the Boost CLI
 
-By default your local instance of the `boost` CLI will read the local `.env` file and use the remote production server details you defined there. So these commands when run locally will contact the API on your production server. (Unless overridden by the `-u <url>` see [Using the Boost CLI](#cli) for more info.)
+By default your local instance of the `boost` CLI will read the local `.env` file and use the remote production server details you defined there. So these commands when run locally will contact the API on your production server unless overridden by the `-e <path to .env file>`. (See [Using the Boost CLI](#cli) for more info.)
 
 
 #### Provision two Twillio numbers
@@ -603,7 +603,7 @@ By default your local instance of the `boost` CLI will read the local `.env` fil
 The below will provision 2 phone numbers in area code 510:
 
 ``` shell
-boost create-number -n 2 -a 510
+boost create-number -e .env -n 2 -a 510
 ```
 
 > NOTE: If you omit the `-n` and `-a` flag, boost will provision 1 number with a non-deterministic area code.
