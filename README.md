@@ -17,9 +17,9 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 
 **The stack** consists of node services calling out to the [signald](https://git.callpipe.com/finn/signald) Java app over unix sockets. See [Application Design](#design) for a detailed overview.
 
-**Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/Team Friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/Team Friendo/signalboost/boards).
+**Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use Signalboost for social justice work?**  Send us a Signal message at `+1 (938) 444-8536` or email us at `Team Friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
+**Want to use Signalboost for social justice work?**  Send us a Signal message at `+1 (938) 444-8536` or email us at `team-friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
 
 **NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie, Trevor, and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
@@ -46,7 +46,7 @@ Data flows through the application in (roughly) the following manner:
   * admins may send attachments to subscribers
 * notably: the list of subscribers is currently stored on disk on the Signalboost server. if this makes you nervous, you can:
   * host your own instance of Signalboost (see docs below)
-  * register your desire for us to implement encrypted subscriber tables in the [issue tracker](https://0xacab.org/Team Friendo/signalboost/issues/68)
+  * register your desire for us to implement encrypted subscriber tables in the [issue tracker](https://0xacab.org/team-friendo/signalboost/issues/68)
 
 ## Architecture
 
@@ -68,7 +68,7 @@ The application has the following components:
    
 # System and Service Requirements <a name="services"></a>
 
-Signalboost relies on a few external services and tools. These dependancies and setup vary slightly between a production/deploy setup and local development. If you are just getting started with Signalboost we recommend you walk through this section to get those ready. 
+Signalboost relies on a few external services and tools. These dependencies and setup vary slightly between a production/deploy setup and local development. If you are just getting started with Signalboost we recommend you walk through this section to get those ready. 
 
 **If you are a member of Team Friendo we provide accesss to the exsiting servers and services listed here. Checkout the [Secrets for Team Friendo Members](#Team-Friendo-secrets) section. Otherwise this section will walk you through the setup of services, both for production servers or/and your local development system.** 
 
@@ -105,7 +105,7 @@ If you want to run a production version of Signalboost you will need a domain. I
 
 **Twillio Account**
 
-To get Twilio credentials, sign up for a Twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page. You will need these for configuration later.  A free account only provides one phone number, but might be enough to get you started. You will need a number for ever channel you want to host. Besides any hosting costs Twillio numbers, at $1 a month, are the main additional cost of hosting a Signalboost server. 
+To get Twilio credentials, sign up for a Twilio account [here](https://www.twilio.com/try-twilio), then visit the [console page](https://www.twilio.com/console) and look for the `ACCOUNT SID` and `AUTH TOKEN` fields on the righthand side of the page. You will need these for configuration later.  A free account only provides one phone number, but might be enough to get you started. You will need a number for ever channel you want to host. Besides any hosting costs Twillio numbers, at $1 a number per month, are the main additional cost of hosting a Signalboost server. 
 
 **Let's Encrypt Account** 
 
@@ -150,7 +150,7 @@ cd signalboost
 ```
 
 
-### (2) Install dependancies
+### (2) Install dependencies
 
 To develop Signalboost you should make sure your local computer has the following programs installed:
 
@@ -330,18 +330,18 @@ make cli.uninstall
 
 To use the `boost` cli tool for development you will always have to pass `-e .env.dev` as an argument to all `boost` calls in order to tell `boost` to talk to your local system instead of production. 
 
-If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost -e .env list-channels` would list all channels on prod.)
+If you find it annoying to type this over and over again, consider adding `export SIGNALBOOST_ENV_FILE=.env.dev` to your `~/.bashrc` (or equivalent file in your favorite shell program). This will set `.env.dev` as your default `.env` file, which you can still override by passing an explicit value to `-e` when invoking `boost`. (For example: `boost list-channels -e .env ` would list all channels on prod.)
 
-Learn more about how the CLI tools works in [Using the Boost CLI] (#boost-cli).
+Learn more about how the CLI tools works in [Using the Boost CLI](#boost-cli).
 
 
 ### (7) Create Seed Data
 
-Once you've got the CLI installed, you can use the following to create some Twillio numbers for use in your channels and emulators etc. Please note that this is specific to our local development setup as it uses the -u to specify the ngrok tunnel reservered domain you created, **for Team Friendo we use signalboost.ngrok.io but your ngrok reserved domain will be different**:
+Once you've got the CLI installed, you can use the following to create some Twillio numbers for use in your channels and emulators etc. Please note that this is specific to your local development setup, it uses the -e to specify the ngrok tunnel reservered domain you definied in `.env.dev`:
 
 ``` shell
 make dev.up
-boost -e .env.dev create-number -n 2 -u signalboost.ngrok.io -u signalboost.ngrok.io
+boost create-number -e .env.dev -n 2 
 ```
 
 Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
@@ -355,10 +355,11 @@ boost create-channel \
     -p <channel_phone_number> \
     -n "my new channel" \
     -a <your_actual_phone_number> \
-    -u signalboost.ngrok.io
 ```
 
-Congrats! you should now have your first channel running on your local development instance of Signalboost. 
+**Congrats! You should now have your first channel running on your local development instance of Signalboost.**
+
+Be sure to checkout our [contributor guide](https://0xacab.org/team-friendo/signalboost/blob/master/CONTRIBUTING.md) for more details on successfully contributing.  Our [`make` script](#make-file) includes handy commands for running tests and migrations.  
 
 
 # Sysadmin Guide <a name="sysadmin-guide"></a>
@@ -404,7 +405,7 @@ On the system you plan to use to deploy Signalboost from you'll first need to cl
 `git clone git@0xacab.org:team-friendo/signalboost.git`
 
 
-### (3) Install dependancies on your local deploy system
+### (3) Install dependencies on your local deploy system
 
 #### Install Ansible
 
@@ -423,9 +424,9 @@ cd path/to/signalboost
 make ansible.install
 ```
 
-and our `make` file will then install the Ansible dependancies.
+and our `make` file will then install the Ansible dependencies.
 
-If you are on another system, first [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html). Then run these commands to install the Ansible dependancies manually:
+If you are on another system, first [install ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html). Then run these commands to install the Ansible dependencies manually:
 
 ``` shell
 ansible-galaxy install geerlingguy.docker
@@ -459,8 +460,7 @@ For production deploy only these need to be set...
 
 Provide your server's domain name for the API:
 ```
-# Signalboost API service //  Used in Production mode only these should be the details of your production server
-# URL is used by the Boost cli as the default url for the API, overrode with -u to specify ngrok host locally. 
+# Signalboost API service // URL is used by the Boost cli as the default url for the API when this file is called with the -e flag.
 
 SIGNALBOOST_HOST_URL=%FULL DOMAIN NAME FOR PROD SERVER%
 ```
@@ -501,14 +501,13 @@ For now we'll comment out this optional item because we need the Boost CLI to cr
 # Format must be e164 (https://www.twilio.com/docs/glossary/what-e164), with the + and with no special characters
 
 #SIGNUP_CHANNEL_NUMBER=%+15554445555%
-#SIGNUP_CHANNEL_NUMBER_DEV=%+15553334444%
 ```
 
 #### Configure ansible/inventory
 
 In the  ansible `inventory` file we created we will define the intial credentials ansible will create and use to setup Signalboost.  You will need the static `{{ IP ADDRESS OF YOUR REMOTE HOST }}`, `{{ A USERNAME TO BE CREATED BY ANSIBLE, NOT ROOT }}` and the local `{{ PATH TO YOUR SSH PRIVATE KEY }}`.
 
-You must add at least one `admin`, that matches the ansible_user you defined above. Add additional admins if you need additional users on your server. The `{{ SSH PUBKEY OF AN ADMIN }}` in this case expects a full pub key contained in single quotes: 
+You must add at least one `admin`, that matches the ansible_user you defined above. Add additional admins if you need additional users on your server. The `{{ SSH PUBKEY OF AN ADMIN }}` in this case expects a full pub key contained in quotes: 
 
 ```
 signalboost:
@@ -525,6 +524,13 @@ signalboost:
         ssh_key: {{ SSH PUBKEY OF ANOTHER ADMIN }}
 ```
 
+You can generate an appropriate SSH key with:
+
+```shell
+ssh-keygen -t ed25519 -o -a 100 -f ~/.ssh/id_signalboost
+```
+
+That will produce a public key in ~/.ssh/id_signalboost.pub and a private key in ~/.ssh/id_signalboost. 
 
 ### (5) Provision and deploy Signalboost 
 
@@ -571,7 +577,7 @@ cd ansible
 ansible-playbook -i inventory -e "sb_host=antarctica env_file=/path/to/.env.antarctica" playbooks/main.yml
 ```
 
-Once your all the playbooks complete you should have a running Signalboost server available at the API domain you defined in your `.env` file and can proceed to use the `boost` cli to generate numbers and create new channels with them. 
+Once all the playbooks complete you should have a running Signalboost server available at the API domain you defined in your `.env` file and can proceed to use the `boost` cli to generate numbers and create new channels with them. 
 
  
 ### (6) Install the Boost CLI tool
@@ -608,7 +614,7 @@ boost create-number -n 2 -a 510
 Assuming the above returns by printing a success message for the new twilio phone number `+15105555555`, the below would create a channel called `conquest of bread` on that phone number, administered by people with the phone numbers `+151066666666` and `+15107777777`.
 
 ``` shell
-boost create-channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
+boost create-channel -e .env -p +15105555555 -n "conquest of bread" -a "+151066666666,+15107777777"
 ```
 
 #### List existing numbers and channels
@@ -616,8 +622,8 @@ boost create-channel -p +15105555555 -n "conquest of bread" -a "+151066666666,+1
 You can check out what numbers and channels already exist with:
 
 ```shell
-boost list-numbers
-boost list-channels
+boost list-numbers -e .env
+boost list-channels -e .env
 ```
 
 ### (9) Deploy later updates to Signalboost
@@ -659,7 +665,7 @@ Any admin should be able to:
 * Receive all messages broadcast to the channel
 
 
-### Makefile
+### Makefile <a name="make-file"></a>
 
 We have a lot of scripts to help run the app that are all defined in the repo's `Makefile`. You can list them all with:
 
@@ -709,7 +715,7 @@ make db.psql
 
 ### Using the Boost CLI  <a name="boost-cli"></a>
 
-The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as its target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target and use the `-u` flag to specify it in each command. 
+The `boost` cli can be run from your development or deploy system against the API of your production server. By default it reads the local `.env` file and uses the SIGNALBOOST_HOST_URL value as its target API. This can cause confusion when you are developing in a codebase that is configured for deploy. It is a good idea to always be specific about the target `.env` file and use the `-e` flag to specify it in each command. 
 
 You can also run `boost` directly on your production server where it will use the local `.env` file it finds there. Our development setup steps encourage you to install jq on your localhost, which is needed for `boost` command output. Ansible does not install this on production servers and it will need to be installed manually if you wish to run `boost` directly on your production server.
 
@@ -771,20 +777,20 @@ For example, assume you had two different servers, one in The Arctic Sea, and on
 Then, to list all the channels in your Antarctic instance, you would use:
 
 ```shell
-boost -e .env.antarctic list-channels
+boost list-channels -e .env.antarctic
 ```
 
 To list all the channels in your Arctic instance, you would use:
 
 ```shell
-boost -e .env.arctic list-channels
+boost list-channels -e .env.arctic 
 ```
 
 ### Setting a default .env file
 
 You can set a default `.env` file for boost by declaring a value for `$SIGNALBOOST_ENV_FILE` somewhere in your `~/.bashrc` (or in another manner that ensures that `$SIGNALBOOST_ENV_FILE` is always in scope whenever you invoke boost.)
 
-To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctcic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
+To continue the above example, if you found that you always are trying to use `boost` with your Arctic instance and almost never want to use it with your Antarctic instance, you might find it annoying to always have to accompany every command with `-e .env.arctic`.  In that case, you could set `.env.arctic` as the default and list the channels on your Arctic server as follows:
 
 ```
 export SIGNALBOOST_ENV_FILE=.env.arctic
