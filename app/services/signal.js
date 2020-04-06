@@ -5,7 +5,7 @@ const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../constants')
 const { isEmpty } = require('lodash')
 const {
-  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, trustRequestTimeout },
+  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, signaldRequestTimeout },
 } = require('../config')
 
 /**
@@ -97,6 +97,7 @@ const messageTypes = {
   VERIFICATION_REQUIRED: 'verification_required',
   VERIFICATION_SUCCESS: 'verification_succeeded',
   VERIFY: 'verify',
+  VERSION: 'version',
 }
 
 const trustLevels = {
@@ -283,7 +284,7 @@ const _awaitTrustVerification = async (
     // register handler
     sock.on('data', handle)
     // reject and deregister handle after timeout if no trust response received
-    wait(trustRequestTimeout).then(() => {
+    wait(signaldRequestTimeout).then(() => {
       sock.removeListener('data', handle)
       reject({
         status: statuses.ERROR,
@@ -292,6 +293,35 @@ const _awaitTrustVerification = async (
     })
   })
 }
+
+const isAlive = sock => {
+  write(sock, { type: messageTypes.VERSION })
+  return awaitVersion(sock)
+}
+
+const awaitVersion = sock =>
+  new Promise((resolve, reject) => {
+    const handle = msg => {
+      const { type, data } = safeJsonParse(msg, reject)
+      if (type === null && data === null) {
+        return Promise.resolve()
+      } else if (type === messageTypes.VERSION) {
+        sock.removeListener('data', handle)
+        resolve({
+          status: statuses.SUCCESS,
+        })
+      }
+    }
+    // register handler
+    sock.on('data', handle)
+    // reject and deregister handle after timeout if no trust response received
+    wait(signaldRequestTimeout).then(() => {
+      sock.removeListener('data', handle)
+      reject({
+        status: statuses.ERROR,
+      })
+    })
+  })
 
 /*******************
  * MESSAGE PARSING
@@ -364,6 +394,7 @@ module.exports = {
   // fetchIdentities,
   signaldEncode,
   getSocket,
+  isAlive,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,

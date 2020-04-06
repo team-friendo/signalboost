@@ -4,7 +4,7 @@ const defaults = {
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
   registrationBatchSize: 5,
-  trustRequestTimeout: 10000, // 10 sec
+  signaldRequestTimeout: 10000, // 10 sec
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
@@ -25,7 +25,7 @@ const test = {
   verificationTimeout: 30, // 30 millis
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
-  trustRequestTimeout: 100, // 100 millis
+  signaldRequestTimeout: 100, // 100 millis
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   signaldStartupTime: 1, // 1 milli
