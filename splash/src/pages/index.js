@@ -122,8 +122,11 @@ const IndexPage = () => (
       <li>
         Visit our&nbsp;
         <a href="https://0xacab.org/team-friendo/signalboost">gitlab page</a>
-        &nbsp;to learn more technical details, read our source code, request a
-        new feature, report a bug, or become a contributor!
+        &nbsp;to read our source code and{' '}
+        <a href="https://0xacab.org/team-friendo/signalboost/-/wikis/Team-Friendo-Values-and-CoC">
+          code of conduct
+        </a>
+        , request a new feature, report a bug, or become a contributor!
       </li>
     </ul>
   </Layout>
