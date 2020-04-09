@@ -276,6 +276,31 @@ describe('signal module', () => {
         })
       })
     })
+
+    describe('checking aliveness of signald', () => {
+      it('sends correct object to signald', async () => {
+        emitWithDelay(5, {
+          type: signal.messageTypes.VERSION,
+          data: { version: '+git2020-04-05rd709c3fa.0' },
+        })
+        await signal.isAlive(sock)
+        expect(sock.write.getCall(0).args[0]).to.eql(`{"type":"version"}\n`)
+      })
+
+      it('returns error if signald times out', async () => {
+        const response = await signal.isAlive(sock).catch(a => a)
+        expect(response).to.eql({ status: 'ERROR' })
+      })
+
+      it('returns success if signald responds with version', async () => {
+        emitWithDelay(5, {
+          type: signal.messageTypes.VERSION,
+          data: { version: '+git2020-04-05rd709c3fa.0' },
+        })
+        const response = await signal.isAlive(sock)
+        expect(response).to.eql({ status: 'SUCCESS' })
+      })
+    })
   })
 
   describe('message parsing', () => {

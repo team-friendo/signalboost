@@ -2,13 +2,19 @@
 const phoneNumberService = require('./phoneNumber')
 const channelRegistrar = require('./channel')
 const { get, find } = require('lodash')
+const signal = require('../signal')
 const {
   twilio: { smsEndpoint },
 } = require('../../config/index')
 
-const routesOf = (router, db, sock) => {
+const routesOf = async (router, db, sock) => {
   router.get('/hello', async ctx => {
     ctx.body = { msg: 'hello world' }
+  })
+
+  router.get('/healthcheck', async ctx => {
+    const result = await signal.isAlive(sock)
+    ctx.status = httpStatusOf(get(result, 'status'))
   })
 
   router.get('/channels', async ctx => {

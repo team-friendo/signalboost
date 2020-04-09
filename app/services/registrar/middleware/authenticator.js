@@ -10,10 +10,16 @@ const configureAuthenticator = app => app.use(authenticator)
 const authenticator = async (ctx, next) =>
   isAuthorized(ctx) ? await next() : respondNotAuthorized(ctx)
 
-const isAuthorized = ctx =>
-  ctx.path === `/${smsEndpoint}`
-    ? isValidTwilioRequest(ctx)
-    : ctx.request.headers.token === authToken
+const isAuthorized = ctx => {
+  switch (ctx.path) {
+    case `/healthcheck`:
+      return true
+    case `/${smsEndpoint}`:
+      return isValidTwilioRequest(ctx)
+    default:
+      return ctx.request.headers.token === authToken
+  }
+}
 
 const isValidTwilioRequest = ctx =>
   // validate signature according to scheme given here:

@@ -5,10 +5,18 @@ import request from 'supertest'
 import phoneNumberService from '../../../../../app/services/registrar/phoneNumber'
 import { startServer } from '../../../../../app/services/registrar/api'
 import { registrar } from '../../../../../app/config/index'
+import { EventEmitter } from 'events'
+import signal from '../../../../../app/services/signal'
 
 describe('authentication middleware', () => {
   let server
-  before(async () => (server = (await startServer()).server))
+
+  before(async () => {
+    const sock = new EventEmitter()
+    sock.write = sinon.stub()
+    server = (await startServer(10000, {}, sock)).server
+  })
+
   after(() => server.close())
 
   describe('for api endpoints', () => {
@@ -71,6 +79,15 @@ describe('authentication middleware', () => {
       validateSignatureStub.returns(true)
       await request(server)
         .post('/twilioSms')
+        .expect(200)
+    })
+  })
+
+  describe('for /healthcheck endpoint', () => {
+    it('allows a request that does not contain an auth token in the header', async () => {
+      sinon.stub(signal, 'isAlive').returns(Promise.resolve({ status: 'SUCCESS' }))
+      await request(server)
+        .get('/healthcheck')
         .expect(200)
     })
   })
