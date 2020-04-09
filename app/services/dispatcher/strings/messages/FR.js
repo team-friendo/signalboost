@@ -227,7 +227,7 @@ ${support}`,
     notSubscriber,
     invalidPhoneNumber: input =>
       `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
-    success: `Invitation envoyée.`,
+    success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Oups! Échec de l'envoi des invitations pour ${
