@@ -9,7 +9,7 @@ volumes:
 services:
 
   db:
-    image: postgres
+    image: postgres:11
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
