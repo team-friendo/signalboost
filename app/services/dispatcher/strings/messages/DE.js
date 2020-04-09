@@ -223,7 +223,7 @@ ${support}`,
     notSubscriber,
     invalidPhoneNumber: input =>
       `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
-    success: `Einladung versandt.`,
+    success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${

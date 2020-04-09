@@ -219,7 +219,7 @@ ${support}`,
   invite: {
     notSubscriber,
     invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
-    success: n => `Issued ${n} invitation(s).`,
+    success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
     dbError: 'Oops! Failed to issue invitation. Please try again. :)',
     dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
       failedPhoneNumbers.length

@@ -227,7 +227,7 @@ ${support}`,
     notSubscriber,
     invalidPhoneNumber: input =>
       `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
-    success: `Invitación emitida.`,
+    success: n => (n === 1 ? `Se Emitió la invitación` : `Se emitieron ${n} invitaciones`),
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `¡Ay! No se pudo emitir las invitaciónes para ${

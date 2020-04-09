@@ -42,7 +42,7 @@ describe('parse module', () => {
           'la INVITAR',
           'la HOLA',
           'la ADIÓS',
-          'la ELIMINAR',
+          'la QUITAR',
           'la RECHAZAR',
           'la RENOMBRAR',
           'la LÍNEA DIRECTA',
@@ -443,7 +443,7 @@ describe('parse module', () => {
           },
           {
             language: languages.ES,
-            messages: [`ELIMINAR ${e164PhoneNumber}`, `eliminar ${e164PhoneNumber}`],
+            messages: [`QUITAR ${e164PhoneNumber}`, `quitar ${e164PhoneNumber}`],
           },
           {
             language: languages.FR,
@@ -907,7 +907,7 @@ describe('parse module', () => {
               language: languages.ES,
               messages: [
                 `agregar ${rawPhoneNumber}`,
-                `eliminar ${rawPhoneNumber}`,
+                `quitar ${rawPhoneNumber}`,
               ],
             },
             {
