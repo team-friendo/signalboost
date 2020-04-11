@@ -6,10 +6,12 @@ volumes:
 
 services:
   db:
-    image: postgres:11
+    image: postgres:12
     container_name: signalboost_test_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
   test_runner:
     image: signalboost
     container_name: signalboost_test_runner
