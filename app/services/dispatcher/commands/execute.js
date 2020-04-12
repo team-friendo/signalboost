@@ -149,6 +149,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       message: `${messagesIn(newAdminMembership.language).notifications.welcome(
         sender.phoneNumber,
         channel.phoneNumber,
+        channel.name
       )}`,
     },
     ...bystanders.map(membership => ({

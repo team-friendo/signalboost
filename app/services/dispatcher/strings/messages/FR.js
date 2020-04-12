@@ -462,9 +462,8 @@ ${
       vouchLevel > 1 ? 'invitations' : 'invitation'
     } seront désormais nécessaires pour rejoindre cette chaîne.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `Vous êtes maintenant un.e
- admin de ce canal Signalboost grâce à ${addingAdmin}. Bienvenue!
+  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
+    `Vous êtes maintenant un.e admin de ce canal Signalboost [${channelName}]  grâce à ${addingAdmin}. Bienvenue!
 
 On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
 
