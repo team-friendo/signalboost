@@ -101,7 +101,6 @@ module.exports = {
   isAdmin,
   isSubscriber,
   removeMember,
-  removeMember,
   resolveMemberType,
   resolveSenderLanguage,
   updateLanguage,

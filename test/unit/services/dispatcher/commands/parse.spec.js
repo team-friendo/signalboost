@@ -898,31 +898,19 @@ describe('parse module', () => {
           const variants = [
             {
               language: languages.EN,
-              messages: [
-                `add ${rawPhoneNumber}`,
-                `remove ${rawPhoneNumber}`,
-              ],
+              messages: [`add ${rawPhoneNumber}`, `remove ${rawPhoneNumber}`],
             },
             {
               language: languages.ES,
-              messages: [
-                `agregar ${rawPhoneNumber}`,
-                `quitar ${rawPhoneNumber}`,
-              ],
+              messages: [`agregar ${rawPhoneNumber}`, `quitar ${rawPhoneNumber}`],
             },
             {
               language: languages.FR,
-              messages: [
-                `ajouter ${rawPhoneNumber}`,
-                `supprimer ${rawPhoneNumber}`,
-              ],
+              messages: [`ajouter ${rawPhoneNumber}`, `supprimer ${rawPhoneNumber}`],
             },
             {
               language: languages.DE,
-              messages: [
-                `HINZUFÜGEN ${rawPhoneNumber}`,
-                `ENTFERNEN ${rawPhoneNumber}`,
-              ],
+              messages: [`HINZUFÜGEN ${rawPhoneNumber}`, `ENTFERNEN ${rawPhoneNumber}`],
             },
           ]
 

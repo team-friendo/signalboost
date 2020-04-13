@@ -6,7 +6,7 @@ const deauthorizationRepository = require('../../../db/repositories/deauthorizat
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
-const { get, isEmpty, isString, uniq } = require('lodash')
+const { get, isEmpty, uniq } = require('lodash')
 const { getAllAdminsExcept } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
@@ -149,7 +149,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       message: `${messagesIn(newAdminMembership.language).notifications.welcome(
         sender.phoneNumber,
         channel.phoneNumber,
-        channel.name
+        channel.name,
       )}`,
     },
     ...bystanders.map(membership => ({
