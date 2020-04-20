@@ -88,9 +88,7 @@ To do local development for Signalboost you need:
 
 * A local computer able to run node and docker, git and the development tools of your choice. 
 * A Twillio account (https://www.twilio.com/) that provides the phone numbers that Signalboost will use. 
-* A paid ngrok account (https://dashboard.ngrok.com/billing/plan) that allows secure tunnelling to your localhost's Signalboost API.
 * A Signalboost API Token created by you to authenticate on your Signalboost API.
-
 
 We'll address the setup of production and development systems in the Developer and Sysadmin guides later, but for now here's some details on how to get the services and authentication details you need for the configuration you want to do.
 
@@ -110,10 +108,6 @@ To get Twilio credentials, sign up for a Twilio account [here](https://www.twili
 **Let's Encrypt Account** 
 
 [Let's Encrypt] (https://letsencrypt.org/) does not require you to create an account, but it will require you to provide an email address in our configuration files so decided what address you want to use here. 
-
-**Ngrok Tunnel**
-
-To run Signalboost in your local development environment you need a paid "basic" ngrok account is needed (https://ngrok.com/). Only the paid account will allow you to create a "reservered domain" (https://dashboard.ngrok.com/reserved). Note the `NGROK_AUTH_TOKEN` and `NGROK_SUBDOMAIN`. The NGROK tunnel allows us to do requests to your localhost's Signalboost API. 
 
 **Signalboost API Token**
 
@@ -213,13 +207,7 @@ cp .env.dev.example .env.dev
 
 You will need to provide values for the credentials listed in `.env.dev`. You should replace the values in `%TEMPLATE_STRINGS%` with your own values.
 
-Provide the ngrok subdomain you created as the API url: 
-
-```shell
-# URL is used by the Boost cli as the default url for the API
-  
-SIGNALBOOST_HOST_URL=%FULL CUSTOM SUBDOMAIN REGISTERED WITH NGROK%.ngrok.io
-```
+Leave the value for `SIGNALBOOST_ENV=development` intact. It is important for making sure configuration scripts run properly. :) 
 
 Provide the Signalboost API Token you generated:
 
@@ -228,17 +216,6 @@ Provide the Signalboost API Token you generated:
 # See the README for details on how to generate a suitable HEX string
 
 SIGNALBOOST_API_TOKEN=%HEX STRING%
-```
-
-Add the Ngrok auth token and the subdomain part of your reservered domain to:
-
-``` shell
-# Ngrok // Used in Development mode only. Provides secure tunnel to your localhost's Signalboost API
-# A paid "basic" ngrok account is needed https://ngrok.com/ so you can create a "reservered domain" https://dashboard.ngrok.com/reserved
-# From the reservered domain we get the subdomain (eg our reserved domain is signalboost.ngrok.io so the subdomain is just signalboost)
-
-NGROK_AUTH_TOKEN=%43_BYTE_HEX STRING%
-NGROK_SUBDOMAIN=%NAME OF CUSTOM SUBDOMAIN REGISTERED WITH NGROK%
 ```
 
 Add your Twillio credentials:
@@ -250,7 +227,6 @@ Add your Twillio credentials:
 TWILIO_ACCOUNT_SID=%HEX STRING%
 TWILIO_AUTH_TOKEN=%HEX STRING%
 ```
-
 
 #### Team Friendo: Configuration Secrets for Team Friendo Members <a name="Team-Friendo-secrets"></a>
 
@@ -337,16 +313,16 @@ Learn more about how the CLI tools works in [Using the Boost CLI](#boost-cli).
 
 ### (7) Create Seed Data
 
-Once you've got the CLI installed, you can use the following to create some Twillio numbers for use in your channels and emulators etc. Please note that this is specific to your local development setup, it uses the -e to specify the ngrok tunnel reservered domain you definied in `.env.dev`:
+Once you've got the CLI installed, you can use the following to create some Twillio numbers for use in your channels and emulators etc. NOTE: it is important that you use the `-e` flag to make sure that `boost` uses the values you defined in `.env.dev` specific to your local development environment:
 
 ``` shell
 make dev.up
 boost create-number -e .env.dev -n 2 
 ```
 
-Look for the first phone number returned by this call. Let's call it <channel_phone_number>. Let's call the phone number that you use in daily life <your_actual_phone_number>.
+Look for the first phone number returned by this call. Let's call it `<channel_phone_number>`. Let's call the phone number that you use in daily life `<your_actual_phone_number>`.
 
-You can use the following to create a channel that uses <channel_phone_number> as its number and uses <your_actual_phone_number> as an Admin of the channel, again using the ngrok reserved domain you created rather than signalboost.ngrok.io:
+You can use the following to create a channel that uses `<channel_phone_number>` as its number and uses `<your_actual_phone_number>` as an Admin of the channel:
 
 
 ```shell
