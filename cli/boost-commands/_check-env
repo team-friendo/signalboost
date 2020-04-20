@@ -36,8 +36,22 @@ check-env(){
   fi
 
   if [[ -z ${SIGNALBOOST_HOST_URL} ]];then
-    echo "--- ERROR: no SIGNALBOOST_HOST_URL found in the .env file in ${env_file}"
-    exit 1
+
+    if [[ ${SIGNALBOOST_ENV} != "production" ]];then
+      # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
+      host_url=$(curl -s localhost:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 9- | rev | cut -c 2- | rev)
+
+      if [[ -z ${host_url} ]];then
+        echo "Sorry, you are trying to run boost against a local dev server, but ngrok does not appear to be running."
+        echo "That means we cannot find a proxy to route requests through. Please troubleshoot ngrok and try again!"
+        exit 1
+      fi
+      export SIGNALBOOST_HOST_URL=${host_url}
+
+      else
+      echo "--- ERROR: no SIGNALBOOST_HOST_URL found in the .env file in ${env_file}"
+      exit 1
+    fi
   fi
 
   if [[ -z ${TWILIO_ACCOUNT_SID} ]];then

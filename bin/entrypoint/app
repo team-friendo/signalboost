@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 
+set -eu
+
 echo "--- running app..."
 
-if [ "$NODE_ENV" = "development" ];then
+check-until-ngrok-url-available(){
+  echo "checking ngrok..."
+  # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
+  ngrok_url=$(curl -s signalboost_ngrok:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 10- | rev | cut -c 2- | rev)
+  if [[ -z ${ngrok_url} ]];then
+    sleep 1
+    check-until-ngrok-url-available
+  fi
+}
+
+if [[ "$NODE_ENV" = "development" ]];then    check-ngrok-until-available
+  check-until-ngrok-url-available
+  export SIGNALBOOST_HOST_URL=${ngrok_url}
   cd /signalboost
   npx nodemon app
 else
