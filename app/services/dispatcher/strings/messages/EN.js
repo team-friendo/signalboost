@@ -117,8 +117,11 @@ DESCRIPTION description of channel
 INVITE +1-555-555-5555, +1-444-444-4444
 -> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to the channel
 
-ADD / REMOVE +1-555-555-5555
--> adds or removes +1-555-555-5555 as an admin of the channel
+ADD +1-555-555-5555
+-> adds +1-555-555-5555 as an admin of the channel
+
+REMOVE +1-555-555-5555
+-> removes +1-555-555-5555 from the channel
 
 HOTLINE ON / OFF
 -> enables or disables hotline

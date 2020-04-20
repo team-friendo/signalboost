@@ -124,8 +124,11 @@ DESCRIPCIÓN descripción del canal
 INVITAR +1-555-555-5555, +1-444-444-4444
 -> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
 
-AGREGAR / QUITAR + 1-555-555-5555
--> agrega or quita + 1-555-555-5555 como admin de este canal
+AGREGAR + 1-555-555-5555
+-> agrega + 1-555-555-5555 como admin de este canal
+
+QUITAR + 1-555-555-5555
+-> quita + 1-555-555-5555 del canal
 
 LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 -> habilita o deshabilita mensajes anónimos a los admins
