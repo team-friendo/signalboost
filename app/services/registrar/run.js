@@ -3,7 +3,7 @@ const phoneNumberRegistrar = require('./phoneNumber')
 const inviteRepository = require('../../db/repositories/invite')
 const api = require('./api')
 const {
-  registrar: { port },
+  registrar: { host, port },
 } = require('../../config')
 
 const run = async (db, sock) => {
@@ -11,7 +11,7 @@ const run = async (db, sock) => {
 
   logger.log(`----- Staring api server...`)
   await api.startServer(port, db, sock).catch(logger.error)
-  logger.log(`----- Api server listening on port ${port}`)
+  logger.log(`----- Api server listening on ${host}:${port}`)
 
   logger.log('----- Registering phone numbers...')
   const regs = await phoneNumberRegistrar.registerAllUnregistered({ db, sock }).catch(logger.error)

@@ -64,7 +64,5 @@ services:
       - app
     env_file: .env.dev
     environment:
-      - NGROK_AUTH=$NGROK_AUTH_TOKEN
-      - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
       - NGROK_PORT=app:3000
     restart: unless-stopped
