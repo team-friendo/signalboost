@@ -436,8 +436,8 @@ ${requestMsg}`,
       vouchLevel > 1 ? 'invites' : 'invite'
     }.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
+    `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!
 
 People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 

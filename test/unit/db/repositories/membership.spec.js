@@ -296,11 +296,7 @@ describe('membership repository', () => {
       describe('when asked to remove a number that is subscribed to the channel', () => {
         let result
         beforeEach(async () => {
-          result = await membershipRepository.removeMember(
-            db,
-            channel.phoneNumber,
-            subscriberPhone,
-          )
+          result = await membershipRepository.removeMember(db, channel.phoneNumber, subscriberPhone)
         })
         it('deletes a membership', async () => {
           expect(await db.membership.count()).to.eql(membershipCount - 1)

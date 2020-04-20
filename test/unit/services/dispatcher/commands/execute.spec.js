@@ -285,6 +285,7 @@ describe('executing commands', () => {
                     message: messagesIn(languages.FR).notifications.welcome(
                       sender.phoneNumber,
                       channel.phoneNumber,
+                      channel.name,
                     ),
                   },
                   // notifications for all bystander admins
@@ -823,7 +824,10 @@ describe('executing commands', () => {
                     command: commands.INVITE,
                     payload: inviteePhoneNumbers,
                     status: statuses.ERROR,
-                    message: CR.invite.dbErrors([inviteePhoneNumbers[1]], inviteePhoneNumbers.length),
+                    message: CR.invite.dbErrors(
+                      [inviteePhoneNumbers[1]],
+                      inviteePhoneNumbers.length,
+                    ),
                     notifications: [
                       {
                         recipient: inviteePhoneNumbers[0],

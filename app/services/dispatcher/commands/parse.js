@@ -1,4 +1,4 @@
-const { map, flattenDeep, isEmpty, get, every } = require('lodash')
+const { map, flattenDeep, isEmpty, get } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
 const validator = require('../../../db/validations/phoneNumber')

@@ -449,8 +449,8 @@ ${requestMsg}`,
       vouchLevel > 1 ? 'Einladungen' : 'Einladung'
     }.`,
 
-  welcome: (addingAdmin, channelPhoneNumber) =>
-    `Du wurdest gerade als Admin in diesem Signalboost Kanal hinzugefügt von ${addingAdmin}. Wilkommen!
+  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
+    `Du wurdest gerade als Admin in diesem Signalboost Kanal [${channelName}] hinzugefügt von ${addingAdmin}. Wilkommen!
 
 Als Teilnehmer kann Mensch sich einfach mit einer Signal Nachricht mit dem Text HALLO an ${channelPhoneNumber}  anmelden. Um sich später wieder abzumelden kan eine Nachricht mit dem Text TSCHÜSS an die gleiche Nummer versandt werden.
 
