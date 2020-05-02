@@ -14,7 +14,7 @@ check-until-ngrok-url-available(){
   fi
 }
 
-if [[ "$NODE_ENV" = "development" ]];then    check-ngrok-until-available
+if [[ "$NODE_ENV" = "development" ]];then
   check-until-ngrok-url-available
   export SIGNALBOOST_HOST_URL=${ngrok_url}
   cd /signalboost
