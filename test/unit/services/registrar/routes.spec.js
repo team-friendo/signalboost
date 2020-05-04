@@ -377,56 +377,73 @@ describe('routes', () => {
   })
 
   describe('POST to /twilioSms', () => {
-    let verifyStub, validateSignatureStub
+    const senderPhoneNumber = genPhoneNumber()
+    let validateSignatureStub, handleSmsStub
+
     beforeEach(() => {
-      verifyStub = sinon.stub(phoneNumberService, 'verify')
       validateSignatureStub = sinon.stub(twilio, 'validateRequest').returns(true)
+      handleSmsStub = sinon.stub(phoneNumberService, 'handleSms')
     })
 
     afterEach(() => {
-      verifyStub.restore()
       validateSignatureStub.restore()
+      handleSmsStub.restore()
     })
 
     describe('in all cases', () => {
-      beforeEach(() => verifyStub.returns(Promise.resolve({})))
+      beforeEach(() => handleSmsStub.returns(Promise.resolve({})))
 
-      it('attempts to verify a phone number with a verification code parsed from the request', async () => {
+      it('attempts to handle the message (either by verifying a code or providing a response)', async () => {
         await request(server)
           .post('/twilioSms')
           .set('Token', registrar.authToken)
-          .send({ To: phoneNumber, Body: verificationMessage })
-        const arg = verifyStub.getCall(0).args[0]
+          .send({ To: phoneNumber, From: senderPhoneNumber, Body: verificationMessage })
 
-        expect(keys(arg)).to.have.members(['db', 'sock', 'phoneNumber', 'verificationMessage'])
-        expect(pick(arg, ['phoneNumber', 'verificationMessage'])).to.eql({
+        expect(
+          pick(handleSmsStub.getCall(0).args[0], ['phoneNumber', 'senderPhoneNumber', 'message']),
+        ).to.eql({
           phoneNumber,
-          verificationMessage,
+          senderPhoneNumber,
+          message: verificationMessage,
         })
       })
     })
 
-    describe('when verification succeeds', () => {
-      beforeEach(() => verifyStub.returns(Promise.resolve()))
+    describe('when handling message succeeds', () => {
+      beforeEach(() =>
+        handleSmsStub.returns(
+          Promise.resolve({
+            status: statuses.SUCCESS,
+            body: 'OK',
+          }),
+        ),
+      )
 
       it('responds with a success code', async () => {
         await request(server)
           .post('/twilioSms')
           .set('Token', registrar.authToken)
           .send({ phoneNumber })
-          .expect(200)
+          .expect(200, 'OK')
       })
     })
 
     describe('when verification fails', () => {
-      beforeEach(() => verifyStub.callsFake(() => Promise.reject()))
+      beforeEach(() =>
+        handleSmsStub.returns(
+          Promise.resolve({
+            status: statuses.ERROR,
+            message: 'oh noes!',
+          }),
+        ),
+      )
 
       it('responds with an error code', async () => {
         await request(server)
           .post('/twilioSms')
           .set('Token', registrar.authToken)
           .send({ phoneNumber })
-          .expect(500)
+          .expect(500, 'oh noes!')
       })
     })
   })

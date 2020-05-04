@@ -6,6 +6,7 @@ import phoneNumberService from '../../../../../app/services/registrar/phoneNumbe
 import { startServer } from '../../../../../app/services/registrar/api'
 import { registrar } from '../../../../../app/config/index'
 import { EventEmitter } from 'events'
+import { statuses } from '../../../../../app/constants'
 import signal from '../../../../../app/services/signal'
 
 describe('authentication middleware', () => {
@@ -56,16 +57,16 @@ describe('authentication middleware', () => {
   })
 
   describe('for twilio callback endpoint', () => {
-    let validateSignatureStub, verifyStub
+    let validateSignatureStub, handleSmsStug
 
     beforeEach(() => {
       validateSignatureStub = sinon.stub(twilio, 'validateRequest')
-      verifyStub = sinon.stub(phoneNumberService, 'verify').returns(Promise.resolve())
+      handleSmsStug = sinon.stub(phoneNumberService, 'handleSms').returns(Promise.resolve({ status: statuses.SUCCESS, message: 'OK'}))
     })
 
     afterEach(() => {
       validateSignatureStub.restore()
-      verifyStub.restore()
+      handleSmsStug.restore()
     })
 
     it('blocks a request to the twilio endpoint that lacks a valid signature', async () => {
