@@ -929,6 +929,40 @@ describe('executing commands', () => {
             })
           })
         })
+
+        describe('when sending INVITE in a different language', () => {
+          // sender's language is English but they're issuing an invite in Spanish
+
+          const dispatchable = {
+            db,
+            sdMessage: sdMessageOf(channel, `INVITAR ${inviteePhoneNumbers[0]}`),
+            channel: vouchingChannel,
+            sender: admin,
+          }
+
+          let res
+          beforeEach(async () => {
+            issueInviteStub.returns(Promise.resolve(true))
+            res = await processCommand(dispatchable)
+          })
+
+          it('returns an invite notification in the language that the command was sent in', () => {
+            expect(res).to.eql({
+              command: commands.INVITE,
+              payload: [inviteePhoneNumbers[0]],
+              status: statuses.SUCCESS,
+              message: CR.invite.success(1),
+              notifications: [
+                {
+                  recipient: inviteePhoneNumbers[0],
+                  message: messagesIn(languages.ES).notifications.inviteReceived(
+                    vouchingChannel.name,
+                  ),
+                },
+              ],
+            })
+          })
+        })
       })
 
       describe('when sender is a subscriber on happy path', () => {
