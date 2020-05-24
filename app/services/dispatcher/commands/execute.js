@@ -55,7 +55,7 @@ const execute = async (executable, dispatchable) => {
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
     [commands.HELP]: () => showHelp(db, channel, sender),
     [commands.INFO]: () => showInfo(db, channel, sender),
-    [commands.INVITE]: () => maybeInvite(db, channel, sender, payload),
+    [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
@@ -226,13 +226,13 @@ const showInfo = async (db, channel, sender) => {
 
 // INVITE
 
-const maybeInvite = async (db, channel, sender, inviteePhoneNumbers) => {
+const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>
-      invite(db, channel, sender.phoneNumber, inviteePhoneNumber, cr),
+      invite(db, channel, sender.phoneNumber, inviteePhoneNumber, language),
     ),
   )
 
@@ -252,7 +252,7 @@ const maybeInvite = async (db, channel, sender, inviteePhoneNumbers) => {
   return { status: statuses.SUCCESS, message: cr.success(inviteResults.length), notifications }
 }
 
-const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber) => {
+const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, language) => {
   // SECURITY NOTE:
   //
   // There are 2 cases in which inviting might fail due to a logical error:
@@ -287,6 +287,7 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber) => {
             inviteePhoneNumber,
             totalReceived,
             channel.vouchLevel,
+            language,
           ),
         }
   } catch (e) {
@@ -294,8 +295,14 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber) => {
   }
 }
 
-const inviteNotificationOf = (channel, inviteePhoneNumber, invitesReceived, invitesNeeded) => {
-  const notifications = messagesIn(channel.language).notifications
+const inviteNotificationOf = (
+  channel,
+  inviteePhoneNumber,
+  invitesReceived,
+  invitesNeeded,
+  language,
+) => {
+  const notifications = messagesIn(language).notifications
   const inviteMessage =
     channel.vouchingOn && channel.vouchLevel > 1
       ? notifications.vouchedInviteReceived(channel.name, invitesReceived, invitesNeeded)
