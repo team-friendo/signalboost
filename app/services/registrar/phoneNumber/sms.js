@@ -20,7 +20,6 @@ const handleSms = ({ db, sock, phoneNumber, senderPhoneNumber, message }) => {
 
 // (String, String) -> SignalboostStatus
 const respondToSms = async (db, senderPhoneNumber) => {
-  // TODO(aguestuser|2020-05-03): localize prompt based on country code
   try {
     if (await smsSenderRepository.hasReachedQuota(db, senderPhoneNumber))
       return { status: statuses.ERROR, message: reachedQuotaError }

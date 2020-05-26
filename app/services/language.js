@@ -9,13 +9,13 @@ const languages = {
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || languages.EN
 
+// string -> string
 const languageForPhoneNumber = phoneNumber =>
   languageForCountry(parsePhoneNumberFromString(phoneNumber).country)
 
+// string -> string
 const languageForCountry = country => {
-  // not handled: suriname, brazil (and many others!)
-  // --
-  // luxembourg, belgium, french guyana
+  // NOTE: many countries are not handled!
   switch (country) {
     // spanish-speaking countries
     case 'AR': // argentina
