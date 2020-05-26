@@ -5,13 +5,13 @@ const jobConfigsByEnv = require('./job')
 const twilioConfigsByEnv = require('./twilio')
 const registrarConfigsByEnv = require('./registrar')
 const signalConfigsByEnv = require('./signal')
-const { languages } = require('../services/language')
+const { defaultLanguage } = require('../services/language')
 
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
 
 module.exports = {
+  defaultLanguage,
   projectRoot: process.env.PROJECT_ROOT,
-  defaultLanguage: process.env.DEFAULT_LANGUAGE || languages.EN,
   db: getConfig(dbConfigsByEnv),
   job: getConfig(jobConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
