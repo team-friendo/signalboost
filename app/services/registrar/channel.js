@@ -7,7 +7,7 @@ const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../../config')
 const { statuses: pNumStatuses } = require('../../db/models/phoneNumber')
-const { statuses: sbStatuses } = require('../../constants')
+const { statuses: sbStatuses } = require('../../services/util')
 const { loggerOf, wait } = require('../util')
 const logger = loggerOf()
 const {

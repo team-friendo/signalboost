@@ -9,7 +9,7 @@ import {
   errors,
   statuses as pnStatuses,
 } from '../../../../../app/services/registrar/phoneNumber/index'
-import { statuses } from '../../../../../app/constants'
+import { statuses } from '../../../../../app/services/util'
 import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
 import { wait } from '../../../../../app/services/util'
 import logger from '../../../../../app/services/registrar/logger'

@@ -1,7 +1,7 @@
 const signal = require('../../signal')
 const registrationService = require('./register')
 const smsSenderRepository = require('../../../db/repositories/smsSender')
-const { statuses } = require('../../../constants')
+const { statuses } = require('../../../services/util')
 const {
   twiml: { MessagingResponse },
 } = require('twilio')

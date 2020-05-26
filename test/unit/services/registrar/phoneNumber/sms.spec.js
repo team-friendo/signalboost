@@ -8,7 +8,7 @@ import {
   prompToUseSignal,
   reachedQuotaError,
 } from '../../../../../app/services/registrar/phoneNumber/sms'
-import { statuses } from '../../../../../app/constants'
+import { statuses } from '../../../../../app/services/util'
 import registrationService from '../../../../../app/services/registrar/phoneNumber/register'
 import smsSenderRepository from '../../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../../support/factories/smsSender'

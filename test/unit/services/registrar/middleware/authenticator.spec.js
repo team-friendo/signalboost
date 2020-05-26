@@ -6,7 +6,7 @@ import phoneNumberService from '../../../../../app/services/registrar/phoneNumbe
 import { startServer } from '../../../../../app/services/registrar/api'
 import { registrar } from '../../../../../app/config/index'
 import { EventEmitter } from 'events'
-import { statuses } from '../../../../../app/constants'
+import { statuses } from '../../../../../app/services/util'
 import signal from '../../../../../app/services/signal'
 
 describe('authentication middleware', () => {
