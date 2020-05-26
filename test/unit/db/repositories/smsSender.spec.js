@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+const moment = require('moment')
 import { initDb } from '../../../../app/db/index'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../support/factories/smsSender'
 const {
-  twilio: { monthlySmsQuota },
+  twilio: { smsQuotaAmount, smsQuotaDurationInMillis },
 } = require('../../../../app/config')
 
 describe('smsSender repository', () => {
@@ -56,22 +57,37 @@ describe('smsSender repository', () => {
 
   describe('#hasReachedQuota', () => {
     it('returns false when sender has sent less than quota', async () => {
-      await db.smsSender.create(
-        smsSenderFactory({ phoneNumber, messagesSent: monthlySmsQuota - 1 }),
-      )
+      await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount - 1 }))
       expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(false)
     })
 
     it('returns true when sender has sent messages equaling quota', async () => {
-      await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: monthlySmsQuota }))
+      await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount }))
       expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(true)
     })
 
     it('returns true when sender has sent above quota', async () => {
-      await db.smsSender.create(
-        smsSenderFactory({ phoneNumber, messagesSent: monthlySmsQuota + 1 }),
-      )
+      await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount + 1 }))
       expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(true)
+    })
+  })
+
+  describe('#deleteExpired', () => {
+    let count
+    beforeEach(async () => {
+      // create 2 smsSender records, make one of them expired
+      await db.smsSender.create(smsSenderFactory())
+      const second = await db.smsSender.create(smsSenderFactory())
+      await db.smsSender.update(
+        { createdAt: moment().subtract(smsQuotaDurationInMillis + 1, 'ms') },
+        { where: { phoneNumber: second.phoneNumber } }
+      )
+      count = await db.smsSender.count()
+    })
+
+    it('deletes all smsSender records older than quota duration (1 month)', async () => {
+      expect(await smsSenderRepository.deleteExpired(db)).to.eql(1)
+      expect(await db.smsSender.count()).to.eql(count - 1)
     })
   })
 })

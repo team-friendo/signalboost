@@ -1,5 +1,7 @@
+const moment = require('moment')
+const { Op } = require('sequelize')
 const {
-  twilio: { monthlySmsQuota },
+  twilio: { smsQuotaAmount, smsQuotaDurationInMillis },
 } = require('../../config')
 
 // (Database, String) -> Promise<SmsSender>
@@ -11,7 +13,17 @@ const countMessage = async (db, phoneNumber) => {
 // (Database, String) -> Promise<boolean>
 const hasReachedQuota = async (db, phoneNumber) => {
   const [smsSender] = await db.smsSender.findOrCreate({ where: { phoneNumber } })
-  return smsSender.messagesSent >= monthlySmsQuota
+  return smsSender.messagesSent >= smsQuotaAmount
 }
 
-module.exports = { countMessage, hasReachedQuota }
+// DataBase -> Promise<number>
+const deleteExpired = async db =>
+  db.smsSender.destroy({
+    where: {
+      createdAt: {
+        [Op.lte]: moment().subtract(smsQuotaDurationInMillis, 'ms'),
+      },
+    },
+  })
+
+module.exports = { countMessage, hasReachedQuota, deleteExpired }
