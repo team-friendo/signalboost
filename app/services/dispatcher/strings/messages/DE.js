@@ -418,6 +418,9 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
 
   inviteAccepted: `Glückwunsch! Deine Einladung wurde angenommen, die Person ist jetzt Teilnehmer dieses Kanals.`,
 
+  promptToUseSignal:
+    'Diese Nummer akzeptiert nur Nachrichten, die mit dem Signal Private Messenger gesendet wurden. Bitte installieren Sie Signal von https://signal.org und versuchen Sie es erneut.',
+
   rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
     `Nachrichtenrate auf: ${channelPhoneNumber} ist limitiert.
 ${

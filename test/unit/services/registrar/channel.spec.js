@@ -8,7 +8,7 @@ import signal from '../../../../app/services/signal'
 import messenger from '../../../../app/services/dispatcher/messenger'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
-import { statuses } from '../../../../app/constants'
+import { statuses } from '../../../../app/services/util'
 import { create, addAdmin, list } from '../../../../app/services/registrar/channel'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 const {

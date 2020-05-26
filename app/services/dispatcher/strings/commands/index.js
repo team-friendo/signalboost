@@ -1,4 +1,4 @@
-const { languages } = require('../../../../constants')
+const { languages } = require('../../../../services/language')
 const commandStringsEN = require('./EN')
 const commandStringsES = require('./ES')
 const commandStringsFR = require('./FR')

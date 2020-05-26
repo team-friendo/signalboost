@@ -383,6 +383,18 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
+    
+Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
+
+Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
+
+Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
+  
+AGREGAR ${adminPhoneNumber},
+  
+Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
   setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
 
   expiryUpdateNotAuthorized:
@@ -413,18 +425,8 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
 
   inviteAccepted: `¡Felicidades! Alguien ha aceptado su invitación y ahora está suscrito a este canal.`,
 
-  deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
-    
-Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
-
-Sin embargo, existe una pequeña posibilidad de que un atacante haya comprometido su teléfono y esté tratando de hacerse pasar por él.
-
-Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su teléfono, luego vuelva a autorizarlos con:
-  
-AGREGAR ${adminPhoneNumber}
-  
-Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
+  promptToUseSignal:
+    'Este número solo acepta mensajes enviados con Signal Private Messenger. Instale Signal desde https://signal.org y intente nuevamente.',
 
   noop: '¡Lo siento! Eso no es un comando!',
 

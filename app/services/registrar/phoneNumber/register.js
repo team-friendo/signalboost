@@ -1,5 +1,6 @@
 const fs = require('fs-extra')
-const { errors, statuses, errorStatus, extractStatus } = require('./common')
+const { errors, statuses: pnStatuses, errorStatus, extractStatus } = require('./common')
+const { statuses } = require('../../../services/util')
 const { flatten, without } = require('lodash')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const signal = require('../../signal')
@@ -63,28 +64,22 @@ const registerAllUnregistered = async ({ db, sock }) => {
 const register = ({ db, sock, phoneNumber }) =>
   signal
     .register(sock, phoneNumber)
-    .then(() => recordStatusChange(db, phoneNumber, statuses.REGISTERED))
+    .then(() => recordStatusChange(db, phoneNumber, pnStatuses.REGISTERED))
     .then(() => signal.awaitVerificationResult(sock, phoneNumber))
-    .then(() => recordStatusChange(db, phoneNumber, statuses.VERIFIED))
+    .then(() => recordStatusChange(db, phoneNumber, pnStatuses.VERIFIED))
     .catch(err => {
       // TODO(@zig): add prometheus error count here (counter: signal_register_error)
       logger.error(err)
       return errorStatus(errors.registrationFailed(err), phoneNumber)
     })
 
-// ({Database, Emitter, string, string}) => Promise<Boolean>
-const verify = ({ sock, phoneNumber, verificationMessage }) => {
-  const [ok, verificationCode] = signal.parseVerificationCode(verificationMessage)
-  if (!ok) {
-    // handled rejections from #verify only ever wind up in HTTP responses to twillio,
-    // so we don't reject with the error message (which we don't wish to expose to twillio)
-    logger.log(errors.invalidIncomingSms(phoneNumber, verificationMessage))
-    return Promise.reject()
-  }
-  return signal
+// ({Emitter, string, string}) => Promise<SignalboostStatus>
+const verify = ({ sock, phoneNumber, verificationCode }) =>
+  signal
     .verify(sock, phoneNumber, verificationCode)
     .then(() => signal.awaitVerificationResult(sock, phoneNumber))
-}
+    .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
+    .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
 /********************
  * HELPER FUNCTIONS
@@ -103,7 +98,7 @@ const recordStatusChange = (db, phoneNumber, status) =>
 
 // PhoneNumberStatus -> boolean
 const isRegistered = async ({ status, phoneNumber }) => {
-  const marked = status === statuses.VERIFIED || status === statuses.ACTIVE
+  const marked = status === pnStatuses.VERIFIED || status === pnStatuses.ACTIVE
   const inKeystore = await fs.pathExists(`${keystorePath}/${phoneNumber}`)
   return marked && inKeystore
 }

@@ -2,7 +2,7 @@ const net = require('net')
 const fs = require('fs-extra')
 const { pick, get } = require('lodash')
 const { promisifyCallback, wait } = require('./util.js')
-const { statuses } = require('../constants')
+const { statuses } = require('../services/util')
 const { isEmpty } = require('lodash')
 const {
   signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, signaldRequestTimeout },

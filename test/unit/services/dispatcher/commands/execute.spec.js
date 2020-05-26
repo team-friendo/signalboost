@@ -3,12 +3,9 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { processCommand } from '../../../../../app/services/dispatcher/commands'
-import {
-  commands,
-  toggles,
-  statuses,
-} from '../../../../../app/services/dispatcher/commands/constants'
-import { languages } from '../../../../../app/constants'
+import { commands, toggles } from '../../../../../app/services/dispatcher/commands/constants'
+import { statuses } from '../../../../../app/services/util'
+import { languages } from '../../../../../app/services/language'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
 import signal from '../../../../../app/services/signal'
 import channelRepository from '../../../../../app/db/repositories/channel'

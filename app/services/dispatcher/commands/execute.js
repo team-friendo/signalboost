@@ -1,4 +1,5 @@
-const { commands, statuses, toggles } = require('./constants')
+const { commands, toggles } = require('./constants')
+const { statuses } = require('../../../services/util')
 const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')

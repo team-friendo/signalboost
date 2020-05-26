@@ -6,7 +6,7 @@ const { loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { sdMessageOf } = require('../signal')
-const { statuses } = require('../../constants')
+const { statuses } = require('../../services/util')
 
 // (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
 const trustAndResend = async (db, sock, updatableFingerprint) => {

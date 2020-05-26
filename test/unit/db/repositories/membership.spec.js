@@ -5,7 +5,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
 import { initDb } from '../../../../app/db'
-import { languages } from '../../../../app/constants'
+import { languages } from '../../../../app/services/language'
 import {
   adminMembershipFactory,
   membershipFactory,

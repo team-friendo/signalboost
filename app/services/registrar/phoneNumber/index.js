@@ -5,7 +5,8 @@ const { destroy } = require('./destroy')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
 const { recycle } = require('./recycle')
-const { register, registerAllPurchased, registerAllUnregistered, verify } = require('./register')
+const { register, registerAllPurchased, registerAllUnregistered } = require('./register')
+const { handleSms } = require('./sms')
 const { purchase, purchaseN } = require('./purchase')
 
 // EXPORTS
@@ -25,5 +26,5 @@ module.exports = {
   register,
   registerAllPurchased,
   registerAllUnregistered,
-  verify,
+  handleSms,
 }

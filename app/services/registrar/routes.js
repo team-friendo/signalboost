@@ -1,7 +1,7 @@
 /* eslint require-atomic-updates: 0 */
 const phoneNumberService = require('./phoneNumber')
 const channelRegistrar = require('./channel')
-const { get, find } = require('lodash')
+const { get, find, merge } = require('lodash')
 const signal = require('../signal')
 const {
   twilio: { smsEndpoint },
@@ -14,20 +14,18 @@ const routesOf = async (router, db, sock) => {
 
   router.get('/healthcheck', async ctx => {
     const result = await signal.isAlive(sock)
-    ctx.status = httpStatusOf(get(result, 'status'))
+    merge(ctx, { status: httpStatusOf(get(result, 'status')) })
   })
 
   router.get('/channels', async ctx => {
     const result = await channelRegistrar.list(db)
-    ctx.status = httpStatusOf(get(result, 'status'))
-    ctx.body = result.data
+    merge(ctx, { status: httpStatusOf(get(result, 'status')), body: result.data })
   })
 
   router.post('/channels', async ctx => {
     const { phoneNumber, name, admins } = ctx.request.body
     const result = await channelRegistrar.create({ db, sock, phoneNumber, name, admins })
-    ctx.status = httpStatusOf(get(result, 'status'))
-    ctx.body = result
+    merge(ctx, { status: httpStatusOf(get(result, 'status')), body: result })
   })
 
   router.post('/channels/admins', async ctx => {
@@ -38,15 +36,13 @@ const routesOf = async (router, db, sock) => {
       channelPhoneNumber,
       adminPhoneNumber,
     })
-    ctx.status = httpStatusOf(get(result, 'status'))
-    ctx.body = result
+    merge(ctx, { status: httpStatusOf(get(result, 'status')), body: result })
   })
 
   router.get('/phoneNumbers', async ctx => {
     const filter = phoneNumberService.filters[ctx.query.filter] || null
     const phoneNumberList = await phoneNumberService.list(db, filter)
-    ctx.status = httpStatusOf(phoneNumberList.status)
-    ctx.body = phoneNumberList.data
+    merge(ctx, { status: httpStatusOf(phoneNumberList.status), body: phoneNumberList.data })
   })
 
   router.post('/phoneNumbers', async ctx => {
@@ -54,8 +50,7 @@ const routesOf = async (router, db, sock) => {
     const n = parseInt(num) || 1
 
     const phoneNumberStatuses = await phoneNumberService.provisionN({ db, sock, areaCode, n })
-    ctx.status = httpStatusOfMany(phoneNumberStatuses)
-    ctx.body = phoneNumberStatuses
+    merge(ctx, { status: httpStatusOfMany(phoneNumberStatuses), body: phoneNumberStatuses })
   })
 
   router.delete('/phoneNumbers', async ctx => {
@@ -65,8 +60,7 @@ const routesOf = async (router, db, sock) => {
       sock,
       phoneNumber,
     })
-    ctx.status = httpStatusOf(result.status)
-    ctx.body = result
+    merge(ctx, { status: httpStatusOf(result.status), body: result })
   })
 
   router.post('/phoneNumbers/recycle', async ctx => {
@@ -76,16 +70,20 @@ const routesOf = async (router, db, sock) => {
       sock,
       phoneNumbers,
     })
-    ctx.status = httpStatusOfMany(result)
-    ctx.body = result
+    merge(ctx, { status: httpStatusOfMany(result), body: result })
   })
 
   router.post(`/${smsEndpoint}`, async ctx => {
-    const { To: phoneNumber, Body: verificationMessage } = ctx.request.body
-    await phoneNumberService
-      .verify({ db, sock, phoneNumber, verificationMessage })
-      .then(() => (ctx.status = 200))
-      .catch(() => (ctx.status = 500))
+    const { To: phoneNumber, Body: smsBody, From: senderPhoneNumber } = ctx.request.body
+    const { status, message } = await phoneNumberService.handleSms({
+      db,
+      sock,
+      phoneNumber,
+      senderPhoneNumber,
+      message: smsBody,
+    })
+    const header = { 'content-type': 'text/xml' }
+    merge(ctx, { status: httpStatusOf(status), body: message, header })
   })
 }
 

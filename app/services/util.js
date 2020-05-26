@@ -1,5 +1,4 @@
 const { concat, take, drop, isEmpty } = require('lodash')
-const { statuses } = require('../constants')
 
 /**************** Promises ****************/
 
@@ -69,7 +68,14 @@ const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
-/*************** Errors ********************/
+/*************** Statuses ********************/
+
+const statuses = {
+  SUCCESS: 'SUCCESS',
+  NOOP: 'NOOP',
+  ERROR: 'ERROR',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+}
 
 const defaultErrorOf = err => ({
   status: statuses.ERROR,
@@ -87,5 +93,6 @@ module.exports = {
   repeatEvery,
   repeatUntilTimeout,
   sequence,
+  statuses,
   wait,
 }

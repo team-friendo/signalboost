@@ -61,10 +61,12 @@ describe('channel model', () => {
     db = initDb()
   })
 
-  afterEach(() => {
-    db.messageCount.destroy({ where: {}, force: true })
-    db.membership.destroy({ where: {}, force: true })
-    db.channel.destroy({ where: {}, force: true })
+  afterEach(async () => {
+    await Promise.all([
+      db.messageCount.destroy({ where: {}, force: true }),
+      db.membership.destroy({ where: {}, force: true }),
+    ])
+    await db.channel.destroy({ where: {}, force: true })
   })
 
   after(async () => {
