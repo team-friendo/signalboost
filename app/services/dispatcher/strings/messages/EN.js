@@ -12,6 +12,7 @@ const notAdmin =
   'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
 const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
+
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const support = `----------------------------
@@ -406,6 +407,9 @@ Send HELP to list valid commands. Send HELLO to subscribe.
     }`,
 
   inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
+
+  promptToUseSignal:
+    'This number only accepts messages sent with the Signal Private Messenger. Please install Signal from https://signal.org and try again.',
 
   rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
     `Message rate limited on channel: ${channelPhoneNumber}.

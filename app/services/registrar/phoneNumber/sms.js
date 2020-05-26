@@ -1,15 +1,14 @@
 const signal = require('../../signal')
 const registrationService = require('./register')
 const smsSenderRepository = require('../../../db/repositories/smsSender')
+const { languageForPhoneNumber } = require('../../language')
+const { messagesIn } = require('../../dispatcher/strings/messages')
 const { statuses } = require('../../../services/util')
 const {
   twiml: { MessagingResponse },
 } = require('twilio')
 
-// TODO: extract this to localized string!
 const reachedQuotaError = 'Sender exceeded monthly sms quota.'
-const prompToUseSignal =
-  'This number only accepts messages sent with the Signal Private Messenger. Please install Signal from https://signal.org and try again.'
 
 // ({Database, EventEmitter, string, string, string}) => Promise<Boolean>
 const handleSms = ({ db, sock, phoneNumber, senderPhoneNumber, message }) => {
@@ -27,11 +26,14 @@ const respondToSms = async (db, senderPhoneNumber) => {
       return { status: statuses.ERROR, message: reachedQuotaError }
 
     await smsSenderRepository.countMessage(db, senderPhoneNumber)
-    const message = new MessagingResponse().message(prompToUseSignal).toString()
+    const language = languageForPhoneNumber(senderPhoneNumber)
+    const promptToUseSignal = messagesIn(language).notifications.promptToUseSignal
+    const message = new MessagingResponse().message(promptToUseSignal).toString()
+
     return { status: statuses.SUCCESS, message }
   } catch (e) {
     return { status: statuses.ERROR, message: `Database error: ${e}` }
   }
 }
 
-module.exports = { handleSms, respondToSms, prompToUseSignal, reachedQuotaError }
+module.exports = { handleSms, respondToSms, reachedQuotaError }

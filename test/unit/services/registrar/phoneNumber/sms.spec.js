@@ -3,15 +3,13 @@ import { expect } from 'chai'
 import sinon from 'sinon'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 import { EventEmitter } from 'events'
-import {
-  handleSms,
-  prompToUseSignal,
-  reachedQuotaError,
-} from '../../../../../app/services/registrar/phoneNumber/sms'
+import { handleSms, reachedQuotaError } from '../../../../../app/services/registrar/phoneNumber/sms'
 import { statuses } from '../../../../../app/services/util'
 import registrationService from '../../../../../app/services/registrar/phoneNumber/register'
 import smsSenderRepository from '../../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../../support/factories/smsSender'
+import { languages } from '../../../../../app/services/language'
+import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 
 describe('sms module', () => {
   const sock = new EventEmitter()
@@ -97,15 +95,22 @@ describe('sms module', () => {
     })
 
     describe('when user has not reached quota', () => {
+      const frenchPhoneNumber = '+32494000000'
       beforeEach(async () => {
         hasReachedQuotaStub.returns(Promise.resolve(false))
-        result = await handleSms({ sock, phoneNumber, senderPhoneNumber, message })
+        result = await handleSms({
+          sock,
+          phoneNumber,
+          senderPhoneNumber: frenchPhoneNumber,
+          message,
+        })
       })
 
       it('returns a TWIML message with a prompt to install signal', () => {
+        const prompt = messagesIn(languages.FR).notifications.promptToUseSignal
         expect(result).to.eql({
           status: statuses.SUCCESS,
-          message: `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${prompToUseSignal}</Message></Response>`,
+          message: `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${prompt}</Message></Response>`,
         })
       })
 

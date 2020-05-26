@@ -387,6 +387,19 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Le canal a été renommé de "${oldName}" à "${newName}."`,
 
+  deauthorization: adminPhoneNumber => `
+${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
+
+C'est probablement parce que Signal a été installé sur un nouvel appareil.
+
+Cependant, il y a un petit risque que leur téléphone soit compromis et qu'une autre personne tente de se faire passer pour elleux.
+
+Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
+
+AJOUTER ${adminPhoneNumber}
+
+Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
+
   setDescription: newDescription =>
     `La description de ce canal est désormais: "${newDescription}."`,
 
@@ -415,19 +428,11 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette chaîne.`,
 
-  deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
+  promptToUseSignal:
+    'Ce numéro accepte uniquement les messages envoyés avec Signal Private Messenger. Veuillez installer Signal depuis https://signal.org et réessayer.',
 
-C'est probablement parce que Signal a été installé sur un nouvel appareil.
-
-Cependant, il y a un petit risque que leur téléphone soit compromis et qu'une autre personne tente de se faire passer pour elleux.
-
-Vérifiez auprès de ${adminPhoneNumber} pour vous assurer qu’ielles contrôlent toujours leur appareil, et vous pouvez par la suite les revalider avec:
-
-AJOUTER ${adminPhoneNumber}
-
-Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
   noop: 'Oups! Ceci n’est pas une commande!',
+  
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
