@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import { describe, it } from 'mocha'
 import { commands } from '../../../../../app/services/dispatcher/commands/constants'
 import { parseExecutable } from '../../../../../app/services/dispatcher/commands/parse'
-import { languages } from '../../../../../app/constants'
+import { languages } from '../../../../../app/services/language'
 import { defaultLanguage } from '../../../../../app/config'
 import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 

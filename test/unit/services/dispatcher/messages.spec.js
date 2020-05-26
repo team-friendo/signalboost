@@ -7,7 +7,7 @@ import messagesDE from '../../../../app/services/dispatcher/strings/messages/DE'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times, keys } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
-import { languages } from '../../../../app/constants'
+import { languages } from '../../../../app/services/language'
 import { toggles } from '../../../../app/services/dispatcher/commands/constants'
 import {
   adminMembershipFactory,
