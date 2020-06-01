@@ -2,11 +2,12 @@ const Sequelize = require('sequelize')
 const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
 const { channelOf } = require('./models/channel')
-const { membershipOf } = require('./models/membership')
-const { phoneNumberOf } = require('./models/phoneNumber')
-const { messageCountOf } = require('./models/messageCount')
 const { deauthorizationOf } = require('./models/deauthorization')
+const { hotlineMessageOf } = require('./models/hotlineMessages')
 const { inviteOf } = require('./models/invite')
+const { membershipOf } = require('./models/membership')
+const { messageCountOf } = require('./models/messageCount')
+const { phoneNumberOf } = require('./models/phoneNumber')
 const { smsSenderOf } = require('./models/smsSender')
 const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
@@ -20,6 +21,7 @@ const initDb = () => {
   const db = {
     channel: channelOf(sequelize, Sequelize),
     deauthorization: deauthorizationOf(sequelize, Sequelize),
+    hotlineMessage: hotlineMessageOf(sequelize, Sequelize),
     invite: inviteOf(sequelize, Sequelize),
     membership: membershipOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
