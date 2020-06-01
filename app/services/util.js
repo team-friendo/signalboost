@@ -1,4 +1,4 @@
-const { concat, take, drop, isEmpty } = require('lodash')
+const { concat, take, drop, isEmpty, get } = require('lodash')
 
 /**************** Promises ****************/
 
@@ -56,7 +56,10 @@ const loggerOf = prefix =>
           console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.status} ${sbStatus.message}`)
           return sbStatus
         },
-        error: e => console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`),
+        error: e =>
+          console.error(
+            `[${prefix} | ${nowTimestamp()}] ${get(e, 'errors[0].message', e.message)}\n${e.stack}`,
+          ),
         fatalError: e => {
           console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
           console.error('ABORTING.')
