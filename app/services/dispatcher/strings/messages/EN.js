@@ -46,6 +46,9 @@ const parseErrors = {
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and ${maxVouchLevel}.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} does not contain a valid hotline message number. A valid hotline message number looks like: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber

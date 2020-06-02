@@ -14,8 +14,13 @@ const {
  *
  * type Executable = {
  *   command: string,
- *   payload: string,
+ *   payload: string | HotlineReply,
  *   language: 'EN' | 'ES' | 'FR'
+ * }
+ *
+ * type HotlineReply {
+ *   messageId: number,
+ *   reply: string,
  * }
  *
  * type ParseError = {
@@ -98,6 +103,8 @@ const validatePayload = commandMatch => {
       return validatePhoneNumberList(commandMatch)
     case commands.VOUCH_LEVEL:
       return validateVouchLevel(commandMatch)
+    case commands.REPLY:
+      return validateMessageId(commandMatch)
     default:
       return commandMatch
   }
@@ -161,6 +168,26 @@ const validateVouchLevel = commandMatch => {
   return !isValidVouchLevel
     ? { command, matches, error: parseErrors.invalidVouchLevel(matches[2]) }
     : commandMatch
+}
+
+// CommandMatch -> CommandMatch | ParseError
+const validateMessageId = commandMatch => {
+  const { command, language, matches } = commandMatch
+  const parseErrors = messagesIn(language).parseErrors
+
+  const payload = matches[2]
+  const validationMatches = new RegExp(`^#(\\d+)(.*)`, 'i').exec(payload.trim())
+
+  return isEmpty(validationMatches)
+    ? { command, matches, error: parseErrors.invalidHotlineMessageId(payload) }
+    : {
+        ...commandMatch,
+        matches: [
+          null,
+          null,
+          { messageId: parseInt(validationMatches[1]), reply: validationMatches[2].trim() },
+        ],
+      }
 }
 
 module.exports = { parseExecutable }

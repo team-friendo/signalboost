@@ -46,6 +46,9 @@ const parseErrors = {
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber

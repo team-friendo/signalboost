@@ -45,6 +45,9 @@ const parseErrors = {
 
   invalidVouchLevel: invalidVouchLevel =>
     `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} no contiene un número válido de mensaje de línea directa. Un número válido de mensaje de línea directa se ve así: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber

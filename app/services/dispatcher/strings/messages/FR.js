@@ -48,6 +48,9 @@ const parseErrors = {
 
   invalidVouchLevel: invalidVouchLevel =>
     `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et ${maxVouchLevel}.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} ne contient pas de numéro de message hotline valide. Un numéro de message de hotline valide ressemble à: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
