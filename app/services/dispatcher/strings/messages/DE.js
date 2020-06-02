@@ -461,7 +461,7 @@ Antworte HILFE für mehr Informationen.`,
 }
 
 const prefixes = {
-  hotlineMessage: `HOTLINE NACHRICHT`,
+  hotlineMessage: messageId => `HOTLINE NACHRICHT #${messageId}`,
 }
 
 module.exports = {

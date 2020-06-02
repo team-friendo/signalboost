@@ -5,7 +5,7 @@ const {
 } = require('../../config')
 
 // ({Database, string, string}) => Promise<string>
-const findOrCreateId = async ({ db, channelPhoneNumber, memberPhoneNumber }) => {
+const getMessageId = async ({ db, channelPhoneNumber, memberPhoneNumber }) => {
   const [hm] = await db.hotlineMessage.findOrCreate({
     where: { channelPhoneNumber, memberPhoneNumber },
   })
@@ -30,4 +30,4 @@ const deleteExpired = db =>
     },
   })
 
-module.exports = { findOrCreateId, findMemberPhoneNumber, deleteExpired }
+module.exports = { getMessageId, findMemberPhoneNumber, deleteExpired }

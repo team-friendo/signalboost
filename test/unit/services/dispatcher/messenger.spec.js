@@ -15,6 +15,7 @@ import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../../app/config'
 import channelRepository from '../../../../app/db/repositories/channel'
+import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
 const {
   signal: { signupPhoneNumber, broadcastBatchSize },
 } = require('../../../../app/config')
@@ -25,6 +26,7 @@ describe('messenger service', () => {
   const channelPhoneNumber = genPhoneNumber()
   const subscriberPhoneNumbers = times(2, genPhoneNumber)
   const adminPhoneNumbers = times(4, genPhoneNumber)
+  const messageId = 42
   const channel = {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
@@ -118,7 +120,8 @@ describe('messenger service', () => {
       countCommandStub,
       countBroadcastStub,
       countHotlineStub,
-      setExpirationStub
+      setExpirationStub,
+      getMessageIdStub
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
@@ -135,6 +138,9 @@ describe('messenger service', () => {
         .stub(messageCountRepository, 'countHotline')
         .returns(Promise.resolve())
       setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
+      getMessageIdStub = sinon
+        .stub(hotlineMessageRepository, 'getMessageId')
+        .returns(Promise.resolve(messageId))
     })
 
     afterEach(() => {
@@ -146,6 +152,7 @@ describe('messenger service', () => {
       countBroadcastStub.restore()
       countHotlineStub.restore()
       setExpirationStub.restore()
+      getMessageIdStub.restore()
     })
 
     describe('a broadcast message', () => {
@@ -285,6 +292,7 @@ describe('messenger service', () => {
                 sdMessage,
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
+                messageId,
               }).messageBody
               expect(sendMessageStub.getCall(index).args).to.eql([
                 sock,
@@ -327,6 +335,7 @@ describe('messenger service', () => {
                 sdMessage,
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
+                messageId,
               }).messageBody
 
               expect(sendMessageStub.getCall(index).args).to.eql([
@@ -579,9 +588,10 @@ describe('messenger service', () => {
           sdMessage: sdMessageOf(channel, 'blah'),
           messageType: messageTypes.HOTLINE_MESSAGE,
           language: languages.EN,
+          messageId,
         }
         expect(messenger.addHeader(msg)).to.eql(
-          sdMessageOf(channel, `[${messages.prefixes.hotlineMessage}]\nblah`),
+          sdMessageOf(channel, `[${messages.prefixes.hotlineMessage(messageId)}]\nblah`),
         )
       })
     })

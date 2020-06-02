@@ -26,7 +26,7 @@ describe('hotlineMessage repository', () => {
     db.sequelize.close()
   })
 
-  describe('#findOrCreateId', () => {
+  describe('#getMessageId', () => {
     beforeEach(async () => {
       hotlineMessage = await db.hotlineMessage.create(
         hotlineMessageFactory({ channelPhoneNumber, memberPhoneNumber }),
@@ -36,7 +36,7 @@ describe('hotlineMessage repository', () => {
     describe('for a member who has already sent a message to the channel', () => {
       it('retrieves the existing hotline message id number', async () => {
         expect(
-          await hotlineMessageRepository.findOrCreateId({
+          await hotlineMessageRepository.getMessageId({
             db,
             channelPhoneNumber,
             memberPhoneNumber,
@@ -48,7 +48,7 @@ describe('hotlineMessage repository', () => {
     describe('for a member who has not yet sent a message to the channel', () => {
       it('creates and returns a new hotline message id number', async () => {
         expect(
-          await hotlineMessageRepository.findOrCreateId({
+          await hotlineMessageRepository.getMessageId({
             db,
             channelPhoneNumber,
             memberPhoneNumber: memberPhoneNumber2,

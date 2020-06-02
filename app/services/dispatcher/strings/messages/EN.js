@@ -449,7 +449,7 @@ Reply with HELP for more info.`,
 }
 
 const prefixes = {
-  hotlineMessage: `HOTLINE MESSAGE`,
+  hotlineMessage: messageId => `HOTLINE MESSAGE #${messageId}`,
 }
 
 module.exports = {

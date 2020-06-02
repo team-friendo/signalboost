@@ -432,7 +432,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     'Ce numéro accepte uniquement les messages envoyés avec Signal Private Messenger. Veuillez installer Signal depuis https://signal.org et réessayer.',
 
   noop: 'Oups! Ceci n’est pas une commande!',
-  
+
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
@@ -476,7 +476,7 @@ Commande AIDE pour plus de renseignements.`,
 }
 
 const prefixes = {
-  hotlineMessage: `HOTLINE`,
+  hotlineMessage: messageId => `MESSAGE HOTLINE #${messageId}`,
 }
 
 module.exports = {

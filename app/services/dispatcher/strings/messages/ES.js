@@ -474,7 +474,7 @@ Responda con AYUDA para más información.`,
 }
 
 const prefixes = {
-  hotlineMessage: `LÍNEA DIRECTA`,
+  hotlineMessage: messageId => `LÍNEA DIRECTA #${messageId}`,
 }
 
 module.exports = {
