@@ -39,14 +39,20 @@ const execute = async (executable, dispatchable) => {
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
 
   // if payload parse error occured return early and notify sender
-  if (executable.error)
+  if (executable.error) {
+    // sorry for this gross special casing! working fast during a mass mobilization! -aguestuser
+    const message =
+      command === commands.REPLY && sender.type !== memberTypes.ADMIN
+        ? messagesIn(sender.language).commandResponses.hotlineReply.notAdmin
+        : executable.error
     return {
       command,
       payload,
       status: statuses.ERROR,
-      message: executable.error,
+      message,
       notifications: [],
     }
+  }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
@@ -468,23 +474,34 @@ const maybeReplyToHotlineMessage = (db, channel, sender, hotlineReply) => {
   return replyToHotlineMessage(db, channel, sender, hotlineReply, cr)
 }
 
-const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) =>
-  hotlineMessageRepository
-    .findMemberPhoneNumber({ db, id: hotlineReply.messageId })
-    .then(memberPhoneNumber => ({
+const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) => {
+  try {
+    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber({
+      db,
+      id: hotlineReply.messageId,
+    })
+    const membership = await membershipRepository.findMembership(
+      db,
+      channel.phoneNumber,
+      memberPhoneNumber,
+    )
+    return {
       status: statuses.SUCCESS,
       message: cr.success(hotlineReply),
-      notifications: hotlineReplyNotificationsOf(channel, sender, memberPhoneNumber, hotlineReply),
-    }))
-    .catch(() => ({
+      notifications: hotlineReplyNotificationsOf(channel, sender, hotlineReply, membership),
+    }
+  } catch (e) {
+    return {
       status: statuses.ERROR,
       message: cr.invalidMessageId(hotlineReply.messageId),
-    }))
+    }
+  }
+}
 
-const hotlineReplyNotificationsOf = (channel, sender, memberPhoneNumber, hotlineReply) => [
+const hotlineReplyNotificationsOf = (channel, sender, hotlineReply, membership) => [
   {
-    recipient: memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.hotlineReplyOf(
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.hotlineReplyOf(
       hotlineReply,
       memberTypes.SUBSCRIBER,
     ),

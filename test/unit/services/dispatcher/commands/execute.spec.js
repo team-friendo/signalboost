@@ -1577,29 +1577,44 @@ describe('executing commands', () => {
 
   describe('REPLY command', () => {
     const messageId = 1312
+    const crFR = messagesIn(languages.FR).commandResponses
     const dispatchable = {
       db,
       channel,
-      sender: admin,
+      sender: { ...admin, language: languages.FR },
       sdMessage: sdMessageOf(channel, 'REPLY #1312 foo'),
     }
 
-    let findMemberPhoneNumberStub
+    let findMemberPhoneNumberStub, findMembershipStub
     beforeEach(() => {
       findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
+      findMembershipStub = sinon.stub(membershipRepository, 'findMembership')
     })
 
-    afterEach(() => findMemberPhoneNumberStub.restore())
+    afterEach(() => {
+      findMemberPhoneNumberStub.restore()
+      findMembershipStub.restore()
+    })
 
     describe('when sender is an admin', () => {
       describe('when hotline message id exists', () => {
-        beforeEach(() => findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber)))
+        beforeEach(() => {
+          findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+          findMembershipStub.returns(
+            Promise.resolve(
+              membershipFactory({
+                channel: channel.phoneNumber,
+                memberPhoneNumber: subscriber.phoneNumber,
+              }),
+            ),
+          )
+        })
 
         it('returns SUCCESS with notifications for admins and member associated with id', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
-            message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+            message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
             notifications: [
               {
                 recipient: subscriber.phoneNumber,
@@ -1623,7 +1638,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.ERROR,
-            message: CR.hotlineReply.invalidMessageId(messageId),
+            message: crFR.hotlineReply.invalidMessageId(messageId),
             notifications: [],
             payload: { messageId: 1312, reply: 'foo' },
           })
