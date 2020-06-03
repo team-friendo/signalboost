@@ -268,6 +268,7 @@ const _awaitTrustVerification = async (
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
         // ignore bad JSON
+        sock.removeListener('data', handle)
         return Promise.resolve()
       } else if (
         type === messageTypes.TRUSTED_FINGERPRINT &&
