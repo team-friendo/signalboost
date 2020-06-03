@@ -6,6 +6,7 @@ import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
 import { inviteFactory } from '../../../support/factories/invite'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
+import { hotlineMessageFactory } from '../../../support/factories/hotlineMessages'
 const {
   signal: { defaultMessageExpiryTime },
 } = require('../../../../app/config')
@@ -57,6 +58,17 @@ describe('channel model', () => {
       },
     )
 
+  const createChannelWithHotlineMessages = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        hotlineMessages: [hotlineMessageFactory(), hotlineMessageFactory()],
+      },
+      {
+        include: [{ model: db.hotlineMessage }],
+      },
+    )
+
   before(async () => {
     db = initDb()
   })
@@ -65,6 +77,7 @@ describe('channel model', () => {
     await Promise.all([
       db.messageCount.destroy({ where: {}, force: true }),
       db.membership.destroy({ where: {}, force: true }),
+      db.hotlineMessage.destroy({ where: {}, force: true }),
     ])
     await db.channel.destroy({ where: {}, force: true })
   })
@@ -119,7 +132,7 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, messageCount, memberships, invites, deauthorizations
+    let channel, messageCount, memberships, invites, deauthorizations, hotlineMessages
 
     describe('memberships', () => {
       beforeEach(async () => {
@@ -196,7 +209,7 @@ describe('channel model', () => {
         deauthorizations = await channel.getDeauthorizations()
       })
 
-      it('has many invites', async () => {
+      it('has many deauthorizations', async () => {
         expect(deauthorizations).to.have.length(2)
       })
 
@@ -210,6 +223,29 @@ describe('channel model', () => {
         const deauthorizationCount = await db.deauthorization.count()
         await channel.destroy()
         expect(await db.deauthorization.count()).to.eql(deauthorizationCount - 2)
+      })
+    })
+
+    describe('hotline messages', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithHotlineMessages()
+        hotlineMessages = await channel.getHotlineMessages()
+      })
+
+      it('has many hotlineMessages', async () => {
+        expect(hotlineMessages).to.have.length(2)
+      })
+
+      it('sets the channel phone number as the foreign key in each invite', () => {
+        expect(hotlineMessages.map(s => s.channelPhoneNumber)).to.eql(
+          times(2, () => channel.phoneNumber),
+        )
+      })
+
+      it('deletes hotlineMessages when it deletes channel', async () => {
+        const hotlineMessageCount = await db.hotlineMessage.count()
+        await channel.destroy()
+        expect(await db.hotlineMessage.count()).to.eql(hotlineMessageCount - 2)
       })
     })
   })

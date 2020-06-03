@@ -6,6 +6,10 @@ const memberTypes = {
   NONE: 'NONE',
 }
 
+const findMembership = (db, channelPhoneNumber, memberPhoneNumber) =>
+  db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }) ||
+  Promise.reject('no membership found')
+
 const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
     Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
@@ -97,6 +101,7 @@ module.exports = {
   addAdmin,
   addAdmins,
   addSubscriber,
+  findMembership,
   isMember,
   isAdmin,
   isSubscriber,

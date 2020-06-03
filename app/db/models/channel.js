@@ -63,6 +63,11 @@ const channelOf = (sequelize, DataTypes) => {
       hooks: true,
       onDelete: 'cascade',
     })
+
+    channel.hasMany(db.hotlineMessage, {
+      hooks: true,
+      onDelete: 'cascade',
+    })
   }
 
   return channel

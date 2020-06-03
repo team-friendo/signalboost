@@ -1,6 +1,7 @@
 const signal = require('../signal')
 const channelRepository = require('../../db/repositories/channel')
 const messageCountRepository = require('../../db/repositories/messageCount')
+const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
@@ -158,6 +159,12 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
   const recipients = channelRepository.getAdminMemberships(channel)
   const response = messagesIn(language).notifications.hotlineMessageSent(channel)
 
+  const messageId = await hotlineMessageRepository.getMessageId({
+    db,
+    channelPhoneNumber: channel.phoneNumber,
+    memberPhoneNumber: sender.phoneNumber,
+  })
+
   await Promise.all(
     recipients.map(recipient =>
       notify({
@@ -170,6 +177,7 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
             sdMessage,
             messageType: HOTLINE_MESSAGE,
             language: recipient.language,
+            messageId,
           }).messageBody,
         },
       }),
@@ -245,11 +253,11 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
  * HELPERS
  **********/
 
-// { Channel, string, string, string, string } -> string
-const addHeader = ({ channel, sdMessage, messageType, language }) => {
+// { Channel, string, string, string, string, string? } -> string
+const addHeader = ({ channel, sdMessage, messageType, language, messageId }) => {
   const prefix =
     messageType === HOTLINE_MESSAGE
-      ? `[${messagesIn(language).prefixes.hotlineMessage}]\n`
+      ? `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
       : `[${channel.name}]\n`
   return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
 }

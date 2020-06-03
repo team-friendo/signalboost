@@ -4,6 +4,7 @@ const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const deauthorizationRepository = require('../../../db/repositories/deauthorization')
+const hotlineMessageRepository = require('../../../db/repositories/hotlineMessage')
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
@@ -38,14 +39,20 @@ const execute = async (executable, dispatchable) => {
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
 
   // if payload parse error occured return early and notify sender
-  if (executable.error)
+  if (executable.error) {
+    // sorry for this gross special casing! working fast during a mass mobilization! -aguestuser
+    const message =
+      command === commands.REPLY && sender.type !== memberTypes.ADMIN
+        ? messagesIn(sender.language).commandResponses.hotlineReply.notAdmin
+        : executable.error
     return {
       command,
       payload,
       status: statuses.ERROR,
-      message: executable.error,
+      message,
       notifications: [],
     }
+  }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
@@ -55,14 +62,15 @@ const execute = async (executable, dispatchable) => {
     [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
     [commands.HELP]: () => showHelp(db, channel, sender),
+    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
-    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
-    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
@@ -455,6 +463,54 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
     message: messagesIn(sender.language).notifications.channelRenamed(channel.name, newChannelName),
   }))
 }
+
+// REPLY
+
+const maybeReplyToHotlineMessage = (db, channel, sender, hotlineReply) => {
+  const cr = messagesIn(sender.language).commandResponses.hotlineReply
+  if (sender.type !== ADMIN) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+  return replyToHotlineMessage(db, channel, sender, hotlineReply, cr)
+}
+
+const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) => {
+  try {
+    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber({
+      db,
+      id: hotlineReply.messageId,
+    })
+    const membership = await membershipRepository.findMembership(
+      db,
+      channel.phoneNumber,
+      memberPhoneNumber,
+    )
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(hotlineReply),
+      notifications: hotlineReplyNotificationsOf(channel, sender, hotlineReply, membership),
+    }
+  } catch (e) {
+    return {
+      status: statuses.ERROR,
+      message: cr.invalidMessageId(hotlineReply.messageId),
+    }
+  }
+}
+
+const hotlineReplyNotificationsOf = (channel, sender, hotlineReply, membership) => [
+  {
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.hotlineReplyOf(
+      hotlineReply,
+      memberTypes.SUBSCRIBER,
+    ),
+  },
+  ...getAllAdminsExcept(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
+    recipient: memberPhoneNumber,
+    message: messagesIn(language).notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+  })),
+]
 
 // ON / OFF TOGGLES FOR RESPONSES, VOUCHING
 

@@ -668,6 +668,41 @@ describe('parse module', () => {
       })
     })
 
+    describe('REPLY command', () => {
+      it('parses a REPLY command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['REPLY #1312', ' reply #1312 '],
+          },
+          {
+            language: languages.ES,
+            messages: ['RESPONDER #1312', ' responder #1312 '],
+          },
+          {
+            language: languages.FR,
+            messages: ['RÉPONDRE #1312', 'REPONDRE #1312', ' repondre #1312 '],
+          },
+          {
+            language: languages.DE,
+            messages: ['ANTWORTEN #1312', ' antworten #1312 '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.REPLY,
+              language,
+              payload: {
+                messageId: 1312,
+                reply: '',
+              },
+            }),
+          ),
+        )
+      })
+    })
+
     describe('SET_LANGUAGE command', () => {
       it('sets language regardless of language in which new language is specified', () => {
         const variants = [
@@ -811,7 +846,7 @@ describe('parse module', () => {
   })
 
   describe('validating payloads', () => {
-    describe('a no-payload command is followed by a payload', () => {
+    describe('a no-payload command followed by a payload', () => {
       it('is parsed as a broadcast message', () => {
         const variants = [
           {
@@ -984,6 +1019,43 @@ describe('parse module', () => {
               expect(parseExecutable(message).error).to.eql(
                 messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
               ),
+          )
+        })
+      })
+    })
+
+    describe('a hotline message id payload', () => {
+      describe('when it contains a valid message id', () => {
+        const variants = [
+          { language: languages.EN, message: 'REPLY #1312 foo' },
+          { language: languages.ES, message: 'RESPONDER #1312 foo' },
+          { language: languages.FR, message: 'RÉPONDRE #1312 foo' },
+          { language: languages.DE, message: 'ANTWORTEN #1312 foo' },
+        ]
+
+        it('returns a command match with a HotlineReply as a payload', () => {
+          variants.forEach(({ language, message }) =>
+            expect(parseExecutable(message)).to.eql({
+              command: commands.REPLY,
+              language,
+              payload: { messageId: 1312, reply: 'foo' },
+            }),
+          )
+        })
+      })
+
+      describe('when it does not contain a valid message id', () => {
+        const variants = [
+          { language: languages.EN, message: 'REPLY #abc foo' },
+          { language: languages.ES, message: 'RESPONDER #abc foo' },
+          // { language: languages.FR, message: 'RÉPONDRE foo' },
+          // { language: languages.DE, message: 'ANTWORTEN foo' },
+        ]
+        it('returns a parse error', () => {
+          variants.forEach(({ language, message }) =>
+            expect(parseExecutable(message).error).to.eql(
+              messagesIn(language).parseErrors.invalidHotlineMessageId('#abc foo'),
+            ),
           )
         })
       })

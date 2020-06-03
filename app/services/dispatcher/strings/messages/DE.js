@@ -46,6 +46,9 @@ const parseErrors = {
 
   invalidVouchLevel: vouchLevel =>
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -128,6 +131,9 @@ ENTFERNEN +491701234567
 
 HOTLINE AN / AUS
 -> Schaltet die Hotline Funktion an oder aus
+
+ANTWORTEN #1312
+-> Sendet eine private Antwort an [HOTLINE #1312]
 
 VERTRAUEN AN / AUS
 -> Bestimmt ob es einer Einladung bedarf um sich beim Kanal anzumelden
@@ -284,6 +290,15 @@ Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}
     notAdmin,
   },
 
+  // REPLY
+
+  hotlineReply: {
+    success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    notAdmin,
+    invalidMessageId: messageId =>
+      `Entschuldigung, die Hotline-Nachrichtenkennung #${messageId} ist abgelaufen oder hat nie existiert.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -399,14 +414,15 @@ Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch
   hotlineMessageSent: channel =>
     `Deine Nachricht wurde an die Admins des [${channel.name}] Kanals weitergeleitet.
 
-Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.
-
-(Hinweis: alle Nachrichten weren anonym weitergeleitet. Wenn du möchtest, dass dir ein Admin antworten kann, schreibe deine Nummer in die Nachricht)`,
+Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
+
+  hotlineReplyOf: ({ messageId, reply }, memberType) =>
+    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
 
   inviteReceived: channelName =>
     `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
@@ -461,7 +477,11 @@ Antworte HILFE für mehr Informationen.`,
 }
 
 const prefixes = {
-  hotlineMessage: `HOTLINE NACHRICHT`,
+  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineReplyOf: (messageId, memberType) =>
+    memberType === memberTypes.ADMIN
+      ? `ANTWORT AUF HOTLINE #${messageId}`
+      : `PRIVATE ANTWORT VON ADMINS`,
 }
 
 module.exports = {

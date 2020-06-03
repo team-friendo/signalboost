@@ -45,6 +45,9 @@ const parseErrors = {
 
   invalidVouchLevel: invalidVouchLevel =>
     `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
+
+  invalidHotlineMessageId: payload =>
+    `${payload} no contiene un número válido de mensaje de línea directa. Un número válido de mensaje de línea directa se ve así: #123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -132,6 +135,9 @@ QUITAR + 1-555-555-5555
 
 LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 -> habilita o deshabilita mensajes anónimos a los admins
+
+RESPONDER #1312
+-> envía una respuesta privada a [LÍNEA DIRECTA #1312]
 
 ATESTIGUANDO ACTIVADA / DESACTIVADA
 -> activa o desactiva el requisito de recibir una invitación para suscribirse
@@ -261,6 +267,15 @@ ${failedPhoneNumbers.join(',')}`,
     dbError: (oldName, newName) =>
       `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
     notAdmin,
+  },
+
+  // REPLY
+
+  hotlineReply: {
+    success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    notAdmin,
+    invalidMessageId: messageId =>
+      `Lo sentimos, el identificador de mensaje de línea directa #${messageId} ha caducado o nunca ha existido.`,
   },
 
   // JOIN
@@ -403,14 +418,15 @@ Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
   hotlineMessageSent: channel =>
     `Su mensaje se envió de forma anónima a los admins de [${channel.name}].
     
-Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
-
-(Nota: todos los mensajes se reenvían de forma anónima. Incluya su número de teléfono si desea que los administradores le respondan individualmente).`,
+Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
+
+  hotlineReplyOf: ({ messageId, reply }, memberType) =>
+    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
 
   inviteReceived: channelName =>
     `Hola! Usted ha recibido una invitación para unirse al canal Signalboost de [${channelName}]. Por favor, responda con ACEPTAR o RECHAZAR.`,
@@ -474,7 +490,11 @@ Responda con AYUDA para más información.`,
 }
 
 const prefixes = {
-  hotlineMessage: `LÍNEA DIRECTA`,
+  hotlineMessage: messageId => `LÍNEA DIRECTA #${messageId}`,
+  hotlineReplyOf: (messageId, memberType) =>
+    memberType === memberTypes.ADMIN
+      ? `RESPONDER A LA LÍNEA DIRECTA #${messageId}`
+      : `RESPUESTA PRIVADA DE ADMINS`,
 }
 
 module.exports = {
