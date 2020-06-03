@@ -287,6 +287,15 @@ Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}
     notAdmin,
   },
 
+  // REPLY
+
+  hotlineReply: {
+    success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    notAdmin,
+    invalidMessageId: messageId =>
+      `Entschuldigung, die Hotline-Nachrichtenkennung #${messageId} ist abgelaufen oder hat nie existiert.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -402,14 +411,15 @@ Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch
   hotlineMessageSent: channel =>
     `Deine Nachricht wurde an die Admins des [${channel.name}] Kanals weitergeleitet.
 
-Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.
-
-(Hinweis: alle Nachrichten weren anonym weitergeleitet. Wenn du möchtest, dass dir ein Admin antworten kann, schreibe deine Nummer in die Nachricht)`,
+Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
+
+  hotlineReplyOf: ({ messageId, reply }, memberType) =>
+    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
 
   inviteReceived: channelName =>
     `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
@@ -464,7 +474,11 @@ Antworte HILFE für mehr Informationen.`,
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE NACHRICHT #${messageId}`,
+  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineReplyOf: (messageId, memberType) =>
+    memberType === memberTypes.ADMIN
+      ? `ANTWORT AUF HOTLINE #${messageId}`
+      : `PRIVATE ANTWORT VON ADMINS`,
 }
 
 module.exports = {

@@ -266,6 +266,15 @@ ${failedPhoneNumbers.join(',')}`,
     notAdmin,
   },
 
+  // REPLY
+
+  hotlineReply: {
+    success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    notAdmin,
+    invalidMessageId: messageId =>
+      `Lo sentimos, el identificador de mensaje de línea directa #${messageId} ha caducado o nunca ha existido.`,
+  },
+
   // JOIN
 
   join: {
@@ -406,14 +415,15 @@ Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
   hotlineMessageSent: channel =>
     `Su mensaje se envió de forma anónima a los admins de [${channel.name}].
     
-Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.
-
-(Nota: todos los mensajes se reenvían de forma anónima. Incluya su número de teléfono si desea que los administradores le respondan individualmente).`,
+Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
+
+  hotlineReplyOf: ({ messageId, reply }, memberType) =>
+    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
 
   inviteReceived: channelName =>
     `Hola! Usted ha recibido una invitación para unirse al canal Signalboost de [${channelName}]. Por favor, responda con ACEPTAR o RECHAZAR.`,
@@ -478,6 +488,10 @@ Responda con AYUDA para más información.`,
 
 const prefixes = {
   hotlineMessage: messageId => `LÍNEA DIRECTA #${messageId}`,
+  hotlineReplyOf: (messageId, memberType) =>
+    memberType === memberTypes.ADMIN
+      ? `RESPONDER A LA LÍNEA DIRECTA #${messageId}`
+      : `RESPUESTA PRIVADA DE ADMINS`,
 }
 
 module.exports = {

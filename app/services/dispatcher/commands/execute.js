@@ -4,6 +4,7 @@ const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
 const deauthorizationRepository = require('../../../db/repositories/deauthorization')
+const hotlineMessageRepository = require('../../../db/repositories/hotlineMessage')
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
@@ -55,14 +56,15 @@ const execute = async (executable, dispatchable) => {
     [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
     [commands.HELP]: () => showHelp(db, channel, sender),
+    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
     [commands.INFO]: () => showInfo(db, channel, sender),
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
-    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
-    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
     [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
@@ -455,6 +457,43 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
     message: messagesIn(sender.language).notifications.channelRenamed(channel.name, newChannelName),
   }))
 }
+
+// REPLY
+
+const maybeReplyToHotlineMessage = (db, channel, sender, hotlineReply) => {
+  const cr = messagesIn(sender.language).commandResponses.hotlineReply
+  if (sender.type !== ADMIN) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+  return replyToHotlineMessage(db, channel, sender, hotlineReply, cr)
+}
+
+const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) =>
+  hotlineMessageRepository
+    .findMemberPhoneNumber({ db, id: hotlineReply.messageId })
+    .then(memberPhoneNumber => ({
+      status: statuses.SUCCESS,
+      message: cr.success(hotlineReply),
+      notifications: hotlineReplyNotificationsOf(channel, sender, memberPhoneNumber, hotlineReply),
+    }))
+    .catch(() => ({
+      status: statuses.ERROR,
+      message: cr.invalidMessageId(hotlineReply.messageId),
+    }))
+
+const hotlineReplyNotificationsOf = (channel, sender, memberPhoneNumber, hotlineReply) => [
+  {
+    recipient: memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.hotlineReplyOf(
+      hotlineReply,
+      memberTypes.SUBSCRIBER,
+    ),
+  },
+  ...getAllAdminsExcept(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
+    recipient: memberPhoneNumber,
+    message: messagesIn(language).notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+  })),
+]
 
 // ON / OFF TOGGLES FOR RESPONSES, VOUCHING
 
