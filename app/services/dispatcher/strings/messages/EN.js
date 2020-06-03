@@ -130,6 +130,9 @@ REMOVE +1-555-555-5555
 HOTLINE ON / OFF
 -> enables or disables hotline
 
+REPLY #1312
+-> sends private reply to [HOTLINE #1312]
+
 VOUCHING ON / OFF
 -> enables or disables requirement to receive an invite to subscribe
 

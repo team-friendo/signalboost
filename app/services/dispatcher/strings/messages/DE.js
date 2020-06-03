@@ -132,6 +132,9 @@ ENTFERNEN +491701234567
 HOTLINE AN / AUS
 -> Schaltet die Hotline Funktion an oder aus
 
+ANTWORTEN #1312
+-> Sendet eine private Antwort an [HOTLINE #1312]
+
 VERTRAUEN AN / AUS
 -> Bestimmt ob es einer Einladung bedarf um sich beim Kanal anzumelden
 

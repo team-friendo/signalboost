@@ -136,6 +136,9 @@ QUITAR + 1-555-555-5555
 LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 -> habilita o deshabilita mensajes anónimos a los admins
 
+RESPONDER #1312
+-> envía una respuesta privada a [LÍNEA DIRECTA #1312]
+
 ATESTIGUANDO ACTIVADA / DESACTIVADA
 -> activa o desactiva el requisito de recibir una invitación para suscribirse
 

@@ -136,6 +136,9 @@ SUPPRIMER +33612345678
 HOTLINE ON / OFF
 -> Activer ou désactiver la hotline
 
+RÉPONDRE #1312
+-> Envoie une réponse privée à [HOTLINE #1312]
+
 SE PORTER GARANT ON / OFF
 -> Activer ou désactiver l'exigence de recevoir une invitation à s'abonner
 
