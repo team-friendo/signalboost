@@ -35,7 +35,7 @@ const test = {
   setExpiryInterval: 1, // 1 milli
   minResendInterval: 2, // 20 millis
   maxResendInterval: 256, // ~ 2.5 sec,
-  broadcastBatchSize: 2,
+  broadcastBatchSize: 1,
   broadcastBatchInterval: 10, // 10 millis
   maxVouchLevel: 10,
 }

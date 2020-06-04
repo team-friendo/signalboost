@@ -139,6 +139,9 @@ LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 RESPONDER #1312
 -> envía una respuesta privada a [LÍNEA DIRECTA #1312]
 
+PRIVADO buenas noches, admins
+-> envía un mensaje privado "buenas noches, admins" a todos los administradores del canal
+
 ATESTIGUANDO ACTIVADA / DESACTIVADA
 -> activa o desactiva el requisito de recibir una invitación para suscribirse
 
@@ -246,6 +249,13 @@ ${support}`,
 Intenta emitir nuevamente INVITAR para los siguientes números:
       
 ${failedPhoneNumbers.join(',')}`,
+  },
+
+  // PRIVATE
+
+  private: {
+    notAdmin,
+    signalError: `¡Ay! Se produjo un error al intentar enviar un mensaje privado a los administradores de este canal. ¡Inténtelo de nuevo!`
   },
 
   // REMOVE
@@ -495,6 +505,8 @@ const prefixes = {
     memberType === memberTypes.ADMIN
       ? `RESPONDER A LA LÍNEA DIRECTA #${messageId}`
       : `RESPUESTA PRIVADA DE ADMINS`,
+  broadcastMessage: `TRANSMITIR`,
+  privateMessage: `PRIVADO`,
 }
 
 module.exports = {

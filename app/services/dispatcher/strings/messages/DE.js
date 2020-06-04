@@ -135,6 +135,9 @@ HOTLINE AN / AUS
 ANTWORTEN #1312
 -> Sendet eine private Antwort an [HOTLINE #1312]
 
+PRIVAT Guten Abend, Admins
+-> sendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
+
 VERTRAUEN AN / AUS
 -> Bestimmt ob es einer Einladung bedarf um sich beim Kanal anzumelden
 
@@ -265,6 +268,14 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     success: `Du wurdest vom Kanal abgemeldet! Tschüssi!`,
     error: `UUps! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!`,
     notSubscriber,
+  },
+
+  // PRIVATE
+
+  private: {
+    notAdmin,
+    signalError:
+      `Ups! Beim Versuch, den Admins dieses Kanals eine private Nachricht zu senden, ist ein Fehler aufgetreten. Bitte versuchs erneut!`,
   },
 
   // REMOVE
@@ -482,6 +493,8 @@ const prefixes = {
     memberType === memberTypes.ADMIN
       ? `ANTWORT AUF HOTLINE #${messageId}`
       : `PRIVATE ANTWORT VON ADMINS`,
+  broadcastMessage: `ÜBERTRAGUNG`,
+  privateMessage: `PRIVAT`
 }
 
 module.exports = {

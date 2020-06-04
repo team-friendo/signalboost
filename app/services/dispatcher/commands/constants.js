@@ -24,6 +24,7 @@ const commands = {
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
   NOOP: 'NOOP',
+  PRIVATE: 'PRIVATE',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
   REPLY: 'REPLY',

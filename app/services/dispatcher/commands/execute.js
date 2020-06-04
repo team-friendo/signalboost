@@ -1,5 +1,6 @@
 const { commands, toggles } = require('./constants')
 const { statuses } = require('../../../services/util')
+const messenger = require('../messenger')
 const channelRepository = require('../../../db/repositories/channel')
 const membershipRepository = require('../../../db/repositories/membership')
 const inviteRepository = require('../../../db/repositories/invite')
@@ -9,7 +10,7 @@ const phoneNumberService = require('../../../../app/services/registrar/phoneNumb
 const signal = require('../../signal')
 const logger = require('../logger')
 const { get, isEmpty, uniq } = require('lodash')
-const { getAllAdminsExcept } = require('../../../db/repositories/channel')
+const { getAllAdminsExcept, getAdminMemberships } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../../db/repositories/membership')
 const { ADMIN, NONE } = memberTypes
@@ -33,7 +34,7 @@ const {
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
-  const { db, sock, channel, sender } = dispatchable
+  const { db, sock, channel, sender, sdMessage } = dispatchable
 
   // don't allow ANY command execution on the signup channel for non-admins
   if (channel.phoneNumber === signupPhoneNumber && sender.type !== ADMIN) return noop()
@@ -68,6 +69,7 @@ const execute = async (executable, dispatchable) => {
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
+    [commands.PRIVATE]: () => maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
@@ -166,6 +168,32 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       message: messagesIn(membership.language).notifications.adminAdded,
     })),
   ]
+}
+
+// ADMINS
+const maybePrivateMessageAdmins = async (db, sock, channel, sender, payload, sdMessage) => {
+  const cr = messagesIn(sender.language).commandResponses.private
+  if (sender.type !== ADMIN) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+
+  return Promise.all(
+    getAdminMemberships(channel).map(admin => {
+      return signal.sendMessage(
+        sock,
+        admin.memberPhoneNumber,
+        messenger.addHeader({
+          channel,
+          sdMessage: { ...sdMessage, messageBody: payload },
+          messageType: messenger.messageTypes.PRIVATE_MESSAGE,
+          language: admin.language,
+          memberType: admin.type
+        })
+      )
+    })
+  )
+    .then(() => ({ status: statuses.SUCCESS }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.signalError }))
 }
 
 // DECLINE

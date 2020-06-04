@@ -11,6 +11,7 @@ module.exports = {
   INVITE: ['INVITAR'],
   JOIN: ['HOLA'],
   LEAVE: ['ADIÓS', 'ADIOS'],
+  PRIVATE: ['PRIVADA', 'PRIVADO'],
   REMOVE: ['QUITAR'],
   RENAME: ['RENOMBRAR'],
   REPLY: ['RESPONDER'],
