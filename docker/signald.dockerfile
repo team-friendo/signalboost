@@ -22,6 +22,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     procps \
     pkg-config \
     python \
+    software-properties-common \
     xz-utils \
     wget \
     --fix-missing
@@ -46,18 +47,24 @@ ENV LC_CTYPE en_US.UTF-8
 # Signald attachments break if we use jdk11 (why?!??),
 # but buster does not provide a jdk8 installation candidate,
 # so we grab one from sid package repository...
-RUN echo "deb http://ftp.us.debian.org/debian sid main" \
-    | tee -a /etc/apt/sources.list \
-    && apt-get update -qq
+#RUN echo "deb http://ftp.us.debian.org/debian sid main" \
+#    | tee -a /etc/apt/sources.list \
+#    && apt-get update -qq
 
 # We install sudo as a hack to get around halting errors
 # in make commands that (needlessly) invoke it
-RUN apt-get update -qq
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        openjdk-8-jdk-headless \
-        sudo
+#RUN apt-get update -qq
+#RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+#        openjdk-8-jdk-headless \
+#        sudo
 
-ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
+#ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
+
+RUN wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add -
+RUN add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y adoptopenjdk-8-hotspot
+
+ENV JAVA_HOME "/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64"
 
 # ------------------------------------------------------
 # --- Install and Configure Signald (from source)
