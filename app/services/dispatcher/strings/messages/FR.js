@@ -139,6 +139,9 @@ HOTLINE ON / OFF
 RÉPONDRE #1312
 -> Envoie une réponse privée à [HOTLINE #1312]
 
+PRIVÉ bonsoir, admins
+-> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
+
 SE PORTER GARANT ON / OFF
 -> Activer ou désactiver l'exigence de recevoir une invitation à s'abonner
 
@@ -270,6 +273,13 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     success: `Vous êtes maintenant désabonné-e de ce canal. Au revoir!`,
     error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
     notSubscriber,
+  },
+
+  // PRIVATE
+
+  private: {
+    notAdmin,
+    signalError: `Oups! Une erreur s'est produite lors de l'envoi d'un message privé aux administrateurs de cette chaîne. Veuillez essayer de nouveau!`
   },
 
   // REMOVE
@@ -497,6 +507,8 @@ const prefixes = {
     memberType === memberTypes.ADMIN
       ? `RÉPONSE AU HOTLINE #${messageId}`
       : `RÉPONSE PRIVÉE DES ADMINS`,
+  broadcastMessage: `DIFFUSER`,
+  privateMessage: `PRIVÉ`,
 }
 
 module.exports = {

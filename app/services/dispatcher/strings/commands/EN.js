@@ -11,6 +11,7 @@ module.exports = {
   INVITE: ['INVITE'],
   JOIN: ['HELLO', 'JOIN', 'HI', 'HEY', 'HEYA', 'HEY THERE', 'WHASSUP'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
   LEAVE: ['GOODBYE', 'LEAVE'],
+  PRIVATE: ['PRIVATE'],
   REMOVE: ['REMOVE'],
   RENAME: ['RENAME'],
   REPLY: ['REPLY'],

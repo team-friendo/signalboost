@@ -1310,6 +1310,67 @@ describe('executing commands', () => {
     })
   })
 
+  describe('PRIVATE command', () => {
+    let sendMessageStub
+    const sdMessage = sdMessageOf(channel, 'PRIVATE hello this is private!')
+
+    beforeEach(async () => {
+      sendMessageStub = sinon.stub(signal, 'sendMessage')
+    })
+
+    afterEach(() => {
+      sendMessageStub.restore()
+    })
+
+    describe('when sender is not an admin', () => {
+      const dispatchable = { db, channel, sender: subscriber, sdMessage }
+
+      it('returns an error message to sender', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.PRIVATE,
+          payload: 'hello this is private!',
+          status: statuses.UNAUTHORIZED,
+          message: CR.private.notAdmin,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when sender is an admin', () => {
+      const dispatchable = { db, channel, sender: admin, sdMessage }
+
+      it('returns a success status', async () => {
+        const result = await processCommand(dispatchable)
+        expect(result).to.eql({
+          command: commands.PRIVATE,
+          payload: 'hello this is private!',
+          status: statuses.SUCCESS,
+          notifications: []
+        })
+      })
+
+      it('only messages admins', async () => {
+        const result = await processCommand(dispatchable)
+        const bystanderPhoneNumbers = bystanderAdminMemberships.concat([admin]).map(m => m.memberPhoneNumber).sort()
+        const sendMessageNumbers = sendMessageStub.getCalls().map((call) => call.args[1]).sort()
+        expect(sendMessageNumbers).to.eql(bystanderPhoneNumbers)
+      })
+
+      it('handles a signal sendMessage error', async () => {
+        sendMessageStub.returns(Promise.reject("signal failure"))
+
+        const result = await processCommand(dispatchable)
+        expect(result).to.eql({
+          command: commands.PRIVATE,
+          message: messagesIn(subscriber.language).commandResponses.private.signalError,
+          payload: 'hello this is private!',
+          status: statuses.ERROR,
+          notifications: []
+        })
+      })
+    })
+  })
+
   describe('REMOVE command', () => {
     const removalTargetNumber = channel.memberships[1].memberPhoneNumber
     let validateStub, isAdminStub, removeMemberStub, resolveMemberTypeStub

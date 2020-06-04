@@ -5,6 +5,7 @@ const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
+const { getAdminPhoneNumbers, getSubscriberPhoneNumbers } = require('../../db/repositories/channel')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
 const { statuses } = require('../../services/util')
@@ -31,9 +32,10 @@ const messageTypes = {
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
   COMMAND_RESULT: 'COMMAND_RESULT',
   SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
+  PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND_RESULT, SIGNUP_MESSAGE } = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND_RESULT, SIGNUP_MESSAGE, PRIVATE_MESSAGE } = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -133,17 +135,31 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
 
 // Dispatchable -> Promise<MessageCount>
 const broadcast = async ({ db, sock, channel, sdMessage }) => {
-  const recipients = channel.memberships.map(m => m.memberPhoneNumber)
+  const recipients = channel.memberships
 
   try {
     if (isEmpty(sdMessage.attachments)) {
-      await signal.broadcastMessage(sock, recipients, addHeader({ channel, sdMessage }))
+      await Promise.all(
+        recipients.map(recipient =>
+          signal.broadcastMessage(
+            sock,
+            [recipient.memberPhoneNumber],
+            addHeader({ channel, sdMessage, messageType: BROADCAST_MESSAGE, language: recipient.language, memberType: recipient.type })
+          )
+        ),
+      )
     } else {
       const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
       await sequence(
-        recipientBatches.map(recipientBatch => () =>
-          signal.broadcastMessage(sock, recipientBatch, addHeader({ channel, sdMessage })),
-        ),
+        recipientBatches.map(recipientBatch => {
+          recipientBatch.map(recipient => {
+            signal.broadcastMessage(
+              sock,
+              [recipient.memberPhoneNumber],
+              addHeader({ channel, sdMessage, messageType: BROADCAST_MESSAGE, language: recipient.language, memberType: recipient.type })
+            )
+          })
+        }),
         broadcastBatchInterval,
       )
     }
@@ -190,7 +206,11 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender }) => {
+const respond = ({ db, sock, channel, message, sender, command, status }) => {
+  // FIX: PRIVATE command sends out all messages including to sender
+  // because respond doesn't handle attachments, don't want to repeat message here
+  if (command === commands.PRIVATE && status === statuses.SUCCESS) return
+
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
     .then(() => messageCountRepository.countCommand(db, channel))
@@ -253,12 +273,22 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
  * HELPERS
  **********/
 
-// { Channel, string, string, string, string, string? } -> string
-const addHeader = ({ channel, sdMessage, messageType, language, messageId }) => {
-  const prefix =
-    messageType === HOTLINE_MESSAGE
-      ? `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
-      : `[${channel.name}]\n`
+
+// { Channel, string, string, string, string } -> string
+const addHeader = ({ channel, sdMessage, messageType, language, memberType, messageId }) => {
+  let prefix
+  if (messageType === HOTLINE_MESSAGE) {
+    prefix = `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
+  } else if (messageType === BROADCAST_MESSAGE) {
+    if (memberType === 'ADMIN') {
+      prefix = `[${messagesIn(language).prefixes.broadcastMessage}]\n`
+    } else {
+      prefix = `[${channel.name}]\n`
+    }
+  } else if (messageType === PRIVATE_MESSAGE) {
+    prefix = `[${messagesIn(language).prefixes.privateMessage}]\n`
+  }
+
   return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
 }
 

@@ -133,6 +133,9 @@ HOTLINE ON / OFF
 REPLY #1312
 -> sends private reply to [HOTLINE #1312]
 
+PRIVATE good evening admins
+-> sends private message "good evening admins" to all admins of the channel
+
 VOUCHING ON / OFF
 -> enables or disables requirement to receive an invite to subscribe
 
@@ -261,6 +264,13 @@ If you already have an invite, try sending ACCEPT`,
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
     notSubscriber,
+  },
+
+  // PRIVATE
+
+  private: {
+    notAdmin,
+    signalError: `Whoops! There was an error trying to private message the admins of this channel. Please try again!`,
   },
 
   // REMOVE
@@ -470,6 +480,8 @@ const prefixes = {
     memberType === memberTypes.ADMIN
       ? `REPLY TO HOTLINE #${messageId}`
       : `PRIVATE REPLY FROM ADMINS`,
+  broadcastMessage: `BROADCAST`,
+  privateMessage: `PRIVATE`
 }
 
 module.exports = {
