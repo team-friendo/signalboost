@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
-import { pick, omit } from 'lodash'
+import { pick } from 'lodash'
 import { registrar } from '../../app/config/index'
 import { initDb } from '../../app/db'
 import { genPhoneNumber } from '../support/factories/phoneNumber'

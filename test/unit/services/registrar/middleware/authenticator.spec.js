@@ -61,7 +61,9 @@ describe('authentication middleware', () => {
 
     beforeEach(() => {
       validateSignatureStub = sinon.stub(twilio, 'validateRequest')
-      handleSmsStug = sinon.stub(phoneNumberService, 'handleSms').returns(Promise.resolve({ status: statuses.SUCCESS, message: 'OK'}))
+      handleSmsStug = sinon
+        .stub(phoneNumberService, 'handleSms')
+        .returns(Promise.resolve({ status: statuses.SUCCESS, message: 'OK' }))
     })
 
     afterEach(() => {

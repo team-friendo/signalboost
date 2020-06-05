@@ -576,7 +576,7 @@ describe('messenger service', () => {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
           messageType: messenger.messageTypes.BROADCAST_MESSAGE,
-          memberType: 'SUBSCRIBER'
+          memberType: 'SUBSCRIBER',
         }
         expect(messenger.addHeader(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
       })
@@ -586,9 +586,11 @@ describe('messenger service', () => {
           channel,
           sdMessage: sdMessageOf(channel, 'blah'),
           messageType: messenger.messageTypes.BROADCAST_MESSAGE,
-          memberType: 'ADMIN'
+          memberType: 'ADMIN',
         }
-        expect(messenger.addHeader(msg)).to.eql(sdMessageOf(channel, `[${messages.prefixes.broadcastMessage}]\nblah`))
+        expect(messenger.addHeader(msg)).to.eql(
+          sdMessageOf(channel, `[${messages.prefixes.broadcastMessage}]\nblah`),
+        )
       })
     })
 

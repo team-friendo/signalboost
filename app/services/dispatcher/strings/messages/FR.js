@@ -279,7 +279,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
 
   private: {
     notAdmin,
-    signalError: `Oups! Une erreur s'est produite lors de l'envoi d'un message privé aux administrateurs de cette chaîne. Veuillez essayer de nouveau!`
+    signalError: `Oups! Une erreur s'est produite lors de l'envoi d'un message privé aux administrateurs de cette chaîne. Veuillez essayer de nouveau!`,
   },
 
   // REMOVE

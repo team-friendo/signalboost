@@ -1,8 +1,8 @@
+/* eslint-disable no-unused-vars */
 import { expect } from 'chai'
 import { afterEach, beforeEach, describe, it } from 'mocha'
 import commonService from '../../../../../app/services/registrar/phoneNumber/common'
 import { destroy } from '../../../../../app/services/registrar/phoneNumber/destroy'
-import destroyService from '../../../../../app/services/registrar/phoneNumber/destroy'
 import sinon from 'sinon'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../../app/db/repositories/channel'

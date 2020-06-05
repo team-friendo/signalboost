@@ -481,7 +481,7 @@ const prefixes = {
       ? `REPLY TO HOTLINE #${messageId}`
       : `PRIVATE REPLY FROM ADMINS`,
   broadcastMessage: `BROADCAST`,
-  privateMessage: `PRIVATE`
+  privateMessage: `PRIVATE`,
 }
 
 module.exports = {

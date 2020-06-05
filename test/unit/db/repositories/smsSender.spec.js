@@ -80,7 +80,7 @@ describe('smsSender repository', () => {
       const second = await db.smsSender.create(smsSenderFactory())
       await db.smsSender.update(
         { createdAt: moment().subtract(smsQuotaDurationInMillis + 1, 'ms') },
-        { where: { phoneNumber: second.phoneNumber } }
+        { where: { phoneNumber: second.phoneNumber } },
       )
       count = await db.smsSender.count()
     })

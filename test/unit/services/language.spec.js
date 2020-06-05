@@ -154,7 +154,7 @@ describe('langauge module', () => {
           countryCodes: ['IN', 'IR', 'PL', 'HU'],
         },
       ]
-      variants.forEach(({ language, countryCodes } ) => {
+      variants.forEach(({ language, countryCodes }) => {
         countryCodes.forEach(countryCode => {
           expect(languageForCountry(countryCode)).to.eql(language)
         })
