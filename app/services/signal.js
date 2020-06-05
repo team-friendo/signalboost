@@ -1,3 +1,4 @@
+const genericPool = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
 const { pick, get } = require('lodash')
@@ -5,7 +6,15 @@ const { promisifyCallback, wait } = require('./util.js')
 const { statuses } = require('../services/util')
 const { isEmpty } = require('lodash')
 const {
-  signal: { connectionInterval, maxConnectionAttempts, verificationTimeout, signaldRequestTimeout },
+  signal: {
+    connectionInterval,
+    maxConnectionAttempts,
+    poolMinConnections,
+    poolMaxConnections,
+    poolEvictionMillis,
+    verificationTimeout,
+    signaldRequestTimeout,
+  },
 } = require('../config')
 
 /**
@@ -173,6 +182,44 @@ const write = (sock, data) =>
     ),
   )
 
+const writeWithPool = async data => {
+  new Promise((resolve, reject) =>
+    pool
+      .acquire()
+      .then(sock =>
+        sock.write(
+          signaldEncode(data),
+          promisifyCallback(
+            () => {
+              pool.release(sock)
+              return resolve()
+            },
+            e => {
+              pool.release(sock)
+              return reject({
+                status: statuses.ERROR,
+                message: `Error writing to signald socket: ${e.message}`,
+              })
+            },
+          ),
+        ),
+      )
+      .catch(reject),
+  )
+}
+
+const pool = genericPool.createPool(
+  {
+    create: getSocket,
+    destroy: socket => socket.destroy(),
+  },
+  {
+    min: poolMinConnections,
+    max: poolMaxConnections,
+    evictionRunIntervalMillis: poolEvictionMillis,
+  },
+)
+
 const signaldEncode = data => JSON.stringify(data) + '\n'
 
 /********************
@@ -227,7 +274,7 @@ const unsubscribe = (sock, phoneNumber) =>
   write(sock, { type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
 const sendMessage = (sock, recipientNumber, outboundMessage) =>
-  write(sock, { ...outboundMessage, recipientNumber })
+  writeWithPool({ ...outboundMessage, recipientNumber })
 
 // (Socket, Array<string>, OutMessage) -> Promise<void>
 const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
@@ -399,6 +446,7 @@ module.exports = {
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,
+  pool,
   register,
   sendMessage,
   sdMessageOf,

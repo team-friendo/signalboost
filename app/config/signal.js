@@ -3,6 +3,9 @@ const defaults = {
   keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
+  poolMinConnections: 10,
+  poolMaxConnections: 50,
+  poolEvictionMillis: 30000,
   registrationBatchSize: 5,
   signaldRequestTimeout: 10000, // 10 sec
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
