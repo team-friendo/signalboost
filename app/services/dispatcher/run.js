@@ -62,7 +62,6 @@ const run = async (db, sock) => {
   const channels = await channelRepository.findAllDeep(db).catch(logger.fatalError)
   const listening = await listenForInboundMessages(db, sock, channels).catch(logger.fatalError)
   logger.log(`----- Subscribed to ${listening.length} of ${channels.length} channels!`)
-
   logger.log(`--- Dispatcher running!`)
 }
 

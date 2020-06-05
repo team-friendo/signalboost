@@ -56,30 +56,32 @@ const execute = async (executable, dispatchable) => {
   }
 
   // otherwise, dispatch on the command issued, and process it!
-  const result = await ({
-    [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
-    [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
-    [commands.DECLINE]: () => decline(db, channel, sender, language),
-    [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
-    [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
-    [commands.HELP]: () => showHelp(db, channel, sender),
-    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
-    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
-    [commands.INFO]: () => showInfo(db, channel, sender),
-    [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
-    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
-    [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
-    [commands.PRIVATE]: () =>
-      maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
-    [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
-    [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
-    [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
-    [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
-    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
-    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
-    [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
-  }[command] || (() => noop()))()
+  const result = await (
+    {
+      [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
+      [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
+      [commands.DECLINE]: () => decline(db, channel, sender, language),
+      [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
+      [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
+      [commands.HELP]: () => showHelp(db, channel, sender),
+      [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
+      [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
+      [commands.INFO]: () => showInfo(db, channel, sender),
+      [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
+      [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
+      [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
+      [commands.PRIVATE]: () =>
+        maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
+      [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
+      [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
+      [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
+      [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
+      [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
+      [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
+      [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
+      [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
+    }[command] || (() => noop())
+  )()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
@@ -282,7 +284,10 @@ const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) =
   if (!isEmpty(errors)) {
     return {
       status: statuses.ERROR,
-      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
+      message: cr.dbErrors(
+        errors.map(e => e.inviteePhoneNumber),
+        inviteResults.length,
+      ),
       notifications,
     }
   }
