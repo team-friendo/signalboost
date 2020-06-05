@@ -1345,19 +1345,25 @@ describe('executing commands', () => {
           command: commands.PRIVATE,
           payload: 'hello this is private!',
           status: statuses.SUCCESS,
-          notifications: []
+          notifications: [],
         })
       })
 
       it('only messages admins', async () => {
-        const result = await processCommand(dispatchable)
-        const bystanderPhoneNumbers = bystanderAdminMemberships.concat([admin]).map(m => m.memberPhoneNumber).sort()
-        const sendMessageNumbers = sendMessageStub.getCalls().map((call) => call.args[1]).sort()
+        await processCommand(dispatchable)
+        const bystanderPhoneNumbers = bystanderAdminMemberships
+          .concat([admin])
+          .map(m => m.memberPhoneNumber)
+          .sort()
+        const sendMessageNumbers = sendMessageStub
+          .getCalls()
+          .map(call => call.args[1])
+          .sort()
         expect(sendMessageNumbers).to.eql(bystanderPhoneNumbers)
       })
 
       it('handles a signal sendMessage error', async () => {
-        sendMessageStub.returns(Promise.reject("signal failure"))
+        sendMessageStub.returns(Promise.reject('signal failure'))
 
         const result = await processCommand(dispatchable)
         expect(result).to.eql({
@@ -1365,7 +1371,7 @@ describe('executing commands', () => {
           message: messagesIn(subscriber.language).commandResponses.private.signalError,
           payload: 'hello this is private!',
           status: statuses.ERROR,
-          notifications: []
+          notifications: [],
         })
       })
     })

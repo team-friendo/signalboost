@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { expect } from 'chai'
 import { afterEach, beforeEach, describe, it } from 'mocha'
 import phoneNumberService from '../../../../../app/services/registrar/phoneNumber/index'

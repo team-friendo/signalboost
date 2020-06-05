@@ -69,7 +69,8 @@ const execute = async (executable, dispatchable) => {
     [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
-    [commands.PRIVATE]: () => maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
+    [commands.PRIVATE]: () =>
+      maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
@@ -187,10 +188,10 @@ const maybePrivateMessageAdmins = async (db, sock, channel, sender, payload, sdM
           sdMessage: { ...sdMessage, messageBody: payload },
           messageType: messenger.messageTypes.PRIVATE_MESSAGE,
           language: admin.language,
-          memberType: admin.type
-        })
+          memberType: admin.type,
+        }),
       )
-    })
+    }),
   )
     .then(() => ({ status: statuses.SUCCESS }))
     .catch(() => ({ status: statuses.ERROR, message: cr.signalError }))

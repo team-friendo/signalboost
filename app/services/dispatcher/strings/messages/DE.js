@@ -274,8 +274,7 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
 
   private: {
     notAdmin,
-    signalError:
-      `Ups! Beim Versuch, den Admins dieses Kanals eine private Nachricht zu senden, ist ein Fehler aufgetreten. Bitte versuchs erneut!`,
+    signalError: `Ups! Beim Versuch, den Admins dieses Kanals eine private Nachricht zu senden, ist ein Fehler aufgetreten. Bitte versuchs erneut!`,
   },
 
   // REMOVE
@@ -494,7 +493,7 @@ const prefixes = {
       ? `ANTWORT AUF HOTLINE #${messageId}`
       : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
-  privateMessage: `PRIVAT`
+  privateMessage: `PRIVAT`,
 }
 
 module.exports = {

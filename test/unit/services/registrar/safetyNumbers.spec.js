@@ -79,9 +79,7 @@ describe('safety numbers registrar module', () => {
       )
 
       it('attempts to resend the original message', async () => {
-        const start = new Date().getTime()
         await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
-        const elapsed = new Date().getTime() - start
 
         expect(sendMessageStub.getCall(0).args).to.eql([sock, memberPhoneNumber, sdMessage])
       })

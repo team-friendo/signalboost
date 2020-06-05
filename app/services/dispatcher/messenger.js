@@ -5,7 +5,6 @@ const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal')
 const { memberTypes } = require('../../db/repositories/membership')
-const { getAdminPhoneNumbers, getSubscriberPhoneNumbers } = require('../../db/repositories/channel')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
 const { statuses } = require('../../services/util')
@@ -35,7 +34,13 @@ const messageTypes = {
   PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND_RESULT, SIGNUP_MESSAGE, PRIVATE_MESSAGE } = messageTypes
+const {
+  BROADCAST_MESSAGE,
+  HOTLINE_MESSAGE,
+  COMMAND_RESULT,
+  SIGNUP_MESSAGE,
+  PRIVATE_MESSAGE,
+} = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -144,8 +149,14 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
           signal.broadcastMessage(
             sock,
             [recipient.memberPhoneNumber],
-            addHeader({ channel, sdMessage, messageType: BROADCAST_MESSAGE, language: recipient.language, memberType: recipient.type })
-          )
+            addHeader({
+              channel,
+              sdMessage,
+              messageType: BROADCAST_MESSAGE,
+              language: recipient.language,
+              memberType: recipient.type,
+            }),
+          ),
         ),
       )
     } else {
@@ -156,7 +167,13 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
             signal.broadcastMessage(
               sock,
               [recipient.memberPhoneNumber],
-              addHeader({ channel, sdMessage, messageType: BROADCAST_MESSAGE, language: recipient.language, memberType: recipient.type })
+              addHeader({
+                channel,
+                sdMessage,
+                messageType: BROADCAST_MESSAGE,
+                language: recipient.language,
+                memberType: recipient.type,
+              }),
             )
           })
         }),
@@ -272,7 +289,6 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
 /**********
  * HELPERS
  **********/
-
 
 // { Channel, string, string, string, string } -> string
 const addHeader = ({ channel, sdMessage, messageType, language, memberType, messageId }) => {

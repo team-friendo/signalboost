@@ -255,7 +255,7 @@ ${failedPhoneNumbers.join(',')}`,
 
   private: {
     notAdmin,
-    signalError: `¡Ay! Se produjo un error al intentar enviar un mensaje privado a los administradores de este canal. ¡Inténtelo de nuevo!`
+    signalError: `¡Ay! Se produjo un error al intentar enviar un mensaje privado a los administradores de este canal. ¡Inténtelo de nuevo!`,
   },
 
   // REMOVE

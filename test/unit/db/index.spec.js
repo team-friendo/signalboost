@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before } from 'mocha'
 import sinon from 'sinon'
-import { times } from 'lodash'
 import dbWrapper from '../../../app/db'
 const {
   db: { maxConnectionAttempts },
