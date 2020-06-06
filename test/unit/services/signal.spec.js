@@ -9,6 +9,7 @@ import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
+  pool,
 } from '../../../app/services/signal'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
@@ -21,6 +22,11 @@ import {
 describe('signal module', () => {
   const sock = new EventEmitter()
   sock.setEncoding = () => null
+
+  afterEach(() => {
+    sinon.restore()
+  })
+
   describe('getting a socket', () => {
     let pathExistsStub, connectStub
 
@@ -76,13 +82,20 @@ describe('signal module', () => {
     const subscriberNumber = genPhoneNumber()
     const fingerprint = genFingerprint()
 
-    let sock
+    let sock, poolAcquireStub, poolReleaseStub
     const emit = msg => sock.emit('data', JSON.stringify(msg) + '\n')
     const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
     beforeEach(() => {
       sock = new EventEmitter()
-      sock.write = sinon.stub()
+      sock.write = sinon.stub().returns(Promise.resolve())
+      poolAcquireStub = sinon.stub(pool, 'acquire').returns(Promise.resolve(sock))
+      poolReleaseStub = sinon.stub(pool, 'release')
+    })
+
+    afterEach(() => {
+      poolAcquireStub.restore()
+      poolReleaseStub.restore()
     })
 
     it('sends a register command', async () => {
@@ -117,7 +130,7 @@ describe('signal module', () => {
       )
     })
 
-    it('sends a signal message', () => {
+    it('sends a signal message', async () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
@@ -125,14 +138,14 @@ describe('signal module', () => {
         messageBody: 'hello world!',
         attachments: [],
       }
-      signal.sendMessage(sock, '+12223334444', sdMessage)
+      await signal.sendMessage(sock, '+12223334444', sdMessage)
 
       expect(sock.write.getCall(0).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+12223334444","messageBody":"hello world!","attachments":[]}\n`,
       )
     })
 
-    it('broadcasts a signal message', () => {
+    it('broadcasts a signal message', async () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
@@ -141,7 +154,7 @@ describe('signal module', () => {
         attachments: [],
       }
       const recipients = ['+11111111111', '+12222222222']
-      signal.broadcastMessage(sock, recipients, sdMessage)
+      await signal.broadcastMessage(sock, recipients, sdMessage)
 
       expect(sock.write.getCall(0).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+11111111111","messageBody":"hello world!","attachments":[]}\n`,

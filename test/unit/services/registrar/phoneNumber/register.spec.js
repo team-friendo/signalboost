@@ -107,6 +107,7 @@ describe('phone number services -- registration module', () => {
     findAllPurchasedStub.restore()
     pathExistsStub.restore()
     logStub.restore()
+    sinon.restore()
   })
 
   describe('registering a number with signal', () => {
