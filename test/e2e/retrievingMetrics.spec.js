@@ -10,6 +10,7 @@ import { first, last, findIndex } from 'lodash'
 import { deepChannelAttrs } from '../support/factories/channel'
 
 describe('retrieving metrics', () => {
+  const appUrl = `https://${process.env.SIGNALBOOST_HOST_URL}`
   let db, count, channels, phoneNumbers, response
   const phoneNumberAttributes = [
     { phoneNumber: genPhoneNumber(), twilioSid: genSid(), status: statuses.PURCHASED },
@@ -36,7 +37,7 @@ describe('retrieving metrics', () => {
       )
       count = await db.channel.count()
       /**********************************************************/
-      response = await request('https://signalboost.ngrok.io')
+      response = await request(appUrl)
         .get('/channels')
         .set('Token', registrar.authToken)
       /**********************************************************/
@@ -71,7 +72,7 @@ describe('retrieving metrics', () => {
         returning: true,
       })
       count = await db.phoneNumber.count()
-      response = await request('https://signalboost.ngrok.io')
+      response = await request(appUrl)
         .get('/phoneNumbers')
         .set('Token', registrar.authToken)
     })
