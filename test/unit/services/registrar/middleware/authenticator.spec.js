@@ -18,7 +18,10 @@ describe('authentication middleware', () => {
     server = (await startServer(10000, {}, sock)).server
   })
 
-  after(() => server.close())
+  after(() => {
+    sinon.restore()
+    server.close()
+  })
 
   describe('for api endpoints', () => {
     it('allows a request that contains auth token in the header', async () => {
