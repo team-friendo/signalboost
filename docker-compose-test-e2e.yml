@@ -64,25 +64,26 @@ services:
       - app
     #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
     env_file: .env.dev
+    networks:
+      - default
     environment:
-      - NGROK_AUTH=$NGROK_AUTH_TOKEN
-      - NGROK_SUBDOMAIN=$NGROK_SUBDOMAIN
       - NGROK_PORT=app:3000
     restart: unless-stopped
+
 
   test_runner:
     image: signalboost
     container_name: signalboost_test_runner
     entrypoint: /signalboost/bin/entrypoint/test-e2e
     #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
-    env_file: .env.dev
     environment:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "${NODE_ENV:-development}"
     depends_on:
+      - ngrok
       - db
       - app
-      - ngrok
+    env_file: .env.dev
     volumes:
       - ./.sequelizerc:/signalboost/.sequelizerc
       - ./app:/signalboost/app
