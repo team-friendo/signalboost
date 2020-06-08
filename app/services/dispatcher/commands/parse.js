@@ -95,6 +95,7 @@ const validatePayload = commandMatch => {
     case commands.SET_LANGUAGE:
     case commands.VOUCHING_ON:
     case commands.VOUCHING_OFF:
+    case commands.VOUCHING_ADMIN:
       return validateNoPayload(commandMatch)
     case commands.ADD:
     case commands.REMOVE:

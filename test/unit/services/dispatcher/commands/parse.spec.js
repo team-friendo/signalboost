@@ -33,6 +33,8 @@ describe('parse module', () => {
           'the VOUCH LEVEL',
           'the VOUCHING ON',
           'the VOUCHING OFF',
+          'the VOUCHING ADMIN',
+
           'the ENGLISH',
 
           'la AGREGAR foo',
@@ -48,6 +50,9 @@ describe('parse module', () => {
           'la LÍNEA DIRECTA',
           'la LÍNEA DIRECTA',
           'la NIVEL DE ATESTIGUAR',
+          'la ATESTIGUANDO ACTIVADA'
+          'la ATESTIGUANDO DESACTIVADA'
+          'la ATESTIGUANDO ADMIN',
           'la ESPAÑOL',
 
           'le AJOUTER',
@@ -65,6 +70,7 @@ describe('parse module', () => {
           'le NIVEAU DE PORTER GARANT',
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
+          'le SE PORTER GARANT ADMIN',
           'le FRENCH',
 
           'foo ANNEHMEN',
@@ -84,6 +90,7 @@ describe('parse module', () => {
           'foo VERTRAUEN AN',
           'foo VERTRAUEN EIN',
           'foo VERTRAUEN AUS',
+          'FOO VERTRAUEN ADMIN',
           'foo DEUTSCH',
         ]
         msgs.forEach(msg =>
@@ -799,6 +806,38 @@ describe('parse module', () => {
           messages.forEach(msg =>
             expect(parseExecutable(msg)).to.eql({
               command: commands.VOUCHING_OFF,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('VOUCHING_ADMIN command', () => {
+      it('parses VOUCHING_ADMIN regardless of spacing, accents, casing, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['VOUCHING ADMIN', ' vouching admin '],
+          },
+          {
+            language: languages.ES,
+            messages: ['ATESTIGUANDO ADMIN', ' atestiguando admin '],
+          },
+          {
+            language: languages.FR,
+            messages: ['SE PORTER GARANT ADMIN', ' se porter garant admin '],
+          },
+          {
+            language: languages.DE,
+            messages: ['VERTRAUEN ADMIN', ' vertrauen admin '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.VOUCHING_ADMIN,
               language,
               payload: '',
             }),
