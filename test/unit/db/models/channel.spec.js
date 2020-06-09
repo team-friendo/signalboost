@@ -95,6 +95,7 @@ describe('channel model', () => {
     expect(channel.hotlineOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
     expect(channel.vouchingOn).to.be.a('boolean')
+    expect(channel.vouching).to.be.a('string')
     expect(channel.vouchLevel).to.be.a('number')
     expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
@@ -115,6 +116,7 @@ describe('channel model', () => {
     expect(channel.description).to.equal('')
     expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     expect(channel.vouchingOn).to.equal(false)
+    expect(channel.vouching).to.equal('OFF')
     expect(channel.vouchLevel).to.equal(1)
   })
 
