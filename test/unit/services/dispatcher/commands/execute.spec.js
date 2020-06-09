@@ -3,7 +3,11 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { processCommand } from '../../../../../app/services/dispatcher/commands'
-import { commands, toggles } from '../../../../../app/services/dispatcher/commands/constants'
+import {
+  commands,
+  toggles,
+  vouchModes,
+} from '../../../../../app/services/dispatcher/commands/constants'
 import { statuses } from '../../../../../app/services/util'
 import { languages } from '../../../../../app/services/language'
 import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
@@ -1820,18 +1824,18 @@ describe('executing commands', () => {
         command: commands.HOTLINE_OFF,
         commandStr: 'HOTLINE OFF',
       },
-      {
-        ...toggles.VOUCHING,
-        isOn: true,
-        command: commands.VOUCHING_ON,
-        commandStr: 'VOUCHING ON',
-      },
-      {
-        ...toggles.VOUCHING,
-        isOn: false,
-        command: commands.VOUCHING_OFF,
-        commandStr: 'VOUCHING OFF',
-      },
+      // {
+      //   ...toggles.VOUCHING,
+      //   isOn: true,
+      //   command: commands.VOUCHING_ON,
+      //   commandStr: 'VOUCHING ON',
+      // },
+      // {
+      //   ...toggles.VOUCHING,
+      //   isOn: false,
+      //   command: commands.VOUCHING_OFF,
+      //   commandStr: 'VOUCHING OFF',
+      // },
     ]
 
     scenarios.forEach(({ name, dbField, isOn, command, commandStr }) => {
@@ -1924,6 +1928,135 @@ describe('executing commands', () => {
 
     describe('when toggle is followed by a payload', () => {
       scenarios.forEach(({ commandStr }) => {
+        const dispatchable = {
+          db,
+          channel,
+          sender: admin,
+          sdMessage: sdMessageOf(channel, `${commandStr} foo`),
+        }
+        it('returns a NOOP', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NOOP,
+            payload: '',
+            status: statuses.NOOP,
+            message: '',
+            notifications: [],
+          })
+        })
+      })
+    })
+  })
+
+  describe('VOUCHING commands', () => {
+    let updateChannelStub
+    beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
+    afterEach(() => updateChannelStub.restore())
+
+    const vouchingScenarios = [
+      {
+        command: commands.VOUCHING_ON,
+        commandStr: 'VOUCHING ON',
+      },
+      {
+        command: commands.VOUCHING_OFF,
+        commandStr: 'VOUCHING OFF',
+      },
+      {
+        command: commands.VOUCHING_ADMIN,
+        commandStr: 'VOUCHING ADMIN',
+      },
+    ]
+
+    vouchingScenarios.forEach(({ command, commandStr }) => {
+      describe('when sender is an admin', () => {
+        const sender = admin
+
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
+
+        it('attempts to update the vouching field on the channel db record', async () => {
+          updateChannelStub.returns(Promise.resolve())
+          await processCommand(dispatchable)
+          expect(updateChannelStub.getCall(0).args).to.have.deep.members([
+            db,
+            channel.phoneNumber,
+            { ['vouching']: vouchModes[command] },
+          ])
+        })
+
+        describe('when db update succeeds', () => {
+          const notificationMsg = messagesIn(sender.language).notifications.vouchModeChanged(
+            vouchModes[command],
+          )
+
+          beforeEach(() => updateChannelStub.returns(Promise.resolve()))
+
+          it('returns a SUCCESS status, message, and notifications', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command,
+              status: statuses.SUCCESS,
+              payload: '',
+              message: CR.vouching.success(vouchModes[command]),
+              notifications: [
+                ...bystanderAdminMemberships.map(membership => ({
+                  recipient: membership.memberPhoneNumber,
+                  message: notificationMsg,
+                })),
+              ],
+            })
+          })
+        })
+
+        describe('when db update fails', () => {
+          beforeEach(() => updateChannelStub.callsFake(() => Promise.reject(new Error('db error'))))
+
+          it('returns an ERROR status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command,
+              payload: '',
+              status: statuses.ERROR,
+              message: CR.vouching.dbError,
+              notifications: [],
+            })
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const sender = subscriber
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
+
+        it('returns an UNAUTHORIZED status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command,
+            payload: '',
+            status: statuses.UNAUTHORIZED,
+            message: CR.vouching.notAdmin,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const sender = randomPerson
+        const sdMessage = sdMessageOf(channel, commandStr)
+        const dispatchable = { db, channel, sender, sdMessage }
+
+        it('returns an UNAUTHORIZED status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command,
+            payload: '',
+            status: statuses.UNAUTHORIZED,
+            message: CR.vouching.notAdmin,
+            notifications: [],
+          })
+        })
+      })
+    })
+
+    describe('when VOUCHING command is followed by a payload', () => {
+      vouchingScenarios.forEach(({ commandStr }) => {
         const dispatchable = {
           db,
           channel,

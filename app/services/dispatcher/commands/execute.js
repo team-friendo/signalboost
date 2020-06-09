@@ -1,4 +1,4 @@
-const { commands, toggles } = require('./constants')
+const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../../services/util')
 const messenger = require('../messenger')
 const channelRepository = require('../../../db/repositories/channel')
@@ -69,8 +69,10 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
-    [commands.VOUCHING_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.VOUCHING),
-    [commands.VOUCHING_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.VOUCHING),
+    [commands.VOUCHING_ON]: () => maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_ON),
+    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_OFF),
+    [commands.VOUCHING_ADMIN]: () =>
+      maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_ADMIN),
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
@@ -624,6 +626,46 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: messagesIn(sender.language).notifications.setDescription(newDescription),
+  }))
+}
+
+// VOUCH MODE
+const maybeSetVouchMode = (db, channel, sender, newVouchMode) => {
+  const cr = messagesIn(sender.language).commandResponses.vouching
+
+  if (sender.type !== ADMIN)
+    return {
+      status: statuses.UNAUTHORIZED,
+      message: cr.notAdmin,
+    }
+
+  return setVouchMode(db, channel, sender, newVouchMode, cr)
+}
+
+const setVouchMode = async (db, channel, sender, newVouchMode, cr) => {
+  try {
+    console.log(newVouchMode)
+    await channelRepository.update(db, channel.phoneNumber, {
+      vouching: newVouchMode,
+    })
+
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(newVouchMode),
+      notifications: vouchingNotificationsOf(channel, sender, newVouchMode),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const vouchingNotificationsOf = (channel, sender, newVouchMode) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+
+  return bystanders.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(membership.language).notifications.vouchModeChanged(newVouchMode),
   }))
 }
 

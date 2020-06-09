@@ -6,9 +6,9 @@ const statuses = {
 }
 
 const vouchModes = {
-  ON: 'ON',
-  OFF: 'OFF',
-  ADMIN: 'ADMIN',
+  VOUCHING_ON: 'ON',
+  VOUCHING_OFF: 'OFF',
+  VOUCHING_ADMIN: 'ADMIN',
 }
 
 const toggles = {
