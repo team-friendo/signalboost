@@ -14,7 +14,6 @@ const logger = loggerOf('messenger')
 const {
   defaultLanguage,
   signal: {
-    signupPhoneNumber,
     defaultMessageExpiryTime,
     setExpiryInterval,
     broadcastBatchSize,
@@ -66,10 +65,9 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 }
 
 // (CommandResult, Dispatchable) -> MessageType
-const parseMessageType = (commandResult, { sender, channel }) => {
+const parseMessageType = (commandResult, { sender }) => {
   if (commandResult.status === statuses.NOOP) {
     if (sender.type === ADMIN) return BROADCAST_MESSAGE
-    if (channel.phoneNumber === signupPhoneNumber) return SIGNUP_MESSAGE
     return HOTLINE_MESSAGE
   }
   return COMMAND_RESULT

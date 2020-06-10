@@ -5,7 +5,7 @@ const signal = require('../../signal')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
   registrar: { host },
-  signal: { signupPhoneNumber },
+  signal: { supportPhoneNumber },
 } = require('../../../config')
 
 // STRINGS
@@ -38,7 +38,7 @@ const notifyMembersExcept = async (db, sock, channel, message, sender) => {
 
 // (DB, Socket, String) -> Promise<void>
 const notifyMaintainers = async (db, sock, message) => {
-  const adminChannel = await channelRepository.findDeep(db, signupPhoneNumber)
+  const adminChannel = await channelRepository.findDeep(db, supportPhoneNumber)
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
   await signal.broadcastMessage(sock, adminPhoneNumbers, signal.sdMessageOf(adminChannel, message))
 }

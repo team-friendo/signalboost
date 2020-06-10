@@ -13,15 +13,13 @@ import { statuses } from '../../../../app/services/util'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { sdMessageOf } from '../../../../app/services/signal'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
-import { defaultLanguage } from '../../../../app/config'
 import channelRepository from '../../../../app/db/repositories/channel'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
 const {
-  signal: { signupPhoneNumber, broadcastBatchSize },
+  signal: { broadcastBatchSize },
 } = require('../../../../app/config')
 
 describe('messenger service', () => {
-  const notifications = messagesIn(defaultLanguage).notifications
   const [db, sock] = [{}, { write: () => {} }]
   const channelPhoneNumber = genPhoneNumber()
   const subscriberPhoneNumbers = times(2, genPhoneNumber)
@@ -55,11 +53,6 @@ describe('messenger service', () => {
     messageCount: { broadcastIn: 42 },
   }
   const hotlineEnabledChannel = { ...channel, hotlineOn: true }
-  const signupChannel = {
-    name: 'SB_SIGNUP',
-    phoneNumber: signupPhoneNumber,
-    memberships: channel.memberships,
-  }
 
   const attachments = [{ filename: 'some/path', width: 42, height: 42 }]
   const sdMessage = {
@@ -350,43 +343,6 @@ describe('messenger service', () => {
               sdMessageOf(channel, response),
             ])
           })
-        })
-      })
-    })
-
-    describe('when message is a signup request', () => {
-      const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
-
-      beforeEach(async () => {
-        const dispatchable = {
-          db,
-          sock,
-          channel: signupChannel,
-          sender: randomSender,
-          sdMessage: sdMessageOf(signupChannel, 'gimme a channel'),
-        }
-        const commandResult = { status: commands.NOOP, message: '', notifications: [] }
-        await messenger.dispatch({ dispatchable, commandResult })
-      })
-
-      it('responds to requester', () => {
-        expect(sendMessageStub.getCall(0).args).to.eql([
-          sock,
-          randomSender.phoneNumber,
-          sdMessageOf(signupChannel, notifications.signupRequestResponse),
-        ])
-      })
-
-      it('forwards request to channel admins and appends phone number', () => {
-        adminPhoneNumbers.forEach((adminPhoneNumber, idx) => {
-          expect(sendMessageStub.getCall(idx + 1).args).to.eql([
-            sock,
-            adminPhoneNumber,
-            sdMessageOf(
-              signupChannel,
-              notifications.signupRequestReceived(randomSender.phoneNumber, 'gimme a channel'),
-            ),
-          ])
         })
       })
     })
