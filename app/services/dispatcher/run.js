@@ -11,7 +11,7 @@ const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const {
-  signal: { signupPhoneNumber },
+  signal: { supportPhoneNumber },
 } = require('../../config')
 
 /**
@@ -127,7 +127,7 @@ const relay = async (db, sock, channel, sender, inboundMsg) => {
 
 // (Database, Socket, SdMessage, number) -> Promise<void>
 const notifyRateLimitedMessage = async (db, sock, sdMessage, resendInterval) => {
-  const channel = await channelRepository.findDeep(db, signupPhoneNumber)
+  const channel = await channelRepository.findDeep(db, supportPhoneNumber)
   if (!channel) return Promise.resolve()
 
   const recipients = channelRepository.getAdminMemberships(channel)
@@ -137,7 +137,7 @@ const notifyRateLimitedMessage = async (db, sock, sdMessage, resendInterval) => 
         sock,
         memberPhoneNumber,
         sdMessageOf(
-          { phoneNumber: signupPhoneNumber },
+          { phoneNumber: supportPhoneNumber },
           messagesIn(language).notifications.rateLimitOccurred(sdMessage.username, resendInterval),
         ),
       ),

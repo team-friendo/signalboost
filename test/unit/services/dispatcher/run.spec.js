@@ -21,7 +21,7 @@ import { messagesIn } from '../../../../app/services/dispatcher/strings/messages
 import { adminMembershipFactory } from '../../../support/factories/membership'
 import { inboundAttachmentFactory } from '../../../support/factories/sdMessage'
 const {
-  signal: { defaultMessageExpiryTime, signupPhoneNumber, minResendInterval },
+  signal: { defaultMessageExpiryTime, supportPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
 
 describe('dispatcher service', () => {
@@ -284,10 +284,10 @@ describe('dispatcher service', () => {
     })
 
     describe('when message is a rate limit error notification', () => {
-      const signupChannel = deepChannelFactory({
-        phoneNumber: signupPhoneNumber,
+      const supportChannel = deepChannelFactory({
+        phoneNumber: supportPhoneNumber,
         memberships: ['EN', 'ES', 'FR'].map(language =>
-          adminMembershipFactory({ channelPhoneNumber: signupPhoneNumber, language }),
+          adminMembershipFactory({ channelPhoneNumber: supportPhoneNumber, language }),
         ),
       })
       const recipientNumber = genPhoneNumber()
@@ -313,9 +313,9 @@ describe('dispatcher service', () => {
 
       beforeEach(() => enqueueResendStub.returns(minResendInterval))
 
-      describe('and there is a signup channel', () => {
+      describe('and there is a support channel', () => {
         beforeEach(async () => {
-          findDeepStub.returns(Promise.resolve(signupChannel))
+          findDeepStub.returns(Promise.resolve(supportChannel))
           sock.emit('data', JSON.stringify(sdErrorMessage))
           await wait(2 * socketDelay)
         })
@@ -325,12 +325,12 @@ describe('dispatcher service', () => {
         })
 
         it('notifies admins of the support channel', () => {
-          signupChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
+          supportChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
             expect(sendMessageStub.getCall(idx).args).to.eql([
               sock,
               memberPhoneNumber,
               sdMessageOf(
-                { phoneNumber: signupPhoneNumber },
+                { phoneNumber: supportPhoneNumber },
                 messagesIn(language).notifications.rateLimitOccurred(
                   channel.phoneNumber,
                   minResendInterval,
@@ -341,7 +341,7 @@ describe('dispatcher service', () => {
         })
       })
 
-      describe('and there is not a signup channel', () => {
+      describe('and there is not a support channel', () => {
         beforeEach(async () => {
           findDeepStub.returns(Promise.resolve(null))
           sock.emit('data', JSON.stringify(sdErrorMessage))

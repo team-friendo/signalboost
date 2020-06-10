@@ -57,7 +57,7 @@ const recycleChannelFailureNotification = channel =>
 
 // Channel -> Promise<void>
 const notifyMaintainersOfDestructionFailure = async (db, sock, channel) => {
-  const adminChannel = await channelRepository.findDeep(db, signalConfig.signupPhoneNumber)
+  const adminChannel = await channelRepository.findDeep(db, signalConfig.supportPhoneNumber)
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
 
   await signal.broadcastMessage(

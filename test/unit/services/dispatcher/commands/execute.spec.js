@@ -26,9 +26,6 @@ import {
 } from '../../../../support/factories/membership'
 import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../../support/factories/deauthorization'
-const {
-  signal: { signupPhoneNumber },
-} = require('../../../../../app/config')
 
 describe('executing commands', () => {
   const db = {}
@@ -44,11 +41,6 @@ describe('executing commands', () => {
     messageCount: { broadcastIn: 42 },
   }
   const bystanderAdminMemberships = channel.memberships.slice(1, 3)
-  const signupChannel = {
-    name: 'SB_SIGNUP',
-    phoneNumber: signupPhoneNumber,
-    publications: channel.publications,
-  }
   const admin = {
     ...channel.memberships[0],
     phoneNumber: channel.memberships[0].memberPhoneNumber,
@@ -2106,23 +2098,6 @@ describe('executing commands', () => {
           message: CR.rename.notAdmin,
           notifications: [],
         })
-      })
-    })
-  })
-
-  describe('new user attempting to JOIN the signup channel', () => {
-    it('returns NOOP', async () => {
-      const dispatchable = {
-        db,
-        channel: signupChannel,
-        sender: randomPerson,
-        sdMessage: sdMessageOf(signupChannel, 'HELLO'),
-      }
-      expect(await processCommand(dispatchable)).to.eql({
-        command: commands.NOOP,
-        status: statuses.NOOP,
-        message: '',
-        notifications: [],
       })
     })
   })
