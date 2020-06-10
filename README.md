@@ -476,7 +476,7 @@ For now we'll comment out this optional item because we need the Boost CLI to cr
 # Use Boost cli to create these, you only need the one specific to the mode you are running in
 # Format must be e164 (https://www.twilio.com/docs/glossary/what-e164), with the + and with no special characters
 
-#SIGNUP_CHANNEL_NUMBER=%+15554445555%
+#SUPPORT_CHANNEL_NUMBER=%+15554445555%
 ```
 
 #### Configure ansible/inventory

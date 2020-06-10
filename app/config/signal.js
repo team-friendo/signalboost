@@ -12,7 +12,7 @@ const defaults = {
   intervalBetweenRegistrations: 2000, // 2 seconds
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   welcomeDelay: 3000, // 3 sec
-  supportPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER,
+  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER,
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
   setExpiryInterval: 2000, // 2 sec
@@ -46,7 +46,7 @@ const test = {
 
 const development = {
   ...defaults,
-  supportPhoneNumber: process.env.SIGNUP_CHANNEL_NUMBER_DEV,
+  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER_DEV,
 }
 
 module.exports = {
