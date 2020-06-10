@@ -9,7 +9,7 @@ const IndexPage = () => (
     <p>
       Signalboost lets activists use Signal to send text blasts and receive
       hotline tips without revealing their identity or spending money. It is{' '}
-      <em style={{ color: '#ff79c6' }}>secure, simple, and free.</em>
+      <em style={{ color: '#ff79c6' }}>secure, focused, and free.</em>
     </p>
     <h3>Secure:</h3>
     <ul>
@@ -32,15 +32,16 @@ const IndexPage = () => (
         make such disclosure impossible.
       </li>
     </ul>
-    <h3>Simple:</h3>
+    <h3>Focused:</h3>
     <ul>
       <li>
         Signalboost is for 1-way messaging only. Admins can send announcements
-        to large groups and receive hotline tips from anyone. That's it.
+        to large groups, or receive and reply to hotline messages from anyone.
+        That's it.
       </li>
       <li>
-        It does not allow subscribers to send messages to each other. This cuts
-        out cross talk endemic to large Signal or WhatsApp groups.
+        Signalboost does not allow subscribers to send messages to each other.
+        This cuts out cross talk endemic to large Signal or WhatsApp groups.
       </li>
       <li>
         It tries to solve one problem and solve it well. This makes it easier to
@@ -63,11 +64,17 @@ const IndexPage = () => (
     <p>Send HELP to see the commands you can use and GOODBYE to leave.</p>
     <h3>Get your own channel:</h3>
     <p>
-      Send a Signal message to <span className="purple">+1-938-444-8536</span>{' '}
-      that includes a name for the channel and the phone numbers of all admins.
+      Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
+      that includes a name for the channel and the phone numbers of at least 2
+      admins. (You can remember that as:{' '}
+      <span className="purple">947 BOOST IT!</span>)
     </p>
     <p>
       You will receive a welcome message as soon as your channel is created.
+    </p>
+    <p>
+      You can also write team-friendo with support questions at any time on this
+      channel , and we will do our best to respond promptly.
     </p>
     <h3>Once you have a channel:</h3>
     <ul>
@@ -100,24 +107,28 @@ const IndexPage = () => (
     <h2>Got questions?</h2>
     <ul>
       <li>
-        Check out the <Link to="/how-to">How-To Manual</Link>
+        Check out the <Link to="/faq">FAQ</Link> or{' '}
+        <Link to="/how-to">How-To Manual</Link>
       </li>
       <li>
-        Try out commands by sending messages to the playground channel:
+        Try out commands by Signal-messaging the playground channel at:
         <span className="purple">+1-938-222-9889</span>
+      </li>
+      <li>
+        Talk to us directly by Signal-messaging our support channel at:{' '}
+        <span className="purple">+1-947-800-5717</span> (That's <span className="purple">"947 BOOST IT!"</span>)
       </li>
       <li>
         Send us an email at{' '}
         <a href="mailto:team-friendo@protonmail.com">
           team-friendo@protonmail.com
         </a>{' '}
-        or <a href="mailto:team-friendo@riseup.net">team-friendo@riseup.net</a>
-      </li>
-      <li>
-        Find our{' '}
+        or <a href="mailto:team-friendo@riseup.net">team-friendo@riseup.net</a>.
+        (Find our{' '}
         <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
           PGP key here
         </a>
+        .)
       </li>
       <li>
         Visit our&nbsp;
