@@ -21,3 +21,10 @@ test_unit:
     - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
   only:
     - merge_requests
+
+test_lint:
+  script:
+    - npm install
+    - npx eslint app && npx eslint test
+  only:
+    - merge_requests
