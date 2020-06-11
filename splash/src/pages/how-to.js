@@ -8,25 +8,23 @@ export default () => (
       This page is intended primarily for admins who already have Signalboost
       channels. If you need a channel, check out the{' '}
       <Link to="/">Getting Started</Link> section. If you want to know more
-      about Signalboost and how secure it is to use, check out the{' '}
-      <Link to="/faq">FAQ's.</Link>
+      about why you should use Signalboost for your activist organizing work,
+      check out our <Link to="/faq">FAQ's.</Link>
     </p>
     <h3>Conceptual overview</h3>
     <p>
-      A Signalboost channel is simply a phone number with admins and
+      A Signalboost channel is a phone number that keeps track of admins and
       subscribers. Any time an admin sends a message to the channel, it is
-      interpreted as a command or an announcement. If the message is an
-      announcement, all of the subscribers will receive that announcement -
-      notably, the announcement will appear as if it is coming from the channel
-      phone number, not the admin who sent it.
+      interpreted as a command or a broadcast. If admins send a broadcast, all
+      of the subscribers will see it, but Signalboost will route the broadcast
+      so that it appears as if coming from the channel phone number.
     </p>
     <h3>What is a command?</h3>
     <p>
-      A command is a word or phrase that Signalboost will interpret as an
-      instruction. To use a command, you don't have to do anything fancy - just
-      type it into the channel and Signalboost will interpret it or give you an
-      error message! Some commands can only be used by admins. If you're unsure
-      which command to use, the HELP command is a great place to start.
+      A command is a word or phrase sent as a Signal message that Signalboost
+      will interpret as an instruction. Some commands can only be used by
+      admins. If you're unsure which command to use, the HELP command is a great
+      place to start.
     </p>
     <p>
       Signalboost currently supports English, Spanish, French, and German. To
@@ -40,6 +38,9 @@ export default () => (
       By default, messages on Signalboost channels disappear after 1 week.
       However, admins and admins only can override the 1-week duration using the
       disappearing message timer in the top right hand corner of the Signal app.
+      We recommend shortening the duration of disappearing message timer
+      (usually to 1 day or 6 hours) if your broadcasts will contain sensitive
+      information.
     </p>
 
     <h2>Commands</h2>
@@ -49,50 +50,12 @@ export default () => (
     <h4>INFO</h4>
     <p>Shows stats and briefly explains how Signalboost works.</p>
 
+    <h3>Managing your channel</h3>
     <h4>ADD / REMOVE +1-555-555-5555</h4>
     <p>
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
     </p>
-
-    <h4>INVITE +1-555-555-5555</h4>
-    <p>
-      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
-      the phone number with a + and country code!
-    </p>
-
-    <h4>HOTLINE ON / OFF</h4>
-    <p>
-      Enables or disables the hotline. This means that when subscribers send
-      messages to the channel, admins will receive them **anonymously.** By
-      default, Signalboost channels start with the hotline disabled. If you're
-      an admin, you'll know that a message coming in is a hotline message
-      because it will have the following header:
-    </p>
-    <p>
-      <b>[HOTLINE MESSAGE]</b>
-    </p>
-    <p>
-      If you decide to turn the hotline on:
-      <ul>
-        <li>Your subscribers' anonymity will be preserved.</li>
-        <li>
-          This means that if you need to get in contact with someone from the
-          hotline, they need to include their phone number in the message.
-        </li>
-        <li>
-          Depending on the number of people subscribed to your channel, the
-          hotline can be noisy and increase the chances of spam/abuse.
-        </li>
-      </ul>
-    </p>
-
-    <h4>ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH </h4>
-    <p>
-      Switches language to Spanish or French. Language changes on Signalboost
-      are person-specific, so you don't need to worry about
-    </p>
-
     <h4>RENAME new name</h4>
     <p>Renames channel to "new name"</p>
     <p>Example: RENAME My Cool Signalboost Channel</p>
@@ -123,6 +86,62 @@ export default () => (
       After executing this command, anyone who wants to join the channel will
       need 3 invites.
     </p>
+
+    <h3>Managing a hotline</h3>
+    <h4>HOTLINE ON / OFF</h4>
+    <p>
+      Enables or disables a hotline, which allows admins to receive anonymous
+      messages from subscribers. Channel hotlines are off by default. If you're
+      an admin, you'll know that a message coming in is a hotline message
+      because it will have the following header:
+    </p>
+    <p>
+      <b>[HOTLINE MESSAGE]</b>
+    </p>
+    <p>
+      If you decide to turn the hotline on:
+      <ul>
+        <li>
+          Your subscribers' anonymity will be preserved when they message the
+          hotline.
+        </li>
+        <li>
+          Depending on the number of people subscribed to your channel, the
+          hotline can be noisy and increase the chances of spam/abuse.
+        </li>
+      </ul>
+    </p>
+    <h4>REPLY</h4>
+    <p>Incoming hotline messages are followed by a hotline #:</p>
+    <blockquote>
+      <p>[HOTLINE #2]</p>
+      <p>Hello! We need a legal representative at jail support location XYZ.</p>
+    </blockquote>
+    <p>In order to respond to a hotline message, type REPLY:</p>
+    <blockquote>
+      <p>REPLY #2 Okay, we are sending someone over!</p>
+    </blockquote>
+    <p>And the subscriber you replied to will receive the following message:</p>
+    <blockquote>
+      <p>[PRIVATE REPLY FROM ADMINS]</p>
+      <p>Okay, we are sending someone over!</p>
+    </blockquote>
+
+    <h3>Other useful commands</h3>
+    <h4>PRIVATE good morning fellow admins!</h4>
+    <p>Sends a private message </p>
+    <h4>INVITE +1-555-555-5555</h4>
+    <p>
+      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
+      the phone number with a + and country code!
+    </p>
+    <h4>ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH </h4>
+    <p>
+      Switches language to Spanish, French, or German. Language changes on
+      Signalboost are user-specific, so if you change your language to Spanish
+      other admins and subscribers' channels will be unaffected.
+    </p>
+
     <h4>GOODBYE</h4>
     <p>
       Leaves the channel. If you're an admin, you will lose your admin access to
