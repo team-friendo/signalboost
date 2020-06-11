@@ -103,7 +103,7 @@ describe('executing commands', () => {
     describe('when sender is not already member of channel', () => {
       beforeEach(() => isMemberStub.returns(Promise.resolve(false)))
 
-      describe('when vouching is on', () => {
+      describe('when vouching is set to ON', () => {
         describe('when sender lacks sufficient invites', () => {
           // vouching level is 1 by default; accepter possesses 0 invites
           beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
@@ -151,7 +151,7 @@ describe('executing commands', () => {
         })
       })
 
-      describe('when vouching is off and user has no invites', () => {
+      describe('when vouching is OFF and user has no invites', () => {
         const _dispatchable = { ...dispatchable, channel }
         beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
 
@@ -198,6 +198,7 @@ describe('executing commands', () => {
         })
       })
     })
+
     describe('when there is an error counting invites', () => {
       beforeEach(() => {
         isMemberStub.returns(Promise.resolve(false))
@@ -717,18 +718,19 @@ describe('executing commands', () => {
       countInvitesStub.restore()
     })
 
-    describe('when vouching mode is on', () => {
-      const vouchingChannel = { ...channel, vouchingOn: true, vouchLevel: 1 }
+    // VOUCHING_ON
+    describe('when vouching is ON', () => {
+      const vouchingOnChannel = { ...channel, vouchingOn: true, vouchLevel: 1 }
 
-      describe('when sender is not a member of channel', () => {
-        const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: randomPerson }
+      describe('when sender is non-member of the channel', () => {
+        const dispatchable = { db, sdMessage, channel: vouchingOnChannel, sender: randomPerson }
 
         it('returns UNAUTHORIZED', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.INVITE,
             payload: inviteePhoneNumbers,
             status: statuses.UNAUTHORIZED,
-            message: CR.invite.unauthorized,
+            message: CR.invite.notSubscriber,
             notifications: [],
           })
         })
@@ -739,7 +741,7 @@ describe('executing commands', () => {
           const dispatchable = {
             db,
             sdMessage: sdMessageOf(channel, `INVITE foo, ${inviteePhoneNumbers[0]}`),
-            channel: vouchingChannel,
+            channel: vouchingOnChannel,
             sender: admin,
           }
 
@@ -755,7 +757,7 @@ describe('executing commands', () => {
         })
 
         describe('when all invitee numbers are valid (and unique)', () => {
-          const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: admin }
+          const dispatchable = { db, sdMessage, channel: vouchingOnChannel, sender: admin }
 
           describe('when all invitees are already subscribers', () => {
             let res
@@ -825,9 +827,9 @@ describe('executing commands', () => {
                     notifications: [
                       {
                         recipient: inviteePhoneNumbers[0],
-                        message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                          vouchingChannel.name,
-                        ),
+                        message: messagesIn(
+                          vouchingOnChannel.language,
+                        ).notifications.inviteReceived(vouchingOnChannel.name),
                       },
                     ],
                   })
@@ -856,14 +858,14 @@ describe('executing commands', () => {
                   notifications: [
                     {
                       recipient: inviteePhoneNumbers[0],
-                      message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                        vouchingChannel.name,
+                      message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                        vouchingOnChannel.name,
                       ),
                     },
                     {
                       recipient: inviteePhoneNumbers[1],
-                      message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                        vouchingChannel.name,
+                      message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                        vouchingOnChannel.name,
                       ),
                     },
                   ],
@@ -883,7 +885,7 @@ describe('executing commands', () => {
           const dispatchable = {
             db,
             sdMessage: _sdMessage,
-            channel: vouchingChannel,
+            channel: vouchingOnChannel,
             sender: admin,
           }
 
@@ -908,14 +910,14 @@ describe('executing commands', () => {
                 notifications: [
                   {
                     recipient: inviteePhoneNumbers[0],
-                    message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                      vouchingChannel.name,
+                    message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                      vouchingOnChannel.name,
                     ),
                   },
                   {
                     recipient: inviteePhoneNumbers[1],
-                    message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                      vouchingChannel.name,
+                    message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                      vouchingOnChannel.name,
                     ),
                   },
                 ],
@@ -930,7 +932,7 @@ describe('executing commands', () => {
           const dispatchable = {
             db,
             sdMessage: sdMessageOf(channel, `INVITAR ${inviteePhoneNumbers[0]}`),
-            channel: vouchingChannel,
+            channel: vouchingOnChannel,
             sender: admin,
           }
 
@@ -950,7 +952,7 @@ describe('executing commands', () => {
                 {
                   recipient: inviteePhoneNumbers[0],
                   message: messagesIn(languages.ES).notifications.inviteReceived(
-                    vouchingChannel.name,
+                    vouchingOnChannel.name,
                   ),
                 },
               ],
@@ -959,8 +961,8 @@ describe('executing commands', () => {
         })
       })
 
-      describe('when sender is a subscriber on happy path', () => {
-        const dispatchable = { db, sdMessage, channel: vouchingChannel, sender: subscriber }
+      describe('when sender is a subscriber', () => {
+        const dispatchable = { db, sdMessage, channel: vouchingOnChannel, sender: subscriber }
         let res
         beforeEach(async () => {
           issueInviteStub.returns(Promise.resolve(true))
@@ -981,14 +983,14 @@ describe('executing commands', () => {
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                  vouchingChannel.name,
+                message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                  vouchingOnChannel.name,
                 ),
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(vouchingChannel.language).notifications.inviteReceived(
-                  vouchingChannel.name,
+                message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
+                  vouchingOnChannel.name,
                 ),
               },
             ],
@@ -997,7 +999,80 @@ describe('executing commands', () => {
       })
     })
 
-    describe('when vouching mode is on and set to greater than 1', () => {
+    // VOUCHING_ADMIN
+    describe('when vouching is ADMIN only', () => {
+      const vouchingAdminChannel = {
+        ...channel,
+        vouching: vouchModes.VOUCHING_ADMIN,
+        vouchLevel: 1,
+      }
+
+      describe('when sender is an admin', () => {
+        const dispatchable = { db, sdMessage, channel: vouchingAdminChannel, sender: admin }
+        let res
+        beforeEach(async () => {
+          issueInviteStub.returns(Promise.resolve(true))
+          countInvitesStub.returns(Promise.resolve(0))
+          res = await processCommand(dispatchable)
+        })
+
+        it('creates the invites', () => {
+          expect(issueInviteStub.callCount).to.eql(2)
+        })
+
+        it('returns SUCCESS with notification for invitee', () => {
+          expect(res).to.eql({
+            command: commands.INVITE,
+            payload: inviteePhoneNumbers,
+            status: statuses.SUCCESS,
+            message: CR.invite.success(2),
+            notifications: [
+              {
+                recipient: inviteePhoneNumbers[0],
+                message: messagesIn(vouchingAdminChannel.language).notifications.inviteReceived(
+                  vouchingAdminChannel.name,
+                ),
+              },
+              {
+                recipient: inviteePhoneNumbers[1],
+                message: messagesIn(vouchingAdminChannel.language).notifications.inviteReceived(
+                  vouchingAdminChannel.name,
+                ),
+              },
+            ],
+          })
+        })
+      })
+
+      describe('when sender is a subscriber or non-member of the channel', () => {
+        beforeEach(async () => {
+          issueInviteStub.returns(Promise.resolve(true))
+          countInvitesStub.returns(Promise.resolve(0))
+        })
+
+        const senders = [(subscriber, randomPerson)]
+
+        senders.forEach(sender => {
+          const dispatchable = { db, sdMessage, channel: vouchingAdminChannel, sender }
+          it('does not create an invite record', () => {
+            expect(issueInviteStub.callCount).to.eql(0)
+          })
+
+          it('returns UNAUTHORIZED', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.INVITE,
+              payload: inviteePhoneNumbers,
+              status: statuses.UNAUTHORIZED,
+              message: CR.invite.notSubscriber,
+              notifications: [],
+            })
+          })
+        })
+      })
+    })
+
+    // VOUCH_LEVEL
+    describe('when vouching is ON and set to greater than 1', () => {
       describe('sender is an admin and invitees are not yet subscribers or invited', () => {
         const extraVouchedChannel = { ...channel, vouchingOn: true, vouchLevel: 2 }
         const dispatchable = { db, sdMessage, channel: extraVouchedChannel, sender: admin }
@@ -1033,7 +1108,8 @@ describe('executing commands', () => {
       })
     })
 
-    describe('when vouching mode is off', () => {
+    // VOUCHING_OFF
+    describe('when vouching mode is OFF', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }
 
       it('has same behavior as vouching on', async () => {
@@ -1947,7 +2023,7 @@ describe('executing commands', () => {
     })
   })
 
-  describe('VOUCHING commands', () => {
+  describe('VOUCHING ON/OFF/ADMIN commands', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
     afterEach(() => updateChannelStub.restore())

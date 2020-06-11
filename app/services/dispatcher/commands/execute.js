@@ -263,7 +263,9 @@ const showInfo = async (db, channel, sender) => {
 
 const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
-  if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.unauthorized }
+  if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
+  if (sender.type !== ADMIN && channel.vouching === vouchModes.VOUCHING_ADMIN)
+    return { status: statuses.UNAUTHORIZED, message: cr.adminOnly }
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>
@@ -644,7 +646,6 @@ const maybeSetVouchMode = (db, channel, sender, newVouchMode) => {
 
 const setVouchMode = async (db, channel, sender, newVouchMode, cr) => {
   try {
-    console.log(newVouchMode)
     await channelRepository.update(db, channel.phoneNumber, {
       vouching: newVouchMode,
     })
@@ -686,7 +687,6 @@ const setVouchLevel = async (db, channel, newVouchLevel, sender, cr) => {
   try {
     await channelRepository.update(db, channel.phoneNumber, {
       vouchLevel: newVouchLevel,
-      vouchingOn: true,
     })
 
     return {
