@@ -15,6 +15,12 @@ const notSubscriber =
 
 const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
 
+const vouchModes = {
+  ON: 'activée',
+  ADMIN: 'admin',
+  OFF: 'désactivée',
+}
+
 const support = `----------------------------------------------
 COMMENT ÇA FONCTIONNE
 ----------------------------------------------
@@ -142,8 +148,8 @@ RÉPONDRE #1312
 PRIVÉ bonsoir, admins
 -> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
 
-SE PORTER GARANT ON / OFF
--> Activer ou désactiver l'exigence de recevoir une invitation à s'abonner
+SE PORTER GARANT ON / ADMIN/ OFF
+-> Modifie les autorisations qui peuvent inviter des personnes à s'abonner à la chaîne
 
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
@@ -197,8 +203,8 @@ numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonné-e-s: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModes[channel.vouching]}
+${channel.vouching !== vouchModes.OFF ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -213,8 +219,8 @@ Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModes[channel.vouching]}
+${channel.vouching !== vouchModes.OFF ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Description : ${channel.description}` : ''}
 
 ${support}`,
@@ -240,6 +246,7 @@ ${support}`,
     invalidPhoneNumber: input =>
       `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
     success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
+    adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette chaîne.',
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Oups! Échec de l'envoi des invitations pour ${
@@ -369,6 +376,22 @@ Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER 
       `Oups! Une erreur s’est produite lors de la mise à jour du numéro de sécurité de ${phoneNumber}. Veuillez essayer à nouveau!`,
   },
 
+  // VOUCHING
+  vouching: {
+    success: mode =>
+      `${
+        mode === vouchModes.ADMIN
+          ? `Vouching défini sur ${vouchModes.ADMIN}.
+Cela signifie que seuls vous et vos collègues administrateurs peuvent inviter des personnes sur cette chaîne.
+
+Tapez HELP pour en savoir plus sur les commandes INVITE et VOUCH LEVEL.`
+          : `Vouching est passé avec succès ${vouchModes.mode}.`
+      }`,
+    notAdmin,
+    dbError:
+      "Une erreur s'est produite lors de la mise à jour de l'attestation de votre chaîne. Veuillez réessayer.",
+  },
+
   // VOUCH_LEVEL
 
   vouchLevel: {
@@ -425,9 +448,6 @@ AJOUTER ${adminPhoneNumber}
 
 Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant que cette étape soit complétée.`,
 
-  setDescription: newDescription =>
-    `La description de ce canal est désormais: "${newDescription}."`,
-
   expiryUpdateNotAuthorized:
     "Désolé, seul-e-s les admins peuvent régler l'horloge des messages disparus.",
 
@@ -447,11 +467,6 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   inviteReceived: channelName =>
     `Bonjour! Vous avez reçu le invitation pour rejoindre la chaîne Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
-  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
-       ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
-     `,
-
   inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette chaîne.`,
 
   promptToUseSignal:
@@ -459,12 +474,28 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   noop: 'Oups! Ceci n’est pas une commande!',
 
+  rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
+    `Erreur de limite de débit sur le canal: ${channelPhoneNumber}.
+  ${
+    resendInterval
+      ? `tentative sera faite pour renvoyer le message en: ${resendInterval
+          .toString()
+          .slice(0, -3)}s`
+      : `le message a dépassé le seuil de renvoi et ne sera pas renvoyé`
+  }`,
+
+  recycleChannelFailed: phoneNumber =>
+    `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
+
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
+  setDescription: newDescription =>
+    `La description de ce canal est désormais: "${newDescription}."`,
+
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Demande d’abonnement reçu provenant de ${senderNumber}:
-${requestMsg}`,
+    ${requestMsg}`,
 
   signupRequestResponse:
     'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
@@ -477,16 +508,17 @@ ${requestMsg}`,
 
   toggles: commandResponses.toggles,
 
-  rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
-    `Erreur de limite de débit sur le canal: ${channelPhoneNumber}.
-${
-  resendInterval
-    ? `tentative sera faite pour renvoyer le message en: ${resendInterval.toString().slice(0, -3)}s`
-    : `le message a dépassé le seuil de renvoi et ne sera pas renvoyé`
-}`,
+  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
+  ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
+  `,
 
-  recycleChannelFailed: phoneNumber =>
-    `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
+  vouchModeChanged: mode =>
+    `Un administrateur vient de se porter garant ${mode}.  ${
+      mode === vouchModes.ADMIN
+        ? '"Désormais, seuls les administrateurs peuvent inviter des personnes sur cette chaîne. Tapez HELP pour en savoir plus sur la modification du niveau de garantie.'
+        : ''
+    }`,
 
   vouchLevelChanged: vouchLevel =>
     `Un-e admin vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${

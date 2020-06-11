@@ -15,6 +15,12 @@ const notSubscriber =
 
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
+const vouchModes = {
+  ON: 'on',
+  ADMIN: 'admin',
+  OFF: 'off',
+}
+
 const support = `----------------------------
 HOW IT WORKS
 ----------------------------
@@ -22,7 +28,7 @@ HOW IT WORKS
 Signalboost has channels with admins and subscribers:
 
 -> When admins send announcements, they are broadcast to all subscribers.
--> If hotline mode is enabled, anyone can send anonymous messages to the admins.
+-> If the hotline is enabled, anyone can send anonymous messages to the admins.
 
 Signalboost protects your privacy:
 
@@ -136,8 +142,8 @@ REPLY #1312
 PRIVATE good evening admins
 -> sends private message "good evening admins" to all admins of the channel
 
-VOUCHING ON / OFF
--> enables or disables requirement to receive an invite to subscribe
+VOUCHING ON / ADMIN / OFF 
+-> toggles permissions for who can invite people to subscribe to the channel 
 
 VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
@@ -191,8 +197,8 @@ phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModes[channel.vouching]}
+${channel.vouching !== vouchModes.OFF ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -207,8 +213,8 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModes[channel.vouching]}
+${channel.vouching !== vouchModes.OFF ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -233,6 +239,7 @@ ${support}`,
     notSubscriber,
     invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
     success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
+    adminOnly: 'Sorry, only admins can invite people to this channel.',
     dbError: 'Oops! Failed to issue invitation. Please try again. :)',
     dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
       failedPhoneNumbers.length
@@ -355,6 +362,21 @@ To change the vouching level, use the VOUCH LEVEL command. For example:
       `Whoops! There was an error updating the safety number for ${phoneNumber}. Please try again!`,
   },
 
+  // VOUCHING
+  vouching: {
+    success: mode =>
+      `${
+        mode === vouchModes.ADMIN
+          ? `Vouching set to ${vouchModes.ADMIN}.
+This means that only you and fellow admins can invite people to this channel. 
+
+Type HELP to learn about the INVITE and VOUCH LEVEL commands.`
+          : `Vouching successfully turned ${vouchModes.mode}.`
+      }`,
+    notAdmin,
+    dbError: 'There was an error updating vouching for your channel. Please try again.',
+  },
+
   // VOUCH_LEVEL
   vouchLevel: {
     success: level =>
@@ -394,27 +416,25 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
 
-  setDescription: newDescription => `Channel description set to "${newDescription}."`,
-
   deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} has been removed from this channel because their safety number changed.
-
-This is almost certainly because they reinstalled Signal on a new phone.
-
-However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
-
-Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
-
-ADD ${adminPhoneNumber}
-
-Until then, they will be unable to send messages to or read messages from this channel.`,
+  ${adminPhoneNumber} has been removed from this channel because their safety number changed.
+  
+  This is almost certainly because they reinstalled Signal on a new phone.
+  
+  However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+  
+  Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+  
+  ADD ${adminPhoneNumber}
+  
+  Until then, they will be unable to send messages to or read messages from this channel.`,
 
   expiryUpdateNotAuthorized: 'Sorry, only admins can set the disappearing message timer.',
 
   hotlineMessageSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
-
-Send HELP to list valid commands. Send HELLO to subscribe.`,
+  
+  Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
@@ -427,11 +447,6 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   inviteReceived: channelName =>
     `Hello! You have received an invite to join the [${channelName}] Signalboost channel. Please respond with ACCEPT or DECLINE.`,
 
-  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
-      invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
-    }`,
-
   inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
 
   promptToUseSignal:
@@ -439,17 +454,19 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
     `Message rate limited on channel: ${channelPhoneNumber}.
-${
-  resendInterval
-    ? `next resend attempt in: ${resendInterval.toString().slice(0, -3)} sec`
-    : `message has exceeded resend threshold and will not be resent`
-}`,
+    ${
+      resendInterval
+        ? `next resend attempt in: ${resendInterval.toString().slice(0, -3)} sec`
+        : `message has exceeded resend threshold and will not be resent`
+    }`,
 
   recycleChannelFailed: phoneNumber => `Failed to recycle channel for phone number: ${phoneNumber}`,
 
+  setDescription: newDescription => `Channel description set to "${newDescription}."`,
+
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Signup request received from ${senderNumber}:
-${requestMsg}`,
+    ${requestMsg}`,
 
   signupRequestResponse:
     'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
@@ -460,6 +477,18 @@ ${requestMsg}`,
     'You were just removed from this channel by an Admin. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
+
+  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
+    `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
+      invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
+    }`,
+
+  vouchModeChanged: mode =>
+    `An admin just set vouching to ${vouchModes.mode}.  ${
+      mode === vouchModes.ADMIN
+        ? 'Now, only admins can invite people to this channel. Type HELP to learn about changing the vouch level.'
+        : ''
+    }`,
 
   vouchLevelChanged: vouchLevel =>
     `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${
