@@ -1650,33 +1650,53 @@ describe('executing commands', () => {
       findMembershipStub = sinon.stub(membershipRepository, 'findMembership')
     })
 
-    afterEach(() => {
-      findMemberPhoneNumberStub.restore()
-      findMembershipStub.restore()
-    })
+    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       describe('when hotline message id exists', () => {
+        beforeEach(() => {})
+
+        describe('when hotline message was from a subscriber', () => {
+          beforeEach(() => {
+            findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+            findMembershipStub.returns(Promise.resolve(subscriber))
+          })
+
+          it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.REPLY,
+              status: statuses.SUCCESS,
+              message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
+              notifications: [
+                {
+                  recipient: subscriber.phoneNumber,
+                  message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+                },
+                ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
+                  recipient: memberPhoneNumber,
+                  message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                })),
+              ],
+              payload: { messageId: 1312, reply: 'foo' },
+            })
+          })
+        })
+      })
+
+      describe('when hotline message was from a non-subscriber', () => {
         beforeEach(() => {
-          findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
-          findMembershipStub.returns(
-            Promise.resolve(
-              membershipFactory({
-                channel: channel.phoneNumber,
-                memberPhoneNumber: subscriber.phoneNumber,
-              }),
-            ),
-          )
+          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
+          findMembershipStub.returns(null)
         })
 
-        it('returns SUCCESS with notifications for admins and member associated with id', async () => {
+        it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
             message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
             notifications: [
               {
-                recipient: subscriber.phoneNumber,
+                recipient: randomPerson.phoneNumber,
                 message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
               },
               ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
@@ -1690,9 +1710,8 @@ describe('executing commands', () => {
       })
 
       describe('when hotline message id does not exist', () => {
-        beforeEach(() =>
-          findMemberPhoneNumberStub.callsFake(() => Promise.reject(new Error('oh noes!'))),
-        )
+        beforeEach(() => findMemberPhoneNumberStub.callsFake(() => Promise.reject()))
+
         it('returns ERROR status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
@@ -1704,6 +1723,7 @@ describe('executing commands', () => {
         })
       })
     })
+
     describe('when sender is not an admin', () => {
       const _dispatchable = { ...dispatchable, sender: subscriber }
 

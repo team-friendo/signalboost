@@ -9,6 +9,7 @@ const hotlineMessageRepository = require('../../../db/repositories/hotlineMessag
 const phoneNumberService = require('../../../../app/services/registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
+const { defaultLanguage } = require('../../../config')
 const { get, isEmpty, uniq } = require('lodash')
 const { getAllAdminsExcept, getAdminMemberships } = require('../../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
@@ -503,15 +504,21 @@ const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) => {
       db,
       id: hotlineReply.messageId,
     })
-    const membership = await membershipRepository.findMembership(
-      db,
-      channel.phoneNumber,
-      memberPhoneNumber,
+    const language = get(
+      await membershipRepository.findMembership(db, channel.phoneNumber, memberPhoneNumber),
+      'language',
+      defaultLanguage,
     )
     return {
       status: statuses.SUCCESS,
       message: cr.success(hotlineReply),
-      notifications: hotlineReplyNotificationsOf(channel, sender, hotlineReply, membership),
+      notifications: hotlineReplyNotificationsOf(
+        channel,
+        sender,
+        hotlineReply,
+        memberPhoneNumber,
+        language,
+      ),
     }
   } catch (e) {
     return {
@@ -521,10 +528,16 @@ const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) => {
   }
 }
 
-const hotlineReplyNotificationsOf = (channel, sender, hotlineReply, membership) => [
+const hotlineReplyNotificationsOf = (
+  channel,
+  sender,
+  hotlineReply,
+  memberPhoneNumber,
+  language,
+) => [
   {
-    recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.hotlineReplyOf(
+    recipient: memberPhoneNumber,
+    message: messagesIn(language).notifications.hotlineReplyOf(
       hotlineReply,
       memberTypes.SUBSCRIBER,
     ),
