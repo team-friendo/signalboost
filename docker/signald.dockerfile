@@ -71,7 +71,8 @@ ENV JAVA_HOME "/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64"
 # ------------------------------------------------------
 
 # store most recent HEAD of master...
-ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
+# ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
+ENV RELEASE_COMMIT_HASH "b66e7138cefef760f5b7e098cdfc2abb097bba60"
 
 # hack to avoid halting error on (unnecessary) `sudo` invocations
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
