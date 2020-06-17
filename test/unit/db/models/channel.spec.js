@@ -94,7 +94,6 @@ describe('channel model', () => {
     expect(channel.description).to.be.a('string')
     expect(channel.hotlineOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
-    expect(channel.vouchingOn).to.be.a('boolean')
     expect(channel.vouching).to.be.a('string')
     expect(channel.vouchLevel).to.be.a('number')
     expect(channel.createdAt).to.be.a('Date')
@@ -105,7 +104,7 @@ describe('channel model', () => {
     channel = await db.channel.create(
       channelFactory({
         hotlineOn: undefined,
-        vouchingOn: undefined,
+        vouching: undefined,
         messageExpiryTime: undefined,
         description: undefined,
         vouchLevel: undefined,
@@ -115,7 +114,6 @@ describe('channel model', () => {
     expect(channel.hotlineOn).to.equal(false)
     expect(channel.description).to.equal('')
     expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
-    expect(channel.vouchingOn).to.equal(false)
     expect(channel.vouching).to.equal('OFF')
     expect(channel.vouchLevel).to.equal(1)
   })

@@ -69,10 +69,9 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
     [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
-    [commands.VOUCHING_ON]: () => maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_ON),
-    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_OFF),
-    [commands.VOUCHING_ADMIN]: () =>
-      maybeSetVouchMode(db, channel, sender, vouchModes.VOUCHING_ADMIN),
+    [commands.VOUCHING_ON]: () => maybeSetVouchMode(db, channel, sender, vouchModes.ON),
+    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(db, channel, sender, vouchModes.OFF),
+    [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(db, channel, sender, vouchModes.ADMIN),
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
@@ -98,7 +97,7 @@ const maybeAccept = async (db, channel, sender, language) => {
 
     // don't accept invite if sender doesn't have sufficient invites
     const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
-    if (channel.vouchingOn && inviteCount < channel.vouchLevel)
+    if (channel.vouching !== vouchModes.OFF && inviteCount < channel.vouchLevel)
       return {
         status: statuses.ERROR,
         message: cr.belowVouchLevel(channel, channel.vouchLevel, inviteCount),
@@ -264,7 +263,7 @@ const showInfo = async (db, channel, sender) => {
 const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
-  if (sender.type !== ADMIN && channel.vouching === vouchModes.VOUCHING_ADMIN)
+  if (sender.type !== ADMIN && channel.vouching === vouchModes.ADMIN)
     return { status: statuses.UNAUTHORIZED, message: cr.adminOnly }
 
   const inviteResults = await Promise.all(
@@ -341,7 +340,7 @@ const inviteNotificationOf = (
 ) => {
   const notifications = messagesIn(language).notifications
   const inviteMessage =
-    channel.vouchingOn && channel.vouchLevel > 1
+    channel.vouching !== vouchModes.OFF && channel.vouchLevel > 1
       ? notifications.vouchedInviteReceived(channel.name, invitesReceived, invitesNeeded)
       : notifications.inviteReceived(channel.name)
 
@@ -356,7 +355,8 @@ const inviteNotificationOf = (
 const maybeAddSubscriber = async (db, channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.join
   if (sender.type !== NONE) return { status: statuses.ERROR, message: cr.alreadyMember }
-  if (channel.vouchingOn) return { status: statuses.ERROR, message: cr.inviteRequired }
+  if (channel.vouching !== vouchModes.OFF)
+    return { status: statuses.ERROR, message: cr.inviteRequired }
   return addSubscriber(db, channel, sender, language, cr)
 }
 
@@ -552,7 +552,7 @@ const hotlineReplyNotificationsOf = (
   })),
 ]
 
-// ON / OFF TOGGLES FOR RESPONSES, VOUCHING
+// ON / OFF TOGGLES FOR RESPONSES
 
 // (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
 const maybeToggleSettingOn = (db, channel, sender, toggle) =>
@@ -586,10 +586,7 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(
-      isOn,
-      channel.vouchLevel,
-    ),
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
   }))
 }
 

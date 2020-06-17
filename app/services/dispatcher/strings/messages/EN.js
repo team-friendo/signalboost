@@ -15,7 +15,7 @@ const notSubscriber =
 
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
-const vouchModes = {
+const vouchModeDisplay = {
   ON: 'on',
   ADMIN: 'admin',
   OFF: 'off',
@@ -197,8 +197,8 @@ phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${vouchModes[channel.vouching]}
-${channel.vouching !== vouchModes.OFF ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModeDisplay[channel.vouching]}
+${channel.vouching !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -213,8 +213,8 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${vouchModes[channel.vouching]}
-${channel.vouching !== vouchModes.OFF ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModeDisplay[channel.vouching]}
+${channel.vouching !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -320,7 +320,7 @@ Send HELP to list commands I understand.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
-  // TOGGLES (HOTLINE, VOUCHING)
+  // TOGGLES (HOTLINE)
 
   toggles: {
     hotline: {
@@ -328,25 +328,6 @@ Send HELP to list commands I understand.`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,
-    },
-    vouching: {
-      success: (isOn, vouchLevel) =>
-        `${
-          isOn
-            ? `Vouching turned on. Joining this channel will now require ${vouchLevel} ${
-                vouchLevel > 1 ? 'invites' : 'invite'
-              }.
-
-To vouch for someone, use the INVITE command. For example:
-"INVITE +12345551234"
-
-To change the vouching level, use the VOUCH LEVEL command. For example:
-"VOUCH LEVEL 3"`
-            : `Vouching turned off.`
-        }`,
-      notAdmin,
-      dbError: isOn =>
-        `Whoops! There was an error trying to turn vouching ${onOrOff(isOn)}. Please try again!`,
     },
   },
 
@@ -366,12 +347,12 @@ To change the vouching level, use the VOUCH LEVEL command. For example:
   vouching: {
     success: mode =>
       `${
-        mode === vouchModes.ADMIN
-          ? `Vouching set to ${vouchModes.ADMIN}.
+        mode === 'ADMIN'
+          ? `Vouching set to ${vouchModeDisplay.ADMIN}.
 This means that only you and fellow admins can invite people to this channel. 
 
 Type HELP to learn about the INVITE and VOUCH LEVEL commands.`
-          : `Vouching successfully turned ${vouchModes.mode}.`
+          : `Vouching successfully turned ${vouchModeDisplay[mode]}.`
       }`,
     notAdmin,
     dbError: 'There was an error updating vouching for your channel. Please try again.',
@@ -484,8 +465,8 @@ const notifications = {
     }`,
 
   vouchModeChanged: mode =>
-    `An admin just set vouching to ${vouchModes.mode}.  ${
-      mode === vouchModes.ADMIN
+    `An admin just set vouching to ${vouchModeDisplay[mode]}.  ${
+      mode === 'ADMIN'
         ? 'Now, only admins can invite people to this channel. Type HELP to learn about changing the vouch level.'
         : ''
     }`,

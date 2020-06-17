@@ -6,14 +6,13 @@ const statuses = {
 }
 
 const vouchModes = {
-  VOUCHING_ON: 'ON',
-  VOUCHING_OFF: 'OFF',
-  VOUCHING_ADMIN: 'ADMIN',
+  ON: 'ON',
+  OFF: 'OFF',
+  ADMIN: 'ADMIN',
 }
 
 const toggles = {
   HOTLINE: { dbField: 'hotlineOn', name: 'hotline' },
-  VOUCHING: { dbField: 'vouchingOn', name: 'vouching' },
 }
 
 const commands = {

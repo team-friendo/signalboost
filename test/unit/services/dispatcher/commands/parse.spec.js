@@ -50,8 +50,8 @@ describe('parse module', () => {
           'la LÍNEA DIRECTA',
           'la LÍNEA DIRECTA',
           'la NIVEL DE ATESTIGUAR',
-          'la ATESTIGUANDO ACTIVADA'
-          'la ATESTIGUANDO DESACTIVADA'
+          'la ATESTIGUANDO ACTIVADA',
+          'la ATESTIGUANDO DESACTIVADA',
           'la ATESTIGUANDO ADMIN',
           'la ESPAÑOL',
 

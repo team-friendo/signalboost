@@ -37,6 +37,7 @@ describe('executing commands', () => {
     name: 'foobar',
     description: 'foobar channel description',
     phoneNumber: '+13333333333',
+    vouching: 'OFF',
     deauthorizations: [deauthorizationFactory()],
     memberships: [
       ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -71,7 +72,7 @@ describe('executing commands', () => {
   describe('ACCEPT command', () => {
     const dispatchable = {
       db,
-      channel: { ...channel, vouchingOn: true, vouchLevel: 1 },
+      channel: { ...channel, vouching: 'ON', vouchLevel: 1 },
       sender: randomPerson,
       sdMessage: sdMessageOf(channel, 'ACCEPT'),
     }
@@ -720,7 +721,7 @@ describe('executing commands', () => {
 
     // VOUCHING_ON
     describe('when vouching is ON', () => {
-      const vouchingOnChannel = { ...channel, vouchingOn: true, vouchLevel: 1 }
+      const vouchingOnChannel = { ...channel, vouching: 'ON', vouchLevel: 1 }
 
       describe('when sender is non-member of the channel', () => {
         const dispatchable = { db, sdMessage, channel: vouchingOnChannel, sender: randomPerson }
@@ -1003,7 +1004,7 @@ describe('executing commands', () => {
     describe('when vouching is ADMIN only', () => {
       const vouchingAdminChannel = {
         ...channel,
-        vouching: vouchModes.VOUCHING_ADMIN,
+        vouching: vouchModes.ADMIN,
         vouchLevel: 1,
       }
 
@@ -1074,7 +1075,7 @@ describe('executing commands', () => {
     // VOUCH_LEVEL
     describe('when vouching is ON and set to greater than 1', () => {
       describe('sender is an admin and invitees are not yet subscribers or invited', () => {
-        const extraVouchedChannel = { ...channel, vouchingOn: true, vouchLevel: 2 }
+        const extraVouchedChannel = { ...channel, vouching: 'ON', vouchLevel: 2 }
         const dispatchable = { db, sdMessage, channel: extraVouchedChannel, sender: admin }
         let res
         beforeEach(async () => {
@@ -1142,7 +1143,7 @@ describe('executing commands', () => {
     afterEach(() => addSubscriberStub.restore())
 
     describe('when vouching mode is on', () => {
-      const vouchedChannel = { ...channel, vouchingOn: true }
+      const vouchedChannel = { ...channel, vouching: 'ON' }
       const dispatchable = { db, channel: vouchedChannel, sender: randomPerson, sdMessage }
 
       it('responds with an ERROR', async () => {
@@ -1900,18 +1901,6 @@ describe('executing commands', () => {
         command: commands.HOTLINE_OFF,
         commandStr: 'HOTLINE OFF',
       },
-      // {
-      //   ...toggles.VOUCHING,
-      //   isOn: true,
-      //   command: commands.VOUCHING_ON,
-      //   commandStr: 'VOUCHING ON',
-      // },
-      // {
-      //   ...toggles.VOUCHING,
-      //   isOn: false,
-      //   command: commands.VOUCHING_OFF,
-      //   commandStr: 'VOUCHING OFF',
-      // },
     ]
 
     scenarios.forEach(({ name, dbField, isOn, command, commandStr }) => {
@@ -2032,18 +2021,21 @@ describe('executing commands', () => {
       {
         command: commands.VOUCHING_ON,
         commandStr: 'VOUCHING ON',
+        mode: 'ON',
       },
       {
         command: commands.VOUCHING_OFF,
         commandStr: 'VOUCHING OFF',
+        mode: 'OFF',
       },
       {
         command: commands.VOUCHING_ADMIN,
         commandStr: 'VOUCHING ADMIN',
+        mode: 'ADMIN',
       },
     ]
 
-    vouchingScenarios.forEach(({ command, commandStr }) => {
+    vouchingScenarios.forEach(({ command, commandStr, mode }) => {
       describe('when sender is an admin', () => {
         const sender = admin
 
@@ -2056,13 +2048,13 @@ describe('executing commands', () => {
           expect(updateChannelStub.getCall(0).args).to.have.deep.members([
             db,
             channel.phoneNumber,
-            { ['vouching']: vouchModes[command] },
+            { ['vouching']: vouchModes[mode] },
           ])
         })
 
         describe('when db update succeeds', () => {
           const notificationMsg = messagesIn(sender.language).notifications.vouchModeChanged(
-            vouchModes[command],
+            vouchModes[mode],
           )
 
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
@@ -2072,7 +2064,7 @@ describe('executing commands', () => {
               command,
               status: statuses.SUCCESS,
               payload: '',
-              message: CR.vouching.success(vouchModes[command]),
+              message: CR.vouching.success(vouchModes[mode]),
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,

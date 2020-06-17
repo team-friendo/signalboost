@@ -15,7 +15,7 @@ const notSubscriber =
 
 const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
 
-const vouchModes = {
+const vouchModeDisplay = {
   ON: 'activée',
   ADMIN: 'admin',
   OFF: 'désactivée',
@@ -203,8 +203,8 @@ numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonné-e-s: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${vouchModes[channel.vouching]}
-${channel.vouching !== vouchModes.OFF ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModeDisplay[channel.vouching]}
+${channel.vouching !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -219,8 +219,8 @@ Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${vouchModes[channel.vouching]}
-${channel.vouching !== vouchModes.OFF ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModeDisplay[channel.vouching]}
+${channel.vouching !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Description : ${channel.description}` : ''}
 
 ${support}`,
@@ -330,7 +330,7 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
       'Oups! Votre préférence de langue n’a pas été enregistrée. Veuillez essayer de nouveau!',
   },
 
-  // TOGGLES (HOTLINE, VOUCHING)
+  // TOGGLES (HOTLINE)
 
   toggles: {
     hotline: {
@@ -338,27 +338,6 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer la hotline à ${onOrOff(
-          isOn,
-        )}. Veuillez essayer de nouveau!`,
-    },
-    vouching: {
-      success: (isOn, vouchLevel) =>
-        `${
-          isOn
-            ? `Se porter garant activée. ${vouchLevel} ${
-                vouchLevel > 1 ? 'invitations' : 'invitation'
-              } seront désormais nécessaires pour rejoindre cette chaîne.
-
-Pour inviter quelqu'un, utilisez la commande INVITER:
-"INVITER +12345551234"
-
-Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER GARANT:
-"NIVEAU DE PORTER GARANT 3"`
-            : `Se porter garant desactivée.`
-        }`,
-      notAdmin,
-      dbError: isOn =>
-        `Oups! Une erreur s’est produite en tentant de changer se porter garant à ${onOrOff(
           isOn,
         )}. Veuillez essayer de nouveau!`,
     },
@@ -380,12 +359,12 @@ Pour modifier le niveau de porter garant, utilisez la commande NIVEAU DE PORTER 
   vouching: {
     success: mode =>
       `${
-        mode === vouchModes.ADMIN
-          ? `Vouching défini sur ${vouchModes.ADMIN}.
+        mode === 'ADMIN'
+          ? `Vouching défini sur ${vouchModeDisplay.ADMIN}.
 Cela signifie que seuls vous et vos collègues administrateurs peuvent inviter des personnes sur cette chaîne.
 
 Tapez HELP pour en savoir plus sur les commandes INVITE et VOUCH LEVEL.`
-          : `Vouching est passé avec succès ${vouchModes.mode}.`
+          : `Vouching est passé avec succès ${vouchModeDisplay[mode]}.`
       }`,
     notAdmin,
     dbError:
@@ -514,8 +493,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   `,
 
   vouchModeChanged: mode =>
-    `Un administrateur vient de se porter garant ${mode}.  ${
-      mode === vouchModes.ADMIN
+    `Un administrateur vient de se porter garant ${vouchModeDisplay[mode]}.  ${
+      mode === 'ADMIN'
         ? '"Désormais, seuls les administrateurs peuvent inviter des personnes sur cette chaîne. Tapez HELP pour en savoir plus sur la modification du niveau de garantie.'
         : ''
     }`,
