@@ -1,16 +1,14 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import fs from 'fs-extra'
-import net from 'net'
 import { keys } from 'lodash'
 import { wait } from '../../../app/services/util'
 import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
-  pool,
 } from '../../../app/services/signal'
+import { pool, signaldEncode } from '../../../app/services/socket'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
@@ -20,58 +18,6 @@ import {
 } from '../../support/factories/sdMessage'
 
 describe('signal module', () => {
-  const sock = new EventEmitter()
-  sock.setEncoding = () => null
-
-  describe('getting a socket', () => {
-    let pathExistsStub, connectStub
-
-    beforeEach(() => {
-      pathExistsStub = sinon.stub(fs, 'pathExists')
-      connectStub = sinon.stub(net, 'createConnection').returns(sock)
-    })
-
-    afterEach(() => {
-      sinon.restore()
-    })
-
-    describe('when socket is eventually available', () => {
-      let result
-      beforeEach(async () => {
-        pathExistsStub.onCall(0).returns(Promise.resolve(false))
-        pathExistsStub.onCall(1).returns(Promise.resolve(false))
-        pathExistsStub.onCall(2).callsFake(() => {
-          wait(5).then(() => sock.emit('connect', sock))
-          return Promise.resolve(true)
-        })
-        result = await signal.getSocket()
-      })
-
-      it('looks for a socket descriptor at an interval', async () => {
-        expect(pathExistsStub.callCount).to.eql(3)
-      })
-
-      it('connects to socket once it exists', () => {
-        expect(connectStub.callCount).to.eql(1)
-      })
-
-      it('returns the connected socket', () => {
-        expect(result).to.eql(sock)
-      })
-    })
-
-    describe('when connection is never available', () => {
-      beforeEach(() => pathExistsStub.returns(Promise.resolve(false)))
-
-      it('attempts to connect a finite number of times then rejects', async () => {
-        const result = await signal.getSocket().catch(a => a)
-        expect(pathExistsStub.callCount).to.be.above(10)
-        expect(connectStub.callCount).to.eql(0)
-        expect(result.message).to.eql(signal.messages.error.socketTimeout)
-      })
-    })
-  })
-
   describe('sending signald commands', () => {
     const channelPhoneNumber = genPhoneNumber()
     const subscriberNumber = genPhoneNumber()
@@ -83,14 +29,13 @@ describe('signal module', () => {
 
     beforeEach(() => {
       sock = new EventEmitter()
+      sock.setEncoding = () => null
       sock.write = sinon.stub().returns(Promise.resolve())
       sinon.stub(pool, 'acquire').returns(Promise.resolve(sock))
       sinon.stub(pool, 'release')
     })
 
-    afterEach(() => {
-      sinon.restore()
-    })
+    afterEach(() => sinon.restore())
 
     it('sends a register command', async () => {
       signal.register(sock, channelPhoneNumber)
@@ -178,7 +123,7 @@ describe('signal module', () => {
 
       it('attempts to trust the new fingerprint', async () => {
         await signal.trust(sock, channelPhoneNumber, subscriberNumber, fingerprint).catch(a => a)
-        expect(sock.write.getCall(0).args[0]).to.eql(signal.signaldEncode(trustRequest))
+        expect(sock.write.getCall(0).args[0]).to.eql(signaldEncode(trustRequest))
       })
 
       describe('when trusting fingerprint succeeds', () => {

@@ -1,17 +1,9 @@
-const genericPool = require('generic-pool')
-const net = require('net')
-const fs = require('fs-extra')
-const { pick, get } = require('lodash')
-const { promisifyCallback, wait } = require('./util.js')
+const { pick, get, isEmpty } = require('lodash')
+const { wait } = require('./util.js')
 const { statuses } = require('../services/util')
-const { isEmpty } = require('lodash')
+const socket = require('./socket')
 const {
   signal: {
-    connectionInterval,
-    maxConnectionAttempts,
-    poolMinConnections,
-    poolMaxConnections,
-    poolEvictionMillis,
     verificationTimeout,
     signaldRequestTimeout,
   },
@@ -86,8 +78,6 @@ const {
 
 // CONSTANTS
 
-const signaldSocketPath = '/var/run/signald/signald.sock'
-
 const messageTypes = {
   ERROR: 'unexpected_error',
   GET_IDENTITIES: 'get_identities',
@@ -115,12 +105,8 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
-// TODO(aguestuser|2019-09-20): localize these...
 const messages = {
   error: {
-    socketTimeout: 'Maximum signald connection attempts exceeded.',
-    invalidJSON: msg => `Failed to parse JSON: ${msg}`,
-    socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
     verificationFailure: (phoneNumber, reason) =>
       `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
     verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
@@ -137,100 +123,15 @@ const messages = {
   },
 }
 
-// TODO(aguestuser|2019-08-20): alo localize these...
-const successMessages = {
-  trustSuccess: phoneNumber => `Trusted new safety number for ${phoneNumber}.`,
-}
-
-/**************************
- * UNIX SOCKET MANAGEMENT
- **************************/
-
-const getSocket = async (attempts = 0) => {
-  if (!(await fs.pathExists(signaldSocketPath))) {
-    if (attempts > maxConnectionAttempts) {
-      return Promise.reject(new Error(messages.error.socketTimeout))
-    } else {
-      return wait(connectionInterval).then(() => getSocket(attempts + 1))
-    }
-  } else {
-    return connect()
-  }
-}
-
-const connect = () => {
-  try {
-    const sock = net.createConnection(signaldSocketPath)
-    sock.setEncoding('utf8')
-    sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    return new Promise(resolve => sock.on('connect', () => resolve(sock)))
-  } catch (e) {
-    return Promise.reject(new Error(messages.error.socketConnectError(e.message)))
-  }
-}
-
-const write = (sock, data) =>
-  new Promise((resolve, reject) =>
-    sock.write(
-      signaldEncode(data),
-      promisifyCallback(resolve, e =>
-        reject({
-          status: statuses.ERROR,
-          message: `Error writing to signald socket: ${e.message}`,
-        }),
-      ),
-    ),
-  )
-
-const writeWithPool = async data => {
-  new Promise((resolve, reject) =>
-    pool
-      .acquire()
-      .then(sock =>
-        sock.write(
-          signaldEncode(data),
-          promisifyCallback(
-            () => {
-              pool.release(sock)
-              return resolve()
-            },
-            e => {
-              pool.release(sock)
-              return reject({
-                status: statuses.ERROR,
-                message: `Error writing to signald socket: ${e.message}`,
-              })
-            },
-          ),
-        ),
-      )
-      .catch(reject),
-  )
-}
-
-const pool = genericPool.createPool(
-  {
-    create: getSocket,
-    destroy: socket => socket.destroy(),
-  },
-  {
-    min: poolMinConnections,
-    max: poolMaxConnections,
-    evictionRunIntervalMillis: poolEvictionMillis,
-  },
-)
-
-const signaldEncode = data => JSON.stringify(data) + '\n'
-
 /********************
  * SIGNALD COMMANDS
  ********************/
 
 const register = (sock, phoneNumber) =>
-  write(sock, { type: messageTypes.REGISTER, username: phoneNumber })
+  socket.write(sock, { type: messageTypes.REGISTER, username: phoneNumber })
 
 const verify = (sock, phoneNumber, code) =>
-  write(sock, { type: messageTypes.VERIFY, username: phoneNumber, code })
+  socket.write(sock, { type: messageTypes.VERIFY, username: phoneNumber, code })
 
 const awaitVerificationResult = async (sock, phoneNumber) => {
   return new Promise((resolve, reject) => {
@@ -268,13 +169,13 @@ const _isVerificationFailure = (type, data, phoneNumber) =>
 
 // (Socket, string) -> Promise<void>
 const subscribe = (sock, phoneNumber) =>
-  write(sock, { type: messageTypes.SUBSCRIBE, username: phoneNumber })
+  socket.write(sock, { type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
 const unsubscribe = (sock, phoneNumber) =>
-  write(sock, { type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
+  socket.write(sock, { type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
 const sendMessage = (sock, recipientNumber, outboundMessage) =>
-  writeWithPool({ ...outboundMessage, recipientNumber })
+  socket.writeWithPool({ ...outboundMessage, recipientNumber })
 
 // (Socket, Array<string>, OutMessage) -> Promise<void>
 const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
@@ -283,7 +184,7 @@ const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
   )
 
 const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
-  write(sock, {
+  socket.write(sock, {
     type: messageTypes.SET_EXPIRATION,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
@@ -292,8 +193,8 @@ const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSec
 
 // (Socket, String, String, String?) -> Promise<Array<TrustResult>>
 const trust = async (sock, channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  // don't await this write so we can start listening sooner!
-  write(sock, {
+  // don't await this socket.write so we can start listening sooner!
+  socket.write(sock, {
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
@@ -343,7 +244,7 @@ const _awaitTrustVerification = async (
 }
 
 const isAlive = sock => {
-  write(sock, { type: messageTypes.VERSION })
+  socket.write(sock, { type: messageTypes.VERSION })
   return awaitVersion(sock)
 }
 
@@ -435,18 +336,13 @@ const sdMessageOf = (channel, messageBody) => ({
 module.exports = {
   messageTypes,
   messages,
-  successMessages,
   trustLevels,
   awaitVerificationResult,
   broadcastMessage,
-  // fetchIdentities,
-  signaldEncode,
-  getSocket,
   isAlive,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,
-  pool,
   register,
   sendMessage,
   sdMessageOf,
