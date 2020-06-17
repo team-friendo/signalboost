@@ -7,13 +7,21 @@ import sinon from 'sinon'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../../app/db/repositories/channel'
 import signal from '../../../../../app/services/signal'
-import del from 'del'
+const fs = require('fs-extra')
 
 describe('phone number services -- destroy module', () => {
   // SETUP
 
   const phoneNumber = '+11111111111'
-  let db = {}
+  let db = {
+    sequelize: {
+      transaction: () => ({
+        commit: async () => Promise.resolve(),
+        rollback: async () => Promise.resolve(),
+      }),
+    },
+  }
+
   const sock = {}
   let findChannelStub,
     findPhoneNumberStub,
@@ -101,7 +109,7 @@ describe('phone number services -- destroy module', () => {
     destroyPhoneNumberSpy = sinon.spy()
     twilioRemoveSpy = sinon.spy()
     releasePhoneNumberStub = sinon.stub(commonService, 'getTwilioClient')
-    deleteDirStub = sinon.stub(del, 'sync').returns(['/var/lib'])
+    deleteDirStub = sinon.stub(fs, 'remove').returns(['/var/lib'])
     signaldUnsubscribeStub = sinon.stub(signal, 'unsubscribe')
   })
 
@@ -217,7 +225,7 @@ describe('phone number services -- destroy module', () => {
 
         it('deletes the associated signal data dir', async () => {
           await destroy({ db, sock, phoneNumber })
-          expect(deleteDirStub.getCall(0).args[0]).to.eql('/var/lib/signald/data/+11111111111*')
+          expect(deleteDirStub.getCall(0).args[0]).to.eql('/var/lib/signald/data/+11111111111')
         })
 
         it('releases the phone number to twilio', async () => {
@@ -245,7 +253,25 @@ describe('phone number services -- destroy module', () => {
       })
 
       describe('when notifying members fails', () => {
-        beforeEach(async () => await broadcastMessageFails())
+        beforeEach(async () => {
+          await destroyPhoneNumberSucceeds()
+          await destroySignalEntrySucceeds()
+          await releasePhoneNumberSucceeds()
+
+          findChannelStub.callsFake((_, phoneNumber) =>
+            Promise.resolve({
+              destroy: destroyChannelSpy,
+              phoneNumber,
+              memberships: [
+                { memberPhoneNumber: '+12223334444', type: 'ADMIN' },
+                { memberPhoneNumber: '+15556667777', type: 'ADMIN' },
+              ],
+            }),
+          )
+
+          broadcastMessageStub.onFirstCall().returns(Promise.reject('Failed to broadcast message'))
+          broadcastMessageStub.onSecondCall().returns(Promise.resolve())
+        })
 
         it('returns an error status', async () => {
           const response = await destroy({ db, sock, phoneNumber })

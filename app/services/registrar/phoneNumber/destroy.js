@@ -5,41 +5,42 @@ const common = require('./common')
 const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../../db/repositories/channel')
-const del = require('del')
 const logger = require('../logger')
+const fs = require('fs-extra')
 const {
   signal: { keystorePath },
 } = require('../../../config')
 
 // ({Database, Socket, string}) -> SignalboostStatus
 const destroy = async ({ db, sock, phoneNumber, sender }) => {
-  const channelInstance = await channelRepository.findDeep(db, phoneNumber)
-  const phoneNumberInstance = await phoneNumberRepository.find(db, phoneNumber)
+  let tx = await db.sequelize.transaction()
+  try {
+    const channelInstance = await channelRepository.findDeep(db, phoneNumber)
+    const phoneNumberInstance = await phoneNumberRepository.find(db, phoneNumber)
 
-  if (channelInstance || phoneNumberInstance) {
-    return notifyMembersExcept(
-      db,
-      sock,
-      channelInstance,
-      messagesIn(defaultLanguage).notifications.channelDestroyed,
-      sender,
-    )
-      .then(() =>
-        destroyChannel(
-          db,
-          sock,
-          channelInstance,
-          messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
-        ),
+    if (channelInstance || phoneNumberInstance) {
+      // TODO: Refactor destroyChannel for recycle
+      await destroyChannel(db, sock, channelInstance, tx)
+      await destroyPhoneNumber(db, sock, phoneNumberInstance, tx)
+      await signal.unsubscribe(sock, phoneNumber)
+      // TODO: Test to make sure delete works
+      await destroySignalEntry(db, phoneNumber)
+      await releasePhoneNumber(db, phoneNumberInstance)
+      await notifyMembersExcept(
+        db,
+        sock,
+        channelInstance,
+        messagesIn(defaultLanguage).notifications.channelDestroyed,
+        sender,
       )
-      .then(() => destroyPhoneNumber(db, sock, phoneNumberInstance))
-      .then(() => destroySignalEntry(db, phoneNumber))
-      .then(() => releasePhoneNumber(db, phoneNumberInstance))
-      .then(() => signal.unsubscribe(sock, phoneNumber))
-      .then(() => ({ status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }))
-      .catch(err => handleDestroyFailure(err, phoneNumber))
-  } else {
-    return { status: 'ERROR', message: `No records found for ${phoneNumber}` }
+      await tx.commit()
+      return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
+    } else {
+      return { status: 'ERROR', message: `No records found for ${phoneNumber}` }
+    }
+  } catch (err) {
+    await tx.rollback()
+    return handleDestroyFailure(err, db, sock, phoneNumber)
   }
 }
 
@@ -48,7 +49,8 @@ const destroy = async ({ db, sock, phoneNumber, sender }) => {
 // (DB, string) -> Promise<void>
 const destroySignalEntry = async (db, phoneNumber) => {
   try {
-    del.sync(`${keystorePath}/${phoneNumber}*`, { force: true })
+    await fs.remove(`${keystorePath}/${phoneNumber}`)
+    await fs.remove(`${keystorePath}/${phoneNumber}.d`)
   } catch (error) {
     return Promise.reject('Failed to destroy signal entry data in keystore')
   }
@@ -60,23 +62,32 @@ const releasePhoneNumber = async (db, phoneNumberInstance) => {
     const twilioClient = common.getTwilioClient()
     await twilioClient.incomingPhoneNumbers(phoneNumberInstance.twilioSid).remove()
   } catch (error) {
-    return Promise.reject('Failed to release phone number back to Twilio')
+    return error.status === 404
+      ? Promise.resolve()
+      : Promise.reject('Failed to release phone number back to Twilio')
   }
 }
 
 // Channel -> Promise<void>
-const destroyPhoneNumber = async (db, sock, phoneNumberInstance) => {
+const destroyPhoneNumber = async (db, sock, phoneNumberInstance, tx) => {
+  if (phoneNumberInstance == null) return
   try {
-    await phoneNumberInstance.destroy()
+    await phoneNumberInstance.destroy({ transaction: tx })
   } catch (error) {
     await Promise.reject('Failed to destroy phoneNumber in db')
   }
 }
 
-// (String, String) -> SignalboostStatus
-const handleDestroyFailure = (err, phoneNumber) => {
+// (String, DB, Socket, String) -> SignalboostStatus
+const handleDestroyFailure = async (err, db, sock, phoneNumber) => {
   logger.log(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
+  await common.notifyMaintainers(
+    db,
+    sock,
+    messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
+  )
+
   return {
     status: 'ERROR',
     message: `Failed to destroy channel for ${phoneNumber}. Error: ${err}`,

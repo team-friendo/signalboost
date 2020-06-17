@@ -44,12 +44,11 @@ const notifyMaintainers = async (db, sock, message) => {
 }
 
 // (DB, Socket, ChannelInstance, String) -> Promise<void>
-const destroyChannel = async (db, sock, channel, message) => {
+const destroyChannel = async (db, sock, channel, tx) => {
   if (channel == null) return
   try {
-    await channel.destroy()
+    await channel.destroy({ transaction: tx })
   } catch (error) {
-    await notifyMaintainers(db, sock, message)
     await Promise.reject('Failed to destroy channel')
   }
 }
