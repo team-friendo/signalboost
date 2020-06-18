@@ -47,7 +47,6 @@ describe('channel registrar', () => {
     updatePhoneNumberStub,
     notifyStub,
     findAllDeepStub,
-    findByNumberStub,
     setExpirationStub
 
   beforeEach(() => {
@@ -57,21 +56,12 @@ describe('channel registrar', () => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     notifyStub = sinon.stub(messenger, 'notify')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
-    findByNumberStub = sinon
-      .stub(channelRepository, 'findByPhoneNumber')
-      .returns(Promise.resolve(channelInstance))
+    sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
     setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
   })
 
   afterEach(() => {
-    addAdminStub.restore()
-    createChannelStub.restore()
-    subscribeStub.restore()
-    updatePhoneNumberStub.restore()
-    notifyStub.restore()
-    findAllDeepStub.restore()
-    findByNumberStub.restore()
-    setExpirationStub.restore()
+    sinon.restore()
   })
 
   describe('#create', () => {

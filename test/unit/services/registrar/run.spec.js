@@ -30,11 +30,7 @@ describe('registrar service', () => {
     })
 
     after(() => {
-      startServerStub.restore()
-      registerAllStub.restore()
-      inviteDeletionStub.restore()
-      smsSenderDeletionStub.restore()
-      hotlineMessageDeletionStub.restore()
+      sinon.restore()
     })
 
     it('registers any unregistered phone numbers with signal', () => {

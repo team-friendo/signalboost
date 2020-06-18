@@ -114,12 +114,7 @@ describe('phone number services -- destroy module', () => {
   })
 
   afterEach(() => {
-    findChannelStub.restore()
-    findPhoneNumberStub.restore()
-    broadcastMessageStub.restore()
-    deleteDirStub.restore()
-    releasePhoneNumberStub.restore()
-    signaldUnsubscribeStub.restore()
+    sinon.restore()
   })
 
   // TESTS

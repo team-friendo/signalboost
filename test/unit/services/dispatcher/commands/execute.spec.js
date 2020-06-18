@@ -78,9 +78,7 @@ describe('executing commands', () => {
       acceptStub = sinon.stub(inviteRepository, 'accept')
     })
     afterEach(() => {
-      isMemberStub.restore()
-      countInvitesStub.restore()
-      acceptStub.restore()
+      sinon.restore()
     })
 
     describe('when sender is already member of channel', () => {
@@ -233,9 +231,7 @@ describe('executing commands', () => {
       destroyDeauthStub = sinon.stub(deauthorizationRepository, 'destroy')
     })
     afterEach(() => {
-      addAdminStub.restore()
-      trustStub.restore()
-      destroyDeauthStub.restore()
+      sinon.restore()
     })
 
     describe('when sender is an admin', () => {
@@ -409,7 +405,7 @@ describe('executing commands', () => {
 
     let declineStub
     beforeEach(() => (declineStub = sinon.stub(inviteRepository, 'decline')))
-    afterEach(() => declineStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when db call succeeds', () => {
       beforeEach(() => declineStub.returns(Promise.resolve(1)))
@@ -496,7 +492,7 @@ describe('executing commands', () => {
 
     let destroyStub
     beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
-    afterEach(() => destroyStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when issuer is an admin', () => {
       const dispatchable = { ..._dispatchable, sender: admin }
@@ -708,9 +704,7 @@ describe('executing commands', () => {
       countInvitesStub = sinon.stub(inviteRepository, 'count')
     })
     afterEach(() => {
-      isMemberStub.restore()
-      issueInviteStub.restore()
-      countInvitesStub.restore()
+      sinon.restore()
     })
 
     describe('when vouching mode is on', () => {
@@ -1059,7 +1053,7 @@ describe('executing commands', () => {
     let addSubscriberStub
 
     beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
-    afterEach(() => addSubscriberStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when vouching mode is on', () => {
       const vouchedChannel = { ...channel, vouchingOn: true }
@@ -1187,7 +1181,7 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'LEAVE')
     let removeMemberStub
     beforeEach(() => (removeMemberStub = sinon.stub(membershipRepository, 'removeMember')))
-    afterEach(() => removeMemberStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when sender is subscribed to channel', () => {
       const dispatchable = { db, channel, sender: subscriber, sdMessage }
@@ -1311,7 +1305,7 @@ describe('executing commands', () => {
     })
 
     afterEach(() => {
-      sendMessageStub.restore()
+      sinon.restore()
     })
 
     describe('when sender is not an admin', () => {
@@ -1371,20 +1365,17 @@ describe('executing commands', () => {
 
   describe('REMOVE command', () => {
     const removalTargetNumber = channel.memberships[1].memberPhoneNumber
-    let validateStub, isAdminStub, removeMemberStub, resolveMemberTypeStub
+    let validateStub, removeMemberStub, resolveMemberTypeStub
 
     beforeEach(() => {
       validateStub = sinon.stub(validator, 'validatePhoneNumber')
-      isAdminStub = sinon.stub(membershipRepository, 'isAdmin')
+      sinon.stub(membershipRepository, 'isAdmin')
       removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
       resolveMemberTypeStub = sinon.stub(membershipRepository, 'resolveMemberType')
     })
 
     afterEach(() => {
-      validateStub.restore()
-      isAdminStub.restore()
-      removeMemberStub.restore()
-      resolveMemberTypeStub.restore()
+      sinon.restore()
     })
 
     describe('when sender is an admin', () => {
@@ -1555,7 +1546,7 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'RENAME foo')
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -1749,7 +1740,7 @@ describe('executing commands', () => {
 
     let updateLanguageStub
     beforeEach(() => (updateLanguageStub = sinon.stub(membershipRepository, 'updateLanguage')))
-    afterEach(() => updateLanguageStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when update call succeeds', () => {
       beforeEach(() => {
@@ -1805,7 +1796,7 @@ describe('executing commands', () => {
   describe('TOGGLE commands', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateChannelStub.restore())
+    afterEach(() => sinon.restore())
 
     const scenarios = [
       {
@@ -1949,7 +1940,7 @@ describe('executing commands', () => {
 
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -2045,7 +2036,7 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'DESCRIPTION foo channel description')
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => updateStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const dispatchable = { db, channel, sender: admin, sdMessage }

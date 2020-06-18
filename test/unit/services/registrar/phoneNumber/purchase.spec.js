@@ -26,8 +26,7 @@ describe('phone number services - purchase module', () => {
   })
 
   afterEach(() => {
-    twilioListStub.restore()
-    twilioCreateStub.restore()
+    sinon.restore()
   })
 
   describe('purchasing many phone numbers', () => {

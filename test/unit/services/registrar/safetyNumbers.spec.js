@@ -25,7 +25,7 @@ describe('safety numbers registrar module', () => {
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
   const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
   const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage }
-  let trustStub, sendMessageStub, removeMemberStub, findDeepStub, createDeauthStub
+  let trustStub, sendMessageStub, removeMemberStub, createDeauthStub
 
   beforeEach(() => {
     trustStub = sinon.stub(signal, 'trust')
@@ -33,7 +33,7 @@ describe('safety numbers registrar module', () => {
     removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
     createDeauthStub = sinon.stub(deauthorizationRepository, 'create')
 
-    findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(
+    sinon.stub(channelRepository, 'findDeep').returns(
       Promise.resolve(
         channelFactory({
           phoneNumber: channelPhoneNumber,
@@ -53,11 +53,7 @@ describe('safety numbers registrar module', () => {
   })
 
   afterEach(() => {
-    trustStub.restore()
-    sendMessageStub.restore()
-    removeMemberStub.restore()
-    findDeepStub.restore()
-    createDeauthStub.restore()
+    sinon.restore()
   })
 
   describe('#trustAndResend', () => {

@@ -40,7 +40,10 @@ describe('routes', () => {
 
   let server
   before(async () => (server = (await startServer(200, db, sock)).server))
-  after(() => server.close())
+  after(() => {
+    sinon.restore()
+    server.close()
+  })
 
   describe('GET to /channels', () => {
     let listStub

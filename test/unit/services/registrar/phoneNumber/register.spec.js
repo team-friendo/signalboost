@@ -40,14 +40,7 @@ describe('phone number services -- registration module', () => {
   const sock = {}
   const db = {}
 
-  let registerStub,
-    awaitVerificationStub,
-    verifyStub,
-    updateStub,
-    findAllStub,
-    findAllPurchasedStub,
-    pathExistsStub,
-    logStub
+  let registerStub, awaitVerificationStub, verifyStub, updateStub, findAllStub, pathExistsStub
 
   const updateSucceeds = () =>
     updateStub.callsFake((_, phoneNumber, { status }) => Promise.resolve({ phoneNumber, status }))
@@ -92,21 +85,13 @@ describe('phone number services -- registration module', () => {
     awaitVerificationStub = sinon.stub(signal, 'awaitVerificationResult')
     verifyStub = sinon.stub(signal, 'verify')
     findAllStub = sinon.stub(phoneNumberRepository, 'findAll')
-    findAllPurchasedStub = sinon.stub(phoneNumberRepository, 'findAllPurchased')
+    sinon.stub(phoneNumberRepository, 'findAllPurchased')
     updateStub = sinon.stub(phoneNumberRepository, 'update')
     pathExistsStub = sinon.stub(fs, 'pathExists')
-    logStub = sinon.stub(logger, 'log')
+    sinon.stub(logger, 'log')
   })
 
   afterEach(() => {
-    registerStub.restore()
-    awaitVerificationStub.restore()
-    verifyStub.restore()
-    updateStub.restore()
-    findAllStub.restore()
-    findAllPurchasedStub.restore()
-    pathExistsStub.restore()
-    logStub.restore()
     sinon.restore()
   })
 

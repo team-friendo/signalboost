@@ -60,18 +60,17 @@ describe('authentication middleware', () => {
   })
 
   describe('for twilio callback endpoint', () => {
-    let validateSignatureStub, handleSmsStug
+    let validateSignatureStub
 
     beforeEach(() => {
       validateSignatureStub = sinon.stub(twilio, 'validateRequest')
-      handleSmsStug = sinon
+      sinon
         .stub(phoneNumberService, 'handleSms')
         .returns(Promise.resolve({ status: statuses.SUCCESS, message: 'OK' }))
     })
 
     afterEach(() => {
-      validateSignatureStub.restore()
-      handleSmsStug.restore()
+      sinon.restore()
     })
 
     it('blocks a request to the twilio endpoint that lacks a valid signature', async () => {

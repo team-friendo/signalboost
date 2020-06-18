@@ -53,11 +53,8 @@ describe('dispatcher service', () => {
   const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
   const socketDelay = 5
 
-  let findAllDeepStub,
-    findDeepStub,
+  let findDeepStub,
     resolveMemberTypeStub,
-    resolveSenderLanguageStub,
-    subscribeStub,
     trustAndResendStub,
     deauthorizeStub,
     processCommandStub,
@@ -70,11 +67,8 @@ describe('dispatcher service', () => {
   beforeEach(async () => {
     // initialization stubs --v
 
-    findAllDeepStub = sinon
-      .stub(channelRepository, 'findAllDeep')
-      .returns(Promise.resolve(channels))
-
-    subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve())
+    sinon.stub(channelRepository, 'findAllDeep').returns(Promise.resolve(channels))
+    sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
     // main loop stubs --^
 
@@ -86,9 +80,7 @@ describe('dispatcher service', () => {
       .stub(membershipRepository, 'resolveMemberType')
       .returns(Promise.resolve(memberTypes.ADMIN))
 
-    resolveSenderLanguageStub = sinon
-      .stub(membershipRepository, 'resolveSenderLanguage')
-      .returns(languages.EN)
+    sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(languages.EN)
 
     trustAndResendStub = sinon
       .stub(safetyNumberService, 'trustAndResend')
@@ -116,19 +108,7 @@ describe('dispatcher service', () => {
   })
 
   afterEach(() => {
-    findAllDeepStub.restore()
-    findDeepStub.restore()
-    resolveMemberTypeStub.restore()
-    resolveSenderLanguageStub.restore()
-    trustAndResendStub.restore()
-    deauthorizeStub.restore()
-    processCommandStub.restore()
-    dispatchStub.restore()
-    subscribeStub.restore()
-    logAndReturnSpy.restore()
-    logErrorSpy.restore()
-    sendMessageStub.restore()
-    enqueueResendStub.restore()
+    sinon.restore()
   })
 
   describe('handling an incoming message', () => {

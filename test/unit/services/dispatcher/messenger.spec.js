@@ -113,8 +113,7 @@ describe('messenger service', () => {
       countCommandStub,
       countBroadcastStub,
       countHotlineStub,
-      setExpirationStub,
-      getMessageIdStub
+      setExpirationStub
 
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
@@ -131,21 +130,11 @@ describe('messenger service', () => {
         .stub(messageCountRepository, 'countHotline')
         .returns(Promise.resolve())
       setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
-      getMessageIdStub = sinon
-        .stub(hotlineMessageRepository, 'getMessageId')
-        .returns(Promise.resolve(messageId))
+      sinon.stub(hotlineMessageRepository, 'getMessageId').returns(Promise.resolve(messageId))
     })
 
     afterEach(() => {
-      broadcastSpy.restore()
-      respondSpy.restore()
-      broadcastMessageStub.restore()
-      sendMessageStub.restore()
-      countCommandStub.restore()
-      countBroadcastStub.restore()
-      countHotlineStub.restore()
-      setExpirationStub.restore()
-      getMessageIdStub.restore()
+      sinon.restore()
     })
 
     describe('a broadcast message', () => {
