@@ -53,11 +53,7 @@ describe('safety numbers registrar module', () => {
   })
 
   afterEach(() => {
-    trustStub.restore()
-    sendMessageStub.restore()
-    removeMemberStub.restore()
-    findDeepStub.restore()
-    createDeauthStub.restore()
+    sinon.restore()
   })
 
   describe('#trustAndResend', () => {

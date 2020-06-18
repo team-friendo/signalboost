@@ -23,10 +23,6 @@ describe('signal module', () => {
   const sock = new EventEmitter()
   sock.setEncoding = () => null
 
-  afterEach(() => {
-    sinon.restore()
-  })
-
   describe('getting a socket', () => {
     let pathExistsStub, connectStub
 
@@ -36,8 +32,7 @@ describe('signal module', () => {
     })
 
     afterEach(() => {
-      pathExistsStub.restore()
-      connectStub.restore()
+      sinon.restore()
     })
 
     describe('when socket is eventually available', () => {
@@ -94,8 +89,7 @@ describe('signal module', () => {
     })
 
     afterEach(() => {
-      poolAcquireStub.restore()
-      poolReleaseStub.restore()
+      sinon.restore()
     })
 
     it('sends a register command', async () => {

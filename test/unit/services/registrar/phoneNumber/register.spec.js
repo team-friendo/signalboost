@@ -99,14 +99,6 @@ describe('phone number services -- registration module', () => {
   })
 
   afterEach(() => {
-    registerStub.restore()
-    awaitVerificationStub.restore()
-    verifyStub.restore()
-    updateStub.restore()
-    findAllStub.restore()
-    findAllPurchasedStub.restore()
-    pathExistsStub.restore()
-    logStub.restore()
     sinon.restore()
   })
 

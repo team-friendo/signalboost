@@ -47,7 +47,7 @@ describe('resend module', () => {
       sendStub = sinon.stub(signal, 'sendMessage')
     })
     afterEach(() => {
-      sendStub.restore()
+      sinon.restore()
     })
 
     describe('given a message that has never been resent', () => {

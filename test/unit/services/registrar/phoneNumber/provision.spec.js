@@ -18,8 +18,7 @@ describe('phone number services -- provision module', () => {
     registerManyStub = sinon.stub(register, 'registerMany')
   })
   afterEach(() => {
-    purchaseNStub.restore()
-    registerManyStub.restore()
+    sinon.restore()
   })
 
   describe('provisioning 3 phone numbers', () => {

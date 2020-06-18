@@ -25,9 +25,7 @@ describe('sms module', () => {
       .returns(Promise.resolve(smsSenderFactory()))
   })
   afterEach(() => {
-    verifyStub.restore()
-    hasReachedQuotaStub.restore()
-    countMessageStub.restore()
+    sinon.restore()
   })
 
   describe('handleInboundSms', () => {
@@ -82,8 +80,7 @@ describe('sms module', () => {
     })
 
     afterEach(() => {
-      hasReachedQuotaStub.restore()
-      countMessageStub.restore()
+      sinon.restore()
     })
 
     describe('in all cases', () => {

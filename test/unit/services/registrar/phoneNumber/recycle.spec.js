@@ -30,11 +30,7 @@ describe('phone number services -- recycle module', () => {
   })
 
   afterEach(() => {
-    updatePhoneNumberStub.restore()
-    broadcastMessageStub.restore()
-    findChannelStub.restore()
-    getMemberPhoneNumbersStub.restore()
-    getAdminPhoneNumbersStub.restore()
+    sinon.restore()
   })
 
   const updatePhoneNumberSucceeds = () =>

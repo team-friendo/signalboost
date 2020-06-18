@@ -137,15 +137,7 @@ describe('messenger service', () => {
     })
 
     afterEach(() => {
-      broadcastSpy.restore()
-      respondSpy.restore()
-      broadcastMessageStub.restore()
-      sendMessageStub.restore()
-      countCommandStub.restore()
-      countBroadcastStub.restore()
-      countHotlineStub.restore()
-      setExpirationStub.restore()
-      getMessageIdStub.restore()
+      sinon.restore()
     })
 
     describe('a broadcast message', () => {

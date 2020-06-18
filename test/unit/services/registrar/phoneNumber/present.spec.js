@@ -25,7 +25,7 @@ describe('phone number presenters', () => {
     let dbListStub
 
     beforeEach(() => (dbListStub = sinon.stub(phoneNumberRepository, 'list')))
-    afterEach(() => dbListStub.restore())
+    afterEach(() => sinon.restore())
 
     describe('in all cases', () => {
       beforeEach(() => dbListStub.returns(Promise.resolve()))

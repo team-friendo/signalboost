@@ -116,19 +116,7 @@ describe('dispatcher service', () => {
   })
 
   afterEach(() => {
-    findAllDeepStub.restore()
-    findDeepStub.restore()
-    resolveMemberTypeStub.restore()
-    resolveSenderLanguageStub.restore()
-    trustAndResendStub.restore()
-    deauthorizeStub.restore()
-    processCommandStub.restore()
-    dispatchStub.restore()
-    subscribeStub.restore()
-    logAndReturnSpy.restore()
-    logErrorSpy.restore()
-    sendMessageStub.restore()
-    enqueueResendStub.restore()
+    sinon.restore()
   })
 
   describe('handling an incoming message', () => {

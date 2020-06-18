@@ -64,14 +64,7 @@ describe('channel registrar', () => {
   })
 
   afterEach(() => {
-    addAdminStub.restore()
-    createChannelStub.restore()
-    subscribeStub.restore()
-    updatePhoneNumberStub.restore()
-    notifyStub.restore()
-    findAllDeepStub.restore()
-    findByNumberStub.restore()
-    setExpirationStub.restore()
+    sinon.restore()
   })
 
   describe('#create', () => {
