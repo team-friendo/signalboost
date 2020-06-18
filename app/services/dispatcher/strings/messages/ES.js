@@ -14,6 +14,12 @@ const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
+const vouchModeDisplay = {
+  ON: 'activada',
+  ADMIN: 'admin',
+  OFF: 'desactivada',
+}
+
 const support = `----------------------------
 CÓMO FUNCIONA
 ----------------------------
@@ -142,8 +148,8 @@ RESPONDER #1312
 PRIVADO buenas noches, admins
 -> envía un mensaje privado "buenas noches, admins" a todos los administradores del canal
 
-ATESTIGUANDO ACTIVADA / DESACTIVADA
--> activa o desactiva el requisito de recibir una invitación para suscribirse
+ATESTIGUANDO ACTIVADA / ADMIN / DESACTIVADA
+-> activa / desactiva atestiguando. Cuando está ACTIVADA, se debe invitar a las personas a unirse al canal. Cuando ADMIN, solo los administradores pueden enviar esas invitaciones.
 
 NIVEL DE ATESTIGUAR nivel
 -> cambia el numero de invitaciónes requeridos para unirse a este canal 
@@ -196,8 +202,8 @@ número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${onOrOff(channel.hotlineOn)}
-atestiguando: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
+atestiguando: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -212,8 +218,8 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
-atestiguando: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
+atestiguando: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
 ${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
@@ -240,6 +246,7 @@ ${support}`,
     invalidPhoneNumber: input =>
       `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
     success: n => (n === 1 ? `Se emitió la invitación` : `Se emitieron ${n} invitaciones`),
+    adminOnly: 'Lo siento, solo administradores pueden emitir invitaciones para este canal.',
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `¡Ay! No se pudo emitir las invitaciónes para ${
@@ -321,7 +328,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
     dbError: '¡Lo siento! No se pudo almacenar su preferencia de idioma. ¡Inténtelo de nuevo!',
   },
 
-  // TOGGLES (HOTLINE, VOUCHING)
+  // TOGGLES (HOTLINE)
 
   toggles: {
     hotline: {
@@ -331,27 +338,6 @@ Envíe AYUDA para ver los comandos que comprendo.`,
         `¡Lo siento! Se produjo un error al intentar ${
           isOn ? 'activar' : 'desactivar'
         } la línea directa. ¡Inténtelo de nuevo!`,
-    },
-    vouching: {
-      success: (isOn, vouchLevel) =>
-        `${
-          isOn
-            ? `Atestiguando activada. Ahore se require ${vouchLevel} ${
-                vouchLevel > 1 ? 'invitaciones' : 'invitación'
-              } para unirse a este canal.
-
-Para atestiguar para alguien, use el comando INVITAR. Por ejemplo:
-"INVITAR +12345551234"
-
-Para cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por ejemplo:
-"NIVEL DE ATESTIGUAR 3"`
-            : `Atestiguando desactivada.`
-        }`,
-      notAdmin,
-      dbError: isOn =>
-        `¡Lo siento! Se produjo un error al intentar establecer atestiguando a ${onOrOff(
-          isOn,
-        )}. ¡Inténtelo de nuevo!`,
     },
   },
 
@@ -365,6 +351,30 @@ Para cambiar el nivel de atestiguar, use el comando NIVEL DE ATESTIGUAR. Por eje
     notAdmin,
     dbError: phoneNumber =>
       `¡Lo siento! Se produjo un error al actualizar el número de seguridad de ${phoneNumber}. ¡Inténtelo de nuevo!`,
+  },
+
+  // VOUCHING
+  vouchMode: {
+    success: mode =>
+      ({
+        ON: `Se configuró atestiguando ${vouchModeDisplay.ON}.
+
+Esto significa que se requiere una invitación de un miembro existente para unirse a este canal.
+Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
+
+Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
+        OFF: `Se configuró atestiguando ${vouchModeDisplay.OFF}.
+
+Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
+        ADMIN: `Se configuró atestiguando en ${vouchModeDisplay.ADMIN}.
+
+Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
+Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
+
+Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
+      }[mode]),
+    notAdmin,
+    dbError: 'Se produjo un error al actualizar atestiguando. Inténtelo de nuevo, por favor.',
   },
 
   // VOUCH_LEVEL
@@ -485,6 +495,8 @@ En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
     'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
   toggles: commandResponses.toggles,
+
+  vouchModeChanged: commandResponses.vouchMode.success,
 
   vouchLevelChanged: vouchLevel =>
     `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requiere ${vouchLevel} ${

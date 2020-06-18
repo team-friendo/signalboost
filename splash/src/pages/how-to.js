@@ -67,14 +67,29 @@ export default () => (
       channel! We'll use it to make announcements for the upcoming protest.
     </p>
 
-    <h4>VOUCHING ON / OFF</h4>
+    <h4>VOUCHING ON / OFF / ADMIN</h4>
     <p>
-      Turning vouching on means that only people who have received invites via
-      the INVITE command can join the channel as subscribers. Invites are
-      considered valid for vouched channels regardless of if you repeatedly
-      toggle vouching on and off.
+      VOUCHING ON: turning vouching on means that an invite (1 by default) is
+      required to join the channel. Both admins and subscribers can invite
+      people to the channel using the INVITE command.
     </p>
-
+    <p>
+      {' '}
+      VOUCHING OFF: this is the default behavior of the channel; anyone can join
+      by sending HELLO to the channel number.
+    </p>
+    <p>
+      VOUCHING ADMIN: this means that an invite from an *admin* is required to
+      join the channel. If other people try to send invites, they will be
+      prevented from doing so.
+    </p>
+    <h4>INVITE +1-555-555-5555</h4>
+    <p>
+      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
+      the phone number with a + and country code!
+    </p>
+    <p>Multiple invites can be sent by comma-separating phone numbers:</p>
+    <p>INVITE +1-555-555-5555, +1-333-333-3333</p>
     <h4>VOUCH LEVEL level</h4>
     <p>
       This changes the number of invites needed to join the channel; currently
@@ -130,11 +145,6 @@ export default () => (
     <h3>Other useful commands</h3>
     <h4>PRIVATE good morning fellow admins!</h4>
     <p>Sends a private message </p>
-    <h4>INVITE +1-555-555-5555</h4>
-    <p>
-      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
-      the phone number with a + and country code!
-    </p>
     <h4>ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH </h4>
     <p>
       Switches language to Spanish, French, or German. Language changes on

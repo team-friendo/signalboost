@@ -31,10 +31,11 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false,
     },
-    vouchingOn: {
-      type: DataTypes.BOOLEAN,
+    vouchMode: {
+      type: DataTypes.ENUM,
+      values: ['ON', 'OFF', 'ADMIN'],
+      defaultValue: 'OFF',
       allowNull: false,
-      defaultValue: false,
     },
     vouchLevel: {
       type: DataTypes.INTEGER,

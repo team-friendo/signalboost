@@ -14,6 +14,12 @@ const notSubscriber =
   'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
 
+const vouchModeDisplay = {
+  ON: 'an',
+  ADMIN: 'admin',
+  OFF: 'aus',
+}
+
 const support = `----------------------------
 WIE ES FUNKTIONIERT
 ----------------------------
@@ -136,10 +142,10 @@ ANTWORTEN #1312
 -> Sendet eine private Antwort an [HOTLINE #1312]
 
 PRIVAT Guten Abend, Admins
--> sendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
+-> Dendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
 
-VERTRAUEN AN / AUS
--> Bestimmt ob es einer Einladung bedarf um sich beim Kanal anzumelden
+VERTRAUEN AN / AUS / ADMIN
+-> Schaltet die Gutscheine EIN / AUS. Wenn EIN, müssen Personen eingeladen werden, dem Kanal beizutreten. Bei ADMIN können nur Administratoren diese Einladungen senden.
 
 VERTRAUENS-LEVEL level
 -> Verändert die Zahl der benötigten Einladungen um dem Kanal beitreten zu können
@@ -193,8 +199,8 @@ Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
-Vertrauen: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
+Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
@@ -209,8 +215,8 @@ Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
-Vertrauen: ${onOrOff(channel.vouchingOn)}
-${channel.vouchingOn ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
+Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
@@ -236,6 +242,7 @@ ${support}`,
     invalidPhoneNumber: input =>
       `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
     success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
+    adminOnly: 'Leider können nur Administratoren Personen zu diesem Kanal einladen.',
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
@@ -318,7 +325,7 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
     dbError: 'Upsi! Fehler beim speichern der Sprachwahl. Bitte versuchs nochmal!',
   },
 
-  // TOGGLES (HOTLINE, VOUCHING)
+  // TOGGLES (HOTLINE)
 
   toggles: {
     hotline: {
@@ -328,27 +335,6 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
         `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(
           isOn,
         )} zu schalten. Bitte versuche es erneut!`,
-    },
-    vouching: {
-      success: (isOn, vouchLevel) =>
-        `${
-          isOn
-            ? `Vertrauen ist eingeschaltet.Um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${
-                vouchLevel > 1 ? 'Einladungen' : 'Einladung'
-              }.
-
-Um für jemanden dein Vertrauen auszusprechen benutze den EINLADEN Befehl. Zum Beispiel:
-"EINLADEN +491701234567"
-
-Nutze den VERTRAUENS-LEVEL Befehl um die Zahl der benötigten Einladungen zu verändern. Zum Beispiel:
-"VERTRAUENS-LEVEL 3"`
-            : `Vertrauen ausgeschaltet.`
-        }`,
-      notAdmin,
-      dbError: isOn =>
-        `Oh! Es gab einen Fehler beim Versuch Vertrauen ${onOrOff(
-          isOn,
-        )} zu schalten. Bitte versuchs nochmal!`,
     },
   },
 
@@ -362,6 +348,31 @@ Nutze den VERTRAUENS-LEVEL Befehl um die Zahl der benötigten Einladungen zu ver
     notAdmin,
     dbError: phoneNumber =>
       `Oups! Es gab einen Fehler beim updaten der Sicherheitsnummer von ${phoneNumber}. Bitte versuchs nochmal!`,
+  },
+
+  // VOUCHING
+  vouchMode: {
+    success: mode =>
+      ({
+        ON: `Der Gutschein ist jetzt ${vouchModeDisplay.ON}.
+
+Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
+Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+
+Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+        OFF: `Der Gutschein ist jetzt ${vouchModeDisplay.OFF}.
+
+Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
+        ADMIN: `Der Gutschein ist jetzt ${vouchModeDisplay.ADMIN}.
+
+Dies bedeutet, dass eine Einladung eines *Administrators* erforderlich ist, um diesem Kanal beizutreten.
+Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+
+Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+      }[mode]),
+    notAdmin,
+    dbError:
+      'Beim Aktualisieren der Gutscheine für Ihren Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',
   },
 
   // VOUCH_LEVEL
@@ -472,6 +483,8 @@ ${requestMsg}`,
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
   toggles: commandResponses.toggles,
+
+  vouchModeChanged: commandResponses.vouchMode.success,
 
   vouchLevelChanged: vouchLevel =>
     `Ein Admin hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${

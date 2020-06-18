@@ -8,7 +8,6 @@ import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times, keys } from 'lodash'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { languages } from '../../../../app/services/language'
-import { toggles } from '../../../../app/services/dispatcher/commands/constants'
 import {
   adminMembershipFactory,
   subscriberMembershipFactory,
@@ -82,7 +81,7 @@ describe('messages module', () => {
       name: 'foobar',
       description: 'the foobar channel',
       phoneNumber: '+13333333333',
-      vouchingOn: true,
+      vouchMode: 'ON',
       vouchLevel: 1,
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -101,7 +100,7 @@ describe('messages module', () => {
           expect(msg).to.include('description: the foobar channel')
         })
 
-        describe('when vouching is on', () => {
+        describe('when vouch mode is on', () => {
           it('shows the admin the vouch level', () => {
             expect(msg).to.include('vouching: on')
             expect(msg).to.include('vouch level: 1')
@@ -115,16 +114,6 @@ describe('messages module', () => {
           expect(msg).to.include('subscribers: 2')
           expect(msg).to.include('description: the foobar channel')
         })
-      })
-    })
-
-    describe('VOUCHING_ON command', () => {
-      it('should include the vouch level in the command response', () => {
-        const msg = cr.toggles[toggles.VOUCHING.name].success(
-          channel.vouchingOn,
-          channel.vouchLevel,
-        )
-        expect(msg).to.include(1)
       })
     })
   })
