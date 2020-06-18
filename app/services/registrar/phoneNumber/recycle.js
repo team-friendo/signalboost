@@ -13,7 +13,7 @@ const recycle = async ({ db, sock, phoneNumbers }) => {
 
       if (channel) {
         return notifyMembers(db, sock, channel)
-          .then(() => common.destroyChannel(db, sock, channel))
+          .then(() => common.destroyChannel(channel))
           .then(() => recordStatusChange(db, phoneNumber, common.statuses.VERIFIED))
           .then(phoneNumberStatus => ({ status: 'SUCCESS', data: phoneNumberStatus }))
           .catch(err => handleRecycleFailure(err, db, sock, phoneNumber))

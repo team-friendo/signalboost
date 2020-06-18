@@ -19,15 +19,12 @@ const destroy = async ({ db, sock, phoneNumber, sender }) => {
     const phoneNumberInstance = await phoneNumberRepository.find(db, phoneNumber)
 
     if (channelInstance || phoneNumberInstance) {
-      // TODO: Refactor destroyChannel for recycle
-      await destroyChannel(db, sock, channelInstance, tx)
-      await destroyPhoneNumber(db, sock, phoneNumberInstance, tx)
+      await destroyChannel(channelInstance, tx)
+      await destroyPhoneNumber(phoneNumberInstance, tx)
       await signal.unsubscribe(sock, phoneNumber)
-      // TODO: Test to make sure delete works
-      await destroySignalEntry(db, phoneNumber)
-      await releasePhoneNumber(db, phoneNumberInstance)
+      await destroySignalEntry(phoneNumber)
+      await releasePhoneNumber(phoneNumberInstance)
       await notifyMembersExcept(
-        db,
         sock,
         channelInstance,
         messagesIn(defaultLanguage).notifications.channelDestroyed,
@@ -47,7 +44,7 @@ const destroy = async ({ db, sock, phoneNumber, sender }) => {
 // HELPERS
 
 // (DB, string) -> Promise<void>
-const destroySignalEntry = async (db, phoneNumber) => {
+const destroySignalEntry = async phoneNumber => {
   try {
     await fs.remove(`${keystorePath}/${phoneNumber}`)
     await fs.remove(`${keystorePath}/${phoneNumber}.d`)
@@ -56,8 +53,8 @@ const destroySignalEntry = async (db, phoneNumber) => {
   }
 }
 
-// (DB, PhoneNumberInstance) -> Promise<void>
-const releasePhoneNumber = async (db, phoneNumberInstance) => {
+// (PhoneNumberInstance) -> Promise<void>
+const releasePhoneNumber = async phoneNumberInstance => {
   try {
     const twilioClient = common.getTwilioClient()
     await twilioClient.incomingPhoneNumbers(phoneNumberInstance.twilioSid).remove()
@@ -69,7 +66,7 @@ const releasePhoneNumber = async (db, phoneNumberInstance) => {
 }
 
 // Channel -> Promise<void>
-const destroyPhoneNumber = async (db, sock, phoneNumberInstance, tx) => {
+const destroyPhoneNumber = async (phoneNumberInstance, tx) => {
   if (phoneNumberInstance == null) return
   try {
     await phoneNumberInstance.destroy({ transaction: tx })
