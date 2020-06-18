@@ -13,7 +13,7 @@ const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
 
 // () -> { Database, Sequelize, DataTypes }
-const initDb = () => {
+const initDb = async () => {
   const sequelize = config.use_env_variable
     ? new Sequelize(process.env[config.use_env_variable], config)
     : new Sequelize(config.database, config.username, config.password, config)
@@ -31,12 +31,14 @@ const initDb = () => {
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))
 
+  await getDbConnection(sequelize)
+
   return { ...db, sequelize, Sequelize }
 }
 
 // (Database, number) => Promise<string>
-const getDbConnection = (db, attempts = 0) =>
-  db.sequelize
+const getDbConnection = (sequelize, attempts = 0) =>
+  sequelize
     .authenticate()
     .then(() => Promise.resolve('db connected'))
     .catch(() =>

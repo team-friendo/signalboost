@@ -20,13 +20,14 @@ import { wait } from '../../../../app/services/util'
 import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
 import { adminMembershipFactory } from '../../../support/factories/membership'
 import { inboundAttachmentFactory } from '../../../support/factories/sdMessage'
+import app from '../../../../app'
+import dbService from '../../../../app/db'
+import socketService from '../../../../app/services/socket'
 const {
   signal: { defaultMessageExpiryTime, supportPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
 
 describe('dispatcher service', () => {
-  const db = {}
-  const sock = new EventEmitter().setMaxListeners(30)
   const channels = times(2, deepChannelFactory)
   const channel = channels[0]
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
@@ -67,6 +68,11 @@ describe('dispatcher service', () => {
   beforeEach(async () => {
     // initialization stubs --v
 
+    sinon.stub(dbService, 'initDb').returns(Promise.resolve({}))
+    sinon
+      .stub(socketService, 'getSocket')
+      .returns(Promise.resolve(new EventEmitter().setMaxListeners(30)))
+
     sinon.stub(channelRepository, 'findAllDeep').returns(Promise.resolve(channels))
     sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
@@ -104,7 +110,8 @@ describe('dispatcher service', () => {
     logErrorSpy = sinon.spy(logger, 'error')
     // onReceivedMessage stubs --^
 
-    await run(db, sock)
+    await app.initialize()
+    await run()
   })
 
   afterEach(() => {
@@ -115,7 +122,7 @@ describe('dispatcher service', () => {
     describe('deciding whether to dispatch a message', () => {
       describe('when message is not of type "message"', () => {
         beforeEach(async () => {
-          sock.emit(
+          app.sock.emit(
             'data',
             JSON.stringify({
               type: 'list_groups',
@@ -136,7 +143,7 @@ describe('dispatcher service', () => {
       describe('when message is of type "message"', () => {
         describe('when message has a body', () => {
           beforeEach(async () => {
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({
                 type: 'message',
@@ -159,7 +166,7 @@ describe('dispatcher service', () => {
 
         describe('when message lacks a body but contains an attachment', () => {
           beforeEach(async () => {
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({
                 type: 'message',
@@ -182,7 +189,7 @@ describe('dispatcher service', () => {
 
         describe('when message lacks a body AND an attachment', () => {
           beforeEach(async () => {
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }),
             )
@@ -199,8 +206,11 @@ describe('dispatcher service', () => {
 
     describe('when message lacks a body AND an attachment', () => {
       beforeEach(async () => {
-        sock.emit('data', JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }))
-        wait(socketDelay)
+        app.sock.emit(
+          'data',
+          JSON.stringify({ type: 'message', data: { receipt: { type: 'READ' } } }),
+        )
+        await wait(socketDelay)
       })
 
       it('ignores the message', () => {
@@ -211,17 +221,17 @@ describe('dispatcher service', () => {
 
     describe('dispatching a message', () => {
       beforeEach(async () => {
-        sock.emit('data', JSON.stringify(sdInMessage))
+        app.sock.emit('data', JSON.stringify(sdInMessage))
         await wait(socketDelay)
       })
 
       it('retrieves a channel record', () => {
-        expect(findDeepStub.getCall(0).args).to.eql([db, channel.phoneNumber])
+        expect(findDeepStub.getCall(0).args).to.eql([app.db, channel.phoneNumber])
       })
 
       it('retrieves permissions for the message sender', () => {
         expect(resolveMemberTypeStub.getCall(0).args).to.eql([
-          db,
+          app.db,
           channel.phoneNumber,
           adminPhoneNumber,
         ])
@@ -229,8 +239,8 @@ describe('dispatcher service', () => {
 
       it('processes any commands in the message', () => {
         expect(processCommandStub.getCall(0).args[0]).to.eql({
-          db,
-          sock,
+          db: app.db,
+          sock: app.sock,
           channel,
           sender,
           sdMessage: sdOutMessage,
@@ -241,8 +251,8 @@ describe('dispatcher service', () => {
         expect(dispatchStub.getCall(0).args[0]).to.eql({
           commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
           dispatchable: {
-            db,
-            sock,
+            db: app.db,
+            sock: app.sock,
             channel,
             sender,
             sdMessage: sdOutMessage,
@@ -255,7 +265,7 @@ describe('dispatcher service', () => {
       beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.NONE))
 
       it('drops the message', async () => {
-        sock.emit('data', JSON.stringify(sdInMessage))
+        app.sock.emit('data', JSON.stringify(sdInMessage))
         await wait(socketDelay)
 
         expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
@@ -296,18 +306,18 @@ describe('dispatcher service', () => {
       describe('and there is a support channel', () => {
         beforeEach(async () => {
           findDeepStub.returns(Promise.resolve(supportChannel))
-          sock.emit('data', JSON.stringify(sdErrorMessage))
+          app.sock.emit('data', JSON.stringify(sdErrorMessage))
           await wait(2 * socketDelay)
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([app.sock, {}, originalSdMessage])
         })
 
         it('notifies admins of the support channel', () => {
           supportChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
             expect(sendMessageStub.getCall(idx).args).to.eql([
-              sock,
+              app.sock,
               memberPhoneNumber,
               sdMessageOf(
                 { phoneNumber: supportPhoneNumber },
@@ -324,12 +334,12 @@ describe('dispatcher service', () => {
       describe('and there is not a support channel', () => {
         beforeEach(async () => {
           findDeepStub.returns(Promise.resolve(null))
-          sock.emit('data', JSON.stringify(sdErrorMessage))
+          app.sock.emit('data', JSON.stringify(sdErrorMessage))
           await wait(2 * socketDelay)
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([sock, {}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([app.sock, {}, originalSdMessage])
         })
 
         it('does not send any notifications', () => {
@@ -367,13 +377,13 @@ describe('dispatcher service', () => {
         beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
 
         it("attempts to trust the recipient's safety number and re-send the message", async () => {
-          sock.emit('data', JSON.stringify(sdErrorMessage))
+          app.sock.emit('data', JSON.stringify(sdErrorMessage))
           await wait(socketDelay)
 
           expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
           expect(trustAndResendStub.getCall(0).args).to.eql([
-            db,
-            sock,
+            app.db,
+            app.sock,
             {
               channelPhoneNumber: channel.phoneNumber,
               memberPhoneNumber: recipientNumber,
@@ -386,7 +396,7 @@ describe('dispatcher service', () => {
         describe('when trusting succeeds', () => {
           // this is the default stub
           it('logs the success', async () => {
-            sock.emit('data', JSON.stringify(sdErrorMessage))
+            app.sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
             expect(logAndReturnSpy.getCall(0).args).to.eql([
@@ -403,7 +413,7 @@ describe('dispatcher service', () => {
           beforeEach(() => trustAndResendStub.callsFake(() => Promise.reject(errorStatus)))
 
           it('logs the failure', async () => {
-            sock.emit('data', JSON.stringify(sdErrorMessage))
+            app.sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
             expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
@@ -415,7 +425,7 @@ describe('dispatcher service', () => {
         beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.ADMIN))
 
         it('attempts to deauthorize the admin', async () => {
-          sock.emit('data', JSON.stringify(sdErrorMessage))
+          app.sock.emit('data', JSON.stringify(sdErrorMessage))
           await wait(socketDelay)
 
           expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
@@ -430,7 +440,7 @@ describe('dispatcher service', () => {
         describe('when deauth succeeds', () => {
           // this is the default stub
           it('logs the success', async () => {
-            sock.emit('data', JSON.stringify(sdErrorMessage))
+            app.sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
             expect(logAndReturnSpy.getCall(0).args).to.eql([
@@ -447,7 +457,7 @@ describe('dispatcher service', () => {
           beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
 
           it('logs the failure', async () => {
-            sock.emit('data', JSON.stringify(sdErrorMessage))
+            app.sock.emit('data', JSON.stringify(sdErrorMessage))
             await wait(socketDelay)
 
             expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
@@ -478,13 +488,13 @@ describe('dispatcher service', () => {
 
       describe('from an admin', () => {
         beforeEach(async () => {
-          sock.emit('data', JSON.stringify(expiryUpdate))
+          app.sock.emit('data', JSON.stringify(expiryUpdate))
           await wait(socketDelay)
         })
 
         it('stores the new expiry time', () => {
           expect(updateStub.getCall(0).args).to.eql([
-            db,
+            app.db,
             channel.phoneNumber,
             { messageExpiryTime: 60 },
           ])
@@ -493,7 +503,7 @@ describe('dispatcher service', () => {
         it('updates the expiry time between the channel and every other channel member', () => {
           getAllAdminsExcept(channel, [adminPhoneNumber]).forEach((membership, i) =>
             expect(setExpirationStub.getCall(i).args).to.eql([
-              sock,
+              app.sock,
               channel.phoneNumber,
               membership.memberPhoneNumber,
               60,
@@ -508,13 +518,13 @@ describe('dispatcher service', () => {
         })
         beforeEach(async () => {
           resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
-          sock.emit('data', JSON.stringify(subscriberExpiryUpdate))
+          app.sock.emit('data', JSON.stringify(subscriberExpiryUpdate))
           await wait(socketDelay)
         })
 
         it('sets the expiry time btw/ channel and sender back to original expiry time', () => {
           expect(setExpirationStub.getCall(0).args).to.eql([
-            sock,
+            app.sock,
             channel.phoneNumber,
             subscriberPhoneNumber,
             defaultMessageExpiryTime,
@@ -528,7 +538,7 @@ describe('dispatcher service', () => {
         })
         beforeEach(async () => {
           resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
-          sock.emit('data', JSON.stringify(randoExpiryUpdate))
+          app.sock.emit('data', JSON.stringify(randoExpiryUpdate))
           await wait(socketDelay)
         })
 
@@ -549,7 +559,7 @@ describe('dispatcher service', () => {
 
         beforeEach(async () => {
           resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
-          sock.emit('data', JSON.stringify(expiryUpdateWithBody))
+          app.sock.emit('data', JSON.stringify(expiryUpdateWithBody))
           await wait(socketDelay)
         })
 
