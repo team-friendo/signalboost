@@ -4,7 +4,6 @@ const { defaultLanguage } = require('../../../config')
 const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../../db/repositories/channel')
-const { signal: signalConfig } = require('../../../config')
 
 // ({Database, Socket, string}) -> SignalboostStatus
 const recycle = async ({ db, sock, phoneNumbers }) => {

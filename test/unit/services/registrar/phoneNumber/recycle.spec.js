@@ -6,6 +6,7 @@ import sinon from 'sinon'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../../app/db/repositories/channel'
 import signal from '../../../../../app/services/signal'
+import common from '../../../../../app/services/registrar/phoneNumber/common'
 
 describe('phone number services -- recycle module', () => {
   const phoneNumbers = '+11111111111,+12222222222'
@@ -16,7 +17,8 @@ describe('phone number services -- recycle module', () => {
     findChannelStub,
     getMemberPhoneNumbersStub,
     getAdminPhoneNumbersStub,
-    destroyChannelSpy
+    destroyChannelSpy,
+    notifyMaintainersStub
 
   beforeEach(() => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
@@ -84,7 +86,6 @@ describe('phone number services -- recycle module', () => {
           sock,
           phoneNumbers: phoneNumbers,
         })
-
         expect(response).to.eql([
           {
             message: 'Channel not found for +11111111111',
@@ -106,6 +107,11 @@ describe('phone number services -- recycle module', () => {
       describe('when notifying members of channel recycling fails', () => {
         beforeEach(async () => {
           await broadcastMessageFails()
+          notifyMaintainersStub = sinon.stub(common, 'notifyMaintainers')
+        })
+
+        afterEach(() => {
+          notifyMaintainersStub.restore()
         })
 
         it('returns a failed status', async () => {
