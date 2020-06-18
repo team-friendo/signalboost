@@ -30,7 +30,7 @@ const extractStatus = phoneNumberInstance =>
   pick(phoneNumberInstance, ['status', 'phoneNumber', 'twilioSid'])
 
 // (Database, Socket, Channel, String, String) -> Promise<void>
-const notifyMembersExcept = async (db, sock, channel, message, sender) => {
+const notifyMembersExcept = async (sock, channel, message, sender) => {
   if (channel == null) return
   const memberPhoneNumbers = channelRepository.getMemberPhoneNumbersExcept(channel, [sender])
   await signal.broadcastMessage(sock, memberPhoneNumbers, signal.sdMessageOf(channel, message))
@@ -44,12 +44,11 @@ const notifyMaintainers = async (db, sock, message) => {
 }
 
 // (DB, Socket, ChannelInstance, String) -> Promise<void>
-const destroyChannel = async (db, sock, channel, message) => {
+const destroyChannel = async (channel, tx) => {
   if (channel == null) return
   try {
-    await channel.destroy()
+    await channel.destroy({ transaction: tx })
   } catch (error) {
-    await notifyMaintainers(db, sock, message)
     await Promise.reject('Failed to destroy channel')
   }
 }
