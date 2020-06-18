@@ -92,13 +92,16 @@ db.migrate.status: # check migration statuses
 ##########################
 
 dev.up: ## run signalboost in local dev mode
-	docker-compose -f docker-compose-dev.yml up
+	docker-compose -f docker-compose-dev.yml up -d
 
 dev.down: ## gracefully stop all signalboost container
 	docker-compose -f docker-compose-dev.yml down
 
 dev.abort: ## force stop all running signalboost containers
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
+
+dev.logs: ## show logs for all docker containers
+	docker-compose -f docker-compose-dev.yml logs -f
 
 dev.restart: ## force stop and start the app again
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
