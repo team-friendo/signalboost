@@ -56,12 +56,16 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${
+      channel.name
+    }] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowVouchLevel: (channel, required, actual) =>
-      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${
+        channel.name
+      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
   },
 
@@ -288,7 +292,9 @@ ${failedPhoneNumbers.join(',')}`,
 
   join: {
     success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
+        channel.description
+      }
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!

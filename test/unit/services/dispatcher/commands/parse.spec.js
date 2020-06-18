@@ -1014,12 +1014,11 @@ describe('parse module', () => {
 
       describe('with a mix of invalid and valid phone numbers', () => {
         it('returns a parse error', () => {
-          variantsOf(
-            `foo, ${rawPhoneNumber}, ${invalidPhoneNumber}, ${rawPhoneNumber2}`,
-          ).forEach(({ message, language }) =>
-            expect(parseExecutable(message).error).to.eql(
-              messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
-            ),
+          variantsOf(`foo, ${rawPhoneNumber}, ${invalidPhoneNumber}, ${rawPhoneNumber2}`).forEach(
+            ({ message, language }) =>
+              expect(parseExecutable(message).error).to.eql(
+                messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
+              ),
           )
         })
       })

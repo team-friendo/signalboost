@@ -29,12 +29,10 @@ const addAdmin = async (db, channelPhoneNumber, memberPhoneNumber) => {
   //   - because of the way signald handles changed safety numbers, we have NO OTHER WAY of detecting a
   //     changed safety number and retrusting it without first sending a message, so observing
   //     the above invariant is extra important
-  const membership = (
-    await db.membership.findOrCreate({
-      where: { channelPhoneNumber, memberPhoneNumber },
-      defaults: { type: memberTypes.ADMIN },
-    })
-  )[0]
+  const membership = (await db.membership.findOrCreate({
+    where: { channelPhoneNumber, memberPhoneNumber },
+    defaults: { type: memberTypes.ADMIN },
+  }))[0]
   return membership.update({ type: memberTypes.ADMIN })
 }
 
