@@ -60,11 +60,11 @@ describe('authentication middleware', () => {
   })
 
   describe('for twilio callback endpoint', () => {
-    let validateSignatureStub, handleSmsStub
+    let validateSignatureStub
 
     beforeEach(() => {
       validateSignatureStub = sinon.stub(twilio, 'validateRequest')
-      handleSmsStub = sinon
+      sinon
         .stub(phoneNumberService, 'handleSms')
         .returns(Promise.resolve({ status: statuses.SUCCESS, message: 'OK' }))
     })

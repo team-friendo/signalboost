@@ -77,15 +77,15 @@ describe('signal module', () => {
     const subscriberNumber = genPhoneNumber()
     const fingerprint = genFingerprint()
 
-    let sock, poolAcquireStub, poolReleaseStub
+    let sock
     const emit = msg => sock.emit('data', JSON.stringify(msg) + '\n')
     const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
     beforeEach(() => {
       sock = new EventEmitter()
       sock.write = sinon.stub().returns(Promise.resolve())
-      poolAcquireStub = sinon.stub(pool, 'acquire').returns(Promise.resolve(sock))
-      poolReleaseStub = sinon.stub(pool, 'release')
+      sinon.stub(pool, 'acquire').returns(Promise.resolve(sock))
+      sinon.stub(pool, 'release')
     })
 
     afterEach(() => {

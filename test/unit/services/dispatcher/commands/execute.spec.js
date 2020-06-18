@@ -1365,11 +1365,11 @@ describe('executing commands', () => {
 
   describe('REMOVE command', () => {
     const removalTargetNumber = channel.memberships[1].memberPhoneNumber
-    let validateStub, isAdminStub, removeMemberStub, resolveMemberTypeStub
+    let validateStub, removeMemberStub, resolveMemberTypeStub
 
     beforeEach(() => {
       validateStub = sinon.stub(validator, 'validatePhoneNumber')
-      isAdminStub = sinon.stub(membershipRepository, 'isAdmin')
+      sinon.stub(membershipRepository, 'isAdmin')
       removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
       resolveMemberTypeStub = sinon.stub(membershipRepository, 'resolveMemberType')
     })

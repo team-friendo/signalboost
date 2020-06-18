@@ -22,7 +22,11 @@ describe('utility module', () => {
   describe('#batchesOfN', () => {
     it('partitions an array with length M into M/N subarrays with length N', () => {
       const arr = [1, 2, 3, 4, 5, 6, 7, 8]
-      expect(util.batchesOfN(arr, 3)).to.eql([[1, 2, 3], [4, 5, 6], [7, 8]])
+      expect(util.batchesOfN(arr, 3)).to.eql([
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8],
+      ])
     })
   })
 })
