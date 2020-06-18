@@ -81,7 +81,7 @@ describe('messages module', () => {
       name: 'foobar',
       description: 'the foobar channel',
       phoneNumber: '+13333333333',
-      vouching: 'ON',
+      vouchMode: 'ON',
       vouchLevel: 1,
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -100,7 +100,7 @@ describe('messages module', () => {
           expect(msg).to.include('description: the foobar channel')
         })
 
-        describe('when vouching is on', () => {
+        describe('when vouch mode is on', () => {
           it('shows the admin the vouch level', () => {
             expect(msg).to.include('vouching: on')
             expect(msg).to.include('vouch level: 1')

@@ -3,8 +3,8 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
 
-    // create new vouching column with values ('ON', 'OFF', 'ADMIN')
-    await queryInterface.addColumn('channels', 'vouching', {
+    // create new vouchMode column with values ('ON', 'OFF', 'ADMIN')
+    await queryInterface.addColumn('channels', 'vouchMode', {
       type: Sequelize.ENUM,
       values: ['ON', 'OFF', 'ADMIN'],
       defaultValue: 'OFF',
@@ -14,11 +14,11 @@ module.exports = {
     // map old boolean true/false values to 'ON'/'OFF'
     await queryInterface.sequelize.query(`
       update channels 
-      set vouching = 'ON' where "vouchingOn" = true
+      set "vouchMode" = 'ON' where "vouchingOn" = true
     `)
     await queryInterface.sequelize.query(`
       update channels 
-      set vouching = 'OFF' where "vouchingOn" = false
+      set "vouchMode" = 'OFF' where "vouchingOn" = false
     `)
     
     // remove vouchingOn column
@@ -36,18 +36,18 @@ module.exports = {
 
     await queryInterface.sequelize.query(`
       update channels 
-      set "vouchingOn" = true where vouching = 'ON' 
+      set "vouchingOn" = true where "vouchMode" = 'ON' 
     `)
     
     await queryInterface.sequelize.query(`
       update channels 
-      set "vouchingOn" = false where vouching = 'OFF'
+      set "vouchingOn" = false where "vouchMode" = 'OFF'
     `)
 
-    await queryInterface.removeColumn('channels', 'vouching')
+    await queryInterface.removeColumn('channels', 'vouchMode')
     
     // postgres doesn't automatically remove enum types when removing columns
-    await queryInterface.sequelize.query(`DROP TYPE enum_channels_vouching`)
+    await queryInterface.sequelize.query(`DROP TYPE "enum_channels_vouchMode"`)
 
     return Promise.resolve()
   }

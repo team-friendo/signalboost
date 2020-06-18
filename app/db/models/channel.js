@@ -31,7 +31,7 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false,
     },
-    vouching: {
+    vouchMode: {
       type: DataTypes.ENUM,
       values: ['ON', 'OFF', 'ADMIN'],
       defaultValue: 'OFF',
