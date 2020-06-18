@@ -142,8 +142,8 @@ REPLY #1312
 PRIVATE good evening admins
 -> sends private message "good evening admins" to all admins of the channel
 
-VOUCHING ON / ADMIN / OFF 
--> toggles permissions for who can invite people to subscribe to the channel 
+VOUCHING ON / OFF / ADMIN 
+-> toggles vouching on/off. When ON, people must be invited to join the channel. When ADMIN, only admins can send those invites.
 
 VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
@@ -197,8 +197,8 @@ phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -213,8 +213,8 @@ name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
-vouching: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
+vouching: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -344,16 +344,25 @@ Send HELP to list commands I understand.`,
   },
 
   // VOUCHING
-  vouching: {
+  vouchMode: {
     success: mode =>
-      `${
-        mode === 'ADMIN'
-          ? `Vouching set to ${vouchModeDisplay.ADMIN}.
-This means that only you and fellow admins can invite people to this channel. 
+      ({
+        ON: `Vouching is now ${vouchModeDisplay.ON}.
 
-Type HELP to learn about the INVITE and VOUCH LEVEL commands.`
-          : `Vouching successfully turned ${vouchModeDisplay[mode]}.`
-      }`,
+This means an invite from an existing member is required to join this channel.
+Anyone can send an invite by sending INVITE +1-555-123-1234.
+
+Admins can adjust the number of invites needed to join by using the VOUCH LEVEL command.`,
+        OFF: `Vouching is now ${vouchModeDisplay.OFF}.
+
+This means that anyone can join the channel by sending HELLO to the channel number.`,
+        ADMIN: `Vouching is now set to ${vouchModeDisplay.ADMIN}.
+
+This means that an invite from an *admin* is required to join this channel.
+Anyone can send an invite by sending INVITE +1-555-123-1234.
+
+Admins can adjust the number of invites needed to join by using the VOUCH LEVEL command.`,
+      }[mode]),
     notAdmin,
     dbError: 'There was an error updating vouching for your channel. Please try again.',
   },
@@ -464,12 +473,7 @@ const notifications = {
       invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
     }`,
 
-  vouchModeChanged: mode =>
-    `An admin just set vouching to ${vouchModeDisplay[mode]}.  ${
-      mode === 'ADMIN'
-        ? 'Now, only admins can invite people to this channel. Type HELP to learn about changing the vouch level.'
-        : ''
-    }`,
+  vouchModeChanged: commandResponses.vouchMode.success,
 
   vouchLevelChanged: vouchLevel =>
     `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${

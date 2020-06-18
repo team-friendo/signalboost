@@ -142,10 +142,10 @@ ANTWORTEN #1312
 -> Sendet eine private Antwort an [HOTLINE #1312]
 
 PRIVAT Guten Abend, Admins
--> sendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
+-> Dendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
 
-VERTRAUEN AN / ADMIN / AUS
--> Schaltet die Berechtigungen um, wer Personen zum Abonnieren des Kanals einladen kann
+VERTRAUEN AN / AUS / ADMIN
+-> Schaltet die Gutscheine EIN / AUS. Wenn EIN, müssen Personen eingeladen werden, dem Kanal beizutreten. Bei ADMIN können nur Administratoren diese Einladungen senden.
 
 VERTRAUENS-LEVEL level
 -> Verändert die Zahl der benötigten Einladungen um dem Kanal beitreten zu können
@@ -199,8 +199,8 @@ Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
-Vertrauen: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
+Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
@@ -215,8 +215,8 @@ Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
-Vertrauen: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
+Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
@@ -351,16 +351,25 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
   },
 
   // VOUCHING
-  vouching: {
+  vouchMode: {
     success: mode =>
-      `${
-        mode === 'ADMIN'
-          ? `Gutschein auf ${vouchModeDisplay.ADMIN} gesetzt.
-Dies bedeutet, dass nur Sie und andere Administratoren Personen zu diesem Kanal einladen können. 
+      ({
+        ON: `Der Gutschein ist jetzt ${vouchModeDisplay.ON}.
 
-Geben Sie HELP ein, um mehr über die Befehle INVITE und VOUCH LEVEL zu erfahren.`
-          : `Gutschein erfolgreich gedreht ${vouchModeDisplay[mode]}.`
-      }`,
+Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
+Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+
+Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+        OFF: `Der Gutschein ist jetzt ${vouchModeDisplay.OFF}.
+
+Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
+        ADMIN: `Der Gutschein ist jetzt ${vouchModeDisplay.ADMIN}.
+
+Dies bedeutet, dass eine Einladung eines *Administrators* erforderlich ist, um diesem Kanal beizutreten.
+Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+
+Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+      }[mode]),
     notAdmin,
     dbError:
       'Beim Aktualisieren der Gutscheine für Ihren Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',
@@ -475,12 +484,7 @@ ${requestMsg}`,
 
   toggles: commandResponses.toggles,
 
-  vouchModeChanged: mode =>
-    `Ein Administrator hat gerade den Gutschein ${vouchModeDisplay[mode]}.  ${
-      mode === 'ADMIN'
-        ? 'Jetzt können nur noch Administratoren Personen zu diesem Kanal einladen. Geben Sie HELP ein, um Informationen zum Ändern der Gutscheinstufe zu erhalten.'
-        : ''
-    }`,
+  vouchModeChanged: commandResponses.vouchMode.success,
 
   vouchLevelChanged: vouchLevel =>
     `Ein Admin hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${

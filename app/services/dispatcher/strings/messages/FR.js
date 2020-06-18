@@ -148,8 +148,8 @@ RÉPONDRE #1312
 PRIVÉ bonsoir, admins
 -> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
 
-SE PORTER GARANT ON / ADMIN/ OFF
--> Modifie les autorisations qui peuvent inviter des personnes à s'abonner à la chaîne
+SE PORTER GARANT ON / OFF / ADMIN
+-> active / désactive l'activation de se porter garant. Lorsque cette option est ON, les personnes doivent être invitées à rejoindre la chaîne. Lorsque ADMIN, seuls les administrateurs peuvent envoyer ces invitations.
 
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
@@ -203,8 +203,8 @@ numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonné-e-s: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
@@ -219,8 +219,8 @@ Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
-se porter garant: ${vouchModeDisplay[channel.vouching]}
-${channel.vouching !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
+se porter garant: ${vouchModeDisplay[channel.vouchMode]}
+${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
 ${channel.description ? `Description : ${channel.description}` : ''}
 
 ${support}`,
@@ -356,16 +356,25 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
   },
 
   // VOUCHING
-  vouching: {
+  vouchMode: {
     success: mode =>
-      `${
-        mode === 'ADMIN'
-          ? `Vouching défini sur ${vouchModeDisplay.ADMIN}.
-Cela signifie que seuls vous et vos collègues administrateurs peuvent inviter des personnes sur cette chaîne.
+      ({
+        ON: `Se porter garant est maintenant ${vouchModeDisplay.ON}.
 
-Tapez HELP pour en savoir plus sur les commandes INVITE et VOUCH LEVEL.`
-          : `Vouching est passé avec succès ${vouchModeDisplay[mode]}.`
-      }`,
+Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette chaîne.
+Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
+
+Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
+        OFF: `Se porter garant est maintenant ${vouchModeDisplay.OFF}.
+
+Cela signifie que n'importe qui peut rejoindre la chaîne en envoyant BONJOUR au numéro de chaîne.`,
+        ADMIN: `Se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
+
+Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette chaîne.
+Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
+
+Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
+      }[mode]),
     notAdmin,
     dbError:
       "Une erreur s'est produite lors de la mise à jour de l'attestation de votre chaîne. Veuillez réessayer.",
@@ -492,12 +501,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
   `,
 
-  vouchModeChanged: mode =>
-    `Un administrateur vient de se porter garant ${vouchModeDisplay[mode]}.  ${
-      mode === 'ADMIN'
-        ? '"Désormais, seuls les administrateurs peuvent inviter des personnes sur cette chaîne. Tapez HELP pour en savoir plus sur la modification du niveau de garantie.'
-        : ''
-    }`,
+  vouchModeChanged: commandResponses.vouchMode.success,
 
   vouchLevelChanged: vouchLevel =>
     `Un-e admin vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
