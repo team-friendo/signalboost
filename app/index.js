@@ -3,13 +3,12 @@ const app = {
   sock: null,
 }
 
-app.run = async () => {
-  /**  IMPORT MODULES **/
-  const dbService = require('./db')
-  const socketService = require('./services/socket')
-  const registrar = require('./services/registrar')
-  const dispatcher = require('./services/dispatcher')
+app.run = async ({ db, sock, registrar, dispatcher }) => {
   const { logger } = require('./services/util')
+  const dbService = db || require('./db')
+  const socketService = sock || require('./services/socket')
+  const registrarService = registrar || require('./services/registrar')
+  const dispatcherService = dispatcher || require('./services/dispatcher')
 
   logger.log('> Initializing Signalboost...')
 
@@ -24,10 +23,10 @@ app.run = async () => {
   /** START SERVICES **/
 
   logger.log('Starting registrar...')
-  await registrar.run(app.db, app.sock)
+  await registrarService.run(app.db, app.sock)
 
   logger.log('Starting dispatcher')
-  await dispatcher.run()
+  await dispatcherService.run()
 
   logger.log('> Signalboost running!')
 }

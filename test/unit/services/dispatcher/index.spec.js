@@ -5,7 +5,7 @@ import { times, merge } from 'lodash'
 import { EventEmitter } from 'events'
 import { languages } from '../../../../app/services/language'
 import { memberTypes } from '../../../../app/db/repositories/membership'
-import { run } from '../../../../app/services/dispatcher'
+import dispatcher from '../../../../app/services/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../../app/db/repositories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
 import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
@@ -22,6 +22,7 @@ import { messagesIn } from '../../../../app/services/dispatcher/strings/messages
 import { adminMembershipFactory } from '../../../support/factories/membership'
 import { inboundAttachmentFactory } from '../../../support/factories/sdMessage'
 import app from '../../../../app'
+import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 import socketService from '../../../../app/services/socket'
 const {
@@ -72,7 +73,7 @@ describe('dispatcher service', () => {
     sinon.stub(channelRepository, 'findAllDeep').returns(Promise.resolve(channels))
     sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
-    // main loop stubs --^
+    // initialization stubs --^
 
     // on inboundMessage stubs --v
 
@@ -106,15 +107,11 @@ describe('dispatcher service', () => {
     logErrorSpy = sinon.spy(logger, 'error')
     // onReceivedMessage stubs --^
 
-    // app module stubs --v
-    sinon.stub(registrar, 'run').returns(Promise.resolve())
-    sinon.stub(dbService, 'initDb').returns(Promise.resolve({}))
-    sinon
-      .stub(socketService, 'getSocket')
-      .returns(Promise.resolve(new EventEmitter().setMaxListeners(30)))
-
-    await app.run()
-    await run()
+    await app.run({
+      ...testApp,
+      sock: { getSocket: () => Promise.resolve(new EventEmitter().setMaxListeners(30)) },
+      dispatcher,
+    })
   })
 
   afterEach(() => {
