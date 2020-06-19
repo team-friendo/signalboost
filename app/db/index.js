@@ -13,7 +13,7 @@ const { wait } = require('../services/util')
 const { maxConnectionAttempts, connectionInterval } = config
 
 // () -> { Database, Sequelize, DataTypes }
-const initDb = async () => {
+const run = async () => {
   const sequelize = config.use_env_variable
     ? new Sequelize(process.env[config.use_env_variable], config)
     : new Sequelize(config.database, config.username, config.password, config)
@@ -49,4 +49,4 @@ const getDbConnection = (sequelize, attempts = 0) =>
           ),
     )
 
-module.exports = { initDb, getDbConnection }
+module.exports = { run, getDbConnection }

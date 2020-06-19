@@ -1,6 +1,6 @@
 module.exports = {
-  db: { initDb: () => Promise.resolve() },
-  sock: { getSocket: () => Promise.resolve() },
+  db: { run: () => Promise.resolve() },
+  sock: { run: () => Promise.resolve() },
   registrar: { run: () => Promise.resolve() },
   dispatcher: { run: () => Promise.resolve() },
 }

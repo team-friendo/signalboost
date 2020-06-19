@@ -15,18 +15,18 @@ app.run = async ({ db, sock, registrar, dispatcher }) => {
   /**  INITIALIZE RESOURCES **/
 
   logger.log('Getting database connection...')
-  app.db = await dbService.initDb().catch(logger.fatalError)
+  app.db = await dbService.run().catch(logger.fatalError)
 
   logger.log('Connecting to signald socket...')
-  app.sock = await socketService.getSocket().catch(logger.fatalError)
+  app.sock = await socketService.run().catch(logger.fatalError)
 
   /** START SERVICES **/
 
   logger.log('Starting registrar...')
-  await registrarService.run(app.db, app.sock)
+  await registrarService.run(app.db, app.sock).catch(logger.fatalError)
 
   logger.log('Starting dispatcher')
-  await dispatcherService.run()
+  await dispatcherService.run().catch(logger.fatalError)
 
   logger.log('> Signalboost running!')
 }

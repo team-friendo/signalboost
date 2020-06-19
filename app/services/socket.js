@@ -19,7 +19,9 @@ const messages = {
   },
 }
 
-const getSocket = async (attempts = 0) => {
+const run = () => getSocket(0)
+
+const getSocket = async attempts => {
   if (!(await fs.pathExists(SIGNALD_SOCKET_PATH))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
@@ -97,6 +99,7 @@ const signaldEncode = data => JSON.stringify(data) + '\n'
 
 module.exports = {
   signaldEncode,
+  run,
   getSocket,
   writeWithPool,
   write,
