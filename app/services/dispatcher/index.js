@@ -82,7 +82,7 @@ const dispatch = async (resendQueue, inboundMsg) => {
   // retrieve db info we need for dispatching...
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
-        channelRepository.findDeep(app.db, inboundMsg.data.username),
+        channelRepository.findDeep(inboundMsg.data.username),
         classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source),
       ])
     : []
@@ -117,7 +117,7 @@ const dispatch = async (resendQueue, inboundMsg) => {
 const relay = async (channel, sender, inboundMsg) => {
   const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
   try {
-    const dispatchable = { db: app.db, sock: app.sock, channel, sender, sdMessage }
+    const dispatchable = { sock: app.sock, channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
     return messenger.dispatch({ dispatchable, commandResult })
   } catch (e) {
@@ -127,7 +127,7 @@ const relay = async (channel, sender, inboundMsg) => {
 
 // (Database, Socket, SdMessage, number) -> Promise<void>
 const notifyRateLimitedMessage = async (sdMessage, resendInterval) => {
-  const channel = await channelRepository.findDeep(app.db, supportPhoneNumber)
+  const channel = await channelRepository.findDeep(supportPhoneNumber)
   if (!channel) return Promise.resolve()
 
   const recipients = channelRepository.getAdminMemberships(channel)
@@ -152,12 +152,12 @@ const updateFingerprint = async updatableFingerprint => {
     if (recipient.type === memberTypes.NONE) return Promise.resolve()
     if (recipient.type === memberTypes.ADMIN) {
       return safetyNumberService
-        .deauthorize(app.db, app.sock, updatableFingerprint)
+        .deauthorize(app.sock, updatableFingerprint)
         .then(logger.logAndReturn)
         .catch(logger.error)
     }
     return safetyNumberService
-      .trustAndResend(app.db, app.sock, updatableFingerprint)
+      .trustAndResend(app.sock, updatableFingerprint)
       .then(logger.logAndReturn)
       .catch(logger.error)
   } catch (e) {
@@ -180,7 +180,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
       )
     case memberTypes.ADMIN:
       // enforce a disappearing message time set by an admin
-      await channelRepository.update(app.db, channel.phoneNumber, { messageExpiryTime })
+      await channelRepository.update(channel.phoneNumber, { messageExpiryTime })
       return Promise.all(
         channel.memberships
           .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
@@ -255,13 +255,8 @@ const detectUpdatableExpiryTime = (inboundMsg, channel) =>
 
 const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!
-  const type = await membershipRepository.resolveMemberType(
-    app.db,
-    channelPhoneNumber,
-    senderPhoneNumber,
-  )
+  const type = await membershipRepository.resolveMemberType(channelPhoneNumber, senderPhoneNumber)
   const language = await membershipRepository.resolveSenderLanguage(
-    app.db,
     channelPhoneNumber,
     senderPhoneNumber,
     type,

@@ -11,20 +11,20 @@ const {
 const reachedQuotaError = 'Sender exceeded monthly sms quota.'
 
 // ({Database, EventEmitter, string, string, string}) => Promise<Boolean>
-const handleSms = ({ db, sock, phoneNumber, senderPhoneNumber, message }) => {
+const handleSms = ({ sock, phoneNumber, senderPhoneNumber, message }) => {
   const [isVerificationCode, verificationCode] = signal.parseVerificationCode(message)
   return isVerificationCode
     ? registrationService.verify({ sock, phoneNumber, verificationCode })
-    : respondToSms(db, senderPhoneNumber)
+    : respondToSms(senderPhoneNumber)
 }
 
 // (String, String) -> SignalboostStatus
-const respondToSms = async (db, senderPhoneNumber) => {
+const respondToSms = async senderPhoneNumber => {
   try {
-    if (await smsSenderRepository.hasReachedQuota(db, senderPhoneNumber))
+    if (await smsSenderRepository.hasReachedQuota(senderPhoneNumber))
       return { status: statuses.ERROR, message: reachedQuotaError }
 
-    await smsSenderRepository.countMessage(db, senderPhoneNumber)
+    await smsSenderRepository.countMessage(senderPhoneNumber)
     const language = languageForPhoneNumber(senderPhoneNumber)
     const promptToUseSignal = messagesIn(language).notifications.promptToUseSignal
     const message = new MessagingResponse().message(promptToUseSignal).toString()

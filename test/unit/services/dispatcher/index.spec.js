@@ -11,7 +11,6 @@ import membershipRepository from '../../../../app/db/repositories/membership'
 import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
 import messenger from '../../../../app/services/dispatcher/messenger'
-import registrar from '../../../../app/services/registrar'
 import resend from '../../../../app/services/dispatcher/resend'
 import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import logger from '../../../../app/services/dispatcher/logger'
@@ -23,8 +22,6 @@ import { adminMembershipFactory } from '../../../support/factories/membership'
 import { inboundAttachmentFactory } from '../../../support/factories/sdMessage'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
-import dbService from '../../../../app/db'
-import socketService from '../../../../app/services/socket'
 const {
   signal: { defaultMessageExpiryTime, supportPhoneNumber, minResendInterval },
 } = require('../../../../app/config')
@@ -109,7 +106,7 @@ describe('dispatcher service', () => {
 
     await app.run({
       ...testApp,
-      sock: { getSocket: () => Promise.resolve(new EventEmitter().setMaxListeners(30)) },
+      sock: { run: () => Promise.resolve(new EventEmitter().setMaxListeners(30)) },
       dispatcher,
     })
   })
@@ -226,12 +223,11 @@ describe('dispatcher service', () => {
       })
 
       it('retrieves a channel record', () => {
-        expect(findDeepStub.getCall(0).args).to.eql([app.db, channel.phoneNumber])
+        expect(findDeepStub.getCall(0).args).to.eql([channel.phoneNumber])
       })
 
       it('retrieves permissions for the message sender', () => {
         expect(resolveMemberTypeStub.getCall(0).args).to.eql([
-          app.db,
           channel.phoneNumber,
           adminPhoneNumber,
         ])
@@ -239,7 +235,6 @@ describe('dispatcher service', () => {
 
       it('processes any commands in the message', () => {
         expect(processCommandStub.getCall(0).args[0]).to.eql({
-          db: app.db,
           sock: app.sock,
           channel,
           sender,
@@ -251,7 +246,6 @@ describe('dispatcher service', () => {
         expect(dispatchStub.getCall(0).args[0]).to.eql({
           commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
           dispatchable: {
-            db: app.db,
             sock: app.sock,
             channel,
             sender,
@@ -382,7 +376,6 @@ describe('dispatcher service', () => {
 
           expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
           expect(trustAndResendStub.getCall(0).args).to.eql([
-            app.db,
             app.sock,
             {
               channelPhoneNumber: channel.phoneNumber,
@@ -429,7 +422,7 @@ describe('dispatcher service', () => {
           await wait(socketDelay)
 
           expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.getCall(0).args[2]).to.eql({
+          expect(deauthorizeStub.getCall(0).args[1]).to.eql({
             channelPhoneNumber: channel.phoneNumber,
             memberPhoneNumber: recipientNumber,
             fingerprint,
@@ -494,7 +487,6 @@ describe('dispatcher service', () => {
 
         it('stores the new expiry time', () => {
           expect(updateStub.getCall(0).args).to.eql([
-            app.db,
             channel.phoneNumber,
             { messageExpiryTime: 60 },
           ])

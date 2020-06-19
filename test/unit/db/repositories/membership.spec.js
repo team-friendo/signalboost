@@ -4,13 +4,15 @@ import { omit, pick } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
-import { initDb } from '../../../../app/db'
 import { languages } from '../../../../app/services/language'
 import {
   adminMembershipFactory,
   membershipFactory,
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 const { memberTypes } = membershipRepository
 const { defaultLanguage } = require('../../../../app/config')
 
@@ -20,7 +22,9 @@ describe('membership repository', () => {
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel, sub, membershipCount, subCount, adminCount, admins
 
-  before(() => (db = initDb()))
+  before(async () => {
+    db = (await app.run({ ...testApp, db: dbService })).db
+  })
   afterEach(async () => {
     await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
@@ -28,7 +32,7 @@ describe('membership repository', () => {
       db.messageCount.destroy({ where: {}, force: true }),
     ])
   })
-  after(async () => await db.sequelize.close())
+  after(async () => await app.stop())
 
   describe('#addAdmin', () => {
     describe('when given the phone number of an existing channel and a new admin', () => {
@@ -36,7 +40,7 @@ describe('membership repository', () => {
         channel = await db.channel.create(channelFactory())
         subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
-        admins = await membershipRepository.addAdmins(db, channel.phoneNumber, adminPhoneNumbers)
+        admins = await membershipRepository.addAdmins(channel.phoneNumber, adminPhoneNumbers)
       })
 
       it('creates 2 new admin memberships', async () => {
@@ -74,10 +78,10 @@ describe('membership repository', () => {
       let res
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await membershipRepository.addAdmins(db, channel.phoneNumber, adminPhoneNumbers)
+        await membershipRepository.addAdmins(channel.phoneNumber, adminPhoneNumbers)
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-        res = await membershipRepository.addAdmins(db, channel.phoneNumber, [
+        res = await membershipRepository.addAdmins(channel.phoneNumber, [
           adminPhoneNumbers[1],
           genPhoneNumber(),
         ])
@@ -103,10 +107,10 @@ describe('membership repository', () => {
 
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        res1 = await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+        res1 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count()
 
-        res2 = await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+        res2 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
       })
 
       describe('when given the number of an existing admin', () => {
@@ -124,7 +128,6 @@ describe('membership repository', () => {
         beforeEach(async () => {
           channel = await db.channel.create(channelFactory())
           res1 = await membershipRepository.addSubscriber(
-            db,
             channel.phoneNumber,
             subscriberPhoneNumbers[0],
           )
@@ -132,11 +135,7 @@ describe('membership repository', () => {
           subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
           adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-          res2 = await membershipRepository.addAdmin(
-            db,
-            channel.phoneNumber,
-            subscriberPhoneNumbers[0],
-          )
+          res2 = await membershipRepository.addAdmin(channel.phoneNumber, subscriberPhoneNumbers[0])
         })
 
         it('makes the subscriber an admin and returns its membership', async () => {
@@ -155,9 +154,9 @@ describe('membership repository', () => {
     describe('when given an empty array of admin numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await membershipRepository.addAdmins(db, channel.phoneNumber, adminPhoneNumbers.slice(1))
+        await membershipRepository.addAdmins(channel.phoneNumber, adminPhoneNumbers.slice(1))
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
-        await membershipRepository.addAdmins(db, channel.phoneNumber, [])
+        await membershipRepository.addAdmins(channel.phoneNumber, [])
       })
 
       it('creates no new publications', async () => {
@@ -168,7 +167,7 @@ describe('membership repository', () => {
     describe('when given the phone number of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
         expect(
-          await membershipRepository.addSubscriber(db, genPhoneNumber(), null).catch(e => e),
+          await membershipRepository.addSubscriber(genPhoneNumber(), null).catch(e => e),
         ).to.contain('non-existent channel')
       })
     })
@@ -179,10 +178,10 @@ describe('membership repository', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+        await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-        result = await membershipRepository.removeMember(db, channel.phoneNumber, adminPhoneNumbers)
+        result = await membershipRepository.removeMember(channel.phoneNumber, adminPhoneNumbers)
       })
 
       it('deletes a membership record', async () => {
@@ -198,10 +197,10 @@ describe('membership repository', () => {
       let result
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
-        await membershipRepository.addAdmin(db, channel.phoneNumber, adminPhoneNumbers[0])
+        await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count()
 
-        result = await membershipRepository.removeMember(db, channel.phoneNumber, '+11111111111')
+        result = await membershipRepository.removeMember(channel.phoneNumber, '+11111111111')
       })
 
       it('does not create a membership record', async () => {
@@ -221,7 +220,6 @@ describe('membership repository', () => {
         membershipCount = await db.membership.count()
         channel = await db.channel.create(channelFactory())
         sub = await membershipRepository.addSubscriber(
-          db,
           channel.phoneNumber,
           subscriberPhone,
           languages.ES,
@@ -252,14 +250,14 @@ describe('membership repository', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         res1 = await membershipRepository.addSubscriber(
-          db,
+          
           channel.phoneNumber,
           subscriberPhoneNumbers[0],
         )
         membershipCount = await db.membership.count()
 
         res2 = await membershipRepository.addSubscriber(
-          db,
+          
           channel.phoneNumber,
           subscriberPhoneNumbers[0],
         )
@@ -277,7 +275,7 @@ describe('membership repository', () => {
     describe('when given the pNum of a non-existent channel', () => {
       it('rejects a Promise with an error', async () => {
         expect(
-          await membershipRepository.addSubscriber(db, genPhoneNumber(), null).catch(e => e),
+          await membershipRepository.addSubscriber(genPhoneNumber(), null).catch(e => e),
         ).to.contain('non-existent channel')
       })
     })
@@ -288,7 +286,7 @@ describe('membership repository', () => {
 
     beforeEach(async () => {
       channel = await db.channel.create(channelFactory())
-      sub = await membershipRepository.addSubscriber(db, channel.phoneNumber, subscriberPhone)
+      sub = await membershipRepository.addSubscriber(channel.phoneNumber, subscriberPhone)
       membershipCount = await db.membership.count()
     })
 
@@ -296,7 +294,7 @@ describe('membership repository', () => {
       describe('when asked to remove a number that is subscribed to the channel', () => {
         let result
         beforeEach(async () => {
-          result = await membershipRepository.removeMember(db, channel.phoneNumber, subscriberPhone)
+          result = await membershipRepository.removeMember(channel.phoneNumber, subscriberPhone)
         })
         it('deletes a membership', async () => {
           expect(await db.membership.count()).to.eql(membershipCount - 1)
@@ -309,7 +307,7 @@ describe('membership repository', () => {
       describe('when asked to remove a number that is not subscribed to the channel', () => {
         it('resolves with a deletion count of 0', async () => {
           expect(
-            await membershipRepository.removeMember(db, channel.phoneNumber, unsubscribedPhone),
+            await membershipRepository.removeMember(channel.phoneNumber, unsubscribedPhone),
           ).to.eql(0)
         })
       })
@@ -318,7 +316,7 @@ describe('membership repository', () => {
     describe('when given the phone number of a non-existent channel', () => {
       it('it rejects with an error', async () => {
         expect(
-          await membershipRepository.removeMember(db, genPhoneNumber(), null).catch(e => e),
+          await membershipRepository.removeMember(genPhoneNumber(), null).catch(e => e),
         ).to.contain('non-existent channel')
       })
     })
@@ -341,20 +339,20 @@ describe('membership repository', () => {
     })
 
     it("returns true when given a channel admin's phone number", async () => {
-      expect(
-        await membershipRepository.isAdmin(db, channelPhoneNumber, adminPhoneNumbers[0]),
-      ).to.eql(true)
+      expect(await membershipRepository.isAdmin(channelPhoneNumber, adminPhoneNumbers[0])).to.eql(
+        true,
+      )
     })
 
     it("it returns false when given a non-admin's phone number", async () => {
       expect(
-        await membershipRepository.isAdmin(db, channelPhoneNumber, subscriberPhoneNumbers[0]),
+        await membershipRepository.isAdmin(channelPhoneNumber, subscriberPhoneNumbers[0]),
       ).to.eql(false)
     })
 
     it('returns false when asked to check a non existent channel', async () => {
       expect(
-        await membershipRepository.isAdmin(db, genPhoneNumber(), subscriberPhoneNumbers[0]),
+        await membershipRepository.isAdmin(genPhoneNumber(), subscriberPhoneNumbers[0]),
       ).to.eql(false)
     })
   })
@@ -381,11 +379,7 @@ describe('membership repository', () => {
     describe('when sender is admin on channel', () => {
       it('returns ADMIN', async () => {
         expect(
-          await membershipRepository.resolveMemberType(
-            db,
-            channelPhoneNumber,
-            adminPhoneNumbers[0],
-          ),
+          await membershipRepository.resolveMemberType(channelPhoneNumber, adminPhoneNumbers[0]),
         ).to.eql(memberTypes.ADMIN)
       })
     })
@@ -394,7 +388,6 @@ describe('membership repository', () => {
       it('returns SUBSCRIBER', async () => {
         expect(
           await membershipRepository.resolveMemberType(
-            db,
             channelPhoneNumber,
             subscriberPhoneNumbers[0],
           ),
@@ -405,7 +398,7 @@ describe('membership repository', () => {
     describe('when sender is neither admin nor subscriber', () => {
       it('returns RANDOM', async () => {
         expect(
-          await membershipRepository.resolveMemberType(db, channelPhoneNumber, genPhoneNumber()),
+          await membershipRepository.resolveMemberType(channelPhoneNumber, genPhoneNumber()),
         ).to.eql(memberTypes.NONE)
       })
     })
@@ -420,7 +413,7 @@ describe('membership repository', () => {
         await db.membership.create(
           adminMembershipFactory({ memberPhoneNumber, language: languages.EN }),
         )
-        result = await membershipRepository.updateLanguage(db, memberPhoneNumber, languages.ES)
+        result = await membershipRepository.updateLanguage(memberPhoneNumber, languages.ES)
       })
 
       it('updates the membership language', async () => {
@@ -439,7 +432,7 @@ describe('membership repository', () => {
             language: languages.EN,
           }),
         )
-        result = await membershipRepository.updateLanguage(db, memberPhoneNumber, languages.ES)
+        result = await membershipRepository.updateLanguage(memberPhoneNumber, languages.ES)
       })
 
       it('updates the subscription language', async () => {
@@ -452,7 +445,7 @@ describe('membership repository', () => {
 
     describe('when sender is neither admin nor subscriber', () => {
       beforeEach(async () => {
-        result = await membershipRepository.updateLanguage(db, genPhoneNumber(), languages.ES)
+        result = await membershipRepository.updateLanguage(genPhoneNumber(), languages.ES)
       })
       it('does nothing', () => {
         expect(result).to.eql([0])

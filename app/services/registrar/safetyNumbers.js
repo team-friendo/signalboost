@@ -9,7 +9,7 @@ const { sdMessageOf } = require('../signal')
 const { statuses } = require('../../services/util')
 
 // (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
-const trustAndResend = async (db, sock, updatableFingerprint) => {
+const trustAndResend = async (sock, updatableFingerprint) => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
   if (sdMessage) {
@@ -19,16 +19,15 @@ const trustAndResend = async (db, sock, updatableFingerprint) => {
 }
 
 // (Database, Socket, UpdatableFingerprint) -> Promise<SignalBoostStatus>
-const deauthorize = async (db, sock, updatableFingerprint) => {
+const deauthorize = async (sock, updatableFingerprint) => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint } = updatableFingerprint
   try {
-    const channel = await channelRepository.findDeep(db, channelPhoneNumber)
+    const channel = await channelRepository.findDeep(channelPhoneNumber)
     const removalResult = await membershipRepository.removeMember(
-      db,
       channelPhoneNumber,
       memberPhoneNumber,
     )
-    await deauthorizationRepository.create(db, channelPhoneNumber, memberPhoneNumber, fingerprint)
+    await deauthorizationRepository.create(channelPhoneNumber, memberPhoneNumber, fingerprint)
     await _sendDeauthAlerts(
       sock,
       channelPhoneNumber,

@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
+import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import {
   twilioClient,
   availableTwilioNumbers,
@@ -18,11 +19,12 @@ import {
 describe('phone number services - purchase module', () => {
   const fakePhoneNumber = genPhoneNumber()
   const twilioSid = genSid()
-  let db, twilioListStub, twilioCreateStub
+  let twilioListStub, twilioCreateStub, createPhoneNumberStub
 
   beforeEach(() => {
     twilioListStub = sinon.stub(availableTwilioNumbers, 'list')
     twilioCreateStub = sinon.stub(twilioClient.incomingPhoneNumbers, 'create')
+    createPhoneNumberStub = sinon.stub(phoneNumberRepository, 'create')
   })
 
   afterEach(() => {
@@ -42,11 +44,11 @@ describe('phone number services - purchase module', () => {
             .returns(Promise.resolve([{ phoneNumber: number, twilioSid: sids[i] }])),
         )
         twilioCreateStub.callsFake(x => Promise.resolve(x))
-        db = { phoneNumber: { create: x => Promise.resolve(x) } }
+        createPhoneNumberStub.callsFake(x => Promise.resolve(x))
       })
 
       it('returns an array of success statuses', async () => {
-        expect(await purchaseN({ db, n: 3 })).to.eql([
+        expect(await purchaseN({ n: 3 })).to.eql([
           {
             status: statuses.PURCHASED,
             phoneNumber: fakeNumbers[0],
@@ -76,11 +78,11 @@ describe('phone number services - purchase module', () => {
         twilioCreateStub.onCall(0).callsFake(() => Promise.reject('boom!'))
         twilioCreateStub.onCall(1).callsFake(x => Promise.resolve(x))
         twilioCreateStub.onCall(2).callsFake(x => Promise.resolve(x))
-        db = { phoneNumber: { create: x => Promise.resolve(x) } }
+        createPhoneNumberStub.callsFake(x => Promise.resolve(x))
       })
 
       it('returns an array of success AND error statuses', async () => {
-        expect(await purchaseN({ db, n: 3 })).to.eql([
+        expect(await purchaseN({  n: 3 })).to.eql([
           {
             status: statuses.ERROR,
             error: errors.purchaseFailed('boom!'),
@@ -106,12 +108,12 @@ describe('phone number services - purchase module', () => {
       beforeEach(() => twilioListStub.returns(Promise.resolve([{ phoneNumber: fakePhoneNumber }])))
 
       it('attempts to register the number returned by search with twilio', async () => {
-        await purchase({ db })
+        await purchase({})
         expect(twilioCreateStub.getCall(0).args[0].phoneNumber).to.eql(fakePhoneNumber)
       })
 
       it("includes the current environment in the registered number's friendlyName", async () => {
-        await purchase({ db })
+        await purchase({})
         expect(twilioCreateStub.getCall(0).args[0].friendlyName).to.match(/^test+ .*$/)
       })
 
@@ -127,16 +129,10 @@ describe('phone number services - purchase module', () => {
         )
 
         describe('when recording phone number state to db succeeds', () => {
-          beforeEach(() => {
-            db = {
-              phoneNumber: {
-                create: x => Promise.resolve(x),
-              },
-            }
-          })
+          beforeEach(() => createPhoneNumberStub.callsFake(x => Promise.resolve(x)))
 
           it('returns a success status', async () => {
-            expect(await purchase({ db })).to.eql({
+            expect(await purchase({})).to.eql({
               status: statuses.PURCHASED,
               phoneNumber: fakePhoneNumber,
               twilioSid,
@@ -145,14 +141,10 @@ describe('phone number services - purchase module', () => {
         })
 
         describe('when recording phone number to db fails', () => {
-          beforeEach(() => {
-            db = {
-              phoneNumber: { create: () => Promise.reject('oh noes!') },
-            }
-          })
+          beforeEach(() => createPhoneNumberStub.callsFake(() => Promise.reject('oh noes!')))
 
           it('returns an error tuple', async () => {
-            expect(await purchase({ db })).to.eql({
+            expect(await purchase({})).to.eql({
               status: statuses.ERROR,
               phoneNumber: fakePhoneNumber,
               error: errors.dbWriteFailed('oh noes!'),

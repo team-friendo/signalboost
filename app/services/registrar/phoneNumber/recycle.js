@@ -6,17 +6,17 @@ const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../../db/repositories/channel')
 
 // ({Database, Socket, string}) -> SignalboostStatus
-const recycle = async ({ db, sock, phoneNumbers }) => {
+const recycle = async ({ sock, phoneNumbers }) => {
   return await Promise.all(
     phoneNumbers.split(',').map(async phoneNumber => {
-      const channel = await channelRepository.findDeep(db, phoneNumber)
+      const channel = await channelRepository.findDeep(phoneNumber)
 
       if (channel) {
-        return notifyMembers(db, sock, channel)
+        return notifyMembers(sock, channel)
           .then(() => common.destroyChannel(channel))
-          .then(() => recordStatusChange(db, phoneNumber, common.statuses.VERIFIED))
+          .then(() => recordStatusChange(phoneNumber, common.statuses.VERIFIED))
           .then(phoneNumberStatus => ({ status: 'SUCCESS', data: phoneNumberStatus }))
-          .catch(err => handleRecycleFailure(err, db, sock, phoneNumber))
+          .catch(err => handleRecycleFailure(err, sock, phoneNumber))
       } else {
         return { status: 'ERROR', message: `Channel not found for ${phoneNumber}` }
       }
@@ -28,7 +28,7 @@ const recycle = async ({ db, sock, phoneNumbers }) => {
  * HELPER FUNCTIONS
  ********************/
 // (Database, Socket, Channel) -> Channel
-const notifyMembers = async (db, sock, channel) => {
+const notifyMembers = async (sock, channel) => {
   const memberPhoneNumbers = channelRepository.getMemberPhoneNumbers(channel)
   await signal.broadcastMessage(
     sock,
@@ -41,12 +41,11 @@ const notifyMembers = async (db, sock, channel) => {
 const channelRecycledNotification = messagesIn(defaultLanguage).notifications.channelRecycled
 
 // (Database, string, PhoneNumberStatus) -> PhoneNumberStatus
-const recordStatusChange = async (db, phoneNumber, status) =>
-  phoneNumberRepository.update(db, phoneNumber, { status }).then(common.extractStatus)
+const recordStatusChange = async (phoneNumber, status) =>
+  phoneNumberRepository.update(phoneNumber, { status }).then(common.extractStatus)
 
-const handleRecycleFailure = async (err, db, sock, phoneNumber) => {
+const handleRecycleFailure = async (err, sock, phoneNumber) => {
   await common.notifyMaintainers(
-    db,
     sock,
     messagesIn(defaultLanguage).notifications.recycleChannelFailed(phoneNumber),
   )

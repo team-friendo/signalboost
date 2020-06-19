@@ -31,8 +31,8 @@ describe('phone number presenters', () => {
       beforeEach(() => dbListStub.returns(Promise.resolve()))
 
       it('passes filter to repository query', async () => {
-        await phoneNumberService.list({}, 'ACTIVE')
-        expect(dbListStub.getCall(0).args[1]).to.eql('ACTIVE')
+        await phoneNumberService.list('ACTIVE')
+        expect(dbListStub.getCall(0).args).to.eql(['ACTIVE'])
       })
     })
 

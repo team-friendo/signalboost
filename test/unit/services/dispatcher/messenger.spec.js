@@ -148,7 +148,7 @@ describe('messenger service', () => {
                   messageBody: messages.notifications.noop,
                   notifications: [],
                 },
-                dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
+                dispatchable: { sock, channel, sender: adminSender, sdMessage },
               }),
           )
           it('does not respond to the sender', () => {
@@ -181,7 +181,7 @@ describe('messenger service', () => {
 
           it('it increments the broadcast count for the channel exactly once', () => {
             expect(countBroadcastStub.callCount).to.eql(1)
-            expect(countBroadcastStub.getCall(0).args).to.eql([db, channel])
+            expect(countBroadcastStub.getCall(0).args).to.eql([channel])
           })
 
           it('attempts to broadcast in batches of broadcastBatchSize', async () => {
@@ -230,7 +230,7 @@ describe('messenger service', () => {
                 messageBody: messages.notifications.noop,
                 notifications: [],
               },
-              dispatchable: { db, sock, channel, sender, sdMessage },
+              dispatchable: { sock, channel, sender, sdMessage },
             })
           })
 
@@ -259,7 +259,7 @@ describe('messenger service', () => {
                 messageBody: messages.notifications.noop,
                 notifications: [],
               },
-              dispatchable: { db, sock, channel: hotlineEnabledChannel, sender, sdMessage },
+              dispatchable: { sock, channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -302,7 +302,7 @@ describe('messenger service', () => {
           beforeEach(async () => {
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { db, sock, channel: hotlineEnabledChannel, sender, sdMessage },
+              dispatchable: { sock, channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -339,7 +339,7 @@ describe('messenger service', () => {
     describe('when message is a command response', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { db, sock, channel, sender: adminSender, sdMessage: commands.JOIN },
+          dispatchable: { sock, channel, sender: adminSender, sdMessage: commands.JOIN },
           commandResult: {
             command: commands.JOIN,
             status: statuses.SUCCESS,
@@ -366,14 +366,14 @@ describe('messenger service', () => {
       })
 
       it('increments the command count for the channel', () => {
-        expect(countCommandStub.getCall(0).args).to.eql([db, channel])
+        expect(countCommandStub.getCall(0).args).to.eql([channel])
       })
     })
 
     describe('when command result includes notification(s)', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { db, sock, channel, sender: adminSender, sdMessage },
+          dispatchable: { sock, channel, sender: adminSender, sdMessage },
           commandResult: {
             command: commands.ADD,
             status: statuses.SUCCESS,

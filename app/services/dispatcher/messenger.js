@@ -137,7 +137,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  ************/
 
 // Dispatchable -> Promise<MessageCount>
-const broadcast = async ({ db, sock, channel, sdMessage }) => {
+const broadcast = async ({ sock, channel, sdMessage }) => {
   const recipients = channel.memberships
 
   try {
@@ -178,20 +178,19 @@ const broadcast = async ({ db, sock, channel, sdMessage }) => {
         broadcastBatchInterval,
       )
     }
-    return messageCountRepository.countBroadcast(db, channel)
+    return messageCountRepository.countBroadcast(channel)
   } catch (e) {
     logger.error(e)
   }
 }
 
 // Dispatchable -> Promise<void>
-const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => {
+const relayHotlineMessage = async ({ sock, channel, sender, sdMessage }) => {
   const { language } = sender
   const recipients = channelRepository.getAdminMemberships(channel)
   const response = messagesIn(language).notifications.hotlineMessageSent(channel)
 
   const messageId = await hotlineMessageRepository.getMessageId({
-    db,
     channelPhoneNumber: channel.phoneNumber,
     memberPhoneNumber: sender.phoneNumber,
   })
@@ -217,18 +216,18 @@ const relayHotlineMessage = async ({ db, sock, channel, sender, sdMessage }) => 
 
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, response))
-    .then(() => messageCountRepository.countHotline(db, channel))
+    .then(() => messageCountRepository.countHotline(channel))
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
-const respond = ({ db, sock, channel, message, sender, command, status }) => {
+const respond = ({ sock, channel, message, sender, command, status }) => {
   // FIX: PRIVATE command sends out all messages including to sender
   // because respond doesn't handle attachments, don't want to repeat message here
   if (command === commands.PRIVATE && status === statuses.SUCCESS) return
 
   return signal
     .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
-    .then(() => messageCountRepository.countCommand(db, channel))
+    .then(() => messageCountRepository.countCommand(channel))
 }
 
 // ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>

@@ -4,8 +4,10 @@ import moment from 'moment'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { hotlineMessageFactory } from '../../../support/factories/hotlineMessages'
 import { channelFactory } from '../../../support/factories/channel'
-import { initDb } from '../../../../app/db'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 const {
   job: { hotlineMessageExpiryInMillis },
 } = require('../../../../app/config')
@@ -15,7 +17,7 @@ describe('hotlineMessage repository', () => {
   let db, channelPhoneNumber, hotlineMessage
 
   before(async () => {
-    db = initDb()
+    db = (await app.run({ ...testApp, db: dbService })).db
     channelPhoneNumber = (await db.channel.create(channelFactory())).phoneNumber
   })
 
@@ -23,7 +25,7 @@ describe('hotlineMessage repository', () => {
 
   after(async () => {
     await db.channel.destroy({ where: {}, force: true })
-    db.sequelize.close()
+    await app.stop()
   })
 
   describe('#getMessageId', () => {
@@ -36,11 +38,7 @@ describe('hotlineMessage repository', () => {
     describe('for a member who has already sent a message to the channel', () => {
       it('retrieves the existing hotline message id number', async () => {
         expect(
-          await hotlineMessageRepository.getMessageId({
-            db,
-            channelPhoneNumber,
-            memberPhoneNumber,
-          }),
+          await hotlineMessageRepository.getMessageId({ channelPhoneNumber, memberPhoneNumber }),
         ).to.eql(hotlineMessage.id)
       })
     })
@@ -49,7 +47,6 @@ describe('hotlineMessage repository', () => {
       it('creates and returns a new hotline message id number', async () => {
         expect(
           await hotlineMessageRepository.getMessageId({
-            db,
             channelPhoneNumber,
             memberPhoneNumber: memberPhoneNumber2,
           }),
@@ -67,20 +64,15 @@ describe('hotlineMessage repository', () => {
       })
 
       it('resolves a promise with the corresponding member phone number', async () => {
-        expect(
-          await hotlineMessageRepository.findMemberPhoneNumber({
-            db,
-            id: hotlineMessage.id,
-          }),
-        ).to.eql(memberPhoneNumber)
+        expect(await hotlineMessageRepository.findMemberPhoneNumber(hotlineMessage.id)).to.eql(
+          memberPhoneNumber,
+        )
       })
     })
 
     describe('when hotline message does not exist', () => {
       it('rejects a promise with an error', async () => {
-        const err = await hotlineMessageRepository
-          .findMemberPhoneNumber({ db, id: -1 })
-          .catch(e => e)
+        const err = await hotlineMessageRepository.findMemberPhoneNumber(-1).catch(e => e)
         expect(err).to.be.an('error')
       })
     })
@@ -100,7 +92,7 @@ describe('hotlineMessage repository', () => {
     })
 
     it('deletes all hotlineMessage records older than expiry time', async () => {
-      expect(await hotlineMessageRepository.deleteExpired(db)).to.eql(1)
+      expect(await hotlineMessageRepository.deleteExpired()).to.eql(1)
       expect(await db.hotlineMessage.count()).to.eql(count - 1)
     })
   })

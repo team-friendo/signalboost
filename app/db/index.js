@@ -33,7 +33,9 @@ const run = async () => {
 
   await getDbConnection(sequelize)
 
-  return { ...db, sequelize, Sequelize }
+  const stop = () => sequelize.close()
+
+  return { ...db, stop, sequelize, Sequelize }
 }
 
 // (Database, number) => Promise<string>
@@ -43,10 +45,12 @@ const getDbConnection = (sequelize, attempts = 0) =>
     .then(() => Promise.resolve('db connected'))
     .catch(() =>
       attempts < maxConnectionAttempts
-        ? wait(connectionInterval).then(() => getDbConnection(db, attempts + 1))
+        ? wait(connectionInterval).then(() => getDbConnection(sequelize, attempts + 1))
         : Promise.reject(
             new Error(`could not connect to db after ${maxConnectionAttempts} attempts`),
           ),
     )
 
-module.exports = { run, getDbConnection }
+const stop = db => db.sequelize.close()
+
+module.exports = { run, stop, getDbConnection }

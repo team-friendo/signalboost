@@ -1,50 +1,51 @@
+const app = require('../../../app')
 const { memberTypes } = require('./membership')
 
 /***********
  * QUERIES
  ***********/
 
-const create = async (db, phoneNumber, name, adminPhoneNumbers) => {
+const create = async (phoneNumber, name, adminPhoneNumbers) => {
   const memberships = adminPhoneNumbers.map(pNum => ({
     type: memberTypes.ADMIN,
     memberPhoneNumber: pNum,
   }))
-  const channel = await findByPhoneNumber(db, phoneNumber)
-  const include = [{ model: db.messageCount }, { model: db.membership }]
+  const channel = await findByPhoneNumber(phoneNumber)
+  const include = [{ model: app.db.messageCount }, { model: app.db.membership }]
   return !channel
-    ? db.channel.create({ phoneNumber, name, memberships, messageCount: {} }, { include })
+    ? app.db.channel.create({ phoneNumber, name, memberships, messageCount: {} }, { include })
     : channel
         .update({ name, memberships, returning: true }, { include })
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 
-const update = (db, phoneNumber, attrs) =>
-  db.channel
+const update = (phoneNumber, attrs) =>
+  app.db.channel
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-const findAll = db => db.channel.findAll()
+const findAll = () => app.db.channel.findAll()
 
-const findAllDeep = db =>
-  db.channel.findAll({
+const findAllDeep = () =>
+  app.db.channel.findAll({
     include: [
-      { model: db.deauthorization },
-      { model: db.invite },
-      { model: db.membership },
-      { model: db.messageCount },
+      { model: app.db.deauthorization },
+      { model: app.db.invite },
+      { model: app.db.membership },
+      { model: app.db.messageCount },
     ],
   })
 
-const findByPhoneNumber = (db, phoneNumber) => db.channel.findOne({ where: { phoneNumber } })
+const findByPhoneNumber = phoneNumber => app.db.channel.findOne({ where: { phoneNumber } })
 
-const findDeep = (db, phoneNumber) =>
-  db.channel.findOne({
+const findDeep = phoneNumber =>
+  app.db.channel.findOne({
     where: { phoneNumber },
     include: [
-      { model: db.deauthorization },
-      { model: db.invite },
-      { model: db.membership },
-      { model: db.messageCount },
+      { model: app.db.deauthorization },
+      { model: app.db.invite },
+      { model: app.db.membership },
+      { model: app.db.messageCount },
     ],
   })
 

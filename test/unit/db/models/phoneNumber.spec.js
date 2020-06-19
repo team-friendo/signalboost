@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, test, before, after } from 'mocha'
 import { keys } from 'lodash'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { statuses } from '../../../../app/db/models/phoneNumber'
 
@@ -9,12 +9,12 @@ describe('phoneNumber model', () => {
   let db, phoneNumber
 
   before(async () => {
-    db = initDb()
+    db = await run()
   })
 
   after(async () => {
     await db.phoneNumber.destroy({ where: {} })
-    await db.sequelize.close()
+    await db.stop()
   })
 
   test('fields', async () => {

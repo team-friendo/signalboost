@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import { keys, values, pick } from 'lodash'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { messageCountFactory } from '../../../support/factories/messageCount'
 import { channelFactory } from '../../../support/factories/channel'
@@ -10,13 +10,13 @@ describe('messageCount model', () => {
   let db, messageCount
 
   before(async () => {
-    db = initDb()
+    db = await run()
   })
 
   after(async () => {
     await db.messageCount.destroy({ where: {} })
     await db.channel.destroy({ where: {} })
-    await db.sequelize.close()
+    await db.stop()
   })
 
   it('has correct fields', async () => {

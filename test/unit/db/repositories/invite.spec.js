@@ -2,7 +2,6 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { times } from 'lodash'
-import { initDb } from '../../../../app/db'
 import { channelFactory } from '../../../support/factories/channel'
 import {
   adminMembershipFactory,
@@ -11,6 +10,9 @@ import {
 import inviteRepository from '../../../../app/db/repositories/invite'
 import { inviteFactory } from '../../../support/factories/invite'
 import { wait } from '../../../../app/services/util'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 const {
   job: { inviteExpiryInMillis, inviteDeletionInterval },
 } = require('../../../../app/config')
@@ -25,7 +27,9 @@ describe('invite repository', () => {
   ] = times(5, genPhoneNumber)
   let res, db, inviteCount, memberCount
 
-  before(() => (db = initDb()))
+  before(async () => {
+    db = (await app.run({ ...testApp, db: dbService })).db
+  })
   beforeEach(async () => {
     await db.channel.create(
       channelFactory({
@@ -55,13 +59,12 @@ describe('invite repository', () => {
       db.invite.destroy({ where: {}, force: true }),
     ])
   })
-  after(async () => await db.sequelize.close())
+  after(async () => await app.stop())
 
   describe('#issue', () => {
     describe('when issuing an invite to a new member', () => {
       beforeEach(async () => {
         res = await inviteRepository.issue(
-          db,
           channelPhoneNumber,
           adminPhoneNumber,
           randoPhoneNumber,
@@ -81,7 +84,6 @@ describe('invite repository', () => {
       describe('from new invite issuer', () => {
         beforeEach(async () => {
           res = await inviteRepository.issue(
-            db,
             channelPhoneNumber,
             adminPhoneNumber,
             pendingInviteePhoneNumber,
@@ -100,7 +102,6 @@ describe('invite repository', () => {
       describe('from original invite issuer', () => {
         beforeEach(async () => {
           res = await inviteRepository.issue(
-            db,
             channelPhoneNumber,
             subscriberPhoneNumber,
             pendingInviteePhoneNumber,
@@ -120,16 +121,16 @@ describe('invite repository', () => {
 
   describe('#count', () => {
     it('counts the number of invites received by a number on a channel', async () => {
-      expect(await inviteRepository.count(db, channelPhoneNumber, adminPhoneNumber)).to.eql(0)
+      expect(await inviteRepository.count(channelPhoneNumber, adminPhoneNumber)).to.eql(0)
       expect(
-        await inviteRepository.count(db, channelPhoneNumber, pendingInviteePhoneNumber),
+        await inviteRepository.count(channelPhoneNumber, pendingInviteePhoneNumber),
       ).to.eql(1)
     })
   })
 
   describe('#accept', () => {
     beforeEach(async () => {
-      await inviteRepository.accept(db, channelPhoneNumber, pendingInviteePhoneNumber)
+      await inviteRepository.accept(channelPhoneNumber, pendingInviteePhoneNumber)
     })
 
     it('subscribes invitee to channel', async () => {
@@ -152,7 +153,7 @@ describe('invite repository', () => {
   describe('#decline', () => {
     describe('when decliner has a pending invite', () => {
       beforeEach(async () => {
-        await inviteRepository.decline(db, channelPhoneNumber, pendingInviteePhoneNumber)
+        await inviteRepository.decline(channelPhoneNumber, pendingInviteePhoneNumber)
       })
 
       it("deletes invitee's invite", async () => {
@@ -166,7 +167,7 @@ describe('invite repository', () => {
     describe('when decliner has no pending invite', () => {
       let res
       beforeEach(async () => {
-        res = await inviteRepository.decline(db, channelPhoneNumber, subscriberPhoneNumber)
+        res = await inviteRepository.decline(channelPhoneNumber, subscriberPhoneNumber)
       })
 
       it('does not throw', () => {
@@ -181,11 +182,11 @@ describe('invite repository', () => {
 
   describe('#deleteExpired', () => {
     it('deletes any invite older than a given expiry time', async () => {
-      await inviteRepository.deleteExpired(db)
+      await inviteRepository.deleteExpired()
       expect(await db.invite.count()).to.eql(inviteCount)
 
       await wait(inviteExpiryInMillis)
-      await inviteRepository.deleteExpired(db)
+      await inviteRepository.deleteExpired()
       expect(await db.invite.count()).to.eql(inviteCount - 1)
     })
   })
@@ -195,7 +196,7 @@ describe('invite repository', () => {
       await db.invite.destroy({ where: {}, force: true })
       await Promise.all([db.invite.create(inviteFactory()), db.invite.create(inviteFactory())])
       inviteCount = await db.invite.count()
-      inviteRepository.launchInviteDeletionJob(db)
+      inviteRepository.launchInviteDeletionJob()
     })
 
     it('launches a job to delete expired invites at a specified interval', async () => {

@@ -1,9 +1,9 @@
 const { pick } = require('lodash')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 
-const list = (db, filter) =>
+const list = filter =>
   phoneNumberRepository
-    .list(db, filter)
+    .list(filter)
     .then(phoneNumbers => ({
       status: 'SUCCESS',
       data: {

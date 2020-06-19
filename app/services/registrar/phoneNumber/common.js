@@ -37,8 +37,8 @@ const notifyMembersExcept = async (sock, channel, message, sender) => {
 }
 
 // (DB, Socket, String) -> Promise<void>
-const notifyMaintainers = async (db, sock, message) => {
-  const adminChannel = await channelRepository.findDeep(db, supportPhoneNumber)
+const notifyMaintainers = async (sock, message) => {
+  const adminChannel = await channelRepository.findDeep(supportPhoneNumber)
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
   await signal.broadcastMessage(sock, adminPhoneNumbers, signal.sdMessageOf(adminChannel, message))
 }

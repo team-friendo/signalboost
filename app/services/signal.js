@@ -3,10 +3,7 @@ const { wait } = require('./util.js')
 const { statuses } = require('../services/util')
 const socket = require('./socket')
 const {
-  signal: {
-    verificationTimeout,
-    signaldRequestTimeout,
-  },
+  signal: { verificationTimeout, signaldRequestTimeout },
 } = require('../config')
 
 /**

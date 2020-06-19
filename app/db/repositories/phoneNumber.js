@@ -1,3 +1,4 @@
+const app = require('../../../app')
 const { Op } = require('sequelize')
 const { statuses } = require('../models/phoneNumber')
 
@@ -6,14 +7,17 @@ const filters = {
   INACTIVE: 'INACTIVE',
 }
 
-const find = (db, phoneNumber) => db.phoneNumber.findOne({ where: { phoneNumber } })
+const create = ({ phoneNumber, twilioSid, status }) =>
+  app.db.phoneNumber.create({ phoneNumber, twilioSid, status })
 
-const findAll = db => db.phoneNumber.findAll()
+const find = phoneNumber => app.db.phoneNumber.findOne({ where: { phoneNumber } })
 
-const findAllPurchased = db => db.phoneNumber.findAll({ where: { status: statuses.PURCHASED } })
+const findAll = () => app.db.phoneNumber.findAll()
 
-const list = (db, filter) =>
-  db.phoneNumber.findAll({ order: [['status', 'DESC']], where: parseQueryFilter(filter) })
+const findAllPurchased = () => app.db.phoneNumber.findAll({ where: { status: statuses.PURCHASED } })
+
+const list = filter =>
+  app.db.phoneNumber.findAll({ order: [['status', 'DESC']], where: parseQueryFilter(filter) })
 
 const parseQueryFilter = filter => {
   switch (filter) {
@@ -26,9 +30,9 @@ const parseQueryFilter = filter => {
   }
 }
 
-const update = (db, phoneNumber, attrs) =>
-  db.phoneNumber
+const update = (phoneNumber, attrs) =>
+  app.db.phoneNumber
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, find, findAll, findAllPurchased, list, update }
+module.exports = { filters, create, find, findAll, findAllPurchased, list, update }

@@ -16,7 +16,6 @@ import { adminMembershipFactory } from '../../../support/factories/membership'
 import { genFingerprint } from '../../../support/factories/deauthorization'
 
 describe('safety numbers registrar module', () => {
-  let db = {}
   const sock = {}
   const channelPhoneNumber = genPhoneNumber()
   const memberPhoneNumber = genPhoneNumber()
@@ -58,7 +57,7 @@ describe('safety numbers registrar module', () => {
 
   describe('#trustAndResend', () => {
     it('attempts to trust the safety number between a member and a channel phone number', async () => {
-      await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
+      await trustAndResend(sock, updatableFingerprint).catch(a => a)
       expect(trustStub.getCall(0).args).to.eql([
         sock,
         channelPhoneNumber,
@@ -75,7 +74,7 @@ describe('safety numbers registrar module', () => {
       )
 
       it('attempts to resend the original message', async () => {
-        await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
+        await trustAndResend(sock, updatableFingerprint).catch(a => a)
 
         expect(sendMessageStub.getCall(0).args).to.eql([sock, memberPhoneNumber, sdMessage])
       })
@@ -84,7 +83,7 @@ describe('safety numbers registrar module', () => {
         beforeEach(() => sendMessageStub.returns(Promise.resolve()))
 
         it('resolves with succes status', async () => {
-          expect(await trustAndResend(db, sock, updatableFingerprint)).to.eql({
+          expect(await trustAndResend(sock, updatableFingerprint)).to.eql({
             status: statuses.SUCCESS,
             message: 'fake trust success msg',
           })
@@ -102,7 +101,7 @@ describe('safety numbers registrar module', () => {
         )
 
         it('rejects with error status', async () => {
-          const err = await trustAndResend(db, sock, updatableFingerprint).catch(a => a)
+          const err = await trustAndResend(sock, updatableFingerprint).catch(a => a)
           expect(err).to.eql({ status: statuses.ERROR, message: 'whoops' })
         })
       })
@@ -119,7 +118,6 @@ describe('safety numbers registrar module', () => {
       )
       it('rejects with error status', async () => {
         const err = await trustAndResend(
-          db,
           sock,
           channelPhoneNumber,
           memberPhoneNumber,
@@ -135,8 +133,8 @@ describe('safety numbers registrar module', () => {
     const fingerprint = genFingerprint()
     const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint }
     it('attempts to remove a admin from a channel', async () => {
-      await deauthorize(db, sock, updatableFingerprint).catch(a => a)
-      expect(removeMemberStub.getCall(0).args).to.eql([db, channelPhoneNumber, memberPhoneNumber])
+      await deauthorize(sock, updatableFingerprint).catch(a => a)
+      expect(removeMemberStub.getCall(0).args).to.eql([channelPhoneNumber, memberPhoneNumber])
     })
 
     describe('if removal succeeds', () => {
@@ -153,10 +151,10 @@ describe('safety numbers registrar module', () => {
         beforeEach(() => createDeauthStub.returns(Promise.resolve(updatableFingerprint)))
 
         it('notifies all the other admins', async () => {
-          await deauthorize(db, sock, updatableFingerprint).catch(a => a)
+          await deauthorize(sock, updatableFingerprint).catch(a => a)
           expect(sendMessageStub.callCount).to.eql(2)
           expect(sendMessageStub.getCall(0).args).to.eql([
-            db,
+            sock,
             otherAdminPhoneNumbers[0],
             sdMessageOf(
               { phoneNumber: channelPhoneNumber },
@@ -169,7 +167,7 @@ describe('safety numbers registrar module', () => {
           beforeEach(() => sendMessageStub.returns(Promise.resolve()))
 
           it('resolves with a success status', async () => {
-            const res = await deauthorize(db, sock, channelPhoneNumber, memberPhoneNumber)
+            const res = await deauthorize(sock, channelPhoneNumber, memberPhoneNumber)
             expect(res).to.eql({
               status: statuses.SUCCESS,
               message: 'fake removal success message',
@@ -188,7 +186,7 @@ describe('safety numbers registrar module', () => {
           )
 
           it('rejects with an error', async () => {
-            const err = await deauthorize(db, sock, updatableFingerprint).catch(a => a)
+            const err = await deauthorize(sock, updatableFingerprint).catch(a => a)
             expect(err).to.eql({
               status: statuses.ERROR,
               message: `Error deauthorizing ${memberPhoneNumber} on ${channelPhoneNumber}: write failure`,
@@ -202,7 +200,7 @@ describe('safety numbers registrar module', () => {
           createDeauthStub.callsFake(() => Promise.reject(new Error('oh noes!')))
         })
         it('rejects with an error', async () => {
-          const err = await deauthorize(db, sock, updatableFingerprint).catch(a => a)
+          const err = await deauthorize(sock, updatableFingerprint).catch(a => a)
           expect(err).to.eql({
             status: statuses.ERROR,
             message: `Error deauthorizing ${memberPhoneNumber} on ${channelPhoneNumber}: oh noes!`,
@@ -222,7 +220,7 @@ describe('safety numbers registrar module', () => {
       )
 
       it('rejects with an error', async () => {
-        const err = await deauthorize(db, sock, updatableFingerprint).catch(a => a)
+        const err = await deauthorize(sock, updatableFingerprint).catch(a => a)
         expect(err).to.eql({
           status: statuses.ERROR,
           message: `Error deauthorizing ${memberPhoneNumber} on ${channelPhoneNumber}: fake removal error message`,

@@ -1,10 +1,13 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
-const moment = require('moment')
-import { initDb } from '../../../../app/db/index'
+import moment from 'moment'
+import { run } from '../../../../app/db/index'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../support/factories/smsSender'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 const {
   twilio: { smsQuotaAmount, smsQuotaDurationInMillis },
 } = require('../../../../app/config')
@@ -13,16 +16,18 @@ describe('smsSender repository', () => {
   const phoneNumber = genPhoneNumber()
 
   let db
-  before(() => (db = initDb()))
+  before(async () => {
+    db = (await app.run({ ...testApp, db: dbService })).db
+  })
   afterEach(() => db.smsSender.destroy({ where: {}, force: true }))
-  after(() => db.sequelize.close())
+  after(async () => await app.stop())
 
   describe('#countMessage', () => {
     describe('when a sender has not sent any messages yet', () => {
       let result, smsSenderCount
       beforeEach(async () => {
         smsSenderCount = await db.smsSender.count()
-        result = await smsSenderRepository.countMessage(db, phoneNumber)
+        result = await smsSenderRepository.countMessage(phoneNumber)
       })
 
       it('creates a new smsSender record', async () => {
@@ -46,7 +51,7 @@ describe('smsSender repository', () => {
       })
 
       it('increments the messagesSent counter', async () => {
-        const result = await smsSenderRepository.countMessage(db, phoneNumber)
+        const result = await smsSenderRepository.countMessage(phoneNumber)
         const newCount = (await db.smsSender.findOne({ where: { phoneNumber } })).messagesSent
 
         expect(newCount).to.be.above(messagesSent)
@@ -58,17 +63,17 @@ describe('smsSender repository', () => {
   describe('#hasReachedQuota', () => {
     it('returns false when sender has sent less than quota', async () => {
       await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount - 1 }))
-      expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(false)
+      expect(await smsSenderRepository.hasReachedQuota(phoneNumber)).to.eql(false)
     })
 
     it('returns true when sender has sent messages equaling quota', async () => {
       await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount }))
-      expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(true)
+      expect(await smsSenderRepository.hasReachedQuota(phoneNumber)).to.eql(true)
     })
 
     it('returns true when sender has sent above quota', async () => {
       await db.smsSender.create(smsSenderFactory({ phoneNumber, messagesSent: smsQuotaAmount + 1 }))
-      expect(await smsSenderRepository.hasReachedQuota(db, phoneNumber)).to.eql(true)
+      expect(await smsSenderRepository.hasReachedQuota(phoneNumber)).to.eql(true)
     })
   })
 

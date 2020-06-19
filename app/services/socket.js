@@ -21,7 +21,7 @@ const messages = {
 
 const run = () => getSocket(0)
 
-const getSocket = async attempts => {
+const getSocket = async (attempts = 0) => {
   if (!(await fs.pathExists(SIGNALD_SOCKET_PATH))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
@@ -38,7 +38,8 @@ const connect = () => {
     const sock = net.createConnection(SIGNALD_SOCKET_PATH)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    // sock.on('data', handleSocketMessage)
+    sock.stop = () => sock.close()
+    // sock.on('data', handleSocketMessage1
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
     return Promise.reject(new Error(messages.error.socketConnectError(e.message)))

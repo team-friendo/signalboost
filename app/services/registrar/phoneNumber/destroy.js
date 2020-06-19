@@ -1,3 +1,4 @@
+const app = require('../../../../app')
 const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const { defaultLanguage } = require('../../../config')
 const { notifyMembersExcept, destroyChannel } = require('./common')
@@ -12,11 +13,11 @@ const {
 } = require('../../../config')
 
 // ({Database, Socket, string}) -> SignalboostStatus
-const destroy = async ({ db, sock, phoneNumber, sender }) => {
-  let tx = await db.sequelize.transaction()
+const destroy = async ({ sock, phoneNumber, sender }) => {
+  let tx = await app.db.sequelize.transaction()
   try {
-    const channelInstance = await channelRepository.findDeep(db, phoneNumber)
-    const phoneNumberInstance = await phoneNumberRepository.find(db, phoneNumber)
+    const channelInstance = await channelRepository.findDeep(phoneNumber)
+    const phoneNumberInstance = await phoneNumberRepository.find(phoneNumber)
 
     if (channelInstance || phoneNumberInstance) {
       await destroyChannel(channelInstance, tx)
@@ -37,7 +38,7 @@ const destroy = async ({ db, sock, phoneNumber, sender }) => {
     }
   } catch (err) {
     await tx.rollback()
-    return handleDestroyFailure(err, db, sock, phoneNumber)
+    return handleDestroyFailure(err, sock, phoneNumber)
   }
 }
 
@@ -76,11 +77,10 @@ const destroyPhoneNumber = async (phoneNumberInstance, tx) => {
 }
 
 // (String, DB, Socket, String) -> SignalboostStatus
-const handleDestroyFailure = async (err, db, sock, phoneNumber) => {
+const handleDestroyFailure = async (err, sock, phoneNumber) => {
   logger.log(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
   await common.notifyMaintainers(
-    db,
     sock,
     messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
   )

@@ -1,3 +1,4 @@
+const app = require('../../../app')
 const { defaultLanguage } = require('../../config')
 
 const memberTypes = {
@@ -6,16 +7,16 @@ const memberTypes = {
   NONE: 'NONE',
 }
 
-const findMembership = (db, channelPhoneNumber, memberPhoneNumber) =>
-  db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }) ||
+const findMembership = (channelPhoneNumber, memberPhoneNumber) =>
+  app.db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }) ||
   Promise.reject('no membership found')
 
-const addAdmins = (db, channelPhoneNumber, adminNumbers = []) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(adminNumbers.map(num => addAdmin(db, channelPhoneNumber, num))),
+const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
+  performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', () =>
+    Promise.all(adminNumbers.map(num => addAdmin(channelPhoneNumber, num))),
   )
 
-const addAdmin = async (db, channelPhoneNumber, memberPhoneNumber) => {
+const addAdmin = async (channelPhoneNumber, memberPhoneNumber) => {
   // - when given the phone number of...
   //   - a new user: make an admin
   //   - an existing admin: return that admin's membership (do not error or alter/create anything)
@@ -29,21 +30,16 @@ const addAdmin = async (db, channelPhoneNumber, memberPhoneNumber) => {
   //   - because of the way signald handles changed safety numbers, we have NO OTHER WAY of detecting a
   //     changed safety number and retrusting it without first sending a message, so observing
   //     the above invariant is extra important
-  const membership = (await db.membership.findOrCreate({
+  const membership = (await app.db.membership.findOrCreate({
     where: { channelPhoneNumber, memberPhoneNumber },
     defaults: { type: memberTypes.ADMIN },
   }))[0]
   return membership.update({ type: memberTypes.ADMIN })
 }
 
-const addSubscriber = async (
-  db,
-  channelPhoneNumber,
-  memberPhoneNumber,
-  language = defaultLanguage,
-) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'subscribe member to', async () => {
-    const [membership] = await db.membership.findOrCreate({
+const addSubscriber = async (channelPhoneNumber, memberPhoneNumber, language = defaultLanguage) =>
+  performOpIfChannelExists(channelPhoneNumber, 'subscribe member to', async () => {
+    const [membership] = await app.db.membership.findOrCreate({
       where: {
         type: memberTypes.SUBSCRIBER,
         channelPhoneNumber,
@@ -54,45 +50,49 @@ const addSubscriber = async (
     return membership
   })
 
-const removeMember = async (db, channelPhoneNumber, memberPhoneNumber) =>
-  performOpIfChannelExists(db, channelPhoneNumber, 'unsubscribe member from', async () =>
-    db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } }),
+const removeMember = async (channelPhoneNumber, memberPhoneNumber) =>
+  performOpIfChannelExists(channelPhoneNumber, 'unsubscribe member from', async () =>
+    app.db.membership.destroy({ where: { channelPhoneNumber, memberPhoneNumber } }),
   )
 
-const resolveMemberType = async (db, channelPhoneNumber, memberPhoneNumber) => {
-  const member = await db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } })
+const resolveMemberType = async (channelPhoneNumber, memberPhoneNumber) => {
+  const member = await app.db.membership.findOne({
+    where: { channelPhoneNumber, memberPhoneNumber },
+  })
   return member ? member.type : memberTypes.NONE
 }
 
-const resolveSenderLanguage = async (db, channelPhoneNumber, memberPhoneNumber, senderType) => {
+const resolveSenderLanguage = async (channelPhoneNumber, memberPhoneNumber, senderType) => {
   if (senderType === memberTypes.NONE) return defaultLanguage
-  const member = await db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } })
+  const member = await app.db.membership.findOne({
+    where: { channelPhoneNumber, memberPhoneNumber },
+  })
   return member ? member.language : defaultLanguage
 }
 
 // (Database, string, string) -> Array<number>
-const updateLanguage = async (db, memberPhoneNumber, language) =>
-  db.membership.update({ language }, { where: { memberPhoneNumber } })
+const updateLanguage = async (memberPhoneNumber, language) =>
+  app.db.membership.update({ language }, { where: { memberPhoneNumber } })
 
-const isMember = (db, channelPhoneNumber, memberPhoneNumber) =>
-  db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }).then(Boolean)
+const isMember = (channelPhoneNumber, memberPhoneNumber) =>
+  app.db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }).then(Boolean)
 
-const isAdmin = (db, channelPhoneNumber, memberPhoneNumber) =>
-  db.membership
+const isAdmin = (channelPhoneNumber, memberPhoneNumber) =>
+  app.db.membership
     .findOne({ where: { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber } })
     .then(Boolean)
 
-const isSubscriber = (db, channelPhoneNumber, memberPhoneNumber) =>
-  db.membership
+const isSubscriber = (channelPhoneNumber, memberPhoneNumber) =>
+  app.db.membership
     .findOne({ where: { type: memberTypes.SUBSCRIBER, channelPhoneNumber, memberPhoneNumber } })
     .then(Boolean)
 
 // HELPERS
 
-const performOpIfChannelExists = async (db, channelPhoneNumber, opDescription, op) => {
-  const ch = await db.channel.findOne({
+const performOpIfChannelExists = async (channelPhoneNumber, opDescription, op) => {
+  const ch = await app.db.channel.findOne({
     where: { phoneNumber: channelPhoneNumber },
-    include: [{ model: db.membership }],
+    include: [{ model: app.db.membership }],
   })
   return ch ? op(ch) : Promise.reject(`cannot ${opDescription} non-existent channel`)
 }

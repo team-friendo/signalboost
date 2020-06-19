@@ -6,13 +6,13 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const logger = require('./logger')
 
-const startServer = async (port, db, sock) => {
+const startServer = async (port, sock) => {
   const app = new Koa()
 
   configureLogger(app)
   configureBodyParser(app)
   configureAuthenticator(app)
-  configureRoutes(app, db, sock)
+  configureRoutes(app, sock)
 
   const server = await app.listen(port).on('error', logger.error)
   return Promise.resolve({ app, server })
@@ -30,9 +30,9 @@ const configureBodyParser = app => {
   )
 }
 
-const configureRoutes = (app, db, sock) => {
+const configureRoutes = (app, sock) => {
   const router = new Router()
-  routesOf(router, db, sock)
+  routesOf(router, sock)
   app.use(router.routes())
   app.use(router.allowedMethods())
 }

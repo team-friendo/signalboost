@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { defaultLanguage } from '../../../../app/config'
@@ -10,13 +10,13 @@ describe('membership model', () => {
   let db, membership
 
   before(async () => {
-    db = initDb()
+    db = await run()
   })
 
   after(async () => {
     await db.membership.destroy({ where: {} })
     await db.channel.destroy({ where: {} })
-    await db.sequelize.close()
+    await db.stop()
   })
 
   it('has correct fields', async () => {

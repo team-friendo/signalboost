@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
 import { pick } from 'lodash'
 import { registrar } from '../../app/config/index'
-import { initDb } from '../../app/db'
+import { run } from '../../app/db'
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 const {
   twilio: { accountSid },
@@ -43,7 +43,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
     ])
 
   before(async () => {
-    db = initDb()
+    db = await run()
     phoneNumberCount = await db.phoneNumber.count()
     channelCount = await db.channel.count()
     publicationCount = await db.publication.count()
@@ -56,7 +56,7 @@ describe.skip('creating new phone numbers for use in new channels', () => {
       ...phoneNumberResponse.body.map(({ phoneNumber }) => destroyPhoneNumber(phoneNumber)),
       ...phoneNumberResponse.body.map(({ twilioSid }) => releaseNumber(twilioSid)),
     ])
-    await db.sequelize.close()
+    await db.stop()
   })
 
   describe('creating phone numbers', () => {

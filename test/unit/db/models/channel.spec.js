@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { times } from 'lodash'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
 import { inviteFactory } from '../../../support/factories/invite'
@@ -70,7 +70,7 @@ describe('channel model', () => {
     )
 
   before(async () => {
-    db = initDb()
+    db = await run()
   })
 
   afterEach(async () => {

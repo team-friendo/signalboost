@@ -1,7 +1,9 @@
-const create = (db, channelPhoneNumber, memberPhoneNumber, fingerprint) =>
-  db.deauthorization.create({ channelPhoneNumber, memberPhoneNumber, fingerprint })
+const app = require('../../../app')
 
-const destroy = (db, channelPhoneNumber, memberPhoneNumber) =>
-  db.deauthorization.destroy({ where: { channelPhoneNumber, memberPhoneNumber } })
+const create = (channelPhoneNumber, memberPhoneNumber, fingerprint) =>
+  app.db.deauthorization.create({ channelPhoneNumber, memberPhoneNumber, fingerprint })
+
+const destroy = (channelPhoneNumber, memberPhoneNumber) =>
+  app.db.deauthorization.destroy({ where: { channelPhoneNumber, memberPhoneNumber } })
 
 module.exports = { create, destroy }

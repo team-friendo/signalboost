@@ -21,9 +21,9 @@ const welcomeNotificationOf = channelPhoneNumber =>
   )
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
-const addAdmin = async ({ db, sock, channelPhoneNumber, adminPhoneNumber }) => {
-  await membershipRepository.addAdmin(db, channelPhoneNumber, adminPhoneNumber)
-  const channel = await channelRepository.findByPhoneNumber(db, channelPhoneNumber)
+const addAdmin = async ({ sock, channelPhoneNumber, adminPhoneNumber }) => {
+  await membershipRepository.addAdmin(channelPhoneNumber, adminPhoneNumber)
+  const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
   await messenger.notify({
     sock,
     channel,
@@ -39,11 +39,11 @@ const addAdmin = async ({ db, sock, channelPhoneNumber, adminPhoneNumber }) => {
 }
 
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
-const create = async ({ db, sock, phoneNumber, name, admins }) => {
+const create = async ({ sock, phoneNumber, name, admins }) => {
   try {
     await signal.subscribe(sock, phoneNumber)
-    const channel = await channelRepository.create(db, phoneNumber, name, admins)
-    await phoneNumberRepository.update(db, phoneNumber, { status: pNumStatuses.ACTIVE })
+    const channel = await channelRepository.create(phoneNumber, name, admins)
+    await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await _welcomeAdmins(sock, channel)
     return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
   } catch (e) {

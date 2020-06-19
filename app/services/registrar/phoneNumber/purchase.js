@@ -1,6 +1,7 @@
 const uuid = require('uuid/v4')
 const { isEmpty, times, identity } = require('lodash')
 const { errors, statuses, smsUrl, extractStatus, errorStatus } = require('./common')
+const phoneNumberRepository = require('../../../db/repositories/phoneNumber')
 const {
   twilio: { accountSid, authToken },
 } = require('../../../config/index')
@@ -23,12 +24,12 @@ const availableTwilioNumbers = twilioClient.availablePhoneNumbers('US').local
 
 // MAIN FUNCTION
 
-const purchaseN = ({ db, areaCode, n }) => Promise.all(times(n, () => purchase({ db, areaCode })))
+const purchaseN = ({ areaCode, n }) => Promise.all(times(n, () => purchase({ areaCode })))
 
-const purchase = ({ db, areaCode }) =>
+const purchase = ({ areaCode }) =>
   search(areaCode)
     .then(create)
-    .then(recordPurchase(db))
+    .then(recordPurchase())
     .catch(identity)
 
 // HELPERS
@@ -55,8 +56,8 @@ const create = phoneNumber =>
       return Promise.reject(errorStatus(errors.purchaseFailed(err), phoneNumber))
     })
 
-const recordPurchase = db => ({ phoneNumber, sid }) =>
-  db.phoneNumber
+const recordPurchase = () => ({ phoneNumber, sid }) =>
+  phoneNumberRepository
     .create({ phoneNumber, twilioSid: sid, status: statuses.PURCHASED })
     .then(extractStatus)
     .catch(err => Promise.reject(errorStatus(errors.dbWriteFailed(err), phoneNumber)))

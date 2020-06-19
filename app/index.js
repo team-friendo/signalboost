@@ -1,7 +1,4 @@
-const app = {
-  db: null,
-  sock: null,
-}
+const app = {}
 
 app.run = async ({ db, sock, registrar, dispatcher }) => {
   const { logger } = require('./services/util')
@@ -29,6 +26,14 @@ app.run = async ({ db, sock, registrar, dispatcher }) => {
   await dispatcherService.run().catch(logger.fatalError)
 
   logger.log('> Signalboost running!')
+  return app
+}
+
+app.stop = async () => {
+  const { logger } = require('./services/util')
+  logger.log('Shutting down signalboost...')
+  await Promise.all([app.db.stop(), app.sock.stop()])
+  logger.log('...Signalboost shut down!')
 }
 
 module.exports = app

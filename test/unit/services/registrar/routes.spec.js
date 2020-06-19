@@ -39,7 +39,7 @@ describe('routes', () => {
   }
 
   let server
-  before(async () => (server = (await startServer(200, db, sock)).server))
+  before(async () => (server = (await startServer(200, sock)).server))
   after(() => {
     sinon.restore()
     server.close()
@@ -144,7 +144,6 @@ describe('routes', () => {
 
         expect(addAdminStub.getCall(0).args).to.eql([
           {
-            db,
             sock,
             channelPhoneNumber: phoneNumber,
             adminPhoneNumber: admins[0],
@@ -223,7 +222,7 @@ describe('routes', () => {
           await request(server)
             .get('/phoneNumbers?filter=ACTIVE')
             .set('Token', registrar.authToken)
-          expect(listStub.getCall(0).args[1]).to.eql('ACTIVE')
+          expect(listStub.getCall(0).args).to.eql(['ACTIVE'])
         })
       })
       describe('when passed an invalid filter', () => {
@@ -231,7 +230,7 @@ describe('routes', () => {
           await request(server)
             .get('/phoneNumbers?filter=DROP%20TABLE;')
             .set('Token', registrar.authToken)
-          expect(listStub.getCall(0).args[1]).to.eql(null)
+          expect(listStub.getCall(0).args).to.eql([null])
         })
       })
     })

@@ -8,29 +8,29 @@ const {
   registrar: { host, port },
 } = require('../../config')
 
-const run = async (db, sock) => {
+const run = async sock => {
   logger.log('--- Initializing Registrar...')
 
   logger.log(`----- Staring api server...`)
-  await api.startServer(port, db, sock).catch(logger.error)
+  await api.startServer(port, sock).catch(logger.error)
   logger.log(`----- Api server listening on ${host}:${port}`)
 
   logger.log('----- Registering phone numbers...')
-  const regs = await phoneNumberRegistrar.registerAllUnregistered({ db, sock }).catch(logger.error)
+  const regs = await phoneNumberRegistrar.registerAllUnregistered({ sock }).catch(logger.error)
   logger.log(`----- Registered ${regs.length} phone numbers.`)
 
   logger.log('----- Deleting expired sms sender records...')
   // here we rely on fact of nightly backups to ensure this task runs once every 24 hr.
-  const sendersDeleted = await smsSenderRepository.deleteExpired(db)
+  const sendersDeleted = await smsSenderRepository.deleteExpired()
   logger.log(`----- Deleted ${sendersDeleted} expired sms sender records.`)
 
   logger.log('----- Deleting expired hotline message records...')
   // here we rely on fact of nightly backups to ensure this task runs once every 24 hr.
-  const messageIdsDeleted = await hotlineMessageRepository.deleteExpired(db)
+  const messageIdsDeleted = await hotlineMessageRepository.deleteExpired()
   logger.log(`----- Deleted ${messageIdsDeleted} expired sms sender records.`)
 
   logger.log('----- Launching data cleaning jobs...')
-  inviteRepository.launchInviteDeletionJob(db)
+  inviteRepository.launchInviteDeletionJob()
   logger.log('----- Launched data cleaning jobs.')
 
   logger.log('--- Registrar running!')

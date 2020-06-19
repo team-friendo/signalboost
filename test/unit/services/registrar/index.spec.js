@@ -9,7 +9,6 @@ import api from '../../../../app/services/registrar/api'
 import registrar from '../../../../app/services/registrar'
 
 describe('registrar service', () => {
-  const db = {}
   const sock = {}
   let registerAllStub,
     startServerStub,
@@ -26,7 +25,7 @@ describe('registrar service', () => {
       inviteDeletionStub = sinon.stub(inviteRepository, 'launchInviteDeletionJob')
       smsSenderDeletionStub = sinon.stub(smsSenderRepository, 'deleteExpired')
       hotlineMessageDeletionStub = sinon.stub(hotlineMessageRepository, 'deleteExpired')
-      await registrar.run(db, sock)
+      await registrar.run(sock)
     })
 
     after(() => {
@@ -34,15 +33,15 @@ describe('registrar service', () => {
     })
 
     it('registers any unregistered phone numbers with signal', () => {
-      expect(registerAllStub.getCall(0).args).to.eql([{ db, sock }])
+      expect(registerAllStub.getCall(0).args).to.eql([{ sock }])
     })
 
     it('initializes an api server', () => {
-      expect(startServerStub.getCall(0).args).to.eql([3000, db, sock])
+      expect(startServerStub.getCall(0).args).to.eql([3000, sock])
     })
 
     it('launches an invite deletion job', () => {
-      expect(inviteDeletionStub.getCall(0).args).to.eql([db])
+      expect(inviteDeletionStub.callCount).to.be.above(0)
     })
 
     it('deletes all expired sms sender records', () => {

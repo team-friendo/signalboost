@@ -32,7 +32,7 @@ const { ADMIN, NONE } = memberTypes
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
   const { command, payload, language } = executable
-  const { db, sock, channel, sender, sdMessage } = dispatchable
+  const { sock, channel, sender, sdMessage } = dispatchable
 
   // if payload parse error occured return early and notify sender
   if (executable.error) {
@@ -52,29 +52,29 @@ const execute = async (executable, dispatchable) => {
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
-    [commands.ACCEPT]: () => maybeAccept(db, channel, sender, language),
-    [commands.ADD]: () => maybeAddAdmin(db, sock, channel, sender, payload),
-    [commands.DECLINE]: () => decline(db, channel, sender, language),
-    [commands.DESTROY]: () => maybeConfirmDestroy(db, sock, channel, sender),
-    [commands.DESTROY_CONFIRM]: () => maybeDestroy(db, sock, channel, sender),
-    [commands.HELP]: () => showHelp(db, channel, sender),
-    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(db, channel, sender, toggles.HOTLINE),
-    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(db, channel, sender, toggles.HOTLINE),
-    [commands.INFO]: () => showInfo(db, channel, sender),
-    [commands.INVITE]: () => maybeInvite(db, channel, sender, payload, language),
-    [commands.JOIN]: () => maybeAddSubscriber(db, channel, sender, language),
-    [commands.LEAVE]: () => maybeRemoveSender(db, channel, sender),
+    [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
+    [commands.ADD]: () => maybeAddAdmin(sock, channel, sender, payload),
+    [commands.DECLINE]: () => decline(channel, sender, language),
+    [commands.DESTROY]: () => maybeConfirmDestroy(sock, channel, sender),
+    [commands.DESTROY_CONFIRM]: () => maybeDestroy(sock, channel, sender),
+    [commands.HELP]: () => showHelp(channel, sender),
+    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(channel, sender, toggles.HOTLINE),
+    [commands.INFO]: () => showInfo(channel, sender),
+    [commands.INVITE]: () => maybeInvite(channel, sender, payload, language),
+    [commands.JOIN]: () => maybeAddSubscriber(channel, sender, language),
+    [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
     [commands.PRIVATE]: () =>
-      maybePrivateMessageAdmins(db, sock, channel, sender, payload, sdMessage),
-    [commands.RENAME]: () => maybeRenameChannel(db, channel, sender, payload),
-    [commands.REMOVE]: () => maybeRemoveMember(db, channel, sender, payload),
-    [commands.REPLY]: () => maybeReplyToHotlineMessage(db, channel, sender, payload),
-    [commands.VOUCHING_ON]: () => maybeSetVouchMode(db, channel, sender, vouchModes.ON),
-    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(db, channel, sender, vouchModes.OFF),
-    [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(db, channel, sender, vouchModes.ADMIN),
-    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(db, channel, sender, payload),
-    [commands.SET_LANGUAGE]: () => setLanguage(db, sender, language),
-    [commands.SET_DESCRIPTION]: () => maybeSetDescription(db, channel, sender, payload),
+      maybePrivateMessageAdmins(sock, channel, sender, payload, sdMessage),
+    [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, payload),
+    [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
+    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
+    [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
+    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
+    [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
+    [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
   }[command] || (() => noop()))()
 
   result.notifications = result.notifications || []
@@ -87,16 +87,16 @@ const execute = async (executable, dispatchable) => {
 
 // ACCEPT
 
-const maybeAccept = async (db, channel, sender, language) => {
+const maybeAccept = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.accept
 
   try {
     // don't accept invite if sender is already a member
-    if (await membershipRepository.isMember(db, channel.phoneNumber, sender.phoneNumber))
+    if (await membershipRepository.isMember(channel.phoneNumber, sender.phoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyMember }
 
     // don't accept invite if sender doesn't have sufficient invites
-    const inviteCount = await inviteRepository.count(db, channel.phoneNumber, sender.phoneNumber)
+    const inviteCount = await inviteRepository.count(channel.phoneNumber, sender.phoneNumber)
     if (channel.vouchMode !== vouchModes.OFF && inviteCount < channel.vouchLevel)
       return {
         status: statuses.ERROR,
@@ -104,36 +104,35 @@ const maybeAccept = async (db, channel, sender, language) => {
       }
 
     // okay, fine: accept the invite! :)
-    return accept(db, channel, sender, language, cr)
+    return accept(channel, sender, language, cr)
   } catch (e) {
     return { status: statuses.ERROR, message: cr.dbError }
   }
 }
 
-const accept = async (db, channel, sender, language, cr) =>
+const accept = async (channel, sender, language, cr) =>
   inviteRepository
-    .accept(db, channel.phoneNumber, sender.phoneNumber, language)
+    .accept(channel.phoneNumber, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 
 // ADD
 
-const maybeAddAdmin = async (db, sock, channel, sender, phoneNumber) => {
+const maybeAddAdmin = async (sock, channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.add
   if (sender.type !== ADMIN)
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-  return addAdmin(db, sock, channel, sender, phoneNumber, cr)
+  return addAdmin(sock, channel, sender, phoneNumber, cr)
 }
 
-const addAdmin = async (db, sock, channel, sender, newAdminPhoneNumber, cr) => {
+const addAdmin = async (sock, channel, sender, newAdminPhoneNumber, cr) => {
   try {
     const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
     if (deauth) {
       await signal.trust(sock, channel.phoneNumber, newAdminPhoneNumber, deauth.fingerprint)
-      await deauthorizationRepository.destroy(db, channel.phoneNumber, newAdminPhoneNumber)
+      await deauthorizationRepository.destroy(channel.phoneNumber, newAdminPhoneNumber)
     }
     const newAdminMembership = await membershipRepository.addAdmin(
-      db,
       channel.phoneNumber,
       newAdminPhoneNumber,
     )
@@ -168,7 +167,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // ADMINS
-const maybePrivateMessageAdmins = async (db, sock, channel, sender, payload, sdMessage) => {
+const maybePrivateMessageAdmins = async (sock, channel, sender, payload, sdMessage) => {
   const cr = messagesIn(sender.language).commandResponses.private
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
@@ -195,17 +194,17 @@ const maybePrivateMessageAdmins = async (db, sock, channel, sender, payload, sdM
 
 // DECLINE
 
-const decline = async (db, channel, sender, language) => {
+const decline = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.decline
   return inviteRepository
-    .decline(db, channel.phoneNumber, sender.phoneNumber)
+    .decline(channel.phoneNumber, sender.phoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 }
 
 // DESTROY
 
-const maybeConfirmDestroy = async (db, sock, channel, sender) => {
+const maybeConfirmDestroy = async (sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
 
   if (sender.type !== ADMIN) {
@@ -214,7 +213,7 @@ const maybeConfirmDestroy = async (db, sock, channel, sender) => {
   return { status: statuses.SUCCESS, message: cr.confirm }
 }
 
-const maybeDestroy = async (db, sock, channel, sender) => {
+const maybeDestroy = async (sock, channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
 
   if (sender.type !== ADMIN) {
@@ -222,7 +221,6 @@ const maybeDestroy = async (db, sock, channel, sender) => {
   }
 
   const result = await phoneNumberService.destroy({
-    db,
     sock,
     phoneNumber: channel.phoneNumber,
     sender: sender.phoneNumber,
@@ -243,7 +241,7 @@ const maybeDestroy = async (db, sock, channel, sender) => {
 
 // HELP
 
-const showHelp = async (db, channel, sender) => {
+const showHelp = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.help
   return {
     status: statuses.SUCCESS,
@@ -253,14 +251,14 @@ const showHelp = async (db, channel, sender) => {
 
 // INFO
 
-const showInfo = async (db, channel, sender) => {
+const showInfo = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.info
   return { status: statuses.SUCCESS, message: cr[sender.type](channel) }
 }
 
 // INVITE
 
-const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) => {
+const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
   if (sender.type !== ADMIN && channel.vouchMode === vouchModes.ADMIN)
@@ -268,7 +266,7 @@ const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) =
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>
-      invite(db, channel, sender.phoneNumber, inviteePhoneNumber, language),
+      invite(channel, sender.phoneNumber, inviteePhoneNumber, language),
     ),
   )
 
@@ -288,7 +286,7 @@ const maybeInvite = async (db, channel, sender, inviteePhoneNumbers, language) =
   return { status: statuses.SUCCESS, message: cr.success(inviteResults.length), notifications }
 }
 
-const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, language) => {
+const invite = async (channel, inviterPhoneNumber, inviteePhoneNumber, language) => {
   // SECURITY NOTE:
   //
   // There are 2 cases in which inviting might fail due to a logical error:
@@ -306,13 +304,13 @@ const invite = async (db, channel, inviterPhoneNumber, inviteePhoneNumber, langu
 
   const { issue, count } = inviteRepository
 
-  if (await membershipRepository.isMember(db, channel.phoneNumber, inviteePhoneNumber)) {
+  if (await membershipRepository.isMember(channel.phoneNumber, inviteePhoneNumber)) {
     return { status: statuses.NOOP, notifications: [] }
   }
 
   try {
-    const wasCreated = await issue(db, channel.phoneNumber, inviterPhoneNumber, inviteePhoneNumber)
-    const totalReceived = await count(db, channel.phoneNumber, inviteePhoneNumber)
+    const wasCreated = await issue(channel.phoneNumber, inviterPhoneNumber, inviteePhoneNumber)
+    const totalReceived = await count(channel.phoneNumber, inviteePhoneNumber)
 
     return !wasCreated
       ? { status: statuses.NOOP, notifications: [] }
@@ -352,33 +350,33 @@ const inviteNotificationOf = (
 
 // JOIN
 
-const maybeAddSubscriber = async (db, channel, sender, language) => {
+const maybeAddSubscriber = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.join
   if (sender.type !== NONE) return { status: statuses.ERROR, message: cr.alreadyMember }
   if (channel.vouchMode !== vouchModes.OFF)
     return { status: statuses.ERROR, message: cr.inviteRequired }
-  return addSubscriber(db, channel, sender, language, cr)
+  return addSubscriber(channel, sender, language, cr)
 }
 
-const addSubscriber = (db, channel, sender, language, cr) =>
+const addSubscriber = (channel, sender, language, cr) =>
   membershipRepository
-    .addSubscriber(db, channel.phoneNumber, sender.phoneNumber, language)
+    .addSubscriber(channel.phoneNumber, sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
 // LEAVE
 
-const maybeRemoveSender = async (db, channel, sender) => {
+const maybeRemoveSender = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.leave
   return sender.type === NONE
     ? Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notSubscriber })
-    : removeSender(db, channel, sender, cr)
+    : removeSender(channel, sender, cr)
 }
 
-const removeSender = (db, channel, sender, cr) => {
+const removeSender = (channel, sender, cr) => {
   const remove =
     sender.type === ADMIN ? membershipRepository.removeMember : membershipRepository.removeMember
-  return remove(db, channel.phoneNumber, sender.phoneNumber)
+  return remove(channel.phoneNumber, sender.phoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
@@ -398,7 +396,7 @@ const removeSenderNotificationsOf = (channel, sender) => {
 
 // REMOVE
 
-const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
+const maybeRemoveMember = async (channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
 
   if (sender.type !== ADMIN) {
@@ -406,22 +404,21 @@ const maybeRemoveMember = async (db, channel, sender, phoneNumber) => {
   }
 
   const payloadMemberType = await membershipRepository.resolveMemberType(
-    db,
     channel.phoneNumber,
     phoneNumber,
   )
   return payloadMemberType === memberTypes.NONE
     ? { status: statuses.ERROR, message: cr.targetNotMember(phoneNumber) }
-    : removeMember(db, channel, phoneNumber, payloadMemberType, sender, cr)
+    : removeMember(channel, phoneNumber, payloadMemberType, sender, cr)
 }
 
-const removeMember = async (db, channel, memberPhoneNumber, memberType, sender, cr) => {
+const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) => {
   const notifications =
     memberType === memberTypes.ADMIN
       ? removalNotificationsOfAdmin(channel, memberPhoneNumber, sender)
       : removalNotificationsOfSubscriber(channel, memberPhoneNumber, sender)
   return membershipRepository
-    .removeMember(db, channel.phoneNumber, memberPhoneNumber)
+    .removeMember(channel.phoneNumber, memberPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(memberPhoneNumber),
@@ -462,16 +459,16 @@ const removalNotificationsOfSubscriber = (channel, phoneNumber, sender) => {
 
 // RENAME
 
-const maybeRenameChannel = async (db, channel, sender, newChannelName) => {
+const maybeRenameChannel = async (channel, sender, newChannelName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
   return sender.type === ADMIN
-    ? renameChannel(db, channel, newChannelName, sender, cr)
+    ? renameChannel(channel, newChannelName, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const renameChannel = (db, channel, newChannelName, sender, cr) =>
+const renameChannel = (channel, newChannelName, sender, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { name: newChannelName })
+    .update(channel.phoneNumber, { name: newChannelName })
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(channel.name, newChannelName),
@@ -494,22 +491,21 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
 
 // REPLY
 
-const maybeReplyToHotlineMessage = (db, channel, sender, hotlineReply) => {
+const maybeReplyToHotlineMessage = (channel, sender, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  return replyToHotlineMessage(db, channel, sender, hotlineReply, cr)
+  return replyToHotlineMessage(channel, sender, hotlineReply, cr)
 }
 
-const replyToHotlineMessage = async (db, channel, sender, hotlineReply, cr) => {
+const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber({
-      db,
       id: hotlineReply.messageId,
     })
     const language = get(
-      await membershipRepository.findMembership(db, channel.phoneNumber, memberPhoneNumber),
+      await membershipRepository.findMembership(channel.phoneNumber, memberPhoneNumber),
       'language',
       defaultLanguage,
     )
@@ -555,26 +551,26 @@ const hotlineReplyNotificationsOf = (
 // ON / OFF TOGGLES FOR RESPONSES
 
 // (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOn = (db, channel, sender, toggle) =>
-  _maybeToggleSetting(db, channel, sender, toggle, true)
+const maybeToggleSettingOn = (channel, sender, toggle) =>
+  _maybeToggleSetting(channel, sender, toggle, true)
 
 // (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOff = (db, channel, sender, toggle) =>
-  _maybeToggleSetting(db, channel, sender, toggle, false)
+const maybeToggleSettingOff = (channel, sender, toggle) =>
+  _maybeToggleSetting(channel, sender, toggle, false)
 
 // (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
-const _maybeToggleSetting = (db, channel, sender, toggle, isOn) => {
+const _maybeToggleSetting = (channel, sender, toggle, isOn) => {
   const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
   if (sender.type !== ADMIN) {
     return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
   }
-  return _toggleSetting(db, channel, sender, toggle, isOn, cr)
+  return _toggleSetting(channel, sender, toggle, isOn, cr)
 }
 
 // (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
-const _toggleSetting = (db, channel, sender, toggle, isOn, cr) =>
+const _toggleSetting = (channel, sender, toggle, isOn, cr) =>
   channelRepository
-    .update(db, channel.phoneNumber, { [toggle.dbField]: isOn })
+    .update(channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(isOn, channel.vouchLevel),
@@ -592,26 +588,26 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
 
 // SET_LANGUAGE
 
-const setLanguage = (db, sender, language) => {
+const setLanguage = (sender, language) => {
   const cr = messagesIn(language).commandResponses.setLanguage
   return membershipRepository
-    .updateLanguage(db, sender.phoneNumber, language)
+    .updateLanguage(sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }
 
 // SET_DESCRIPTION
 
-const maybeSetDescription = async (db, channel, sender, newDescription) => {
+const maybeSetDescription = async (channel, sender, newDescription) => {
   const cr = messagesIn(sender.language).commandResponses.description
   return sender.type === ADMIN
-    ? setDescription(db, channel, newDescription, sender, cr)
+    ? setDescription(channel, newDescription, sender, cr)
     : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
 }
 
-const setDescription = (db, channel, newDescription, sender, cr) => {
+const setDescription = (channel, newDescription, sender, cr) => {
   return channelRepository
-    .update(db, channel.phoneNumber, { description: newDescription })
+    .update(channel.phoneNumber, { description: newDescription })
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(newDescription),
@@ -629,7 +625,7 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
 }
 
 // VOUCH MODE
-const maybeSetVouchMode = (db, channel, sender, newVouchMode) => {
+const maybeSetVouchMode = (channel, sender, newVouchMode) => {
   const cr = messagesIn(sender.language).commandResponses.vouchMode
 
   if (sender.type !== ADMIN)
@@ -638,12 +634,12 @@ const maybeSetVouchMode = (db, channel, sender, newVouchMode) => {
       message: cr.notAdmin,
     }
 
-  return setVouchMode(db, channel, sender, newVouchMode, cr)
+  return setVouchMode(channel, sender, newVouchMode, cr)
 }
 
-const setVouchMode = async (db, channel, sender, newVouchMode, cr) => {
+const setVouchMode = async (channel, sender, newVouchMode, cr) => {
   try {
-    await channelRepository.update(db, channel.phoneNumber, {
+    await channelRepository.update(channel.phoneNumber, {
       vouchMode: newVouchMode,
     })
 
@@ -669,7 +665,7 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
 
 // VOUCH LEVEL
 
-const maybeSetVouchLevel = (db, channel, sender, newVouchLevel) => {
+const maybeSetVouchLevel = (channel, sender, newVouchLevel) => {
   const cr = messagesIn(sender.language).commandResponses.vouchLevel
   if (sender.type !== ADMIN)
     return {
@@ -677,12 +673,12 @@ const maybeSetVouchLevel = (db, channel, sender, newVouchLevel) => {
       message: cr.notAdmin,
     }
 
-  return setVouchLevel(db, channel, newVouchLevel, sender, cr)
+  return setVouchLevel(channel, newVouchLevel, sender, cr)
 }
 
-const setVouchLevel = async (db, channel, newVouchLevel, sender, cr) => {
+const setVouchLevel = async (channel, newVouchLevel, sender, cr) => {
   try {
-    await channelRepository.update(db, channel.phoneNumber, {
+    await channelRepository.update(channel.phoneNumber, {
       vouchLevel: newVouchLevel,
     })
 
