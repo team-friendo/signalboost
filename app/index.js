@@ -1,22 +1,35 @@
-const dbService = require('./db')
-const socketService = require('./services/socket')
-const { logger } = require('./services/util')
-
 const app = {
   db: null,
   sock: null,
 }
 
-app.initialize = async () => {
+app.run = async () => {
+  /**  IMPORT MODULES **/
+  const dbService = require('./db')
+  const socketService = require('./services/socket')
+  const registrar = require('./services/registrar')
+  const dispatcher = require('./services/dispatcher')
+  const { logger } = require('./services/util')
+
   logger.log('> Initializing Signalboost...')
+
+  /**  INITIALIZE RESOURCES **/
 
   logger.log('Getting database connection...')
   app.db = await dbService.initDb().catch(logger.fatalError)
-  logger.log('Got database connection!')
 
   logger.log('Connecting to signald socket...')
   app.sock = await socketService.getSocket().catch(logger.fatalError)
-  logger.log('Connected to signald socket!')
+
+  /** START SERVICES **/
+
+  logger.log('Starting registrar...')
+  await registrar.run(app.db, app.sock)
+
+  logger.log('Starting dispatcher')
+  await dispatcher.run()
+
+  logger.log('> Signalboost running!')
 }
 
 module.exports = app

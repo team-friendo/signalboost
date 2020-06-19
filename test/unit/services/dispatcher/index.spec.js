@@ -11,6 +11,7 @@ import membershipRepository from '../../../../app/db/repositories/membership'
 import signal, { messageTypes, sdMessageOf } from '../../../../app/services/signal'
 import executor from '../../../../app/services/dispatcher/commands'
 import messenger from '../../../../app/services/dispatcher/messenger'
+import registrar from '../../../../app/services/registrar'
 import resend from '../../../../app/services/dispatcher/resend'
 import safetyNumberService from '../../../../app/services/registrar/safetyNumbers'
 import logger from '../../../../app/services/dispatcher/logger'
@@ -68,11 +69,6 @@ describe('dispatcher service', () => {
   beforeEach(async () => {
     // initialization stubs --v
 
-    sinon.stub(dbService, 'initDb').returns(Promise.resolve({}))
-    sinon
-      .stub(socketService, 'getSocket')
-      .returns(Promise.resolve(new EventEmitter().setMaxListeners(30)))
-
     sinon.stub(channelRepository, 'findAllDeep').returns(Promise.resolve(channels))
     sinon.stub(signal, 'subscribe').returns(Promise.resolve())
 
@@ -110,7 +106,14 @@ describe('dispatcher service', () => {
     logErrorSpy = sinon.spy(logger, 'error')
     // onReceivedMessage stubs --^
 
-    await app.initialize()
+    // app module stubs --v
+    sinon.stub(registrar, 'run').returns(Promise.resolve())
+    sinon.stub(dbService, 'initDb').returns(Promise.resolve({}))
+    sinon
+      .stub(socketService, 'getSocket')
+      .returns(Promise.resolve(new EventEmitter().setMaxListeners(30)))
+
+    await app.run()
     await run()
   })
 
