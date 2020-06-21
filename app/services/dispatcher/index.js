@@ -62,10 +62,8 @@ const run = async () => {
   logger.log(`----- Subscribing to channels...`)
 
   const resendQueue = {}
-  const channels = await channelRepository.findAllDeep(app.db).catch(logger.fatalError)
-  const numListening = await Promise.all(
-    channels.map(ch => signal.subscribe(app.sock, ch.phoneNumber)),
-  )
+  const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
+  const numListening = await Promise.all(channels.map(ch => signal.subscribe(ch.phoneNumber)))
   app.sock.on('data', inboundMsg =>
     dispatch(resendQueue, parseMessage(inboundMsg)).catch(logger.error),
   )
@@ -90,7 +88,7 @@ const dispatch = async (resendQueue, inboundMsg) => {
   // dispatch system-created messages
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg, resendQueue)
   if (rateLimitedMessage) {
-    const resendInterval = resend.enqueueResend(app.sock, resendQueue, rateLimitedMessage)
+    const resendInterval = resend.enqueueResend(resendQueue, rateLimitedMessage)
     return notifyRateLimitedMessage(rateLimitedMessage, resendInterval)
   }
 
@@ -117,7 +115,7 @@ const dispatch = async (resendQueue, inboundMsg) => {
 const relay = async (channel, sender, inboundMsg) => {
   const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
   try {
-    const dispatchable = { sock: app.sock, channel, sender, sdMessage }
+    const dispatchable = { channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
     return messenger.dispatch({ dispatchable, commandResult })
   } catch (e) {
@@ -134,7 +132,6 @@ const notifyRateLimitedMessage = async (sdMessage, resendInterval) => {
   return Promise.all(
     recipients.map(({ memberPhoneNumber, language }) =>
       signal.sendMessage(
-        app.sock,
         memberPhoneNumber,
         sdMessageOf(
           { phoneNumber: supportPhoneNumber },
@@ -152,12 +149,12 @@ const updateFingerprint = async updatableFingerprint => {
     if (recipient.type === memberTypes.NONE) return Promise.resolve()
     if (recipient.type === memberTypes.ADMIN) {
       return safetyNumberService
-        .deauthorize(app.sock, updatableFingerprint)
+        .deauthorize(updatableFingerprint)
         .then(logger.logAndReturn)
         .catch(logger.error)
     }
     return safetyNumberService
-      .trustAndResend(app.sock, updatableFingerprint)
+      .trustAndResend(updatableFingerprint)
       .then(logger.logAndReturn)
       .catch(logger.error)
   } catch (e) {
@@ -173,7 +170,6 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
     case memberTypes.SUBSCRIBER:
       // override a disappearing message time set by a subscriber or rando
       return signal.setExpiration(
-        app.sock,
         channel.phoneNumber,
         sender.phoneNumber,
         channel.messageExpiryTime,
@@ -185,12 +181,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
         channel.memberships
           .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
           .map(m =>
-            signal.setExpiration(
-              app.sock,
-              channel.phoneNumber,
-              m.memberPhoneNumber,
-              messageExpiryTime,
-            ),
+            signal.setExpiration(channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
           ),
       )
   }

@@ -11,13 +11,13 @@ const errorMessages = {
 }
 
 // ({ Database, Socket, string, number }) -> Array<PhoneNumberStatus>
-const provisionN = async ({ sock, areaCode, n }) => {
+const provisionN = async ({ areaCode, n }) => {
   if (n > registrationBatchSize) {
     return Promise.resolve({ status: 'ERROR', error: errorMessages.registrationBatchSizeExceeded })
   }
   const [errored, purchased] = partitionErrors(await purchase.purchaseN({ areaCode, n }))
   const [_errored, registered] = partitionErrors(
-    await register.registerMany({ sock, phoneNumbers: purchased.map(p => p.phoneNumber) }),
+    await register.registerMany({ phoneNumbers: purchased.map(p => p.phoneNumber) }),
   )
   return [...errored, ..._errored, ...registered]
 }

@@ -9,17 +9,17 @@ const { sdMessageOf } = require('../signal')
 const { statuses } = require('../../services/util')
 
 // (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
-const trustAndResend = async (sock, updatableFingerprint) => {
+const trustAndResend = async updatableFingerprint => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
-  const trustResult = await signal.trust(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
+  const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
   if (sdMessage) {
-    await signal.sendMessage(sock, memberPhoneNumber, sdMessage)
+    await signal.sendMessage(memberPhoneNumber, sdMessage)
   }
   return trustResult
 }
 
 // (Database, Socket, UpdatableFingerprint) -> Promise<SignalBoostStatus>
-const deauthorize = async (sock, updatableFingerprint) => {
+const deauthorize = async updatableFingerprint => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint } = updatableFingerprint
   try {
     const channel = await channelRepository.findDeep(channelPhoneNumber)
@@ -29,7 +29,6 @@ const deauthorize = async (sock, updatableFingerprint) => {
     )
     await deauthorizationRepository.create(channelPhoneNumber, memberPhoneNumber, fingerprint)
     await _sendDeauthAlerts(
-      sock,
       channelPhoneNumber,
       memberPhoneNumber,
       channelRepository.getAllAdminsExcept(channel, [memberPhoneNumber]),
@@ -43,11 +42,10 @@ const deauthorize = async (sock, updatableFingerprint) => {
   }
 }
 
-const _sendDeauthAlerts = (sock, channelPhoneNumber, deauthorizedNumber, adminMemberships) =>
+const _sendDeauthAlerts = (channelPhoneNumber, deauthorizedNumber, adminMemberships) =>
   Promise.all(
     adminMemberships.map(({ memberPhoneNumber, language }) =>
       signal.sendMessage(
-        sock,
         memberPhoneNumber,
         sdMessageOf(
           { phoneNumber: channelPhoneNumber },

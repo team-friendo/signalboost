@@ -33,11 +33,11 @@ describe('registrar service', () => {
     })
 
     it('registers any unregistered phone numbers with signal', () => {
-      expect(registerAllStub.getCall(0).args).to.eql([{ sock }])
+      expect(registerAllStub.callCount).to.be.above(0)
     })
 
     it('initializes an api server', () => {
-      expect(startServerStub.getCall(0).args).to.eql([3000, sock])
+      expect(startServerStub.getCall(0).args).to.eql([3000])
     })
 
     it('launches an invite deletion job', () => {

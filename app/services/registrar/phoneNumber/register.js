@@ -37,33 +37,33 @@ const {
  ********************/
 
 // ({Database, Socket, Array<string>}) => Promise<Array<PhoneNumberStatus>>
-const registerMany = async ({ sock, phoneNumbers }) => {
+const registerMany = async phoneNumbers => {
   const phoneNumberBatches = batchesOfN(phoneNumbers, registrationBatchSize)
   return flatten(
     await sequence(
-      phoneNumberBatches.map(phoneNumberBatch => () => registerBatch({ sock, phoneNumberBatch })),
+      phoneNumberBatches.map(phoneNumberBatch => () => registerBatch({ phoneNumberBatch })),
       intervalBetweenRegistrationBatches,
     ),
   )
 }
 
 // ({Database, Socket }) => Promise<Array<PhoneNumberStatus>>
-const registerAllUnregistered = async ({ sock }) => {
+const registerAllUnregistered = async () => {
   const allStatuses = await phoneNumberRepository.findAll()
   // this is a bit awkward but necessary b/c we can't just map/filter w/ Promises
   const unregisteredPhoneNumbers = without(
     await Promise.all(allStatuses.map(async s => ((await isRegistered(s)) ? null : s.phoneNumber))),
     null,
   )
-  return registerMany({ sock, phoneNumbers: unregisteredPhoneNumbers })
+  return registerMany(unregisteredPhoneNumbers)
 }
 
 // ({Database, Socket, string}) => Promise<PhoneNumberStatus>
-const register = ({ sock, phoneNumber }) =>
+const register = phoneNumber =>
   signal
-    .register(sock, phoneNumber)
+    .register(phoneNumber)
     .then(() => recordStatusChange(phoneNumber, pnStatuses.REGISTERED))
-    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+    .then(() => signal.awaitVerificationResult(phoneNumber))
     .then(() => recordStatusChange(phoneNumber, pnStatuses.VERIFIED))
     .catch(err => {
       // TODO(@zig): add prometheus error count here (counter: signal_register_error)
@@ -72,10 +72,10 @@ const register = ({ sock, phoneNumber }) =>
     })
 
 // ({Emitter, string, string}) => Promise<SignalboostStatus>
-const verify = ({ sock, phoneNumber, verificationCode }) =>
+const verify = ({ phoneNumber, verificationCode }) =>
   signal
-    .verify(sock, phoneNumber, verificationCode)
-    .then(() => signal.awaitVerificationResult(sock, phoneNumber))
+    .verify(phoneNumber, verificationCode)
+    .then(() => signal.awaitVerificationResult(phoneNumber))
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
@@ -84,9 +84,9 @@ const verify = ({ sock, phoneNumber, verificationCode }) =>
  ********************/
 
 // ({ Database, Socket, Array<PhoneNumberStatus> }) => Array<PhoneNumberStatus>
-const registerBatch = async ({ sock, phoneNumberBatch }) =>
+const registerBatch = async ({ phoneNumberBatch }) =>
   sequence(
-    phoneNumberBatch.map(phoneNumber => () => register({ sock, phoneNumber })),
+    phoneNumberBatch.map(phoneNumber => () => register(phoneNumber)),
     intervalBetweenRegistrations,
   )
 

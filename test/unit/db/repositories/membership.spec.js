@@ -250,14 +250,12 @@ describe('membership repository', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         res1 = await membershipRepository.addSubscriber(
-          
           channel.phoneNumber,
           subscriberPhoneNumbers[0],
         )
         membershipCount = await db.membership.count()
 
         res2 = await membershipRepository.addSubscriber(
-          
           channel.phoneNumber,
           subscriberPhoneNumbers[0],
         )

@@ -9,7 +9,7 @@ const {
 // - impelements a queue for resending messages that are droped due to rate-limiting by signal
 // - uses exponential backoff between resend attempts up to a `maxResendInterval` limit
 // - returns the interval after which the message will be resent, or null if it will not be resent
-const enqueueResend = (sock, resendQueue, inSdMessage) => {
+const enqueueResend = (resendQueue, inSdMessage) => {
   const msgHash = hash(inSdMessage)
   const msgAlreadyResent = resendQueue[msgHash]
 
@@ -31,14 +31,14 @@ const enqueueResend = (sock, resendQueue, inSdMessage) => {
   // record the interval we are about to wait and the outbound-formatted sd message
   resendQueue[msgHash] = { sdMessage: outSdMessage, lastResendInterval: newResendInterval }
   // enqueue the message for resending after waiting the new interval
-  _resendAfter(sock, outSdMessage, newResendInterval)
+  _resendAfter(outSdMessage, newResendInterval)
   // end by returning the interval so we can report it to admins
   return newResendInterval
 }
 
-const _resendAfter = async (sock, outSdMessage, resendInterval) => {
+const _resendAfter = async (outSdMessage, resendInterval) => {
   await wait(resendInterval)
-  signal.sendMessage(sock, outSdMessage.recipientNumber, outSdMessage)
+  signal.sendMessage(outSdMessage.recipientNumber, outSdMessage)
 }
 
 // SdMessage -> string

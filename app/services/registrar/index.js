@@ -8,15 +8,15 @@ const {
   registrar: { host, port },
 } = require('../../config')
 
-const run = async sock => {
+const run = async () => {
   logger.log('--- Initializing Registrar...')
 
   logger.log(`----- Staring api server...`)
-  await api.startServer(port, sock).catch(logger.error)
+  await api.startServer(port).catch(logger.error)
   logger.log(`----- Api server listening on ${host}:${port}`)
 
   logger.log('----- Registering phone numbers...')
-  const regs = await phoneNumberRegistrar.registerAllUnregistered({ sock }).catch(logger.error)
+  const regs = await phoneNumberRegistrar.registerAllUnregistered().catch(logger.error)
   logger.log(`----- Registered ${regs.length} phone numbers.`)
 
   logger.log('----- Deleting expired sms sender records...')

@@ -12,7 +12,6 @@ const {
 } = require('../../../../app/config')
 
 describe('resend module', () => {
-  const sock = { write: () => Promise.resolve() }
   const sdMessage = {
     channel: channelFactory(),
     username: genPhoneNumber(),
@@ -56,7 +55,7 @@ describe('resend module', () => {
       beforeEach(() => {
         sendCount = sendStub.callCount
         resendQueue = {}
-        resendInterval = enqueueResend(sock, resendQueue, inSdMessage)
+        resendInterval = enqueueResend(resendQueue, inSdMessage)
       })
 
       it('resends the message in minResendInverval seconds', async () => {
@@ -64,11 +63,7 @@ describe('resend module', () => {
 
         await wait(minResendInterval)
         expect(sendStub.callCount).to.eql(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([
-          sock,
-          outSdMessage.recipientNumber,
-          outSdMessage,
-        ])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientNumber, outSdMessage])
       })
 
       it('it adds the message to the resendQueue', async () => {
@@ -97,7 +92,7 @@ describe('resend module', () => {
             lastResendInterval: minResendInterval,
           },
         }
-        enqueueResend(sock, resendQueue, outSdMessage)
+        enqueueResend(resendQueue, outSdMessage)
       })
 
       it('resends the message in <2 * last resend interval> seconds', async () => {
@@ -105,11 +100,7 @@ describe('resend module', () => {
 
         await wait(2 * minResendInterval)
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([
-          sock,
-          outSdMessage.recipientNumber,
-          outSdMessage,
-        ])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientNumber, outSdMessage])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {
@@ -135,7 +126,7 @@ describe('resend module', () => {
             lastResendInterval: maxResendInterval,
           },
         }
-        enqueueResend(sock, resendQueue, outSdMessage)
+        enqueueResend(resendQueue, outSdMessage)
       })
 
       it('does not resend the message', async () => {

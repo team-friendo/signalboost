@@ -21,11 +21,10 @@ const welcomeNotificationOf = channelPhoneNumber =>
   )
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
-const addAdmin = async ({ sock, channelPhoneNumber, adminPhoneNumber }) => {
+const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   await membershipRepository.addAdmin(channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
   await messenger.notify({
-    sock,
     channel,
     notification: {
       message: welcomeNotificationOf(channelPhoneNumber),
@@ -39,12 +38,12 @@ const addAdmin = async ({ sock, channelPhoneNumber, adminPhoneNumber }) => {
 }
 
 // ({ Database, Socket, string, string, Array<string> }) -> Promise<ChannelStatus>
-const create = async ({ sock, phoneNumber, name, admins }) => {
+const create = async ({ phoneNumber, name, admins }) => {
   try {
-    await signal.subscribe(sock, phoneNumber)
+    await signal.subscribe(phoneNumber)
     const channel = await channelRepository.create(phoneNumber, name, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
-    await _welcomeAdmins(sock, channel)
+    await _welcomeAdmins(channel)
     return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
   } catch (e) {
     logger.error(e)
@@ -57,12 +56,11 @@ const create = async ({ sock, phoneNumber, name, admins }) => {
 }
 
 // (Socket, Channel) -> Promise<SignalboostStatus>
-const _welcomeAdmins = async (sock, channel) => {
+const _welcomeAdmins = async channel => {
   await wait(welcomeDelay)
   return Promise.all(
     channelRepository.getAdminPhoneNumbers(channel).map(async adminPhoneNumber => {
       await messenger.notify({
-        sock,
         channel,
         notification: {
           recipient: adminPhoneNumber,
@@ -70,12 +68,7 @@ const _welcomeAdmins = async (sock, channel) => {
         },
       })
       await wait(setExpiryInterval)
-      return signal.setExpiration(
-        sock,
-        channel.phoneNumber,
-        adminPhoneNumber,
-        defaultMessageExpiryTime,
-      )
+      return signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
     }),
   )
 }

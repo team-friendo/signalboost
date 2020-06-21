@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import moment from 'moment'
-import { run } from '../../../../app/db/index'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../support/factories/smsSender'

@@ -82,11 +82,11 @@ describe('phone number services -- destroy module', () => {
   }
 
   const broadcastMessageSucceeds = () =>
-    broadcastMessageStub.callsFake(async (sock, phoneNumbers, msg) => await Promise.resolve())
+    broadcastMessageStub.callsFake(async (phoneNumbers, msg) => await Promise.resolve())
 
   const broadcastMessageFails = () =>
     broadcastMessageStub.callsFake(
-      async (sock, phoneNumbers, msg) => await Promise.reject('Failed to broadcast message'),
+      async (phoneNumbers, msg) => await Promise.reject('Failed to broadcast message'),
     )
 
   const signaldUnsubscribeFails = () =>
@@ -127,7 +127,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message: 'No records found for +11111111111',
             status: 'ERROR',
@@ -145,17 +145,17 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('runs successfully', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response.status).to.eql('SUCCESS')
         })
 
         it('does not attempt to notify members of non-existent channel', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(broadcastMessageStub.callCount).to.eql(0)
         })
 
         it('does not attempt to destroy a channel', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(destroyChannelSpy.callCount).to.eql(0)
         })
       })
@@ -177,45 +177,45 @@ describe('phone number services -- destroy module', () => {
 
         describe('destroy command called from maintainer', () => {
           it('notifies all the members of the channel of destruction', async () => {
-            await destroy({ sock, phoneNumber })
-            expect(broadcastMessageStub.getCall(0).args[1]).to.eql(['+12223334444', '+15556667777'])
+            await destroy({ phoneNumber })
+            expect(broadcastMessageStub.getCall(0).args[0]).to.eql(['+12223334444', '+15556667777'])
           })
         })
 
         describe('destroy command called from admin of channel', () => {
           it('notifies all members of the channel except for the sender', async () => {
-            await destroy({ sock, phoneNumber, sender: '+15556667777' })
-            expect(broadcastMessageStub.getCall(0).args[1]).to.eql(['+12223334444'])
+            await destroy({ phoneNumber, sender: '+15556667777' })
+            expect(broadcastMessageStub.getCall(0).args[0]).to.eql(['+12223334444'])
           })
         })
 
         it('destroys the channel in the db', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(destroyChannelSpy.callCount).to.eql(1)
         })
 
         it('deletes the associated signal data dir', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(deleteDirStub.getCall(0).args[0]).to.eql('/var/lib/signald/data/+11111111111')
         })
 
         it('releases the phone number to twilio', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(twilioRemoveSpy.callCount).to.eql(1)
         })
 
         it('destroys the phoneNumber in the db', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(destroyPhoneNumberSpy.callCount).to.eql(1)
         })
 
         it('unsubscribes the phoneNumber from signald', async () => {
-          await destroy({ sock, phoneNumber })
+          await destroy({ phoneNumber })
           expect(signaldUnsubscribeStub.callCount).to.eql(1)
         })
 
         it('returns a success status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             status: 'SUCCESS',
             msg: 'All records of phone number have been destroyed.',
@@ -245,7 +245,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
               'Failed to destroy channel for +11111111111. Error: Failed to broadcast message',
@@ -261,7 +261,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message: 'Failed to destroy channel for +11111111111. Error: Failed to destroy channel',
             status: 'ERROR',
@@ -278,7 +278,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
               'Failed to destroy channel for +11111111111. Error: Failed to destroy phoneNumber in db',
@@ -296,7 +296,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
               'Failed to destroy channel for +11111111111. Error: Failed to destroy signal entry data in keystore',
@@ -315,7 +315,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
               'Failed to destroy channel for +11111111111. Error: Failed to release phone number back to Twilio',
@@ -335,7 +335,7 @@ describe('phone number services -- destroy module', () => {
         })
 
         it('returns an error status', async () => {
-          const response = await destroy({ sock, phoneNumber })
+          const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
               'Failed to destroy channel for +11111111111. Error: Error: Signald failed to unsubscribe',

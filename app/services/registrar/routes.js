@@ -24,14 +24,13 @@ const routesOf = async (router, sock) => {
 
   router.post('/channels', async ctx => {
     const { phoneNumber, name, admins } = ctx.request.body
-    const result = await channelRegistrar.create({ sock, phoneNumber, name, admins })
+    const result = await channelRegistrar.create({ phoneNumber, name, admins })
     merge(ctx, { status: httpStatusOf(get(result, 'status')), body: result })
   })
 
   router.post('/channels/admins', async ctx => {
     const { channelPhoneNumber, adminPhoneNumber } = ctx.request.body
     const result = await channelRegistrar.addAdmin({
-      sock,
       channelPhoneNumber,
       adminPhoneNumber,
     })
@@ -48,14 +47,13 @@ const routesOf = async (router, sock) => {
     const { num, areaCode } = ctx.request.body
     const n = parseInt(num) || 1
 
-    const phoneNumberStatuses = await phoneNumberService.provisionN({ sock, areaCode, n })
+    const phoneNumberStatuses = await phoneNumberService.provisionN({ areaCode, n })
     merge(ctx, { status: httpStatusOfMany(phoneNumberStatuses), body: phoneNumberStatuses })
   })
 
   router.delete('/phoneNumbers', async ctx => {
     const { phoneNumber } = ctx.request.body
     const result = await phoneNumberService.destroy({
-      sock,
       phoneNumber,
     })
     merge(ctx, { status: httpStatusOf(result.status), body: result })
@@ -64,7 +62,6 @@ const routesOf = async (router, sock) => {
   router.post('/phoneNumbers/recycle', async ctx => {
     const { phoneNumbers } = ctx.request.body
     const result = await phoneNumberService.recycle({
-      sock,
       phoneNumbers,
     })
     merge(ctx, { status: httpStatusOfMany(result), body: result })
@@ -73,7 +70,6 @@ const routesOf = async (router, sock) => {
   router.post(`/${smsEndpoint}`, async ctx => {
     const { To: phoneNumber, Body: smsBody, From: senderPhoneNumber } = ctx.request.body
     const { status, message } = await phoneNumberService.handleSms({
-      sock,
       phoneNumber,
       senderPhoneNumber,
       message: smsBody,

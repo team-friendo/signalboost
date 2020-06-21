@@ -2,7 +2,6 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
-import { EventEmitter } from 'events'
 import { handleSms, reachedQuotaError } from '../../../../../app/services/registrar/phoneNumber/sms'
 import { statuses } from '../../../../../app/services/util'
 import registrationService from '../../../../../app/services/registrar/phoneNumber/register'
@@ -12,7 +11,6 @@ import { languages } from '../../../../../app/services/language'
 import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
 
 describe('sms module', () => {
-  const sock = new EventEmitter()
   const phoneNumber = genPhoneNumber()
   const senderPhoneNumber = genPhoneNumber()
 
@@ -40,9 +38,9 @@ describe('sms module', () => {
           verifyStub.returns(Promise.resolve())
         })
         it('attempts to verify the code', async () => {
-          await handleSms({ sock, phoneNumber, senderPhoneNumber, message })
+          await handleSms({ phoneNumber, senderPhoneNumber, message })
           expect(verifyStub.callCount).to.be.above(callCount)
-          expect(verifyStub.getCall(0).args[0]).to.eql({ sock, phoneNumber, verificationCode })
+          expect(verifyStub.getCall(0).args[0]).to.eql({ phoneNumber, verificationCode })
         })
       })
 
@@ -51,9 +49,7 @@ describe('sms module', () => {
         beforeEach(() => verifyStub.returns(Promise.resolve(successStatus)))
 
         it('returns a success status', async () => {
-          expect(await handleSms({ sock, phoneNumber, senderPhoneNumber, message })).to.eql(
-            successStatus,
-          )
+          expect(await handleSms({ phoneNumber, senderPhoneNumber, message })).to.eql(successStatus)
         })
       })
 
@@ -62,9 +58,7 @@ describe('sms module', () => {
         beforeEach(() => verifyStub.returns(Promise.resolve(errorStatus)))
 
         it('returns an error status', async () => {
-          expect(await handleSms({ sock, phoneNumber, senderPhoneNumber, message })).to.eql(
-            errorStatus,
-          )
+          expect(await handleSms({ phoneNumber, senderPhoneNumber, message })).to.eql(errorStatus)
         })
       })
     })
@@ -84,7 +78,7 @@ describe('sms module', () => {
     })
 
     describe('in all cases', () => {
-      beforeEach(() => handleSms({ sock, phoneNumber, senderPhoneNumber, message }))
+      beforeEach(() => handleSms({ phoneNumber, senderPhoneNumber, message }))
 
       it('does not attempt to verify code', () => {
         expect(verifyStub.callCount).to.eql(verifyCallCount)
@@ -96,7 +90,6 @@ describe('sms module', () => {
       beforeEach(async () => {
         hasReachedQuotaStub.returns(Promise.resolve(false))
         result = await handleSms({
-          sock,
           phoneNumber,
           senderPhoneNumber: frenchPhoneNumber,
           message,
@@ -119,7 +112,7 @@ describe('sms module', () => {
     describe('when user has reached quota', () => {
       beforeEach(async () => {
         hasReachedQuotaStub.returns(Promise.resolve(true))
-        result = await handleSms({ sock, phoneNumber, senderPhoneNumber, message })
+        result = await handleSms({ phoneNumber, senderPhoneNumber, message })
       })
 
       it('returns an error', () => {
@@ -137,7 +130,7 @@ describe('sms module', () => {
     describe('when there is a database errror', () => {
       beforeEach(async () => {
         hasReachedQuotaStub.callsFake(() => Promise.reject(new Error('oh noes!')))
-        result = await handleSms({ sock, phoneNumber, senderPhoneNumber, message }).catch(e => e)
+        result = await handleSms({ phoneNumber, senderPhoneNumber, message }).catch(e => e)
       })
 
       it('returns an error', () => {

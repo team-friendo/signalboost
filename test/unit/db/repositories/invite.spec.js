@@ -64,11 +64,7 @@ describe('invite repository', () => {
   describe('#issue', () => {
     describe('when issuing an invite to a new member', () => {
       beforeEach(async () => {
-        res = await inviteRepository.issue(
-          channelPhoneNumber,
-          adminPhoneNumber,
-          randoPhoneNumber,
-        )
+        res = await inviteRepository.issue(channelPhoneNumber, adminPhoneNumber, randoPhoneNumber)
       })
 
       it('creates a new invite', async () => {
@@ -122,9 +118,7 @@ describe('invite repository', () => {
   describe('#count', () => {
     it('counts the number of invites received by a number on a channel', async () => {
       expect(await inviteRepository.count(channelPhoneNumber, adminPhoneNumber)).to.eql(0)
-      expect(
-        await inviteRepository.count(channelPhoneNumber, pendingInviteePhoneNumber),
-      ).to.eql(1)
+      expect(await inviteRepository.count(channelPhoneNumber, pendingInviteePhoneNumber)).to.eql(1)
     })
   })
 

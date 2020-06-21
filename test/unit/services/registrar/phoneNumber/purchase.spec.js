@@ -82,7 +82,7 @@ describe('phone number services - purchase module', () => {
       })
 
       it('returns an array of success AND error statuses', async () => {
-        expect(await purchaseN({  n: 3 })).to.eql([
+        expect(await purchaseN({ n: 3 })).to.eql([
           {
             status: statuses.ERROR,
             error: errors.purchaseFailed('boom!'),

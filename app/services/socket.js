@@ -1,3 +1,4 @@
+const app = require('../../app')
 const genericPool = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
@@ -18,6 +19,8 @@ const messages = {
     socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
   },
 }
+
+// STARTUP
 
 const run = () => getSocket(0)
 
@@ -46,9 +49,11 @@ const connect = () => {
   }
 }
 
-const write = (sock, data) =>
+// USING SOCKET
+
+const write = data =>
   new Promise((resolve, reject) =>
-    sock.write(
+    app.sock.write(
       signaldEncode(data),
       promisifyCallback(resolve, e =>
         reject({

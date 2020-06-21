@@ -1,3 +1,4 @@
+const app = require('../../app')
 const { pick, get, isEmpty } = require('lodash')
 const { wait } = require('./util.js')
 const { statuses } = require('../services/util')
@@ -124,33 +125,32 @@ const messages = {
  * SIGNALD COMMANDS
  ********************/
 
-const register = (sock, phoneNumber) =>
-  socket.write(sock, { type: messageTypes.REGISTER, username: phoneNumber })
+const register = phoneNumber => socket.write({ type: messageTypes.REGISTER, username: phoneNumber })
 
-const verify = (sock, phoneNumber, code) =>
-  socket.write(sock, { type: messageTypes.VERIFY, username: phoneNumber, code })
+const verify = (phoneNumber, code) =>
+  socket.write({ type: messageTypes.VERIFY, username: phoneNumber, code })
 
-const awaitVerificationResult = async (sock, phoneNumber) => {
+const awaitVerificationResult = async phoneNumber => {
   return new Promise((resolve, reject) => {
-    sock.on('data', function handle(msg) {
+    app.sock.on('data', function handle(msg) {
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
         reject(new Error(messages.error.invalidJSON(msg)))
       } else if (_isVerificationFailure(type, data, phoneNumber)) {
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         const reason = get(data, 'message', 'Captcha required: 402')
         reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
       } else if (_isVerificationSuccess(type, data, phoneNumber)) {
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         resolve(data)
       } else if (_isVerificationFailure(type, data, phoneNumber)) {
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         const reason = get(data, 'message', 'Captcha required: 402')
         reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
       } else {
         // on first message (reporting registration) set timeout for listening to subsequent messages
         wait(verificationTimeout).then(() => {
-          sock.removeListener('data', handle)
+          app.sock.removeListener('data', handle)
           reject(new Error(messages.error.verificationTimeout(phoneNumber)))
         })
       }
@@ -164,24 +164,24 @@ const _isVerificationSuccess = (type, data, phoneNumber) =>
 const _isVerificationFailure = (type, data, phoneNumber) =>
   type === messageTypes.ERROR && get(data, 'request.username') === phoneNumber
 
-// (Socket, string) -> Promise<void>
-const subscribe = (sock, phoneNumber) =>
-  socket.write(sock, { type: messageTypes.SUBSCRIBE, username: phoneNumber })
+// string -> Promise<void>
+const subscribe = phoneNumber =>
+  socket.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
-const unsubscribe = (sock, phoneNumber) =>
-  socket.write(sock, { type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
+const unsubscribe = phoneNumber =>
+  socket.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
-const sendMessage = (sock, recipientNumber, outboundMessage) =>
+const sendMessage = (recipientNumber, outboundMessage) =>
   socket.writeWithPool({ ...outboundMessage, recipientNumber })
 
 // (Socket, Array<string>, OutMessage) -> Promise<void>
-const broadcastMessage = (sock, recipientNumbers, outboundMessage) =>
+const broadcastMessage = (recipientNumbers, outboundMessage) =>
   Promise.all(
-    recipientNumbers.map(recipientNumber => sendMessage(sock, recipientNumber, outboundMessage)),
+    recipientNumbers.map(recipientNumber => sendMessage(recipientNumber, outboundMessage)),
   )
 
-const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
-  socket.write(sock, {
+const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
+  socket.write({
     type: messageTypes.SET_EXPIRATION,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
@@ -189,38 +189,33 @@ const setExpiration = (sock, channelPhoneNumber, memberPhoneNumber, expiresInSec
   })
 
 // (Socket, String, String, String?) -> Promise<Array<TrustResult>>
-const trust = async (sock, channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  // don't await this socket.write so we can start listening sooner!
-  socket.write(sock, {
+const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
+  // don't await first socket.write so we can start listening sooner!
+  socket.write({
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
     fingerprint,
   })
-  return await _awaitTrustVerification(sock, channelPhoneNumber, memberPhoneNumber, fingerprint)
+  return _awaitTrustVerification(channelPhoneNumber, memberPhoneNumber, fingerprint)
 }
 
 // (Socket, string, string) => Promise<TrustResult>
-const _awaitTrustVerification = async (
-  sock,
-  channelPhoneNumber,
-  memberPhoneNumber,
-  fingerprint,
-) => {
+const _awaitTrustVerification = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
   return new Promise((resolve, reject) => {
     // create handler
     const handle = msg => {
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
         // ignore bad JSON
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         return Promise.resolve()
       } else if (
         type === messageTypes.TRUSTED_FINGERPRINT &&
         data.request.fingerprint === fingerprint
       ) {
         // return success if we get a trust response
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         resolve({
           status: statuses.SUCCESS,
           message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
@@ -228,10 +223,10 @@ const _awaitTrustVerification = async (
       }
     }
     // register handler
-    sock.on('data', handle)
+    app.sock.on('data', handle)
     // reject and deregister handle after timeout if no trust response received
     wait(signaldRequestTimeout).then(() => {
-      sock.removeListener('data', handle)
+      app.sock.removeListener('data', handle)
       reject({
         status: statuses.ERROR,
         message: messages.error.trustTimeout(channelPhoneNumber, memberPhoneNumber),
@@ -240,29 +235,29 @@ const _awaitTrustVerification = async (
   })
 }
 
-const isAlive = sock => {
-  socket.write(sock, { type: messageTypes.VERSION })
-  return awaitVersion(sock)
+const isAlive = () => {
+  socket.write({ type: messageTypes.VERSION })
+  return awaitVersion()
 }
 
-const awaitVersion = sock =>
+const awaitVersion = () =>
   new Promise((resolve, reject) => {
     const handle = msg => {
       const { type, data } = safeJsonParse(msg, reject)
       if (type === null && data === null) {
         return Promise.resolve()
       } else if (type === messageTypes.VERSION) {
-        sock.removeListener('data', handle)
+        app.sock.removeListener('data', handle)
         resolve({
           status: statuses.SUCCESS,
         })
       }
     }
     // register handler
-    sock.on('data', handle)
+    app.sock.on('data', handle)
     // reject and deregister handle after timeout if no trust response received
     wait(signaldRequestTimeout).then(() => {
-      sock.removeListener('data', handle)
+      app.sock.removeListener('data', handle)
       reject({
         status: statuses.ERROR,
       })

@@ -20,7 +20,7 @@ app.run = async ({ db, sock, registrar, dispatcher }) => {
   /** START SERVICES **/
 
   logger.log('Starting registrar...')
-  await registrarService.run(app.db, app.sock).catch(logger.fatalError)
+  await registrarService.run().catch(logger.fatalError)
 
   logger.log('Starting dispatcher')
   await dispatcherService.run().catch(logger.fatalError)

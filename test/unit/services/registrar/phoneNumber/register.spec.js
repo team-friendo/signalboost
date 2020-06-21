@@ -103,7 +103,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('attempts to register a phone number', async () => {
-        await register({ sock, phoneNumber })
+        await register(phoneNumber)
         expect(registerStub.callCount).to.eql(1)
       })
     })
@@ -112,7 +112,7 @@ describe('phone number services -- registration module', () => {
       beforeEach(() => registrationSucceeds())
 
       it('attempts to record registered status', async () => {
-        await register({ sock, phoneNumber })
+        await register(phoneNumber)
         expect(updateStub.getCall(0).args).to.eql([phoneNumber, { status: pnStatuses.REGISTERED }])
       })
 
@@ -123,7 +123,7 @@ describe('phone number services -- registration module', () => {
         })
 
         it('listens for verification result', async () => {
-          await register({ sock, phoneNumber })
+          await register(phoneNumber)
           expect(awaitVerificationStub.callCount).to.eql(1)
         })
 
@@ -131,7 +131,7 @@ describe('phone number services -- registration module', () => {
           beforeEach(() => verificationSucceeds())
 
           it('attempts to save verification status', async () => {
-            await register({ sock, phoneNumber })
+            await register(phoneNumber)
             expect(updateStub.getCall(1).args).to.eql([
               phoneNumber,
               { status: pnStatuses.VERIFIED },
@@ -142,7 +142,7 @@ describe('phone number services -- registration module', () => {
             beforeEach(() => updateSucceedsOnCall(1))
 
             it('returns a success status', async () => {
-              expect(await register({ sock, phoneNumber })).to.eql(verifiedStatus)
+              expect(await register(phoneNumber)).to.eql(verifiedStatus)
             })
           })
 
@@ -154,7 +154,7 @@ describe('phone number services -- registration module', () => {
             )
 
             it('returns an error status', async () => {
-              expect(await register({ sock, phoneNumber })).to.eql({
+              expect(await register(phoneNumber)).to.eql({
                 status: pnStatuses.ERROR,
                 phoneNumber,
                 error: errors.registrationFailed('Error: wild database error!', phoneNumber),
@@ -170,7 +170,7 @@ describe('phone number services -- registration module', () => {
           })
 
           it('returns an error status', async () => {
-            expect(await register({ sock, phoneNumber })).to.eql({
+            expect(await register(phoneNumber)).to.eql({
               status: pnStatuses.ERROR,
               phoneNumber,
               error: errors.registrationFailed('Error: oh noes!', phoneNumber),
@@ -185,7 +185,7 @@ describe('phone number services -- registration module', () => {
         )
 
         it('returns an error status', async () => {
-          expect(await register({ sock, phoneNumber })).to.eql({
+          expect(await register(phoneNumber)).to.eql({
             status: pnStatuses.ERROR,
             phoneNumber,
             error: errors.registrationFailed('wild database error!'),
@@ -198,7 +198,7 @@ describe('phone number services -- registration module', () => {
       beforeEach(() => registerStub.callsFake(() => Promise.reject(new Error('foo'))))
 
       it('returns an error status', async () => {
-        expect(await register({ sock, phoneNumber })).to.eql({
+        expect(await register(phoneNumber)).to.eql({
           status: pnStatuses.ERROR,
           phoneNumber,
           error: errors.registrationFailed('Error: foo'),
@@ -216,7 +216,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('attempts to register phone numbers in batches', async () => {
-        registerMany({ sock, phoneNumbers: twoBatchesOfPhoneNumbers })
+        registerMany(twoBatchesOfPhoneNumbers)
         await wait(twoBatchesOfPhoneNumbers.length * intervalBetweenRegistrations)
         expect(registerStub.callCount).to.be.at.most(registrationBatchSize)
         await wait(intervalBetweenRegistrations * 2) // to avoid side effects on other tests
@@ -224,7 +224,7 @@ describe('phone number services -- registration module', () => {
 
       it('waits a set interval between batches and between registrations', async () => {
         const start = new Date().getTime()
-        await registerMany({ sock, phoneNumbers: twoBatchesOfPhoneNumbers }).catch(a => a)
+        await registerMany(twoBatchesOfPhoneNumbers).catch(a => a)
         const elapsed = new Date().getTime() - start
         expect(elapsed).to.be.above(
           (twoBatchesOfPhoneNumbers.length - 2) * intervalBetweenRegistrations +
@@ -242,7 +242,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('returns an array of success pnStatuses', async () => {
-        expect(await registerMany({ sock, phoneNumbers })).to.eql([
+        expect(await registerMany(phoneNumbers)).to.eql([
           {
             status: pnStatuses.VERIFIED,
             phoneNumber: phoneNumbers[0],
@@ -271,7 +271,7 @@ describe('phone number services -- registration module', () => {
       })
 
       it('returns an array of success AND error pnStatuses', async () => {
-        expect(await registerMany({ sock, phoneNumbers })).to.eql([
+        expect(await registerMany(phoneNumbers)).to.eql([
           {
             status: pnStatuses.VERIFIED,
             phoneNumber: phoneNumbers[0],
@@ -375,11 +375,11 @@ describe('phone number services -- registration module', () => {
     describe('in all cases', () => {
       beforeEach(async () => {
         verifyStub.returns(Promise.resolve())
-        await verify({ sock, phoneNumber, verificationCode })
+        await verify({ phoneNumber, verificationCode })
       })
 
       it('attempts to verify the code with signal', () => {
-        expect(verifyStub.getCall(0).args).to.eql([sock, phoneNumber, '809-842'])
+        expect(verifyStub.getCall(0).args).to.eql([phoneNumber, '809-842'])
       })
     })
 
@@ -387,7 +387,7 @@ describe('phone number services -- registration module', () => {
       beforeEach(() => verifyStub.returns(Promise.resolve()))
 
       it('waits for a verification result from signald', async () => {
-        await verify({ sock, phoneNumber, verificationCode })
+        await verify({ phoneNumber, verificationCode })
         expect(awaitVerificationStub.callCount).to.eql(1)
       })
 
@@ -395,7 +395,7 @@ describe('phone number services -- registration module', () => {
         beforeEach(() => verificationSucceeds())
 
         it('returns the success message from signald', async () => {
-          expect(await verify({ sock, phoneNumber, verificationCode })).to.eql({
+          expect(await verify({ phoneNumber, verificationCode })).to.eql({
             status: statuses.SUCCESS,
             message: 'OK',
           })
@@ -408,7 +408,7 @@ describe('phone number services -- registration module', () => {
         )
 
         it('returns an error status', async () => {
-          expect(await verify({ sock, phoneNumber, verificationCode })).to.eql({
+          expect(await verify({ phoneNumber, verificationCode })).to.eql({
             status: pnStatuses.ERROR,
             message: 'rate limited',
           })
@@ -420,7 +420,7 @@ describe('phone number services -- registration module', () => {
       beforeEach(() => verifyStub.callsFake(() => Promise.reject(new Error('weird network error'))))
 
       it('rejects with an error', async () => {
-        expect(await verify({ sock, phoneNumber, verificationCode }).catch(a => a)).to.eql({
+        expect(await verify({ phoneNumber, verificationCode }).catch(a => a)).to.eql({
           status: statuses.ERROR,
           message: 'weird network error',
         })

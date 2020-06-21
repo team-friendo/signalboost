@@ -235,7 +235,6 @@ describe('dispatcher service', () => {
 
       it('processes any commands in the message', () => {
         expect(processCommandStub.getCall(0).args[0]).to.eql({
-          sock: app.sock,
           channel,
           sender,
           sdMessage: sdOutMessage,
@@ -246,7 +245,6 @@ describe('dispatcher service', () => {
         expect(dispatchStub.getCall(0).args[0]).to.eql({
           commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
           dispatchable: {
-            sock: app.sock,
             channel,
             sender,
             sdMessage: sdOutMessage,
@@ -305,13 +303,12 @@ describe('dispatcher service', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([app.sock, {}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
         })
 
         it('notifies admins of the support channel', () => {
           supportChannel.memberships.forEach(({ memberPhoneNumber, language }, idx) =>
             expect(sendMessageStub.getCall(idx).args).to.eql([
-              app.sock,
               memberPhoneNumber,
               sdMessageOf(
                 { phoneNumber: supportPhoneNumber },
@@ -333,7 +330,7 @@ describe('dispatcher service', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([app.sock, {}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
         })
 
         it('does not send any notifications', () => {
@@ -376,7 +373,6 @@ describe('dispatcher service', () => {
 
           expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
           expect(trustAndResendStub.getCall(0).args).to.eql([
-            app.sock,
             {
               channelPhoneNumber: channel.phoneNumber,
               memberPhoneNumber: recipientNumber,
@@ -422,7 +418,7 @@ describe('dispatcher service', () => {
           await wait(socketDelay)
 
           expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.getCall(0).args[1]).to.eql({
+          expect(deauthorizeStub.getCall(0).args[0]).to.eql({
             channelPhoneNumber: channel.phoneNumber,
             memberPhoneNumber: recipientNumber,
             fingerprint,
@@ -495,7 +491,6 @@ describe('dispatcher service', () => {
         it('updates the expiry time between the channel and every other channel member', () => {
           getAllAdminsExcept(channel, [adminPhoneNumber]).forEach((membership, i) =>
             expect(setExpirationStub.getCall(i).args).to.eql([
-              app.sock,
               channel.phoneNumber,
               membership.memberPhoneNumber,
               60,
@@ -516,7 +511,6 @@ describe('dispatcher service', () => {
 
         it('sets the expiry time btw/ channel and sender back to original expiry time', () => {
           expect(setExpirationStub.getCall(0).args).to.eql([
-            app.sock,
             channel.phoneNumber,
             subscriberPhoneNumber,
             defaultMessageExpiryTime,

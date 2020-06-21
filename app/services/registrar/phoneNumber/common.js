@@ -30,17 +30,17 @@ const extractStatus = phoneNumberInstance =>
   pick(phoneNumberInstance, ['status', 'phoneNumber', 'twilioSid'])
 
 // (Database, Socket, Channel, String, String) -> Promise<void>
-const notifyMembersExcept = async (sock, channel, message, sender) => {
+const notifyMembersExcept = async (channel, message, sender) => {
   if (channel == null) return
   const memberPhoneNumbers = channelRepository.getMemberPhoneNumbersExcept(channel, [sender])
-  await signal.broadcastMessage(sock, memberPhoneNumbers, signal.sdMessageOf(channel, message))
+  await signal.broadcastMessage(memberPhoneNumbers, signal.sdMessageOf(channel, message))
 }
 
 // (DB, Socket, String) -> Promise<void>
-const notifyMaintainers = async (sock, message) => {
+const notifyMaintainers = async message => {
   const adminChannel = await channelRepository.findDeep(supportPhoneNumber)
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
-  await signal.broadcastMessage(sock, adminPhoneNumbers, signal.sdMessageOf(adminChannel, message))
+  await signal.broadcastMessage(adminPhoneNumbers, signal.sdMessageOf(adminChannel, message))
 }
 
 // (DB, Socket, ChannelInstance, String) -> Promise<void>

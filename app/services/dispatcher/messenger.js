@@ -86,12 +86,11 @@ const handleHotlineMessage = dispatchable => {
     : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
 }
 
-const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
+const handleSignupMessage = async ({ channel, sender, sdMessage }) => {
   const notificationMessages = messagesIn(defaultLanguage).notifications
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
   // respond to signup requester
   await notify({
-    sock,
     channel,
     notification: {
       message: notificationMessages.signupRequestResponse,
@@ -102,14 +101,8 @@ const handleSignupMessage = async ({ sock, channel, sender, sdMessage }) => {
   return Promise.all(
     adminPhoneNumbers.map(async adminPhoneNumber => {
       // these messages contain user phone numbers so they should ALWAYS disappear
-      await signal.setExpiration(
-        sock,
-        channel.phoneNumber,
-        adminPhoneNumber,
-        defaultMessageExpiryTime,
-      )
+      await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
       return notify({
-        sock,
         channel,
         notification: {
           recipient: adminPhoneNumber,
@@ -137,7 +130,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  ************/
 
 // Dispatchable -> Promise<MessageCount>
-const broadcast = async ({ sock, channel, sdMessage }) => {
+const broadcast = async ({ channel, sdMessage }) => {
   const recipients = channel.memberships
 
   try {
@@ -145,7 +138,6 @@ const broadcast = async ({ sock, channel, sdMessage }) => {
       await Promise.all(
         recipients.map(recipient =>
           signal.broadcastMessage(
-            sock,
             [recipient.memberPhoneNumber],
             addHeader({
               channel,
@@ -163,7 +155,6 @@ const broadcast = async ({ sock, channel, sdMessage }) => {
         recipientBatches.map(recipientBatch => {
           recipientBatch.map(recipient => {
             signal.broadcastMessage(
-              sock,
               [recipient.memberPhoneNumber],
               addHeader({
                 channel,
@@ -185,7 +176,7 @@ const broadcast = async ({ sock, channel, sdMessage }) => {
 }
 
 // Dispatchable -> Promise<void>
-const relayHotlineMessage = async ({ sock, channel, sender, sdMessage }) => {
+const relayHotlineMessage = async ({ channel, sender, sdMessage }) => {
   const { language } = sender
   const recipients = channelRepository.getAdminMemberships(channel)
   const response = messagesIn(language).notifications.hotlineMessageSent(channel)
@@ -198,7 +189,6 @@ const relayHotlineMessage = async ({ sock, channel, sender, sdMessage }) => {
   await Promise.all(
     recipients.map(recipient =>
       notify({
-        sock,
         channel,
         notification: {
           recipient: recipient.memberPhoneNumber,
@@ -215,41 +205,41 @@ const relayHotlineMessage = async ({ sock, channel, sender, sdMessage }) => {
   )
 
   return signal
-    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, response))
+    .sendMessage(sender.phoneNumber, sdMessageOf(channel, response))
     .then(() => messageCountRepository.countHotline(channel))
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
-const respond = ({ sock, channel, message, sender, command, status }) => {
+const respond = ({ channel, message, sender, command, status }) => {
   // FIX: PRIVATE command sends out all messages including to sender
   // because respond doesn't handle attachments, don't want to repeat message here
   if (command === commands.PRIVATE && status === statuses.SUCCESS) return
 
   return signal
-    .sendMessage(sock, sender.phoneNumber, sdMessageOf(channel, message))
+    .sendMessage(sender.phoneNumber, sdMessageOf(channel, message))
     .then(() => messageCountRepository.countCommand(channel))
 }
 
 // ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
 const sendNotifications = ({ commandResult, dispatchable }) => {
-  const { sock, channel } = dispatchable
+  const { channel } = dispatchable
   const { status, notifications } = commandResult
 
   return status === statuses.SUCCESS
-    ? Promise.all(notifications.map(notification => notify({ sock, channel, notification })))
+    ? Promise.all(notifications.map(notification => notify({ channel, notification })))
     : Promise.resolve([])
 }
 
 // ({Socket, Channel, Notification}) -> Promise<void>
-const notify = ({ sock, channel, notification }) =>
-  signal.sendMessage(sock, notification.recipient, sdMessageOf(channel, notification.message))
+const notify = ({ channel, notification }) =>
+  signal.sendMessage(notification.recipient, sdMessageOf(channel, notification.message))
 
 // ({ CommandResult, Dispatchable }) -> Promise<void>
 const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   // for newly added users, make sure disappearing message timer
   // is set to channel's default expiry time
   const { command, payload, status } = commandResult
-  const { sock, channel, sender } = dispatchable
+  const { channel, sender } = dispatchable
 
   if (status !== statuses.SUCCESS) return Promise.resolve()
 
@@ -257,23 +247,17 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
     case commands.ADD:
       // in ADD case, payload is an e164 phone number
       // must be e164, else parse step would have failed and cmd could not have executed successfully
-      return signal.setExpiration(sock, channel.phoneNumber, payload, channel.messageExpiryTime)
+      return signal.setExpiration(channel.phoneNumber, payload, channel.messageExpiryTime)
     case commands.INVITE:
       // in INVITE case, payload is an array of e164 phone numbers (must be e164 for same reasons as ADD above)
       return Promise.all(
         payload.map(memberPhoneNumber =>
-          signal.setExpiration(
-            sock,
-            channel.phoneNumber,
-            memberPhoneNumber,
-            channel.messageExpiryTime,
-          ),
+          signal.setExpiration(channel.phoneNumber, memberPhoneNumber, channel.messageExpiryTime),
         ),
       )
     case commands.JOIN:
     case commands.ACCEPT:
       return signal.setExpiration(
-        sock,
         channel.phoneNumber,
         sender.phoneNumber,
         channel.messageExpiryTime,

@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach } from 'mocha'
+import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { keys } from 'lodash'
 import { wait } from '../../../app/services/util'
@@ -16,6 +16,8 @@ import {
   inboundAttachmentFactory,
   outboundAttachmentFactory,
 } from '../../support/factories/sdMessage'
+import app from '../../../app'
+import testApp from '../../support/testApp'
 
 describe('signal module', () => {
   describe('sending signald commands', () => {
@@ -23,48 +25,51 @@ describe('signal module', () => {
     const subscriberNumber = genPhoneNumber()
     const fingerprint = genFingerprint()
 
-    let sock
-    const emit = msg => sock.emit('data', JSON.stringify(msg) + '\n')
+    let sock = new EventEmitter().setMaxListeners(30)
+    const emit = msg => app.sock.emit('data', JSON.stringify(msg) + '\n')
     const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
+    before(async () => await app.run(testApp))
+
     beforeEach(() => {
-      sock = new EventEmitter()
-      sock.setEncoding = () => null
+      app.sock.write = sinon.stub().returns(Promise.resolve())
       sock.write = sinon.stub().returns(Promise.resolve())
       sinon.stub(pool, 'acquire').returns(Promise.resolve(sock))
       sinon.stub(pool, 'release')
     })
 
-    afterEach(() => sinon.restore())
+    afterEach(async () => sinon.restore())
+
+    after(() => app.stop())
 
     it('sends a register command', async () => {
-      signal.register(sock, channelPhoneNumber)
+      signal.register(channelPhoneNumber)
 
-      expect(sock.write.getCall(0).args[0]).to.eql(
+      expect(app.sock.write.getCall(0).args[0]).to.eql(
         `{"type":"register","username":"${channelPhoneNumber}"}\n`,
       )
     })
 
     it('sends a verify command', () => {
-      signal.verify(sock, channelPhoneNumber, '111-222')
+      signal.verify(channelPhoneNumber, '111-222')
 
-      expect(sock.write.getCall(0).args[0]).to.eql(
+      expect(app.sock.write.getCall(0).args[0]).to.eql(
         `{"type":"verify","username":"${channelPhoneNumber}","code":"111-222"}\n`,
       )
     })
 
     it('sends a subscribe command', () => {
-      signal.subscribe(sock, channelPhoneNumber)
+      signal.subscribe(channelPhoneNumber)
 
-      expect(sock.write.getCall(0).args[0]).to.eql(
+      expect(app.sock.write.getCall(0).args[0]).to.eql(
         `{"type":"subscribe","username":"${channelPhoneNumber}"}\n`,
       )
     })
 
     it('sends an unsubscribe command', () => {
-      signal.unsubscribe(sock, channelPhoneNumber)
+      signal.unsubscribe(channelPhoneNumber)
 
-      expect(sock.write.getCall(0).args[0]).to.eql(
+      expect(app.sock.write.getCall(0).args[0]).to.eql(
         `{"type":"unsubscribe","username":"${channelPhoneNumber}"}\n`,
       )
     })
@@ -77,7 +82,7 @@ describe('signal module', () => {
         messageBody: 'hello world!',
         attachments: [],
       }
-      await signal.sendMessage(sock, '+12223334444', sdMessage)
+      await signal.sendMessage('+12223334444', sdMessage)
 
       expect(sock.write.getCall(0).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+12223334444","messageBody":"hello world!","attachments":[]}\n`,
@@ -93,7 +98,7 @@ describe('signal module', () => {
         attachments: [],
       }
       const recipients = ['+11111111111', '+12222222222']
-      await signal.broadcastMessage(sock, recipients, sdMessage)
+      await signal.broadcastMessage(recipients, sdMessage)
 
       expect(sock.write.getCall(0).args[0]).to.eql(
         `{"type":"send","username":"${channelPhoneNumber}","recipientNumber":"+11111111111","messageBody":"hello world!","attachments":[]}\n`,
@@ -122,14 +127,14 @@ describe('signal module', () => {
       }
 
       it('attempts to trust the new fingerprint', async () => {
-        await signal.trust(sock, channelPhoneNumber, subscriberNumber, fingerprint).catch(a => a)
-        expect(sock.write.getCall(0).args[0]).to.eql(signaldEncode(trustRequest))
+        await signal.trust(channelPhoneNumber, subscriberNumber, fingerprint).catch(a => a)
+        expect(app.sock.write.getCall(0).args[0]).to.eql(signaldEncode(trustRequest))
       })
 
       describe('when trusting fingerprint succeeds', () => {
         it('returns a success object', async () => {
           const promises = await Promise.all([
-            signal.trust(sock, channelPhoneNumber, subscriberNumber, fingerprint),
+            signal.trust(channelPhoneNumber, subscriberNumber, fingerprint),
             emitWithDelay(10, trustResponse),
           ])
           const result = promises[0]
@@ -144,7 +149,7 @@ describe('signal module', () => {
       describe('when trust request times out', () => {
         it('rejects with an error object', async () => {
           const result = await signal
-            .trust(sock, channelPhoneNumber, subscriberNumber, fingerprint)
+            .trust(channelPhoneNumber, subscriberNumber, fingerprint)
             .catch(a => a)
           expect(result).to.eql({
             status: 'ERROR',
@@ -161,7 +166,7 @@ describe('signal module', () => {
       describe('when a verification success message for the listening channel is emitted', () => {
         beforeEach(async () => {
           wait(5).then(() =>
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({
                 type: messageTypes.VERIFICATION_SUCCESS,
@@ -169,7 +174,7 @@ describe('signal module', () => {
               }),
             ),
           )
-          result = await signal.awaitVerificationResult(sock, phoneNumber)
+          result = await signal.awaitVerificationResult(phoneNumber)
         })
 
         it('resolves with the success message', async () => {
@@ -180,7 +185,7 @@ describe('signal module', () => {
       describe('when a verification failure message for the listening channel is emitted', () => {
         beforeEach(async () => {
           wait(5).then(() =>
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({
                 type: messageTypes.VERIFICATION_ERROR,
@@ -188,7 +193,7 @@ describe('signal module', () => {
               }),
             ),
           )
-          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+          result = await signal.awaitVerificationResult(phoneNumber).catch(a => a)
         })
 
         it('rejects with an error message', async () => {
@@ -199,8 +204,8 @@ describe('signal module', () => {
 
       describe('when no verification message is emitted before the timeout threshold', () => {
         beforeEach(async () => {
-          wait(5).then(() => sock.emit('data', JSON.stringify({ type: 'foo' })))
-          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+          wait(5).then(() => app.sock.emit('data', JSON.stringify({ type: 'foo' })))
+          result = await signal.awaitVerificationResult(phoneNumber).catch(a => a)
         })
 
         it('rejects with an error message', async () => {
@@ -212,7 +217,7 @@ describe('signal module', () => {
       describe('when a verification success message for another channel is emitted', () => {
         beforeEach(async () => {
           wait(5).then(() =>
-            sock.emit(
+            app.sock.emit(
               'data',
               JSON.stringify({
                 type: messageTypes.VERIFICATION_ERROR,
@@ -220,7 +225,7 @@ describe('signal module', () => {
               }),
             ),
           )
-          result = await signal.awaitVerificationResult(sock, phoneNumber).catch(a => a)
+          result = await signal.awaitVerificationResult(phoneNumber).catch(a => a)
         })
 
         it('does nothing', () => {
@@ -236,7 +241,7 @@ describe('signal module', () => {
           data: { version: '+git2020-04-05rd709c3fa.0' },
         })
         await signal.isAlive(sock)
-        expect(sock.write.getCall(0).args[0]).to.eql(`{"type":"version"}\n`)
+        expect(app.sock.write.getCall(0).args[0]).to.eql(`{"type":"version"}\n`)
       })
 
       it('returns error if signald times out', async () => {

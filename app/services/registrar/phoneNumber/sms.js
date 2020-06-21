@@ -11,10 +11,10 @@ const {
 const reachedQuotaError = 'Sender exceeded monthly sms quota.'
 
 // ({Database, EventEmitter, string, string, string}) => Promise<Boolean>
-const handleSms = ({ sock, phoneNumber, senderPhoneNumber, message }) => {
+const handleSms = ({ phoneNumber, senderPhoneNumber, message }) => {
   const [isVerificationCode, verificationCode] = signal.parseVerificationCode(message)
   return isVerificationCode
-    ? registrationService.verify({ sock, phoneNumber, verificationCode })
+    ? registrationService.verify({ phoneNumber, verificationCode })
     : respondToSms(senderPhoneNumber)
 }
 

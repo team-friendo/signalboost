@@ -20,7 +20,6 @@ const {
 } = require('../../../../app/config')
 
 describe('messenger service', () => {
-  const [db, sock] = [{}, { write: () => {} }]
   const channelPhoneNumber = genPhoneNumber()
   const subscriberPhoneNumbers = times(2, genPhoneNumber)
   const adminPhoneNumbers = times(4, genPhoneNumber)
@@ -148,7 +147,7 @@ describe('messenger service', () => {
                   messageBody: messages.notifications.noop,
                   notifications: [],
                 },
-                dispatchable: { sock, channel, sender: adminSender, sdMessage },
+                dispatchable: { channel, sender: adminSender, sdMessage },
               }),
           )
           it('does not respond to the sender', () => {
@@ -161,19 +160,16 @@ describe('messenger service', () => {
 
           it('broadcasts the message to all channel subscribers and admins in batches', () => {
             expect(broadcastMessageStub.getCall(0).args).to.eql([
-              sock,
               [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(0, 1),
               { ...sdMessage, messageBody: '[DIFFUSER]\nplease help!' },
             ])
 
             expect(broadcastMessageStub.getCall(1).args).to.eql([
-              sock,
               [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(1, 1),
               { ...sdMessage, messageBody: '[BROADCAST]\nplease help!' },
             ])
 
             expect(broadcastMessageStub.getCall(2).args).to.eql([
-              sock,
               [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(2, 1),
               { ...sdMessage, messageBody: '[BROADCAST]\nplease help!' },
             ])
@@ -202,8 +198,6 @@ describe('messenger service', () => {
                   notifications: [],
                 },
                 dispatchable: {
-                  db,
-                  sock,
                   channel,
                   sender: adminSender,
                   sdMessage: noAttachmentSdMessage,
@@ -230,7 +224,7 @@ describe('messenger service', () => {
                 messageBody: messages.notifications.noop,
                 notifications: [],
               },
-              dispatchable: { sock, channel, sender, sdMessage },
+              dispatchable: { channel, sender, sdMessage },
             })
           })
 
@@ -242,7 +236,6 @@ describe('messenger service', () => {
             const response = messagesIn(sender.language).notifications.hotlineMessagesDisabled(true)
 
             expect(sendMessageStub.getCall(0).args).to.eql([
-              sock,
               sender.phoneNumber,
               sdMessageOf(channel, response),
             ])
@@ -259,7 +252,7 @@ describe('messenger service', () => {
                 messageBody: messages.notifications.noop,
                 notifications: [],
               },
-              dispatchable: { sock, channel: hotlineEnabledChannel, sender, sdMessage },
+              dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -273,7 +266,6 @@ describe('messenger service', () => {
                 messageId,
               }).messageBody
               expect(sendMessageStub.getCall(index).args).to.eql([
-                sock,
                 membership.memberPhoneNumber,
                 sdMessageOf(channel, alert),
               ])
@@ -283,7 +275,6 @@ describe('messenger service', () => {
           it('responds to sender with a hotline message notification in the correct language', () => {
             const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
             expect(sendMessageStub.getCall(adminMemberships.length).args).to.eql([
-              sock,
               sender.phoneNumber,
               sdMessageOf(channel, response),
             ])
@@ -302,7 +293,7 @@ describe('messenger service', () => {
           beforeEach(async () => {
             await messenger.dispatch({
               commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { sock, channel: hotlineEnabledChannel, sender, sdMessage },
+              dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
             })
           })
 
@@ -317,7 +308,6 @@ describe('messenger service', () => {
               }).messageBody
 
               expect(sendMessageStub.getCall(index).args).to.eql([
-                sock,
                 membership.memberPhoneNumber,
                 sdMessageOf(channel, alert),
               ])
@@ -327,7 +317,6 @@ describe('messenger service', () => {
           it('responds to sender with a broadcast response notification', () => {
             const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
             expect(sendMessageStub.getCall(adminMemberships.length).args).to.eql([
-              sock,
               sender.phoneNumber,
               sdMessageOf(channel, response),
             ])
@@ -339,7 +328,7 @@ describe('messenger service', () => {
     describe('when message is a command response', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { sock, channel, sender: adminSender, sdMessage: commands.JOIN },
+          dispatchable: { channel, sender: adminSender, sdMessage: commands.JOIN },
           commandResult: {
             command: commands.JOIN,
             status: statuses.SUCCESS,
@@ -359,7 +348,6 @@ describe('messenger service', () => {
 
       it('sends a command result to the message sender', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
-          sock,
           adminSender.phoneNumber,
           sdMessageOf(channel, 'yay!'),
         ])
@@ -373,7 +361,7 @@ describe('messenger service', () => {
     describe('when command result includes notification(s)', () => {
       beforeEach(async () => {
         await messenger.dispatch({
-          dispatchable: { sock, channel, sender: adminSender, sdMessage },
+          dispatchable: { channel, sender: adminSender, sdMessage },
           commandResult: {
             command: commands.ADD,
             status: statuses.SUCCESS,
@@ -392,7 +380,6 @@ describe('messenger service', () => {
       it('sends out each notification', () => {
         adminPhoneNumbers.forEach((phoneNumber, index) => {
           expect(sendMessageStub.getCall(index + 1).args).to.eql([
-            sock,
             phoneNumber,
             sdMessageOf(channel, 'foobar'),
           ])
@@ -406,8 +393,6 @@ describe('messenger service', () => {
           it(`updates the expiry time between the channel and the sender of a ${command} command`, async () => {
             await messenger.dispatch({
               dispatchable: {
-                db,
-                sock,
                 channel,
                 sender: randomSender,
                 sdMessage: sdMessageOf(channel, command),
@@ -420,7 +405,6 @@ describe('messenger service', () => {
               },
             })
             expect(setExpirationStub.getCall(0).args).to.eql([
-              sock,
               channel.phoneNumber,
               randomSender.phoneNumber,
               channel.messageExpiryTime,
@@ -436,8 +420,6 @@ describe('messenger service', () => {
           it(`updates the expiry time between the channel and the sender of a ${command} command`, async () => {
             await messenger.dispatch({
               dispatchable: {
-                db,
-                sock,
                 channel,
                 sender: randomSender,
                 sdMessage: sdMessageOf(channel, `${command} ${rawNewMemberPhoneNumber}`),
@@ -454,7 +436,6 @@ describe('messenger service', () => {
               },
             })
             expect(setExpirationStub.getCall(0).args).to.eql([
-              sock,
               channel.phoneNumber,
               parsedNewMemberPhoneNumber,
               channel.messageExpiryTime,
@@ -473,8 +454,6 @@ describe('messenger service', () => {
           it(`does not update expiry times in response to a ${command} command`, async () => {
             await messenger.dispatch({
               dispatchable: {
-                db,
-                sock,
                 channel,
                 sender: randomSender,
                 sdMessage: sdMessageOf(channel, command),
@@ -496,8 +475,6 @@ describe('messenger service', () => {
         it('does not modify any expiry times', async () => {
           await messenger.dispatch({
             dispatchable: {
-              db,
-              sock,
               channel,
               sender: randomSender,
               sdMessage: sdMessageOf(channel, commands.JOIN),
