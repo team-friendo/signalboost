@@ -13,9 +13,13 @@ import {
   adminMembershipFactory,
   subscriberMembershipFactory,
 } from '../support/factories/membership'
+import { genPhoneNumber } from '../support/factories/phoneNumber'
+import { messagesIn } from '../../app/dispatcher/strings/messages'
+import { languages } from '../../app/language'
 
 describe('dispatch', () => {
-  const socketDelay = 5
+  const socketDelay = 200
+  const randoPhoneNumber = genPhoneNumber()
   let channel, admins, subscribers, writeWithPoolStub
 
   const createChannelWithMembers = async () => {
@@ -104,6 +108,49 @@ describe('dispatch', () => {
           attachments: [],
         },
       ])
+    })
+  })
+
+  describe('dispatching a HELLO command', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      app.sock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: randoPhoneNumber,
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              message: 'HELLO',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments: [],
+            },
+          },
+        }),
+      )
+      await wait(socketDelay)
+    })
+
+    it('subscribes the sender to the channel', async () => {
+      expect(
+        await app.db.membership.findOne({
+          where: {
+            channelPhoneNumber: channel.phoneNumber,
+            memberPhoneNumber: randoPhoneNumber,
+          },
+        }),
+      ).not.to.eql(null)
+    })
+
+    it('sends a welcome message to the sender', () => {
+      expect(writeWithPoolStub.getCall(0).args[0]).to.eql({
+        messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
+        recipientNumber: randoPhoneNumber,
+        type: 'send',
+        username: channel.phoneNumber,
+      })
     })
   })
 })
