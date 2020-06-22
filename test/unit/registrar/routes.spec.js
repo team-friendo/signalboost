@@ -4,14 +4,14 @@ import sinon from 'sinon'
 import request from 'supertest'
 import twilio from 'twilio'
 import { times, pick } from 'lodash'
-import { run } from '../../../../app/api'
-import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
-import channelRegistrar from '../../../../app/registrar/channel'
-import phoneNumberService, { statuses } from '../../../../app/registrar/phoneNumber'
-import { deepChannelFactory } from '../../../support/factories/channel'
+import { run } from '../../../app/api'
+import { genPhoneNumber, phoneNumberFactory } from '../../support/factories/phoneNumber'
+import channelRegistrar from '../../../app/registrar/channel'
+import phoneNumberService, { statuses } from '../../../app/registrar/phoneNumber'
+import { deepChannelFactory } from '../../support/factories/channel'
 const {
   api: { authToken },
-} = require('../../../../app/config/index')
+} = require('../../../app/config')
 
 describe('routes', () => {
   const phoneNumber = genPhoneNumber()

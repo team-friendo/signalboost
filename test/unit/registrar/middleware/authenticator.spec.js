@@ -2,14 +2,14 @@ import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import twilio from 'twilio'
 import request from 'supertest'
-import phoneNumberService from '../../../../../app/registrar/phoneNumber'
-import { run } from '../../../../../app/api'
+import phoneNumberService from '../../../../app/registrar/phoneNumber'
+import { run } from '../../../../app/api'
 import { EventEmitter } from 'events'
-import { statuses } from '../../../../../app/util'
-import signal from '../../../../../app/signal'
+import { statuses } from '../../../../app/util'
+import signal from '../../../../app/signal'
 const {
   api: { authToken },
-} = require('../../../../../app/config/index')
+} = require('../../../../app/config')
 
 describe('authentication middleware', () => {
   let server

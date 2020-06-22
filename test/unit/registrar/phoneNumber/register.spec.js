@@ -3,19 +3,19 @@ import { afterEach, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import { times } from 'lodash'
-import signal from '../../../../../app/signal'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import { errors, statuses as pnStatuses } from '../../../../../app/registrar/phoneNumber/index'
-import { statuses } from '../../../../../app/util'
-import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
-import { wait } from '../../../../../app/util'
-import logger from '../../../../../app/registrar/logger'
+import signal from '../../../../app/signal'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
+import { errors, statuses as pnStatuses } from '../../../../app/registrar/phoneNumber'
+import { statuses } from '../../../../app/util'
+import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
+import { wait } from '../../../../app/util'
+import logger from '../../../../app/registrar/logger'
 import {
   register,
   registerAllUnregistered,
   registerMany,
   verify,
-} from '../../../../../app/registrar/phoneNumber/register'
+} from '../../../../app/registrar/phoneNumber/register'
 
 const {
   signal: {
@@ -23,7 +23,7 @@ const {
     intervalBetweenRegistrationBatches,
     intervalBetweenRegistrations,
   },
-} = require('../../../../../app/config/index')
+} = require('../../../../app/config')
 
 describe('phone number services -- registration module', () => {
   const sock = {}

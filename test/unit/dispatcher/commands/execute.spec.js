@@ -2,34 +2,34 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { processCommand } from '../../../../../app/dispatcher/commands'
+import { processCommand } from '../../../../app/dispatcher/commands'
 import {
   commands,
   toggles,
   vouchModes,
-} from '../../../../../app/dispatcher/commands/constants'
-import { statuses } from '../../../../../app/util'
-import { languages } from '../../../../../app/language'
-import { commandResponses as CR } from '../../../../../app/dispatcher/strings/messages/EN'
-import signal from '../../../../../app/signal'
-import channelRepository from '../../../../../app/db/repositories/channel'
-import inviteRepository from '../../../../../app/db/repositories/invite'
-import membershipRepository from '../../../../../app/db/repositories/membership'
-import deauthorizationRepository from '../../../../../app/db/repositories/deauthorization'
-import hotlineMessageRepository from '../../../../../app/db/repositories/hotlineMessage'
-import phoneNumberService from '../../../../../app/registrar/phoneNumber'
-import validator from '../../../../../app/db/validations/phoneNumber'
-import { subscriptionFactory } from '../../../../support/factories/subscription'
-import { genPhoneNumber, parenthesize } from '../../../../support/factories/phoneNumber'
-import { memberTypes } from '../../../../../app/db/repositories/membership'
-import { sdMessageOf } from '../../../../../app/signal'
+} from '../../../../app/dispatcher/commands/constants'
+import { statuses } from '../../../../app/util'
+import { languages } from '../../../../app/language'
+import { commandResponses as CR } from '../../../../app/dispatcher/strings/messages/EN'
+import signal from '../../../../app/signal'
+import channelRepository from '../../../../app/db/repositories/channel'
+import inviteRepository from '../../../../app/db/repositories/invite'
+import membershipRepository from '../../../../app/db/repositories/membership'
+import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
+import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
+import phoneNumberService from '../../../../app/registrar/phoneNumber'
+import validator from '../../../../app/db/validations/phoneNumber'
+import { subscriptionFactory } from '../../../support/factories/subscription'
+import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
+import { memberTypes } from '../../../../app/db/repositories/membership'
+import { sdMessageOf } from '../../../../app/signal'
 import {
   adminMembershipFactory,
   membershipFactory,
   subscriberMembershipFactory,
-} from '../../../../support/factories/membership'
-import { messagesIn } from '../../../../../app/dispatcher/strings/messages'
-import { deauthorizationFactory } from '../../../../support/factories/deauthorization'
+} from '../../../support/factories/membership'
+import { messagesIn } from '../../../../app/dispatcher/strings/messages'
+import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 
 describe('executing commands', () => {
   const channel = {

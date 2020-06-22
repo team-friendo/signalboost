@@ -2,14 +2,14 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
 import { get, last } from 'lodash'
-import signal, { parseOutboundAttachment } from '../../../../app/signal'
-import { channelFactory } from '../../../support/factories/channel'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { enqueueResend, hash } from '../../../../app/dispatcher/resend'
-import { wait } from '../../../../app/util'
+import signal, { parseOutboundAttachment } from '../../../app/signal'
+import { channelFactory } from '../../support/factories/channel'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
+import { enqueueResend, hash } from '../../../app/dispatcher/resend'
+import { wait } from '../../../app/util'
 const {
   signal: { minResendInterval, maxResendInterval },
-} = require('../../../../app/config')
+} = require('../../../app/config')
 
 describe('resend module', () => {
   const sdMessage = {

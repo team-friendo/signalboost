@@ -1,15 +1,15 @@
 /* eslint-disable no-unused-vars */
 import { expect } from 'chai'
 import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
-import commonService from '../../../../../app/registrar/phoneNumber/common'
-import { destroy } from '../../../../../app/registrar/phoneNumber/destroy'
+import commonService from '../../../../app/registrar/phoneNumber/common'
+import { destroy } from '../../../../app/registrar/phoneNumber/destroy'
 import sinon from 'sinon'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import channelRepository from '../../../../../app/db/repositories/channel'
-import signal from '../../../../../app/signal'
-import app from '../../../../../app'
-import testApp from '../../../../support/testApp'
-import dbService from '../../../../../app/db'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
+import channelRepository from '../../../../app/db/repositories/channel'
+import signal from '../../../../app/signal'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 const fs = require('fs-extra')
 
 describe('phone number services -- destroy module', () => {

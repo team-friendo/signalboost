@@ -2,22 +2,22 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times, values } from 'lodash'
-import { languages } from '../../../../app/language'
-import { memberTypes } from '../../../../app/db/repositories/membership'
-import signal from '../../../../app/signal'
-import messageCountRepository from '../../../../app/db/repositories/messageCount'
-import messenger, { messageTypes } from '../../../../app/dispatcher/messenger'
-import messages from '../../../../app/dispatcher/strings/messages/EN'
-import { commands } from '../../../../app/dispatcher/commands/constants'
-import { statuses } from '../../../../app/util'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { sdMessageOf } from '../../../../app/signal'
-import { messagesIn } from '../../../../app/dispatcher/strings/messages'
-import channelRepository from '../../../../app/db/repositories/channel'
-import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
+import { languages } from '../../../app/language'
+import { memberTypes } from '../../../app/db/repositories/membership'
+import signal from '../../../app/signal'
+import messageCountRepository from '../../../app/db/repositories/messageCount'
+import messenger, { messageTypes } from '../../../app/dispatcher/messenger'
+import messages from '../../../app/dispatcher/strings/messages/EN'
+import { commands } from '../../../app/dispatcher/commands/constants'
+import { statuses } from '../../../app/util'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
+import { sdMessageOf } from '../../../app/signal'
+import { messagesIn } from '../../../app/dispatcher/strings/messages'
+import channelRepository from '../../../app/db/repositories/channel'
+import hotlineMessageRepository from '../../../app/db/repositories/hotlineMessage'
 const {
   signal: { broadcastBatchSize },
-} = require('../../../../app/config')
+} = require('../../../app/config')
 
 describe('messenger service', () => {
   const channelPhoneNumber = genPhoneNumber()

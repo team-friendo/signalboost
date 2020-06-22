@@ -1,20 +1,20 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import channelRepository from '../../../../app/db/repositories/channel'
-import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
-import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import signal from '../../../../app/signal'
-import messenger from '../../../../app/dispatcher/messenger'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { deepChannelAttrs } from '../../../support/factories/channel'
-import { statuses } from '../../../../app/util'
-import { create, addAdmin, list } from '../../../../app/registrar/channel'
-import { messagesIn } from '../../../../app/dispatcher/strings/messages'
+import channelRepository from '../../../app/db/repositories/channel'
+import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
+import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
+import signal from '../../../app/signal'
+import messenger from '../../../app/dispatcher/messenger'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
+import { deepChannelAttrs } from '../../support/factories/channel'
+import { statuses } from '../../../app/util'
+import { create, addAdmin, list } from '../../../app/registrar/channel'
+import { messagesIn } from '../../../app/dispatcher/strings/messages'
 const {
   signal: { defaultMessageExpiryTime },
   defaultLanguage,
-} = require('../../../../app/config')
+} = require('../../../app/config')
 
 describe('channel registrar', () => {
   const phoneNumber = genPhoneNumber()

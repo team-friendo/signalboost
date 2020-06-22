@@ -2,22 +2,22 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { keys } from 'lodash'
-import { wait } from '../../../app/util'
+import { wait } from '../../app/util'
 import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
-} from '../../../app/signal'
-import { pool, signaldEncode } from '../../../app/socket'
+} from '../../app/signal'
+import { pool, signaldEncode } from '../../app/socket'
 import { EventEmitter } from 'events'
-import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { genFingerprint } from '../../support/factories/deauthorization'
+import { genPhoneNumber } from '../support/factories/phoneNumber'
+import { genFingerprint } from '../support/factories/deauthorization'
 import {
   inboundAttachmentFactory,
   outboundAttachmentFactory,
-} from '../../support/factories/sdMessage'
-import app from '../../../app'
-import testApp from '../../support/testApp'
+} from '../support/factories/sdMessage'
+import app from '../../app'
+import testApp from '../support/testApp'
 
 describe('signal module', () => {
   describe('sending signald commands', () => {

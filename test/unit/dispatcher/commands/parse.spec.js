@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import { commands } from '../../../../../app/dispatcher/commands/constants'
-import { parseExecutable } from '../../../../../app/dispatcher/commands/parse'
-import { languages } from '../../../../../app/language'
-import { defaultLanguage } from '../../../../../app/config'
-import { messagesIn } from '../../../../../app/dispatcher/strings/messages'
+import { commands } from '../../../../app/dispatcher/commands/constants'
+import { parseExecutable } from '../../../../app/dispatcher/commands/parse'
+import { languages } from '../../../../app/language'
+import { defaultLanguage } from '../../../../app/config'
+import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 
 describe('parse module', () => {
   const rawPhoneNumber = '+1 (222) 333-4444'

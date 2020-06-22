@@ -2,19 +2,19 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import {
   twilioClient,
   availableTwilioNumbers,
   purchase,
   purchaseN,
-} from '../../../../../app/registrar/phoneNumber/purchase'
-import { errors, statuses } from '../../../../../app/registrar/phoneNumber/common'
+} from '../../../../app/registrar/phoneNumber/purchase'
+import { errors, statuses } from '../../../../app/registrar/phoneNumber/common'
 import {
   genPhoneNumber,
   genSid,
   twilioNumberCreationResponse,
-} from '../../../../support/factories/phoneNumber'
+} from '../../../support/factories/phoneNumber'
 
 describe('phone number services - purchase module', () => {
   const fakePhoneNumber = genPhoneNumber()
