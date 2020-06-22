@@ -5,10 +5,7 @@ import fs from 'fs-extra'
 import { times } from 'lodash'
 import signal from '../../../../../app/signal'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
-import {
-  errors,
-  statuses as pnStatuses,
-} from '../../../../../app/registrar/phoneNumber/index'
+import { errors, statuses as pnStatuses } from '../../../../../app/registrar/phoneNumber/index'
 import { statuses } from '../../../../../app/util'
 import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
 import { wait } from '../../../../../app/util'

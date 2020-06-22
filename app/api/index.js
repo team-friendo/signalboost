@@ -5,7 +5,9 @@ const Router = require('koa-router')
 const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const logger = require('../registrar/logger')
-const { api: { port } } = require('../config')
+const {
+  api: { port },
+} = require('../config')
 
 const run = async () => {
   const app = new Koa()

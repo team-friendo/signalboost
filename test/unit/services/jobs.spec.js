@@ -8,10 +8,7 @@ import hotlineMessageRepository from '../../../app/db/repositories/hotlineMessag
 import registrar from '../../../app/jobs'
 
 describe('jobs service', () => {
-  let registerAllStub,
-    inviteDeletionStub,
-    smsSenderDeletionStub,
-    hotlineMessageDeletionStub
+  let registerAllStub, inviteDeletionStub, smsSenderDeletionStub, hotlineMessageDeletionStub
 
   describe('running the service', () => {
     before(async () => {
