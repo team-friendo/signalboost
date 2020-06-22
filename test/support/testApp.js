@@ -19,11 +19,12 @@ const dbResource = {
   },
 }
 
-const sockResource = () =>
-  merge(new EventEmitter().setMaxListeners(30), {
-    stop: defaultResource.stop,
-    write: () => Promise.resolve(),
-  })
+const sockResource = () => {
+  const res = new EventEmitter().setMaxListeners(30)
+  res.stop = defaultResource.stop
+  res.write = (msg, cb) => cb(null, true)
+  return res
+}
 
 module.exports = {
   db: stubOf(dbResource),
