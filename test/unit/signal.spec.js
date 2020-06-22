@@ -12,10 +12,7 @@ import { pool, signaldEncode } from '../../app/socket'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 import { genFingerprint } from '../support/factories/deauthorization'
-import {
-  inboundAttachmentFactory,
-  outboundAttachmentFactory,
-} from '../support/factories/sdMessage'
+import { inboundAttachmentFactory, outboundAttachmentFactory } from '../support/factories/sdMessage'
 import app from '../../app'
 import testApp from '../support/testApp'
 

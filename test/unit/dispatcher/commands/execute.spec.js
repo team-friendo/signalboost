@@ -3,11 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import { processCommand } from '../../../../app/dispatcher/commands'
-import {
-  commands,
-  toggles,
-  vouchModes,
-} from '../../../../app/dispatcher/commands/constants'
+import { commands, toggles, vouchModes } from '../../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../../app/util'
 import { languages } from '../../../../app/language'
 import { commandResponses as CR } from '../../../../app/dispatcher/strings/messages/EN'
