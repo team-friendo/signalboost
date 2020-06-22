@@ -105,7 +105,7 @@ dev.logs: ## show logs for all docker containers
 
 dev.restart: ## force stop and start the app again
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
-	docker-compose -f docker-compose-dev.yml up
+	docker-compose -f docker-compose-dev.yml up -d
 
 #############
 # run tests #
