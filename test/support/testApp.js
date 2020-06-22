@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import { merge } from 'lodash'
 
 const stubOf = (resource = defaultResource) => ({
   run: () => Promise.resolve(resource),
