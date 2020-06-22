@@ -254,4 +254,4 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
 
 // EXPORTS
 
-module.exports = { run }
+module.exports = { run, dispatch }
