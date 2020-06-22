@@ -29,5 +29,6 @@ module.exports = {
   db: stubOf(dbResource),
   sock: stubOf(sockResource()),
   api: stubOf(defaultResource),
+  jobs: stubOf(defaultResource),
   dispatcher: stubOf(defaultResource),
 }

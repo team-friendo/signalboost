@@ -1,8 +1,8 @@
-const logger = require('./logger')
-const phoneNumberRegistrar = require('./phoneNumber')
-const inviteRepository = require('../db/repositories/invite')
-const smsSenderRepository = require('../db/repositories/smsSender')
-const hotlineMessageRepository = require('../db/repositories/hotlineMessage')
+const logger = require('./registrar/logger')
+const phoneNumberRegistrar = require('./registrar/phoneNumber')
+const inviteRepository = require('./db/repositories/invite')
+const smsSenderRepository = require('./db/repositories/smsSender')
+const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 
 const run = async () => {
   logger.log('--- Initializing Registrar...')

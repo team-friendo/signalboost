@@ -1,13 +1,13 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import sinon from 'sinon'
-import phoneNumberRegistrar from '../../../../app/registrar/phoneNumber'
-import inviteRepository from '../../../../app/db/repositories/invite'
-import smsSenderRepository from '../../../../app/db/repositories/smsSender'
-import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
-import registrar from '../../../../app/registrar'
+import phoneNumberRegistrar from '../../../app/registrar/phoneNumber'
+import inviteRepository from '../../../app/db/repositories/invite'
+import smsSenderRepository from '../../../app/db/repositories/smsSender'
+import hotlineMessageRepository from '../../../app/db/repositories/hotlineMessage'
+import registrar from '../../../app/jobs'
 
-describe('registrar service', () => {
+describe('jobs service', () => {
   let registerAllStub,
     inviteDeletionStub,
     smsSenderDeletionStub,

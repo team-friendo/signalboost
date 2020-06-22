@@ -17,8 +17,6 @@ const {
 
 /**
  * type Dispatchable = {
- *   db: SequelizeDatabaseConnection,
- *   sock: Socket,
  *   channel: models.Channel,
  *   sender: Sender,
  *   sdMessage: signal.OutBoundSignaldMessage,,
