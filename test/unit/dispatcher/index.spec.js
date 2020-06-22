@@ -23,7 +23,7 @@ const {
   signal: { defaultMessageExpiryTime, supportPhoneNumber, minResendInterval },
 } = require('../../../app/config')
 
-describe('dispatcher service', () => {
+describe('dispatcher module', () => {
   const channels = times(2, deepChannelFactory)
   const channel = channels[0]
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
