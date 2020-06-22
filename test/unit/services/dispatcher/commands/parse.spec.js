@@ -591,16 +591,6 @@ describe('parse module', () => {
           })
         })
       })
-
-      it('parses a multi-line description', () => {
-        const message = 'DESCRIPTION foo channel\ndescription'
-
-        expect(parseExecutable(message)).to.eql({
-          command: commands.SET_DESCRIPTION,
-          language: languages.EN,
-          payload: 'foo channel\ndescription',
-        })
-      })
     })
 
     describe('HOTLINE_ON command', () => {
@@ -1063,7 +1053,7 @@ describe('parse module', () => {
       })
     })
 
-    describe('a hotline message id payload', () => {
+    describe('a hotline reply payload', () => {
       describe('when it contains a valid message id', () => {
         const variants = [
           { language: languages.EN, message: 'REPLY #1312 foo' },
@@ -1087,8 +1077,8 @@ describe('parse module', () => {
         const variants = [
           { language: languages.EN, message: 'REPLY #abc foo' },
           { language: languages.ES, message: 'RESPONDER #abc foo' },
-          // { language: languages.FR, message: 'RÉPONDRE foo' },
-          // { language: languages.DE, message: 'ANTWORTEN foo' },
+          { language: languages.FR, message: 'RÉPONDRE #abc foo' },
+          { language: languages.DE, message: 'ANTWORTEN #abc foo' },
         ]
         it('returns a parse error', () => {
           variants.forEach(({ language, message }) =>
@@ -1097,6 +1087,24 @@ describe('parse module', () => {
             ),
           )
         })
+      })
+
+      describe('a multi-line hotline reply', () => {
+        const message = 'reply #2 friendos\n to\n the\n\n rescue!!!!!!'
+        it('parses the hotline reply, including line breaks', () => {
+          expect(parseExecutable(message).payload).to.eql({
+            messageId: 2,
+            reply: 'friendos\n to\n the\n\n rescue!!!!!!',
+          })
+        })
+      })
+    })
+
+    describe('a description payload', () => {
+      it('parses a multi-line description', () => {
+        const message = 'DESCRIPTION foo channel\ndescription'
+
+        expect(parseExecutable(message).payload).to.eql('foo channel\ndescription')
       })
     })
   })
