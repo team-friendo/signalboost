@@ -62,9 +62,7 @@ const run = async () => {
   const resendQueue = {}
   const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
   const numListening = await Promise.all(channels.map(ch => signal.subscribe(ch.phoneNumber)))
-  app.sock.on('data', inboundMsg =>
-    dispatch(resendQueue, parseMessage(inboundMsg)).catch(logger.error),
-  )
+  app.sock.on('data', msg => dispatch(msg, resendQueue).catch(logger.error))
 
   logger.log(`----- Subscribed to ${numListening.length} of ${channels.length} channels!`)
   logger.log(`--- Dispatcher running!`)
@@ -74,7 +72,8 @@ const run = async () => {
  * MESSAGE DISPATCH
  *******************/
 
-const dispatch = async (resendQueue, inboundMsg) => {
+const dispatch = async (rawMessage, resendQueue) => {
+  const inboundMsg = parseMessage(rawMessage)
   // retrieve db info we need for dispatching...
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
@@ -255,4 +254,4 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
 
 // EXPORTS
 
-module.exports = { run }
+module.exports = { run, dispatch }
