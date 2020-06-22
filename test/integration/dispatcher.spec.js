@@ -17,7 +17,7 @@ import { genPhoneNumber } from '../support/factories/phoneNumber'
 import { messagesIn } from '../../app/dispatcher/strings/messages'
 import { languages } from '../../app/language'
 
-describe('dispatch', () => {
+describe('dispatcher', () => {
   const socketDelay = 200
   const randoPhoneNumber = genPhoneNumber()
   let channel, admins, subscribers, writeWithPoolStub
