@@ -2,12 +2,12 @@ import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import twilio from 'twilio'
 import request from 'supertest'
-import phoneNumberService from '../../../../../app/services/registrar/phoneNumber'
-import { startServer } from '../../../../../app/services/registrar/api'
+import phoneNumberService from '../../../../../app/registrar/phoneNumber'
+import { startServer } from '../../../../../app/registrar/api'
 import { registrar } from '../../../../../app/config/index'
 import { EventEmitter } from 'events'
-import { statuses } from '../../../../../app/services/util'
-import signal from '../../../../../app/services/signal'
+import { statuses } from '../../../../../app/util'
+import signal from '../../../../../app/signal'
 
 describe('authentication middleware', () => {
   let server

@@ -3,22 +3,22 @@ import { afterEach, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import { times } from 'lodash'
-import signal from '../../../../../app/services/signal'
+import signal from '../../../../../app/signal'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import {
   errors,
   statuses as pnStatuses,
-} from '../../../../../app/services/registrar/phoneNumber/index'
-import { statuses } from '../../../../../app/services/util'
+} from '../../../../../app/registrar/phoneNumber/index'
+import { statuses } from '../../../../../app/util'
 import { genPhoneNumber, phoneNumberFactory } from '../../../../support/factories/phoneNumber'
-import { wait } from '../../../../../app/services/util'
-import logger from '../../../../../app/services/registrar/logger'
+import { wait } from '../../../../../app/util'
+import logger from '../../../../../app/registrar/logger'
 import {
   register,
   registerAllUnregistered,
   registerMany,
   verify,
-} from '../../../../../app/services/registrar/phoneNumber/register'
+} from '../../../../../app/registrar/phoneNumber/register'
 
 const {
   signal: {

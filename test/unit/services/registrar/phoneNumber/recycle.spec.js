@@ -1,12 +1,12 @@
 /* eslint-disable no-unused-vars */
 import { expect } from 'chai'
 import { afterEach, beforeEach, describe, it } from 'mocha'
-import phoneNumberService from '../../../../../app/services/registrar/phoneNumber/index'
+import phoneNumberService from '../../../../../app/registrar/phoneNumber/index'
 import sinon from 'sinon'
 import phoneNumberRepository from '../../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../../app/db/repositories/channel'
-import signal from '../../../../../app/services/signal'
-import common from '../../../../../app/services/registrar/phoneNumber/common'
+import signal from '../../../../../app/signal'
+import common from '../../../../../app/registrar/phoneNumber/common'
 
 describe('phone number services -- recycle module', () => {
   const phoneNumbers = '+11111111111,+12222222222'

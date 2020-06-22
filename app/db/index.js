@@ -9,7 +9,7 @@ const { membershipOf } = require('./models/membership')
 const { messageCountOf } = require('./models/messageCount')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { smsSenderOf } = require('./models/smsSender')
-const { wait } = require('../services/util')
+const { wait } = require('../util')
 const { maxConnectionAttempts, connectionInterval } = config
 
 // () -> { Database, Sequelize, DataTypes }

@@ -1,11 +1,11 @@
 const app = {}
 
 app.run = async ({ db, sock, registrar, dispatcher }) => {
-  const { logger } = require('./services/util')
+  const { logger } = require('./util')
   const dbService = db || require('./db')
-  const socketService = sock || require('./services/socket')
-  const registrarService = registrar || require('./services/registrar')
-  const dispatcherService = dispatcher || require('./services/dispatcher')
+  const socketService = sock || require('./socket')
+  const registrarService = registrar || require('./registrar')
+  const dispatcherService = dispatcher || require('./dispatcher')
 
   logger.log('> Initializing Signalboost...')
 
@@ -30,7 +30,7 @@ app.run = async ({ db, sock, registrar, dispatcher }) => {
 }
 
 app.stop = async () => {
-  const { logger } = require('./services/util')
+  const { logger } = require('./util')
   logger.log('Shutting down signalboost...')
   await Promise.all([app.db.stop(), app.sock.stop()])
   logger.log('...Signalboost shut down!')

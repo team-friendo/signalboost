@@ -2,13 +2,13 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { keys } from 'lodash'
-import { wait } from '../../../app/services/util'
+import { wait } from '../../../app/util'
 import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
-} from '../../../app/services/signal'
-import { pool, signaldEncode } from '../../../app/services/socket'
+} from '../../../app/signal'
+import { pool, signaldEncode } from '../../../app/socket'
 import { EventEmitter } from 'events'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'

@@ -4,13 +4,13 @@ import sinon from 'sinon'
 import channelRepository from '../../../../app/db/repositories/channel'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import signal from '../../../../app/services/signal'
-import messenger from '../../../../app/services/dispatcher/messenger'
+import signal from '../../../../app/signal'
+import messenger from '../../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../../support/factories/channel'
-import { statuses } from '../../../../app/services/util'
-import { create, addAdmin, list } from '../../../../app/services/registrar/channel'
-import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
+import { statuses } from '../../../../app/util'
+import { create, addAdmin, list } from '../../../../app/registrar/channel'
+import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 const {
   signal: { defaultMessageExpiryTime },
   defaultLanguage,

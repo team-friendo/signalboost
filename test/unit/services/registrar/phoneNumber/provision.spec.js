@@ -2,9 +2,9 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { provisionN, statuses } from '../../../../../app/services/registrar/phoneNumber/index'
-import purchase from '../../../../../app/services/registrar/phoneNumber/purchase'
-import register from '../../../../../app/services/registrar/phoneNumber/register'
+import { provisionN, statuses } from '../../../../../app/registrar/phoneNumber/index'
+import purchase from '../../../../../app/registrar/phoneNumber/purchase'
+import register from '../../../../../app/registrar/phoneNumber/register'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
 const {
   signal: { registrationBatchSize },

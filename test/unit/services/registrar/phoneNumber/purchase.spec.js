@@ -8,8 +8,8 @@ import {
   availableTwilioNumbers,
   purchase,
   purchaseN,
-} from '../../../../../app/services/registrar/phoneNumber/purchase'
-import { errors, statuses } from '../../../../../app/services/registrar/phoneNumber/common'
+} from '../../../../../app/registrar/phoneNumber/purchase'
+import { errors, statuses } from '../../../../../app/registrar/phoneNumber/common'
 import {
   genPhoneNumber,
   genSid,

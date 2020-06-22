@@ -2,7 +2,7 @@ const app = require('../../../app')
 const moment = require('moment')
 const { Op } = require('sequelize')
 const membershipRepository = require('./membership')
-const { repeatEvery, loggerOf } = require('../../services/util')
+const { repeatEvery, loggerOf } = require('../../util')
 const logger = loggerOf('db|inviteRepository')
 const {
   defaultLanguage,

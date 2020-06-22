@@ -3,9 +3,9 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import net from 'net'
-import { wait } from '../../../app/services/util'
+import { wait } from '../../../app/util'
 import { EventEmitter } from 'events'
-import socket from '../../../app/services/socket'
+import socket from '../../../app/socket'
 
 describe('socket module', () => {
   const sock = new EventEmitter()

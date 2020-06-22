@@ -5,7 +5,7 @@ const jobConfigsByEnv = require('./job')
 const twilioConfigsByEnv = require('./twilio')
 const registrarConfigsByEnv = require('./registrar')
 const signalConfigsByEnv = require('./signal')
-const { defaultLanguage } = require('../services/language')
+const { defaultLanguage } = require('../language')
 
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
 

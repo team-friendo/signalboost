@@ -9,7 +9,7 @@ import {
 } from '../../../support/factories/membership'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import { inviteFactory } from '../../../support/factories/invite'
-import { wait } from '../../../../app/services/util'
+import { wait } from '../../../../app/util'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'

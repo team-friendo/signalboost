@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import util from '../../app/services/util'
+import util from '../../app/util'
 
 describe('utility module', () => {
   describe('#sequence', () => {

@@ -2,13 +2,13 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
 import { genPhoneNumber } from '../../../../support/factories/phoneNumber'
-import { handleSms, reachedQuotaError } from '../../../../../app/services/registrar/phoneNumber/sms'
-import { statuses } from '../../../../../app/services/util'
-import registrationService from '../../../../../app/services/registrar/phoneNumber/register'
+import { handleSms, reachedQuotaError } from '../../../../../app/registrar/phoneNumber/sms'
+import { statuses } from '../../../../../app/util'
+import registrationService from '../../../../../app/registrar/phoneNumber/register'
 import smsSenderRepository from '../../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../../support/factories/smsSender'
-import { languages } from '../../../../../app/services/language'
-import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
+import { languages } from '../../../../../app/language'
+import { messagesIn } from '../../../../../app/dispatcher/strings/messages'
 
 describe('sms module', () => {
   const phoneNumber = genPhoneNumber()

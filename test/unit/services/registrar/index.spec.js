@@ -1,12 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import sinon from 'sinon'
-import phoneNumberRegistrar from '../../../../app/services/registrar/phoneNumber'
+import phoneNumberRegistrar from '../../../../app/registrar/phoneNumber'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
-import api from '../../../../app/services/registrar/api'
-import registrar from '../../../../app/services/registrar'
+import api from '../../../../app/registrar/api'
+import registrar from '../../../../app/registrar'
 
 describe('registrar service', () => {
   const sock = {}

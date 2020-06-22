@@ -1,13 +1,13 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import messagesEN from '../../../../app/services/dispatcher/strings/messages/EN'
-import messagesES from '../../../../app/services/dispatcher/strings/messages/ES'
-import messagesFR from '../../../../app/services/dispatcher/strings/messages/FR'
-import messagesDE from '../../../../app/services/dispatcher/strings/messages/DE'
+import messagesEN from '../../../../app/dispatcher/strings/messages/EN'
+import messagesES from '../../../../app/dispatcher/strings/messages/ES'
+import messagesFR from '../../../../app/dispatcher/strings/messages/FR'
+import messagesDE from '../../../../app/dispatcher/strings/messages/DE'
 import { memberTypes } from '../../../../app/db/repositories/membership'
 import { times, keys } from 'lodash'
-import { messagesIn } from '../../../../app/services/dispatcher/strings/messages'
-import { languages } from '../../../../app/services/language'
+import { messagesIn } from '../../../../app/dispatcher/strings/messages'
+import { languages } from '../../../../app/language'
 import {
   adminMembershipFactory,
   subscriberMembershipFactory,

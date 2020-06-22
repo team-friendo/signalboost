@@ -2,33 +2,33 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import { processCommand } from '../../../../../app/services/dispatcher/commands'
+import { processCommand } from '../../../../../app/dispatcher/commands'
 import {
   commands,
   toggles,
   vouchModes,
-} from '../../../../../app/services/dispatcher/commands/constants'
-import { statuses } from '../../../../../app/services/util'
-import { languages } from '../../../../../app/services/language'
-import { commandResponses as CR } from '../../../../../app/services/dispatcher/strings/messages/EN'
-import signal from '../../../../../app/services/signal'
+} from '../../../../../app/dispatcher/commands/constants'
+import { statuses } from '../../../../../app/util'
+import { languages } from '../../../../../app/language'
+import { commandResponses as CR } from '../../../../../app/dispatcher/strings/messages/EN'
+import signal from '../../../../../app/signal'
 import channelRepository from '../../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../../app/db/repositories/deauthorization'
 import hotlineMessageRepository from '../../../../../app/db/repositories/hotlineMessage'
-import phoneNumberService from '../../../../../app/services/registrar/phoneNumber'
+import phoneNumberService from '../../../../../app/registrar/phoneNumber'
 import validator from '../../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../../support/factories/phoneNumber'
 import { memberTypes } from '../../../../../app/db/repositories/membership'
-import { sdMessageOf } from '../../../../../app/services/signal'
+import { sdMessageOf } from '../../../../../app/signal'
 import {
   adminMembershipFactory,
   membershipFactory,
   subscriberMembershipFactory,
 } from '../../../../support/factories/membership'
-import { messagesIn } from '../../../../../app/services/dispatcher/strings/messages'
+import { messagesIn } from '../../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../../support/factories/deauthorization'
 
 describe('executing commands', () => {

@@ -5,7 +5,7 @@ import {
   defaultLanguage,
   languageForPhoneNumber,
   languageForCountry,
-} from '../../../app/services/language'
+} from '../../../app/language'
 
 describe('langauge module', () => {
   describe('supported languages', () => {

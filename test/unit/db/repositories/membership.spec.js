@@ -4,7 +4,7 @@ import { omit, pick } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
-import { languages } from '../../../../app/services/language'
+import { languages } from '../../../../app/language'
 import {
   adminMembershipFactory,
   membershipFactory,
