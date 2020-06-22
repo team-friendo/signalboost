@@ -2,8 +2,8 @@ import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
 import { keys } from 'lodash'
-import { initDb } from '../../app/db'
-import { registrar } from '../../app/config/index'
+import { run } from '../../app/db'
+import { api } from '../../app/config'
 import { statuses } from '../../app/db/models/phoneNumber'
 import { genPhoneNumber, genSid } from '../support/factories/phoneNumber'
 import { first, last, findIndex } from 'lodash'
@@ -19,8 +19,8 @@ describe('retrieving metrics', () => {
     { phoneNumber: genPhoneNumber(), twilioSid: genSid(), status: statuses.ACTIVE },
   ]
 
-  before(async () => (db = initDb()))
-  after(async () => await db.sequelize.close())
+  before(async () => (db = await run()))
+  after(async () => await db.stop())
 
   describe('listing channels', () => {
     before(async function() {
@@ -39,7 +39,7 @@ describe('retrieving metrics', () => {
       /**********************************************************/
       response = await request(appUrl)
         .get('/channels')
-        .set('Token', registrar.authToken)
+        .set('Token', api.authToken)
       /**********************************************************/
     })
     after(async () => await Promise.all(channels.map(ch => ch.destroy())))
@@ -74,7 +74,7 @@ describe('retrieving metrics', () => {
       count = await db.phoneNumber.count()
       response = await request(appUrl)
         .get('/phoneNumbers')
-        .set('Token', registrar.authToken)
+        .set('Token', api.authToken)
     })
     after(async () => await Promise.all(phoneNumbers.map(r => r.destroy())))
 

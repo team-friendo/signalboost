@@ -3,9 +3,11 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
 import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { initDb } from '../../../../app/db/index'
 import { omit, keys, times } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -14,7 +16,9 @@ describe('channel repository', () => {
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
 
-  before(() => (db = initDb()))
+  before(async () => {
+    db = (await app.run({ ...testApp, db: dbService })).db
+  })
   afterEach(async () => {
     await Promise.all([
       db.channel.destroy({ where: {}, force: true }),
@@ -24,7 +28,7 @@ describe('channel repository', () => {
       db.deauthorization.destroy({ where: {}, force: true }),
     ])
   })
-  after(async () => await db.sequelize.close())
+  after(async () => await app.stop())
 
   describe('#create', () => {
     let channel, channelCount, messageCountCount, membershipCount
@@ -34,12 +38,7 @@ describe('channel repository', () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         membershipCount = await db.membership.count()
-        channel = await channelRepository.create(
-          db,
-          channelPhoneNumber,
-          '#blackops',
-          adminPhoneNumbers,
-        )
+        channel = await channelRepository.create(channelPhoneNumber, '#blackops', adminPhoneNumbers)
       })
 
       it('creates a new channel', async () => {
@@ -71,12 +70,11 @@ describe('channel repository', () => {
     describe('when given phone number for a already-existing channel', () => {
       let newAdminPhoneNumbers = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.create(db, channelPhoneNumber, '#foursquare', newAdminPhoneNumbers)
+        await channelRepository.create(channelPhoneNumber, '#foursquare', newAdminPhoneNumbers)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         membershipCount = await db.membership.count()
         channel = await channelRepository.create(
-          db,
           channelPhoneNumber,
           '#blackops',
           newAdminPhoneNumbers,
@@ -106,7 +104,7 @@ describe('channel repository', () => {
     let updatedChannel
     beforeEach(async () => {
       await db.channel.create({ phoneNumber: channelPhoneNumber, name: 'foo' })
-      updatedChannel = await channelRepository.update(db, channelPhoneNumber, { name: 'bar' })
+      updatedChannel = await channelRepository.update(channelPhoneNumber, { name: 'bar' })
     })
 
     it("updates a channel's name", async () => {
@@ -134,7 +132,7 @@ describe('channel repository', () => {
           { model: db.messageCount },
         ],
       })
-      result = await channelRepository.findDeep(db, channel.phoneNumber)
+      result = await channelRepository.findDeep(channel.phoneNumber)
     })
 
     it('retrieves all of a  channels nested attrs', () => {

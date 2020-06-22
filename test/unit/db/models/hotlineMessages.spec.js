@@ -1,14 +1,14 @@
 import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import { times } from 'lodash'
-import { initDb } from '../../../../app/db'
+import { run } from '../../../../app/db'
 import { hotlineMessageFactory } from '../../../support/factories/hotlineMessages'
 import { channelFactory } from '../../../support/factories/channel'
 
 describe('hotlineMessages model', () => {
   let db, hotlineMessage, channel
 
-  before(() => (db = initDb()))
+  before(async () => (db = await run()))
   beforeEach(async () => {
     channel = await db.channel.create(channelFactory())
   })
@@ -17,7 +17,7 @@ describe('hotlineMessages model', () => {
     await db.hotlineMessage.destroy({ where: {}, force: true })
     return db.channel.destroy({ where: {}, force: true })
   })
-  after(() => db.sequelize.close())
+  after(() => db.stop())
 
   it('has correct fields', async () => {
     hotlineMessage = await db.hotlineMessage.create(

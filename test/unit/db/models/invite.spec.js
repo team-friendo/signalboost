@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, after } from 'mocha'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { channelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { inviteFactory } from '../../../support/factories/invite'
@@ -9,12 +9,13 @@ describe('invite model', () => {
   let db, invite
 
   before(async () => {
-    db = initDb()
+    db = await run()
   })
 
   after(async () => {
     await db.invite.destroy({ where: {} })
     await db.channel.destroy({ where: {} })
+    await db.stop()
   })
 
   it('has correct fields', async () => {

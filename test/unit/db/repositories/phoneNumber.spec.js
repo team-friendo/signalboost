@@ -1,9 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, afterEach, after } from 'mocha'
 import { pick } from 'lodash'
-import { initDb } from '../../../../app/db/index'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
+import dbService from '../../../../app/db'
 
 describe('phone number repository', () => {
   const {
@@ -11,9 +13,19 @@ describe('phone number repository', () => {
   } = phoneNumberRepository
   let db
 
-  before(() => (db = initDb()))
+  before(async () => {
+    db = (await app.run({ ...testApp, db: dbService })).db
+  })
   afterEach(async () => await db.phoneNumber.destroy({ where: {} }))
-  after(async () => await db.sequelize.close())
+  after(async () => await app.stop())
+
+  describe('#create', () => {
+    it('creates a new phoneNubmer', async () => {
+      let count = await db.phoneNumber.count()
+      await phoneNumberRepository.create(phoneNumberFactory())
+      expect(await db.phoneNumber.count()).to.eql(count + 1)
+    })
+  })
 
   describe('#update', () => {
     let phoneNumber
@@ -22,7 +34,7 @@ describe('phone number repository', () => {
     })
 
     it('updates a phone number', async () => {
-      await phoneNumberRepository.update(db, phoneNumber, {
+      await phoneNumberRepository.update(phoneNumber, {
         status: 'VERIFIED',
         twilioSid: 'deadbeef',
       })
@@ -45,7 +57,7 @@ describe('phone number repository', () => {
 
     describe('when given no filters', () => {
       it('retrieves a list of all phone numbers, sorted by activation level', async () => {
-        const pNumList = await phoneNumberRepository.list(db)
+        const pNumList = await phoneNumberRepository.list()
         expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
           phoneNumberAttrs.slice().reverse(),
         )
@@ -54,7 +66,7 @@ describe('phone number repository', () => {
 
     describe('when given ACTIVE filter', () => {
       it('retrieves a list of ACTIVE phone numbers', async () => {
-        const pNumList = await phoneNumberRepository.list(db, ACTIVE)
+        const pNumList = await phoneNumberRepository.list(ACTIVE)
         expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
           phoneNumberAttrs.slice(-1),
         )
@@ -63,7 +75,7 @@ describe('phone number repository', () => {
 
     describe('when given INACTIVE filter', () => {
       it('retrieves a list of PURCHASED, REGISTERD, and VERIFIED phone numbers', async () => {
-        const pNumList = await phoneNumberRepository.list(db, INACTIVE)
+        const pNumList = await phoneNumberRepository.list(INACTIVE)
         expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
           phoneNumberAttrs.slice(0, -1).reverse(),
         )

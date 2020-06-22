@@ -1,14 +1,14 @@
 import { expect } from 'chai'
 import { describe, it, before, after, afterEach } from 'mocha'
-import { initDb } from '../../../../app/db/index'
+import { run } from '../../../../app/db/index'
 import { smsSenderFactory } from '../../../support/factories/smsSender'
 
 describe('smsSender model', () => {
   let db
 
-  before(() => (db = initDb()))
+  before(async () => (db = await run()))
   afterEach(() => db.smsSender.destroy({ where: {}, force: true }))
-  after(() => db.sequelize.close())
+  after(() => db.stop())
 
   it('has correct fields', async () => {
     const smsSender = await db.smsSender.create(smsSenderFactory())
