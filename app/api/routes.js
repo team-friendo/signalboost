@@ -1,19 +1,19 @@
 /* eslint require-atomic-updates: 0 */
-const phoneNumberService = require('./phoneNumber')
-const channelRegistrar = require('./channel')
+const phoneNumberService = require('../registrar/phoneNumber')
+const channelRegistrar = require('../registrar/channel')
 const { get, find, merge } = require('lodash')
 const signal = require('../signal')
 const {
   twilio: { smsEndpoint },
 } = require('../config')
 
-const routesOf = async (router, sock) => {
+const routesOf = async router => {
   router.get('/hello', async ctx => {
     ctx.body = { msg: 'hello world' }
   })
 
   router.get('/healthcheck', async ctx => {
-    const result = await signal.isAlive(sock)
+    const result = await signal.isAlive()
     merge(ctx, { status: httpStatusOf(get(result, 'status')) })
   })
 

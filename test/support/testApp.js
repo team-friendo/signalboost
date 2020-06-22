@@ -28,6 +28,6 @@ const sockResource = () =>
 module.exports = {
   db: stubOf(dbResource),
   sock: stubOf(sockResource()),
-  registrar: stubOf(defaultResource),
+  api: stubOf(defaultResource),
   dispatcher: stubOf(defaultResource),
 }

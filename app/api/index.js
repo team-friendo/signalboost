@@ -4,18 +4,20 @@ const requestLogger = require('koa-logger')
 const Router = require('koa-router')
 const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
-const logger = require('./logger')
+const logger = require('../registrar/logger')
+const { api: { port } } = require('../config')
 
-const startServer = async (port, sock) => {
+const run = async () => {
   const app = new Koa()
 
   configureLogger(app)
   configureBodyParser(app)
   configureAuthenticator(app)
-  configureRoutes(app, sock)
+  configureRoutes(app)
 
   const server = await app.listen(port).on('error', logger.error)
-  return Promise.resolve({ app, server })
+  const stop = () => server.close()
+  return Promise.resolve({ app, server, stop })
 }
 
 const configureLogger = app => process.env.NODE_ENV !== 'test' && app.use(requestLogger())
@@ -30,11 +32,11 @@ const configureBodyParser = app => {
   )
 }
 
-const configureRoutes = (app, sock) => {
+const configureRoutes = app => {
   const router = new Router()
-  routesOf(router, sock)
+  routesOf(router)
   app.use(router.routes())
   app.use(router.allowedMethods())
 }
 
-module.exports = { startServer }
+module.exports = { run }

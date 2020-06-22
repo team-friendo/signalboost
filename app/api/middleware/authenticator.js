@@ -1,7 +1,7 @@
 const twilio = require('twilio')
-const { smsUrl } = require('../phoneNumber/common')
+const { smsUrl } = require('../../registrar/phoneNumber/common')
 const {
-  registrar: { authToken },
+  api: { authToken },
   twilio: { smsEndpoint, authToken: twilioAuthToken },
 } = require('../../config')
 

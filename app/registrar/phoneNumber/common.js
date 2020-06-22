@@ -4,7 +4,7 @@ const channelRepository = require('../../db/repositories/channel')
 const signal = require('../../signal')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
-  registrar: { host },
+  api: { host },
   signal: { supportPhoneNumber },
 } = require('../../config')
 

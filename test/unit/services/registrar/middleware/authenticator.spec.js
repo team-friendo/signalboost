@@ -3,11 +3,13 @@ import sinon from 'sinon'
 import twilio from 'twilio'
 import request from 'supertest'
 import phoneNumberService from '../../../../../app/registrar/phoneNumber'
-import { startServer } from '../../../../../app/registrar/api'
-import { registrar } from '../../../../../app/config/index'
+import { run } from '../../../../../app/api'
 import { EventEmitter } from 'events'
 import { statuses } from '../../../../../app/util'
 import signal from '../../../../../app/signal'
+const {
+  api: { authToken },
+} = require('../../../../../app/config/index')
 
 describe('authentication middleware', () => {
   let server
@@ -15,7 +17,7 @@ describe('authentication middleware', () => {
   before(async () => {
     const sock = new EventEmitter()
     sock.write = sinon.stub()
-    server = (await startServer(10000, {}, sock)).server
+    server = (await run(10000, {}, sock)).server
   })
 
   after(() => {
@@ -27,14 +29,14 @@ describe('authentication middleware', () => {
     it('allows a request that contains auth token in the header', async () => {
       await request(server)
         .get('/hello')
-        .set('Token', registrar.authToken)
+        .set('Token', authToken)
         .expect(200, { msg: 'hello world' })
     })
 
     it('allows a request regardless of cregistrartalization in header', async () => {
       await request(server)
         .get('/hello')
-        .set('ToKeN', registrar.authToken)
+        .set('ToKeN', authToken)
         .expect(200, { msg: 'hello world' })
     })
 
@@ -54,7 +56,7 @@ describe('authentication middleware', () => {
     it('blocks a request that contains the right auth token in the wrong header', async () => {
       await request(server)
         .get('/hello')
-        .set('FooBar', registrar.authToken)
+        .set('FooBar', authToken)
         .expect(401, { error: 'Not Authorized' })
     })
   })

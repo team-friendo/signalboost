@@ -3,17 +3,9 @@ const phoneNumberRegistrar = require('./phoneNumber')
 const inviteRepository = require('../db/repositories/invite')
 const smsSenderRepository = require('../db/repositories/smsSender')
 const hotlineMessageRepository = require('../db/repositories/hotlineMessage')
-const api = require('./api')
-const {
-  registrar: { host, port },
-} = require('../config')
 
 const run = async () => {
   logger.log('--- Initializing Registrar...')
-
-  logger.log(`----- Staring api server...`)
-  await api.startServer(port).catch(logger.error)
-  logger.log(`----- Api server listening on ${host}:${port}`)
 
   logger.log('----- Registering phone numbers...')
   const regs = await phoneNumberRegistrar.registerAllUnregistered().catch(logger.error)

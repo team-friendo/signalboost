@@ -62,7 +62,8 @@ const loggerOf = prefix =>
           ),
         fatalError: e => {
           console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
-          throw e
+          console.log('ABORTING')
+          process.exit(1)
         },
       }
 

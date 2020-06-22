@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'mocha'
 import request from 'supertest'
 import { keys } from 'lodash'
 import { run } from '../../app/db'
-import { registrar } from '../../app/config/index'
+import { api } from '../../app/config'
 import { statuses } from '../../app/db/models/phoneNumber'
 import { genPhoneNumber, genSid } from '../support/factories/phoneNumber'
 import { first, last, findIndex } from 'lodash'
@@ -39,7 +39,7 @@ describe('retrieving metrics', () => {
       /**********************************************************/
       response = await request(appUrl)
         .get('/channels')
-        .set('Token', registrar.authToken)
+        .set('Token', api.authToken)
       /**********************************************************/
     })
     after(async () => await Promise.all(channels.map(ch => ch.destroy())))
@@ -74,7 +74,7 @@ describe('retrieving metrics', () => {
       count = await db.phoneNumber.count()
       response = await request(appUrl)
         .get('/phoneNumbers')
-        .set('Token', registrar.authToken)
+        .set('Token', api.authToken)
     })
     after(async () => await Promise.all(phoneNumbers.map(r => r.destroy())))
 

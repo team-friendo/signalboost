@@ -3,7 +3,7 @@ const { get } = require('lodash')
 const dbConfigsByEnv = require('./db.json')
 const jobConfigsByEnv = require('./job')
 const twilioConfigsByEnv = require('./twilio')
-const registrarConfigsByEnv = require('./registrar')
+const apiConfigsByEnv = require('./api')
 const signalConfigsByEnv = require('./signal')
 const { defaultLanguage } = require('../language')
 
@@ -15,6 +15,6 @@ module.exports = {
   db: getConfig(dbConfigsByEnv),
   job: getConfig(jobConfigsByEnv),
   twilio: getConfig(twilioConfigsByEnv),
-  registrar: getConfig(registrarConfigsByEnv),
+  api: getConfig(apiConfigsByEnv),
   signal: getConfig(signalConfigsByEnv),
 }
