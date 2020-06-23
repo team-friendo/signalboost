@@ -5,7 +5,7 @@ const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 
 const run = async () => {
-  logger.log('--- Initializing Registrar...')
+  logger.log('--- Running startup jobs...')
 
   logger.log('----- Registering phone numbers...')
   const regs = await phoneNumberRegistrar.registerAllUnregistered().catch(logger.error)
@@ -25,7 +25,7 @@ const run = async () => {
   inviteRepository.launchInviteDeletionJob()
   logger.log('----- Launched data cleaning jobs.')
 
-  logger.log('--- Registrar running!')
+  logger.log('--- Startup jobs complete!')
 }
 
 module.exports = { run }
