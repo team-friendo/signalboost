@@ -14,6 +14,8 @@ const isAuthorized = ctx => {
   switch (ctx.path) {
     case `/healthcheck`:
       return true
+    case '/metrics':
+      return true
     case `/${smsEndpoint}`:
       return isValidTwilioRequest(ctx)
     default:

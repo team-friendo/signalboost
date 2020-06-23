@@ -6,13 +6,15 @@ const app = {
   db: null,
   sock: null,
   api: null,
+  metricsRegistry: null,
 }
 
-app.run = async ({ db, sock, api, jobs, dispatcher }) => {
+app.run = async ({ db, sock, api, metricsRegistry, jobs, dispatcher }) => {
   const { logger } = require('./util')
   const dbService = db || require('./db')
   const socketService = sock || require('./socket')
   const apiService = api || require('./api')
+  const metricsRegistryService = metricsRegistry || require('./metrics')
   const jobsService = jobs || require('./jobs')
   const dispatcherService = dispatcher || require('./dispatcher')
 
@@ -29,6 +31,10 @@ app.run = async ({ db, sock, api, jobs, dispatcher }) => {
   logger.log('Starting api server...')
   app.api = await apiService.run().catch(logger.fatalError)
   logger.log(`...api server running at ${host}:${port}!`)
+
+  logger.log('Creating metrics registry...')
+  app.metricsRegistry = metricsRegistryService.run()
+  logger.log(`...created metrics registry!`)
 
   logger.log('Running startup jobs...')
   await jobsService.run().catch(logger.fatalError)

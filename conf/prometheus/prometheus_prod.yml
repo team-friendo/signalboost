@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'signalboost-metrics'
+    scrape_interval: 5s
+    static_configs:
+    - targets: ['api.signalboost.info']
+    metrics_path: '/metrics'
