@@ -34,6 +34,10 @@
 # signal keystore
 signal_data
 
+# prometheus/grafana data volumes
+prometheus_data
+grafana_data
+
 # blackbox
 /keyrings/live/pubring.gpg~
 /keyrings/live/pubring.kbx~

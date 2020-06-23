@@ -42,6 +42,7 @@
     "pg-hstore": "^2.3.2",
     "pg-native": "^3.0.0",
     "prettier": "^1.15.2",
+    "prom-client": "^12.0.0",
     "sequelize": "^5.21.3",
     "sequelize-cli": "^5.5.1",
     "sinon": "^7.2.2",

@@ -5,6 +5,8 @@ volumes:
   postgres_data:
   signal_sock:
   signal_data:
+  prometheus_data:
+  grafana_data:
 
 services:
 
@@ -65,4 +67,35 @@ services:
     env_file: .env.dev
     environment:
       - NGROK_PORT=app:3000
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.18.1
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - default
+    volumes:
+      - ./conf/prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus_data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus_data'
+      - '--log.level=debug'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+      - prometheus
+    ports:
+      - 5000:5000
+    networks:
+      - default
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./conf/grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SERVER_HTTP_PORT=5000
     restart: unless-stopped
