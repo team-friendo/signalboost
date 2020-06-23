@@ -11,6 +11,13 @@ cache:
   paths:
     - node_modules/
 
+test_lint:
+  script:
+    - yarn install
+    - npx eslint app && npx eslint test
+  only:
+    - merge_requests
+
 test_unit:
   services:
     - name: postgres:latest
@@ -22,9 +29,13 @@ test_unit:
   only:
     - merge_requests
 
-test_lint:
+test_integration:
+  services:
+    - name: postgres:latest
+      alias: db
   script:
     - yarn install
-    - npx eslint app && npx eslint test
+    - npx sequelize db:migrate --env test
+    - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
   only:
     - merge_requests
