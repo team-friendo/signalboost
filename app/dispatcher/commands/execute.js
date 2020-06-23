@@ -498,9 +498,9 @@ const maybeReplyToHotlineMessage = (channel, sender, hotlineReply) => {
 
 const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
   try {
-    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber({
-      id: hotlineReply.messageId,
-    })
+    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
+      hotlineReply.messageId,
+    )
     const language = get(
       await membershipRepository.findMembership(channel.phoneNumber, memberPhoneNumber),
       'language',
