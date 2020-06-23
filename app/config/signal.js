@@ -1,47 +1,41 @@
 const defaults = {
-  verificationTimeout: 30000, // 30 seconds
-  keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
-  connectionInterval: 1000, // 1 sec
-  maxConnectionAttempts: 30, // 30 tries/ 30 seconds
-  poolMinConnections: 10,
-  poolMaxConnections: 50,
-  poolEvictionMillis: 30000,
-  registrationBatchSize: 5,
-  signaldRequestTimeout: 10000, // 10 sec
-  intervalBetweenRegistrationBatches: 120000, // 2 minutes
-  intervalBetweenRegistrations: 2000, // 2 seconds
-  signaldStartupTime: 1000 * 60 * 5, // 5 minutes
-  welcomeDelay: 3000, // 3 sec
-  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER,
+  broadcastBatchInterval: 1300, // 1.3 seconds
+  broadcastBatchSize: 1,
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
-  setExpiryInterval: 2000, // 2 sec
-  minResendInterval: 60 * 1000, // 1 min
+  intervalBetweenRegistrationBatches: 120000, // 2 minutes
+  intervalBetweenRegistrations: 2000, // 2 seconds
+  keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
-  broadcastBatchSize: 1,
-  broadcastBatchInterval: 1300, // 1.3 seconds
   maxVouchLevel: 10,
+  minResendInterval: 60 * 1000, // 1 min
+  poolSize: 50,
+  registrationBatchSize: 5,
+  setExpiryInterval: 2000, // 2 sec
+  signaldRequestTimeout: 10000, // 10 sec
+  signaldStartupTime: 1000 * 60 * 5, // 5 minutes
+  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER,
+  verificationTimeout: 30000, // 30 seconds
+  welcomeDelay: 3000, // 3 sec
 }
 
 const test = {
   ...defaults,
-  verificationTimeout: 30, // 30 millis
-  connectionInterval: 10, // 10 milli
-  maxConnectionAttempts: 10,
-  poolMinConnections: 0,
-  signaldRequestTimeout: 100, // 100 millis
+  broadcastBatchInterval: 10, // 10 millis
+  broadcastBatchSize: 1,
+  expiryUpdateDelay: 1, // 1 milli
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
-  signaldStartupTime: 1, // 1 milli
-  welcomeDelay: 0.0001, // .0001 millis
-  supportPhoneNumber: '+15555555555',
-  expiryUpdateDelay: 1, // 1 milli
-  setExpiryInterval: 1, // 1 milli
-  minResendInterval: 2, // 20 millis
   maxResendInterval: 256, // ~ 2.5 sec,
-  broadcastBatchSize: 1,
-  broadcastBatchInterval: 10, // 10 millis
   maxVouchLevel: 10,
+  minResendInterval: 2, // 20 millis
+  poolSize: 3,
+  setExpiryInterval: 1, // 1 milli
+  signaldRequestTimeout: 100, // 100 millis
+  signaldStartupTime: 1, // 1 milli
+  supportPhoneNumber: '+15555555555',
+  verificationTimeout: 30, // 30 millis
+  welcomeDelay: 0.0001, // .0001 millis
 }
 
 const development = {

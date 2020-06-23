@@ -48,33 +48,10 @@ const {
  * }
  */
 
-/******************
- *INITIALIZATION
- *****************/
-
-const run = async () => {
-  logger.log('--- Initializing Dispatcher....')
-
-  // TODO: log this or not based on env var value
-  // sock.on('data', data => console.log(`+++++++++\n${data}\n++++++++\n`))
-
-  logger.log(`----- Subscribing to channels...`)
-
-  const resendQueue = {}
-  const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
-  const numListening = await Promise.all(channels.map(ch => signal.subscribe(ch.phoneNumber)))
-  app.sock.on('data', msg => dispatch(msg, resendQueue).catch(logger.error))
-
-  logger.log(`----- Subscribed to ${numListening.length} of ${channels.length} channels!`)
-  logger.log(`--- Dispatcher running!`)
-}
-
-/********************
- * MESSAGE DISPATCH
- *******************/
-
-const dispatch = async (rawMessage, resendQueue) => {
-  const inboundMsg = parseMessage(rawMessage)
+// string -> Promise<SignalBoostStatus>
+const dispatch = async msg => {
+  // console.log(`+++++++++\n${msg}\n++++++++\n`)
+  const inboundMsg = parseInboundSignaldMessage(msg)
   const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
   metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
     inboundMsg.type,
@@ -90,10 +67,9 @@ const dispatch = async (rawMessage, resendQueue) => {
     : []
 
   // dispatch system-created messages
-  const rateLimitedMessage = detectRateLimitedMessage(inboundMsg, resendQueue)
+  const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) {
-    metrics.incrementCounter(metrics.counters.ERRORS, [metrics.errorTypes.RATE_LIMIT])
-    const resendInterval = resend.enqueueResend(resendQueue, rateLimitedMessage)
+    const resendInterval = resend.enqueueResend(rateLimitedMessage)
     return notifyRateLimitedMessage(rateLimitedMessage, resendInterval)
   }
 
@@ -197,7 +173,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
  * MESSAGE PARSING
  ******************/
 
-const parseMessage = inboundMsg => {
+const parseInboundSignaldMessage = inboundMsg => {
   try {
     return JSON.parse(inboundMsg)
   } catch (e) {
@@ -263,4 +239,4 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
 
 // EXPORTS
 
-module.exports = { run, dispatch }
+module.exports = { dispatch }

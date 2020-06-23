@@ -5,7 +5,7 @@ import { get, last } from 'lodash'
 import signal, { parseOutboundAttachment } from '../../../app/signal'
 import { channelFactory } from '../../support/factories/channel'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { enqueueResend, hash } from '../../../app/dispatcher/resend'
+import { enqueueResend, hash, resendQueue } from '../../../app/dispatcher/resend'
 import { wait } from '../../../app/util'
 const {
   signal: { minResendInterval, maxResendInterval },
@@ -41,11 +41,13 @@ describe('resend module', () => {
   }
 
   describe('enqueueResend', () => {
-    let resendQueue, sendStub, sendCount, resendInterval
+    let sendStub, sendCount, resendInterval
     beforeEach(() => {
       sendStub = sinon.stub(signal, 'sendMessage')
     })
-    afterEach(() => {
+    afterEach(async () => {
+      Object.keys(resendQueue).map(k => delete resendQueue[k])
+      await wait(5) // so that messages don't hit our unstubbed socket module!
       sinon.restore()
     })
 
@@ -54,8 +56,7 @@ describe('resend module', () => {
       const outSdMessage = signal.parseOutboundSdMessage(inSdMessage)
       beforeEach(() => {
         sendCount = sendStub.callCount
-        resendQueue = {}
-        resendInterval = enqueueResend(resendQueue, inSdMessage)
+        resendInterval = enqueueResend(inSdMessage)
       })
 
       it('resends the message in minResendInverval seconds', async () => {
@@ -86,13 +87,11 @@ describe('resend module', () => {
 
       beforeEach(() => {
         sendCount = sendStub.callCount
-        resendQueue = {
-          [hash(outSdMessage)]: {
-            sdMessage: outSdMessage,
-            lastResendInterval: minResendInterval,
-          },
+        resendQueue[hash(outSdMessage)] = {
+          sdMessage: outSdMessage,
+          lastResendInterval: minResendInterval,
         }
-        enqueueResend(resendQueue, outSdMessage)
+        enqueueResend(outSdMessage)
       })
 
       it('resends the message in <2 * last resend interval> seconds', async () => {
@@ -120,13 +119,11 @@ describe('resend module', () => {
 
       beforeEach(() => {
         sendCount = sendStub.callCount
-        resendQueue = {
-          [hash(outSdMessage)]: {
-            sdMessage: outSdMessage,
-            lastResendInterval: maxResendInterval,
-          },
+        resendQueue[hash(outSdMessage)] = {
+          sdMessage: outSdMessage,
+          lastResendInterval: maxResendInterval,
         }
-        enqueueResend(resendQueue, outSdMessage)
+        enqueueResend(outSdMessage)
       })
 
       it('does not resend the message', async () => {

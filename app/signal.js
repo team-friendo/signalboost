@@ -1,10 +1,10 @@
 const app = require('./index')
 const { pick, get, isEmpty } = require('lodash')
-const { wait } = require('./util.js')
 const { statuses } = require('./util')
-const socket = require('./socket')
+const channelRepository = require('./db/repositories/channel')
+const { wait, loggerOf } = require('./util.js')
 const {
-  signal: { verificationTimeout, signaldRequestTimeout },
+  signal: { signaldRequestTimeout },
 } = require('./config')
 
 /**
@@ -74,7 +74,9 @@ const {
  *
  * */
 
-// CONSTANTS
+/***************
+ * CONSTANTS
+ ***************/
 
 const messageTypes = {
   ERROR: 'unexpected_error',
@@ -121,6 +123,22 @@ const messages = {
   },
 }
 
+const logger = loggerOf('signal')
+
+/**********************
+ * STARTUP
+ **********************/
+
+let socket
+const run = async () => {
+  logger.log(`--- Subscribing to channels...`)
+  // we import socket here due to import-time weirdness imposed by app.run
+  socket = require('./socket')
+  const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
+  const numListening = await Promise.all(channels.map(ch => subscribe(ch.phoneNumber)))
+  logger.log(`--- Subscribed to ${numListening.length} / ${channels.length} channels!`)
+}
+
 /********************
  * SIGNALD COMMANDS
  ********************/
@@ -131,31 +149,33 @@ const verify = (phoneNumber, code) =>
   socket.write({ type: messageTypes.VERIFY, username: phoneNumber, code })
 
 const awaitVerificationResult = async phoneNumber => {
-  return new Promise((resolve, reject) => {
-    app.sock.on('data', function handle(msg) {
-      const { type, data } = safeJsonParse(msg, reject)
-      if (type === null && data === null) {
-        reject(new Error(messages.error.invalidJSON(msg)))
-      } else if (_isVerificationFailure(type, data, phoneNumber)) {
-        app.sock.removeListener('data', handle)
-        const reason = get(data, 'message', 'Captcha required: 402')
-        reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
-      } else if (_isVerificationSuccess(type, data, phoneNumber)) {
-        app.sock.removeListener('data', handle)
-        resolve(data)
-      } else if (_isVerificationFailure(type, data, phoneNumber)) {
-        app.sock.removeListener('data', handle)
-        const reason = get(data, 'message', 'Captcha required: 402')
-        reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
-      } else {
-        // on first message (reporting registration) set timeout for listening to subsequent messages
-        wait(verificationTimeout).then(() => {
-          app.sock.removeListener('data', handle)
-          reject(new Error(messages.error.verificationTimeout(phoneNumber)))
-        })
-      }
-    })
-  })
+  // TODO: implement this with receivers hash map!
+  return Promise.resolve()
+  // return new Promise((resolve, reject) => {
+  //   app.sock.on('data', function handle(msg) {
+  //     const { type, data } = safeJsonParse(msg, reject)
+  //     if (type === null && data === null) {
+  //       reject(new Error(messages.error.invalidJSON(msg)))
+  //     } else if (_isVerificationFailure(type, data, phoneNumber)) {
+  //       app.sock.removeListener('data', handle)
+  //       const reason = get(data, 'message', 'Captcha required: 402')
+  //       reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
+  //     } else if (_isVerificationSuccess(type, data, phoneNumber)) {
+  //       app.sock.removeListener('data', handle)
+  //       resolve(data)
+  //     } else if (_isVerificationFailure(type, data, phoneNumber)) {
+  //       app.sock.removeListener('data', handle)
+  //       const reason = get(data, 'message', 'Captcha required: 402')
+  //       reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
+  //     } else {
+  //       // on first message (reporting registration) set timeout for listening to subsequent messages
+  //       wait(verificationTimeout).then(() => {
+  //         app.sock.removeListener('data', handle)
+  //         reject(new Error(messages.error.verificationTimeout(phoneNumber)))
+  //       })
+  //     }
+  //   })
+  // })
 }
 
 const _isVerificationSuccess = (type, data, phoneNumber) =>
@@ -172,7 +192,7 @@ const unsubscribe = phoneNumber =>
   socket.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
 const sendMessage = (recipientNumber, outboundMessage) =>
-  socket.writeWithPool({ ...outboundMessage, recipientNumber })
+  socket.write({ ...outboundMessage, recipientNumber })
 
 // (Socket, Array<string>, OutMessage) -> Promise<void>
 const broadcastMessage = (recipientNumbers, outboundMessage) =>
@@ -202,37 +222,39 @@ const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
 
 // (Socket, string, string) => Promise<TrustResult>
 const _awaitTrustVerification = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  return new Promise((resolve, reject) => {
-    // create handler
-    const handle = msg => {
-      const { type, data } = safeJsonParse(msg, reject)
-      if (type === null && data === null) {
-        // ignore bad JSON
-        app.sock.removeListener('data', handle)
-        return Promise.resolve()
-      } else if (
-        type === messageTypes.TRUSTED_FINGERPRINT &&
-        data.request.fingerprint === fingerprint
-      ) {
-        // return success if we get a trust response
-        app.sock.removeListener('data', handle)
-        resolve({
-          status: statuses.SUCCESS,
-          message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
-        })
-      }
-    }
-    // register handler
-    app.sock.on('data', handle)
-    // reject and deregister handle after timeout if no trust response received
-    wait(signaldRequestTimeout).then(() => {
-      app.sock.removeListener('data', handle)
-      reject({
-        status: statuses.ERROR,
-        message: messages.error.trustTimeout(channelPhoneNumber, memberPhoneNumber),
-      })
-    })
-  })
+  // TODO: re-implement this with receivers hash map!
+  return Promise.resolve()
+  // return new Promise((resolve, reject) => {
+  //   // create handler
+  //   const handle = msg => {
+  //     const { type, data } = safeJsonParse(msg, reject)
+  //     if (type === null && data === null) {
+  //       // ignore bad JSON
+  //       app.sock.removeListener('data', handle)
+  //       return Promise.resolve()
+  //     } else if (
+  //       type === messageTypes.TRUSTED_FINGERPRINT &&
+  //       data.request.fingerprint === fingerprint
+  //     ) {
+  //       // return success if we get a trust response
+  //       app.sock.removeListener('data', handle)
+  //       resolve({
+  //         status: statuses.SUCCESS,
+  //         message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
+  //       })
+  //     }
+  //   }
+  //   // register handler
+  //   app.sock.on('data', handle)
+  //   // reject and deregister handle after timeout if no trust response received
+  //   wait(signaldRequestTimeout).then(() => {
+  //     app.sock.removeListener('data', handle)
+  //     reject({
+  //       status: statuses.ERROR,
+  //       message: messages.error.trustTimeout(channelPhoneNumber, memberPhoneNumber),
+  //     })
+  //   })
+  // })
 }
 
 const isAlive = () => {
@@ -336,6 +358,7 @@ module.exports = {
   parseOutboundAttachment,
   parseVerificationCode,
   register,
+  run,
   sendMessage,
   sdMessageOf,
   subscribe,

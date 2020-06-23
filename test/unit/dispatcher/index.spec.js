@@ -251,7 +251,7 @@ describe('dispatcher module', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
         })
 
         it('notifies admins of the support channel', () => {
@@ -278,7 +278,7 @@ describe('dispatcher module', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
         })
 
         it('does not send any notifications', () => {

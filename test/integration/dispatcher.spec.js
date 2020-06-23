@@ -5,7 +5,7 @@ import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
 import socket from '../../app/socket'
-import dispatcher from '../../app/dispatcher'
+import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
 import { times } from 'lodash'
 import { wait } from '../../app/util'
@@ -21,7 +21,7 @@ import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 describe('dispatcher service', () => {
   const socketDelay = 200
   const randoPhoneNumber = genPhoneNumber()
-  let channel, admins, subscribers, writeWithPoolStub
+  let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
     channel = await app.db.channel.create(channelFactory())
@@ -52,10 +52,10 @@ describe('dispatcher service', () => {
       }),
     )
 
-  before(async () => await app.run({ ...testApp, db, dispatcher }))
+  before(async () => await app.run({ ...testApp, db, signal }))
   beforeEach(async () => {
-    sinon.stub(app.sock, 'write').returns(Promise.resolve())
-    writeWithPoolStub = sinon.stub(socket, 'writeWithPool').returns(Promise.resolve())
+    readSock = await app.socketPool.acquire()
+    writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
     await app.db.membership.destroy({ where: {}, force: true })
@@ -67,6 +67,7 @@ describe('dispatcher service', () => {
       restartIdentity: true,
     })
     await app.db.channel.destroy({ where: {}, force: true })
+    await app.socketPool.release(readSock)
     sinon.restore()
   })
   after(async () => await app.stop())
@@ -74,7 +75,7 @@ describe('dispatcher service', () => {
   describe('dispatching a broadcast message', () => {
     beforeEach(async () => {
       await createChannelWithMembers()
-      app.sock.emit(
+      readSock.emit(
         'data',
         JSON.stringify({
           type: 'message',
@@ -94,7 +95,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the message to all admins and subscribers', () => {
-      const messages = times(4, n => writeWithPoolStub.getCall(n)).map(call => call.args[0])
+      const messages = times(4, n => writeStub.getCall(n)).map(call => call.args[0])
       expect(messages).to.have.deep.members([
         {
           type: 'send',
@@ -132,7 +133,7 @@ describe('dispatcher service', () => {
     beforeEach(async () => {
       await createChannelWithMembers()
       await enableHotlineMessages()
-      app.sock.emit(
+      readSock.emit(
         'data',
         JSON.stringify({
           type: 'message',
@@ -152,7 +153,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline message to all admins', () => {
-      const messages = times(2, n => writeWithPoolStub.getCall(n)).map(c => c.args[0])
+      const messages = times(2, n => writeStub.getCall(n)).map(c => c.args[0])
       expect(messages).to.have.deep.members([
         {
           type: 'send',
@@ -175,7 +176,7 @@ describe('dispatcher service', () => {
   describe('dispatching a HELLO command', () => {
     beforeEach(async () => {
       await createChannelWithMembers()
-      app.sock.emit(
+      readSock.emit(
         'data',
         JSON.stringify({
           type: 'message',
@@ -206,7 +207,7 @@ describe('dispatcher service', () => {
     })
 
     it('sends a welcome message to the sender', () => {
-      expect(writeWithPoolStub.getCall(0).args[0]).to.eql({
+      expect(writeStub.getCall(0).args[0]).to.eql({
         messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
         recipientNumber: randoPhoneNumber,
         type: 'send',
@@ -220,7 +221,7 @@ describe('dispatcher service', () => {
       await createChannelWithMembers()
       await enableHotlineMessages()
       await createHotlineMessage({ id: 1, memberPhoneNumber: randoPhoneNumber })
-      app.sock.emit(
+      readSock.emit(
         'data',
         JSON.stringify({
           type: 'message',
@@ -240,7 +241,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline reply to hotline message sender and all admins', () => {
-      const messages = times(3, n => writeWithPoolStub.getCall(n)).map(c => c.args[0])
+      const messages = times(3, n => writeStub.getCall(n)).map(c => c.args[0])
       expect(messages).to.have.deep.members([
         {
           type: 'send',

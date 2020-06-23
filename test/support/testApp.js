@@ -1,4 +1,6 @@
 import { EventEmitter } from 'events'
+import { socketPoolOf } from '../../app/socket'
+import dispatcher from '../../app/dispatcher'
 
 const stubOf = (resource = defaultResource) => ({
   run: () => Promise.resolve(resource),
@@ -18,12 +20,16 @@ const dbResource = {
   },
 }
 
-const sockResource = () => {
-  const res = new EventEmitter().setMaxListeners(30)
-  res.stop = defaultResource.stop
-  res.write = (msg, cb) => cb(null, true)
-  return res
-}
+const socketPoolResource = () =>
+  socketPoolOf({
+    create: () => {
+      const sock = new EventEmitter().setMaxListeners(0)
+      sock.on('data', dispatcher.dispatch)
+      sock.write = (msg, cb) => cb(null, true)
+      return sock
+    },
+    destroy: x => x.removeAllListeners(),
+  })
 
 const metricsResource = () => ({
   run: () => ({
@@ -52,9 +58,9 @@ const metricsResource = () => ({
 
 module.exports = {
   db: stubOf(dbResource),
-  sock: stubOf(sockResource()),
+  socketPool: stubOf(socketPoolResource()),
   api: stubOf(defaultResource),
   metrics: metricsResource(),
   jobs: stubOf(defaultResource),
-  dispatcher: stubOf(defaultResource),
+  signal: stubOf(defaultResource),
 }
