@@ -25,11 +25,17 @@ const sockResource = () => {
   return res
 }
 
+const metricsRegistryResource = () => ({
+  run: () => ({
+    metrics: () => Promise.resolve(),
+  }),
+})
+
 module.exports = {
   db: stubOf(dbResource),
   sock: stubOf(sockResource()),
   api: stubOf(defaultResource),
-  metricsRegistry: stubOf(defaultResource),
+  metricsRegistry: metricsRegistryResource(),
   jobs: stubOf(defaultResource),
   dispatcher: stubOf(defaultResource),
 }

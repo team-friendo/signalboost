@@ -48,6 +48,9 @@ ansible.install: ## removes boost cli files from your path
 ansible.deploy: # deploy the app to prod
 	./bin/deploy
 
+ansible.deploy_metrics: # deploy grafana/prometheus to metrics server
+	./bin/deploy-metrics
+
 ansible.provision: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision.yml
 

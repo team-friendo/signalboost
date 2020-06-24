@@ -1,0 +1,77 @@
+version: '3'
+
+networks:
+  proxy-tier:
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  certs:
+  html:
+  vhost.d:
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.18.1
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - default
+    volumes:
+      - ./conf/prometheus/prometheus_prod.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus_data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus_data'
+      - '--log.level=debug'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+      - prometheus
+    ports:
+      - 5000:5000
+    networks:
+      - default
+      - proxy-tier
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./conf/grafana/provisioning/:/etc/grafana/provisioning/
+      - ./conf/grafana/config/grafana.ini:/etc/grafana/grafana.ini
+    env_file: .env.metrics
+    environment:
+      - GF_SERVER_HTTP_PORT=5000
+    restart: unless-stopped
+
+  proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: signalboost_proxy
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy-tier
+    restart: unless-stopped
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: signalboost_letsencrypt
+    restart: unless-stopped
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy-tier
+    depends_on:
+      - proxy
