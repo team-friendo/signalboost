@@ -12,14 +12,10 @@ const authenticator = async (ctx, next) =>
 
 const isAuthorized = ctx => {
   switch (ctx.path) {
-    case `/healthcheck`:
-      return true
-    case '/metrics':
-      return true
     case `/${smsEndpoint}`:
       return isValidTwilioRequest(ctx)
     default:
-      return ctx.request.headers.token === authToken
+      return isValidToken(ctx.request.headers, authToken)
   }
 }
 
@@ -32,6 +28,16 @@ const isValidTwilioRequest = ctx =>
     smsUrl,
     ctx.request.body,
   )
+
+const isValidToken = (headers, authToken) => {
+  if (headers.token) {
+    return headers.token === authToken
+  } else if (headers.authorization) {
+    return headers.authorization.split(' ')[1] === authToken
+  } else {
+    return false
+  }
+}
 
 const respondNotAuthorized = ctx => {
   ctx.status = 401

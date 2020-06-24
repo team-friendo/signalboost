@@ -1,0 +1,93 @@
+---
+  - name: Deploy Prometheus/Grafana
+    become: true
+    hosts: "{{ sb_host | default('sb_metrics') }}"
+  
+    environment:
+      NODE_ENV: production
+  
+    vars:
+      homedir: /srv/signalboost
+      host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
+      api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
+      secrets_method: blackbox
+  
+    tasks:
+
+    ############
+    # ADD KEYS #
+    ############
+
+    - name: Load GPG Deploy Key
+      copy:
+        src: files/deploy_keys/signalboost_gpg_privkey.asc
+        dest: /keys/
+      tags: add_keys
+
+    - name: Import GPG deploy key to keystore
+      command: gpg --import signalboost_gpg_privkey.asc
+      args:
+        chdir: /keys
+      tags: add_keys
+  
+    #########
+    # CLONE #
+    #########
+  
+    - name: Pull signalboost repository from 0xacab
+      git:
+        repo: https://0xacab.org/team-friendo/signalboost
+        dest: "{{ homedir }}"
+        force: true
+        version: "{{ branch | default('master') }}"
+      tags: clone
+  
+    - name: Deploy environment file using blackbox
+      command: ./bin/blackbox/postdeploy
+      args:
+        chdir: "{{ homedir }}"
+      tags: clone
+      when: secrets_method == "blackbox"
+  
+    - name: Deploy environment file by copying local file
+      copy:
+        src: "{{ env_file }}"
+        dest: "{{ homedir }}/.env.metrics"
+      tags: clone
+      when: secrets_method == "copy"
+
+    ########
+    # STOP #
+    ########
+
+    - name: Stop app
+      command: "docker-compose -f docker-compose-metrics.yml down"
+      args:
+        chdir: "{{ homedir }}"
+      tags: stop
+  
+    ###########
+    # PREPARE #
+    ###########
+
+    # to ensure ACMEv2 compatibility
+    # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
+    - name: Ensure we are running latest version of letsencrypt companion
+      command: "docker-compose -f docker-compose-metrics.yml pull letsencrypt"
+      args:
+        chdir: "{{ homedir }}"
+      tags: prepare
+  
+    #########
+    # START #
+    #########
+  
+    - name: Start app
+      command: "docker-compose -f docker-compose-metrics.yml up -d"
+      args:
+        chdir: "{{ homedir }}"
+      register: docker_up_result
+  
+    # - debug:
+    #     var: docker_up_result
+  

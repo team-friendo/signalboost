@@ -96,6 +96,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./conf/grafana/provisioning/:/etc/grafana/provisioning/
+      - ./conf/grafana/config/grafana.ini:/etc/grafana/grafana.ini
     environment:
       - GF_SERVER_HTTP_PORT=5000
     restart: unless-stopped

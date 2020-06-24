@@ -55,3 +55,7 @@ grafana_data
 /ansible/files/deploy_keys/.ssh/known_hosts
 /.env.dev
 /.env.pentest
+/.env.metrics
+/grafana/config/grafana.ini
+/prometheus/prometheus_dev.yml
+/prometheus/prometheus_prod.yml

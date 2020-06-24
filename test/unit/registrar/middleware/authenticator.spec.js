@@ -4,9 +4,10 @@ import twilio from 'twilio'
 import request from 'supertest'
 import phoneNumberService from '../../../../app/registrar/phoneNumber'
 import { run } from '../../../../app/api'
+import app from '../../../../app'
+import testApp from '../../../support/testApp'
 import { EventEmitter } from 'events'
 import { statuses } from '../../../../app/util'
-import signal from '../../../../app/signal'
 const {
   api: { authToken },
 } = require('../../../../app/config')
@@ -17,7 +18,7 @@ describe('authentication middleware', () => {
   before(async () => {
     const sock = new EventEmitter()
     sock.write = sinon.stub()
-    server = (await run(10000, {}, sock)).server
+    server = (await app.run({ ...testApp, api: { run: () => run(10000, {}, sock) } })).api.server
   })
 
   after(() => {
@@ -90,12 +91,18 @@ describe('authentication middleware', () => {
     })
   })
 
-  describe('for /healthcheck endpoint', () => {
-    it('allows a request that does not contain an auth token in the header', async () => {
-      sinon.stub(signal, 'isAlive').returns(Promise.resolve({ status: 'SUCCESS' }))
+  describe('for /metrics endpoint', () => {
+    it('allows a request that contains an auth bearer token in the header', async () => {
       await request(server)
-        .get('/healthcheck')
+        .get('/metrics')
+        .set('Authorization', 'bearer ' + authToken)
         .expect(200)
+    })
+
+    it('does not allow a request that does not contain an auth bearer token in the header', async () => {
+      await request(server)
+        .get('/metrics')
+        .expect(401)
     })
   })
 })
