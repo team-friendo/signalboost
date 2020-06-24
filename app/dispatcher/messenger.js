@@ -188,19 +188,16 @@ const relayHotlineMessage = async ({ channel, sender, sdMessage }) => {
 
   await Promise.all(
     recipients.map(recipient =>
-      notify({
-        channel,
-        notification: {
-          recipient: recipient.memberPhoneNumber,
-          message: addHeader({
-            channel,
-            sdMessage,
-            messageType: HOTLINE_MESSAGE,
-            language: recipient.language,
-            messageId,
-          }).messageBody,
-        },
-      }),
+      signal.sendMessage(
+        recipient.memberPhoneNumber,
+        addHeader({
+          channel,
+          sdMessage,
+          messageType: HOTLINE_MESSAGE,
+          language: recipient.language,
+          messageId,
+        }),
+      ),
     ),
   )
 
@@ -271,7 +268,7 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
  * HELPERS
  **********/
 
-// { Channel, string, string, string, string } -> string
+/* { Channel, string, string, string, string } -> OutboundSignaldMessage */
 const addHeader = ({ channel, sdMessage, messageType, language, memberType, messageId }) => {
   let prefix
   if (messageType === HOTLINE_MESSAGE) {

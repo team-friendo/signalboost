@@ -264,10 +264,10 @@ describe('messenger service', () => {
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
                 messageId,
-              }).messageBody
+              })
               expect(sendMessageStub.getCall(index).args).to.eql([
                 membership.memberPhoneNumber,
-                sdMessageOf(channel, alert),
+                alert,
               ])
             })
           })
@@ -305,11 +305,11 @@ describe('messenger service', () => {
                 messageType: messageTypes.HOTLINE_MESSAGE,
                 language: membership.language,
                 messageId,
-              }).messageBody
+              })
 
               expect(sendMessageStub.getCall(index).args).to.eql([
                 membership.memberPhoneNumber,
-                sdMessageOf(channel, alert),
+                alert,
               ])
             })
           })
