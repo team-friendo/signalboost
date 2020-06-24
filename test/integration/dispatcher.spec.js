@@ -16,6 +16,7 @@ import {
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 import { messagesIn } from '../../app/dispatcher/strings/messages'
 import { languages } from '../../app/language'
+import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 
 describe('dispatcher service', () => {
   const socketDelay = 200
@@ -40,15 +41,31 @@ describe('dispatcher service', () => {
     )
   }
 
+  const enableHotlineMessages = () => channel.update({ hotlineOn: true })
+
+  const createHotlineMessage = ({ id, memberPhoneNumber }) =>
+    app.db.hotlineMessage.create(
+      hotlineMessageFactory({
+        id,
+        memberPhoneNumber,
+        channelPhoneNumber: channel.phoneNumber,
+      }),
+    )
+
   before(async () => await app.run({ ...testApp, db, dispatcher }))
-  beforeEach(() => {
+  beforeEach(async () => {
     sinon.stub(app.sock, 'write').returns(Promise.resolve())
-    // TODO(aguestuser|2020-06-22):
-    //  move this stub to the actual socket after we've added a socket pool to `app` module
     writeWithPoolStub = sinon.stub(socket, 'writeWithPool').returns(Promise.resolve())
   })
   afterEach(async () => {
     await app.db.membership.destroy({ where: {}, force: true })
+    await app.db.messageCount.destroy({ where: {}, force: true })
+    await app.db.hotlineMessage.destroy({
+      where: {},
+      force: true,
+      truncate: true,
+      restartIdentity: true,
+    })
     await app.db.channel.destroy({ where: {}, force: true })
     sinon.restore()
   })
@@ -77,8 +94,8 @@ describe('dispatcher service', () => {
     })
 
     it('relays the message to all admins and subscribers', () => {
-      const messages = times(4, n => writeWithPoolStub.getCall(n))
-      expect(messages.map(m => m.args[0])).to.have.deep.members([
+      const messages = times(4, n => writeWithPoolStub.getCall(n)).map(call => call.args[0])
+      expect(messages).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -106,6 +123,52 @@ describe('dispatcher service', () => {
           recipientNumber: subscribers[1].memberPhoneNumber,
           messageBody: `[${channel.name}]\nfoobar`,
           attachments: [],
+        },
+      ])
+    })
+  })
+
+  describe('dispatching a hotline message', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      await enableHotlineMessages()
+      app.sock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: randoPhoneNumber,
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              message: 'a screaming came across the sky',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments: [],
+            },
+          },
+        }),
+      )
+      await wait(socketDelay)
+    })
+
+    it('relays the hotline message to all admins', () => {
+      const messages = times(2, n => writeWithPoolStub.getCall(n)).map(c => c.args[0])
+      expect(messages).to.have.deep.members([
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientNumber: admins[0].memberPhoneNumber,
+          messageBody: `[HOTLINE #1]\na screaming came across the sky`,
+          // NOTE: it is a bug that there are no attachments here!
+          // see: https://0xacab.org/team-friendo/signalboost/-/issues/277
+          // after we have resolved that we should write:
+          // attachments: [],
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientNumber: admins[1].memberPhoneNumber,
+          messageBody: `[HOTLINE #1]\na screaming came across the sky`,
         },
       ])
     })
@@ -151,6 +214,55 @@ describe('dispatcher service', () => {
         type: 'send',
         username: channel.phoneNumber,
       })
+    })
+  })
+
+  describe('dispatching a REPLY command', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      await enableHotlineMessages()
+      await createHotlineMessage({ id: 1, memberPhoneNumber: randoPhoneNumber })
+      app.sock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: admins[0].memberPhoneNumber,
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              message: 'REPLY #1 it has happened before but there is nothing to compare it to now',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments: [],
+            },
+          },
+        }),
+      )
+      await wait(2 * socketDelay)
+    })
+
+    it('relays the hotline reply to hotline message sender and all admins', () => {
+      const messages = times(3, n => writeWithPoolStub.getCall(n)).map(c => c.args[0])
+      expect(messages).to.have.deep.members([
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientNumber: admins[0].memberPhoneNumber,
+          messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientNumber: admins[1].memberPhoneNumber,
+          messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientNumber: randoPhoneNumber,
+          messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
+        },
+      ])
     })
   })
 })
