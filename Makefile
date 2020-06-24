@@ -112,7 +112,7 @@ dev.restart: ## force stop and start the app again
 #############
 
 test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/unit && ./bin/test/e2e
+	npx eslint app && ./bin/test/unit && ./bin/test/integration && ./bin/test/e2e
 
 test.unit: ## run unit tests
 	./bin/test/unit
