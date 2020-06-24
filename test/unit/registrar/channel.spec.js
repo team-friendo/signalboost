@@ -18,12 +18,13 @@ const {
 
 describe('channel registrar', () => {
   const phoneNumber = genPhoneNumber()
+  const name = '#blackops'
   const channelPhoneNumber = phoneNumber
   const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
     messagesIn(defaultLanguage).systemName,
     channelPhoneNumber,
+    name,
   )
-  const name = '#blackops'
   const admins = [genPhoneNumber(), genPhoneNumber()]
   const adminPhoneNumber = admins[0]
   const channelInstance = {

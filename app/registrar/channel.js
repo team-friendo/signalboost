@@ -14,11 +14,13 @@ const {
   signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval },
 } = require('../config')
 
-const welcomeNotificationOf = channelPhoneNumber =>
-  messagesIn(defaultLanguage).notifications.welcome(
+const welcomeNotificationOf = channel => {
+  return messagesIn(defaultLanguage).notifications.welcome(
     messagesIn(defaultLanguage).systemName,
-    channelPhoneNumber,
+    channel.phoneNumber,
+    channel.name,
   )
+}
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
@@ -27,13 +29,13 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   await messenger.notify({
     channel,
     notification: {
-      message: welcomeNotificationOf(channelPhoneNumber),
+      message: welcomeNotificationOf(channel),
       recipient: adminPhoneNumber,
     },
   })
   return {
     status: sbStatuses.SUCCESS,
-    message: welcomeNotificationOf(channelPhoneNumber),
+    message: welcomeNotificationOf(channel),
   }
 }
 
@@ -64,7 +66,7 @@ const _welcomeAdmins = async channel => {
         channel,
         notification: {
           recipient: adminPhoneNumber,
-          message: welcomeNotificationOf(channel.phoneNumber),
+          message: welcomeNotificationOf(channel),
         },
       })
       await wait(setExpiryInterval)
