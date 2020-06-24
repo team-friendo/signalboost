@@ -159,16 +159,14 @@ describe('dispatcher service', () => {
           username: channel.phoneNumber,
           recipientNumber: admins[0].memberPhoneNumber,
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
-          // NOTE: it is a bug that there are no attachments here!
-          // see: https://0xacab.org/team-friendo/signalboost/-/issues/277
-          // after we have resolved that we should write:
-          // attachments: [],
+          attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientNumber: admins[1].memberPhoneNumber,
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
+          attachments: [],
         },
       ])
     })
