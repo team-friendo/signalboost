@@ -409,22 +409,22 @@ const notifications = {
   deauthorization: adminPhoneNumber => `
   ${adminPhoneNumber} has been removed from this channel because their safety number changed.
   
-  This is almost certainly because they reinstalled Signal on a new phone.
-  
-  However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
-  
-  Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
-  
-  ADD ${adminPhoneNumber}
-  
-  Until then, they will be unable to send messages to or read messages from this channel.`,
+This is almost certainly because they reinstalled Signal on a new phone.
+
+However, there is a small chance that an attacker has compromised their phone and is trying to impersonate them.
+
+Check with ${adminPhoneNumber} to make sure they still control their phone, then reauthorize them with:
+
+ADD ${adminPhoneNumber}
+
+Until then, they will be unable to send messages to or read messages from this channel.`,
 
   expiryUpdateNotAuthorized: 'Sorry, only admins can set the disappearing message timer.',
 
   hotlineMessageSent: channel =>
     `Your message was forwarded to the admins of [${channel.name}].
   
-  Send HELP to list valid commands. Send HELLO to subscribe.`,
+Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
