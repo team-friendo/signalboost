@@ -13,7 +13,7 @@ const routesOf = async router => {
   })
 
   router.get('/metrics', async ctx => {
-    ctx.body = app.metricsRegistry.metrics()
+    ctx.body = app.metrics.registry.metrics()
   })
 
   router.get('/channels', async ctx => {

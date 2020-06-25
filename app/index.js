@@ -6,15 +6,15 @@ const app = {
   db: null,
   sock: null,
   api: null,
-  metricsRegistry: null,
+  metrics: null,
 }
 
-app.run = async ({ db, sock, api, metricsRegistry, jobs, dispatcher }) => {
+app.run = async ({ db, sock, api, metrics, jobs, dispatcher }) => {
   const { logger } = require('./util')
   const dbService = db || require('./db')
   const socketService = sock || require('./socket')
   const apiService = api || require('./api')
-  const metricsRegistryService = metricsRegistry || require('./metrics')
+  const metricsService = metrics || require('./metrics')
   const jobsService = jobs || require('./jobs')
   const dispatcherService = dispatcher || require('./dispatcher')
 
@@ -33,7 +33,7 @@ app.run = async ({ db, sock, api, metricsRegistry, jobs, dispatcher }) => {
   logger.log(`...api server running at ${host}:${port}!`)
 
   logger.log('Creating metrics registry...')
-  app.metricsRegistry = metricsRegistryService.run()
+  app.metrics = metricsService.run()
   logger.log(`...created metrics registry!`)
 
   logger.log('Running startup jobs...')

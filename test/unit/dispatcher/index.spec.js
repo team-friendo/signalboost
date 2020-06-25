@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach } from 'mocha'
+import { describe, it, beforeEach, afterEach, before, after } from 'mocha'
 import sinon from 'sinon'
 import { times, merge } from 'lodash'
 import { languages } from '../../../app/language'
@@ -19,6 +19,9 @@ import { wait } from '../../../app/util'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { adminMembershipFactory } from '../../support/factories/membership'
 import { inboundAttachmentFactory } from '../../support/factories/sdMessage'
+import app from '../../../app/index'
+import testApp from '../../support/testApp'
+
 const {
   signal: { defaultMessageExpiryTime, supportPhoneNumber, minResendInterval },
 } = require('../../../app/config')
@@ -61,6 +64,8 @@ describe('dispatcher module', () => {
     sendMessageStub,
     enqueueResendStub
 
+  before(async () => await app.run(testApp))
+
   beforeEach(async () => {
     sinon.stub(channelRepository, 'findAllDeep').returns(Promise.resolve(channels))
     sinon.stub(signal, 'subscribe').returns(Promise.resolve())
@@ -96,6 +101,8 @@ describe('dispatcher module', () => {
   })
 
   afterEach(() => sinon.restore())
+
+  after(() => app.stop())
 
   describe('handling an incoming message', () => {
     describe('deciding whether to dispatch a message', () => {
