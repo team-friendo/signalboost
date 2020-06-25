@@ -77,7 +77,7 @@ services:
     networks:
       - default
     volumes:
-      - ./conf/prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus_data
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -95,8 +95,8 @@ services:
       - default
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./conf/grafana/provisioning/:/etc/grafana/provisioning/
-      - ./conf/grafana/config/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
     environment:
       - GF_SERVER_HTTP_PORT=5000
     restart: unless-stopped
