@@ -4,6 +4,7 @@ const { createPool } = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
 const dispatcher = require('./dispatcher')
+const callbacks = require('./dispatcher/callbacks')
 const { promisifyCallback, wait, loggerOf, statuses } = require('./util.js')
 const {
   socket: { connectionInterval, maxConnectionAttempts, poolSize },
@@ -74,6 +75,7 @@ const write = data =>
           signaldEncode(data),
           promisifyCallback(
             () => {
+              callbacks.register(sock, data)
               app.socketPool.release(sock)
               metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
                 data.type,
