@@ -113,7 +113,7 @@ const dispatch = async (rawMessage, resendQueue) => {
 const relay = async (channel, sender, inboundMsg) => {
   const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
   try {
-    metrics.incrementCounter(metrics.COUNTERS.RELAYABLE_MESSAGES, [channel])
+    metrics.incrementCounter(metrics.counters.RELAYABLE_MESSAGES, [channel.phoneNumber])
     const dispatchable = { channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
     return messenger.dispatch({ dispatchable, commandResult })
