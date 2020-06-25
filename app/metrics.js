@@ -3,7 +3,7 @@ const app = require('./index')
 
 const register = (registry, metric) => ({ ...metric, registers: [registry] })
 
-const COUNTERS = {
+const counters = {
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
 }
 
@@ -30,5 +30,5 @@ module.exports = {
   run,
   register,
   incrementCounter,
-  COUNTERS,
+  counters,
 }
