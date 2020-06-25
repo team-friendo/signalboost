@@ -19,7 +19,7 @@ services:
     networks:
       - default
     volumes:
-      - ./conf/prometheus/prometheus_prod.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus_prod.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus_data
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -38,8 +38,8 @@ services:
       - proxy-tier
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./conf/grafana/provisioning/:/etc/grafana/provisioning/
-      - ./conf/grafana/config/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
     env_file: .env.metrics
     environment:
       - GF_SERVER_HTTP_PORT=5000
