@@ -1,7 +1,9 @@
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
+import { describe, it, beforeEach, afterEach } from 'mocha'
+import sinon from 'sinon'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { messageTypes } from '../../../app/signal'
+import { statuses } from '../../../app/util'
 import { genFingerprint } from '../../support/factories/deauthorization'
 import callbacks from '../../../app/dispatcher/callbacks'
 
@@ -24,15 +26,22 @@ describe('callback registry', () => {
       request: trustRequest,
     },
   }
-  const trustSocket = {}
+  let resolveStub, rejectStub, noopSpy
+  beforeEach(() => {
+    resolveStub = sinon.stub()
+    rejectStub = sinon.stub()
+    noopSpy = sinon.stub(callbacks, '_noop')
+  })
+  afterEach(() => sinon.restore())
 
   describe('registering callbacks', () => {
     describe('for a trust request', () => {
       it('registers a trust response handler', () => {
-        callbacks.register(trustSocket, trustRequest)
+        callbacks.register(trustRequest, resolveStub, rejectStub)
         expect(callbacks.registry[`${messageTypes.TRUST}-${fingerprint}`]).to.eql({
-          socket: trustSocket,
-          callback: callbacks.handleTrustResponse,
+          callback: callbacks._handleTrustResponse,
+          resolve: resolveStub,
+          reject: rejectStub,
         })
       })
     })
@@ -41,15 +50,18 @@ describe('callback registry', () => {
   describe('retrieving callbacks', () => {
     describe('for a trust reponse', () => {
       it('retrieves the trust resposnse handler', () => {
-        callbacks.register(trustSocket, trustRequest)
-        const { socket, callback } = callbacks.route(trustResponse)
-        expect(socket).to.eql(trustSocket)
-        expect(callback).to.eql(callbacks.handleTrustResponse)
+        callbacks.register(trustRequest, resolveStub, rejectStub)
+        callbacks.handle(trustResponse)
+        expect(resolveStub.getCall(0).args[0]).to.eql({
+          status: statuses.SUCCESS,
+          message: callbacks.messages.trust.success(channelPhoneNumber, subscriberNumber),
+        })
       })
       describe('for an unregistered callback', () => {
         it('returns undefined', () => {
-          expect(callbacks.route(trustResponse)).to.equal(undefined)
-          expect(callbacks.route({ type: 'foobar' })).to.eql(undefined)
+          callbacks.handle(trustResponse)
+          callbacks.handle({ type: 'foo' })
+          expect(noopSpy.callCount).to.eql(2)
         })
       })
     })

@@ -1,4 +1,5 @@
 const app = require('./index')
+const callbacks = require('./dispatcher/callback')
 const { pick, get, isEmpty } = require('lodash')
 const { statuses } = require('./util')
 const channelRepository = require('./db/repositories/channel')
@@ -105,24 +106,6 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
-const messages = {
-  error: {
-    verificationFailure: (phoneNumber, reason) =>
-      `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
-    verificationTimeout: phoneNumber => `Verification for ${phoneNumber} timed out`,
-    trustTimeout: (channelPhoneNumber, memberPhoneNumber) =>
-      `Trust command for member ${memberPhoneNumber} on channel ${channelPhoneNumber} timed out.`,
-    identityRequestTimeout: phoneNumber => `Request for identities of ${phoneNumber} timed out`,
-  },
-  trust: {
-    error: (channelPhoneNumber, memberPhoneNumber, msg) =>
-      `Failed to trust new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}: ${msg}`,
-    success: (channelPhoneNumber, memberPhoneNumber) =>
-      `Trusted new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}.`,
-    noop: phoneNumber => `${phoneNumber} has no new safety numbers to trust`,
-  },
-}
-
 const logger = loggerOf('signal')
 
 /**********************
@@ -208,53 +191,17 @@ const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) 
     expiresInSeconds,
   })
 
-// (Socket, String, String, String?) -> Promise<Array<TrustResult>>
+// (String, String, String?) -> Promise<SignalboostStatus>
 const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  // don't await first socket.write so we can start listening sooner!
   socket.write({
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
     recipientNumber: memberPhoneNumber,
     fingerprint,
   })
-  return _awaitTrustVerification(channelPhoneNumber, memberPhoneNumber, fingerprint)
-}
-
-// (Socket, string, string) => Promise<TrustResult>
-const _awaitTrustVerification = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  // TODO: re-implement this with receivers hash map!
-  return Promise.resolve()
-  // return new Promise((resolve, reject) => {
-  //   // create handler
-  //   const handle = msg => {
-  //     const { type, data } = safeJsonParse(msg, reject)
-  //     if (type === null && data === null) {
-  //       // ignore bad JSON
-  //       app.sock.removeListener('data', handle)
-  //       return Promise.resolve()
-  //     } else if (
-  //       type === messageTypes.TRUSTED_FINGERPRINT &&
-  //       data.request.fingerprint === fingerprint
-  //     ) {
-  //       // return success if we get a trust response
-  //       app.sock.removeListener('data', handle)
-  //       resolve({
-  //         status: statuses.SUCCESS,
-  //         message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
-  //       })
-  //     }
-  //   }
-  //   // register handler
-  //   app.sock.on('data', handle)
-  //   // reject and deregister handle after timeout if no trust response received
-  //   wait(signaldRequestTimeout).then(() => {
-  //     app.sock.removeListener('data', handle)
-  //     reject({
-  //       status: statuses.ERROR,
-  //       message: messages.error.trustTimeout(channelPhoneNumber, memberPhoneNumber),
-  //     })
-  //   })
-  // })
+  return new Promise((resolve, reject) => {
+    callbacks.register(messageTypes.TRUST, fingerprint, resolve, reject)
+  })
 }
 
 const isAlive = () => {
@@ -349,7 +296,6 @@ const sdMessageOf = (channel, messageBody) => ({
 
 module.exports = {
   messageTypes,
-  messages,
   trustLevels,
   awaitVerificationResult,
   broadcastMessage,

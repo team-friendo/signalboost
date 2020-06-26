@@ -1,41 +1,73 @@
 const { messageTypes } = require('../signal')
+const util = require('./util')
+const { statuses, wait } = util
+const { get } = require('lodash')
+const {
+  signal: { signaldRequestTimeout },
+} = require('./config')
 
 /**
  * type CallbackRoute = {
  *   socket: Socket,
- *   callback: (Socket, IncomingSignaldMessage) -> Promise<SignalboostStatus>
+ *   callback: (IncomingSignaldMessage, resolve, reject) -> Promise<SignalboostStatus>
  * }
  *
  * type CallbackRegistry {
  *   [string]: CallbackRoute
  * }
- * **/
+ ***/
+
+// CONSTANTS
+const messages = {
+  timeout: messageType => `Singald response timed out for request of type: ${messageType}`,
+  verification: {
+    error: (phoneNumber, reason) =>
+      `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
+  },
+  trust: {
+    error: (channelPhoneNumber, memberPhoneNumber, msg) =>
+      `Failed to trust new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}: ${msg}`,
+    success: (channelPhoneNumber, memberPhoneNumber) =>
+      `Trusted new safety number for ${memberPhoneNumber} on channel ${channelPhoneNumber}.`,
+  },
+}
 
 // CallbackRegistry
 const registry = {}
 
-// (Socket, OutgoingSignaldMessage) -> void
-const register = (socket, outSdMsg) => {
-  switch (outSdMsg.type) {
-    case messageTypes.TRUST:
-      registry[`${messageTypes.TRUST}-${outSdMsg.fingerprint}`] = {
-        socket,
-        callback: handleTrustResponse,
-      }
-  }
+// (SingaldMessageType, string, function, function) -> void
+const register = (messageType, id, resolve, reject) => {
+  registry[`${messageType}-${id}`] = { callback: _callbackFor(messageType), resolve, reject }
+  wait(signaldRequestTimeout).then(
+    reject({ status: statuses.ERROR, message: messages.timeout(messageType) }),
+  )
 }
+
+const _callbackFor = messageType =>
+  ({
+    [messageTypes.TRUST]: _handleTrustResponse,
+  }[messageType])
 
 // IncomingSignaldMessage -> CallbackRoute
-const route = inSdMsg => {
-  switch (inSdMsg.type) {
-    case messageTypes.TRUSTED_FINGERPRINT:
-      return registry[`${messageTypes.TRUST}-${inSdMsg.data.request.fingerprint}`]
-    default:
-      return undefined
-  }
+const handle = inSdMsg => {
+  // insert safe parsing logic here (to make sure we have a type)
+  const { callback, resolve, reject } = {
+    [messageTypes.TRUSTED_FINGERPRINT]:
+      registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
+  }[inSdMsg.type] || { callback: util.noop }
+  callback(inSdMsg, resolve, reject)
 }
 
-// (Socket, IncomingSignaldMessage) -> Promise<SignaldStatus>
-const handleTrustResponse = (socket, inSdMsg) => Promise.resolve({ status: 'SUCCESS', message: '' })
+// CALLBACKS
 
-module.exports = { registry, register, route, handleTrustResponse }
+// (Socket, IncomingSignaldMessage) -> Promise<SignaldStatus>
+const _handleTrustResponse = (inSdMsg, resolve) => {
+  const channelPhoneNumber = inSdMsg.data.request.username
+  const memberPhoneNumber = inSdMsg.data.request.recipientNumber
+  resolve({
+    status: statuses.SUCCESS,
+    message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
+  })
+}
+
+module.exports = { messages, registry, register, handle, _handleTrustResponse }
