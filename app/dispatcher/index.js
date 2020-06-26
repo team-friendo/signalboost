@@ -75,6 +75,12 @@ const run = async () => {
 
 const dispatch = async (rawMessage, resendQueue) => {
   const inboundMsg = parseMessage(rawMessage)
+  const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
+  metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
+    inboundMsg.type,
+    channelPhoneNumber,
+    metrics.messageDirection.INBOUND,
+  ])
   // retrieve db info we need for dispatching...
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([

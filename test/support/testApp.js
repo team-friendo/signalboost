@@ -36,6 +36,11 @@ const metricsResource = () => ({
           inc: () => ({}),
         }),
       },
+      SIGNALD_MESSAGES: {
+        labels: () => ({
+          inc: () => ({}),
+        }),
+      },
     },
   }),
 })

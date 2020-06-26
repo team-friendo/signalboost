@@ -5,6 +5,12 @@ const register = (registry, metric) => ({ ...metric, registers: [registry] })
 
 const counters = {
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
+  SIGNALD_MESSAGES: 'SIGNALD_MESSAGES',
+}
+
+const messageDirection = {
+  INBOUND: 'inbound',
+  OUTBOUND: 'outbound',
 }
 
 const run = () => {
@@ -17,6 +23,12 @@ const run = () => {
       help: 'Counts the number of relayed messages',
       registers: [registry],
       labelNames: ['channelPhoneNumber'],
+    }),
+    SIGNALD_MESSAGES: new prometheus.Counter({
+      name: 'signald_messages',
+      help: 'Counts the number of messages written out to signald sockets',
+      registers: [registry],
+      labelNames: ['messageType', 'channelPhoneNumber', 'messageDirection'],
     }),
   }
 
@@ -31,4 +43,5 @@ module.exports = {
   register,
   incrementCounter,
   counters,
+  messageDirection,
 }
