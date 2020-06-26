@@ -1,4 +1,5 @@
 const app = require('./index')
+const metrics = require('./metrics')
 const genericPool = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
@@ -55,11 +56,20 @@ const write = data =>
   new Promise((resolve, reject) =>
     app.sock.write(
       signaldEncode(data),
-      promisifyCallback(resolve, e =>
-        reject({
-          status: statuses.ERROR,
-          message: `Error writing to signald socket: ${e.message}`,
-        }),
+      promisifyCallback(
+        () => {
+          metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
+            data.type,
+            data.username,
+            metrics.messageDirection.OUTBOUND,
+          ])
+          return resolve()
+        },
+        e =>
+          reject({
+            status: statuses.ERROR,
+            message: `Error writing to signald socket: ${e.message}`,
+          }),
       ),
     ),
   )
@@ -73,6 +83,11 @@ const writeWithPool = async data => {
           signaldEncode(data),
           promisifyCallback(
             () => {
+              metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
+                data.type,
+                data.username,
+                metrics.messageDirection.OUTBOUND,
+              ])
               pool.release(sock)
               return resolve()
             },
