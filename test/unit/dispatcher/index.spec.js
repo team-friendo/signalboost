@@ -277,13 +277,8 @@ describe('dispatcher module', () => {
           await wait(2 * socketDelay)
         })
 
-        it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
-        })
-
-        it('does not send any notifications', () => {
-          expect(sendMessageStub.callCount).to.eql(0)
-        })
+      it('enqueues the message for resending', () => {
+        expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
       })
     })
 

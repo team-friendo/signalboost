@@ -14,6 +14,7 @@ const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
 const {
   signal: { supportPhoneNumber },
+  defaultLanguage,
 } = require('../config')
 
 /**
@@ -73,7 +74,14 @@ const dispatch = async msg => {
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) {
     const resendInterval = resend.enqueueResend(rateLimitedMessage)
-    return notifyRateLimitedMessage(rateLimitedMessage, resendInterval)
+    logger.log(
+      messagesIn(defaultLanguage).notifications.rateLimitOccurred(channel.name, resendInterval),
+    )
+    metrics.incrementCounter(metrics.counters.ERRORS, [
+      metrics.errorTypes.RATE_LIMIT,
+      channel.phoneNumber,
+    ])
+    return Promise.resolve()
   }
 
   const newFingerprint = detectUpdatableFingerprint(inboundMsg)

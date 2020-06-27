@@ -27,7 +27,7 @@ const run = () => {
       name: 'errors',
       help: 'Counts errors',
       registers: [registry],
-      labelNames: ['errorType'],
+      labelNames: ['errorType', 'channelPhoneNumber'],
     }),
     RELAYABLE_MESSAGES: new prometheus.Counter({
       name: 'relayable_messages',
