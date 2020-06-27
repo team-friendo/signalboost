@@ -2,4 +2,5 @@ SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # backup at 5am every day
-0 5 * * /srv/signalboost/bin/backup
+0 5 * * * /srv/signalboost/bin/backup
+0 * * * * /srv/signalboost/bin/restart > /tmp/restart.log 2>&1

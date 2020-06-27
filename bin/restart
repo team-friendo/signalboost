@@ -1,0 +1,10 @@
+#!/bin/bash 
+
+start=`date`
+echo "Restarting at: $start"
+
+cd /srv/signalboost
+docker-compose down && docker-compose up -d
+
+end=`date`
+echo "Restart complete at: $end"
