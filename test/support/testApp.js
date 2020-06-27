@@ -31,6 +31,11 @@ const metricsResource = () => ({
       metrics: () => Promise.resolve(),
     },
     counters: {
+      ERRORS: {
+        labels: () => ({
+          inc: () => ({}),
+        }),
+      },
       RELAYABLE_MESSAGES: {
         labels: () => ({
           inc: () => ({}),

@@ -6,6 +6,7 @@ const register = (registry, metric) => ({ ...metric, registers: [registry] })
 const counters = {
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
   SIGNALD_MESSAGES: 'SIGNALD_MESSAGES',
+  ERRORS: 'ERRORS',
 }
 
 const messageDirection = {
@@ -13,11 +14,21 @@ const messageDirection = {
   OUTBOUND: 'outbound',
 }
 
+const errorTypes = {
+  RATE_LIMIT: 'RATE_LIMIT',
+}
+
 const run = () => {
   const registry = new prometheus.Registry()
   prometheus.collectDefaultMetrics({ registry })
 
   const counters = {
+    ERRORS: new prometheus.Counter({
+      name: 'errors',
+      help: 'Counts errors',
+      registers: [registry],
+      labelNames: ['errorType'],
+    }),
     RELAYABLE_MESSAGES: new prometheus.Counter({
       name: 'relayable_messages',
       help: 'Counts the number of relayed messages',
@@ -44,4 +55,5 @@ module.exports = {
   incrementCounter,
   counters,
   messageDirection,
+  errorTypes,
 }
