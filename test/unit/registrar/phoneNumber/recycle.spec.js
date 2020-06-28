@@ -5,7 +5,7 @@ import phoneNumberService from '../../../../app/registrar/phoneNumber'
 import sinon from 'sinon'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../app/db/repositories/channel'
-import signal from '../../../../app/signal'
+import signal from '../../../../app/signal/signal'
 import common from '../../../../app/registrar/phoneNumber/common'
 
 describe('phone number services -- recycle module', () => {

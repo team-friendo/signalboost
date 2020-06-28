@@ -1,12 +1,13 @@
-const app = require('./index')
-const callbacks = require('./dispatcher/callback')
+const app = require('../index')
+const callbacks = require('./callbacks')
 const { pick, get, isEmpty } = require('lodash')
-const { statuses } = require('./util')
-const channelRepository = require('./db/repositories/channel')
-const { wait, loggerOf } = require('./util.js')
+const { statuses } = require('../util')
+const channelRepository = require('../db/repositories/channel')
+const { wait, loggerOf } = require('../util.js')
+const { messages, messageTypes, trustLevels } = require('./constants')
 const {
   signal: { signaldRequestTimeout },
-} = require('./config')
+} = require('../config')
 
 /**
  * type InboundSignaldMessage = {
@@ -75,37 +76,6 @@ const {
  *
  * */
 
-/***************
- * CONSTANTS
- ***************/
-
-const messageTypes = {
-  ERROR: 'unexpected_error',
-  GET_IDENTITIES: 'get_identities',
-  IDENTITIES: 'identities',
-  MESSAGE: 'message',
-  REGISTER: 'register',
-  SEND: 'send',
-  SET_EXPIRATION: 'set_expiration',
-  SUBSCRIBE: 'subscribe',
-  TRUST: 'trust',
-  TRUSTED_FINGERPRINT: 'trusted_fingerprint',
-  UNTRUSTED_IDENTITY: 'untrusted_identity',
-  UNREADABLE_MESSAGE: 'unreadable_message',
-  UNSUBSCRIBE: 'unsubscribe',
-  VERIFICATION_ERROR: 'verification_error',
-  VERIFICATION_REQUIRED: 'verification_required',
-  VERIFICATION_SUCCESS: 'verification_succeeded',
-  VERIFY: 'verify',
-  VERSION: 'version',
-}
-
-const trustLevels = {
-  TRUSTED_VERIFIED: 'TRUSTED_VERIFIED',
-  TRUSTED_UNVERIFIED: 'TRUSTED_UNVERIFIED',
-  UNTRUSTED: 'UNTRUSTED',
-}
-
 const logger = loggerOf('signal')
 
 /**********************
@@ -116,7 +86,7 @@ let socket
 const run = async () => {
   logger.log(`--- Subscribing to channels...`)
   // we import socket here due to import-time weirdness imposed by app.run
-  socket = require('./socket')
+  socket = require('../socket')
   const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
   const numListening = await Promise.all(channels.map(ch => subscribe(ch.phoneNumber)))
   logger.log(`--- Subscribed to ${numListening.length} / ${channels.length} channels!`)
@@ -295,6 +265,7 @@ const sdMessageOf = (channel, messageBody) => ({
 })
 
 module.exports = {
+  messages,
   messageTypes,
   trustLevels,
   awaitVerificationResult,

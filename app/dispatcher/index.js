@@ -1,4 +1,5 @@
-const signal = require('../signal')
+const signal = require('../signal/signal')
+const callbacks = require('../signal/callbacks')
 const { sdMessageOf, messageTypes } = signal
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
@@ -10,7 +11,6 @@ const logger = require('./logger')
 const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
-const app = require('../index')
 const metrics = require('../metrics')
 const {
   signal: { supportPhoneNumber },
@@ -65,6 +65,9 @@ const dispatch = async msg => {
         classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source),
       ])
     : []
+
+  // detect and handle callbacks if any
+  callbacks.handle(inboundMsg)
 
   // dispatch system-created messages
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)

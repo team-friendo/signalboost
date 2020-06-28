@@ -29,7 +29,7 @@ const test = {
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // 20 millis
-  poolSize: 3,
+  poolSize: 30,
   setExpiryInterval: 1, // 1 milli
   signaldRequestTimeout: 100, // 100 millis
   signaldStartupTime: 1, // 1 milli

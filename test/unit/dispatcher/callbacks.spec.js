@@ -1,11 +1,12 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
+import util from '../../../app/util'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { messageTypes } from '../../../app/signal'
+import { messageTypes } from '../../../app/signal/signal'
 import { statuses } from '../../../app/util'
 import { genFingerprint } from '../../support/factories/deauthorization'
-import callbacks from '../../../app/dispatcher/callbacks'
+import callbacks from '../../../app/signal/callbacks'
 
 describe('callback registry', () => {
   const channelPhoneNumber = genPhoneNumber()
@@ -26,18 +27,18 @@ describe('callback registry', () => {
       request: trustRequest,
     },
   }
-  let resolveStub, rejectStub, noopSpy
+  let resolveStub, rejectStub, noopStub
   beforeEach(() => {
     resolveStub = sinon.stub()
     rejectStub = sinon.stub()
-    noopSpy = sinon.stub(callbacks, '_noop')
+    noopStub = sinon.stub(util, 'noop')
   })
   afterEach(() => sinon.restore())
 
   describe('registering callbacks', () => {
     describe('for a trust request', () => {
       it('registers a trust response handler', () => {
-        callbacks.register(trustRequest, resolveStub, rejectStub)
+        callbacks.register(messageTypes.TRUST, fingerprint, resolveStub, rejectStub)
         expect(callbacks.registry[`${messageTypes.TRUST}-${fingerprint}`]).to.eql({
           callback: callbacks._handleTrustResponse,
           resolve: resolveStub,
@@ -50,7 +51,7 @@ describe('callback registry', () => {
   describe('retrieving callbacks', () => {
     describe('for a trust reponse', () => {
       it('retrieves the trust resposnse handler', () => {
-        callbacks.register(trustRequest, resolveStub, rejectStub)
+        callbacks.register(messageTypes.TRUST, fingerprint, resolveStub, rejectStub)
         callbacks.handle(trustResponse)
         expect(resolveStub.getCall(0).args[0]).to.eql({
           status: statuses.SUCCESS,
@@ -58,10 +59,9 @@ describe('callback registry', () => {
         })
       })
       describe('for an unregistered callback', () => {
-        it('returns undefined', () => {
-          callbacks.handle(trustResponse)
-          callbacks.handle({ type: 'foo' })
-          expect(noopSpy.callCount).to.eql(2)
+        it('returns undefined', async () => {
+          callbacks.handle({ type: 'foo'})
+          expect(noopStub.callCount).to.eql(1)
         })
       })
     })

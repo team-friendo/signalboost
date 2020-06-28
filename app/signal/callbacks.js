@@ -1,10 +1,10 @@
-const { messageTypes } = require('../signal')
-const util = require('./util')
+const { messageTypes } = require('./constants')
+const util = require('../util')
 const { statuses, wait } = util
 const { get } = require('lodash')
 const {
   signal: { signaldRequestTimeout },
-} = require('./config')
+} = require('../config')
 
 /**
  * type CallbackRoute = {
@@ -17,7 +17,6 @@ const {
  * }
  ***/
 
-// CONSTANTS
 const messages = {
   timeout: messageType => `Singald response timed out for request of type: ${messageType}`,
   verification: {
@@ -35,12 +34,12 @@ const messages = {
 // CallbackRegistry
 const registry = {}
 
-// (SingaldMessageType, string, function, function) -> void
-const register = (messageType, id, resolve, reject) => {
+// (SingaldMessageType, string, function, function) -> Promise<void>
+const register = async (messageType, id, resolve, reject) => {
   registry[`${messageType}-${id}`] = { callback: _callbackFor(messageType), resolve, reject }
-  wait(signaldRequestTimeout).then(
-    reject({ status: statuses.ERROR, message: messages.timeout(messageType) }),
-  )
+  return util
+    .wait(signaldRequestTimeout)
+    .then(() => reject({ status: statuses.ERROR, message: messages.timeout(messageType) }))
 }
 
 const _callbackFor = messageType =>

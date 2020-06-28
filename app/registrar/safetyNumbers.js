@@ -1,11 +1,11 @@
-const signal = require('../signal')
+const signal = require('../signal/signal')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const deauthorizationRepository = require('../db/repositories/deauthorization')
 const { loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
-const { sdMessageOf } = require('../signal')
+const { sdMessageOf } = require('../signal/signal')
 const { statuses } = require('../util')
 
 // (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>

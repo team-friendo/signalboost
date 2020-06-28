@@ -1,7 +1,7 @@
 const { pick } = require('lodash')
 const { statuses } = require('../../db/models/phoneNumber')
 const channelRepository = require('../../db/repositories/channel')
-const signal = require('../../signal')
+const signal = require('../../signal/signal')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
   api: { host },

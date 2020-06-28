@@ -1,4 +1,4 @@
-const signal = require('../../signal')
+const signal = require('../../signal/signal')
 const registrationService = require('./register')
 const smsSenderRepository = require('../../db/repositories/smsSender')
 const { languageForPhoneNumber } = require('../../language')

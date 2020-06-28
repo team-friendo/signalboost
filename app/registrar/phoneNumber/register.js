@@ -3,7 +3,7 @@ const { errors, statuses: pnStatuses, errorStatus, extractStatus } = require('./
 const { statuses } = require('../../util')
 const { flatten, without } = require('lodash')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const signal = require('../../signal')
+const signal = require('../../signal/signal')
 const { sequence, batchesOfN } = require('../../util')
 const logger = require('../logger')
 const {
