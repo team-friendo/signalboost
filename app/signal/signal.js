@@ -96,54 +96,28 @@ const run = async () => {
  * SIGNALD COMMANDS
  ********************/
 
+// string -> Promise<void>
 const register = phoneNumber => socket.write({ type: messageTypes.REGISTER, username: phoneNumber })
 
+// (string, string) -> Promise<void>
 const verify = (phoneNumber, code) =>
   socket.write({ type: messageTypes.VERIFY, username: phoneNumber, code })
 
-const awaitVerificationResult = async phoneNumber => {
-  // TODO: implement this with receivers hash map!
-  return Promise.resolve()
-  // return new Promise((resolve, reject) => {
-  //   app.sock.on('data', function handle(msg) {
-  //     const { type, data } = safeJsonParse(msg, reject)
-  //     if (type === null && data === null) {
-  //       reject(new Error(messages.error.invalidJSON(msg)))
-  //     } else if (_isVerificationFailure(type, data, phoneNumber)) {
-  //       app.sock.removeListener('data', handle)
-  //       const reason = get(data, 'message', 'Captcha required: 402')
-  //       reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
-  //     } else if (_isVerificationSuccess(type, data, phoneNumber)) {
-  //       app.sock.removeListener('data', handle)
-  //       resolve(data)
-  //     } else if (_isVerificationFailure(type, data, phoneNumber)) {
-  //       app.sock.removeListener('data', handle)
-  //       const reason = get(data, 'message', 'Captcha required: 402')
-  //       reject(new Error(messages.error.verificationFailure(phoneNumber, reason)))
-  //     } else {
-  //       // on first message (reporting registration) set timeout for listening to subsequent messages
-  //       wait(verificationTimeout).then(() => {
-  //         app.sock.removeListener('data', handle)
-  //         reject(new Error(messages.error.verificationTimeout(phoneNumber)))
-  //       })
-  //     }
-  //   })
-  // })
-}
-
-const _isVerificationSuccess = (type, data, phoneNumber) =>
-  type === messageTypes.VERIFICATION_SUCCESS && get(data, 'username') === phoneNumber
-
-const _isVerificationFailure = (type, data, phoneNumber) =>
-  type === messageTypes.ERROR && get(data, 'request.username') === phoneNumber
+// string -> Promise<void>
+const awaitVerificationResult = async phoneNumber =>
+  new Promise((resolve, reject) =>
+    callbacks.register(messageTypes.VERIFY, phoneNumber, resolve, reject),
+  )
 
 // string -> Promise<void>
 const subscribe = phoneNumber =>
   socket.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
+// string -> Promise<void>
 const unsubscribe = phoneNumber =>
   socket.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
+// (string, string) -> Promise<void>
 const sendMessage = (recipientNumber, outboundMessage) =>
   socket.write({ ...outboundMessage, recipientNumber })
 
