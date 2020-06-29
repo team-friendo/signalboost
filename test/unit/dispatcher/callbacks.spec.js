@@ -46,20 +46,20 @@ describe('callback registry', () => {
       })
     })
 
-    describe('for a REGISTER request', () => {
-      it('registers a REGISTER response handler', () => {
-        callbacks.register(messageTypes.REGISTER, channelPhoneNumber, resolveStub, rejectStub)
-        expect(callbacks.registry[`${messageTypes.REGISTER}-${channelPhoneNumber}`]).to.eql({
+    describe('for a VERIFY request', () => {
+      it('registers a VERIFY response handler', () => {
+        callbacks.register(messageTypes.VERIFY, channelPhoneNumber, resolveStub, rejectStub)
+        expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql({
           callback: callbacks._handleVerifyResponse,
           resolve: resolveStub,
           reject: rejectStub,
         })
       })
       it('rejects and deletes the handler after timeout', async () => {
-        callbacks.register(messageTypes.REGISTER, channelPhoneNumber, resolveStub, rejectStub)
+        callbacks.register(messageTypes.VERIFY, channelPhoneNumber, resolveStub, rejectStub)
         await util.wait(signaldRequestTimeout)
         expect(rejectStub.callCount).to.eql(1)
-        expect(callbacks.registry[`${messageTypes.REGISTER}-${channelPhoneNumber}`]).to.eql(
+        expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql(
           undefined,
         )
       })
@@ -102,7 +102,7 @@ describe('callback registry', () => {
       })
     })
 
-    describe('a REGISTER response', () => {
+    describe('a VERIFY response', () => {
       const verifySuccessResponse = {
         type: messageTypes.VERIFICATION_SUCCESS,
         data: { username: channelPhoneNumber },
@@ -113,15 +113,15 @@ describe('callback registry', () => {
       }
 
       describe('when verification succeeded', () => {
-        it('resolves the REGISTER response handler', () => {
-          callbacks.register(messageTypes.REGISTER, channelPhoneNumber, resolveStub, rejectStub)
+        it('resolves the VERIFY response handler', () => {
+          callbacks.register(messageTypes.VERIFY, channelPhoneNumber, resolveStub, rejectStub)
           callbacks.handle(verifySuccessResponse)
           expect(resolveStub.callCount).to.eql(1)
         })
       })
       describe('when verification failed', () => {
-        it('rejects the REGISTER response handler', () => {
-          callbacks.register(messageTypes.REGISTER, channelPhoneNumber, resolveStub, rejectStub)
+        it('rejects the VERIFY response handler', () => {
+          callbacks.register(messageTypes.VERIFY, channelPhoneNumber, resolveStub, rejectStub)
           callbacks.handle(verifyErrorResponse)
           expect(rejectStub.getCall(0).args[0]).to.be.an('Error')
         })

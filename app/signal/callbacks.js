@@ -52,7 +52,7 @@ const register = async (messageType, id, resolve, reject) => {
 // string -> (IncomingSignaldMessage, resolve, reject) -> Promise<SignalboostStatus>
 const _callbackFor = messageType =>
   ({
-    [messageTypes.REGISTER]: _handleVerifyResponse,
+    [messageTypes.VERIFY]: _handleVerifyResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERSION]: _handleVersionResponse,
   }[messageType])
@@ -63,9 +63,9 @@ const handle = inSdMsg => {
     [messageTypes.TRUSTED_FINGERPRINT]:
       registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
     [messageTypes.VERIFICATION_SUCCESS]:
-      registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
+      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
-      registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
+      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
     [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-0`],
   }[inSdMsg.type] || { callback: util.noop }
   callback(inSdMsg, resolve, reject)

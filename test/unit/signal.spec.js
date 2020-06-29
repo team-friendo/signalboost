@@ -210,7 +210,7 @@ describe('signal module', () => {
         })
 
         it('rejects with a timeout error', async () => {
-          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.REGISTER))
+          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.VERIFY))
         })
       })
 
@@ -226,7 +226,7 @@ describe('signal module', () => {
         })
 
         it('rejects with timeout error', () => {
-          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.REGISTER))
+          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.VERIFY))
         })
       })
     })

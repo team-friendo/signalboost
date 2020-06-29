@@ -95,8 +95,11 @@ const run = async () => {
 // string -> Promise<void>
 const register = async phoneNumber => {
   socket.write({ type: messageTypes.REGISTER, username: phoneNumber })
+  // Since a registration isn't meaningful without a verification code,
+  // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
+  // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below
   return new Promise((resolve, reject) =>
-    callbacks.register(messageTypes.REGISTER, phoneNumber, resolve, reject),
+    callbacks.register(messageTypes.VERIFY, phoneNumber, resolve, reject),
   )
 }
 
@@ -191,6 +194,7 @@ const transformToInboundMessage = message => {
   }
 }
 
+// SignaldInboundAttachment -> SignaldOutboundAttachment
 const parseOutboundAttachment = inAttachment => ({
   filename: inAttachment.storedFilename || inAttachment.filename || '',
   ...pick(inAttachment, ['width', 'height', 'voiceNote']),
