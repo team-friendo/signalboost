@@ -69,7 +69,7 @@ const routesOf = async router => {
 
   router.post('/phoneNumbers/recycle', async ctx => {
     const { phoneNumbers } = ctx.request.body
-    const result = await phoneNumberService.recycle({
+    const result = await phoneNumberService.enqueueRecycleablePhoneNumber({
       phoneNumbers,
     })
     merge(ctx, { status: httpStatusOfMany(result), body: result })
