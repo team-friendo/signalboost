@@ -1,5 +1,4 @@
 const signal = require('../../signal/signal')
-const registrationService = require('./register')
 const smsSenderRepository = require('../../db/repositories/smsSender')
 const { languageForPhoneNumber } = require('../../language')
 const { messagesIn } = require('../../dispatcher/strings/messages')
@@ -14,7 +13,7 @@ const reachedQuotaError = 'Sender exceeded monthly sms quota.'
 const handleSms = ({ phoneNumber, senderPhoneNumber, message }) => {
   const [isVerificationCode, verificationCode] = signal.parseVerificationCode(message)
   return isVerificationCode
-    ? registrationService.verify({ phoneNumber, verificationCode })
+    ? signal.verify({ phoneNumber, verificationCode })
     : respondToSms(senderPhoneNumber)
 }
 

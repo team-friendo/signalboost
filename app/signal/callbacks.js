@@ -49,7 +49,6 @@ const _callbackFor = messageType =>
   ({
     [messageTypes.REGISTER]: _handleVerifyResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
-    [messageTypes.VERIFY]: _handleVerifyResponse,
   }[messageType])
 
 // IncomingSignaldMessage -> CallbackRoute
@@ -59,11 +58,11 @@ const handle = inSdMsg => {
     // TRUST callbacks
     [messageTypes.TRUSTED_FINGERPRINT]:
       registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
-    // VERIFY/REGISTER callbacks
+    // REGISTER callbacks
     [messageTypes.VERIFICATION_SUCCESS]:
-      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
+      registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
-      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
+      registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
   }[inSdMsg.type] || { callback: util.noop }
   callback(inSdMsg, resolve, reject)
 }
@@ -82,16 +81,20 @@ const _handleTrustResponse = (inSdMsg, resolve) => {
 
 // (IncomingSignaldMessage, function, function) -> void
 const _handleVerifyResponse = (inSdMsg, resolve, reject) => {
-  if (inSdMsg.type === messageTypes.VERIFICATION_ERROR) {
-    const err = new Error(
-      messages.verification.error(
-        get(inSdMsg, 'data.request.username', 'N/A'),
-        get(inSdMsg, 'data.message', 'Captcha required: 402'),
+  if (inSdMsg.type === messageTypes.VERIFICATION_ERROR)
+    reject(
+      new Error(
+        messages.verification.error(
+          get(inSdMsg, 'data.username', 'N/A'),
+          get(inSdMsg, 'data.message', 'Captcha required: 402'),
+        ),
       ),
     )
-    reject(err)
-  }
-  if (inSdMsg.type === messageTypes.VERIFICATION_SUCCESS) resolve()
+  if (inSdMsg.type === messageTypes.VERIFICATION_SUCCESS)
+    resolve({
+      status: statuses.SUCCESS,
+      message: get(inSdMsg, 'data.username', 'N/A'),
+    })
 }
 
 module.exports = {

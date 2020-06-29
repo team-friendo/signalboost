@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { handleSms, reachedQuotaError } from '../../../../app/registrar/phoneNumber/sms'
 import { statuses } from '../../../../app/util'
-import registrationService from '../../../../app/registrar/phoneNumber/register'
+import signal from '../../../../app/signal/signal'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../support/factories/smsSender'
 import { languages } from '../../../../app/language'
@@ -16,7 +16,7 @@ describe('sms module', () => {
 
   let verifyStub, hasReachedQuotaStub, countMessageStub
   beforeEach(() => {
-    verifyStub = sinon.stub(registrationService, 'verify')
+    verifyStub = sinon.stub(signal, 'verify')
     hasReachedQuotaStub = sinon.stub(smsSenderRepository, 'hasReachedQuota')
     countMessageStub = sinon
       .stub(smsSenderRepository, 'countMessage')

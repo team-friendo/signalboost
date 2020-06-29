@@ -14,7 +14,6 @@ import {
   register,
   registerAllUnregistered,
   registerMany,
-  verify,
 } from '../../../../app/registrar/phoneNumber/register'
 
 const {
@@ -36,50 +35,29 @@ describe('phone number services -- registration module', () => {
   const twoBatchesOfPhoneNumbers = times(registrationBatchSize + 1, phoneNumberFactory)
   const verifiedStatus = { status: pnStatuses.VERIFIED, phoneNumber }
 
-  let registerStub, awaitVerificationStub, verifyStub, updateStub, findAllStub, pathExistsStub
+  let registerStub, updateStub, findAllStub, pathExistsStub
 
   const updateSucceeds = () =>
     updateStub.callsFake((phoneNumber, { status }) => Promise.resolve({ phoneNumber, status }))
 
-  const updateSucceedsOnCall = n =>
-    updateStub
-      .onCall(n)
-      .callsFake((phoneNumber, { status }) => Promise.resolve({ phoneNumber, status }))
-
   const registrationSucceeds = () =>
     registerStub.returns(
       Promise.resolve({
-        type: signal.messageTypes.VERIFICATION_REQUIRED,
-        data: {
-          username: phoneNumber,
-        },
+        type: statuses.SUCCESS,
+        message: phoneNumber,
       }),
     )
 
-  const verificationSucceeds = () =>
-    awaitVerificationStub.returns(
+  const registrationSucceedsOnCall = n =>
+    registerStub.onCall(n).returns(
       Promise.resolve({
-        type: signal.messageTypes.VERIFICATION_SUCCESS,
-        data: {
-          username: phoneNumber,
-        },
-      }),
-    )
-
-  const verificationSucceedsOnCall = n =>
-    awaitVerificationStub.onCall(n).returns(
-      Promise.resolve({
-        type: signal.messageTypes.VERIFICATION_SUCCESS,
-        data: {
-          username: phoneNumber,
-        },
+        type: statuses.SUCCESS,
+        message: phoneNumber,
       }),
     )
 
   beforeEach(() => {
     registerStub = sinon.stub(signal, 'register')
-    awaitVerificationStub = sinon.stub(signal, 'awaitVerificationResult')
-    verifyStub = sinon.stub(signal, 'verify')
     findAllStub = sinon.stub(phoneNumberRepository, 'findAll')
     sinon.stub(phoneNumberRepository, 'findAllPurchased')
     updateStub = sinon.stub(phoneNumberRepository, 'update')
@@ -95,7 +73,6 @@ describe('phone number services -- registration module', () => {
     describe('in all cases', () => {
       beforeEach(async () => {
         registerStub.returns(Promise.resolve())
-        awaitVerificationStub.returns(Promise.resolve())
         updateStub.returns(Promise.resolve())
       })
 
@@ -108,97 +85,40 @@ describe('phone number services -- registration module', () => {
     describe('when registration succeeds', () => {
       beforeEach(() => registrationSucceeds())
 
-      it('attempts to record registered status', async () => {
-        await register(phoneNumber)
-        expect(updateStub.getCall(0).args).to.eql([phoneNumber, { status: pnStatuses.REGISTERED }])
-      })
+      describe('when saving verification status succeeds', () => {
+        beforeEach(() => updateSucceeds())
 
-      describe('when saving registration status succeeds', () => {
-        beforeEach(async () => {
-          updateSucceedsOnCall(0)
-          awaitVerificationStub.returns(Promise.resolve())
-        })
-
-        it('listens for verification result', async () => {
-          await register(phoneNumber)
-          expect(awaitVerificationStub.callCount).to.eql(1)
-        })
-
-        describe('when verification succeeds', () => {
-          beforeEach(() => verificationSucceeds())
-
-          it('attempts to save verification status', async () => {
-            await register(phoneNumber)
-            expect(updateStub.getCall(1).args).to.eql([
-              phoneNumber,
-              { status: pnStatuses.VERIFIED },
-            ])
-          })
-
-          describe('when saving verification status succeeds', () => {
-            beforeEach(() => updateSucceedsOnCall(1))
-
-            it('returns a success status', async () => {
-              expect(await register(phoneNumber)).to.eql(verifiedStatus)
-            })
-          })
-
-          describe('when saving verification status fails', () => {
-            beforeEach(() =>
-              updateStub
-                .onCall(1)
-                .callsFake(() => Promise.reject(new Error('wild database error!'))),
-            )
-
-            it('returns an error status', async () => {
-              expect(await register(phoneNumber)).to.eql({
-                status: pnStatuses.ERROR,
-                phoneNumber,
-                error: errors.registrationFailed('Error: wild database error!', phoneNumber),
-              })
-            })
-          })
-        })
-
-        describe('when verification fails', () => {
-          beforeEach(() => {
-            awaitVerificationStub.callsFake(() => Promise.reject(new Error('oh noes!')))
-            updateStub.returns(Promise.resolve())
-          })
-
-          it('returns an error status', async () => {
-            expect(await register(phoneNumber)).to.eql({
-              status: pnStatuses.ERROR,
-              phoneNumber,
-              error: errors.registrationFailed('Error: oh noes!', phoneNumber),
-            })
-          })
+        it('returns a success status', async () => {
+          expect(await register(phoneNumber)).to.eql(verifiedStatus)
         })
       })
 
-      describe('when recording registration fails', () => {
+      describe('when saving verification status fails', () => {
         beforeEach(() =>
-          updateStub.onCall(0).callsFake(() => Promise.reject('wild database error!')),
+          updateStub.callsFake(() => Promise.reject(new Error('wild database error!'))),
         )
 
         it('returns an error status', async () => {
           expect(await register(phoneNumber)).to.eql({
             status: pnStatuses.ERROR,
             phoneNumber,
-            error: errors.registrationFailed('wild database error!'),
+            error: errors.registrationFailed('Error: wild database error!', phoneNumber),
           })
         })
       })
-    })
 
-    describe('when registration fails', () => {
-      beforeEach(() => registerStub.callsFake(() => Promise.reject(new Error('foo'))))
+      describe('when registration fails', () => {
+        beforeEach(() => {
+          registerStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+          updateStub.returns(Promise.resolve())
+        })
 
-      it('returns an error status', async () => {
-        expect(await register(phoneNumber)).to.eql({
-          status: pnStatuses.ERROR,
-          phoneNumber,
-          error: errors.registrationFailed('Error: foo'),
+        it('returns an error status', async () => {
+          expect(await register(phoneNumber)).to.eql({
+            status: pnStatuses.ERROR,
+            phoneNumber,
+            error: errors.registrationFailed('Error: oh noes!', phoneNumber),
+          })
         })
       })
     })
@@ -208,7 +128,6 @@ describe('phone number services -- registration module', () => {
     describe('in all cases', () => {
       beforeEach(() => {
         registrationSucceeds()
-        verificationSucceeds()
         updateSucceeds()
       })
 
@@ -234,7 +153,6 @@ describe('phone number services -- registration module', () => {
       // NOTE: we focus on happy path b/c sad path is covered exhaustively above
       beforeEach(() => {
         registrationSucceeds()
-        verificationSucceeds()
         updateSucceeds()
       })
 
@@ -258,13 +176,10 @@ describe('phone number services -- registration module', () => {
 
     describe('when one registration fails', () => {
       beforeEach(() => {
-        registrationSucceeds()
         updateSucceeds()
-        verificationSucceedsOnCall(0)
-        verificationSucceedsOnCall(1)
-        awaitVerificationStub
-          .onCall(2)
-          .callsFake(() => Promise.reject(new Error('verification timed out')))
+        registrationSucceedsOnCall(0)
+        registrationSucceedsOnCall(1)
+        registerStub.onCall(2).callsFake(() => Promise.reject(new Error('verification timed out')))
       })
 
       it('returns an array of success AND error pnStatuses', async () => {
@@ -291,7 +206,6 @@ describe('phone number services -- registration module', () => {
     beforeEach(() => {
       findAllStub.returns(Promise.resolve(purchasedPhoneNumberStatuses))
       registrationSucceeds()
-      verificationSucceeds()
       updateSucceeds()
     })
 
@@ -346,7 +260,6 @@ describe('phone number services -- registration module', () => {
     describe('when a phone number is already in the keystore and marked as verified in the db', () => {
       beforeEach(() => {
         registrationSucceeds()
-        verificationSucceeds()
         updateSucceeds()
         pathExistsStub.onCall(0).returns(Promise.resolve(false))
         pathExistsStub.onCall(1).returns(Promise.resolve(false))
@@ -362,65 +275,6 @@ describe('phone number services -- registration module', () => {
       it('does not attempt to register that phone number', async () => {
         await registerAllUnregistered({ sock })
         expect(registerStub.callCount).to.eql(2)
-      })
-    })
-  })
-
-  describe('verifying a number with signal', () => {
-    const verificationCode = '809-842'
-
-    describe('in all cases', () => {
-      beforeEach(async () => {
-        verifyStub.returns(Promise.resolve())
-        await verify({ phoneNumber, verificationCode })
-      })
-
-      it('attempts to verify the code with signal', () => {
-        expect(verifyStub.getCall(0).args).to.eql([phoneNumber, '809-842'])
-      })
-    })
-
-    describe('when sending the verification code succeeds', () => {
-      beforeEach(() => verifyStub.returns(Promise.resolve()))
-
-      it('waits for a verification result from signald', async () => {
-        await verify({ phoneNumber, verificationCode })
-        expect(awaitVerificationStub.callCount).to.eql(1)
-      })
-
-      describe('when verification succeeds', () => {
-        beforeEach(() => verificationSucceeds())
-
-        it('returns the success message from signald', async () => {
-          expect(await verify({ phoneNumber, verificationCode })).to.eql({
-            status: statuses.SUCCESS,
-            message: 'OK',
-          })
-        })
-      })
-
-      describe('when verification fails', () => {
-        beforeEach(() =>
-          awaitVerificationStub.callsFake(() => Promise.reject(new Error('rate limited'))),
-        )
-
-        it('returns an error status', async () => {
-          expect(await verify({ phoneNumber, verificationCode })).to.eql({
-            status: pnStatuses.ERROR,
-            message: 'rate limited',
-          })
-        })
-      })
-    })
-
-    describe('when sending the verification code fails', () => {
-      beforeEach(() => verifyStub.callsFake(() => Promise.reject(new Error('weird network error'))))
-
-      it('rejects with an error', async () => {
-        expect(await verify({ phoneNumber, verificationCode }).catch(a => a)).to.eql({
-          status: statuses.ERROR,
-          message: 'weird network error',
-        })
       })
     })
   })

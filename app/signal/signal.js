@@ -97,17 +97,22 @@ const run = async () => {
  ********************/
 
 // string -> Promise<void>
-const register = phoneNumber => socket.write({ type: messageTypes.REGISTER, username: phoneNumber })
+const register = async phoneNumber => {
+  socket.write({ type: messageTypes.REGISTER, username: phoneNumber })
+  return new Promise((resolve, reject) =>
+    callbacks.register(messageTypes.REGISTER, phoneNumber, resolve, reject),
+  )
+}
 
 // (string, string) -> Promise<void>
 const verify = (phoneNumber, code) =>
-  socket.write({ type: messageTypes.VERIFY, username: phoneNumber, code })
-
-// string -> Promise<void>
-const awaitVerificationResult = async phoneNumber =>
-  new Promise((resolve, reject) =>
-    callbacks.register(messageTypes.VERIFY, phoneNumber, resolve, reject),
-  )
+  // This function is only called from twilio callback as fire-and-forget.
+  // Its response will be picked up by the callback for the REGISTER command that triggered it.
+  // Therefore, all we need to do with this response is signal to twilio whether socket write worked.
+  socket
+    .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
+    .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
+    .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
 // string -> Promise<void>
 const subscribe = phoneNumber =>
@@ -242,7 +247,6 @@ module.exports = {
   messages,
   messageTypes,
   trustLevels,
-  awaitVerificationResult,
   broadcastMessage,
   isAlive,
   parseOutboundSdMessage,
