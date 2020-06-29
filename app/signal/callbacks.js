@@ -49,20 +49,20 @@ const _callbackFor = messageType =>
   ({
     [messageTypes.REGISTER]: _handleVerifyResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
+    [messageTypes.VERSION]: _handleVersionResponse,
   }[messageType])
 
 // IncomingSignaldMessage -> CallbackRoute
 const handle = inSdMsg => {
   // insert safe parsing logic here (to make sure we have a type)
   const { callback, resolve, reject } = {
-    // TRUST callbacks
     [messageTypes.TRUSTED_FINGERPRINT]:
       registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
-    // REGISTER callbacks
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
       registry[`${messageTypes.REGISTER}-${get(inSdMsg, 'data.username')}`],
+    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-0`],
   }[inSdMsg.type] || { callback: util.noop }
   callback(inSdMsg, resolve, reject)
 }
@@ -97,6 +97,12 @@ const _handleVerifyResponse = (inSdMsg, resolve, reject) => {
     })
 }
 
+const _handleVersionResponse = (inSdMsg, resolve) =>
+  resolve({
+    status: statuses.SUCCESS,
+    message: get(inSdMsg, 'data.version', 'N/A'),
+  })
+
 module.exports = {
   messages,
   registry,
@@ -105,4 +111,5 @@ module.exports = {
   register,
   _handleTrustResponse,
   _handleVerifyResponse,
+  _handleVersionResponse,
 }

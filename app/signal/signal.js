@@ -1,13 +1,9 @@
-const app = require('../index')
 const callbacks = require('./callbacks')
-const { pick, get, isEmpty } = require('lodash')
+const { pick, isEmpty } = require('lodash')
 const { statuses } = require('../util')
 const channelRepository = require('../db/repositories/channel')
-const { wait, loggerOf } = require('../util.js')
+const { loggerOf } = require('../util.js')
 const { messages, messageTypes, trustLevels } = require('./constants')
-const {
-  signal: { signaldRequestTimeout },
-} = require('../config')
 
 /**
  * type InboundSignaldMessage = {
@@ -126,7 +122,7 @@ const unsubscribe = phoneNumber =>
 const sendMessage = (recipientNumber, outboundMessage) =>
   socket.write({ ...outboundMessage, recipientNumber })
 
-// (Socket, Array<string>, OutMessage) -> Promise<void>
+// (Array<string>, OutMessage) -> Promise<void>
 const broadcastMessage = (recipientNumbers, outboundMessage) =>
   Promise.all(
     recipientNumbers.map(recipientNumber => sendMessage(recipientNumber, outboundMessage)),
@@ -153,34 +149,12 @@ const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
   })
 }
 
-const isAlive = () => {
+const getVersion = () => {
   socket.write({ type: messageTypes.VERSION })
-  return awaitVersion()
+  return new Promise((resolve, reject) =>
+    callbacks.register(messageTypes.VERSION, 0, resolve, reject),
+  )
 }
-
-const awaitVersion = () =>
-  new Promise((resolve, reject) => {
-    const handle = msg => {
-      const { type, data } = safeJsonParse(msg, reject)
-      if (type === null && data === null) {
-        return Promise.resolve()
-      } else if (type === messageTypes.VERSION) {
-        app.sock.removeListener('data', handle)
-        resolve({
-          status: statuses.SUCCESS,
-        })
-      }
-    }
-    // register handler
-    app.sock.on('data', handle)
-    // reject and deregister handle after timeout if no trust response received
-    wait(signaldRequestTimeout).then(() => {
-      app.sock.removeListener('data', handle)
-      reject({
-        status: statuses.ERROR,
-      })
-    })
-  })
 
 /*******************
  * MESSAGE PARSING
@@ -248,7 +222,7 @@ module.exports = {
   messageTypes,
   trustLevels,
   broadcastMessage,
-  isAlive,
+  getVersion,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,
