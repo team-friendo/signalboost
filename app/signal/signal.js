@@ -160,15 +160,6 @@ const getVersion = () => {
  * MESSAGE PARSING
  *******************/
 
-// (Any) -> { type: string, data: object }
-const safeJsonParse = msg => {
-  try {
-    return JSON.parse(msg)
-  } catch (e) {
-    return { type: null, data: null }
-  }
-}
-
 // InboundMessage|ResendRequest -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
   const {

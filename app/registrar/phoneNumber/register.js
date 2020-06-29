@@ -1,6 +1,5 @@
 const fs = require('fs-extra')
 const { errors, statuses: pnStatuses, errorStatus, extractStatus } = require('./common')
-const { statuses } = require('../../util')
 const { flatten, without } = require('lodash')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const signal = require('../../signal/signal')

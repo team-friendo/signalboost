@@ -59,7 +59,9 @@ describe('callback registry', () => {
         callbacks.register(messageTypes.REGISTER, channelPhoneNumber, resolveStub, rejectStub)
         await util.wait(signaldRequestTimeout)
         expect(rejectStub.callCount).to.eql(1)
-        expect(callbacks.registry[`${messageTypes.REGISTER}-${channelPhoneNumber}`]).to.eql(undefined)
+        expect(callbacks.registry[`${messageTypes.REGISTER}-${channelPhoneNumber}`]).to.eql(
+          undefined,
+        )
       })
     })
   })
@@ -137,7 +139,8 @@ describe('callback registry', () => {
   describe('a random message', () => {
     it('invokes noop', () => {
       callbacks.handle({ type: 'foo' })
-      expect(noopStub.callCount).to.eql(1)
+      callbacks.handle({ foo: 'bar' })
+      expect(noopStub.callCount).to.eql(2)
     })
   })
 })

@@ -4,7 +4,6 @@ const { createPool } = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
 const dispatcher = require('./dispatcher')
-const callbacks = require('./signal/callbacks')
 const { promisifyCallback, wait, loggerOf, statuses } = require('./util.js')
 const {
   socket: { connectionInterval, maxConnectionAttempts, poolSize },

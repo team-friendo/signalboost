@@ -7,13 +7,17 @@ const {
 } = require('../config')
 
 /**
- * type CallbackRoute = {
- *   socket: Socket,
- *   callback: (IncomingSignaldMessage, resolve, reject) -> Promise<SignalboostStatus>
- * }
+ * type Callback = (
+ *   IncomingSignaldMessage,
+ *   resolve: (any) => void,
+ *   reject: (any) => void,
+ * ) => Promise<SignalboostStatus>,
  *
  * type CallbackRegistry {
- *   [string]: CallbackRoute
+ *   [string]: {
+ *     callback: Callback,
+ *     resolve: Promise.
+ *   }
  * }
  ***/
 
@@ -45,6 +49,7 @@ const register = async (messageType, id, resolve, reject) => {
   })
 }
 
+// string -> (IncomingSignaldMessage, resolve, reject) -> Promise<SignalboostStatus>
 const _callbackFor = messageType =>
   ({
     [messageTypes.REGISTER]: _handleVerifyResponse,
@@ -54,7 +59,6 @@ const _callbackFor = messageType =>
 
 // IncomingSignaldMessage -> CallbackRoute
 const handle = inSdMsg => {
-  // insert safe parsing logic here (to make sure we have a type)
   const { callback, resolve, reject } = {
     [messageTypes.TRUSTED_FINGERPRINT]:
       registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
