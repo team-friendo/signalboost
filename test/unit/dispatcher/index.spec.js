@@ -7,7 +7,7 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
-import signal, { messageTypes, sdMessageOf } from '../../../app/signal'
+import signal, { messageTypes, sdMessageOf } from '../../../app/signal/signal'
 import executor from '../../../app/dispatcher/commands'
 import messenger from '../../../app/dispatcher/messenger'
 import resend from '../../../app/dispatcher/resend'
@@ -251,7 +251,7 @@ describe('dispatcher module', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
         })
 
         it('notifies admins of the support channel', () => {
@@ -278,7 +278,7 @@ describe('dispatcher module', () => {
         })
 
         it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([{}, originalSdMessage])
+          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
         })
 
         it('does not send any notifications', () => {

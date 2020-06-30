@@ -4,19 +4,22 @@ const {
 
 const app = {
   db: null,
-  sock: null,
+  socketPool: null,
   api: null,
   metrics: null,
 }
 
-app.run = async ({ db, sock, api, metrics, jobs, dispatcher }) => {
+app.run = async ({ db, socketPool, api, metrics, jobs, signal }) => {
+  // we do our imports here b/c if we don't, all the modules we store on `app` are null
+  // when we try to invoke them from modules that depend on `app`.
+  // (gross, but import-time restrictions are not our forte so we'll deal for now?) - /a/
   const { logger } = require('./util')
   const dbService = db || require('./db')
-  const socketService = sock || require('./socket')
+  const socketService = socketPool || require('./socket')
   const apiService = api || require('./api')
   const metricsService = metrics || require('./metrics')
   const jobsService = jobs || require('./jobs')
-  const dispatcherService = dispatcher || require('./dispatcher')
+  const signalService = signal || require('./signal/signal')
 
   logger.log('> Initializing Signalboost...')
 
@@ -25,7 +28,7 @@ app.run = async ({ db, sock, api, metrics, jobs, dispatcher }) => {
   logger.log('...connected to database!')
 
   logger.log('Connecting to signald socket...')
-  app.sock = await socketService.run().catch(logger.fatalError)
+  app.socketPool = await socketService.run().catch(logger.fatalError)
   logger.log('...connected to signald socket!')
 
   logger.log('Starting api server...')
@@ -40,9 +43,9 @@ app.run = async ({ db, sock, api, metrics, jobs, dispatcher }) => {
   await jobsService.run().catch(logger.fatalError)
   logger.log('...ran startup jobs!')
 
-  logger.log('Starting dispatcher')
-  await dispatcherService.run().catch(logger.fatalError)
-  logger.log('...dispatcher running!')
+  logger.log('Starting signal service...')
+  await signalService.run().catch(logger.fatalError)
+  logger.log('...signal service running!')
 
   logger.log('> Signalboost running!')
   return app
@@ -51,7 +54,7 @@ app.run = async ({ db, sock, api, metrics, jobs, dispatcher }) => {
 app.stop = async () => {
   const { logger } = require('./util')
   logger.log('Shutting down signalboost...')
-  await Promise.all([app.db.stop(), app.sock.stop(), app.api.stop()])
+  await Promise.all([app.socketPool.stop(), app.db.stop(), app.api.stop()])
   logger.log('...Signalboost shut down!')
 }
 

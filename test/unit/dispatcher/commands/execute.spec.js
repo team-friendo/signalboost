@@ -7,7 +7,7 @@ import { commands, toggles, vouchModes } from '../../../../app/dispatcher/comman
 import { statuses } from '../../../../app/util'
 import { languages } from '../../../../app/language'
 import { commandResponses as CR } from '../../../../app/dispatcher/strings/messages/EN'
-import signal from '../../../../app/signal'
+import signal from '../../../../app/signal/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../app/db/repositories/membership'
@@ -18,7 +18,7 @@ import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
 import { memberTypes } from '../../../../app/db/repositories/membership'
-import { sdMessageOf } from '../../../../app/signal'
+import { sdMessageOf } from '../../../../app/signal/signal'
 import {
   adminMembershipFactory,
   membershipFactory,

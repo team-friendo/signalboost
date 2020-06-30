@@ -120,6 +120,9 @@ test.all: ## run all unit and e2e tests
 test.unit: ## run unit tests
 	./bin/test/unit
 
+test.integration: ## run integration tests
+	./bin/test/integration
+
 test.e2e: ## run e2e tests
 	./bin/test/e2e
 

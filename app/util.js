@@ -9,6 +9,8 @@ const promisifyCallback = (resolve, reject) => (err, res) => {
   else resolve(res)
 }
 
+const noop = () => null
+
 /**************** Time ****************/
 
 const wait = interval => new Promise(rslv => setTimeout(rslv, interval))
@@ -91,6 +93,7 @@ module.exports = {
   exec,
   loggerOf,
   logger,
+  noop,
   prettyPrint,
   promisifyCallback,
   repeatEvery,

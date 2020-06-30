@@ -1,15 +1,17 @@
 const crypto = require('crypto')
 const { wait } = require('../util')
-const signal = require('../signal')
+const signal = require('../signal/signal')
 const {
   signal: { minResendInterval, maxResendInterval },
 } = require('../config')
+
+const resendQueue = {}
 
 // (Socket, ResendQueue, SdMessage) -> number?
 // - impelements a queue for resending messages that are droped due to rate-limiting by signal
 // - uses exponential backoff between resend attempts up to a `maxResendInterval` limit
 // - returns the interval after which the message will be resent, or null if it will not be resent
-const enqueueResend = (resendQueue, inSdMessage) => {
+const enqueueResend = inSdMessage => {
   const msgHash = hash(inSdMessage)
   const msgAlreadyResent = resendQueue[msgHash]
 
@@ -53,4 +55,4 @@ const hash = sdMessage => {
 
 const getFileName = attachment => attachment.storedFilename || attachment.filename
 
-module.exports = { enqueueResend, hash }
+module.exports = { enqueueResend, hash, resendQueue }

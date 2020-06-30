@@ -15,7 +15,7 @@ services:
   test_runner:
     image: signalboost
     container_name: signalboost_test_runner
-    entrypoint: /signalboost/bin/entrypoint/test-unit
+    entrypoint: /signalboost/bin/entrypoint/test-integration
     #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
     env_file: .env.dev
     environment:

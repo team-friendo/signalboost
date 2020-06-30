@@ -1,9 +1,8 @@
 const fs = require('fs-extra')
 const { errors, statuses: pnStatuses, errorStatus, extractStatus } = require('./common')
-const { statuses } = require('../../util')
 const { flatten, without } = require('lodash')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const signal = require('../../signal')
+const signal = require('../../signal/signal')
 const { sequence, batchesOfN } = require('../../util')
 const logger = require('../logger')
 const {
@@ -58,26 +57,14 @@ const registerAllUnregistered = async () => {
   return registerMany(unregisteredPhoneNumbers)
 }
 
-// ({Database, Socket, string}) => Promise<PhoneNumberStatus>
-const register = phoneNumber =>
+const register = async phoneNumber =>
   signal
     .register(phoneNumber)
-    .then(() => recordStatusChange(phoneNumber, pnStatuses.REGISTERED))
-    .then(() => signal.awaitVerificationResult(phoneNumber))
     .then(() => recordStatusChange(phoneNumber, pnStatuses.VERIFIED))
     .catch(err => {
-      // TODO(@zig): add prometheus error count here (counter: signal_register_error)
       logger.error(err)
       return errorStatus(errors.registrationFailed(err), phoneNumber)
     })
-
-// ({Emitter, string, string}) => Promise<SignalboostStatus>
-const verify = ({ phoneNumber, verificationCode }) =>
-  signal
-    .verify(phoneNumber, verificationCode)
-    .then(() => signal.awaitVerificationResult(phoneNumber))
-    .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
-    .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
 /********************
  * HELPER FUNCTIONS
@@ -103,4 +90,4 @@ const isRegistered = async ({ status, phoneNumber }) => {
 
 // EXPORTS
 
-module.exports = { registerMany, registerAllUnregistered, register, verify }
+module.exports = { registerMany, registerAllUnregistered, register }

@@ -1,4 +1,9 @@
 import { EventEmitter } from 'events'
+import dispatcher from '../../app/dispatcher'
+import { createPool } from 'generic-pool'
+const {
+  socket: { poolSize },
+} = require('../../app/config')
 
 const stubOf = (resource = defaultResource) => ({
   run: () => Promise.resolve(resource),
@@ -18,11 +23,21 @@ const dbResource = {
   },
 }
 
-const sockResource = () => {
-  const res = new EventEmitter().setMaxListeners(30)
-  res.stop = defaultResource.stop
-  res.write = (msg, cb) => cb(null, true)
-  return res
+const socketPoolResource = async () => {
+  const pool = await createPool(
+    {
+      create: () => {
+        const sock = new EventEmitter().setMaxListeners(0)
+        sock.on('data', dispatcher.dispatch)
+        sock.write = (msg, cb) => cb(null, true)
+        return sock
+      },
+      destroy: x => x.removeAllListeners(),
+    },
+    { min: poolSize, max: poolSize },
+  )
+  pool.stop = () => Promise.resolve()
+  return pool
 }
 
 const metricsResource = () => ({
@@ -52,9 +67,9 @@ const metricsResource = () => ({
 
 module.exports = {
   db: stubOf(dbResource),
-  sock: stubOf(sockResource()),
+  socketPool: stubOf(socketPoolResource()),
   api: stubOf(defaultResource),
   metrics: metricsResource(),
   jobs: stubOf(defaultResource),
-  dispatcher: stubOf(defaultResource),
+  signal: stubOf(defaultResource),
 }

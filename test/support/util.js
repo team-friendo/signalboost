@@ -1,5 +1,5 @@
 import { channelFactory } from './factories/channel'
-import { sdMessageOf } from '../../app/signal'
+import { sdMessageOf } from '../../app/signal/signal'
 
 export const emitMessage = (sock, msg, channel = channelFactory()) =>
   sock.emit('data', JSON.stringify(sdMessageOf(channel, msg)))
