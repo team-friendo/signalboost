@@ -16,7 +16,6 @@ const SIGNALD_SOCKET_PATH = '/var/run/signald/signald.sock'
 const messages = {
   error: {
     socketTimeout: 'Maximum signald connection attempts exceeded.',
-    invalidJSON: msg => `Failed to parse JSON: ${msg}`,
     socketConnectError: reason => `Failed to connect to signald socket; Reason: ${reason}`,
   },
 }

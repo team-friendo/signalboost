@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import { socketPoolOf } from '../../app/socket'
 import dispatcher from '../../app/dispatcher'
 import { createPool } from 'generic-pool'
 const {

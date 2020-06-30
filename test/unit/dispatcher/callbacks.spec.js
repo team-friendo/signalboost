@@ -59,9 +59,7 @@ describe('callback registry', () => {
         callbacks.register(messageTypes.VERIFY, channelPhoneNumber, resolveStub, rejectStub)
         await util.wait(signaldRequestTimeout)
         expect(rejectStub.callCount).to.eql(1)
-        expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql(
-          undefined,
-        )
+        expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql(undefined)
       })
     })
   })
