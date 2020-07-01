@@ -61,7 +61,7 @@
     ########
 
     - name: Stop app
-      command: "docker-compose -f docker-compose-metrics.yml down"
+      command: "docker-compose --env-file .env.metrics -f docker-compose-metrics.yml down"
       args:
         chdir: "{{ homedir }}"
       tags: stop
@@ -73,7 +73,7 @@
     # to ensure ACMEv2 compatibility
     # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
     - name: Ensure we are running latest version of letsencrypt companion
-      command: "docker-compose -f docker-compose-metrics.yml pull letsencrypt"
+      command: "docker-compose --env-file .env.metrics -f docker-compose-metrics.yml pull letsencrypt"
       args:
         chdir: "{{ homedir }}"
       tags: prepare
@@ -83,7 +83,7 @@
     #########
   
     - name: Start app
-      command: "docker-compose -f docker-compose-metrics.yml up -d"
+      command: "docker-compose --env-file .env.metrics -f docker-compose-metrics.yml up -d"
       args:
         chdir: "{{ homedir }}"
       register: docker_up_result

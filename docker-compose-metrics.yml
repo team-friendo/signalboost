@@ -1,11 +1,9 @@
 version: '3'
 
-networks:
-  proxy-tier:
-
 volumes:
   prometheus_data:
   grafana_data:
+  loki_data:
   certs:
   html:
   vhost.d:
@@ -13,11 +11,9 @@ volumes:
 services:
   prometheus:
     image: prom/prometheus:v2.18.1
-    ports:
-      - 9090:9090
     user: root
-    networks:
-      - default
+    expose:
+      - 9090
     volumes:
       - ./prometheus/prometheus_prod.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus_data
@@ -25,32 +21,45 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus_data'
       - '--log.level=debug'
+    env_file: .env.metrics
+    environment:
+      - VIRTUAL_HOST=${PROM_HOST}
+      - VIRTUAL_PORT=${PROM_PORT}
+      - LETSENCRYPT_HOST=${PROM_HOST}
     restart: unless-stopped
 
   loki:
     image: grafana/loki:1.5.0
-    ports:
-      - "3100:3100"
+    user: root
+    expose:
+      - 3100
+    volumes:
+      - ./loki/loki.yml:/etc/loki/local-config.yaml
+      - loki_data:/data/loki
     command:
       - '-config.file=/etc/loki/local-config.yaml'
-    networks:
-      - default
-
+    env_file: .env.metrics
+    environment:
+      - VIRTUAL_HOST=${LOKI_HOST}
+      - VIRTUAL_PORT=${LOKI_PORT}
+      - LETSENCRYPT_HOST=${LOKI_HOST}
+    restart: unless-stopped
+  
   grafana:
     image: grafana/grafana:7.0.3
     depends_on:
       - prometheus
-    ports:
-      - 5000:5000
-    networks:
-      - default
-      - proxy-tier
+    expose:
+      - 5000
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning/
       - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
     env_file: .env.metrics
     environment:
+      - VIRTUAL_HOST=${METRICS_HOST}
+      - VIRTUAL_PORT=${METRICS_PORT}
+      - LETSENCRYPT_HOST=${METRICS_HOST}
       - GF_SERVER_HTTP_PORT=5000
     restart: unless-stopped
 
@@ -64,11 +73,9 @@ services:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
     volumes:
       - certs:/etc/nginx/certs:ro
-      - vhost.d:/etc/nginx/vhost.d
+      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - proxy-tier
     restart: unless-stopped
 
   letsencrypt:
@@ -77,10 +84,8 @@ services:
     restart: unless-stopped
     volumes:
       - certs:/etc/nginx/certs
-      - vhost.d:/etc/nginx/vhost.d
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy-tier
     depends_on:
       - proxy
