@@ -81,9 +81,15 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 # ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 
 # build signald from a given commit hash
-ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
-ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
-ENV BRANCH "master"
+# ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
+# ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
+# ENV BRANCH "master"
+
+# this is our hacky patched branch!
+ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
+ENV COMMIT_HASH "1e6308567eefb4ee8168e4122b1b94b41ea82373"
+ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
+
 
 # fetch repo at desired commit
 RUN git init && \
