@@ -17,6 +17,10 @@ docker build -f docker/signald.dockerfile -t "signald:latest" .
 
 echo "--- done building docker images"
 
+# https://github.com/grafana/loki/blob/v1.5.0/docs/clients/docker-driver/README.md
+echo "--- installing Loki docker driver..."
+docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+
 echo "--- installing dependencies..."
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \

@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 
 volumes:
 
@@ -7,6 +7,11 @@ volumes:
   signal_data:
   prometheus_data:
   grafana_data:
+
+x-logging: &loki-logging
+  options:
+    loki-url: "http://localhost:3100/api/prom/push"
+  driver: loki
 
 services:
 
@@ -17,6 +22,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+    logging: *loki-logging
     restart: unless-stopped
 
   signald:
@@ -28,6 +34,7 @@ services:
       - ./bin:/signalboost/bin
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
+    logging: *loki-logging
     restart: unless-stopped
 
   app:
@@ -55,6 +62,7 @@ services:
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
+    logging: *loki-logging
     restart: unless-stopped
 
   ngrok:
@@ -67,6 +75,7 @@ services:
     env_file: .env.dev
     environment:
       - NGROK_PORT=app:3000
+    logging: *loki-logging
     restart: unless-stopped
 
   prometheus:
@@ -83,6 +92,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus_data'
       - '--log.level=debug'
+    logging: *loki-logging
     restart: unless-stopped
 
   grafana:
@@ -99,4 +109,14 @@ services:
       - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
     environment:
       - GF_SERVER_HTTP_PORT=5000
+    logging: *loki-logging
     restart: unless-stopped
+
+  loki:
+    image: grafana/loki:1.5.0
+    ports:
+      - "3100:3100"
+    command:
+      - '-config.file=/etc/loki/local-config.yaml'
+    networks:
+      - default

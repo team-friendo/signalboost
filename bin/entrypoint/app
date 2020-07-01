@@ -7,7 +7,7 @@ echo "--- running app..."
 check-until-ngrok-url-available(){
   echo "checking ngrok..."
   # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
-  ngrok_url=$(curl -s signalboost_ngrok:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 10- | rev | cut -c 2- | rev)
+  ngrok_url=$(curl --max-time 5 -s signalboost_ngrok:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 10- | rev | cut -c 2- | rev)
   if [[ -z ${ngrok_url} ]];then
     sleep 1
     check-until-ngrok-url-available
