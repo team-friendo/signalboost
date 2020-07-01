@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 rm /var/run/signald/signald.sock
-signald -d /var/lib/signald
+signald -v -d /var/lib/signald
