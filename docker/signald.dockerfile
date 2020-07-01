@@ -87,7 +87,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # this is our hacky patched branch!
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-ENV COMMIT_HASH "50c88ec729e0bd886a86ba84b4e485630b8b3a50"
+ENV COMMIT_HASH "72e0107def7d70591bac7169791887155a7ce6f0"
 ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
 
 
