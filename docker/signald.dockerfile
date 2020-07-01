@@ -80,15 +80,15 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 # if we ever want to build off of an unmerged fork...
 # ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 
-# build signald from a given commit hash
-# ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
-# ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
-# ENV BRANCH "master"
-
 # this is our hacky patched branch!
-ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-ENV COMMIT_HASH "72e0107def7d70591bac7169791887155a7ce6f0"
-ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
+# ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
+# ENV COMMIT_HASH "72e0107def7d70591bac7169791887155a7ce6f0"
+# ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
+
+# build signald from a given commit hash
+ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
+ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
+ENV BRANCH "master"
 
 
 # fetch repo at desired commit
