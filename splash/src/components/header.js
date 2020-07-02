@@ -11,18 +11,18 @@ const Header = ({ siteTitle }) => (
       </Link>
       <div>
         <Link
-          to="/faq"
-          className={headerStyles.nav__link}
-          activeClassName={headerStyles.active}
-        >
-          FAQ
-        </Link>
-        <Link
           to="/how-to"
           className={headerStyles.nav__link}
           activeClassName={headerStyles.active}
         >
           How-to
+        </Link>
+        <Link
+          to="/donate"
+          className={headerStyles.nav__link}
+          activeClassName={headerStyles.active}
+        >
+          Donate
         </Link>
       </div>
     </nav>
