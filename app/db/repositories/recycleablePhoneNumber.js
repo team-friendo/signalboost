@@ -9,4 +9,7 @@ const enqueue = channelPhoneNumber =>
 const dequeue = channelPhoneNumber =>
   app.db.recycleablePhoneNumber.destroy({ where: { channelPhoneNumber } })
 
-module.exports = { enqueue, dequeue }
+const findByPhoneNumber = channelPhoneNumber =>
+  app.db.recycleablePhoneNumber.findOne({ where: { channelPhoneNumber } })
+
+module.exports = { enqueue, dequeue, findByPhoneNumber }
