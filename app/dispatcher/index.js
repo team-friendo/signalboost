@@ -50,7 +50,7 @@ const {
 
 // string -> Promise<SignalBoostStatus>
 const dispatch = async msg => {
-  // console.log(`+++++++++\n${msg}\n++++++++\n`)
+  logger.debug(`+++++++++\n${msg}\n++++++++\n`)
   const inboundMsg = parseInboundSignaldMessage(msg)
   const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
   metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [

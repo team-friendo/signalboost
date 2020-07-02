@@ -51,12 +51,22 @@ const nowTimestamp = () => new Date().toISOString()
 
 const loggerOf = prefix =>
   process.env.NODE_ENV === 'test'
-    ? { log: () => null, logAndReturn: () => null, error: () => null, fatalError: () => null }
+    ? {
+        log: () => null,
+        logAndReturn: () => null,
+        debug: () => null,
+        error: () => null,
+        fatalError: () => null,
+      }
     : {
         log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
         logAndReturn: sbStatus => {
           console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.status} ${sbStatus.message}`)
           return sbStatus
+        },
+        debug: msg => {
+          if (process.env.SIGNALBOOST_VERBOSE_LOG === '1')
+            console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`)
         },
         error: e =>
           console.error(

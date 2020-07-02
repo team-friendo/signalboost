@@ -28,6 +28,8 @@ services:
   signald:
     image: signald
     container_name: signalboost_signald
+    environment:
+      SIGNALD_VERBOSE_LOG: "${SIGNALD_VERBOSE_LOG:-0}"
     networks:
       - default
     volumes:
@@ -46,6 +48,7 @@ services:
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env
     environment:
+      SIGNALBOOST_VERBOSE_LOG: "${SIGNALBOOST_VERBOSE_LOG:-0}"
       PROJECT_ROOT: "$PWD"
       DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
       NODE_ENV: production

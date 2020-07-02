@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
 
 rm /var/run/signald/signald.sock
-signald -d /var/lib/signald
+
+v_flag=""
+
+if [[ "$SIGNALD_VERBOSE_LOG" = "1" ]]; then
+  v_flag="-v"
+fi
+
+signald ${v_flag} -d /var/lib/signald
