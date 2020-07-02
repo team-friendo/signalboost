@@ -4,6 +4,7 @@ const inviteRepository = require('./db/repositories/invite')
 const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const diagnostics = require('./diagnostics')
+const recycleablePhoneNumberRepository = require('./db/repositories/recycleablePhoneNumber')
 
 const run = async () => {
   logger.log('--- Running startup jobs...')
@@ -28,11 +29,16 @@ const run = async () => {
   inviteRepository.launchInviteDeletionJob()
   logger.log('----- Launched data cleaning jobs.')
 
+  logger.log('----- Launching job to check for recycleable numbers...')
+  recycleablePhoneNumberRepository.checkForRecycleablePhoneNumbers()
+  logger.log('----- Launched recycleable numbers job')
+
   logger.log('---- Launching healthcheck job...')
   diagnostics.launchHealthcheckJob()
   logger.log('---- Launched healthcheck job...')
 
   logger.log('--- Startup jobs complete!')
+  logger.log('--- Registrar running!')
 }
 
 module.exports = { run }
