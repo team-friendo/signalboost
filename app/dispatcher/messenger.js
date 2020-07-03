@@ -11,35 +11,24 @@ const { statuses } = require('../util')
 const { wait, sequence, batchesOfN } = require('../util')
 const { loggerOf } = require('../util')
 const logger = loggerOf('messenger')
+const metrics = require('../metrics')
+const { counters } = metrics
 const {
-  defaultLanguage,
-  signal: {
-    defaultMessageExpiryTime,
-    setExpiryInterval,
-    broadcastBatchSize,
-    broadcastBatchInterval,
-  },
+  signal: { setExpiryInterval, broadcastBatchSize, broadcastBatchInterval },
 } = require('../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'SIGNUP_MESSAGE' | 'COMMAND_RESULT'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'SIGNUP_MESSAGE' | 'COMMAND'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
-  COMMAND_RESULT: 'COMMAND_RESULT',
-  SIGNUP_MESSAGE: 'SIGNUP_MESSAGE',
+  COMMAND: 'COMMAND',
   PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
 }
 
-const {
-  BROADCAST_MESSAGE,
-  HOTLINE_MESSAGE,
-  COMMAND_RESULT,
-  SIGNUP_MESSAGE,
-  PRIVATE_MESSAGE,
-} = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -50,14 +39,28 @@ const { ADMIN } = memberTypes
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
   const messageType = parseMessageType(commandResult, dispatchable)
+  const { channelPhoneNumber } = dispatchable
   switch (messageType) {
     case BROADCAST_MESSAGE:
+      metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
+        channelPhoneNumber,
+        BROADCAST_MESSAGE,
+        null,
+      ])
       return broadcast(dispatchable)
     case HOTLINE_MESSAGE:
+      metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
+        channelPhoneNumber,
+        HOTLINE_MESSAGE,
+        null,
+      ])
       return handleHotlineMessage(dispatchable)
-    case SIGNUP_MESSAGE:
-      return handleSignupMessage(dispatchable)
-    case COMMAND_RESULT:
+    case COMMAND:
+      metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
+        channelPhoneNumber,
+        COMMAND,
+        commandResult.command,
+      ])
       return handleCommandResult({ commandResult, dispatchable })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
@@ -70,7 +73,7 @@ const parseMessageType = (commandResult, { sender }) => {
     if (sender.type === ADMIN) return BROADCAST_MESSAGE
     return HOTLINE_MESSAGE
   }
-  return COMMAND_RESULT
+  return COMMAND
 }
 
 const handleHotlineMessage = dispatchable => {
@@ -84,36 +87,6 @@ const handleHotlineMessage = dispatchable => {
   return hotlineOn
     ? relayHotlineMessage(dispatchable)
     : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
-}
-
-const handleSignupMessage = async ({ channel, sender, sdMessage }) => {
-  const notificationMessages = messagesIn(defaultLanguage).notifications
-  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
-  // respond to signup requester
-  await notify({
-    channel,
-    notification: {
-      message: notificationMessages.signupRequestResponse,
-      recipient: sender.phoneNumber,
-    },
-  })
-  // notify admins of signup request
-  return Promise.all(
-    adminPhoneNumbers.map(async adminPhoneNumber => {
-      // these messages contain user phone numbers so they should ALWAYS disappear
-      await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
-      return notify({
-        channel,
-        notification: {
-          recipient: adminPhoneNumber,
-          message: notificationMessages.signupRequestReceived(
-            sender.phoneNumber,
-            sdMessage.messageBody,
-          ),
-        },
-      })
-    }),
-  )
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {

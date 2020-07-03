@@ -3,9 +3,10 @@ const app = require('./index')
 
 const register = (registry, metric) => ({ ...metric, registers: [registry] })
 
-const counters = {
+const _counters = {
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
   SIGNALD_MESSAGES: 'SIGNALD_MESSAGES',
+  SIGNALBOOST_MESSAGES: 'SIGNALBOOST_MESSAGES',
   ERRORS: 'ERRORS',
 }
 
@@ -22,25 +23,34 @@ const errorTypes = {
 const run = () => {
   const registry = new prometheus.Registry()
   prometheus.collectDefaultMetrics({ registry })
+  const c = _counters
 
   const counters = {
-    ERRORS: new prometheus.Counter({
+    [c.ERRORS]: new prometheus.Counter({
       name: 'errors',
       help: 'Counts errors',
       registers: [registry],
       labelNames: ['errorType', 'channelPhoneNumber'],
     }),
-    RELAYABLE_MESSAGES: new prometheus.Counter({
+    [c.RELAYABLE_MESSAGES]: new prometheus.Counter({
       name: 'relayable_messages',
       help: 'Counts the number of relayed messages',
       registers: [registry],
       labelNames: ['channelPhoneNumber'],
     }),
-    SIGNALD_MESSAGES: new prometheus.Counter({
+    [c.SIGNALD_MESSAGES]: new prometheus.Counter({
       name: 'signald_messages',
       help: 'Counts the number of messages written out to signald sockets',
       registers: [registry],
       labelNames: ['messageType', 'channelPhoneNumber', 'messageDirection'],
+    }),
+    [c.SIGNALBOOST_MESSAGES]: new prometheus.Counter({
+      name: 'signalboost_messages',
+      help:
+        'Counts signalboost messages dispatched by messenger.\n' +
+        'Message types include: broadcasts, hotline messages, hotline replies, and commands.',
+      registers: [registry],
+      labelNames: ['channelPhoneNumber', 'messageType', 'messageSubtype'],
     }),
   }
 
@@ -54,7 +64,7 @@ module.exports = {
   run,
   register,
   incrementCounter,
-  counters,
+  counters: _counters,
   messageDirection,
   errorTypes,
 }

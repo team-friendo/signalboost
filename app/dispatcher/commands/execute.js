@@ -172,6 +172,13 @@ const maybePrivateMessageAdmins = async (channel, sender, payload, sdMessage) =>
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
 
+  // [TODO|aguestuser] the messsage sending side-effect should not happen here...
+  //  - it should live in messenger.dispatch
+  //  - we should return enough information to recognize it as different message type
+  //    or provide the message as a notification as a normal command response
+  //  - no other function in `execute` sends messages and none should. this breaks an otherwise
+  //    clean interface boundary and violates separation of concers
+  //  - sorry i missed it CR!
   return Promise.all(
     getAdminMemberships(channel).map(admin => {
       return signal.sendMessage(
