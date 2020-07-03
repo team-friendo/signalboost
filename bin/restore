@@ -6,7 +6,7 @@ set -euo pipefail
 ###################
 
 project_root="/srv/signalboost"
-docker_compose="docker-compose -f ${project_root}/docker-compose.yml"
+docker_compose="docker-compose --env-file .env -f ${project_root}/docker-compose.yml"
 
 ####################
 # retrieve backups #

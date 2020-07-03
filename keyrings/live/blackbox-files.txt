@@ -10,6 +10,9 @@ ansible/files/deploy_keys/signalboost_gpg_privkey.asc
 ansible/inventory.tmpl
 bin/get-machine
 grafana/config/grafana.ini
+nginx/vhost.d/loki.signalboost.info
+nginx/vhost.d/metrics.signalboost.info
+nginx/vhost.d/prom.signalboost.info
 prometheus/prometheus_dev.yml
 prometheus/prometheus_prod.yml
 splash/.env

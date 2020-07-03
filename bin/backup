@@ -86,7 +86,7 @@ echo "--- backups moved to target!"
 
 echo "--- restarting app..."
 
-up="docker-compose --file ${project_root}/docker-compose.yml up -d"
+up="docker-compose --env-file .env --file ${project_root}/docker-compose.yml up -d"
 ${up}
 
 echo "--- app restarted!"
