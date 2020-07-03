@@ -100,7 +100,7 @@ describe('messenger service', () => {
     it('recognizes a command result', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
       const dispatchable = { channel, sender: randomSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.COMMAND_RESULT)
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.COMMAND)
     })
   })
 

@@ -12,7 +12,7 @@ const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
-const { errorTypes } = metrics
+const { counters, errorTypes } = metrics
 const { defaultLanguage } = require('../config')
 
 /**
@@ -52,7 +52,7 @@ const dispatch = async msg => {
   logger.debug(`+++++++++\n${msg}\n++++++++\n`)
   const inboundMsg = parseInboundSignaldMessage(msg)
   const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
-  metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
+  metrics.incrementCounter(counters.SIGNALD_MESSAGES, [
     inboundMsg.type,
     channelPhoneNumber,
     metrics.messageDirection.INBOUND,
@@ -78,7 +78,7 @@ const dispatch = async msg => {
         resendInterval,
       ),
     )
-    metrics.incrementCounter(metrics.counters.ERRORS, [
+    metrics.incrementCounter(counters.ERRORS, [
       resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
       channelPhoneNumber,
     ])
@@ -108,7 +108,7 @@ const dispatch = async msg => {
 const relay = async (channel, sender, inboundMsg) => {
   const sdMessage = signal.parseOutboundSdMessage(inboundMsg)
   try {
-    metrics.incrementCounter(metrics.counters.RELAYABLE_MESSAGES, [channel.phoneNumber])
+    metrics.incrementCounter(counters.RELAYABLE_MESSAGES, [channel.phoneNumber])
     const dispatchable = { channel, sender, sdMessage }
     const commandResult = await executor.processCommand(dispatchable)
     return messenger.dispatch({ dispatchable, commandResult })

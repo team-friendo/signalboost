@@ -40,30 +40,22 @@ const socketPoolResource = async () => {
   return pool
 }
 
-const metricsResource = () => ({
-  run: () => ({
-    registry: {
-      metrics: () => Promise.resolve(),
-    },
-    counters: {
-      ERRORS: {
-        labels: () => ({
-          inc: () => ({}),
-        }),
+const metricsResource = () => {
+  const counterStub = { labels: () => ({ inc: () => ({}) }) }
+  return {
+    run: () => ({
+      registry: {
+        metrics: () => Promise.resolve(),
       },
-      RELAYABLE_MESSAGES: {
-        labels: () => ({
-          inc: () => ({}),
-        }),
+      counters: {
+        ERRORS: counterStub,
+        RELAYABLE_MESSAGES: counterStub,
+        SIGNALD_MESSAGES: counterStub,
+        SIGNALBOOST_MESSAGES: counterStub,
       },
-      SIGNALD_MESSAGES: {
-        labels: () => ({
-          inc: () => ({}),
-        }),
-      },
-    },
-  }),
-})
+    }),
+  }
+}
 
 module.exports = {
   db: stubOf(dbResource),
