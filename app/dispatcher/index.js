@@ -61,7 +61,7 @@ const dispatch = async msg => {
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
         channelRepository.findDeep(inboundMsg.data.username),
-        classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source),
+        classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source.number),
       ])
     : []
 

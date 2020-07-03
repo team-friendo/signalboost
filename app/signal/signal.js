@@ -10,12 +10,19 @@ const { messages, messageTypes, trustLevels } = require('./constants')
  *   type: "message",
  *   data: {
  *     username: string,
- *     source: string,
+ *     source: {
+ *       number: string?,
+ *       uuid: string?,
+ *     },
+ *     sourceDevice: number,
+ *     type: string,
  *     dataMessage: ?{
  *       timestamp: number,
- *       message: string,
+ *       body: string,
  *       expiresInSeconds: number,
- *       attachments: Array<InAttachment>,
+ *       endSession: bool,
+ *       profileKeyUpdate: bool,
+ *       attachments: Array<InAttachment>?,
  *     }
  *   }
  * }
@@ -173,8 +180,8 @@ const parseOutboundSdMessage = inboundSdMessage => {
     type: messageTypes.SEND,
     username,
     recipientNumber,
-    messageBody: dataMessage.message,
-    attachments: dataMessage.attachments.map(parseOutboundAttachment),
+    messageBody: dataMessage.body || '',
+    attachments: (dataMessage.attachments || []).map(parseOutboundAttachment),
   }
 }
 
