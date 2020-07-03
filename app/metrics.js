@@ -15,7 +15,8 @@ const messageDirection = {
 }
 
 const errorTypes = {
-  RATE_LIMIT: 'RATE_LIMIT',
+  RATE_LIMIT_RESENDING: 'RATE_LIMIT_RESENDING',
+  RATE_LIMIT_ABORTING: 'RATE_LIMIT_ABORTING',
 }
 
 const run = () => {

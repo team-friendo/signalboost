@@ -12,6 +12,7 @@ const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
+const { errorTypes } = metrics
 const { defaultLanguage } = require('../config')
 
 /**
@@ -78,7 +79,7 @@ const dispatch = async msg => {
       ),
     )
     metrics.incrementCounter(metrics.counters.ERRORS, [
-      metrics.errorTypes.RATE_LIMIT,
+      resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
       channelPhoneNumber,
     ])
     return Promise.resolve()
