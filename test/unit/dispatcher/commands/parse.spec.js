@@ -414,7 +414,18 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['GOODBYE', 'goodbye', ' goodbye ', 'LEAVE', 'leave', '  leave '],
+            messages: [
+              'GOODBYE',
+              'goodbye',
+              ' goodbye ',
+              'LEAVE',
+              'leave',
+              '  leave ',
+              'STOP',
+              ' stop ',
+              'UNSUBSCRIBE',
+              'unsubscribe  ',
+            ],
           },
           {
             language: languages.ES,
