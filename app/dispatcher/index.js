@@ -1,6 +1,6 @@
 const signal = require('../signal/signal')
 const callbacks = require('../signal/callbacks')
-const { sdMessageOf, messageTypes } = signal
+const { messageTypes } = signal
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const { memberTypes } = membershipRepository
@@ -12,9 +12,8 @@ const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
-const {
-  signal: { supportPhoneNumber },
-} = require('../config')
+const { errorTypes } = metrics
+const { defaultLanguage } = require('../config')
 
 /**
  * type Dispatchable = {
@@ -73,7 +72,17 @@ const dispatch = async msg => {
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) {
     const resendInterval = resend.enqueueResend(rateLimitedMessage)
-    return notifyRateLimitedMessage(rateLimitedMessage, resendInterval)
+    logger.log(
+      messagesIn(defaultLanguage).notifications.rateLimitOccurred(
+        channelPhoneNumber,
+        resendInterval,
+      ),
+    )
+    metrics.incrementCounter(metrics.counters.ERRORS, [
+      resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
+      channelPhoneNumber,
+    ])
+    return Promise.resolve()
   }
 
   const newFingerprint = detectUpdatableFingerprint(inboundMsg)
@@ -106,25 +115,6 @@ const relay = async (channel, sender, inboundMsg) => {
   } catch (e) {
     logger.error(e)
   }
-}
-
-// (Database, Socket, SdMessage, number) -> Promise<void>
-const notifyRateLimitedMessage = async (sdMessage, resendInterval) => {
-  const channel = await channelRepository.findDeep(supportPhoneNumber)
-  if (!channel) return Promise.resolve()
-
-  const recipients = channelRepository.getAdminMemberships(channel)
-  return Promise.all(
-    recipients.map(({ memberPhoneNumber, language }) =>
-      signal.sendMessage(
-        memberPhoneNumber,
-        sdMessageOf(
-          { phoneNumber: supportPhoneNumber },
-          messagesIn(language).notifications.rateLimitOccurred(sdMessage.username, resendInterval),
-        ),
-      ),
-    ),
-  )
 }
 
 const updateFingerprint = async updatableFingerprint => {

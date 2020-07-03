@@ -15,7 +15,8 @@ const messageDirection = {
 }
 
 const errorTypes = {
-  RATE_LIMIT: 'RATE_LIMIT',
+  RATE_LIMIT_RESENDING: 'RATE_LIMIT_RESENDING',
+  RATE_LIMIT_ABORTING: 'RATE_LIMIT_ABORTING',
 }
 
 const run = () => {
@@ -27,7 +28,7 @@ const run = () => {
       name: 'errors',
       help: 'Counts errors',
       registers: [registry],
-      labelNames: ['errorType'],
+      labelNames: ['errorType', 'channelPhoneNumber'],
     }),
     RELAYABLE_MESSAGES: new prometheus.Counter({
       name: 'relayable_messages',
