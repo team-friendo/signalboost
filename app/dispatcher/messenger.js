@@ -39,7 +39,7 @@ const { ADMIN } = memberTypes
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
   const messageType = parseMessageType(commandResult, dispatchable)
-  const { channelPhoneNumber } = dispatchable
+  const channelPhoneNumber = dispatchable.channel.phoneNumber
   switch (messageType) {
     case BROADCAST_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
