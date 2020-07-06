@@ -1,5 +1,6 @@
 const defaults = {
-  recyclePhoneNumberDelay: 500, //
+  recyclePhoneNumberInterval: 1000 * 15, // 30 secs
+  recycleGracePeriod: 1000 * 60 * 2, // 3 mins
   inviteDeletionInterval: 1000 * 60 * 60, // 1 hour
   inviteExpiryInMillis: 1000 * 60 * 60 * 24 * 14, // 2 weeks
   hotlineMessageExpiryInMillis: 1000 * 60 * 60 * 24 * 28, // 4 weeks
