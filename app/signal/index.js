@@ -153,7 +153,7 @@ const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) 
   socketWriter.write({
     type: messageTypes.SET_EXPIRATION,
     username: channelPhoneNumber,
-    recipientNumber: memberPhoneNumber,
+    recipientAddress: { number: memberPhoneNumber },
     expiresInSeconds,
   })
 
