@@ -1,4 +1,4 @@
-const signal = require('../../signal/signal')
+const signal = require('../../signal')
 const smsSenderRepository = require('../../db/repositories/smsSender')
 const { languageForPhoneNumber } = require('../../language')
 const { messagesIn } = require('../../dispatcher/strings/messages')

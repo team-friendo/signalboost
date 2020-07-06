@@ -2,7 +2,7 @@ const fs = require('fs-extra')
 const { errors, statuses: pnStatuses, errorStatus, extractStatus } = require('./common')
 const { flatten, without } = require('lodash')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const signal = require('../../signal/signal')
+const signal = require('../../signal')
 const { sequence, batchesOfN } = require('../../util')
 const logger = require('../logger')
 const {

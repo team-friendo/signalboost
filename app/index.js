@@ -19,7 +19,7 @@ app.run = async ({ db, socketPool, api, metrics, jobs, signal }) => {
   const apiService = api || require('./api')
   const metricsService = metrics || require('./metrics')
   const jobsService = jobs || require('./jobs')
-  const signalService = signal || require('./signal/signal')
+  const signalService = signal || require('./signal')
 
   logger.log('> Initializing Signalboost...')
 

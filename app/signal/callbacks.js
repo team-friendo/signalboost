@@ -75,8 +75,8 @@ const handle = inSdMsg => {
 
 // (IncomingSignaldMessage, function) -> void
 const _handleTrustResponse = (inSdMsg, resolve) => {
-  const channelPhoneNumber = inSdMsg.data.request.username
-  const memberPhoneNumber = inSdMsg.data.request.recipientNumber
+  const channelPhoneNumber = get(inSdMsg, 'data.request.username')
+  const memberPhoneNumber = get(inSdMsg, 'data.request.recipientAddress.number')
   resolve({
     status: statuses.SUCCESS,
     message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),

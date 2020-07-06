@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const { wait } = require('../util')
-const signal = require('../signal/signal')
+const signal = require('../signal')
 const {
   signal: { minResendInterval, maxResendInterval },
 } = require('../config')

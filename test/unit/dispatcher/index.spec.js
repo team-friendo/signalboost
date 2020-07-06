@@ -7,7 +7,7 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
-import signal, { messageTypes } from '../../../app/signal/signal'
+import signal, { messageTypes } from '../../../app/signal'
 import executor from '../../../app/dispatcher/commands'
 import messenger from '../../../app/dispatcher/messenger'
 import resend from '../../../app/dispatcher/resend'
@@ -39,7 +39,7 @@ describe('dispatcher module', () => {
     type: messageTypes.MESSAGE,
     data: {
       username: channel.phoneNumber,
-      source: adminPhoneNumber,
+      source: { number: adminPhoneNumber },
       dataMessage: {
         timestamp: new Date().getTime(),
         message: 'foo',
@@ -145,6 +145,9 @@ describe('dispatcher module', () => {
               JSON.stringify({
                 type: 'message',
                 data: {
+                  source: {
+                    number: genPhoneNumber(),
+                  },
                   dataMessage: {
                     message: '',
                     attachments: ['cool pix!'],
@@ -401,7 +404,7 @@ describe('dispatcher module', () => {
 
       describe('from a subscriber', () => {
         const subscriberExpiryUpdate = merge({}, expiryUpdate, {
-          data: { source: subscriberPhoneNumber },
+          data: { source: { number: subscriberPhoneNumber } },
         })
         beforeEach(async () => {
           resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
@@ -434,9 +437,9 @@ describe('dispatcher module', () => {
       describe('with a message body', () => {
         const expiryUpdateWithBody = merge({}, expiryUpdate, {
           data: {
-            source: randoPhoneNumber,
+            source: { number: randoPhoneNumber },
             dataMessage: {
-              message: 'HELLO',
+              body: 'HELLO',
             },
           },
         })

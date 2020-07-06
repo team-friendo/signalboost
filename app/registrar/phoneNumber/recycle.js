@@ -1,7 +1,7 @@
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const common = require('./common')
 const { defaultLanguage } = require('../../config')
-const signal = require('../../signal/signal')
+const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../db/repositories/channel')
 

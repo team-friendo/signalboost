@@ -1,4 +1,4 @@
-const signal = require('../signal/signal')
+const signal = require('../signal')
 const callbacks = require('../signal/callbacks')
 const { messageTypes } = signal
 const channelRepository = require('../db/repositories/channel')
@@ -61,7 +61,10 @@ const dispatch = async msg => {
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
         channelRepository.findDeep(inboundMsg.data.username),
-        classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source.number),
+        classifyPhoneNumber(
+          get(inboundMsg, 'data.username'),
+          get(inboundMsg, 'data.source.number'),
+        ),
       ])
     : []
 

@@ -3,15 +3,13 @@ import { afterEach, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import fs from 'fs-extra'
 import net from 'net'
-import app from '../../app'
-import testApp from '../support/testApp'
-import { wait } from '../../app/util'
+import { wait } from '../../../app/util'
 import { EventEmitter } from 'events'
-import socket, { socketPoolOf } from '../../app/socket'
+import socket from '../../../app/socket'
 
 const {
   socket: { poolSize },
-} = require('../../app/config')
+} = require('../../../app/config')
 
 describe('socket module', () => {
   const sock = new EventEmitter()
@@ -75,35 +73,6 @@ describe('socket module', () => {
         expect(connectStub.callCount).to.eql(0)
         expect(result.message).to.eql('Maximum signald connection attempts exceeded.')
       })
-    })
-  })
-
-  describe('writing to a socket', () => {
-    let writeStub, acquireSpy, releaseSpy
-
-    beforeEach(async () => {
-      writeStub = sinon.stub().callsFake((data, cb) => cb(null, true))
-      await app.run({
-        ...testApp,
-        socketPool: {
-          run: () =>
-            Promise.resolve(
-              socketPoolOf({
-                create: () => Promise.resolve({ write: writeStub }),
-                destroy: () => Promise.resolve(),
-              }),
-            ),
-        },
-      })
-      acquireSpy = sinon.spy(app.socketPool, 'acquire')
-      releaseSpy = sinon.spy(app.socketPool, 'release')
-    })
-
-    it('acquires a socket from the pool, writes a signald-encoded message to it and releases it', async () => {
-      await socket.write({ foo: 'bar' })
-      expect(acquireSpy.callCount).to.eql(1)
-      expect(writeStub.getCall(0).args[0]).to.eql('{"foo":"bar"}\n')
-      expect(releaseSpy.callCount).to.eql(1)
     })
   })
 })

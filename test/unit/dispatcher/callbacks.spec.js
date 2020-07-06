@@ -3,7 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import util from '../../../app/util'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { messageTypes } from '../../../app/signal/signal'
+import { messageTypes } from '../../../app/signal'
 import { statuses } from '../../../app/util'
 import { genFingerprint } from '../../support/factories/deauthorization'
 import callbacks from '../../../app/signal/callbacks'
@@ -75,7 +75,7 @@ describe('callback registry', () => {
           request: {
             type: messageTypes.TRUST,
             username: channelPhoneNumber,
-            recipientNumber: subscriberNumber,
+            recipientAddress: { number: subscriberNumber },
             fingerprint,
           },
         },

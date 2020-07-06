@@ -8,13 +8,30 @@ import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
-} from '../../app/signal/signal'
-import socket from '../../app/socket'
+} from '../../app/signal'
+import socket from '../../app/socket/write'
 import { genPhoneNumber } from '../support/factories/phoneNumber'
 import { genFingerprint } from '../support/factories/deauthorization'
 import { inboundAttachmentFactory, outboundAttachmentFactory } from '../support/factories/sdMessage'
 import app from '../../app'
 import testApp from '../support/testApp'
+
+// aguestuser: this fixture might be useful to future testers...
+// const receipt = {
+//   type: 'message',
+//   data: {
+//     username: '+12013801790',
+//     source: { number: '+18319176400' },
+//     sourceDevice: 1,
+//     type: 'RECEIPT',
+//     timestamp: 1593049674015,
+//     timestampISO: '2020-06-25T01:47:54.015Z',
+//     serverTimestamp: 0,
+//     hasLegacyMessage: false,
+//     hasContent: false,
+//     isUnidentifiedSender: false,
+//   },
+// }
 
 describe('signal module', () => {
   describe('sending signald commands', () => {
@@ -60,7 +77,7 @@ describe('signal module', () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: null,
+        recipientAddress: null,
         messageBody: 'hello world!',
         attachments: [],
       }
@@ -69,7 +86,9 @@ describe('signal module', () => {
       expect(writeStub.getCall(0).args[0]).to.eql({
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: '+12223334444',
+        recipientAddress: {
+          number: '+12223334444',
+        },
         messageBody: 'hello world!',
         attachments: [],
       })
@@ -79,7 +98,7 @@ describe('signal module', () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: null,
+        recipientAddress: null,
         messageBody: 'hello world!',
         attachments: [],
       }
@@ -89,7 +108,7 @@ describe('signal module', () => {
       expect(writeStub.getCall(0).args[0]).to.eql({
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: '+11111111111',
+        recipientAddress: { number: '+11111111111' },
         messageBody: 'hello world!',
         attachments: [],
       })
@@ -97,7 +116,7 @@ describe('signal module', () => {
       expect(writeStub.getCall(1).args[0]).to.eql({
         type: 'send',
         username: channelPhoneNumber,
-        recipientNumber: '+12222222222',
+        recipientAddress: { number: '+12222222222' },
         messageBody: 'hello world!',
         attachments: [],
       })
@@ -107,7 +126,7 @@ describe('signal module', () => {
       const trustRequest = {
         type: messageTypes.TRUST,
         username: channelPhoneNumber,
-        recipientNumber: subscriberNumber,
+        recipientAddress: { number: subscriberNumber },
         fingerprint,
       }
       const trustResponse = {
@@ -317,9 +336,65 @@ describe('signal module', () => {
       expect(signal.parseOutboundSdMessage(inMessage)).to.eql({
         type: messageTypes.SEND,
         username: channelPhoneNumber,
-        recipientNumber: undefined,
+        recipientAddress: undefined,
         messageBody: 'hello world!',
         attachments: [],
+      })
+    })
+
+    it('parses a message with attachments successfully', () => {
+      const inMessage = {
+        type: 'message',
+        data: {
+          username: channelPhoneNumber,
+          source: { number: adminPhoneNumber },
+          sourceDevice: 2,
+          type: 'CIPHERTEXT',
+          timestamp: 1593049458531,
+          timestampISO: '2020-06-25T01:44:18.531Z',
+          serverTimestamp: 1593049459321,
+          hasLegacyMessage: false,
+          hasContent: true,
+          isUnidentifiedSender: false,
+          endSession: false,
+          expiresInSeconds: 0,
+          profileKeyUpdate: false,
+          viewOnce: false,
+          dataMessage: {
+            timestamp: 1593049458531,
+            attachments: [
+              {
+                contentType: 'image/svg+xml',
+                id: 843096872067478927,
+                size: 1714,
+                storedFilename: '/var/lib/signald/attachments/843096872067478927',
+                caption: 'foobar',
+                width: 0,
+                height: 0,
+                voiceNote: false,
+                key:
+                  'nPa/YAJ2diyCpUYlAkUL/G5ORfzDSpP0GQCDBquy0e57vJ+/CKMlL1Uo53546IZblnXJYzKpz+7gbCeryo+wMA==',
+                digest: '1/Hn4gpQIVGthpq9Q+IsEs9GuKr+KRF7YmW/4U/BGkw=',
+              },
+            ],
+          },
+        },
+      }
+
+      expect(signal.parseOutboundSdMessage(inMessage)).to.eql({
+        type: messageTypes.SEND,
+        username: channelPhoneNumber,
+        recipientAddress: undefined,
+        messageBody: '',
+        attachments: [
+          {
+            filename: '/var/lib/signald/attachments/843096872067478927',
+            width: 0,
+            height: 0,
+            voiceNote: false,
+            caption: 'foobar',
+          },
+        ],
       })
     })
 
@@ -327,7 +402,7 @@ describe('signal module', () => {
       const resendRequestMessage = {
         type: messageTypes.SEND,
         username: channelPhoneNumber,
-        recipientNumber: subscriberPhoneNumber,
+        recipientAddress: { number: subscriberPhoneNumber },
         messageBody: 'hello world!',
         attachments: [inboundAttachmentFactory()],
       }
@@ -335,7 +410,7 @@ describe('signal module', () => {
       expect(signal.parseOutboundSdMessage(resendRequestMessage)).to.eql({
         type: messageTypes.SEND,
         username: channelPhoneNumber,
-        recipientNumber: subscriberPhoneNumber,
+        recipientAddress: { number: subscriberPhoneNumber },
         messageBody: 'hello world!',
         attachments: [outboundAttachmentFactory()],
       })
@@ -344,11 +419,12 @@ describe('signal module', () => {
     describe('parsing the filename for an outbound message attachment', () => {
       const inboundAttachment = inboundAttachmentFactory()
 
-      it('keeps the width, height, and voiceNote fields', () => {
-        expect(keys(parseOutboundAttachment(inboundAttachment))).to.eql([
+      it('keeps the fields in the signald spec (minus preview)', () => {
+        expect(keys(parseOutboundAttachment(inboundAttachment))).to.have.members([
           'filename',
-          'width',
+          'caption',
           'height',
+          'width',
           'voiceNote',
         ])
       })
