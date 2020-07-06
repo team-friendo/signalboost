@@ -31,7 +31,7 @@ if [[ -z $TWILIO_AUTH_TOKEN ]];then
   exit 1
 fi
 
-echo "--- releasing number with sid $sid..."
+echo "--- releasing number with sid $phone_number_sid..."
 
 curl -s -X DELETE \
   -u "$TWILIO_ACCOUNT_SID:$TWILIO_AUTH_TOKEN" \
