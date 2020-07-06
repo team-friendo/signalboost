@@ -71,16 +71,17 @@ const dispatch = async msg => {
   // dispatch system-created messages
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) {
+    const _channelPhoneNumber = rateLimitedMessage.username
     const resendInterval = resend.enqueueResend(rateLimitedMessage)
     logger.log(
       messagesIn(defaultLanguage).notifications.rateLimitOccurred(
-        channelPhoneNumber,
+        _channelPhoneNumber,
         resendInterval,
       ),
     )
     metrics.incrementCounter(counters.ERRORS, [
       resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
-      channelPhoneNumber,
+      _channelPhoneNumber,
     ])
     return Promise.resolve()
   }
