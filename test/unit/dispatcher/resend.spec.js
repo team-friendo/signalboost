@@ -15,7 +15,7 @@ describe('resend module', () => {
   const sdMessage = {
     channel: channelFactory(),
     username: genPhoneNumber(),
-    recipientNumber: genPhoneNumber(),
+    recipientAddress: { number: genPhoneNumber() },
     messageBody: 'foo',
     attachments: [
       {
@@ -64,7 +64,7 @@ describe('resend module', () => {
 
         await wait(minResendInterval)
         expect(sendStub.callCount).to.eql(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientNumber, outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientAddress.number, outSdMessage])
       })
 
       it('it adds the message to the resendQueue', async () => {
@@ -99,7 +99,7 @@ describe('resend module', () => {
 
         await wait(2 * minResendInterval)
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientNumber, outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientAddress.number, outSdMessage])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {
@@ -176,7 +176,7 @@ describe('resend module', () => {
       expect(hash(sdMessage)).not.to.equal(
         hash({
           ...sdMessage,
-          recipientNumber: 'bazinga',
+          recipientAddress: { number: 'bazinga' },
         }),
       )
     })

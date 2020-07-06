@@ -40,16 +40,21 @@ const enqueueResend = inSdMessage => {
 
 const _resendAfter = async (outSdMessage, resendInterval) => {
   await wait(resendInterval)
-  signal.sendMessage(outSdMessage.recipientNumber, outSdMessage)
+  signal.sendMessage(outSdMessage.recipientAddress.number, outSdMessage)
 }
 
 // SdMessage -> string
 const hash = sdMessage => {
   // hashes an sd message into a 20-byte hex string, using sha1 algo
-  const { messageBody, username, recipientNumber, attachments } = sdMessage
+  const {
+    messageBody,
+    username,
+    recipientAddress: { number },
+    attachments,
+  } = sdMessage
   return crypto
     .createHash('sha1')
-    .update(messageBody + username + recipientNumber + attachments.map(getFileName).join(''))
+    .update(messageBody + username + number + attachments.map(getFileName).join(''))
     .digest('hex')
 }
 
