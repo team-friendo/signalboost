@@ -184,7 +184,7 @@ const _isMessage = inboundMsg =>
   inboundMsg.type === signal.messageTypes.MESSAGE && get(inboundMsg, 'data.dataMessage')
 
 const _isEmpty = inboundMsg =>
-  get(inboundMsg, 'data.dataMessage.message', '') === '' &&
+  get(inboundMsg, 'data.dataMessage.body', '') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments', []))
 
 // InboundSdMessage -> SdMessage?

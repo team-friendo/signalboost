@@ -42,7 +42,7 @@ describe('dispatcher module', () => {
       source: { number: adminPhoneNumber },
       dataMessage: {
         timestamp: new Date().getTime(),
-        message: 'foo',
+        body: 'foo',
         expiresInSeconds: defaultMessageExpiryTime,
         attachments: [],
       },
@@ -127,7 +127,7 @@ describe('dispatcher module', () => {
                   source: genPhoneNumber(),
                   dataMessage: {
                     timestamp: new Date().toISOString(),
-                    message: 'foobar',
+                    body: 'foobar',
                     expiresInSeconds: channel.messageExpiryTime,
                     attachments: [],
                   },
