@@ -64,7 +64,10 @@ describe('resend module', () => {
 
         await wait(minResendInterval)
         expect(sendStub.callCount).to.eql(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientAddress.number, outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([
+          outSdMessage.recipientAddress.number,
+          outSdMessage,
+        ])
       })
 
       it('it adds the message to the resendQueue', async () => {
@@ -99,7 +102,10 @@ describe('resend module', () => {
 
         await wait(2 * minResendInterval)
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage.recipientAddress.number, outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([
+          outSdMessage.recipientAddress.number,
+          outSdMessage,
+        ])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {
@@ -188,6 +194,11 @@ describe('resend module', () => {
           attachments: [{ digest: 'foo' }],
         }),
       )
+    })
+
+    it('hashes a message that does not have attachments or recipient', () => {
+      const message = { type: 'register', username: '+12223334444', expiresInSeconds: 0, when: 0 }
+      expect(hash(message)).to.eql('0f8107a4ee2fc5c986b3e2602907abe713ca212d')
     })
   })
 })

@@ -1,6 +1,7 @@
 const crypto = require('crypto')
 const { wait } = require('../util')
 const signal = require('../signal')
+const { get } = require('lodash')
 const {
   signal: { minResendInterval, maxResendInterval },
 } = require('../config')
@@ -46,12 +47,11 @@ const _resendAfter = async (outSdMessage, resendInterval) => {
 // SdMessage -> string
 const hash = sdMessage => {
   // hashes an sd message into a 20-byte hex string, using sha1 algo
-  const {
-    messageBody,
-    username,
-    recipientAddress: { number },
-    attachments,
-  } = sdMessage
+  const messageBody = get(sdMessage, 'messageBody', '')
+  const username = get(sdMessage, 'username', '')
+  const number = get(sdMessage, 'recipientAddress.number', '')
+  const attachments = get(sdMessage, 'attachments', [])
+
   return crypto
     .createHash('sha1')
     .update(messageBody + username + number + attachments.map(getFileName).join(''))
