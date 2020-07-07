@@ -1,5 +1,25 @@
 version: '3.4'
 
+# NOTE:
+#
+# we create a `localdev` network w/ a non-standard subnet mask to be able to use
+# use docker from behdind a VPN, which is often necessary to auth w/ Signal.
+# (see: https://github.com/docker/for-linux/issues/418#issuecomment-491323611)
+#
+# USAGE:
+#
+# for this to work you must first run the following (which is done automatically
+# by `make _.setup`):
+#
+# ```bash
+# docker network create localdev --subnet 10.0.1.0/24
+# ```
+
+networks:
+  default:
+    external:
+      name: localdev
+
 volumes:
 
   postgres_data:
@@ -64,6 +84,8 @@ services:
     container_name: signalboost_ngrok
     ports:
       - 0.0.0.0:4040:4040
+    networks:
+      - default
     image: wernight/ngrok
     links:
       - app
@@ -72,34 +94,34 @@ services:
       - NGROK_PORT=app:3000
     restart: unless-stopped
 
-  prometheus:
-    image: prom/prometheus:v2.18.1
-    ports:
-      - 9090:9090
-    user: root
-    networks:
-      - default
-    volumes:
-      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus_data
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus_data'
-      - '--log.level=debug'
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:7.0.3
-    depends_on:
-      - prometheus
-    ports:
-      - 5000:5000
-    networks:
-      - default
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning/:/etc/grafana/provisioning/
-      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
-    environment:
-      - GF_SERVER_HTTP_PORT=5000
-    restart: unless-stopped
+#  prometheus:
+#    image: prom/prometheus:v2.18.1
+#    ports:
+#      - 9090:9090
+#    user: root
+#    networks:
+#      - default
+#    volumes:
+#      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
+#      - prometheus_data:/prometheus_data
+#    command:
+#      - '--config.file=/etc/prometheus/prometheus.yml'
+#      - '--storage.tsdb.path=/prometheus_data'
+#      - '--log.level=debug'
+#    restart: unless-stopped
+#
+#  grafana:
+#    image: grafana/grafana:7.0.3
+#    depends_on:
+#      - prometheus
+#    ports:
+#      - 5000:5000
+#    networks:
+#      - default
+#    volumes:
+#      - grafana_data:/var/lib/grafana
+#      - ./grafana/provisioning/:/etc/grafana/provisioning/
+#      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
+#    environment:
+#      - GF_SERVER_HTTP_PORT=5000
+#    restart: unless-stopped
