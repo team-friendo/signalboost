@@ -3,8 +3,7 @@
  *
  * See: https://www.gatsbyjs.org/docs/node-apis/
  */
-
-// You can delete this file if you're not using it
-require('dotenv').config({
-  path: `.env.${process.env.NODE_ENV}`,
-})
+const activeEnv =
+  process.env.GATSBY_ACTIVE_ENV || process.env.NODE_ENV || 'development'
+const path = activeEnv === 'production' ? '.env' : '.env.dev'
+require('dotenv').config({ path })
