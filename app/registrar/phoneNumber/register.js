@@ -40,7 +40,7 @@ const registerMany = async phoneNumbers => {
   const phoneNumberBatches = batchesOfN(phoneNumbers, registrationBatchSize)
   return flatten(
     await sequence(
-      phoneNumberBatches.map(phoneNumberBatch => () => registerBatch({ phoneNumberBatch })),
+      phoneNumberBatches.map(phoneNumberBatch => () => registerBatch(phoneNumberBatch)),
       intervalBetweenRegistrationBatches,
     ),
   )
@@ -57,7 +57,7 @@ const registerAllUnregistered = async () => {
   return registerMany(unregisteredPhoneNumbers)
 }
 
-const register = async phoneNumber =>
+const register = phoneNumber =>
   signal
     .register(phoneNumber)
     .then(() => recordStatusChange(phoneNumber, pnStatuses.VERIFIED))
@@ -71,7 +71,7 @@ const register = async phoneNumber =>
  ********************/
 
 // ({ Database, Socket, Array<PhoneNumberStatus> }) => Array<PhoneNumberStatus>
-const registerBatch = async ({ phoneNumberBatch }) =>
+const registerBatch = phoneNumberBatch =>
   sequence(
     phoneNumberBatch.map(phoneNumber => () => register(phoneNumber)),
     intervalBetweenRegistrations,

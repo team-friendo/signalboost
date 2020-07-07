@@ -13,7 +13,7 @@ const reachedQuotaError = 'Sender exceeded monthly sms quota.'
 const handleSms = ({ phoneNumber, senderPhoneNumber, message }) => {
   const [isVerificationCode, verificationCode] = signal.parseVerificationCode(message)
   return isVerificationCode
-    ? signal.verify({ phoneNumber, verificationCode })
+    ? signal.verify(phoneNumber, verificationCode)
     : respondToSms(senderPhoneNumber)
 }
 

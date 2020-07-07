@@ -68,7 +68,7 @@ describe('phone number services -- provision module', () => {
             },
           ]),
         )
-        registerManyStub.callsFake(({ phoneNumbers }) =>
+        registerManyStub.callsFake(phoneNumbers =>
           Promise.resolve([
             { phoneNumber: phoneNumbers[0], status: statuses.VERIFIED },
             {
@@ -90,7 +90,7 @@ describe('phone number services -- provision module', () => {
       })
 
       it('only attempts to register successfully purchased number', () => {
-        expect(registerManyStub.getCall(0).args[0].phoneNumbers.length).to.eql(2)
+        expect(registerManyStub.getCall(0).args[0].length).to.eql(2)
       })
     })
   })
