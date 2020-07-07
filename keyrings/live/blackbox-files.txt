@@ -16,4 +16,6 @@ nginx/vhost.d/prom.signalboost.info
 prometheus/prometheus_dev.yml
 prometheus/prometheus_prod.yml
 splash/.env
+splash/.env.dev
+splash/ansible/files/.env
 splash/ansible/inventory.tmpl
