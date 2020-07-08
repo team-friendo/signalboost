@@ -1,6 +1,21 @@
 import React from 'react'
 import Layout from '../components/layout'
-import venmoLogo from '../images/venmo_logo_blue.png'
+import venmoQR from '../images/signalboost_venmo.png'
+import bitcoinQR from '../images/signalboost_bitcoin.png'
+import Checkout from '../components/stripe.js'
+
+const bitcoinQRStyles = {
+  borderRadius: '10px',
+  marginLeft: '8px',
+}
+
+const platformHeader = {
+  color: '#50fa7b',
+}
+
+const stripeBtnStyles = {
+  marginBottom: '20px',
+}
 
 const DonatePage = () => (
   <Layout>
@@ -22,8 +37,24 @@ const DonatePage = () => (
       amount of time we need to spend scaling up.
     </p>
     <h3>Support Signalboost here:</h3>
+    <div style={stripeBtnStyles}>
+      <Checkout price="$5" priceID={process.env.GATSBY_BUTTON_PRICE_ID_5} />
+      <Checkout price="$20" priceID={process.env.GATSBY_BUTTON_PRICE_ID_20} />
+      <Checkout price="$50" priceID={process.env.GATSBY_BUTTON_PRICE_ID_50} />
+    </div>
     <a href="https://venmo.com/signalboost">
-      <img src={venmoLogo} width="200" alt="Venmo logo" />
+      <h4 style={platformHeader}> Venmo: @signalboost</h4>
+      <img src={venmoQR} alt="Venmo QR code" height="200" width="225" />
+    </a>
+    <h4 style={platformHeader}>Bitcoin: 39aSLM1NaPbpvksXjdnWdvVabSM3uYWBDT</h4>
+    <a href="https://venmo.com/signalboost">
+      <img
+        style={bitcoinQRStyles}
+        src={bitcoinQR}
+        alt="Bitcoin QR code"
+        height="200"
+        width="200"
+      />
     </a>
   </Layout>
 )
