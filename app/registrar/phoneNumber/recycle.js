@@ -2,6 +2,7 @@ const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const common = require('./common')
 const { defaultLanguage } = require('../../config')
 const signal = require('../../signal')
+const { sdMessageOf } = require('../../signal/constants')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../db/repositories/channel')
 
@@ -32,7 +33,7 @@ const notifyMembers = async channel => {
   const memberPhoneNumbers = channelRepository.getMemberPhoneNumbers(channel)
   await signal.broadcastMessage(
     memberPhoneNumbers,
-    signal.sdMessageOf(channel, channelRecycledNotification),
+    sdMessageOf(channel, channelRecycledNotification),
   )
 }
 

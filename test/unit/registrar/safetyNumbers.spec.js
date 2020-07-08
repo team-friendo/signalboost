@@ -11,7 +11,7 @@ import { statuses } from '../../../app/util'
 import { channelFactory } from '../../support/factories/channel'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { defaultLanguage } from '../../../app/config'
-import { sdMessageOf } from '../../../app/signal'
+import { sdMessageOf } from '../../../app/signal/constants'
 import { adminMembershipFactory } from '../../support/factories/membership'
 import { genFingerprint } from '../../support/factories/deauthorization'
 

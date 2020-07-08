@@ -2,36 +2,22 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { keys } from 'lodash'
-import { wait } from '../../app/util'
-import callbacks from '../../app/signal/callbacks'
+import { wait } from '../../../app/util'
+import callbacks from '../../../app/signal/callbacks'
 import signal, {
   messageTypes,
   parseOutboundAttachment,
   parseVerificationCode,
-} from '../../app/signal'
-import socket from '../../app/socket/write'
-import { genPhoneNumber } from '../support/factories/phoneNumber'
-import { genFingerprint } from '../support/factories/deauthorization'
-import { inboundAttachmentFactory, outboundAttachmentFactory } from '../support/factories/sdMessage'
-import app from '../../app'
-import testApp from '../support/testApp'
-
-// aguestuser: this fixture might be useful to future testers...
-// const receipt = {
-//   type: 'message',
-//   data: {
-//     username: '+12013801790',
-//     source: { number: '+18319176400' },
-//     sourceDevice: 1,
-//     type: 'RECEIPT',
-//     timestamp: 1593049674015,
-//     timestampISO: '2020-06-25T01:47:54.015Z',
-//     serverTimestamp: 0,
-//     hasLegacyMessage: false,
-//     hasContent: false,
-//     isUnidentifiedSender: false,
-//   },
-// }
+} from '../../../app/signal'
+import socket from '../../../app/socket/write'
+import { genPhoneNumber } from '../../support/factories/phoneNumber'
+import { genFingerprint } from '../../support/factories/deauthorization'
+import {
+  inboundAttachmentFactory,
+  outboundAttachmentFactory,
+} from '../../support/factories/sdMessage'
+import app from '../../../app'
+import testApp from '../../support/testApp'
 
 describe('signal module', () => {
   describe('sending signald commands', () => {
@@ -271,34 +257,6 @@ describe('signal module', () => {
             message: 'OK',
           })
         })
-      })
-    })
-
-    describe('getting signald version', () => {
-      it('sends correct message to signald', async () => {
-        emitWithDelay(5, {
-          type: signal.messageTypes.VERSION,
-          data: { version: '+git2020-04-05rd709c3fa.0' },
-        })
-        await signal.getVersion()
-        expect(writeStub.getCall(0).args[0]).to.eql({ type: 'version' })
-      })
-
-      it('returns error if signald times out', async () => {
-        const response = await signal.getVersion().catch(a => a)
-        expect(response).to.eql({
-          status: 'ERROR',
-          message: callbacks.messages.timeout(messageTypes.VERSION),
-        })
-      })
-
-      it('returns success if signald responds with version', async () => {
-        emitWithDelay(5, {
-          type: signal.messageTypes.VERSION,
-          data: { version: '+git2020-04-05rd709c3fa.0' },
-        })
-        const response = await signal.getVersion()
-        expect(response).to.eql({ status: 'SUCCESS', message: '+git2020-04-05rd709c3fa.0' })
       })
     })
   })

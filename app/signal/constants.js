@@ -5,6 +5,7 @@ const messageTypes = {
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',
+  SEND_RESULTS: 'send_results',
   SET_EXPIRATION: 'set_expiration',
   SUBSCRIBE: 'subscribe',
   TRUST: 'trust',
@@ -25,4 +26,10 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
-module.exports = { messageTypes, trustLevels }
+const sdMessageOf = (channel, messageBody) => ({
+  type: messageTypes.SEND,
+  username: channel.phoneNumber,
+  messageBody,
+})
+
+module.exports = { messageTypes, trustLevels, sdMessageOf }

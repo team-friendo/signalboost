@@ -18,7 +18,7 @@ import validator from '../../../../app/db/validations/phoneNumber'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
 import { memberTypes } from '../../../../app/db/repositories/membership'
-import { sdMessageOf } from '../../../../app/signal'
+import { sdMessageOf } from '../../../../app/signal/constants'
 import {
   adminMembershipFactory,
   membershipFactory,

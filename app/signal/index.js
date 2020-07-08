@@ -6,17 +6,6 @@ const { statuses } = require('../util')
 const { loggerOf } = require('../util.js')
 const { messages, messageTypes, trustLevels } = require('./constants')
 
-/***
- * JsonAttachment
- *
- * filename: string,
- * caption: ?string,
- * width: ?int,
- * height: ?int,
- * voiceNote: ?bool,
- * preview: ?string
- */
-
 /**
  *
  * type Address = {
@@ -110,18 +99,23 @@ const run = async () => {
  * SIGNALD COMMANDS
  ********************/
 
-// string -> Promise<void>
+// string -> Promise<SignalboostStatus>
 const register = async phoneNumber => {
   socketWriter.write({ type: messageTypes.REGISTER, username: phoneNumber })
   // Since a registration isn't meaningful without a verification code,
   // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
   // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below
   return new Promise((resolve, reject) =>
-    callbacks.register(messageTypes.VERIFY, phoneNumber, resolve, reject),
+    callbacks.register({
+      messageType: messageTypes.VERIFY,
+      id: phoneNumber,
+      resolve,
+      reject,
+    }),
   )
 }
 
-// (string, string) -> Promise<void>
+// (string, string) -> Promise<SignalboostStatus>
 const verify = (phoneNumber, code) =>
   // This function is only called from twilio callback as fire-and-forget.
   // Its response will be picked up by the callback for the REGISTER command that triggered it.
@@ -131,19 +125,31 @@ const verify = (phoneNumber, code) =>
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
-// string -> Promise<void>
+// string -> Promise<string>
 const subscribe = phoneNumber =>
   socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
-// string -> Promise<void>
+// string -> Promise<string>
 const unsubscribe = phoneNumber =>
   socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
-// (string, string) -> Promise<void>
-const sendMessage = (recipientNumber, outboundMessage) =>
-  socketWriter.write({ ...outboundMessage, recipientAddress: { number: recipientNumber } })
+// (string, OutboundSignaldMessage) -> Promise<string>
+const sendMessage = async (recipientNumber, sdMessage) => {
+  const recipientAddress = { number: recipientNumber }
+  const id = await socketWriter.write({ ...sdMessage, recipientAddress })
+  callbacks.register({
+    id,
+    messageType: messageTypes.SEND,
+    state: {
+      channelPhoneNumber: sdMessage.username,
+      messageBody: sdMessage.messageBody,
+      attachments: sdMessage.attachments,
+    },
+  })
+  return id
+}
 
-// (Array<string>, OutMessage) -> Promise<void>
+// (Array<string>, OutboundSignaldMessage) -> Promise<Array<string>>
 const broadcastMessage = (recipientNumbers, outboundMessage) =>
   Promise.all(
     recipientNumbers.map(recipientNumber => sendMessage(recipientNumber, outboundMessage)),
@@ -159,22 +165,15 @@ const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) 
 
 // (String, String, String?) -> Promise<SignalboostStatus>
 const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  socketWriter.write({
+  const id = await socketWriter.write({
     type: messageTypes.TRUST,
     username: channelPhoneNumber,
-    recipientNumber: memberPhoneNumber,
+    recipientAddress: { number: memberPhoneNumber },
     fingerprint,
   })
   return new Promise((resolve, reject) => {
-    callbacks.register(messageTypes.TRUST, fingerprint, resolve, reject)
+    callbacks.register({ messageType: messageTypes.TRUST, id, resolve, reject })
   })
-}
-
-const getVersion = () => {
-  socketWriter.write({ type: messageTypes.VERSION })
-  return new Promise((resolve, reject) =>
-    callbacks.register(messageTypes.VERSION, 0, resolve, reject),
-  )
 }
 
 /*******************
@@ -224,25 +223,17 @@ const parseVerificationCode = verificationMessage => {
   return isEmpty(matches) ? [false, verificationMessage] : [true, matches[1]]
 }
 
-const sdMessageOf = (channel, messageBody) => ({
-  type: messageTypes.SEND,
-  username: channel.phoneNumber,
-  messageBody,
-})
-
 module.exports = {
   messages,
   messageTypes,
   trustLevels,
   broadcastMessage,
-  getVersion,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,
   register,
   run,
   sendMessage,
-  sdMessageOf,
   subscribe,
   trust,
   verify,

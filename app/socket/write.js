@@ -1,15 +1,17 @@
 const app = require('../../app')
+const util = require('../util')
 const metrics = require('../metrics')
 const { statuses, promisifyCallback } = require('../util')
 
 // object -> Promise<void>
-const write = data =>
-  new Promise((resolve, reject) =>
+const write = data => {
+  const id = util.genUuid()
+  return new Promise((resolve, reject) =>
     app.socketPool
       .acquire()
       .then(sock =>
         sock.write(
-          signaldEncode(data),
+          signaldEncode({ ...data, id }),
           promisifyCallback(
             () => {
               app.socketPool.release(sock)
@@ -18,13 +20,13 @@ const write = data =>
                 data.username,
                 metrics.messageDirection.OUTBOUND,
               ])
-              return resolve()
+              return resolve(id)
             },
             e => {
               app.socketPool.release(sock)
               return reject({
                 status: statuses.ERROR,
-                message: `Error writing to signald socket: ${e.message}`,
+                message: `Error writing message ${id}: ${e.message}`,
               })
             },
           ),
@@ -32,6 +34,7 @@ const write = data =>
       )
       .catch(reject),
   )
+}
 
 // object -> string
 const signaldEncode = data => JSON.stringify(data) + '\n'

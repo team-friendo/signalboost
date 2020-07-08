@@ -1,25 +1,33 @@
+const membershipRepository = require('../db/repositories/membership')
+const { memberTypes } = membershipRepository
+const safetyNumbers = require('../registrar/safetyNumbers')
 const { messageTypes } = require('./constants')
 const util = require('../util')
 const { statuses } = util
 const { get } = require('lodash')
 const {
-  signal: { signaldRequestTimeout },
+  signal: { signaldRequestTimeout, signaldSendTimeout },
 } = require('../config')
 
 /**
- * type Callback = (
- *   IncomingSignaldMessage,
- *   resolve: (any) => void,
- *   reject: (any) => void,
- * ) => Promise<SignalboostStatus>,
+ * type Callback = ({
+ *   message: IncomingSignaldMessage | SendResponse,
+ *   ?resolve: (any) => void,
+ *   ?reject: (any) => void,
+ *   ?state: object,
+ * }) => void | Promise<void>
  *
  * type CallbackRegistry {
- *   [string]: {
+ *   [id: string]: {
  *     callback: Callback,
- *     resolve: Promise.
+ *     resolve: ((any) => void) | null,
+ *     reject: ((any) => void) | null,
+ *     state: object | null,
  *   }
  * }
  ***/
+
+const logger = util.loggerOf('signal.callbacks')
 
 const messages = {
   timeout: messageType => `Singald response timed out for request of type: ${messageType}`,
@@ -39,44 +47,76 @@ const messages = {
 const registry = {}
 const clear = () => Object.keys(registry).forEach(k => delete registry[k])
 
-// (SingaldMessageType, string, function, function) -> Promise<void>
-const register = async (messageType, id, resolve, reject) => {
-  registry[`${messageType}-${id}`] = { callback: _callbackFor(messageType), resolve, reject }
-  return util.wait(signaldRequestTimeout).then(() => {
+// ({ messageType: SingaldMessageType, id: string, resolve: function, reject: function, state: object }) -> Promise<void>
+const register = async ({ messageType, id, resolve, reject, state }) => {
+  registry[`${messageType}-${id}`] = { callback: _callbackFor(messageType), resolve, reject, state }
+  const timeout = messageType === messageTypes.SEND ? signaldSendTimeout : signaldRequestTimeout
+  return util.wait(timeout).then(() => {
     // delete expired callbacks and reject their promise if not yet handled
     delete registry[`${messageType}-${id}`]
-    reject({ status: statuses.ERROR, message: messages.timeout(messageType) })
+    reject && reject({ status: statuses.ERROR, message: messages.timeout(messageType) })
   })
 }
 
-// string -> (IncomingSignaldMessage, resolve, reject) -> Promise<SignalboostStatus>
+// SignaldMessageType -> Callback
 const _callbackFor = messageType =>
   ({
-    [messageTypes.VERIFY]: _handleVerifyResponse,
+    [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
-    [messageTypes.VERSION]: _handleVersionResponse,
+    [messageTypes.VERIFY]: _handleVerifyResponse,
   }[messageType])
 
-// IncomingSignaldMessage -> CallbackRoute
-const handle = inSdMsg => {
-  const { callback, resolve, reject } = {
-    [messageTypes.TRUSTED_FINGERPRINT]:
-      registry[`${messageTypes.TRUST}-${get(inSdMsg, 'data.request.fingerprint')}`],
+// (IncomingSignaldMessage | SendResponse) -> CallbackRoute
+const handle = message => {
+  // called from dispatcher.relay
+  const { callback, resolve, reject, state } = {
+    [messageTypes.TRUSTED_FINGERPRINT]: registry[`${messageTypes.TRUST}-${message.id}`],
     [messageTypes.VERIFICATION_SUCCESS]:
-      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
+      registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
-      registry[`${messageTypes.VERIFY}-${get(inSdMsg, 'data.username')}`],
-    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-0`],
-  }[inSdMsg.type] || { callback: util.noop }
-  callback(inSdMsg, resolve, reject)
+      registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
+    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${message.id}`],
+    [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
+  }[message.type] || { callback: util.noop }
+  callback({ message, resolve, reject, state })
 }
 
 // CALLBACKS
 
+const _handleSendResponse = ({ message, state }) => {
+  const { identityFailure, id } = get(message, 'data[0]')
+  delete registry[`${messageTypes.SEND}-${id}`]
+  if (identityFailure) {
+    return _updateFingerprint(message, state)
+  }
+}
+
+const _updateFingerprint = async (message, state) => {
+  const { address, identityFailure } = message.data[0]
+  const memberPhoneNumber = address.number
+  const { channelPhoneNumber, messageBody } = state
+
+  const updatableFingerprint = {
+    channelPhoneNumber,
+    memberPhoneNumber,
+    fingerprint: identityFailure.replace(/\(byte\)0x/g, '').replace(/,/g, ''),
+    sdMessage: { type: messageTypes.SEND, username: channelPhoneNumber, messageBody },
+  }
+
+  try {
+    const type = await membershipRepository.resolveMemberType(channelPhoneNumber, memberPhoneNumber)
+    // TODO(aguestuser|2020-07-09): add a metrics counter here to monitor rekey successes/errors?
+    if (type === memberTypes.ADMIN) await safetyNumbers.deauthorize(updatableFingerprint)
+    if (type === memberTypes.SUBSCRIBER) await safetyNumbers.trustAndResend(updatableFingerprint)
+  } catch (e) {
+    logger.error(e)
+  }
+}
+
 // (IncomingSignaldMessage, function) -> void
-const _handleTrustResponse = (inSdMsg, resolve) => {
-  const channelPhoneNumber = get(inSdMsg, 'data.request.username')
-  const memberPhoneNumber = get(inSdMsg, 'data.request.recipientAddress.number')
+const _handleTrustResponse = ({ message, resolve }) => {
+  const channelPhoneNumber = get(message, 'data.request.username')
+  const memberPhoneNumber = get(message, 'data.request.recipientAddress.number')
   resolve({
     status: statuses.SUCCESS,
     message: messages.trust.success(channelPhoneNumber, memberPhoneNumber),
@@ -84,28 +124,22 @@ const _handleTrustResponse = (inSdMsg, resolve) => {
 }
 
 // (IncomingSignaldMessage, function, function) -> void
-const _handleVerifyResponse = (inSdMsg, resolve, reject) => {
-  if (inSdMsg.type === messageTypes.VERIFICATION_ERROR)
+const _handleVerifyResponse = ({ message, resolve, reject }) => {
+  if (message.type === messageTypes.VERIFICATION_ERROR)
     reject(
       new Error(
         messages.verification.error(
-          get(inSdMsg, 'data.username', 'N/A'),
-          get(inSdMsg, 'data.message', 'Captcha required: 402'),
+          get(message, 'data.username', 'N/A'),
+          get(message, 'data.message', 'Captcha required: 402'),
         ),
       ),
     )
-  if (inSdMsg.type === messageTypes.VERIFICATION_SUCCESS)
+  if (message.type === messageTypes.VERIFICATION_SUCCESS)
     resolve({
       status: statuses.SUCCESS,
-      message: get(inSdMsg, 'data.username', 'N/A'),
+      message: get(message, 'data.username', 'N/A'),
     })
 }
-
-const _handleVersionResponse = (inSdMsg, resolve) =>
-  resolve({
-    status: statuses.SUCCESS,
-    message: get(inSdMsg, 'data.version', 'N/A'),
-  })
 
 module.exports = {
   messages,
@@ -113,7 +147,7 @@ module.exports = {
   clear,
   handle,
   register,
+  _handleSendResponse,
   _handleTrustResponse,
   _handleVerifyResponse,
-  _handleVersionResponse,
 }
