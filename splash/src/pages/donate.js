@@ -19,7 +19,7 @@ const stripeBtnStyles = {
 
 const DonatePage = () => (
   <Layout>
-    <h2>Help us build the technology the movement needs.</h2>
+    <h2>Help us build the tech the movement needs.</h2>
     <p>
       Over the past year, Signalboost has grown to support 50+ channels with
       over 10,000 subscribers.
@@ -37,6 +37,7 @@ const DonatePage = () => (
       amount of time we need to spend scaling up.
     </p>
     <h3>Support Signalboost here:</h3>
+    <h4 style={platformHeader}> Credit card:</h4>
     <div style={stripeBtnStyles}>
       <Checkout price="$5" priceID={process.env.GATSBY_BUTTON_PRICE_ID_5} />
       <Checkout price="$20" priceID={process.env.GATSBY_BUTTON_PRICE_ID_20} />
@@ -47,15 +48,13 @@ const DonatePage = () => (
       <img src={venmoQR} alt="Venmo QR code" height="200" width="225" />
     </a>
     <h4 style={platformHeader}>Bitcoin: 39aSLM1NaPbpvksXjdnWdvVabSM3uYWBDT</h4>
-    <a href="https://venmo.com/signalboost">
-      <img
-        style={bitcoinQRStyles}
-        src={bitcoinQR}
-        alt="Bitcoin QR code"
-        height="200"
-        width="200"
-      />
-    </a>
+    <img
+      style={bitcoinQRStyles}
+      src={bitcoinQR}
+      alt="Bitcoin QR code"
+      height="200"
+      width="200"
+    />
   </Layout>
 )
 
