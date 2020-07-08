@@ -60,11 +60,11 @@
   # UPDATE NODE DEPS #
   ####################
 
-  # - name: Install node packages
-  #   command: "docker-compose run --entrypoint 'yarn install' splash"
-  #   args:
-  #     chdir: "{{ homedir }}"
-  #   tags: prepare
+  - name: Install node packages
+    command: "docker-compose run --entrypoint '/splash/bin/entrypoint/install' splash"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare
 
   ########
   # STOP #
