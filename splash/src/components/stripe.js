@@ -10,6 +10,7 @@ const buttonStyles = {
   borderRadius: '5px',
   border: 'none',
   margin: '10px',
+  cursor: 'pointer',
 }
 
 const stripePromise = loadStripe(process.env.GATSBY_STRIPE_PUBLISHABLE_KEY)
