@@ -32,20 +32,6 @@ print_usage(){
   echo ""
 }
 
-check-until-ngrok-url-available(){
-  echo "checking ngrok..."
-  # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
-  ngrok_url=$(curl --max-time 5 -s localhost:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 10- | rev | cut -c 2- | rev)
-  if [[ -z ${ngrok_url} ]];then
-    sleep 1
-    check-until-ngrok-url-available
-  fi
-}
-
-check-until-ngrok-url-available
-
-export SIGNALBOOST_HOST_URL=${ngrok_url}
-
 if [[ $command != "help" ]] &&
      [[ $command != "add-admin" ]] &&
      [[ $command != "create-channel" ]] &&
