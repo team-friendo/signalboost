@@ -1,4 +1,4 @@
-const signal = require('../../signal')
+const signal = require('../../signal/signal')
 const { isEmpty } = require('lodash')
 const { statuses } = require('../../util')
 const { messagesIn } = require('../../dispatcher/strings/messages')
@@ -31,7 +31,6 @@ const enqueueRecycleablePhoneNumber = async ({ phoneNumbers }) => {
           message: `Successfully enqueued ${phoneNumber} for recycling.`,
         }
       } catch (e) {
-        console.log(e)
         return {
           status: statuses.ERROR,
           message: `There was an error trying to enqueue ${phoneNumber} for recycling.`,
@@ -42,11 +41,17 @@ const enqueueRecycleablePhoneNumber = async ({ phoneNumbers }) => {
 }
 
 const notifyAdmins = async channel => {
-  await signal.broadcastMessage(
-    channelRepository.getAdminPhoneNumbers(channel),
-    signal.sdMessageOf(
-      channel,
-      messagesIn(channel.language).notifications.channelEnqueuedForRecycling,
+  const recipients = await channelRepository.getAdminMemberships(channel)
+
+  return Promise.all(
+    recipients.map(recipient =>
+      signal.sendMessage(
+        recipient.memberPhoneNumber,
+        signal.sdMessageOf(
+          channel,
+          messagesIn(recipient.language).notifications.channelEnqueuedForRecycling,
+        ),
+      ),
     ),
   )
 }

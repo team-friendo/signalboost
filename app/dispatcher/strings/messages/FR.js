@@ -415,6 +415,9 @@ const notifications = {
   channelDestroyed:
     'La chaîne et tous les enregistrements associés ont été définitivement détruits.',
 
+  channelEnqueuedForRecycling:
+    "Bonjour! Cette chaîne est sur le point d'être désactivée faute d'utilisation. Pour éviter qu'il ne soit désactivé, envoyez 'INFO' dans les prochaines 24 heures.Pour plus d'informations, visitez signalboost.info/how-to. ",
+
   channelDestructionFailed: phoneNumber =>
     `Impossible de détruire la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 

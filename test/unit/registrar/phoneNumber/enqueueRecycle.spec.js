@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { afterEach, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
-import signal from '../../../../app/signal'
+import signal from '../../../../app/signal/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import recycleablePhoneNumberRepository from '../../../../app/db/repositories/recycleablePhoneNumber'

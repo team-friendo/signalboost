@@ -26,12 +26,17 @@ const recycle = async channelPhoneNumber => {
 /********************
  * HELPER FUNCTIONS
  ********************/
-// TODO @mari - convert these functions to use sendMessage in language per membership
-// (Channel) -> Channel
+// (Channel) -> Promise([])
 const notifyMembers = async channel => {
-  await signal.broadcastMessage(
-    channelRepository.getMemberPhoneNumbers(channel),
-    signal.sdMessageOf(channel, messagesIn(channel.language).notifications.channelRecycled),
+  const recipients = await channelRepository.getMemberPhoneNumbers(channel)
+
+  return Promise.all(
+    recipients.map(recipient =>
+      signal.sendMessage(
+        recipient.memberPhoneNumber,
+        signal.sdMessageOf(channel, messagesIn(recipient.language).notifications.channelRecycled),
+      ),
+    ),
   )
 }
 

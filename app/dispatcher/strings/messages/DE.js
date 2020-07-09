@@ -410,6 +410,9 @@ const notifications = {
   channelDestructionFailed: phoneNumber =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
 
+  channelEnqueuedForRecycling:
+    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung deaktiviert. Um zu verhindern, dass es deaktiviert wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
+
   channelRecycled:
     'Der Kanal wurde wegen Inaktivität deaktiviert. Gehe auf https://signalboost.info um einen neuen Kanal zu erstellen.',
 
