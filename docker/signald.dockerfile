@@ -75,20 +75,15 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # build signald from a given commit hash
 
-# current head of upstream master --v
+# head of upstream master as of 2020-0709 --v
 # ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
 # ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
 # ENV BRANCH "master"
 
 # fork currently running on prod ---v
-# ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-# ENV COMMIT_HASH "537131fdd15c04a432941fd9bcd49c42c363e9db"
-# ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
-
-# libsignalservice upgrade branch --v
-ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
-ENV COMMIT_HASH "b14b4c27e93f09d4b03bbf3377717ae02a878911"
-ENV BRANCH "automated-upgrade/com.github.turasa-signal-service-java"
+ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
+ENV COMMIT_HASH "5103eeb0b693f990b6bb5fd9df7c480010496b54"
+ENV BRANCH "master"
 
 # fetch repo at desired commit
 RUN git init && \
