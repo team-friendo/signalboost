@@ -15,6 +15,7 @@ nginx/vhost.d/metrics.signalboost.info
 nginx/vhost.d/prom.signalboost.info
 prometheus/prometheus_dev.yml
 prometheus/prometheus_prod.yml
+signald/jmx/jmxremote.password
 splash/.env
 splash/.env.dev
 splash/ansible/inventory.tmpl

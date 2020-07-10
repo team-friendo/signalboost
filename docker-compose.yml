@@ -36,10 +36,13 @@ services:
     container_name: signalboost_signald
     environment:
       SIGNALD_VERBOSE_LOG: "${SIGNALD_VERBOSE_LOG:-0}"
+    ports:
+      - 9010:9010
     networks:
       - default
     volumes:
       - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./backups:/backups

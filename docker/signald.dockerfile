@@ -101,5 +101,6 @@ RUN ln -s ${PWD}/build/install/signald/bin/signald /usr/local/bin/signald
 # --- Configure Environment
 # ------------------------------------------------------
 
+EXPOSE 9010
 WORKDIR /signalboost
 ENTRYPOINT /signalboost/bin/entrypoint/signald

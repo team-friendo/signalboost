@@ -63,3 +63,4 @@ grafana_data
 /nginx/vhost.d/metrics.signalboost.info
 /nginx/vhost.d/prom.signalboost.info
 /splash/.env.dev
+/signald/jmx/jmxremote.password
