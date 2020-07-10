@@ -1,6 +1,5 @@
-const signal = require('../signal/signal')
+const signal = require('../signal')
 const callbacks = require('../signal/callbacks')
-const { messageTypes } = signal
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const { memberTypes } = membershipRepository
@@ -8,7 +7,6 @@ const executor = require('./commands')
 const messenger = require('./messenger')
 const resend = require('./resend')
 const logger = require('./logger')
-const safetyNumberService = require('../registrar/safetyNumbers')
 const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
@@ -61,7 +59,10 @@ const dispatch = async msg => {
   const [channel, sender] = _isMessage(inboundMsg)
     ? await Promise.all([
         channelRepository.findDeep(inboundMsg.data.username),
-        classifyPhoneNumber(inboundMsg.data.username, inboundMsg.data.source),
+        classifyPhoneNumber(
+          get(inboundMsg, 'data.username'),
+          get(inboundMsg, 'data.source.number'),
+        ),
       ])
     : []
 
@@ -71,6 +72,7 @@ const dispatch = async msg => {
   // dispatch system-created messages
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) {
+    // TODO(aguestuser|2020-07-08): extract a `handleRateLimitedMessage` helper here?
     const _channelPhoneNumber = rateLimitedMessage.username
     const resendInterval = resend.enqueueResend(rateLimitedMessage)
     logger.log(
@@ -86,20 +88,9 @@ const dispatch = async msg => {
     return Promise.resolve()
   }
 
-  const newFingerprint = detectUpdatableFingerprint(inboundMsg)
-  if (newFingerprint) return updateFingerprint(newFingerprint)
-
-  /***** GOTCHA WARNING!!! *****
-   *
-   * We don't return early from calling `updateExpiryTime` b/c that would cause
-   * messages from new users (who likely have disapparing messages to 0) to channels with
-   * disappearing messages enabled to return early here and never be considered for execution
-   * or relay.
-   *
-   * In particular, it would cause HELLO messages frompeople trying to subscribe to channels
-   * with disappearing messages enabled to be dropped!
-   **/
   const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
+  // GOTCHA: Don't return early here b/c that would prevent HELLO commands on channels w/
+  // disappearing messages from ever being processed!
   if (isNumber(newExpiryTime)) await updateExpiryTime(sender, channel, newExpiryTime)
 
   // dispatch user-created messages
@@ -115,26 +106,6 @@ const relay = async (channel, sender, inboundMsg) => {
     return messenger.dispatch({ dispatchable, commandResult })
   } catch (e) {
     logger.error(e)
-  }
-}
-
-const updateFingerprint = async updatableFingerprint => {
-  const { channelPhoneNumber, memberPhoneNumber } = updatableFingerprint
-  try {
-    const recipient = await classifyPhoneNumber(channelPhoneNumber, memberPhoneNumber)
-    if (recipient.type === memberTypes.NONE) return Promise.resolve()
-    if (recipient.type === memberTypes.ADMIN) {
-      return safetyNumberService
-        .deauthorize(updatableFingerprint)
-        .then(logger.logAndReturn)
-        .catch(logger.error)
-    }
-    return safetyNumberService
-      .trustAndResend(updatableFingerprint)
-      .then(logger.logAndReturn)
-      .catch(logger.error)
-  } catch (e) {
-    return logger.error(e)
   }
 }
 
@@ -181,8 +152,8 @@ const _isMessage = inboundMsg =>
   inboundMsg.type === signal.messageTypes.MESSAGE && get(inboundMsg, 'data.dataMessage')
 
 const _isEmpty = inboundMsg =>
-  get(inboundMsg, 'data.dataMessage.message') === '' &&
-  isEmpty(get(inboundMsg, 'data.dataMessage.attachments'))
+  get(inboundMsg, 'data.dataMessage.body', '') === '' &&
+  isEmpty(get(inboundMsg, 'data.dataMessage.attachments', []))
 
 // InboundSdMessage -> SdMessage?
 const detectRateLimitedMessage = inboundMsg =>
@@ -191,27 +162,6 @@ const detectRateLimitedMessage = inboundMsg =>
     get(inboundMsg, 'data.message', '').includes('Rate limit'))
     ? inboundMsg.data.request
     : null
-
-// SdMessage ->  UpdateableFingerprint?
-const detectUpdatableFingerprint = inboundMsg => {
-  if (inboundMsg.type === messageTypes.UNTRUSTED_IDENTITY) {
-    // indicates a failed outbound message (from channel to recipient with new safety number)
-    return {
-      channelPhoneNumber: inboundMsg.data.username,
-      memberPhoneNumber: inboundMsg.data.number,
-      fingerprint: inboundMsg.data.fingerprint,
-      sdMessage: signal.parseOutboundSdMessage(inboundMsg.data.request),
-    }
-  }
-  /**
-   * TODO(aguestuser|2019-12-28):
-   *  handle failed incoming messages here once an upstream issue around preserving fingerprints
-   *  from exceptions of type `UntrustedIdentityException` is resolved:
-   *  https://gitlab.com/thefinn93/signald/issues/4#note_265584999
-   *  (atm: signald returns a not very useful `'type': 'unreadable_message'` message)
-   **/
-  return null
-}
 
 // (SdMessage, Channel) -> UpdatableExpiryTime?
 const detectUpdatableExpiryTime = (inboundMsg, channel) =>

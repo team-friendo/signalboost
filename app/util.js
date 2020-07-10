@@ -1,4 +1,9 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
+const uuidV4 = require('uuid/v4')
+
+/********* Non-deterministic generators *********/
+
+const genUuid = uuidV4
 
 /**************** Promises ****************/
 
@@ -101,6 +106,7 @@ module.exports = {
   defaultErrorOf,
   batchesOfN,
   exec,
+  genUuid,
   loggerOf,
   logger,
   noop,

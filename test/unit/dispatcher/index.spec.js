@@ -7,16 +7,13 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
-import signal, { messageTypes } from '../../../app/signal/signal'
+import signal, { messageTypes } from '../../../app/signal'
 import executor from '../../../app/dispatcher/commands'
 import messenger from '../../../app/dispatcher/messenger'
 import resend from '../../../app/dispatcher/resend'
-import safetyNumberService from '../../../app/registrar/safetyNumbers'
-import logger from '../../../app/dispatcher/logger'
 import { deepChannelFactory } from '../../support/factories/channel'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { wait } from '../../../app/util'
-import { inboundAttachmentFactory } from '../../support/factories/sdMessage'
 import app from '../../../app/index'
 import testApp from '../../support/testApp'
 
@@ -39,10 +36,10 @@ describe('dispatcher module', () => {
     type: messageTypes.MESSAGE,
     data: {
       username: channel.phoneNumber,
-      source: adminPhoneNumber,
+      source: { number: adminPhoneNumber },
       dataMessage: {
         timestamp: new Date().getTime(),
-        message: 'foo',
+        body: 'foo',
         expiresInSeconds: defaultMessageExpiryTime,
         attachments: [],
       },
@@ -51,15 +48,7 @@ describe('dispatcher module', () => {
   const sdOutMessage = signal.parseOutboundSdMessage(sdInMessage)
   const socketDelay = 5
 
-  let findDeepStub,
-    resolveMemberTypeStub,
-    trustAndResendStub,
-    deauthorizeStub,
-    processCommandStub,
-    dispatchStub,
-    logAndReturnSpy,
-    logErrorSpy,
-    enqueueResendStub
+  let findDeepStub, resolveMemberTypeStub, processCommandStub, dispatchStub, enqueueResendStub
 
   before(async () => await app.run(testApp))
 
@@ -75,14 +64,6 @@ describe('dispatcher module', () => {
 
     sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(languages.EN)
 
-    trustAndResendStub = sinon
-      .stub(safetyNumberService, 'trustAndResend')
-      .returns(Promise.resolve({ status: 'SUCCESS', message: 'fake trust success' }))
-
-    deauthorizeStub = sinon
-      .stub(safetyNumberService, 'deauthorize')
-      .returns(Promise.resolve({ status: 'SUCCESS', message: 'fake deauthorize success' }))
-
     processCommandStub = sinon
       .stub(executor, 'processCommand')
       .returns(Promise.resolve({ command: 'NOOP', status: 'SUCCESS', message: 'foo' }))
@@ -92,9 +73,6 @@ describe('dispatcher module', () => {
     sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
 
     enqueueResendStub = sinon.stub(resend, 'enqueueResend')
-
-    logAndReturnSpy = sinon.spy(logger, 'logAndReturn')
-    logErrorSpy = sinon.spy(logger, 'error')
   })
 
   afterEach(() => sinon.restore())
@@ -127,7 +105,7 @@ describe('dispatcher module', () => {
                   source: genPhoneNumber(),
                   dataMessage: {
                     timestamp: new Date().toISOString(),
-                    message: 'foobar',
+                    body: 'foobar',
                     expiresInSeconds: channel.messageExpiryTime,
                     attachments: [],
                   },
@@ -145,6 +123,9 @@ describe('dispatcher module', () => {
               JSON.stringify({
                 type: 'message',
                 data: {
+                  source: {
+                    number: genPhoneNumber(),
+                  },
                   dataMessage: {
                     message: '',
                     attachments: ['cool pix!'],
@@ -201,16 +182,6 @@ describe('dispatcher module', () => {
       })
     })
 
-    describe('and the recipient is a random person (why would this ever happen?)', () => {
-      beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.NONE))
-
-      it('drops the message', async () => {
-        await dispatch(JSON.stringify(sdInMessage))
-        expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-        expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauth
-      })
-    })
-
     describe('when message is a rate limit error notification', () => {
       const recipientNumber = genPhoneNumber()
       const messageBody = '[foo]\nbar'
@@ -248,112 +219,6 @@ describe('dispatcher module', () => {
 
         it('enqueues the message for resending', () => {
           expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
-        })
-      })
-    })
-
-    describe('when message is an untrusted identity error notification', () => {
-      const recipientNumber = genPhoneNumber()
-      const messageBody = '[foo]\nbar'
-      const inboundAttachment = inboundAttachmentFactory()
-      const originalSdMessage = {
-        type: 'send',
-        username: channel.phoneNumber,
-        messageBody,
-        recipientNumber,
-        attachments: [inboundAttachment],
-        expiresInSeconds: 0,
-      }
-      const fingerprint =
-        '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
-      const sdErrorMessage = {
-        type: signal.messageTypes.UNTRUSTED_IDENTITY,
-        data: {
-          username: channel.phoneNumber,
-          number: recipientNumber,
-          fingerprint,
-          safety_number: '074940190139780110760016007890517723684588610476310913703803',
-          request: originalSdMessage,
-        },
-      }
-
-      describe('when intended recipient is a subscriber', () => {
-        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.SUBSCRIBER))
-
-        it("attempts to trust the recipient's safety number and re-send the message", async () => {
-          await dispatch(JSON.stringify(sdErrorMessage), {})
-
-          expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize user
-          expect(trustAndResendStub.getCall(0).args).to.eql([
-            {
-              channelPhoneNumber: channel.phoneNumber,
-              memberPhoneNumber: recipientNumber,
-              fingerprint,
-              sdMessage: signal.parseOutboundSdMessage(originalSdMessage),
-            },
-          ])
-        })
-
-        describe('when trusting succeeds', () => {
-          // this is the default stub
-          it('logs the success', async () => {
-            await dispatch(JSON.stringify(sdErrorMessage), {})
-            expect(logAndReturnSpy.getCall(0).args).to.eql([
-              {
-                status: 'SUCCESS',
-                message: 'fake trust success',
-              },
-            ])
-          })
-        })
-
-        describe('when trusting fails', () => {
-          const errorStatus = { status: 'ERROR', message: 'fake trust error' }
-          beforeEach(() => trustAndResendStub.callsFake(() => Promise.reject(errorStatus)))
-
-          it('logs the failure', async () => {
-            await dispatch(JSON.stringify(sdErrorMessage))
-            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
-          })
-        })
-      })
-
-      describe('when intended recipient is an admin', () => {
-        beforeEach(async () => resolveMemberTypeStub.returns(memberTypes.ADMIN))
-
-        it('attempts to deauthorize the admin', async () => {
-          await dispatch(JSON.stringify(sdErrorMessage))
-
-          expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-          expect(deauthorizeStub.getCall(0).args[0]).to.eql({
-            channelPhoneNumber: channel.phoneNumber,
-            memberPhoneNumber: recipientNumber,
-            fingerprint,
-            sdMessage: signal.parseOutboundSdMessage(originalSdMessage),
-          })
-        })
-
-        describe('when deauth succeeds', () => {
-          // this is the default stub
-          it('logs the success', async () => {
-            await dispatch(JSON.stringify(sdErrorMessage))
-            expect(logAndReturnSpy.getCall(0).args).to.eql([
-              {
-                status: 'SUCCESS',
-                message: 'fake deauthorize success',
-              },
-            ])
-          })
-        })
-
-        describe('when deauth fails', () => {
-          const errorStatus = { status: 'ERROR', message: 'fake deauthorize error' }
-          beforeEach(() => deauthorizeStub.callsFake(() => Promise.reject(errorStatus)))
-
-          it('logs the failure', async () => {
-            await dispatch(JSON.stringify(sdErrorMessage))
-            expect(logErrorSpy.getCall(0).args).to.eql([errorStatus])
-          })
         })
       })
     })
@@ -401,7 +266,7 @@ describe('dispatcher module', () => {
 
       describe('from a subscriber', () => {
         const subscriberExpiryUpdate = merge({}, expiryUpdate, {
-          data: { source: subscriberPhoneNumber },
+          data: { source: { number: subscriberPhoneNumber } },
         })
         beforeEach(async () => {
           resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
@@ -434,9 +299,9 @@ describe('dispatcher module', () => {
       describe('with a message body', () => {
         const expiryUpdateWithBody = merge({}, expiryUpdate, {
           data: {
-            source: randoPhoneNumber,
+            source: { number: randoPhoneNumber },
             dataMessage: {
-              message: 'HELLO',
+              body: 'HELLO',
             },
           },
         })

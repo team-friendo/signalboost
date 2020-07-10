@@ -70,29 +70,20 @@ ENV JAVA_HOME "/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64"
 # --- Install and Configure Signald (from source)
 # ------------------------------------------------------
 
-# store most recent HEAD of master...
-# ENV RELEASE_COMMIT_HASH "ad69e4bfd06fec18793cb073415e1a22685ae2d5"
-ENV RELEASE_COMMIT_HASH "b66e7138cefef760f5b7e098cdfc2abb097bba60"
-
 # hack to avoid halting error on (unnecessary) `sudo` invocations
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
-# if we ever want to build off of an unmerged fork...
-# ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-
 # build signald from a given commit hash
+
+# head of upstream master as of 2020-0709 --v
 # ENV REPO_URL "https://git.callpipe.com/finn/signald.git"
 # ENV COMMIT_HASH "d709c3face5b027c087c6ed71991b0821d448e28"
 # ENV BRANCH "master"
 
-# this is our hacky patched branch!
+# fork currently running on prod ---v
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-# experiment ---v
-ENV COMMIT_HASH "537131fdd15c04a432941fd9bcd49c42c363e9db"
-# prod ---v
-# ENV COMMIT_HASH "3d7a5104ca545fee4edf3965a83a88f22838a800"
-ENV BRANCH "aguestuser/syncrhonize-all-keystore-writes"
-
+ENV COMMIT_HASH "5103eeb0b693f990b6bb5fd9df7c480010496b54"
+ENV BRANCH "master"
 
 # fetch repo at desired commit
 RUN git init && \

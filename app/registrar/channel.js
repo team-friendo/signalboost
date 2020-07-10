@@ -1,7 +1,7 @@
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRepository = require('../db/repositories/phoneNumber')
-const signal = require('../signal/signal')
+const signal = require('../signal')
 const messenger = require('../dispatcher/messenger')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')

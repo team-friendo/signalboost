@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { handleSms, reachedQuotaError } from '../../../../app/registrar/phoneNumber/sms'
 import { statuses } from '../../../../app/util'
-import signal from '../../../../app/signal/signal'
+import signal from '../../../../app/signal'
 import smsSenderRepository from '../../../../app/db/repositories/smsSender'
 import { smsSenderFactory } from '../../../support/factories/smsSender'
 import { languages } from '../../../../app/language'
@@ -40,7 +40,7 @@ describe('sms module', () => {
         it('attempts to verify the code', async () => {
           await handleSms({ phoneNumber, senderPhoneNumber, message })
           expect(verifyStub.callCount).to.be.above(callCount)
-          expect(verifyStub.getCall(0).args[0]).to.eql({ phoneNumber, verificationCode })
+          expect(verifyStub.getCall(0).args).to.eql([phoneNumber, verificationCode])
         })
       })
 

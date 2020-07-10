@@ -4,6 +4,13 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
+if [[ -z `docker network ls | awk '{print $2}' | grep localdev` ]];then
+  echo "--- creating localdev docker network..."
+  docker network create localdev --subnet 10.0.1.0/24
+else
+  echo "--- localdev docker network already exists!"
+fi
+
 echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 

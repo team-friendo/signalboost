@@ -9,6 +9,7 @@ export const inboundAttachmentFactory = attrs => ({
   width: 4032,
   height: 3024,
   voiceNote: false,
+  caption: 'foobar',
   preview: { present: false },
   key: 'cpdTsaYm9fsE+T29HtCl8qWW2LZPhM32zy82K4VYjTcsqtCIsRxYivSEnxvP6qHD9VwZPrAjFlzZtw6DYWAiig==',
   digest: 'UYm6uzLlrw2xEezccQtb0jqE4jSDq0+09JvySk+EzrQ=',
@@ -20,5 +21,6 @@ export const outboundAttachmentFactory = attrs => ({
   width: 4032,
   height: 3024,
   voiceNote: false,
+  caption: 'foobar',
   ...attrs,
 })

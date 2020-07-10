@@ -39,7 +39,9 @@ check-env(){
 
     if [[ ${SIGNALBOOST_ENV} != "production" ]];then
       # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
-      host_url=$(curl -s localhost:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 9- | rev | cut -c 2- | rev)
+      echo "--- checking for ngrok url..."
+
+      host_url=$(curl --max-time 5 -s localhost:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 9- | rev | cut -c 2- | rev)
 
       if [[ -z ${host_url} ]];then
         echo "Sorry, you are trying to run boost against a local dev server, but ngrok does not appear to be running."

@@ -4,8 +4,8 @@ import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
-import socket from '../../app/socket'
-import signal from '../../app/signal/signal'
+import socket from '../../app/socket/write'
+import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
 import { times } from 'lodash'
 import { wait } from '../../app/util'
@@ -81,10 +81,12 @@ describe('dispatcher service', () => {
           type: 'message',
           data: {
             username: channel.phoneNumber,
-            source: admins[0].memberPhoneNumber,
+            source: {
+              number: admins[0].memberPhoneNumber,
+            },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              message: 'foobar',
+              body: 'foobar',
               expiresInSeconds: channel.messageExpiryTime,
               attachments: [],
             },
@@ -100,28 +102,28 @@ describe('dispatcher service', () => {
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[0].memberPhoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
           attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[1].memberPhoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
           attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: subscribers[0].memberPhoneNumber,
+          recipientAddress: { number: subscribers[0].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
           attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: subscribers[1].memberPhoneNumber,
+          recipientAddress: { number: subscribers[1].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
           attachments: [],
         },
@@ -139,17 +141,17 @@ describe('dispatcher service', () => {
           type: 'message',
           data: {
             username: channel.phoneNumber,
-            source: randoPhoneNumber,
+            source: { number: randoPhoneNumber },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              message: 'a screaming came across the sky',
+              body: 'a screaming came across the sky',
               expiresInSeconds: channel.messageExpiryTime,
               attachments: [],
             },
           },
         }),
       )
-      await wait(socketDelay)
+      await wait(2 * socketDelay)
     })
 
     it('relays the hotline message to all admins', () => {
@@ -158,14 +160,14 @@ describe('dispatcher service', () => {
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[0].memberPhoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
           attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[1].memberPhoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
           attachments: [],
         },
@@ -182,10 +184,10 @@ describe('dispatcher service', () => {
           type: 'message',
           data: {
             username: channel.phoneNumber,
-            source: randoPhoneNumber,
+            source: { number: randoPhoneNumber },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              message: 'HELLO',
+              body: 'HELLO',
               expiresInSeconds: channel.messageExpiryTime,
               attachments: [],
             },
@@ -209,7 +211,7 @@ describe('dispatcher service', () => {
     it('sends a welcome message to the sender', () => {
       expect(writeStub.getCall(0).args[0]).to.eql({
         messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
-        recipientNumber: randoPhoneNumber,
+        recipientAddress: { number: randoPhoneNumber },
         type: 'send',
         username: channel.phoneNumber,
       })
@@ -227,10 +229,10 @@ describe('dispatcher service', () => {
           type: 'message',
           data: {
             username: channel.phoneNumber,
-            source: admins[0].memberPhoneNumber,
+            source: { number: admins[0].memberPhoneNumber },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              message: 'REPLY #1 it has happened before but there is nothing to compare it to now',
+              body: 'REPLY #1 it has happened before but there is nothing to compare it to now',
               expiresInSeconds: channel.messageExpiryTime,
               attachments: [],
             },
@@ -246,19 +248,19 @@ describe('dispatcher service', () => {
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[0].memberPhoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: admins[1].memberPhoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
-          recipientNumber: randoPhoneNumber,
+          recipientAddress: { number: randoPhoneNumber },
           messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
         },
       ])
