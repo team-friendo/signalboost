@@ -13,8 +13,8 @@ const defaults = {
   registrationBatchSize: 5,
   setExpiryInterval: 2000, // 2 sec
   signaldRequestTimeout: 10000, // 10 sec
-  signaldSendTimeout: 1000 * 60 * 1, //1000 * 60 * 60, // 1 hr
-  signaldStartupTime: 1000 * 60 * 30, // 30 minutes
+  signaldSendTimeout: 1000 * 60 * 60, // 1 hr
+  signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER,
   verificationTimeout: 30000, // 30 seconds
   welcomeDelay: 3000, // 3 sec
