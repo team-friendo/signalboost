@@ -8,4 +8,12 @@ if [[ "$SIGNALD_VERBOSE_LOG" = "1" ]]; then
   v_flag="-v"
 fi
 
+export JAVA_OPTS="-Dcom.sun.management.jmxremote
+  -Dcom.sun.management.jmxremote.port=9010
+  -Dcom.sun.management.jmxremote.local.only=false
+  -Dcom.sun.management.jmxremote.ssl=false
+  -Dcom.sun.management.jmxremote.authenticate=true
+  -Dcom.sun.management.jmxremote.password.file=/var/lib/jmx/jmxremote.password
+  -Dcom.sun.management.jmxremote.access.file=/var/lib/jmx/jmxremote.access"
+
 signald ${v_flag} -d /var/lib/signald
