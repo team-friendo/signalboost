@@ -10,6 +10,10 @@ const _counters = {
   ERRORS: 'ERRORS',
 }
 
+const _gauges = {
+  MESSAGE_LAG: 'MESSAGE_LAG',
+}
+
 const messageDirection = {
   INBOUND: 'inbound',
   OUTBOUND: 'outbound',
@@ -24,6 +28,7 @@ const run = () => {
   const registry = new prometheus.Registry()
   prometheus.collectDefaultMetrics({ registry })
   const c = _counters
+  const g = _gauges
 
   const counters = {
     [c.ERRORS]: new prometheus.Counter({
@@ -54,17 +59,30 @@ const run = () => {
     }),
   }
 
-  return { registry, counters }
+  const gauges = {
+    [g.MESSAGE_LAG]: new prometheus.Gauge({
+      name: 'message_lag',
+      help: 'Times the message lag from signald',
+      registers: [registry],
+      labelNames: ['channelPhoneNumber'],
+    }),
+  }
+
+  return { registry, counters, gauges }
 }
 
 // (string, [string]) -> void
 const incrementCounter = (counter, labels) => app.metrics.counters[counter].labels(...labels).inc()
 
+const setGauge = (gauge, labels, value) => app.metrics.gauges[gauge].labels(...labels).set(value)
+
 module.exports = {
   run,
   register,
   incrementCounter,
+  setGauge,
   counters: _counters,
+  gauges: _gauges,
   messageDirection,
   errorTypes,
 }
