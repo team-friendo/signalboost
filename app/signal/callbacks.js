@@ -1,6 +1,8 @@
 const membershipRepository = require('../db/repositories/membership')
 const { memberTypes } = membershipRepository
 const safetyNumbers = require('../registrar/safetyNumbers')
+const metrics = require('../metrics')
+const { gauges, histograms } = metrics
 const { messageTypes } = require('./constants')
 const util = require('../util')
 const { statuses } = util
@@ -14,9 +16,15 @@ const {
  *   message: IncomingSignaldMessage | SendResponse,
  *   ?resolve: (any) => void,
  *   ?reject: (any) => void,
- *   ?state: object,
+ *   ?state: CbState,
  * }) => void | Promise<void>
  *
+ * type CbState = {
+ *   ?channelPhoneNumber: string,
+ *   ?messageBody: string,
+ *   ?attachments: Array<SignaldOutboundAttachment>,
+ *   ?whenSent: number, // millis since epoch
+ * }
  * type CallbackRegistry {
  *   [id: string]: {
  *     callback: Callback,
@@ -84,13 +92,17 @@ const handle = message => {
 // CALLBACKS
 
 const _handleSendResponse = ({ message, state }) => {
-  const { identityFailure, id } = get(message, 'data[0]')
-  delete registry[`${messageTypes.SEND}-${id}`]
+  delete registry[`${messageTypes.SEND}-${message.id}`]
+
+  const { identityFailure } = get(message, 'data[0]')
   if (identityFailure) {
     return _updateFingerprint(message, state)
   }
+
+  _measureRoundTrip(state)
 }
 
+// (SendResult, CbState) => void
 const _updateFingerprint = async (message, state) => {
   const { address, identityFailure } = message.data[0]
   const memberPhoneNumber = address.number
@@ -111,6 +123,13 @@ const _updateFingerprint = async (message, state) => {
   } catch (e) {
     logger.error(e)
   }
+}
+
+// CbState => void
+const _measureRoundTrip = ({ channelPhoneNumber, whenSent }) => {
+  const elapsed = util.nowInMillis() - whenSent
+  metrics.setGauge(gauges.MESSAGE_ROUNDTRIP, elapsed, [channelPhoneNumber])
+  metrics.observeHistogram(histograms.MESSAGE_ROUNDTRIP, elapsed, [channelPhoneNumber])
 }
 
 // (IncomingSignaldMessage, function) -> void

@@ -6,10 +6,12 @@ import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { messageTypes } from '../../../app/signal/constants'
 import { statuses } from '../../../app/util'
 import callbacks from '../../../app/signal/callbacks'
+import metrics from '../../../app/metrics'
 import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import { outboundAttachmentFactory } from '../../support/factories/sdMessage'
 import { sdMessageOf } from '../../../app/signal/constants'
+import moment from 'moment'
 const {
   signal: { signaldRequestTimeout, signaldSendTimeout },
 } = require('../../../app/config')
@@ -207,7 +209,13 @@ describe('callback registry', () => {
     })
 
     describe('a SEND response', () => {
-      const state = { channelPhoneNumber, messageBody, attachments }
+      const whenSent = new Date(
+        moment()
+          .subtract(1, 'hour')
+          .toISOString(),
+      ).getTime()
+      const whenReceived = new Date().getTime()
+      const state = { channelPhoneNumber, messageBody, attachments, whenSent }
 
       describe('for successfully sent message', () => {
         const successfulSend = {
@@ -222,10 +230,32 @@ describe('callback registry', () => {
             },
           ],
         }
+
+        let setGaugeStub, observeHistogramStub
+        beforeEach(() => {
+          setGaugeStub = sinon.stub(metrics, 'setGauge').returns(null)
+          observeHistogramStub = sinon.stub(metrics, 'observeHistogram').returns(null)
+          sinon.stub(util, 'nowInMillis').returns(whenReceived)
+          callbacks.register({ messageType: messageTypes.SEND, id, state })
+        })
+
         it('deletes the registry entry', () => {
-          callbacks.register({ messageType: messageTypes.SEND, state })
           callbacks.handle(successfulSend)
           expect(callbacks.registry[`${messageTypes.SEND}-${id}`]).to.eql(undefined)
+        })
+
+        it('measures message lag', () => {
+          callbacks.handle(successfulSend)
+          expect(setGaugeStub.getCall(0).args).to.eql([
+            metrics.gauges.MESSAGE_ROUNDTRIP,
+            whenReceived - whenSent,
+            [state.channelPhoneNumber],
+          ])
+          expect(observeHistogramStub.getCall(0).args).to.eql([
+            metrics.histograms.MESSAGE_ROUNDTRIP,
+            whenReceived - whenSent,
+            [state.channelPhoneNumber],
+          ])
         })
       })
 

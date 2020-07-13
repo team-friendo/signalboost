@@ -110,6 +110,8 @@ module.exports = {
   loggerOf,
   logger,
   noop,
+  nowInMillis,
+  nowTimestamp,
   prettyPrint,
   promisifyCallback,
   repeatEvery,

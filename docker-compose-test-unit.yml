@@ -4,6 +4,7 @@ version: '3'
 #  you can uncomment the below if you'd like to run unit tests behind a VPN.
 #  do not leave it uncommented as that will mess up CI!
 
+#networks:
 #  default:
 #    external:
 #      name: localdev

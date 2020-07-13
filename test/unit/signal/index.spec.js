@@ -10,6 +10,8 @@ import signal, {
   parseVerificationCode,
 } from '../../../app/signal'
 import socket from '../../../app/socket/write'
+import util from '../../../app/util'
+import metrics from '../../../app/metrics'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
 import {
@@ -59,7 +61,7 @@ describe('signal module', () => {
       })
     })
 
-    it('sends a signal message', async () => {
+    describe('sending a signal message', async () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
@@ -67,16 +69,59 @@ describe('signal module', () => {
         messageBody: 'hello world!',
         attachments: [],
       }
-      await signal.sendMessage('+12223334444', sdMessage)
+      const id = '42'
+      const whenSent = 0
+      const elapsed = 1000
+      const sendResponse = {
+        id,
+        type: messageTypes.SEND_RESULTS,
+        data: [
+          {
+            address: { number: '+12223334444' },
+            success: { unidentified: false, needsSync: true },
+            networkFailure: false,
+            unregisteredFailure: false,
+          },
+        ],
+      }
 
-      expect(writeStub.getCall(0).args[0]).to.eql({
-        type: 'send',
-        username: channelPhoneNumber,
-        recipientAddress: {
-          number: '+12223334444',
-        },
-        messageBody: 'hello world!',
-        attachments: [],
+      let res, observeHistogramStub
+      beforeEach(async () => {
+        observeHistogramStub = sinon.stub(metrics, 'observeHistogram').returns(null)
+        writeStub.returns(Promise.resolve(id))
+        // simulate 1 sec roundtrip
+        sinon
+          .stub(util, 'nowInMillis')
+          .onCall(0)
+          .returns(new Date(whenSent))
+          .onCall(1)
+          .returns(new Date(whenSent + elapsed))
+        res = await signal.sendMessage('+12223334444', sdMessage)
+      })
+
+      it('writes the message to the signald socket', () => {
+        expect(writeStub.getCall(0).args[0]).to.eql({
+          type: 'send',
+          username: channelPhoneNumber,
+          recipientAddress: {
+            number: '+12223334444',
+          },
+          messageBody: 'hello world!',
+          attachments: [],
+        })
+      })
+
+      it('returns the id of the message', () => {
+        expect(res).to.eql(id)
+      })
+
+      it('records the message roundtrip time once sent', () => {
+        callbacks.handle(sendResponse)
+        expect(observeHistogramStub.getCall(0).args).to.eql([
+          metrics.gauges.MESSAGE_ROUNDTRIP,
+          elapsed,
+          [channelPhoneNumber],
+        ])
       })
     })
 

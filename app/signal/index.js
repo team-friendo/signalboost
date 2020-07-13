@@ -2,9 +2,9 @@ const socketWriter = require('../socket/write')
 const channelRepository = require('../db/repositories/channel')
 const callbacks = require('./callbacks')
 const { pick, isEmpty } = require('lodash')
-const { statuses } = require('../util')
-const { loggerOf } = require('../util.js')
 const { messages, messageTypes, trustLevels } = require('./constants')
+const util = require('../util')
+const { statuses, loggerOf } = util
 
 /**
  *
@@ -144,6 +144,7 @@ const sendMessage = async (recipientNumber, sdMessage) => {
       channelPhoneNumber: sdMessage.username,
       messageBody: sdMessage.messageBody,
       attachments: sdMessage.attachments,
+      whenSent: util.nowInMillis(),
     },
   })
   return id
