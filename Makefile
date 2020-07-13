@@ -142,14 +142,20 @@ test.lint.fix: ## run linter with --fix option to automatically fix what can be
 splash.setup: ## build dev env for docker site (build docker container, install  npm deps)
 	./splash/bin/setup
 
-splash.dev: ## run splash site in dev mode
+splash.dev.up: ## run splash site in dev mode
 	cd splash && docker-compose -f docker-compose-dev.yml up
+
+splash.dev.down: ## shut down splash dev containers
+	cd splash && docker-compose -f docker-compose-dev.yml down
 
 splash.build: ## build production version of splash site
 	cd splash && docker-compose run --entrypoint 'gatsby build' splash
 
-splash.prod: ## run (already-built) version of splash site
+splash.prod.up: ## run (already-built) version of splash site
 	cd splash && docker-compose up
+
+splash.prod.down: ## shut down splash prod containers
+	cd splash && docker-compose down
 
 splash.deploy: ## deploy the splash app
 	./splash/bin/deploy
