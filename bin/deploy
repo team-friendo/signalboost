@@ -13,8 +13,16 @@ echo "--- deploying..."
 
 cd ansible
 
-ansible-playbook \
-  -i inventory \
+if [[ ${FRIENDO_DEPLOY} != "1" ]];then
+  # deploy with default configs used for community deploy
+  echo "--- using community deploy defaults..."
+  ansible-playbook -i inventory playbooks/deploy.yml
+  else
+  # add overrides that we want to only use in mainline team-friendo deploys
+  echo "--- using team-friendo overrides... "
+  ansible-playbook -i inventory \
+  -e "secrets_method=blackbox" \
   playbooks/deploy.yml
+fi
 
 pushd > /dev/null
