@@ -41,7 +41,9 @@ const socketPoolResource = async () => {
 }
 
 const metricsResource = () => {
-  const counterStub = { labels: () => ({ inc: () => ({}) }) }
+  const counterStub = { labels: () => ({ inc: () => null }) }
+  const gaugeStub = { labels: () => ({ set: () => null }) }
+  const histogramStub = { labels: () => ({ observe: () => null }) }
   return {
     run: () => ({
       registry: {
@@ -52,6 +54,12 @@ const metricsResource = () => {
         RELAYABLE_MESSAGES: counterStub,
         SIGNALD_MESSAGES: counterStub,
         SIGNALBOOST_MESSAGES: counterStub,
+      },
+      gauges: {
+        MESSAGE_ROUNDTRIP: gaugeStub,
+      },
+      histograms: {
+        MESSAGE_ROUNDTRIP: histogramStub,
       },
     }),
   }
