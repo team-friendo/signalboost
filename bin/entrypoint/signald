@@ -6,7 +6,7 @@ chmod 600 /var/lib/jmx/jmxremote.password
 
 v_flag=""
 
-if [[ "$SIGNALD_VERBOSE_LOG" = "1" ]]; then
+if [[ "$SIGNALD_VERBOSE_LOG" == "1" ]]; then
   v_flag="-v"
 fi
 
