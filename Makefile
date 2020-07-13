@@ -48,8 +48,8 @@ ansible.install: ## removes boost cli files from your path
 ansible.deploy: # deploy the app to prod
 	./bin/deploy
 
-ansible.deploy_friendo: # deploy the app to prod
-	./bin/deploy-friendo
+ansible.deploy.friendo: # deploy the app to prod
+	FRIENDO_DEPLOY=1 ./bin/deploy
 
 ansible.deploy_metrics: # deploy grafana/prometheus to metrics server
 	./bin/deploy-metrics
