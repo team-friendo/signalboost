@@ -51,23 +51,31 @@ export default () => (
     <p>Shows stats and briefly explains how Signalboost works.</p>
 
     <h3>Managing your channel</h3>
-    <h4>ADD / REMOVE +1-555-555-5555</h4>
+    <h4 id="add-admin" class="anchor">
+      ADD / REMOVE +1-555-555-5555
+    </h4>
     <p>
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
     </p>
-    <h4>RENAME new name</h4>
+    <h4 id="rename" class="anchor">
+      RENAME new name
+    </h4>
     <p>Renames channel to "new name"</p>
     <p>Example: RENAME My Cool Signalboost Channel</p>
 
-    <h4>DESCRIPTION description of channel</h4>
+    <h4 id="description" class="anchor">
+      DESCRIPTION description of channel
+    </h4>
     <p>Adds or updates public description of channel.</p>
     <p>
       Example: DESCRIPTION This is the _super cool activist_ signalboost
       channel! We'll use it to make announcements for the upcoming protest.
     </p>
 
-    <h4>VOUCHING ON / OFF / ADMIN</h4>
+    <h4 id="vouching" class="anchor">
+      VOUCHING ON / OFF / ADMIN
+    </h4>
     <p>
       VOUCHING ON: turning vouching on means that an invite (1 by default) is
       required to join the channel. Both admins and subscribers can invite
@@ -83,14 +91,20 @@ export default () => (
       join the channel. If other people try to send invites, they will be
       prevented from doing so.
     </p>
-    <h4>INVITE +1-555-555-5555</h4>
+    <h4 id="invite" class="anchor">
+      INVITE +1-555-555-5555
+    </h4>
     <p>
       Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
       the phone number with a + and country code!
     </p>
-    <p>Multiple invites can be sent by comma-separating phone numbers:</p>
+    <p>
+      Multiple invites can be sent by listing phone numbers separated by commas:
+    </p>
     <p>INVITE +1-555-555-5555, +1-333-333-3333</p>
-    <h4>VOUCH LEVEL level</h4>
+    <h4 id="vouch-level" class="anchor">
+      VOUCH LEVEL level
+    </h4>
     <p>
       This changes the number of invites needed to join the channel; currently
       the vouch level must be between 1 and 10.
@@ -103,7 +117,9 @@ export default () => (
     </p>
 
     <h3>Managing a hotline</h3>
-    <h4>HOTLINE ON / OFF</h4>
+    <h4 id="hotline" class="anchor">
+      HOTLINE ON / OFF
+    </h4>
     <p>
       Enables or disables a hotline, which allows admins to receive anonymous
       messages from subscribers. Channel hotlines are off by default. If you're
@@ -111,7 +127,7 @@ export default () => (
       because it will have the following header:
     </p>
     <p>
-      <b>[HOTLINE MESSAGE]</b>
+      <b>[HOTLINE #3214]</b>
     </p>
     <p>
       If you decide to turn the hotline on:
@@ -126,15 +142,17 @@ export default () => (
         </li>
       </ul>
     </p>
-    <h4>REPLY</h4>
+    <h4 id="hotline-replies" class="anchor">
+      REPLY
+    </h4>
     <p>Incoming hotline messages are followed by a hotline #:</p>
     <blockquote>
-      <p>[HOTLINE #2]</p>
+      <p>[HOTLINE #3214]</p>
       <p>Hello! We need a legal representative at jail support location XYZ.</p>
     </blockquote>
     <p>In order to respond to a hotline message, type REPLY:</p>
     <blockquote>
-      <p>REPLY #2 Okay, we are sending someone over!</p>
+      <p>REPLY #3214 Okay, we are sending someone over!</p>
     </blockquote>
     <p>And the subscriber you replied to will receive the following message:</p>
     <blockquote>
@@ -143,16 +161,25 @@ export default () => (
     </blockquote>
 
     <h3>Other useful commands</h3>
-    <h4>PRIVATE good morning fellow admins!</h4>
-    <p>Sends a private message </p>
-    <h4>ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH </h4>
+    <h4 id="private-messages" class="anchor">
+      PRIVATE good morning fellow admins!
+    </h4>
+    <p>
+      Sends a private message to admins only (subscribers will not be able to
+      see those messages).
+    </p>
+    <h4 id="languages" class="anchor">
+      ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH{' '}
+    </h4>
     <p>
       Switches language to Spanish, French, or German. Language changes on
       Signalboost are user-specific, so if you change your language to Spanish
       other admins and subscribers' channels will be unaffected.
     </p>
 
-    <h4>GOODBYE</h4>
+    <h4 id="leave" class="anchor">
+      GOODBYE
+    </h4>
     <p>
       Leaves the channel. If you're an admin, you will lose your admin access to
       the channel but will still be able to subscribe as a subscriber. If you
@@ -160,7 +187,9 @@ export default () => (
       add you using the ADD command.
     </p>
 
-    <h4>DESTROY</h4>
+    <h4 id="destroy" class="anchor">
+      DESTROY
+    </h4>
     <p>
       Danger zone! This command permanently destroys the channel and all
       associated records. Importantly, it does not erase the message history
