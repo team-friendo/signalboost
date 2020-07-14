@@ -24,7 +24,7 @@ mkdir -p ${backup_dir}
 # backup db #
 #############
 
-echo "--- backing up db..."
+echo "--- backing up db at $timestamp..."
 
 down="docker-compose -f ${project_root}/docker-compose.yml down"
 up="docker-compose --file ${project_root}/docker-compose.yml up -d db"

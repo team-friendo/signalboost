@@ -49,8 +49,8 @@
 
   - name: Load crontab
     copy:
-      src: files/crontab/root
-      dest: /var/spool/cron/crontabs/root
+      src: files/crontab
+      dest: /etc/crontab
     tags: deploy_user, crontab
 
   - name: Load GPG Deploy Key
