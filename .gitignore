@@ -29,6 +29,7 @@
 
 # text editors
 .idea/*
+*.json-e
 /.vscode/settings.json
 
 # signal keystore

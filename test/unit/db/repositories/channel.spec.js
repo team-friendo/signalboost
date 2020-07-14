@@ -61,7 +61,7 @@ describe('channel repository', () => {
       it('returns the channel record', () => {
         expect(channel.phoneNumber).to.eql(channelPhoneNumber)
         expect(channel.name).to.eql('#blackops')
-        expect(channel.hotlineOn).to.eql(false)
+        expect(channel.hotlineOn).to.eql(true)
         expect(channel.memberships.map(m => m.memberPhoneNumber)).to.eql(adminPhoneNumbers)
         expect(channel.messageCount).to.be.an('object')
       })
@@ -92,7 +92,7 @@ describe('channel repository', () => {
       it('updates the channel record and returns it', async () => {
         expect(channel.phoneNumber).to.eql(channelPhoneNumber)
         expect(channel.name).to.eql('#blackops')
-        expect(channel.hotlineOn).to.eql(false)
+        expect(channel.hotlineOn).to.eql(true)
         expect((await channel.memberships).map(m => m.memberPhoneNumber)).to.have.members(
           newAdminPhoneNumbers,
         )
