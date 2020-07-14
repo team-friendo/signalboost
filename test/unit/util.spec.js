@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it } from 'mocha'
+import { describe, it, beforeEach, afterEach } from 'mocha'
 import util from '../../app/util'
 
 describe('utility module', () => {
@@ -64,6 +64,25 @@ describe('utility module', () => {
         messageBody: '500899152',
       })
       expect(util.redact(unredacted)).to.eql(redacted)
+    })
+
+    describe('in dev mode', () => {
+      let originalEnv
+      beforeEach(() => {
+        originalEnv = process.env.NODE_ENV
+        process.env.NODE_ENV = 'development'
+      })
+      afterEach(() => (process.env.NODE_ENV = originalEnv))
+
+      it('does not hash anything', () => {
+        const unredacted = JSON.stringify({
+          type: 'send',
+          username: '+12223334444',
+          recipient: { number: '+14443332222' },
+          messageBody: 'meet me at the docs at midnight!',
+        })
+        expect(util.redact(unredacted)).to.eql(unredacted)
+      })
     })
   })
 })

@@ -89,14 +89,18 @@ const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
+const emphasize = msg => `\n----------------\n${msg}----------------\n`
+
 const _defaultSalt = '483157e72a4c17227f1feb2d437430eecb9f72b0a8691ab38c121d217f95518f'
 
 const hash = str => stringHash(str + (process.env.SIGNALBOOST_HASH_SALT || _defaultSalt))
 
 const redact = str =>
-  str
-    .replace(/\+\d{9,15}/g, hash)
-    .replace(/"(messageBody|body)":"([^"]*)"/, (_, key, msg) => `"${key}":"${hash(msg)}"`)
+  process.env.NODE_ENV === 'development'
+    ? str
+    : str
+        .replace(/\+\d{9,15}/g, hash)
+        .replace(/"(messageBody|body)":"([^"]*)"/, (_, key, msg) => `"${key}":"${hash(msg)}"`)
 
 /*************** Statuses ********************/
 
@@ -115,6 +119,7 @@ const defaultErrorOf = err => ({
 module.exports = {
   defaultErrorOf,
   batchesOfN,
+  emphasize,
   exec,
   genUuid,
   hash,

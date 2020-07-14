@@ -11,6 +11,7 @@ const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
 const { counters, errorTypes } = metrics
+const { emphasize, redact } = require('../util')
 const { defaultLanguage } = require('../config')
 
 /**
@@ -47,7 +48,7 @@ const { defaultLanguage } = require('../config')
 
 // string -> Promise<SignalBoostStatus>
 const dispatch = async msg => {
-  logger.debug(`+++++++++\n${msg}\n++++++++\n`)
+  logger.debug(emphasize(redact(msg)))
   const inboundMsg = parseInboundSignaldMessage(msg)
   const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
   metrics.incrementCounter(counters.SIGNALD_MESSAGES, [
