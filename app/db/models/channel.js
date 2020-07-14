@@ -29,7 +29,7 @@ const channelOf = (sequelize, DataTypes) => {
     hotlineOn: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: false,
+      defaultValue: true,
     },
     vouchMode: {
       type: DataTypes.ENUM,

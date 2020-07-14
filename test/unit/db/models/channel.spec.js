@@ -111,7 +111,7 @@ describe('channel model', () => {
       }),
     )
 
-    expect(channel.hotlineOn).to.equal(false)
+    expect(channel.hotlineOn).to.equal(true)
     expect(channel.description).to.equal('')
     expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     expect(channel.vouchMode).to.equal('OFF')
