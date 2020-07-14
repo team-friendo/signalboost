@@ -1,5 +1,6 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
 const uuidV4 = require('uuid/v4')
+const stringHash = require('string-hash')
 
 /********* Non-deterministic generators *********/
 
@@ -88,6 +89,15 @@ const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
+const _defaultSalt = '483157e72a4c17227f1feb2d437430eecb9f72b0a8691ab38c121d217f95518f'
+
+const hash = str => stringHash(str + (process.env.SIGNALBOOST_HASH_SALT || _defaultSalt))
+
+const redact = str =>
+  str
+    .replace(/\+\d{9,15}/g, hash)
+    .replace(/"(messageBody|body)":"([^"]*)"/, (_, key, msg) => `"${key}":"${hash(msg)}"`)
+
 /*************** Statuses ********************/
 
 const statuses = {
@@ -107,6 +117,7 @@ module.exports = {
   batchesOfN,
   exec,
   genUuid,
+  hash,
   loggerOf,
   logger,
   noop,
@@ -114,6 +125,7 @@ module.exports = {
   nowTimestamp,
   prettyPrint,
   promisifyCallback,
+  redact,
   repeatEvery,
   repeatUntilTimeout,
   sequence,

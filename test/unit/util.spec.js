@@ -25,4 +25,45 @@ describe('utility module', () => {
       expect(util.batchesOfN(arr, 3)).to.eql([[1, 2, 3], [4, 5, 6], [7, 8]])
     })
   })
+
+  describe('#redact', () => {
+    it('hashes messages and phone numbers in an inbound sd message', () => {
+      const unredacted = JSON.stringify({
+        type: 'message',
+        data: {
+          username: '+12223334444',
+          source: { number: '+14443332222' },
+          dataMessage: {
+            body: 'meet me at the docs at midnight!',
+          },
+        },
+      })
+      const redacted = JSON.stringify({
+        type: 'message',
+        data: {
+          username: '2721981381',
+          source: { number: '404640259' },
+          dataMessage: { body: '500899152' },
+        },
+      })
+
+      expect(util.redact(unredacted)).to.eql(redacted)
+    })
+
+    it('hashes messages and phone numbers in an outbound sd message', () => {
+      const unredacted = JSON.stringify({
+        type: 'send',
+        username: '+12223334444',
+        recipient: { number: '+14443332222' },
+        messageBody: 'meet me at the docs at midnight!',
+      })
+      const redacted = JSON.stringify({
+        type: 'send',
+        username: '2721981381',
+        recipient: { number: '404640259' },
+        messageBody: '500899152',
+      })
+      expect(util.redact(unredacted)).to.eql(redacted)
+    })
+  })
 })
