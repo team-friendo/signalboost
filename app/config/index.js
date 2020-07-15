@@ -7,11 +7,13 @@ const jobConfigsByEnv = require('./job')
 const signalConfigsByEnv = require('./signal')
 const socketConfigsByEnv = require('./socket')
 const twilioConfigsByEnv = require('./twilio')
+const cryptoConfigsByEnv = require('./crypto')
 
 const getConfig = cfg => get(cfg, [process.env.NODE_ENV || 'production'])
 
 module.exports = {
   api: getConfig(apiConfigsByEnv),
+  crypto: getConfig(cryptoConfigsByEnv),
   db: getConfig(dbConfigsByEnv),
   defaultLanguage,
   job: getConfig(jobConfigsByEnv),
