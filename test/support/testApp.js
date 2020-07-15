@@ -45,7 +45,7 @@ const metricsResource = () => {
   const histogramStub = { labels: () => ({ observe: () => null }) }
   return {
     run: () => ({
-      registry: {
+      register: {
         metrics: () => Promise.resolve(),
       },
       counters: {

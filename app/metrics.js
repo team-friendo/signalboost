@@ -2,8 +2,6 @@ const prometheus = require('prom-client')
 const app = require('./index')
 const { redact } = require('./util')
 
-const register = (registry, metric) => ({ ...metric, registers: [registry] })
-
 const _counters = {
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
   SIGNALD_MESSAGES: 'SIGNALD_MESSAGES',
@@ -26,8 +24,8 @@ const errorTypes = {
 }
 
 const run = () => {
-  const registry = new prometheus.Registry()
-  prometheus.collectDefaultMetrics({ registry })
+  const register = new prometheus.Registry()
+  prometheus.collectDefaultMetrics({ register })
   const c = _counters
   const h = _histograms
 
@@ -35,19 +33,19 @@ const run = () => {
     [c.ERRORS]: new prometheus.Counter({
       name: 'errors',
       help: 'Counts errors',
-      registers: [registry],
+      registers: [register],
       labelNames: ['errorType', 'channel'],
     }),
     [c.RELAYABLE_MESSAGES]: new prometheus.Counter({
       name: 'relayable_messages',
       help: 'Counts the number of relayed messages',
-      registers: [registry],
+      registers: [register],
       labelNames: ['channel'],
     }),
     [c.SIGNALD_MESSAGES]: new prometheus.Counter({
       name: 'signald_messages',
       help: 'Counts the number of messages written out to signald sockets',
-      registers: [registry],
+      registers: [register],
       labelNames: ['messageType', 'channel', 'messageDirection'],
     }),
     [c.SIGNALBOOST_MESSAGES]: new prometheus.Counter({
@@ -55,7 +53,7 @@ const run = () => {
       help:
         'Counts signalboost messages dispatched by messenger.\n' +
         'Message types include: broadcasts, hotline messages, hotline replies, and commands.',
-      registers: [registry],
+      registers: [register],
       labelNames: ['channel', 'messageType', 'messageSubtype'],
     }),
   }
@@ -66,7 +64,7 @@ const run = () => {
       help:
         'Measures millis elapsed between when message is enqueued for sending with signald' +
         'and when signald confirms successful sending',
-      registers: [registry],
+      registers: [register],
       labelNames: ['channel'],
       // buckets increase exponentially by power of 4 from base of 500 millis
       buckets: [
@@ -82,7 +80,7 @@ const run = () => {
     }),
   }
 
-  return { registry, counters, histograms }
+  return { register, counters, histograms }
 }
 
 // (string, Array<string>) -> void
@@ -95,7 +93,6 @@ const observeHistogram = (histogram, value, labels) =>
 
 module.exports = {
   run,
-  register,
   incrementCounter,
   observeHistogram,
   counters: _counters,
