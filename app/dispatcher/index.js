@@ -50,7 +50,7 @@ const { defaultLanguage } = require('../config')
 const dispatch = async msg => {
   logger.debug(emphasize(redact(msg)))
   const inboundMsg = parseInboundSignaldMessage(msg)
-  const channelPhoneNumber = get(inboundMsg, 'data.username', 'noPhoneNumberType')
+  const channelPhoneNumber = get(inboundMsg, 'data.username', 'SYSTEM')
   metrics.incrementCounter(counters.SIGNALD_MESSAGES, [
     inboundMsg.type,
     channelPhoneNumber,
