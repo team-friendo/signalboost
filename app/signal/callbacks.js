@@ -2,7 +2,7 @@ const membershipRepository = require('../db/repositories/membership')
 const { memberTypes } = membershipRepository
 const safetyNumbers = require('../registrar/safetyNumbers')
 const metrics = require('../metrics')
-const { gauges, histograms } = metrics
+const { histograms } = metrics
 const { messageTypes } = require('./constants')
 const util = require('../util')
 const { statuses } = util
@@ -128,7 +128,6 @@ const _updateFingerprint = async (message, state) => {
 // CbState => void
 const _measureRoundTrip = ({ channelPhoneNumber, whenSent }) => {
   const elapsed = util.nowInMillis() - whenSent
-  metrics.setGauge(gauges.MESSAGE_ROUNDTRIP, elapsed, [channelPhoneNumber])
   metrics.observeHistogram(histograms.MESSAGE_ROUNDTRIP, elapsed, [channelPhoneNumber])
 }
 

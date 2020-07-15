@@ -231,9 +231,8 @@ describe('callback registry', () => {
           ],
         }
 
-        let setGaugeStub, observeHistogramStub
+        let observeHistogramStub
         beforeEach(() => {
-          setGaugeStub = sinon.stub(metrics, 'setGauge').returns(null)
           observeHistogramStub = sinon.stub(metrics, 'observeHistogram').returns(null)
           sinon.stub(util, 'nowInMillis').returns(whenReceived)
           callbacks.register({ messageType: messageTypes.SEND, id, state })
@@ -246,11 +245,6 @@ describe('callback registry', () => {
 
         it('measures message lag', () => {
           callbacks.handle(successfulSend)
-          expect(setGaugeStub.getCall(0).args).to.eql([
-            metrics.gauges.MESSAGE_ROUNDTRIP,
-            whenReceived - whenSent,
-            [state.channelPhoneNumber],
-          ])
           expect(observeHistogramStub.getCall(0).args).to.eql([
             metrics.histograms.MESSAGE_ROUNDTRIP,
             whenReceived - whenSent,
