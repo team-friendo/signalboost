@@ -194,7 +194,7 @@ describe('dispatcher service', () => {
           },
         }),
       )
-      await wait(socketDelay)
+      await wait(2 * socketDelay)
     })
 
     it('subscribes the sender to the channel', async () => {

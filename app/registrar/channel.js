@@ -8,7 +8,7 @@ const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../config')
 const { statuses: pNumStatuses } = require('../db/models/phoneNumber')
 const { statuses: sbStatuses } = require('../util')
-const { loggerOf, wait } = require('../util')
+const { loggerOf, wait, hash } = require('../util')
 const logger = loggerOf()
 const {
   signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval },
@@ -91,6 +91,7 @@ const list = db =>
 
 const _formatForList = ch => ({
   ...pick(ch, ['name', 'phoneNumber']),
+  hash: hash(ch.phoneNumber),
   admins: channelRepository.getAdminMemberships(ch).length,
   subscribers: channelRepository.getSubscriberMemberships(ch).length,
   messageCount: pick(ch.messageCount, ['broadcastIn', 'commandIn', 'hotlineIn']),

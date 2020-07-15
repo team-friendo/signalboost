@@ -1,25 +1,31 @@
 const app = require('../../app')
 const util = require('../util')
+const { emphasize, redact } = util
 const metrics = require('../metrics')
 const { statuses, promisifyCallback } = require('../util')
+const logger = util.loggerOf('socket.write')
 
 // object -> Promise<void>
 const write = data => {
   const id = util.genUuid()
+  const msg = signaldEncode({ ...data, id })
   return new Promise((resolve, reject) =>
     app.socketPool
       .acquire()
       .then(sock =>
         sock.write(
-          signaldEncode({ ...data, id }),
+          msg,
           promisifyCallback(
             () => {
               app.socketPool.release(sock)
+
+              logger.debug(emphasize(redact(msg)))
               metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
                 data.type,
                 data.username,
                 metrics.messageDirection.OUTBOUND,
               ])
+
               return resolve(id)
             },
             e => {

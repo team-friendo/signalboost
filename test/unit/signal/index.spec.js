@@ -118,7 +118,7 @@ describe('signal module', () => {
       it('records the message roundtrip time once sent', () => {
         callbacks.handle(sendResponse)
         expect(observeHistogramStub.getCall(0).args).to.eql([
-          metrics.gauges.MESSAGE_ROUNDTRIP,
+          metrics.histograms.MESSAGE_ROUNDTRIP,
           elapsed,
           [channelPhoneNumber],
         ])
