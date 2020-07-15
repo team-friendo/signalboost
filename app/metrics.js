@@ -1,5 +1,6 @@
 const prometheus = require('prom-client')
 const app = require('./index')
+const { redact } = require('./util')
 
 const register = (registry, metric) => ({ ...metric, registers: [registry] })
 
@@ -35,19 +36,19 @@ const run = () => {
       name: 'errors',
       help: 'Counts errors',
       registers: [registry],
-      labelNames: ['errorType', 'channelPhoneNumber'],
+      labelNames: ['errorType', 'channel'],
     }),
     [c.RELAYABLE_MESSAGES]: new prometheus.Counter({
       name: 'relayable_messages',
       help: 'Counts the number of relayed messages',
       registers: [registry],
-      labelNames: ['channelPhoneNumber'],
+      labelNames: ['channel'],
     }),
     [c.SIGNALD_MESSAGES]: new prometheus.Counter({
       name: 'signald_messages',
       help: 'Counts the number of messages written out to signald sockets',
       registers: [registry],
-      labelNames: ['messageType', 'channelPhoneNumber', 'messageDirection'],
+      labelNames: ['messageType', 'channel', 'messageDirection'],
     }),
     [c.SIGNALBOOST_MESSAGES]: new prometheus.Counter({
       name: 'signalboost_messages',
@@ -55,7 +56,7 @@ const run = () => {
         'Counts signalboost messages dispatched by messenger.\n' +
         'Message types include: broadcasts, hotline messages, hotline replies, and commands.',
       registers: [registry],
-      labelNames: ['channelPhoneNumber', 'messageType', 'messageSubtype'],
+      labelNames: ['channel', 'messageType', 'messageSubtype'],
     }),
   }
 
@@ -66,7 +67,7 @@ const run = () => {
         'Measures millis elapsed between when message is enqueued for sending with signald' +
         'and when signald confirms successful sending',
       registers: [registry],
-      labelNames: ['channelPhoneNumber'],
+      labelNames: ['channel'],
       // buckets increase exponentially by power of 4 from base of 500 millis
       buckets: [
         500, // .5 sec
@@ -85,11 +86,12 @@ const run = () => {
 }
 
 // (string, Array<string>) -> void
-const incrementCounter = (counter, labels) => app.metrics.counters[counter].labels(...labels).inc()
+const incrementCounter = (counter, labels) =>
+  app.metrics.counters[counter].labels(...labels.map(redact)).inc()
 
 // (string, number, Array<string) -> void
 const observeHistogram = (histogram, value, labels) =>
-  app.metrics.histograms[histogram].labels(...labels).observe(value)
+  app.metrics.histograms[histogram].labels(...labels.map(redact)).observe(value)
 
 module.exports = {
   run,

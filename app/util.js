@@ -96,7 +96,7 @@ const _defaultSalt = '483157e72a4c17227f1feb2d437430eecb9f72b0a8691ab38c121d217f
 const hash = str => stringHash(str + (process.env.SIGNALBOOST_HASH_SALT || _defaultSalt))
 
 const redact = str =>
-  process.env.NODE_ENV === 'development'
+  process.env.NODE_ENV === 'development' || isEmpty(str)
     ? str
     : str
         .replace(/\+\d{9,15}/g, hash)

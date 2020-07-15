@@ -66,6 +66,12 @@ describe('utility module', () => {
       expect(util.redact(unredacted)).to.eql(redacted)
     })
 
+    it('handles empty messages without throwing', () => {
+      expect(util.redact(null)).to.eql(null)
+      expect(util.redact(undefined)).to.eql(undefined)
+      expect(util.redact('')).to.eql('')
+    })
+
     describe('in dev mode', () => {
       let originalEnv
       beforeEach(() => {
