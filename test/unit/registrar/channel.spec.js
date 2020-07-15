@@ -1,9 +1,11 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
+import { times } from 'lodash'
 import channelRepository from '../../../app/db/repositories/channel'
 import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
 import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
+import inviteRepository from '../../../app/db/repositories/invite'
 import signal from '../../../app/signal'
 import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
@@ -25,7 +27,7 @@ describe('channel registrar', () => {
     channelPhoneNumber,
     name,
   )
-  const admins = [genPhoneNumber(), genPhoneNumber()]
+  const admins = times(4, genPhoneNumber)
   const adminPhoneNumber = admins[0]
   const channelInstance = {
     phoneNumber,
@@ -33,11 +35,30 @@ describe('channel registrar', () => {
     memberships: [
       { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[0] },
       { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[1] },
+      { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[2] },
+      { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[3] },
     ],
   }
   const activePhoneNumberInstance = {
     phoneNumber,
     status: 'ACTIVE',
+  }
+  const supportPhoneNumber = genPhoneNumber()
+  const supportChannel = {
+    phoneNumber: supportPhoneNumber,
+    name: 'TRYSTERO',
+    memberships: [
+      {
+        type: memberTypes.ADMIN,
+        channelPhoneNumber: supportPhoneNumber,
+        memberPhoneNumber: admins[0],
+      },
+      {
+        type: memberTypes.SUBSCRIBER,
+        channelPhoneNumber: supportPhoneNumber,
+        memberPhoneNumber: admins[1],
+      },
+    ],
   }
 
   let addAdminStub,
@@ -46,6 +67,8 @@ describe('channel registrar', () => {
     updatePhoneNumberStub,
     notifyStub,
     findAllDeepStub,
+    findDeepStub,
+    issueStub,
     setExpirationStub
 
   beforeEach(() => {
@@ -55,6 +78,8 @@ describe('channel registrar', () => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     notifyStub = sinon.stub(messenger, 'notify')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
+    findDeepStub = sinon.stub(channelRepository, 'findDeep')
+    issueStub = sinon.stub(inviteRepository, 'issue')
     sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
     setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
   })
@@ -95,22 +120,7 @@ describe('channel registrar', () => {
           await create({ phoneNumber, name, admins, welcome: notifyStub })
           admins.forEach((adminPhoneNumber, idx) => {
             expect(notifyStub.getCall(idx).args[0]).to.eql({
-              channel: {
-                phoneNumber,
-                name,
-                memberships: [
-                  {
-                    type: memberTypes.ADMIN,
-                    channelPhoneNumber: phoneNumber,
-                    memberPhoneNumber: admins[0],
-                  },
-                  {
-                    type: memberTypes.ADMIN,
-                    channelPhoneNumber: phoneNumber,
-                    memberPhoneNumber: admins[1],
-                  },
-                ],
-              },
+              channel: channelInstance,
               notification: {
                 message: welcomeNotification,
                 recipient: adminPhoneNumber,
@@ -121,7 +131,8 @@ describe('channel registrar', () => {
 
         describe('when sending welcome messages succeeds', () => {
           beforeEach(() => {
-            notifyStub.returns(Promise.resolve())
+            notifyStub.onCall(0).returns(Promise.resolve())
+            notifyStub.onCall(1).returns(Promise.resolve())
           })
 
           it('sets the expiry time on the channel', async () => {
@@ -135,12 +146,79 @@ describe('channel registrar', () => {
             })
           })
 
-          it('returns a success message', async function() {
-            expect(await create({ phoneNumber, name, admins })).to.eql({
-              status: 'ACTIVE',
-              phoneNumber,
-              name,
-              admins,
+          describe('when there is a support channel', () => {
+            beforeEach(() => findDeepStub.returns(Promise.resolve(supportChannel)))
+
+            it('invites unsubscribed users to the support channel', async () => {
+              await create({ phoneNumber, name, admins })
+              ;[admins[2], admins[3]].forEach((adminPhoneNumber, idx) => {
+                expect(issueStub.getCall(idx).args).to.eql([
+                  supportPhoneNumber,
+                  supportPhoneNumber,
+                  adminPhoneNumber,
+                ])
+                expect(notifyStub.getCall(admins.length + idx).args).to.eql([
+                  {
+                    channel: supportChannel,
+                    notification: {
+                      message: messagesIn(defaultLanguage).notifications.inviteReceived(
+                        supportChannel.name,
+                      ),
+                      recipient: adminPhoneNumber,
+                    },
+                  },
+                ])
+              })
+            })
+
+            describe('when sending invites succeeds', () => {
+              beforeEach(() => notifyStub.returns(Promise.resolve()))
+              it('returns a success message', async function() {
+                expect(await create({ phoneNumber, name, admins })).to.eql({
+                  status: 'ACTIVE',
+                  phoneNumber,
+                  name,
+                  admins,
+                })
+              })
+            })
+            describe('when sending invites fails', () => {
+              beforeEach(() =>
+                notifyStub
+                  .onCall(admins.length + 1)
+                  .callsFake(() => Promise.reject(new Error('oh noooes!'))),
+              )
+
+              it('returns an error message', async () => {
+                const result = await create({ phoneNumber, name, admins })
+                expect(result).to.eql({
+                  status: 'ERROR',
+                  error: 'oh noooes!',
+                  request: {
+                    phoneNumber,
+                    name,
+                    admins,
+                  },
+                })
+              })
+            })
+          })
+
+          describe('when there is not a support channel', () => {
+            beforeEach(() => findDeepStub.returns(Promise.resolve(null)))
+
+            it('does not issue any invites', async () => {
+              await create({ phoneNumber, name, admins })
+              expect(issueStub.callCount).to.eql(0)
+            })
+
+            it('returns a success message', async function() {
+              expect(await create({ phoneNumber, name, admins })).to.eql({
+                status: 'ACTIVE',
+                phoneNumber,
+                name,
+                admins,
+              })
             })
           })
         })

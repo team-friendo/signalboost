@@ -15,7 +15,7 @@ const defaults = {
   signaldRequestTimeout: 10000, // 10 sec
   signaldSendTimeout: 1000 * 60 * 60, // 1 hr
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
-  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER,
+  supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
   verificationTimeout: 30000, // 30 seconds
   welcomeDelay: 3000, // 3 sec
 }
@@ -40,13 +40,8 @@ const test = {
   welcomeDelay: 0.0001, // .0001 millis
 }
 
-const development = {
-  ...defaults,
-  supportPhoneNumber: process.env.SUPPORT_CHANNEL_NUMBER_DEV,
-}
-
 module.exports = {
-  development,
+  development: defaults,
   test,
   production: defaults,
 }
