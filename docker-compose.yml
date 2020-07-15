@@ -58,7 +58,7 @@ services:
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env
     environment:
-      SIGNALBOOST_VERBOSE_LOG: "${SIGNALBOOST_VERBOSE_LOG:-0}"
+      SIGNALBOOST_VERBOSE_LOG: "${SIGNALBOOST_VERBOSE_LOG:-1}"
       PROJECT_ROOT: "$PWD"
       DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
       NODE_ENV: production
