@@ -119,7 +119,7 @@
   # AVAILABILITY CHECK #
   ######################
 
-  - name: Ping nextcloud instance until it is available
+  - name: Ping instance until it is available
     shell: SIGNALBOOST_API_TOKEN="{{ api_token }}" SIGNALBOOST_HOST_URL="{{ host_url }}" ./bin/check-availability
     args:
       chdir: "{{ homedir }}"

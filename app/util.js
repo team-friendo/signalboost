@@ -92,7 +92,7 @@ const logger = loggerOf('signalboost')
 
 const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
-const emphasize = msg => `\n----------------\n${msg}----------------\n`
+const emphasize = msg => `\n--------\n${msg}----------------\n`
 
 const hash = str => stringHash(str + hashSalt)
 
