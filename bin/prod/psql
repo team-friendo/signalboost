@@ -6,7 +6,7 @@ cd ../.. # cd to project root
 
 echo "--- running db container..."
 
-docker-compose -f docker-compose-dev.yml run -d db
+docker-compose -f docker-compose.yml run -d db
 
 sleep 4
 
