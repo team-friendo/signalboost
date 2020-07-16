@@ -651,23 +651,41 @@ pre tt:after {
   content: "";
 }
 
-.container {
-  margin: 0 auto;
-  max-width: 960px;
-  padding: 0 15px;
-}
-
-.purple {
-  color: #bd93f9;
-}
 
 @media only screen and (max-width: 480px) {
   html {
     font-size: 100%;
   }
 }
-
+/* custom styles */
+.container {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 0 15px;
+}
 .anchor {
   padding-top: 110px;
   margin-top: -110px;
+}
+
+.purple {
+  color: #bd93f9;
+}
+.getting-started-header {
+  font-size: 20px;
+}
+.download-signal-link {
+  color: #ff79c6;
+  text-decoration: underline;
+}
+.channel-request {
+  border-radius: 5px;
+  padding: 15px;
+  background-color: rgba(40, 42, 54);
+  display: inline-block;
+}
+.command {
+  border-radius: 5px;
+  padding: 5px;
+  background-color: rgba(43, 46, 59);
 }

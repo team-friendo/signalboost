@@ -7,9 +7,9 @@ export default () => (
     <p>
       This page is intended primarily for admins who already have Signalboost
       channels. If you need a channel, check out the{' '}
-      <Link to="/">Getting Started</Link> section. If you want to know more
-      about why you should use Signalboost for your activist organizing work,
-      check out our <Link to="/faq">FAQ's.</Link>
+      <Link to="#getting-started">Getting Started</Link> section. If you want to
+      know more about why you should use Signalboost for your activist
+      organizing work, check out our <Link to="/faq">FAQ's.</Link>
     </p>
     <h3>Conceptual overview</h3>
     <p>
@@ -51,20 +51,20 @@ export default () => (
     <p>Shows stats and briefly explains how Signalboost works.</p>
 
     <h3>Managing your channel</h3>
-    <h4 id="add-admin" class="anchor">
+    <h4 id="add-admin" className="anchor">
       ADD / REMOVE +1-555-555-5555
     </h4>
     <p>
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
     </p>
-    <h4 id="rename" class="anchor">
+    <h4 id="rename" className="anchor">
       RENAME new name
     </h4>
     <p>Renames channel to "new name"</p>
     <p>Example: RENAME My Cool Signalboost Channel</p>
 
-    <h4 id="description" class="anchor">
+    <h4 id="description" className="anchor">
       DESCRIPTION description of channel
     </h4>
     <p>Adds or updates public description of channel.</p>
@@ -73,7 +73,7 @@ export default () => (
       channel! We'll use it to make announcements for the upcoming protest.
     </p>
 
-    <h4 id="vouching" class="anchor">
+    <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>
     <p>
@@ -91,7 +91,7 @@ export default () => (
       join the channel. If other people try to send invites, they will be
       prevented from doing so.
     </p>
-    <h4 id="invite" class="anchor">
+    <h4 id="invite" className="anchor">
       INVITE +1-555-555-5555
     </h4>
     <p>
@@ -102,7 +102,7 @@ export default () => (
       Multiple invites can be sent by listing phone numbers separated by commas:
     </p>
     <p>INVITE +1-555-555-5555, +1-333-333-3333</p>
-    <h4 id="vouch-level" class="anchor">
+    <h4 id="vouch-level" className="anchor">
       VOUCH LEVEL level
     </h4>
     <p>
@@ -117,7 +117,7 @@ export default () => (
     </p>
 
     <h3>Managing a hotline</h3>
-    <h4 id="hotline" class="anchor">
+    <h4 id="hotline" className="anchor">
       HOTLINE ON / OFF
     </h4>
     <p>
@@ -142,7 +142,7 @@ export default () => (
         </li>
       </ul>
     </p>
-    <h4 id="hotline-replies" class="anchor">
+    <h4 id="hotline-replies" className="anchor">
       REPLY
     </h4>
     <p>Incoming hotline messages are followed by a hotline #:</p>
@@ -161,14 +161,14 @@ export default () => (
     </blockquote>
 
     <h3>Other useful commands</h3>
-    <h4 id="private-messages" class="anchor">
+    <h4 id="private-messages" className="anchor">
       PRIVATE good morning fellow admins!
     </h4>
     <p>
       Sends a private message to admins only (subscribers will not be able to
       see those messages).
     </p>
-    <h4 id="languages" class="anchor">
+    <h4 id="languages" className="anchor">
       ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH{' '}
     </h4>
     <p>
@@ -177,7 +177,7 @@ export default () => (
       other admins and subscribers' channels will be unaffected.
     </p>
 
-    <h4 id="leave" class="anchor">
+    <h4 id="leave" className="anchor">
       GOODBYE
     </h4>
     <p>
@@ -187,7 +187,7 @@ export default () => (
       add you using the ADD command.
     </p>
 
-    <h4 id="destroy" class="anchor">
+    <h4 id="destroy" className="anchor">
       DESTROY
     </h4>
     <p>

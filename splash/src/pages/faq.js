@@ -100,12 +100,8 @@ export default () => (
       How much does using Signalboost cost?
     </h3>
     <p>
-      Signalboost is free software and the Signalboost server run by teamfriendo
-      is free for communities and organizations we choose to support. Anyone can
-      run a Signalboost server and other maintainer may chose to charge for the
-      service. Unlike a lot of text messaging apps there is no cost associated
-      with sending messages with Signalboost because it leverages Signal to send
-      messages instead of costly SMS networks.
+      We are making this software for people's collective liberation, not for
+      profit. We do not charge money for it and never will.
     </p>
     <h3>
       <span name="vouche" class="anchor" />
