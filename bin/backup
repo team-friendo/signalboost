@@ -34,6 +34,7 @@ db_backup_path="${backup_dir}/sb_db_backup_${timestamp}.gpg"
 ${down}
 ${up}
 ${pg_dump} | ${encrypt} > ${db_backup_path}
+${down}
 
 echo "--- backed up db!"
 
