@@ -22,7 +22,7 @@ const run = async () => {
   return Promise.resolve({ app, server, stop })
 }
 
-const configureLogger = app => process.env.NODE_ENV !== 'test' && app.use(requestLogger())
+const configureLogger = app => process.env.NODE_ENV === 'development' && app.use(requestLogger())
 
 const configureBodyParser = app => {
   app.use(
