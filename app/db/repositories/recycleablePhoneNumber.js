@@ -8,6 +8,8 @@ const {
 const channelRepository = require('./channel')
 const { recycle } = require('../../registrar/phoneNumber/recycle')
 
+const findAll = () => app.db.recycleablePhoneNumber.findAll({})
+
 // (String) -> Promise
 const enqueue = channelPhoneNumber =>
   app.db.recycleablePhoneNumber.create({
@@ -33,7 +35,8 @@ const checkForRecycleablePhoneNumbers = () =>
 
 const recyclePhoneNumbers = async () => {
   const recycleablePhoneNumbers = await app.db.recycleablePhoneNumber.findAll({})
-
+  // get/await recycleablePhoneNumbers => messageCounts
+  // find messageCount based on channelPhoneNumber
   // dequeue recycleableNumbers that were used within recycleDelay window
   recycleablePhoneNumbers
     .filter(usedRecently)
@@ -62,4 +65,4 @@ const usedRecently = async ({ channelPhoneNumber }) => {
   return lastUsed.diff(recycleDelayWindow) > 0
 }
 
-module.exports = { enqueue, dequeue, findByPhoneNumber, checkForRecycleablePhoneNumbers }
+module.exports = { findAll, enqueue, dequeue, findByPhoneNumber, checkForRecycleablePhoneNumbers }
