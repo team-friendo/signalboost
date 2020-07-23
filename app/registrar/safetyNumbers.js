@@ -4,21 +4,15 @@ const deauthorizationRepository = require('../db/repositories/deauthorization')
 const { loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
-const { wait, statuses } = require('../util')
+const { statuses } = require('../util')
 const { sdMessageOf } = require('../signal/constants')
-const {
-  signal: { minResendInterval },
-} = require('../config')
 
 // (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
 const trustAndResend = async updatableFingerprint => {
   const signal = require('../signal')
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
-  if (sdMessage) {
-    await wait(minResendInterval) // as precaution against rate limiting
-    await signal.sendMessage(memberPhoneNumber, sdMessage)
-  }
+  if (sdMessage) await signal.sendMessage(memberPhoneNumber, sdMessage)
   return trustResult
 }
 
