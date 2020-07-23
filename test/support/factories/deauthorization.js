@@ -1,5 +1,5 @@
 import { genPhoneNumber } from './phoneNumber'
-import { shuffle } from 'lodash'
+import { shuffle, times, random } from 'lodash'
 
 export const genFingerprint = () =>
   shuffle([
@@ -37,6 +37,8 @@ export const genFingerprint = () =>
     '8c',
     '6f',
   ]).join(' ') + ' '
+
+export const genSafetyNumber = () => times(60, () => random(0, 9)).join('')
 
 export const deauthorizationFactory = attrs => ({
   channelPhoneNumber: genPhoneNumber(),

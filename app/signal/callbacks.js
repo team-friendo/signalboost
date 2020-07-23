@@ -35,8 +35,6 @@ const {
  * }
  ***/
 
-const logger = util.loggerOf('signal.callbacks')
-
 const messages = {
   timeout: messageType => `Singald response timed out for request of type: ${messageType}`,
   verification: {
@@ -108,21 +106,12 @@ const _updateFingerprint = async (message, state) => {
   const memberPhoneNumber = address.number
   const { channelPhoneNumber, messageBody } = state
 
-  const updatableFingerprint = {
+  await safetyNumbers.updateFingerprint({
     channelPhoneNumber,
     memberPhoneNumber,
-    fingerprint: identityFailure.replace(/\(byte\)0x/g, '').replace(/,/g, ''),
+    fingerprint: identityFailure,
     sdMessage: { type: messageTypes.SEND, username: channelPhoneNumber, messageBody },
-  }
-
-  try {
-    const type = await membershipRepository.resolveMemberType(channelPhoneNumber, memberPhoneNumber)
-    // TODO(aguestuser|2020-07-09): add a metrics counter here to monitor rekey successes/errors?
-    if (type === memberTypes.ADMIN) await safetyNumbers.deauthorize(updatableFingerprint)
-    if (type === memberTypes.SUBSCRIBER) await safetyNumbers.trustAndResend(updatableFingerprint)
-  } catch (e) {
-    logger.error(e)
-  }
+  })
 }
 
 // CbState => void

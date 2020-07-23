@@ -7,15 +7,17 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
+import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import signal, { messageTypes } from '../../../app/signal'
 import executor from '../../../app/dispatcher/commands'
 import messenger from '../../../app/dispatcher/messenger'
 import resend from '../../../app/dispatcher/resend'
 import { deepChannelFactory } from '../../support/factories/channel'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
-import { wait } from '../../../app/util'
+import { genUuid, wait } from '../../../app/util'
 import app from '../../../app/index'
 import testApp from '../../support/testApp'
+import { genFingerprint, genSafetyNumber } from '../../support/factories/deauthorization'
 
 const {
   signal: { defaultMessageExpiryTime, minResendInterval },
@@ -314,6 +316,42 @@ describe('dispatcher module', () => {
         it('still relays message', async () => {
           expect(processCommandStub.getCall(0).args[0].sdMessage.messageBody).to.eql('HELLO')
         })
+      })
+    })
+
+    describe('inbound identity failure notifications', () => {
+      const fingerprint = genFingerprint()
+      const identityFailureMsg = {
+        type: 'inbound_identity_failure',
+        data: {
+          local_address: { number: channel.phoneNumber, uuid: genUuid() },
+          remote_address: { number: subscriberPhoneNumber },
+          fingerprint,
+          safety_number: genSafetyNumber(),
+        },
+      }
+
+      let updateFingerprintStub
+      beforeEach(async () => {
+        updateFingerprintStub = sinon
+          .stub(safetyNumbers, 'updateFingerprint')
+          .returns(Promise.resolve({ status: 'SUCCESS', message: 'yay!' }))
+      })
+
+      it('updates the fingerprint of the new identity', async () => {
+        await dispatch(JSON.stringify(identityFailureMsg))
+        expect(updateFingerprintStub.getCall(0).args).to.eql([
+          {
+            channelPhoneNumber: channel.phoneNumber,
+            memberPhoneNumber: subscriberPhoneNumber,
+            fingerprint,
+            sdMessage: {
+              type: messageTypes.SEND,
+              username: channel.phoneNumber,
+              messageBody: 'try again!',
+            },
+          },
+        ])
       })
     })
   })
