@@ -38,7 +38,7 @@ const IndexPage = () => (
         admins can see them.
       </li>
     </ul>
-    <h3>Stay safe from censorship and surveillance</h3>
+    <h3>Stay safe from surveillance</h3>
     <ul>
       <li>
         Signalboost sends messages over <a href="https://signal.org">Signal</a>,
