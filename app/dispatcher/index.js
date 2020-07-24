@@ -2,6 +2,7 @@ const signal = require('../signal')
 const callbacks = require('../signal/callbacks')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
+const safetyNumbers = require('../registrar/safetyNumbers')
 const { memberTypes } = membershipRepository
 const executor = require('./commands')
 const messenger = require('./messenger')
@@ -89,6 +90,9 @@ const dispatch = async msg => {
     return Promise.resolve()
   }
 
+  const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
+  if (updatableFingerprint) return safetyNumbers.updateFingerprint(updatableFingerprint)
+
   const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
   // GOTCHA: Don't return early here b/c that would prevent HELLO commands on channels w/
   // disappearing messages from ever being processed!
@@ -155,6 +159,30 @@ const _isMessage = inboundMsg =>
 const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.body', '') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments', []))
+
+/** InboundSdMessage -> UpdatableFingerprint | null **/
+const detectUpdatableFingerprint = async inSdMessage => {
+  if (inSdMessage.type !== signal.messageTypes.INBOUND_IDENTITY_FAILURE) return null
+
+  const channelPhoneNumber = get(inSdMessage, 'data.local_address.number', '')
+  const memberPhoneNumber = get(inSdMessage, 'data.remote_address.number', '')
+  const membership = await membershipRepository.findMembership(
+    channelPhoneNumber,
+    memberPhoneNumber,
+  )
+  const language = membership ? membership.language : defaultLanguage
+
+  return {
+    channelPhoneNumber,
+    memberPhoneNumber,
+    fingerprint: get(inSdMessage, 'data.fingerprint', ''),
+    sdMessage: {
+      type: signal.messageTypes.SEND,
+      username: channelPhoneNumber,
+      messageBody: messagesIn(language).notifications.safetyNumberChanged,
+    },
+  }
+}
 
 // InboundSdMessage -> SdMessage?
 const detectRateLimitedMessage = inboundMsg =>

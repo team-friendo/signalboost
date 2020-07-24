@@ -2,6 +2,7 @@ const messageTypes = {
   ERROR: 'unexpected_error',
   GET_IDENTITIES: 'get_identities',
   IDENTITIES: 'identities',
+  INBOUND_IDENTITY_FAILURE: 'inbound_identity_failure',
   MESSAGE: 'message',
   REGISTER: 'register',
   SEND: 'send',

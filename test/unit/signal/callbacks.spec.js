@@ -7,7 +7,6 @@ import { messageTypes } from '../../../app/signal/constants'
 import { statuses } from '../../../app/util'
 import callbacks from '../../../app/signal/callbacks'
 import metrics from '../../../app/metrics'
-import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import { outboundAttachmentFactory } from '../../support/factories/sdMessage'
 import { sdMessageOf } from '../../../app/signal/constants'
@@ -23,8 +22,6 @@ describe('callback registry', () => {
   const attachments = [outboundAttachmentFactory()]
   const fingerprint =
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53'
-  const encodedFingerprint =
-    '(byte)0x05, (byte)0x45, (byte)0x8d, (byte)0x63, (byte)0x1c, (byte)0xc4, (byte)0x14, (byte)0x55, (byte)0xbf, (byte)0x6d, (byte)0x24, (byte)0x9f, (byte)0xec, (byte)0xcb, (byte)0xaf, (byte)0xf5, (byte)0x8d, (byte)0xe4, (byte)0xc8, (byte)0xd2, (byte)0x78, (byte)0x43, (byte)0x3c, (byte)0x74, (byte)0x8d, (byte)0x52, (byte)0x61, (byte)0xc4, (byte)0x4a, (byte)0xe7, (byte)0x2c, (byte)0x3d, (byte)0x53'
   const messageBody = '[foo]\nbar'
   const id = util.genUuid()
 
@@ -254,15 +251,6 @@ describe('callback registry', () => {
       })
 
       describe('when SEND_RESULT is an identity failure', () => {
-        const successStatus = { status: statuses.SUCCESS, message: 'yay!' }
-
-        const updatableFingerprint = {
-          channelPhoneNumber,
-          memberPhoneNumber,
-          fingerprint,
-          sdMessage: sdMessageOf({ phoneNumber: channelPhoneNumber }, messageBody),
-        }
-
         const identityFailureResponse = {
           id,
           type: messageTypes.SEND_RESULTS,
@@ -271,55 +259,26 @@ describe('callback registry', () => {
               address: { number: memberPhoneNumber },
               networkFailure: false,
               unregisteredFailure: false,
-              identityFailure: encodedFingerprint,
+              identityFailure: fingerprint,
             },
           ],
         }
 
-        let resolveMemberTypeStub, trustAndResendStub, deauthorizeStub
-        beforeEach(() => {
-          resolveMemberTypeStub = sinon.stub(membershipRepository, 'resolveMemberType')
-          trustAndResendStub = sinon.stub(safetyNumbers, 'trustAndResend')
-          deauthorizeStub = sinon.stub(safetyNumbers, 'deauthorize')
-        })
+        let updateFingerprintStub
+        beforeEach(() => (updateFingerprintStub = sinon.stub(safetyNumbers, 'updateFingerprint')))
 
-        describe('and intended recipient was an ADMIN', () => {
-          beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.ADMIN))
-            deauthorizeStub.returns(Promise.resolve(successStatus))
-          })
+        it("updates the sender's fingerprint", async () => {
+          callbacks.register({ messageType: messageTypes.SEND, id, state })
+          await callbacks.handle(identityFailureResponse)
 
-          it('deauthorizes the fingerprint', async () => {
-            callbacks.register({ messageType: messageTypes.SEND, id, state })
-            await callbacks.handle(identityFailureResponse)
-
-            expect(trustAndResendStub.callCount).to.eql(0) // does not attempt to resend
-            expect(deauthorizeStub.getCall(0).args[0]).to.eql(updatableFingerprint)
-          })
-        })
-
-        describe('and intended recipient was a SUBSCRIBER ', () => {
-          beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
-            deauthorizeStub.returns(Promise.resolve(successStatus))
-          })
-
-          it('trusts the fingerprint and resends the message', async () => {
-            callbacks.register({ messageType: messageTypes.SEND, id, state })
-            await callbacks.handle(identityFailureResponse)
-
-            expect(deauthorizeStub.callCount).to.eql(0) // does not attempt to deauthorize
-            expect(trustAndResendStub.getCall(0).args[0]).to.eql(updatableFingerprint)
-          })
-        })
-        describe('and intended recipient was a rando', () => {
-          beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
-          })
-          it('does nothing', () => {
-            expect(deauthorizeStub.callCount).to.eql(0)
-            expect(trustAndResendStub.callCount).to.eql(0)
-          })
+          expect(updateFingerprintStub.getCall(0).args).to.eql([
+            {
+              channelPhoneNumber,
+              memberPhoneNumber,
+              fingerprint,
+              sdMessage: sdMessageOf({ phoneNumber: channelPhoneNumber }, messageBody),
+            },
+          ])
         })
       })
     })

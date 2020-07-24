@@ -430,7 +430,6 @@ Verifique con ${adminPhoneNumber} para asegurarse de que todavía controlan su t
 AGREGAR ${adminPhoneNumber},
   
 Hasta entonces, no podrán enviar mensajes ni leer mensajes de este canal.`,
-  setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
 
   expiryUpdateNotAuthorized:
     'Lo sentimos, solo los admins pueden configurar el temporizador de mensajes desaparecidos',
@@ -480,6 +479,11 @@ ${
 
   recycleChannelFailed: phoneNumber =>
     `Error al reciclar el canal para el número de teléfono: ${phoneNumber}`,
+
+  safetyNumberChanged:
+    'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
+
+  setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Solicitud de registro recibida de ${senderNumber}:

@@ -475,8 +475,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
-  unauthorized:
-    'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
+  safetyNumberChanged:
+    'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',
 
   setDescription: newDescription =>
     `La description de ce canal est désormais: "${newDescription}."`,
@@ -495,6 +495,9 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     "Vous venez d'être supprimé de cette chaîne par un administrateur. Envoyez SALUT pour vous réinscrire.",
 
   toggles: commandResponses.toggles,
+
+  unauthorized:
+    'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
   vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.

@@ -452,6 +452,9 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   recycleChannelFailed: phoneNumber => `Failed to recycle channel for phone number: ${phoneNumber}`,
 
+  safetyNumberChanged:
+    'It looks like you safety number just changed. You might need to resend your last message! :)',
+
   setDescription: newDescription => `Channel description set to "${newDescription}."`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>

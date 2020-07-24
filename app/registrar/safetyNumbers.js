@@ -1,24 +1,33 @@
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
+const { memberTypes } = membershipRepository
 const deauthorizationRepository = require('../db/repositories/deauthorization')
 const { loggerOf } = require('../util')
 const logger = loggerOf('safetyNumberService')
 const { messagesIn } = require('../dispatcher/strings/messages')
-const { wait, statuses } = require('../util')
+const { statuses } = require('../util')
 const { sdMessageOf } = require('../signal/constants')
-const {
-  signal: { minResendInterval },
-} = require('../config')
 
-// (Database, Socket, string, string, string?, SdMessage) -> Promise<SignalboostStatus>
+/** UpdatableFingerprint -> Promsie<SignalboostStatus> **/
+const updateFingerprint = async updatableFingerprint => {
+  // TODO(aguestuser|2020-07-09): add a metrics counter here to monitor rekey successes/errors?
+  const { channelPhoneNumber, memberPhoneNumber } = updatableFingerprint
+  try {
+    const type = await membershipRepository.resolveMemberType(channelPhoneNumber, memberPhoneNumber)
+    if (type === memberTypes.ADMIN) return deauthorize(updatableFingerprint)
+    return trustAndResend(updatableFingerprint)
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: e.message }
+  }
+}
+
+// UpdatableFingerprint -> Promise<SignalboostStatus>
 const trustAndResend = async updatableFingerprint => {
   const signal = require('../signal')
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
-  if (sdMessage) {
-    await wait(minResendInterval) // as precaution against rate limiting
-    await signal.sendMessage(memberPhoneNumber, sdMessage)
-  }
+  if (sdMessage) await signal.sendMessage(memberPhoneNumber, sdMessage)
   return trustResult
 }
 
@@ -61,4 +70,4 @@ const _sendDeauthAlerts = (channelPhoneNumber, deauthorizedNumber, adminMembersh
   )
 }
 
-module.exports = { trustAndResend, deauthorize, logger }
+module.exports = { updateFingerprint, trustAndResend, deauthorize, logger }
