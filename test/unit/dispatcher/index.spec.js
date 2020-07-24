@@ -19,7 +19,7 @@ import app from '../../../app/index'
 import testApp from '../../support/testApp'
 import { genFingerprint, genSafetyNumber } from '../../support/factories/deauthorization'
 import { membershipFactory } from '../../support/factories/membership'
-import { messagesIn } from "../../../app/dispatcher/strings/messages"
+import { messagesIn } from '../../../app/dispatcher/strings/messages'
 
 const {
   signal: { defaultMessageExpiryTime, minResendInterval },

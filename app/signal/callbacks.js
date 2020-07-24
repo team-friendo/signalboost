@@ -1,5 +1,3 @@
-const membershipRepository = require('../db/repositories/membership')
-const { memberTypes } = membershipRepository
 const safetyNumbers = require('../registrar/safetyNumbers')
 const metrics = require('../metrics')
 const { histograms } = metrics
