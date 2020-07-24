@@ -18,6 +18,8 @@ import { genUuid, wait } from '../../../app/util'
 import app from '../../../app/index'
 import testApp from '../../support/testApp'
 import { genFingerprint, genSafetyNumber } from '../../support/factories/deauthorization'
+import { membershipFactory } from '../../support/factories/membership'
+import { messagesIn } from "../../../app/dispatcher/strings/messages"
 
 const {
   signal: { defaultMessageExpiryTime, minResendInterval },
@@ -333,6 +335,9 @@ describe('dispatcher module', () => {
 
       let updateFingerprintStub
       beforeEach(async () => {
+        sinon
+          .stub(membershipRepository, 'findMembership')
+          .returns(Promise.resolve(membershipFactory({ language: languages.FR })))
         updateFingerprintStub = sinon
           .stub(safetyNumbers, 'updateFingerprint')
           .returns(Promise.resolve({ status: 'SUCCESS', message: 'yay!' }))
@@ -348,7 +353,7 @@ describe('dispatcher module', () => {
             sdMessage: {
               type: messageTypes.SEND,
               username: channel.phoneNumber,
-              messageBody: 'try again!',
+              messageBody: messagesIn(languages.FR).notifications.safetyNumberChanged,
             },
           },
         ])

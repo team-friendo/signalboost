@@ -90,7 +90,7 @@ const dispatch = async msg => {
     return Promise.resolve()
   }
 
-  const updatableFingerprint = detectUpdatableFingerprint(inboundMsg)
+  const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return safetyNumbers.updateFingerprint(updatableFingerprint)
 
   const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
@@ -161,17 +161,25 @@ const _isEmpty = inboundMsg =>
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments', []))
 
 /** InboundSdMessage -> UpdatableFingerprint | null **/
-const detectUpdatableFingerprint = inSdMessage => {
+const detectUpdatableFingerprint = async inSdMessage => {
   if (inSdMessage.type !== signal.messageTypes.INBOUND_IDENTITY_FAILURE) return null
+
   const channelPhoneNumber = get(inSdMessage, 'data.local_address.number', '')
+  const memberPhoneNumber = get(inSdMessage, 'data.remote_address.number', '')
+  const membership = await membershipRepository.findMembership(
+    channelPhoneNumber,
+    memberPhoneNumber,
+  )
+  const language = membership ? membership.language : defaultLanguage
+
   return {
     channelPhoneNumber,
-    memberPhoneNumber: get(inSdMessage, 'data.remote_address.number', ''),
+    memberPhoneNumber,
     fingerprint: get(inSdMessage, 'data.fingerprint', ''),
     sdMessage: {
       type: signal.messageTypes.SEND,
       username: channelPhoneNumber,
-      messageBody: 'try again!',
+      messageBody: messagesIn(language).notifications.safetyNumberChanged,
     },
   }
 }

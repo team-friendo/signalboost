@@ -415,8 +415,6 @@ const notifications = {
 
   channelRenamed: (oldName, newName) => `Kanal umbenannt von "${oldName}" zu "${newName}."`,
 
-  setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
-
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.
 
@@ -468,6 +466,11 @@ ${
 
   recycleChannelFailed: phoneNumber =>
     `Fehler beim Recyclen des Kanals für die Telefonnummer: ${phoneNumber}`,
+
+  safetyNumberChanged:
+    'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',
+
+  setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
 
   signupRequestReceived: (senderNumber, requestMsg) =>
     `Bitte um Anmeldung erhalten von: ${senderNumber}:
