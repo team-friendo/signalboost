@@ -83,7 +83,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 # fork currently running on prod ---v
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 ENV BRANCH "master"
-ENV COMMIT_HASH "bfc6675f66f2e2695e40b1e672fd28a8a97ac3c9"
+ENV COMMIT_HASH "02d1e75b0053dd9ec021759cc5e458bd5c1112e5"
 
 # fetch repo at desired commit
 RUN git init && \
