@@ -13,6 +13,7 @@ grafana/config/grafana.ini
 nginx/vhost.d/loki.signalboost.info
 nginx/vhost.d/metrics.signalboost.info
 nginx/vhost.d/prom.signalboost.info
+nginx/vhost.d/signald.signalboost.info
 prometheus/prometheus_dev.yml
 prometheus/prometheus_prod.yml
 signald/jmx/jmxremote.password
