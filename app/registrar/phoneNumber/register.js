@@ -63,7 +63,7 @@ const register = phoneNumber =>
     .then(() => recordStatusChange(phoneNumber, pnStatuses.VERIFIED))
     .catch(err => {
       logger.error(err)
-      return errorStatus(errors.registrationFailed(err), phoneNumber)
+      return errorStatus(errors.registrationFailed(err.message), phoneNumber)
     })
 
 /********************

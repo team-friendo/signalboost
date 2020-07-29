@@ -220,7 +220,7 @@ const parseOutboundAttachment = inAttachment => ({
 
 // string -> [boolean, string]
 const parseVerificationCode = verificationMessage => {
-  const matches = verificationMessage.match(/Your Signal verification code: (\d\d\d-\d\d\d)/)
+  const matches = verificationMessage.match(/.*: (\d\d\d-\d\d\d)/)
   return isEmpty(matches) ? [false, verificationMessage] : [true, matches[1]]
 }
 
