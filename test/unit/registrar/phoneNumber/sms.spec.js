@@ -29,7 +29,7 @@ describe('sms module', () => {
   describe('handleInboundSms', () => {
     describe('when sms is a signal verification code', () => {
       const verificationCode = '809-842'
-      const message = `Your Signal verification code: ${verificationCode} for +14322239406`
+      const message = `Some random message and then: ${verificationCode} maybe some more random stuff`
 
       describe('in all cases', () => {
         let callCount

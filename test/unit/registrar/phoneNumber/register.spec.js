@@ -102,7 +102,7 @@ describe('phone number services -- registration module', () => {
           expect(await register(phoneNumber)).to.eql({
             status: pnStatuses.ERROR,
             phoneNumber,
-            error: errors.registrationFailed('Error: wild database error!', phoneNumber),
+            error: errors.registrationFailed('wild database error!', phoneNumber),
           })
         })
       })
@@ -117,7 +117,7 @@ describe('phone number services -- registration module', () => {
           expect(await register(phoneNumber)).to.eql({
             status: pnStatuses.ERROR,
             phoneNumber,
-            error: errors.registrationFailed('Error: oh noes!', phoneNumber),
+            error: errors.registrationFailed('oh noes!', phoneNumber),
           })
         })
       })
@@ -195,7 +195,7 @@ describe('phone number services -- registration module', () => {
           {
             status: pnStatuses.ERROR,
             phoneNumber: phoneNumbers[2],
-            error: errors.registrationFailed('Error: verification timed out'),
+            error: errors.registrationFailed('verification timed out'),
           },
         ])
       })
