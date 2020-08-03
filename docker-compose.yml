@@ -35,6 +35,9 @@ services:
     image: signald
     container_name: signalboost_signald
     environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL}
+      VIRTUAL_PORT: ${SIGNALD_PORT}
+      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
       SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
     ports:
@@ -59,12 +62,15 @@ services:
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env
     environment:
-      SIGNALBOOST_VERBOSE_LOG: "${SIGNALBOOST_VERBOSE_LOG:-1}"
-      PROJECT_ROOT: "$PWD"
-      DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
+      VIRTUAL_HOST: ${SIGNALBOOST_HOST_URL}
+      VIRTUAL_PORT: ${SIGNALBOOST_PORT}
+      LETSENCRYPT_HOST: ${SIGNALBOOST_HOST_URL}
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
+      PROJECT_ROOT: $PWD
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
       NODE_ENV: production
-    ports:
-      - 3000:3000
+    expose:
+      - ${SIGNALBOOST_PORT}
     networks:
       - proxy-tier
       - default

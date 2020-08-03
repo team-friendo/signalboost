@@ -43,9 +43,11 @@ services:
     image: signald
     container_name: signalboost_signald
     environment:
-      SIGNALD_VERBOSE_LOG: "${SIGNALD_VERBOSE_LOG:-0}"
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
     networks:
       - default
+    expose:
+      - ${SIGNALD_PORT}
     ports:
       - 9010:9010
     volumes:
@@ -64,12 +66,12 @@ services:
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env.dev
     environment:
-      SIGNALBOOST_VERBOSE_LOG: "${SIGNALBOOST_VERBOSE_LOG:-0}"
-      PROJECT_ROOT: "$PWD"
-      NODE_ENV: "${NODE_ENV:-development}"
-      DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
-    ports:
-      - 3000:3000
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
+      PROJECT_ROOT: ${PWD}
+      NODE_ENV: ${NODE_ENV:-development}
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+    expose:
+      - ${SIGNALBOOST_PORT}
     networks:
       - default
     volumes:
