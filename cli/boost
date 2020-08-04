@@ -7,7 +7,7 @@ command=$1
 
 if [[ $command == "-h" ]] || [[ $command == "--help" ]];then
   command=help
-fi  
+fi
 
 echo ""
 
@@ -25,6 +25,7 @@ print_usage(){
   echo "  list-numbers"
   echo "  release-numbers"
   echo "  recycle"
+  echo "  register"
   echo ""
   echo "To learn what these commands do, run:"
   echo ""
@@ -40,7 +41,9 @@ if [[ $command != "help" ]] &&
      [[ $command != "list-channels" ]] &&
      [[ $command != "list-numbers" ]] &&
      [[ $command != "release-numbers" ]] &&
-     [[ $command != "recycle" ]]
+     [[ $command != "recycle" ]] &&
+
+ [[ $command != "register" ]]
 then
   print_usage
   exit 1
