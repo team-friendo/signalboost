@@ -10,7 +10,6 @@ volumes:
   postgres_data:
   signal_sock:
   signal_data:
-  vhost.d:
 
 x-logging: &loki-logging
   options:
@@ -96,7 +95,7 @@ services:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
     volumes:
       - certs:/etc/nginx/certs:ro
-      - vhost.d:/etc/nginx/vhost.d
+      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
