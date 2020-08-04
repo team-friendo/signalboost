@@ -10,13 +10,12 @@ const defaults = {
   maxVouchLevel: 10,
   minResendInterval: 60 * 1000, // 1 min
   poolSize: 50,
-  registrationBatchSize: 5,
+  registrationBatchSize: 4,
   setExpiryInterval: 2000, // 2 sec
-  signaldRequestTimeout: 10000, // 10 sec
+  signaldRequestTimeout: 20 * 1000, // 20 sec
   signaldSendTimeout: 1000 * 60 * 60, // 1 hr
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
-  verificationTimeout: 30000, // 30 seconds
   welcomeDelay: 3000, // 3 sec
 }
 
@@ -36,7 +35,6 @@ const test = {
   signaldRequestTimeout: 100, // 100 millis
   signaldStartupTime: 1, // 1 milli
   supportPhoneNumber: '+15555555555',
-  verificationTimeout: 30, // 30 millis
   welcomeDelay: 0.0001, // .0001 millis
 }
 

@@ -41,13 +41,27 @@ check-env(){
       # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
       echo "--- checking for ngrok url..."
 
-      host_url=$(curl --max-time 5 -s localhost:4040/api/tunnels | jq ".tunnels[0].public_url" | cut -c 9- | rev | cut -c 2- | rev)
+      if [[ "$(uname)" == 'Darwin' ]]
+        then # we are in Mac and must use sed -E
+          host_url=$(curl --max-time 5 -s localhost:4040/api/tunnels | \
+            jq ".tunnels[0].public_url" | \
+            sed -E 's/(http|https):\/\///' | \
+            cut -c 2- | rev | cut -c 2- | rev)
+
+        else # we are in Linux and may use sed -re
+          host_url=$(curl --max-time 5 -s localhost:4040/api/tunnels | \
+            jq ".tunnels[0].public_url" | \
+            sed -re 's/(http|https):\/\///' | \
+            cut -c 2- | rev | cut -c 2- | rev)
+      fi
 
       if [[ -z ${host_url} ]];then
         echo "Sorry, you are trying to run boost against a local dev server, but ngrok does not appear to be running."
         echo "That means we cannot find a proxy to route requests through. Please troubleshoot ngrok and try again!"
         exit 1
       fi
+
+      echo "--- ngrok url: $host_url"
       export SIGNALBOOST_HOST_URL=${host_url}
 
       else

@@ -51,8 +51,8 @@ const routesOf = async router => {
   })
 
   router.post('/phoneNumbers/register', async ctx => {
-    const { phoneNumber } = ctx.request.body
-    const { status, error } = await phoneNumberService.register(phoneNumber)
+    const { phoneNumber, captchaToken } = ctx.request.body
+    const { status, error } = await phoneNumberService.register(phoneNumber, captchaToken)
     merge(ctx, {
       status: httpStatusOf(status),
       body: { status, phoneNumber, ...(error ? { error } : {}) },

@@ -41,6 +41,8 @@ describe('routes', () => {
     phoneNumber,
     admins,
   }
+  const captchaToken =
+    '03AOLTBLR84zMWX9mh1gHaFZJwLYflPh0Bsi3_oYwsxJ9bTt_dV9mcmOMmhHZ19E_4waszAMc7EmPM7IfGSJc4471E45JLXgr2YjRlp36k7_AU5t8ww1IOrZid8hl9fqMs9FNIWx9IUj'
 
   let api
   before(async () => (api = await run(200)))
@@ -313,9 +315,9 @@ describe('routes', () => {
         await request(api.server)
           .post('/phoneNumbers/register')
           .set('Token', authToken)
-          .send({ phoneNumber })
+          .send({ phoneNumber, captchaToken })
 
-        expect(registerStub.getCall(0).args).to.eql([phoneNumber])
+        expect(registerStub.getCall(0).args).to.eql([phoneNumber, captchaToken])
       })
     })
     describe('when registration succeeds', () => {
