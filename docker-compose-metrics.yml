@@ -6,7 +6,6 @@ volumes:
   loki_data:
   certs:
   html:
-  vhost.d:
 
 services:
   prometheus:
