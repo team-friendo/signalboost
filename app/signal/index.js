@@ -99,9 +99,13 @@ const run = async () => {
  * SIGNALD COMMANDS
  ********************/
 
-// string -> Promise<SignalboostStatus>
-const register = async phoneNumber => {
-  socketWriter.write({ type: messageTypes.REGISTER, username: phoneNumber })
+// (string, string || null) -> Promise<SignalboostStatus>
+const register = async (phoneNumber, captchaToken) => {
+  socketWriter.write({
+    type: messageTypes.REGISTER,
+    username: phoneNumber,
+    ...(captchaToken ? { captcha: captchaToken } : {}),
+  })
   // Since a registration isn't meaningful without a verification code,
   // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
   // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below

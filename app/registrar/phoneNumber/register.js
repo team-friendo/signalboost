@@ -57,9 +57,10 @@ const registerAllUnregistered = async () => {
   return registerMany(unregisteredPhoneNumbers)
 }
 
-const register = phoneNumber =>
+// (string, string) => Promise<SignalboostStatus>
+const register = (phoneNumber, captchaToken) =>
   signal
-    .register(phoneNumber)
+    .register(phoneNumber, captchaToken)
     .then(() => recordStatusChange(phoneNumber, pnStatuses.VERIFIED))
     .catch(err => {
       logger.error(err)
