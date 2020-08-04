@@ -50,6 +50,15 @@ const routesOf = async router => {
     merge(ctx, { status: httpStatusOfMany(phoneNumberStatuses), body: phoneNumberStatuses })
   })
 
+  router.post('/phoneNumbers/register', async ctx => {
+    const { phoneNumber } = ctx.request.body
+    const { status, error } = await phoneNumberService.register(phoneNumber)
+    merge(ctx, {
+      status: httpStatusOf(status),
+      body: { status, phoneNumber, ...(error ? { error } : {}) },
+    })
+  })
+
   router.delete('/phoneNumbers', async ctx => {
     const { phoneNumber } = ctx.request.body
     const result = await phoneNumberService.destroy({
