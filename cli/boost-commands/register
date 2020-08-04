@@ -4,6 +4,7 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command registers a purchased twilio phone number with signal. valid options are:"
   echo ""
   echo "-p : phone number of channel to activate";
+  echo "-c : captcha token, get one at: https://signalcaptchas.org/registration/generate.html"
   echo "-e : path to .env file (in dev, use .env.dev)";
   echo ""
   exit 1
@@ -12,10 +13,13 @@ fi
 pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 
-while getopts ":p:e:" opt; do
+while getopts ":p:c:e:" opt; do
   case "$opt" in
     p)
       phone_number="$OPTARG"
+      ;;
+    c)
+      captcha_token="$OPTARG"
       ;;
     e)
       env_file="$OPTARG"
@@ -37,7 +41,7 @@ echo "--- registering ${phone_number} with signal at url ${SIGNALBOOST_HOST_URL}
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\" }" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"captchaToken\": \"$captcha_token\" }" \
      https://${SIGNALBOOST_HOST_URL}/phoneNumbers/register | jq
 
 popd > /dev/null # return to starting directory

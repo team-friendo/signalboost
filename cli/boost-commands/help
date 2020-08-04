@@ -30,8 +30,9 @@ boost cli supports the following commands:
   recycle -p <phone_numbers> -e <path to .env file>
     - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
  
-  register -p <phone_numbers> -e <path to .env file>
-    - registers an already-purchased twilio number with signal on signalboost instance specified in .env file
+  register -p <phone_numbers> -c <captcha_token> -e <path to .env file>
+    - registers a purchased twilio number with signal on signalboost instance specified in .env file
+    - optionally, user may supply a captcha token obtained at: https://signalcaptchas.org/registration/generate.html
 
 for more detailed instructions on any command, run:
 
