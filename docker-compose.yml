@@ -109,8 +109,8 @@ services:
     restart: unless-stopped
     volumes:
       - certs:/etc/nginx/certs
-      - vhost.d:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - proxy-tier

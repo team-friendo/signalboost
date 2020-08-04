@@ -72,8 +72,8 @@ services:
       com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
     volumes:
       - certs:/etc/nginx/certs:ro
-      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
       - html:/usr/share/nginx/html
+      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
     restart: unless-stopped
 
@@ -83,8 +83,8 @@ services:
     restart: unless-stopped
     volumes:
       - certs:/etc/nginx/certs
-      - ./nginx/vhost.d:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - proxy
