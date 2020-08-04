@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+  echo "this command registers a purchased twilio phone number with signal. valid options are:"
+  echo ""
+  echo "-p : phone number of channel to activate";
+  echo "-e : path to .env file (in dev, use .env.dev)";
+  echo ""
+  exit 1
+fi
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+
+while getopts ":p:e:" opt; do
+  case "$opt" in
+    p)
+      phone_number="$OPTARG"
+      ;;
+    e)
+      env_file="$OPTARG"
+      ;;
+  esac
+done
+
+# check env vars are properly defined
+source ./_check-env
+check-env ${env_file}
+
+if [[ ! $phone_number =~ ^\+[0-9]{9,15}$ ]];then
+  echo "> ERROR: -p must be a valid phone number prefixed by a country code"
+  exit 1
+fi
+
+echo "--- registering ${phone_number} with signal at url ${SIGNALBOOST_HOST_URL}"
+
+curl -s -X POST \
+     -H "Content-Type: application/json" \
+     -H "Token: $SIGNALBOOST_API_TOKEN" \
+     -d "{ \"phoneNumber\": \"$phone_number\" }" \
+     https://${SIGNALBOOST_HOST_URL}/phoneNumbers/register | jq
+
+popd > /dev/null # return to starting directory

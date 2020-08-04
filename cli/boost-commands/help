@@ -29,6 +29,9 @@ boost cli supports the following commands:
 
   recycle -p <phone_numbers> -e <path to .env file>
     - recycles phone numbers for use creating new channels on signalboost instance specified in .env file
+ 
+  register -p <phone_numbers> -e <path to .env file>
+    - registers an already-purchased twilio number with signal on signalboost instance specified in .env file
 
 for more detailed instructions on any command, run:
 
