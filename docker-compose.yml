@@ -40,7 +40,7 @@ services:
       SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
     expose:
-      ${SIGNALD_PORT}
+      - ${SIGNALD_PORT}
     ports:
       - 9010:9010
     networks:
