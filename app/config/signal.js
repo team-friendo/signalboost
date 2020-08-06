@@ -12,7 +12,7 @@ const defaults = {
   poolSize: 50,
   registrationBatchSize: 4,
   setExpiryInterval: 2000, // 2 sec
-  signaldRequestTimeout: 20 * 1000, // 20 sec
+  signaldRequestTimeout: 30 * 1000, // 30 sec
   signaldSendTimeout: 1000 * 60 * 60, // 1 hr
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
