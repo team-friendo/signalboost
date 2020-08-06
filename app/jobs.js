@@ -7,9 +7,11 @@ const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const run = async () => {
   logger.log('--- Running startup jobs...')
 
-  logger.log('----- Registering phone numbers...')
-  const regs = await phoneNumberRegistrar.registerAllUnregistered().catch(logger.error)
-  logger.log(`----- Registered ${regs.length} phone numbers.`)
+  if (process.env.REREGISTER_ON_STARTUP === '1') {
+    logger.log('----- Registering phone numbers...')
+    const regs = await phoneNumberRegistrar.registerAllUnregistered().catch(logger.error)
+    logger.log(`----- Registered ${regs.length} phone numbers.`)
+  }
 
   logger.log('----- Deleting expired sms sender records...')
   // here we rely on fact of nightly backups to ensure this task runs once every 24 hr.

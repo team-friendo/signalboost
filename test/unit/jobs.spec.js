@@ -11,6 +11,7 @@ describe('jobs service', () => {
   let registerAllStub, inviteDeletionStub, smsSenderDeletionStub, hotlineMessageDeletionStub
 
   describe('running the service', () => {
+    let originalReregisterValue = process.env.REREGISTER_ON_STARTUP
     before(async () => {
       registerAllStub = sinon
         .stub(phoneNumberRegistrar, 'registerAllUnregistered')
@@ -18,10 +19,12 @@ describe('jobs service', () => {
       inviteDeletionStub = sinon.stub(inviteRepository, 'launchInviteDeletionJob')
       smsSenderDeletionStub = sinon.stub(smsSenderRepository, 'deleteExpired')
       hotlineMessageDeletionStub = sinon.stub(hotlineMessageRepository, 'deleteExpired')
+      process.env.REREGISTER_ON_STARTUP = '1'
       await registrar.run()
     })
 
     after(() => {
+      process.env.REREGISTER_ON_STARTUP = originalReregisterValue
       sinon.restore()
     })
 

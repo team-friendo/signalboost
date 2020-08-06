@@ -70,6 +70,7 @@ services:
       PROJECT_ROOT: ${PWD}
       NODE_ENV: ${NODE_ENV:-development}
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
     expose:
       - ${SIGNALBOOST_PORT}
     networks:
