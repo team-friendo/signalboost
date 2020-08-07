@@ -6,7 +6,7 @@
   vars:
     homedir: /srv/signalboost
     env_file: "files/.env"
-    secrets_method: copy
+    secrets_method: blackbox
 
   tasks:
 

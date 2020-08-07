@@ -72,6 +72,8 @@ ansible.backup: # backup the app from prod to sb_backup host
 ansible.restore: # restore from backup on sb_backup host to prod
 	cd ansible && ansible-playbook -i inventory playbooks/restore.yml
 
+ansible.restart: # restart prod
+	cd ansible && ansible-playbook -i inventory playbooks/restart.yml
 
 #######################
 # db-related commands #
