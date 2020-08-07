@@ -18,5 +18,14 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 25   6  *  *  *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
 47   6  *  *  7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
 52   6  1  *  *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
-0    9  *  *  *   root    /srv/signalboost/bin/backup > /tmp/backup.log 2>&1
-#    ^-- backup every morning at 9am UTC, store logs in /tmp
+
+# ----------------------------------------------------------------------------------------------
+# signalboost jobs
+# --------------------------------------------------------------------------------------------
+
+# backup every morning at 5:30am, store logs in /tmp
+30   5  *  *  *   root    /srv/signalboost/bin/backup > /tmp/backup.log 2>&1
+
+# restart every hour
+0    *  *  *  *   root    /srv/signalboost/bin/restart > /tmp/backup.log 2>&1
+
