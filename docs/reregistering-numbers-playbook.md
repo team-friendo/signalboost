@@ -18,14 +18,13 @@ Get to project root as sudo:
 ``` shell
 sudo su
 cd /srv/signalboost
-docker-compose down && rm -rf /var/lib/docker/volumes/signalboost_signal_data/_data/++19478005717*  && docker-compose --env-file .env up -d
 ```
 Shut down signalboost, delete the keystore and message caches for `PHONE_NUMBER` (replacing `PHONE_NUMBER` with an appropriately formated e164 phone number) and restart signalboost:
 
 ``` shell
 
 docker-compose down && \
-rm -rf /var/lib/docker/volumes/signalboost_signal_data/_data/PHNOE_NUMBER*  \
+rm -rf /var/lib/docker/volumes/signalboost_signal_data/_data/+19478005717*  \
 && docker-compose --env-file .env up -d
 ```
 Note: if you want to do this for multiple numbers at the same time, replace line 2 above with several `rm -rf` statements.
