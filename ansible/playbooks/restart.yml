@@ -1,0 +1,35 @@
+---
+- name: Restart signalboost and all dependent services
+  become: true
+  hosts: signalboost
+
+  vars:
+    homedir: /srv/signalboost
+    env_file: "files/.env"
+    secrets_method: blackbox
+
+  tasks:
+
+    - name: Deploy environment file using blackbox
+      command: ./bin/blackbox/postdeploy
+      args:
+        chdir: "{{ homedir }}"
+      tags: secrets
+      when: secrets_method == "blackbox"
+
+    - name: Deploy environment file by copying local file
+      copy:
+        src: "{{ env_file }}"
+        dest: "{{ homedir }}/.env"
+      tags: secrets
+      when: secrets_method == "copy"
+
+    - name: Spin down
+      command: docker-compose down
+      args:
+        chdir: "{{ homedir }}"
+
+    - name: Spin up
+      command: docker-compose --env-file .env up -d
+      args:
+        chdir: "{{ homedir }}"
