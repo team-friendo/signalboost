@@ -3,6 +3,8 @@ const defaults = {
   broadcastBatchSize: 1,
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
+  healtcheckInterval: 1000 * 60 * 15, // 15 min
+  healthcheckTimeout: 1000 * 60 * 15, // 15 min
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
@@ -11,8 +13,9 @@ const defaults = {
   minResendInterval: 60 * 1000, // 1 min
   registrationBatchSize: 4,
   setExpiryInterval: 2000, // 2 sec
-  signaldRequestTimeout: 30 * 1000, // 30 sec
-  signaldSendTimeout: 1000 * 60 * 60, // 1 hr
+  signaldRequestTimeout: 1000 * 10, // 10 sec
+  signaldVerifyTimeout: 1000 * 30, // 30 sec
+  signaldSendTimeout: 1000 * 60 * 60, // 60 min
   signaldStartupTime: 1000 * 60 * 5, // 5 minutes
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
   diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(`"`, ''),
@@ -24,14 +27,17 @@ const test = {
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
   expiryUpdateDelay: 1, // 1 milli
+  healthcheckInterval: 5, // 5 milli
+  healthcheckTimeout: 5, // 5 milli
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // 20 millis
   setExpiryInterval: 1, // 1 milli
-  signaldSendTimeout: 200, // 200 millis
-  signaldRequestTimeout: 100, // 100 millis
+  signaldSendTimeout: 150, // 150 millis
+  signaldRequestTimeout: 50, // 50 millis
+  signaldVerifyTimeout: 100, // 100 millis
   signaldStartupTime: 1, // 1 milli
   supportPhoneNumber: '+15555555555',
   welcomeDelay: 0.0001, // .0001 millis

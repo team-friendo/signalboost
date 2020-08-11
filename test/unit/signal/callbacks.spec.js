@@ -12,7 +12,7 @@ import { outboundAttachmentFactory } from '../../support/factories/sdMessage'
 import { sdMessageOf } from '../../../app/signal/constants'
 import moment from 'moment'
 const {
-  signal: { signaldRequestTimeout, signaldSendTimeout },
+  signal: { diagnosticsPhoneNumber, healthcheckTimeout, signaldRequestTimeout, signaldSendTimeout, signaldVerifyTimeout },
 } = require('../../../app/config')
 
 describe('callback registry', () => {
@@ -24,6 +24,11 @@ describe('callback registry', () => {
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53'
   const messageBody = '[foo]\nbar'
   const id = util.genUuid()
+  const oneMinuteAgoInMillis = new Date(
+    moment()
+      .subtract(1, 'minute')
+      .toISOString(),
+  ).getTime()
 
   let resolveStub, rejectStub, noopStub
   beforeEach(() => {
@@ -87,7 +92,7 @@ describe('callback registry', () => {
           resolve: resolveStub,
           reject: rejectStub,
         })
-        await util.wait(signaldRequestTimeout)
+        await util.wait(signaldVerifyTimeout)
         expect(rejectStub.callCount).to.eql(1)
         expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql(undefined)
       })
@@ -97,13 +102,13 @@ describe('callback registry', () => {
         callbacks.register({
           id,
           messageType: messageTypes.SEND,
-          state: { channelPhoneNumber, messageBody, attachments },
+          state: { channelPhoneNumber, messageBody, attachments, whenSent: oneMinuteAgoInMillis },
         })
         expect(callbacks.registry[`${messageTypes.SEND}-${id}`]).to.eql({
           callback: callbacks._handleSendResponse,
           resolve: undefined,
           reject: undefined,
-          state: { channelPhoneNumber, messageBody, attachments },
+          state: { channelPhoneNumber, messageBody, attachments, whenSent: oneMinuteAgoInMillis },
         })
       })
       it('deletes the handler after a timeout', async () => {
@@ -114,6 +119,36 @@ describe('callback registry', () => {
         })
         await util.wait(signaldSendTimeout)
         expect(callbacks.registry[`${messageTypes.SEND}-${id}`]).to.eql(undefined)
+      })
+    })
+
+    describe('for a HEALTHCHECK', () => {
+      it('registers a HEALTHCHECK response handler', () => {
+        callbacks.register({
+          messageType: messageTypes.HEALTHCHECK,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: { whenSent: oneMinuteAgoInMillis },
+        })
+        expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql({
+          callback: callbacks._handleHealthcheckResponse,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: { whenSent: oneMinuteAgoInMillis },
+        })
+      })
+
+      it('deletes the handler after a timeout', async () => {
+        callbacks.register({
+          messageType: messageTypes.HEALTHCHECK,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: { whenSent: oneMinuteAgoInMillis },
+        })
+        await util.wait(healthcheckTimeout)
+        expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
       })
     })
   })
@@ -206,11 +241,7 @@ describe('callback registry', () => {
     })
 
     describe('a SEND response', () => {
-      const whenSent = new Date(
-        moment()
-          .subtract(1, 'hour')
-          .toISOString(),
-      ).getTime()
+      const whenSent = oneMinuteAgoInMillis
       const whenReceived = new Date().getTime()
       const state = { channelPhoneNumber, messageBody, attachments, whenSent }
 
@@ -280,6 +311,47 @@ describe('callback registry', () => {
             },
           ])
         })
+      })
+    })
+
+    describe('a HEALTHCHECK response', () => {
+      const healthcheckResponse = {
+        id,
+        type: messageTypes.MESSAGE,
+        data: {
+          username: diagnosticsPhoneNumber,
+          source: {
+            number: channelPhoneNumber,
+          },
+          dataMesssage: {
+            timestamp: new Date().toISOString(),
+            body: `${messageTypes.HEALTHCHECK} ${id}`,
+            expiresInSeconds: 0,
+            attachments: [],
+          },
+        },
+      }
+      const nowInMillis = new Date().getTime()
+
+      beforeEach(() => {
+        sinon.stub(util, 'nowInMillis').returns(nowInMillis)
+        callbacks.register({
+          messageType: messageTypes.HEALTHCHECK,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: { whenSent: oneMinuteAgoInMillis },
+        })
+      })
+
+      it('resolves a promise with the healthcheck response time', () => {
+        callbacks.handle(healthcheckResponse)
+        expect(resolveStub.getCall(0).args).to.eql([nowInMillis - oneMinuteAgoInMillis])
+      })
+
+      it('deletes the registry entry', () => {
+        callbacks.handle(healthcheckResponse)
+        expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
       })
     })
   })
