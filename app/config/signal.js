@@ -27,17 +27,17 @@ const test = {
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
   expiryUpdateDelay: 1, // 1 milli
-  healthcheckInterval: 5, // 5 milli
-  healthcheckTimeout: 5, // 5 milli
+  healthcheckInterval: 30, // 50 milli
+  healthcheckTimeout: 30, // 50 milli
   intervalBetweenRegistrationBatches: 30, // 100 millis
   intervalBetweenRegistrations: 5, // 10 millis,
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // 20 millis
   setExpiryInterval: 1, // 1 milli
-  signaldSendTimeout: 150, // 150 millis
-  signaldRequestTimeout: 50, // 50 millis
-  signaldVerifyTimeout: 100, // 100 millis
+  signaldSendTimeout: 40, // 100 millis
+  signaldRequestTimeout: 10, // 20 millis
+  signaldVerifyTimeout: 20, // 40 millis
   signaldStartupTime: 1, // 1 milli
   supportPhoneNumber: '+15555555555',
   welcomeDelay: 0.0001, // .0001 millis

@@ -10,9 +10,14 @@ import metrics from '../../../app/metrics'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import { outboundAttachmentFactory } from '../../support/factories/sdMessage'
 import { sdMessageOf } from '../../../app/signal/constants'
-import moment from 'moment'
 const {
-  signal: { diagnosticsPhoneNumber, healthcheckTimeout, signaldRequestTimeout, signaldSendTimeout, signaldVerifyTimeout },
+  signal: {
+    diagnosticsPhoneNumber,
+    healthcheckTimeout,
+    signaldRequestTimeout,
+    signaldSendTimeout,
+    signaldVerifyTimeout,
+  },
 } = require('../../../app/config')
 
 describe('callback registry', () => {
@@ -24,11 +29,7 @@ describe('callback registry', () => {
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53'
   const messageBody = '[foo]\nbar'
   const id = util.genUuid()
-  const oneMinuteAgoInMillis = new Date(
-    moment()
-      .subtract(1, 'minute')
-      .toISOString(),
-  ).getTime()
+  const oneMinuteAgoInMillis = new Date().getTime() - 1000 * 60
 
   let resolveStub, rejectStub, noopStub
   beforeEach(() => {
