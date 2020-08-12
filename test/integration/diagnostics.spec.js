@@ -62,24 +62,26 @@ describe('diagnostics jobs', () => {
     })
 
     it('sends a healthcheck to all channels from the diagnostic channel', () => {
-      channels.forEach((channel, idx) =>
-        expect(writeStub.getCall(idx).args[0]).to.eql({
+      const messages = times(channels.length, n => writeStub.getCall(n).args[0])
+      expect(messages).to.have.deep.members(
+        channels.map((channel, idx) => ({
           messageBody: `healthcheck ${uuids[idx]}`,
           recipientAddress: { number: channels[idx].phoneNumber },
           type: messageTypes.SEND,
           username: diagnosticsPhoneNumber,
-        }),
+        })),
       )
     })
 
     it('gets a response from every channel', async () => {
-      channels.forEach((channel, idx) =>
-        expect(writeStub.getCall(idx + channels.length).args[0]).to.eql({
+      const messages = times(channels.length, n => writeStub.getCall(n + channels.length).args[0])
+      expect(messages).to.have.deep.members(
+        channels.map((channel, idx) => ({
           messageBody: `healthcheck_response ${uuids[idx]}`,
           recipientAddress: { number: diagnosticsPhoneNumber },
           type: messageTypes.SEND,
           username: channels[idx].phoneNumber,
-        }),
+        })),
       )
     })
   })
