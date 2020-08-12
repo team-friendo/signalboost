@@ -302,6 +302,16 @@ describe('signal module', () => {
         })
       })
 
+      describe('when no verification message is emitted before the timeout threshold', () => {
+        beforeEach(async () => {
+          result = await signal.register(channelPhoneNumber).catch(a => a)
+        })
+
+        it('rejects with a timeout error', async () => {
+          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.VERIFY))
+        })
+      })
+
       describe('when a verification failure message for the listening channel is emitted', () => {
         beforeEach(async () => {
           wait(5).then(() => emit(verifyErrorResponse))
@@ -312,16 +322,6 @@ describe('signal module', () => {
           expect(result.message).to.eql(
             callbacks.messages.verification.error(channelPhoneNumber, 'Captcha required: 402'),
           )
-        })
-      })
-
-      describe('when no verification message is emitted before the timeout threshold', () => {
-        beforeEach(async () => {
-          result = await signal.register(channelPhoneNumber).catch(a => a)
-        })
-
-        it('rejects with a timeout error', async () => {
-          expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.VERIFY))
         })
       })
 
