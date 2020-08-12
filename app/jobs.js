@@ -3,6 +3,7 @@ const phoneNumberRegistrar = require('./registrar/phoneNumber')
 const inviteRepository = require('./db/repositories/invite')
 const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
+const diagnostics = require('./diagnostics')
 
 const run = async () => {
   logger.log('--- Running startup jobs...')
@@ -26,6 +27,10 @@ const run = async () => {
   logger.log('----- Launching data cleaning jobs...')
   inviteRepository.launchInviteDeletionJob()
   logger.log('----- Launched data cleaning jobs.')
+
+  logger.log('---- Launching healthcheck job...')
+  diagnostics.launchHealthcheckJob()
+  logger.log('---- Launched healthcheck job...')
 
   logger.log('--- Startup jobs complete!')
 }

@@ -5,6 +5,9 @@ const { pick, isEmpty } = require('lodash')
 const { messages, messageTypes, trustLevels } = require('./constants')
 const util = require('../util')
 const { statuses, loggerOf } = util
+const {
+  signal: { diagnosticsPhoneNumber },
+} = require('../config')
 
 /**
  *
@@ -56,7 +59,7 @@ const { statuses, loggerOf } = util
  * type OutboundSignaldMessage = {
  *   type: "send",
  *   username: string,
- *   recipientNumber, ?string, (must include either recipientId or recipientGroupId)
+ *   recipientAddress, ?Address, (must include either recipientId or recipientGroupId)
  *   recipientGroupId: ?string,
  *   messageBody: string,
  *   attachments: Array<OutAttachment>,
@@ -93,6 +96,39 @@ const run = async () => {
   const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
   const numListening = await Promise.all(channels.map(ch => subscribe(ch.phoneNumber)))
   logger.log(`--- Subscribed to ${numListening.length} / ${channels.length} channels!`)
+}
+
+/******************
+ * HEALTHCHECK
+ ******************/
+
+// string -> Promise<number>
+const healthcheck = async channelPhoneNumber => {
+  // - sends a message from the diagnostics channel to a user channel to see if the user channel is alive.
+  //   message is in the form: `healthcheck <uuid>`
+  // - the user channel signals aliveness in `dispatcher.command.execute` by echoing
+  //   the message back to the diagnostics channel and including the healtcheck uuid as the
+  //   id field of the command response. this allows the response to be identified by the
+  //   callback handlers in `signal.callbacks` and passed to `_handleHealtcheckResposne`
+  // - this function itself resolves a promise with either:
+  //   (1) the response time (in seconds) of the healthcheck
+  ///  (2) -1 if the the healthcheck timed out
+  const id = util.genUuid()
+  socketWriter.write({
+    type: messageTypes.SEND,
+    username: diagnosticsPhoneNumber,
+    messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
+    recipientAddress: { number: channelPhoneNumber },
+  })
+  return new Promise((resolve, reject) =>
+    callbacks.register({
+      messageType: messageTypes.HEALTHCHECK,
+      id,
+      resolve,
+      reject,
+      state: { whenSent: util.nowInMillis() },
+    }),
+  ).catch(() => -1) // represent a time-out as a negative response time
 }
 
 /********************
@@ -233,6 +269,7 @@ module.exports = {
   messageTypes,
   trustLevels,
   broadcastMessage,
+  healthcheck,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,

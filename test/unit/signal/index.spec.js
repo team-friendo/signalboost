@@ -12,32 +12,50 @@ import signal, {
 import socket from '../../../app/socket/write'
 import util from '../../../app/util'
 import metrics from '../../../app/metrics'
+import channelRepository from '../../../app/db/repositories/channel'
+import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
+import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
+import app from '../../../app'
+import testApp from '../../support/testApp'
 import {
   inboundAttachmentFactory,
   outboundAttachmentFactory,
 } from '../../support/factories/sdMessage'
-import app from '../../../app'
-import testApp from '../../support/testApp'
+import { channelFactory } from '../../support/factories/channel'
+const {
+  signal: { diagnosticsPhoneNumber },
+} = require('../../../app/config')
 
 describe('signal module', () => {
-  describe('sending signald commands', () => {
-    const channelPhoneNumber = genPhoneNumber()
-    const subscriberNumber = genPhoneNumber()
-    const fingerprint = genFingerprint()
-    let writeStub
+  const channelPhoneNumber = genPhoneNumber()
+  const channel = channelFactory({ phoneNumber: channelPhoneNumber })
+  const subscriberNumber = genPhoneNumber()
+  const fingerprint = genFingerprint()
+  let writeStub
 
-    const emit = async msg => {
-      const sock = await app.socketPool.acquire()
-      sock.emit('data', JSON.stringify(msg) + '\n')
-      app.socketPool.release(sock)
-    }
-    const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
+  const emit = async msg => {
+    const sock = await app.socketPool.acquire()
+    sock.emit('data', JSON.stringify(msg) + '\n')
+    app.socketPool.release(sock)
+  }
+  const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
-    before(async () => await app.run({ ...testApp, signal }))
-    beforeEach(async () => (writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())))
-    afterEach(async () => sinon.restore())
+  describe('sending signald messages', () => {
+    before(async () => {
+      await app.run({ ...testApp, signal })
+    })
+    beforeEach(async () => {
+      writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
+      sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
+      sinon.stub(membershipRepository, 'resolveMemberType').returns(memberTypes.NONE)
+      sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(memberTypes.NONE)
+      sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
+    })
+    afterEach(async () => {
+      sinon.restore()
+    })
     after(async () => {
       await wait(10)
       await app.stop()
@@ -58,6 +76,50 @@ describe('signal module', () => {
       expect(writeStub.getCall(0).args[0]).to.eql({
         type: 'unsubscribe',
         username: channelPhoneNumber,
+      })
+    })
+
+    describe('sending a healthcheck', () => {
+      const id = util.genUuid()
+      const nowInMillis = new Date().getTime()
+      const oneMinuteInMillis = 1000 * 60
+      const oneMinuteAgoInMillis = nowInMillis - oneMinuteInMillis
+      const healthcheckResponse = {
+        type: messageTypes.MESSAGE,
+        data: {
+          username: diagnosticsPhoneNumber,
+          source: {
+            number: channelPhoneNumber,
+          },
+          dataMessage: {
+            timestamp: new Date().toISOString(),
+            body: `${messageTypes.HEALTHCHECK_RESPONSE} ${id}`,
+            expiresInSeconds: 0,
+            attachments: [],
+          },
+        },
+      }
+
+      describe('when healthcheck receives a response', () => {
+        beforeEach(() => {
+          sinon.stub(util, 'genUuid').returns(id)
+          sinon
+            .stub(util, 'nowInMillis')
+            .onCall(0)
+            .returns(oneMinuteAgoInMillis)
+            .onCall(1)
+            .returns(nowInMillis)
+          emitWithDelay(5, healthcheckResponse)
+        })
+
+        it('returns the response time', async () => {
+          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(oneMinuteInMillis / 1000)
+        })
+      })
+      describe('when healthcheck times out', () => {
+        it('returns -1', async () => {
+          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(-1)
+        })
       })
     })
 
@@ -174,7 +236,7 @@ describe('signal module', () => {
         it('returns a success object', async () => {
           const promises = await Promise.all([
             signal.trust(channelPhoneNumber, subscriberNumber, fingerprint),
-            emitWithDelay(10, trustResponse),
+            emitWithDelay(5, trustResponse),
           ])
           const result = promises[0]
 
@@ -240,20 +302,6 @@ describe('signal module', () => {
         })
       })
 
-      describe('when a verification failure message for the listening channel is emitted', () => {
-        beforeEach(async () => {
-          wait(5).then(() => emit(verifyErrorResponse))
-          result = await signal.register(channelPhoneNumber).catch(a => a)
-        })
-
-        it('rejects with a failure error message', async () => {
-          expect(result).to.be.an('Error')
-          expect(result.message).to.eql(
-            callbacks.messages.verification.error(channelPhoneNumber, 'Captcha required: 402'),
-          )
-        })
-      })
-
       describe('when no verification message is emitted before the timeout threshold', () => {
         beforeEach(async () => {
           result = await signal.register(channelPhoneNumber).catch(a => a)
@@ -261,6 +309,19 @@ describe('signal module', () => {
 
         it('rejects with a timeout error', async () => {
           expect(result.message).to.eql(callbacks.messages.timeout(messageTypes.VERIFY))
+        })
+      })
+
+      describe('when a verification failure message for the listening channel is emitted', () => {
+        beforeEach(async () => {
+          wait(5).then(() => emit(verifyErrorResponse))
+          result = await signal.register(channelPhoneNumber).catch(a => a)
+        })
+
+        it('rejects with a failure error message', async () => {
+          expect(result.message).to.eql(
+            callbacks.messages.verification.error(channelPhoneNumber, 'Captcha required: 402'),
+          )
         })
       })
 

@@ -6,7 +6,7 @@ const util = require('../util')
 const { statuses } = util
 const { get } = require('lodash')
 const {
-  signal: { signaldRequestTimeout, signaldSendTimeout },
+  signal: { healthcheckTimeout, signaldRequestTimeout, signaldSendTimeout, signaldVerifyTimeout },
 } = require('../config')
 
 /**
@@ -54,7 +54,7 @@ const clear = () => Object.keys(registry).forEach(k => delete registry[k])
 // ({ messageType: SingaldMessageType, id: string, resolve: function, reject: function, state: object }) -> Promise<void>
 const register = async ({ messageType, id, resolve, reject, state }) => {
   registry[`${messageType}-${id}`] = { callback: _callbackFor(messageType), resolve, reject, state }
-  const timeout = messageType === messageTypes.SEND ? signaldSendTimeout : signaldRequestTimeout
+  const timeout = _timeoutFor(messageType)
   return util.wait(timeout).then(() => {
     // delete expired callbacks and reject their promise if not yet handled
     delete registry[`${messageType}-${id}`]
@@ -65,22 +65,34 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 // SignaldMessageType -> Callback
 const _callbackFor = messageType =>
   ({
+    [messageTypes.HEALTHCHECK]: _handleHealthcheckResponse,
     [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
+  }[messageType])
+
+// SignaldMessageType => number
+const _timeoutFor = messageType =>
+  ({
+    [messageTypes.HEALTHCHECK]: healthcheckTimeout,
+    [messageTypes.SEND]: signaldSendTimeout,
+    [messageTypes.TRUST]: signaldRequestTimeout,
+    [messageTypes.VERIFY]: signaldVerifyTimeout,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
 const handle = message => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
+    [messageTypes.MESSAGE]:
+      registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`],
+    [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
     [messageTypes.TRUSTED_FINGERPRINT]: registry[`${messageTypes.TRUST}-${message.id}`],
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${message.id}`],
-    [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
   }[message.type] || { callback: util.noop }
   callback({ message, resolve, reject, state })
 }
@@ -146,12 +158,26 @@ const _handleVerifyResponse = ({ message, resolve, reject }) => {
     })
 }
 
+// ({ message: IncomingSignaldMessage, resolve: function, state: CbState }) => void
+const _handleHealthcheckResponse = ({ message, resolve, state }) => {
+  delete registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`]
+  // convert millis to seconds
+  resolve((util.nowInMillis() - state.whenSent) / 1000)
+}
+
+// HELPERS
+const _parseHealthcheckResponseId = sdMessage =>
+  get(sdMessage, 'data.dataMessage.body', '')
+    .replace(messageTypes.HEALTHCHECK_RESPONSE, '')
+    .trim()
+
 module.exports = {
   messages,
   registry,
   clear,
   handle,
   register,
+  _handleHealthcheckResponse,
   _handleSendResponse,
   _handleTrustResponse,
   _handleVerifyResponse,
