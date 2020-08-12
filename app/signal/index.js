@@ -5,7 +5,9 @@ const { pick, isEmpty } = require('lodash')
 const { messages, messageTypes, trustLevels } = require('./constants')
 const util = require('../util')
 const { statuses, loggerOf } = util
-const { diagnosticPhoneNumber } = require('../config/signal')
+const {
+  signal: { diagnosticsPhoneNumber },
+} = require('../config')
 
 /**
  *
@@ -57,7 +59,7 @@ const { diagnosticPhoneNumber } = require('../config/signal')
  * type OutboundSignaldMessage = {
  *   type: "send",
  *   username: string,
- *   recipientNumber, ?string, (must include either recipientId or recipientGroupId)
+ *   recipientAddress, ?Address, (must include either recipientId or recipientGroupId)
  *   recipientGroupId: ?string,
  *   messageBody: string,
  *   attachments: Array<OutAttachment>,
@@ -109,14 +111,14 @@ const healthcheck = async channelPhoneNumber => {
   //   id field of the command response. this allows the response to be identified by the
   //   callback handlers in `signal.callbacks` and passed to `_handleHealtcheckResposne`
   // - this function itself resolves a promise with either:
-  //   (1) the response time (in millis) of the healthcheck
+  //   (1) the response time (in seconds) of the healthcheck
   ///  (2) -1 if the the healthcheck timed out
   const id = util.genUuid()
   socketWriter.write({
     type: messageTypes.SEND,
-    username: diagnosticPhoneNumber,
+    username: diagnosticsPhoneNumber,
     messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
-    recipient: { number: channelPhoneNumber },
+    recipientAddress: { number: channelPhoneNumber },
   })
   return new Promise((resolve, reject) =>
     callbacks.register({

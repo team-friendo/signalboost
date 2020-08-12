@@ -3,6 +3,7 @@ const callbacks = require('../signal/callbacks')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const safetyNumbers = require('../registrar/safetyNumbers')
+const diagnostics = require('../diagnostics')
 const { memberTypes } = membershipRepository
 const executor = require('./commands')
 const messenger = require('./messenger')
@@ -13,7 +14,10 @@ const { get, isEmpty, isNumber } = require('lodash')
 const metrics = require('../metrics')
 const { counters, errorTypes } = metrics
 const { emphasize, redact } = require('../util')
-const { defaultLanguage } = require('../config')
+const {
+  defaultLanguage,
+  signal: { diagnosticsPhoneNumber },
+} = require('../config')
 
 /**
  * type Dispatchable = {
@@ -71,24 +75,15 @@ const dispatch = async msg => {
   // detect and handle callbacks if any
   callbacks.handle(inboundMsg)
 
-  // dispatch system-created messages
+  // detect system-created messages, handle them, and return early
+  const healthcheckId = detectHealthcheck(inboundMsg)
+  if (healthcheckId) return diagnostics.respondToHealthcheck(channelPhoneNumber, healthcheckId)
+
+  const isHealthcheckResponse = detectHealthcheckResponse(inboundMsg)
+  if (isHealthcheckResponse) return Promise.resolve()
+
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
-  if (rateLimitedMessage) {
-    // TODO(aguestuser|2020-07-08): extract a `handleRateLimitedMessage` helper here?
-    const _channelPhoneNumber = rateLimitedMessage.username
-    const resendInterval = resend.enqueueResend(rateLimitedMessage)
-    logger.log(
-      messagesIn(defaultLanguage).notifications.rateLimitOccurred(
-        _channelPhoneNumber,
-        resendInterval,
-      ),
-    )
-    metrics.incrementCounter(counters.ERRORS, [
-      resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
-      _channelPhoneNumber,
-    ])
-    return Promise.resolve()
-  }
+  if (rateLimitedMessage) return logAndResendRateLimitedMessage(rateLimitedMessage)
 
   const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return safetyNumbers.updateFingerprint(updatableFingerprint)
@@ -112,6 +107,22 @@ const relay = async (channel, sender, inboundMsg) => {
   } catch (e) {
     logger.error(e)
   }
+}
+
+// InboundSdMessage => void
+const logAndResendRateLimitedMessage = rateLimitedMessage => {
+  const _channelPhoneNumber = rateLimitedMessage.username
+  const resendInterval = resend.enqueueResend(rateLimitedMessage)
+  logger.log(
+    messagesIn(defaultLanguage).notifications.rateLimitOccurred(
+      _channelPhoneNumber,
+      resendInterval,
+    ),
+  )
+  metrics.incrementCounter(counters.ERRORS, [
+    resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
+    _channelPhoneNumber,
+  ])
 }
 
 // (Database, Socket, Channel, number) -> Promise<void>
@@ -159,6 +170,25 @@ const _isMessage = inboundMsg =>
 const _isEmpty = inboundMsg =>
   get(inboundMsg, 'data.dataMessage.body', '') === '' &&
   isEmpty(get(inboundMsg, 'data.dataMessage.attachments', []))
+
+// InboundSingaldMessage => string | null
+const detectHealthcheck = inboundMsg =>
+  // determines if message is an inbound healtcheck; if so, returns its id; if not, returns null
+  diagnosticsPhoneNumber &&
+  get(inboundMsg, 'data.source.number') === diagnosticsPhoneNumber &&
+  get(inboundMsg, 'data.dataMessage.body', '').match(signal.messageTypes.HEALTHCHECK) &&
+  get(inboundMsg, 'data.dataMessage.body', '')
+    .replace(signal.messageTypes.HEALTHCHECK, '')
+    .trim()
+
+// InboundSingaldMessage => string | null
+const detectHealthcheckResponse = inboundMsg =>
+  // determines if message is an inbound healtcheck response (and thus should not be relayed)
+  Boolean(
+    diagnosticsPhoneNumber &&
+      get(inboundMsg, 'data.username') === diagnosticsPhoneNumber &&
+      get(inboundMsg, 'data.dataMessage.body', '').match(signal.messageTypes.HEALTHCHECK_RESPONSE),
+  )
 
 /** InboundSdMessage -> UpdatableFingerprint | null **/
 const detectUpdatableFingerprint = async inSdMessage => {

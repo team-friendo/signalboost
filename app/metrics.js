@@ -13,6 +13,10 @@ const _histograms = {
   MESSAGE_ROUNDTRIP: 'MESSAGE_ROUNDTRIP',
 }
 
+const _gauges = {
+  CHANNEL_HEALTH: 'CHANNEL_HEALTH',
+}
+
 const messageDirection = {
   INBOUND: 'inbound',
   OUTBOUND: 'outbound',
@@ -27,6 +31,7 @@ const run = () => {
   const register = new prometheus.Registry()
   prometheus.collectDefaultMetrics({ register })
   const c = _counters
+  const g = _gauges
   const h = _histograms
 
   const counters = {
@@ -58,6 +63,15 @@ const run = () => {
     }),
   }
 
+  const gauges = {
+    [g.CHANNEL_HEALTH]: new prometheus.Gauge({
+      name: 'channel_health',
+      help: 'Response time to health check message (0 indicates no response)',
+      registers: [register],
+      labelNames: ['channelPhoneNumber'],
+    }),
+  }
+
   const histograms = {
     [h.MESSAGE_ROUNDTRIP]: new prometheus.Histogram({
       name: 'message_roundtrip',
@@ -80,7 +94,7 @@ const run = () => {
     }),
   }
 
-  return { register, counters, histograms }
+  return { register, counters, gauges, histograms }
 }
 
 // (string, Array<string>) -> void
@@ -91,11 +105,17 @@ const incrementCounter = (counter, labels) =>
 const observeHistogram = (histogram, value, labels) =>
   app.metrics.histograms[histogram].labels(...labels.map(redact)).observe(value)
 
+// (string, number, Array<string>) -> void
+const setGauge = (gauge, value, labels) =>
+  app.metrics.gauges[gauge].labels(...labels.map(redact)).set(value)
+
 module.exports = {
   run,
   incrementCounter,
   observeHistogram,
+  setGauge,
   counters: _counters,
+  gauges: _gauges,
   histograms: _histograms,
   messageDirection,
   errorTypes,

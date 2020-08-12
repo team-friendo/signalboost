@@ -84,7 +84,8 @@ const _timeoutFor = messageType =>
 const handle = message => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
-    [messageTypes.MESSAGE]: registry[`${messageTypes.HEALTHCHECK}-${message.id}`],
+    [messageTypes.MESSAGE]:
+      registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`],
     [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
     [messageTypes.TRUSTED_FINGERPRINT]: registry[`${messageTypes.TRUST}-${message.id}`],
     [messageTypes.VERIFICATION_SUCCESS]:
@@ -159,9 +160,16 @@ const _handleVerifyResponse = ({ message, resolve, reject }) => {
 
 // ({ message: IncomingSignaldMessage, resolve: function, state: CbState }) => void
 const _handleHealthcheckResponse = ({ message, resolve, state }) => {
-  delete registry[`${messageTypes.HEALTHCHECK}-${message.id}`]
-  resolve(util.nowInMillis() - state.whenSent)
+  delete registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`]
+  // convert millis to seconds
+  resolve((util.nowInMillis() - state.whenSent) / 1000)
 }
+
+// HELPERS
+const _parseHealthcheckResponseId = sdMessage =>
+  get(sdMessage, 'data.dataMessage.body', '')
+    .replace(messageTypes.HEALTHCHECK_RESPONSE, '')
+    .trim()
 
 module.exports = {
   messages,

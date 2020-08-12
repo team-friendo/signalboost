@@ -12,20 +12,25 @@ import signal, {
 import socket from '../../../app/socket/write'
 import util from '../../../app/util'
 import metrics from '../../../app/metrics'
+import channelRepository from '../../../app/db/repositories/channel'
+import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
+import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
+import app from '../../../app'
+import testApp from '../../support/testApp'
 import {
   inboundAttachmentFactory,
   outboundAttachmentFactory,
 } from '../../support/factories/sdMessage'
-import app from '../../../app'
-import testApp from '../../support/testApp'
+import { channelFactory } from '../../support/factories/channel'
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../../../app/config')
 
 describe('signal module', () => {
   const channelPhoneNumber = genPhoneNumber()
+  const channel = channelFactory({ phoneNumber: channelPhoneNumber })
   const subscriberNumber = genPhoneNumber()
   const fingerprint = genFingerprint()
   let writeStub
@@ -38,9 +43,19 @@ describe('signal module', () => {
   const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
   describe('sending signald messages', () => {
-    before(async () => await app.run({ ...testApp, signal }))
-    beforeEach(async () => (writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())))
-    afterEach(async () => sinon.restore())
+    before(async () => {
+      await app.run({ ...testApp, signal })
+    })
+    beforeEach(async () => {
+      writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
+      sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
+      sinon.stub(membershipRepository, 'resolveMemberType').returns(memberTypes.NONE)
+      sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(memberTypes.NONE)
+      sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
+    })
+    afterEach(async () => {
+      sinon.restore()
+    })
     after(async () => {
       await wait(10)
       await app.stop()
@@ -70,16 +85,15 @@ describe('signal module', () => {
       const oneMinuteInMillis = 1000 * 60
       const oneMinuteAgoInMillis = nowInMillis - oneMinuteInMillis
       const healthcheckResponse = {
-        id,
         type: messageTypes.MESSAGE,
         data: {
           username: diagnosticsPhoneNumber,
           source: {
             number: channelPhoneNumber,
           },
-          dataMesssage: {
+          dataMessage: {
             timestamp: new Date().toISOString(),
-            body: `${messageTypes.HEALTHCHECK} ${id}`,
+            body: `${messageTypes.HEALTHCHECK_RESPONSE} ${id}`,
             expiresInSeconds: 0,
             attachments: [],
           },
@@ -99,7 +113,7 @@ describe('signal module', () => {
         })
 
         it('returns the response time', async () => {
-          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(oneMinuteInMillis)
+          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(oneMinuteInMillis / 1000)
         })
       })
       describe('when healthcheck times out', () => {

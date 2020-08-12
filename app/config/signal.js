@@ -41,10 +41,17 @@ const test = {
   signaldStartupTime: 1, // 1 milli
   supportPhoneNumber: '+15555555555',
   welcomeDelay: 0.0001, // .0001 millis
+  diagnosticsPhoneNumber: '+15554443333',
+}
+
+const development = {
+  ...defaults,
+  healtcheckInterval: 1000 * 60, // 60 sec
+  healthcheckTimeout: 1000 * 60, // 60 sec
 }
 
 module.exports = {
-  development: defaults,
+  development,
   test,
   production: defaults,
 }

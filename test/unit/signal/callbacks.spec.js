@@ -317,16 +317,15 @@ describe('callback registry', () => {
 
     describe('a HEALTHCHECK response', () => {
       const healthcheckResponse = {
-        id,
         type: messageTypes.MESSAGE,
         data: {
           username: diagnosticsPhoneNumber,
           source: {
             number: channelPhoneNumber,
           },
-          dataMesssage: {
+          dataMessage: {
             timestamp: new Date().toISOString(),
-            body: `${messageTypes.HEALTHCHECK} ${id}`,
+            body: `${messageTypes.HEALTHCHECK_RESPONSE} ${id}`,
             expiresInSeconds: 0,
             attachments: [],
           },
@@ -345,9 +344,9 @@ describe('callback registry', () => {
         })
       })
 
-      it('resolves a promise with the healthcheck response time', () => {
+      it('resolves a promise with the healthcheck response time in sec', async () => {
         callbacks.handle(healthcheckResponse)
-        expect(resolveStub.getCall(0).args).to.eql([nowInMillis - oneMinuteAgoInMillis])
+        expect(resolveStub.getCall(0).args).to.eql([(nowInMillis - oneMinuteAgoInMillis) / 1000])
       })
 
       it('deletes the registry entry', () => {
