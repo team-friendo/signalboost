@@ -309,7 +309,6 @@ describe('signal module', () => {
         })
 
         it('rejects with a failure error message', async () => {
-          expect(result).to.be.an('Error')
           expect(result.message).to.eql(
             callbacks.messages.verification.error(channelPhoneNumber, 'Captcha required: 402'),
           )
