@@ -6,7 +6,7 @@ const metrics = require('./metrics')
 const { zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
-  signal: { diagnosticsPhoneNumber, healtcheckInterval },
+  signal: { diagnosticsPhoneNumber, healtcheckInterval, signaldStartupTime },
 } = require('./config')
 
 const logger = util.loggerOf('diagnostics')
@@ -49,10 +49,10 @@ const respondToHealthcheck = (channelPhoneNumber, healthcheckId) =>
   )
 
 // () => Promise<void>
-const launchHealthcheckJob = () =>
-  diagnosticsPhoneNumber
-    ? util.repeatEvery(sendHealthchecks, healtcheckInterval)
-    : Promise.resolve()
+const launchHealthcheckJob = async () => {
+  await util.wait(signaldStartupTime)
+  return diagnosticsPhoneNumber && util.repeatEvery(sendHealthchecks, healtcheckInterval)
+}
 
 module.exports = {
   respondToHealthcheck,
