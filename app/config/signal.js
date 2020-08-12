@@ -26,21 +26,21 @@ const test = {
   ...defaults,
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
-  expiryUpdateDelay: 1, // 1 milli
-  healthcheckInterval: 30, // 50 milli
-  healthcheckTimeout: 30, // 50 milli
-  intervalBetweenRegistrationBatches: 30, // 100 millis
-  intervalBetweenRegistrations: 5, // 10 millis,
+  expiryUpdateDelay: 1, // millis
+  healthcheckInterval: 30, // millis
+  healthcheckTimeout: 30, // millis
+  intervalBetweenRegistrationBatches: 30, // millis
+  intervalBetweenRegistrations: 5, // millis,
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
-  minResendInterval: 2, // 20 millis
-  setExpiryInterval: 1, // 1 milli
-  signaldSendTimeout: 40, // 100 millis
-  signaldRequestTimeout: 10, // 20 millis
-  signaldVerifyTimeout: 20, // 40 millis
-  signaldStartupTime: 1, // 1 milli
+  minResendInterval: 2, // millis
+  setExpiryInterval: 1, // millis
+  signaldSendTimeout: 40, // millis
+  signaldRequestTimeout: 10, // millis
+  signaldVerifyTimeout: 20, // millis
+  signaldStartupTime: 1, //  millis
   supportPhoneNumber: '+15555555555',
-  welcomeDelay: 0.0001, // .0001 millis
+  welcomeDelay: 0.0001, // millis
   diagnosticsPhoneNumber: '+15554443333',
 }
 
