@@ -9,7 +9,6 @@ const defaults = {
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
   maxVouchLevel: 10,
   minResendInterval: 60 * 1000, // 1 min
-  poolSize: 1,
   registrationBatchSize: 4,
   setExpiryInterval: 2000, // 2 sec
   signaldRequestTimeout: 30 * 1000, // 30 sec
@@ -29,7 +28,6 @@ const test = {
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // 20 millis
-  poolSize: 30,
   setExpiryInterval: 1, // 1 milli
   signaldSendTimeout: 200, // 200 millis
   signaldRequestTimeout: 100, // 100 millis
