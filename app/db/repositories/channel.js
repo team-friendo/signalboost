@@ -1,5 +1,11 @@
 const app = require('../../../app')
+const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
+const {
+  signal: { supportPhoneNumber },
+} = require('../../config')
+
+const logger = loggerOf('db.repositories.channel')
 
 /***********
  * QUERIES
@@ -49,6 +55,17 @@ const findDeep = phoneNumber =>
     ],
   })
 
+const isSysadmin = async phoneNumber => {
+  if (!supportPhoneNumber) return false
+  try {
+    const sysadminPhoneNumbers = getAdminPhoneNumbers(await findDeep(supportPhoneNumber))
+    return sysadminPhoneNumbers.includes(phoneNumber)
+  } catch (e) {
+    logger.error(e)
+    return false
+  }
+}
+
 /************
  * SELECTORS
  ***********/
@@ -83,5 +100,6 @@ module.exports = {
   getMemberPhoneNumbersExcept,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
+  isSysadmin,
   update,
 }
