@@ -26,5 +26,5 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # backup every morning at 5:30am, store logs in /tmp
 30   5  *  *  *   root    /srv/signalboost/bin/backup > /tmp/backup.log 2>&1
 
-# restart every hour
-0    *  *  *  *   root    /srv/signalboost/bin/restart > /tmp/restart.log 2>&1
+# restart every 3 hours, store logs in /tmp
+# 0    */3  *  *  *   root    /srv/signalboost/bin/restart > /tmp/restart.log 2>&1
