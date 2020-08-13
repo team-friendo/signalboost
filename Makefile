@@ -51,16 +51,19 @@ ansible.deploy: # deploy the app to prod
 ansible.deploy.friendo: # deploy the app to prod
 	FRIENDO_DEPLOY=1 ./bin/deploy
 
-ansible.deploy_metrics: # deploy grafana/prometheus to metrics server
+ansible.deploy.metrics: # deploy grafana/prometheus to metrics server
 	./bin/deploy-metrics
+
+ansible.deploy.crontab: # deploy changes to the crontab on prod
+	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_src.yml --tags crontab
 
 ansible.provision: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision.yml
 
-ansible.provision_backup_src: # deploy the app to prod
+ansible.provision.backup.src: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_src.yml
 
-ansible.provision_backup_dst: # deploy the app to prod
+ansible.provision.backup.dst: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_dst.yml
 
 ansible.harden: # deploy the app to prod
