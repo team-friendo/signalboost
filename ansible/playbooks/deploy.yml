@@ -41,26 +41,6 @@
     tags: clone
     when: secrets_method == "copy"
 
-  #######################
-  # BUILD DOCKER IMAGES #
-  #######################
-
-  - name: Load base dockerfiles
-    copy:
-      src: files/docker/
-      dest: /srv/signalboost/docker/
-    tags: docker
-
-  - name: Build signalboost container
-    command: docker build -f /srv/signalboost/docker/signalboost.dockerfile -t signalboost:latest /srv/signalboost
-    register: build_output
-    tags: docker
-
-  - name: Build signald container
-    command: docker build -f /srv/signalboost/docker/signald.dockerfile -t signald:latest /srv/signalboost
-    register: build_output
-    tags: docker
-
   ########
   # STOP #
   ########
