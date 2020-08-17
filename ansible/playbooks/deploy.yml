@@ -55,6 +55,18 @@
   # PREPARE #
   ###########
 
+  - name: Pull latest signalboost container
+    command: "docker-compose pull signalboost"
+      args:
+        chdir: "{{ homedir }}"
+      tags: prepare, docker
+
+  - name: Pull latest signalboost container
+    command: "docker-compose pull signald"
+      args:
+        chdir: "{{ homedir }}"
+      tags: prepare, docker
+
   - name: Install node packages
     command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' app"
     args:
