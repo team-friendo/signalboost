@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
 
   signald:
-    image: signald
+    image: registry.0xacab.org/team-friendo/signalboost/signald
     container_name: signalboost_signald
     environment:
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
 
   app:
-    image: signalboost
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: signalboost_app
     depends_on:
       - db

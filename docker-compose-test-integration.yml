@@ -15,6 +15,7 @@ volumes:
 
 
 services:
+
   db:
     image: postgres:12
     container_name: signalboost_test_db
@@ -22,8 +23,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+
   test_runner:
-    image: signalboost
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: signalboost_test_runner
     entrypoint: /signalboost/bin/entrypoint/test-integration
     #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
