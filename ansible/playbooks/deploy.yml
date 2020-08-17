@@ -56,16 +56,24 @@
   ###########
 
   - name: Pull latest signalboost container
-    command: "docker-compose pull signalboost"
-      args:
-        chdir: "{{ homedir }}"
-      tags: prepare, docker
+    command: "docker-compose pull app"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare, docker
 
-  - name: Pull latest signalboost container
+  - name: Pull latest signald container
     command: "docker-compose pull signald"
-      args:
-        chdir: "{{ homedir }}"
-      tags: prepare, docker
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare, docker
+
+    # to ensure ACMEv2 compatibility
+    # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
+  - name: Pull latest version of letsencrypt companion
+    command: "docker-compose pull letsencrypt"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare, docker
 
   - name: Install node packages
     command: "docker-compose run --entrypoint '/signalboost/bin/entrypoint/install' app"
@@ -78,15 +86,6 @@
     args:
       chdir: "{{ homedir }}"
     tags: prepare
-
-  # to ensure ACMEv2 compatibility
-  # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
-  - name: Ensure we are running latest version of letsencrypt companion
-    command: "docker-compose pull letsencrypt"
-    args:
-      chdir: "{{ homedir }}"
-    tags: prepare
-
 
   - name: Stop containers used for install & db setup
     command: "docker-compose down"
