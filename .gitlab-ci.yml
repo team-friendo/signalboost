@@ -1,4 +1,4 @@
-image: node:10.16.3
+image: registry.0xacab.org/team-friendo/signalboost/signalboost
 
 variables:
   NODE_ENV: test
