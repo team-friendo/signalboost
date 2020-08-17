@@ -1,7 +1,7 @@
 FROM debian:buster
 
 MAINTAINER Team Friendo <team-friendo@riseup.net>
-LABEL Description="Image for running a signal-boost service overlaid on top of signal-cli."
+LABEL description="Image for running a signalboost service on top of signald and libsignalservice-java."
 
 # ------------------------------------------------------
 # --- Install System Dependencies
@@ -102,3 +102,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y jq
 # ------------------------------------------------------
 
 WORKDIR /signalboost
+
+# ---------------
+# version
+# ---------------
+
+LABEL version="1.0.0"
