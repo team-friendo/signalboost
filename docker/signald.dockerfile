@@ -1,7 +1,7 @@
 FROM debian:buster
 
 MAINTAINER Team Friendo <team-friendo@riseup.net>
-LABEL Description="Image for running a signal-boost service overlaid on top of signal-cli."
+LABEL description="Image for running a signal-boost service overlaid on top of signal-cli."
 
 # ------------------------------------------------------
 # --- Install System Dependencies
@@ -104,3 +104,8 @@ RUN ln -s ${PWD}/build/install/signald/bin/signald /usr/local/bin/signald
 EXPOSE 9010
 WORKDIR /signalboost
 ENTRYPOINT /signalboost/bin/entrypoint/signald
+
+# ------------------
+# Version
+# ------------------
+LABEL verson="1.0.0"

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+pushd `pwd`> /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+cd ..
+
+image=$1
+tag=$2
+
+if [ -z "$image" ];then
+  echo "--- ERROR: you must supply an image. valid options:"
+  echo "           docker-build signalboost"
+  echo "           docker-build signald"
+  exit 1
+fi
+
+if [ -z "$tag" ];then
+  tag=latest
+fi
+
+echo "--- pushing $image docker image..."
+
+docker push registry.0xacab.org/team-friendo/signalboost/${image}:${tag}
+
+echo "--- ...pushed $image docker image!"
+
+pushd > /dev/null
