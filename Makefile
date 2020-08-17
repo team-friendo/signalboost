@@ -35,12 +35,25 @@ cli.uninstall: ## removes boost cli files from your path
 # TODO: add aliases to commands here that accept args...
 
 
-##########################
-# docker/ansible-related #
-##########################
+##################
+# docker-related #
+##################
 
-docker.build: ## rebuild the signalboost & signald docker images 
-	./bin/build-docker
+docker.build.signalboost: ## build the signalboost docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalboost $(TAG)
+
+docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signald $(TAG)
+
+docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signalboost $(TAG)
+
+docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signald $(TAG)
+
+###################
+# ansible-related #
+###################
 
 ansible.install: ## removes boost cli files from your path
 	./ansible/install-ansible
@@ -74,6 +87,7 @@ ansible.restore: # restore from backup on sb_backup host to prod
 
 ansible.restart: # restart prod
 	cd ansible && ansible-playbook -i inventory playbooks/restart.yml
+
 
 #######################
 # db-related commands #
