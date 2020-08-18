@@ -4,10 +4,13 @@ import chaiAsPromised from 'chai-as-promised'
 import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times } from 'lodash'
-import channelRepository from '../../../../app/db/repositories/channel'
+import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
+const {
+  signal: { supportPhoneNumber },
+} = require('../../../../app/config')
 
 describe('channel repository', () => {
   chai.use(chaiAsPromised)
@@ -191,6 +194,33 @@ describe('channel repository', () => {
           'messageCount',
         ])
       })
+    })
+  })
+
+  describe('#isSysadmin', () => {
+    let supportChannel, adminPhoneNumber, subscriberPhoneNumber
+
+    beforeEach(async () => {
+      supportChannel = await db.channel.create(
+        deepChannelFactory({ phoneNumber: supportPhoneNumber }),
+        {
+          include: [{ model: db.membership }],
+        },
+      )
+      adminPhoneNumber = supportChannel.memberships[0].memberPhoneNumber
+      subscriberPhoneNumber = supportChannel.memberships[2].memberPhoneNumber
+    })
+
+    it('returns true for an admin for the support channel', async () => {
+      expect(await isSysadmin(adminPhoneNumber)).to.eql(true)
+    })
+
+    it('returns false for a subscriber to the support channel', async () => {
+      expect(await isSysadmin(subscriberPhoneNumber)).to.eql(false)
+    })
+
+    it('returns false for a random number', async () => {
+      expect(await isSysadmin(genPhoneNumber())).to.eql(false)
     })
   })
 })

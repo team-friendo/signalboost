@@ -363,6 +363,24 @@ describe('messenger service', () => {
       })
     })
 
+    describe('when command result is INFO from a sysadmin', () => {
+      beforeEach(async () => {
+        sinon.stub(channelRepository, 'isSysadmin').returns(Promise.resolve(true))
+        await messenger.dispatch({
+          dispatchable: { channel, sender: adminSender, sdMessage: commands.JOIN },
+          commandResult: {
+            command: commands.INFO,
+            status: statuses.SUCCESS,
+            message: 'yay!',
+            notifications: [],
+          },
+        })
+      })
+      it('does not increment the command count for the channel', async () => {
+        expect(countCommandStub.callCount).to.eql(0)
+      })
+    })
+
     describe('when command result includes notification(s)', () => {
       beforeEach(async () => {
         await messenger.dispatch({
