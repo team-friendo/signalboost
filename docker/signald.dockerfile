@@ -83,7 +83,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 # fork currently running on prod ---v
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 ENV BRANCH "master"
-ENV COMMIT_HASH "a045f4415dd85a55456176a5c2aa7a4d68eeed52"
+ENV COMMIT_HASH "d4d0cc130906989f90b471436d568c28646474b4"
 
 # fetch repo at desired commit
 RUN git init && \
@@ -108,4 +108,4 @@ ENTRYPOINT /signalboost/bin/entrypoint/signald
 # ------------------
 # Version
 # ------------------
-LABEL verson="1.0.1"
+LABEL verson="1.0.2"
