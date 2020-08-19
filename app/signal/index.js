@@ -114,9 +114,13 @@ const healthcheck = async channelPhoneNumber => {
   //   (1) the response time (in seconds) of the healthcheck
   ///  (2) -1 if the the healthcheck timed out
   const id = util.genUuid()
-  // register the callback for the healthcheck before sending the healthcheck in case the response
-  // comes back very fast!
-  const callbackResult = new Promise((resolve, reject) =>
+  socketWriter.write({
+    type: messageTypes.SEND,
+    username: diagnosticsPhoneNumber,
+    messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
+    recipientAddress: { number: channelPhoneNumber },
+  })
+  return new Promise((resolve, reject) =>
     callbacks.register({
       messageType: messageTypes.HEALTHCHECK,
       id,
@@ -125,20 +129,6 @@ const healthcheck = async channelPhoneNumber => {
       state: { whenSent: util.nowInMillis() },
     }),
   ).catch(() => -1) // represent a time-out as a negative response time
-  // now send the healthcheck
-  try {
-    await socketWriter.write({
-      type: messageTypes.SEND,
-      username: diagnosticsPhoneNumber,
-      messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
-      recipientAddress: { number: channelPhoneNumber },
-    })
-  } catch (e) {
-    logger.error(e)
-    return 0 // represent a failure to send healthcheck as zero
-  }
-  // and return the result of the callback
-  return callbackResult
 }
 
 /********************
