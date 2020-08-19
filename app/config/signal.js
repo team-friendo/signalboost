@@ -5,6 +5,7 @@ const defaults = {
   expiryUpdateDelay: 200, // 200 millis
   healtcheckInterval: 1000 * 60 * 15, // 15 min
   healthcheckTimeout: 1000 * 60 * 15, // 15 min
+  healthcheckSpacing: 100, // 100 millis
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
@@ -29,6 +30,7 @@ const test = {
   expiryUpdateDelay: 1, // millis
   healthcheckInterval: 30, // millis
   healthcheckTimeout: 30, // millis
+  healthcheckSpacing: 1, // millis
   intervalBetweenRegistrationBatches: 30, // millis
   intervalBetweenRegistrations: 5, // millis,
   maxResendInterval: 256, // ~ 2.5 sec,

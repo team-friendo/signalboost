@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { pick } from 'lodash'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
@@ -70,26 +69,22 @@ describe('diagnostics jobs', () => {
       sinon.restore()
     })
 
-    it('sends a healthcheck to all channels from the diagnostic channel', () => {
-      const messages = times(channels.length, n => writeStub.getCall(n).args[0])
-      expect(messages).to.have.deep.members(
-        channels.map((channel, idx) => ({
+    it('sends a a healthcheck to every channel and gets a response', () => {
+      const messages = times(2 * channels.length, n => writeStub.getCall(n).args[0])
+      expect(messages).to.have.deep.members([
+        ...channels.map((channel, idx) => ({
           messageBody: `healthcheck ${uuids[idx]}`,
           recipientAddress: { number: channels[idx].phoneNumber },
           type: messageTypes.SEND,
           username: diagnosticsPhoneNumber,
         })),
-      )
-    })
-
-    it('gets a response from every channel', async () => {
-      const messages = times(channels.length, n => writeStub.getCall(n + channels.length).args[0])
-      expect(messages.map(m => pick(m, ['recipientAddress', 'username']))).to.have.deep.members(
-        channels.map((channel, idx) => ({
+        ...channels.map((channel, idx) => ({
+          messageBody: `healthcheck_response ${uuids[idx]}`,
           recipientAddress: { number: diagnosticsPhoneNumber },
+          type: messageTypes.SEND,
           username: channels[idx].phoneNumber,
         })),
-      )
+      ])
     })
   })
 })
