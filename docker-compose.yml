@@ -1,5 +1,49 @@
 version: '3.4'
 
+#
+# ANCHORS
+#
+
+x-loki-logging: &loki-logging
+  options:
+    loki-url: ${LOKI_URL}
+  driver: loki
+
+x-signald-volumes: &signald-volumes
+  - ./bin:/signalboost/bin
+  - ./signald/jmx:/var/lib/jmx
+  - ./backups:/backups
+  - signal_data:/var/lib/signald/data
+  - signal_sock:/var/run/signald/
+
+x-signald-defaults: &signald-defaults
+  image: registry.0xacab.org/team-friendo/signalboost/signald:latest
+  container_name: signalboost_signald
+  env_file: .env
+  environment:
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL}
+    VIRTUAL_PORT: 1312
+    METRICS_PORT: 1312
+    LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
+    SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
+    SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+    DD_AGENT_HOST: datadog-agent
+    DD_TRACE_AGENT_PORT: 8126
+  expose:
+    - 1312
+  ports:
+    - 9010:9010
+  networks:
+    - default
+    - proxy-tier
+  volumes: *signald-volumes
+  logging: *loki-logging
+  restart: unless-stopped
+
+#
+# NAMED RESOURCES
+#
+
 networks:
   proxy-tier:
 
@@ -11,12 +55,13 @@ volumes:
   signal_sock:
   signal_data:
 
-x-logging: &loki-logging
-  options:
-    loki-url: ${LOKI_URL}
-  driver: loki
+#
+# SERVICES
+#
 
 services:
+
+  signald: *signald-defaults
 
   db:
     image: postgres:12
@@ -24,38 +69,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
+    # as per https://github.com/docker-library/postgres/issues/692
     environment:
-      # as per https://github.com/docker-library/postgres/issues/692
       POSTGRES_HOST_AUTH_METHOD: trust
-    logging: *loki-logging
-    restart: always
-
-  signald:
-    image: registry.0xacab.org/team-friendo/signalboost/signald:latest
-    container_name: signalboost_signald
-    env_file: .env
-    environment:
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL}
-      VIRTUAL_PORT: 1312
-      METRICS_PORT: 1312
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
-      SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-      DD_AGENT_HOST: datadog-agent
-      DD_TRACE_AGENT_PORT: 8126
-    expose:
-      - 1312
-    ports:
-      - 9010:9010
-    networks:
-      - default
-      - proxy-tier
-    volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-      - ./backups:/backups
     logging: *loki-logging
     restart: always
 
