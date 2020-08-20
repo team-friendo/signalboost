@@ -63,6 +63,28 @@ const findManyDeep = phoneNumbers =>
     ],
   })
 
+// () => Promsie<Array<string, number>>
+const getChannelsSortedBySize = async () =>
+  app.db.sequelize
+    .query(
+      `
+      with non_empty as (
+       select "channelPhoneNumber", count ("channelPhoneNumber") as kount from memberships
+         group by "channelPhoneNumber"
+      ),
+      empty as (
+        select "phoneNumber" as "channelPhoneNumber", 0 as kount from channels
+          where "phoneNumber" not in (select distinct "channelPhoneNumber" from memberships)
+      )
+      select * from non_empty union select * from empty
+      order by kount desc;
+      `,
+      {
+        type: app.db.sequelize.QueryTypes.SELECT,
+      },
+    )
+    .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
+
 const findByPhoneNumber = phoneNumber => app.db.channel.findOne({ where: { phoneNumber } })
 
 const findDeep = phoneNumber =>
@@ -139,6 +161,7 @@ module.exports = {
   getAdminPhoneNumbers,
   getDiagnosticsChannel,
   getMaintainers,
+  getChannelsSortedBySize,
   getMemberPhoneNumbers,
   getMembersExcept,
   getMemberPhoneNumbersExcept,

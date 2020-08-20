@@ -3,15 +3,30 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
-import channelRepository, { isMaintainer } from '../../../../app/db/repositories/channel'
+import channelRepository, { getChannelsSortedBySize, isMaintainer } from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
+import { membershipFactory } from '../../../support/factories/membership'
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
+  const createChannelsFromAttributes = attrs =>
+    Promise.all(
+      attrs.map(x =>
+        db.channel.create(x, {
+          include: [
+            { model: db.deauthorization },
+            { model: db.invite },
+            { model: db.membership },
+            { model: db.messageCount },
+          ],
+        }),
+      ),
+    )
+
   const channelPhoneNumber = genPhoneNumber()
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
@@ -283,6 +298,27 @@ describe('channel repository', () => {
       const foundChannel = await channelRepository.getDiagnosticsChannel()
       expect(foundChannel.phoneNumber).to.eql(diagnosticsChannel.phoneNumber)
       expect(foundChannel.memberships.length).to.eql(diagnosticsChannel.memberships.length)
+    })
+  })
+
+  describe('#getChannelsSortedBySize', () => {
+    let channels
+    beforeEach(async () => {
+      channels = await createChannelsFromAttributes([
+        deepChannelFactory({ memberships: times(2, membershipFactory) }),
+        deepChannelFactory({ memberships: times(8, membershipFactory) }),
+        deepChannelFactory({ memberships: times(4, membershipFactory) }),
+        deepChannelFactory({ memberships: [] }),
+      ])
+    })
+
+    it('returns a list of (channelPhoneNumber, channelSize) tuples sorted in descending order of channelSize', async () => {
+      expect(await getChannelsSortedBySize()).to.eql([
+        [channels[1].phoneNumber, 8],
+        [channels[2].phoneNumber, 4],
+        [channels[0].phoneNumber, 2],
+        [channels[3].phoneNumber, 0],
+      ])
     })
   })
 
