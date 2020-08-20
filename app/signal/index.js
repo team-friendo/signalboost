@@ -192,8 +192,12 @@ const sendMessage = async (recipientNumber, sdMessage) => {
 
 // (Array<string>, OutboundSignaldMessage) -> Promise<Array<string>>
 const broadcastMessage = (recipientNumbers, outboundMessage) =>
-  Promise.all(
-    recipientNumbers.map(recipientNumber => sendMessage(recipientNumber, outboundMessage)),
+  // NOTE: we would prefer to broadcast messages in parallel, but send them in sequence
+  // to work around concurrency bugs in signald that cause significant lags / crashes
+  // when trying to handle messages sent in parallel. At such time as we fix those bugs
+  // we would like to call `Promise.all` here and launch all the writes at once!
+  util.sequence(
+    recipientNumbers.map(recipientNumber => () => sendMessage(recipientNumber, outboundMessage)),
   )
 
 const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
