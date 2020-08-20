@@ -105,4 +105,29 @@ describe('utility module', () => {
       expect(fn.callCount).to.eql(2)
     })
   })
+
+  describe('#groupIntoBuckets', () => {
+    it('groups a list of channels into X buckets of Y subscribers', () => {
+      const input = [
+        [12, 3],
+        [11, 9],
+        [0, 1000],
+        [1, 51],
+        [9, 18],
+        [13, 2],
+        [3, 49],
+        [4, 48],
+        [5, 30],
+        [6, 21],
+        [2, 50],
+        [7, 20],
+        [8, 18],
+        [10, 10],
+        [14, 1],
+      ]
+      const output = [[0], [1], [2], [3, 4], [5, 6], [7, 8, 9], [10, 11, 12, 13, 14]]
+      // expect(util.groupIntoBuckets(input, 50)).to.eql([])
+      expect(util.groupIntoBuckets(input, 50)).to.eql(output)
+    })
+  })
 })
