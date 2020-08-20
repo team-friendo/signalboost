@@ -16,7 +16,7 @@ const defaults = {
   signaldRequestTimeout: 1000 * 10, // 10 sec
   signaldVerifyTimeout: 1000 * 30, // 30 sec
   signaldSendTimeout: 1000 * 60 * 60, // 60 min
-  signaldStartupTime: 1000 * 60, // 1 min
+  signaldStartupTime: 3000 * 60, // 3 min
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
   diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(`"`, ''),
   welcomeDelay: 3000, // 3 sec
