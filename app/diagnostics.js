@@ -6,7 +6,7 @@ const metrics = require('./metrics')
 const { zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
-  signal: { diagnosticsPhoneNumber, healtcheckInterval, signaldStartupTime },
+  signal: { diagnosticsPhoneNumber, healtcheckInterval, healthcheckSpacing, signaldStartupTime },
 } = require('./config')
 
 const logger = util.loggerOf('diagnostics')
@@ -17,7 +17,10 @@ const sendHealthchecks = async () => {
     const channelPhoneNumbers = (await channelRepository.findAll())
       .map(channel => channel.phoneNumber)
       .filter(phoneNumber => phoneNumber !== diagnosticsPhoneNumber)
-    const responseTimes = await Promise.all(channelPhoneNumbers.map(signal.healthcheck))
+    const responseTimes = await util.sequence(
+      channelPhoneNumbers.map(phoneNumber => () => signal.healthcheck(phoneNumber)),
+      healthcheckSpacing,
+    )
     zip(channelPhoneNumbers, responseTimes).forEach(([channelPhoneNumber, responseTime]) => {
       metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [channelPhoneNumber])
       if (responseTime === -1) _sendTimeoutAlerts(channelPhoneNumber)
