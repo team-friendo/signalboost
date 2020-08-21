@@ -108,6 +108,7 @@ describe('channel model', () => {
     expect(channel.messageExpiryTime).to.be.a('number')
     expect(channel.vouchMode).to.be.a('string')
     expect(channel.vouchLevel).to.be.a('number')
+    expect(channel.socketPoolId).to.be.a('number')
     expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
   })
@@ -115,17 +116,19 @@ describe('channel model', () => {
   it('sets correct defaults', async () => {
     channel = await db.channel.create(
       channelFactory({
-        hotlineOn: undefined,
-        vouchMode: undefined,
-        messageExpiryTime: undefined,
         description: undefined,
+        hotlineOn: undefined,
+        messageExpiryTime: undefined,
+        socketPoolId: undefined,
         vouchLevel: undefined,
+        vouchMode: undefined,
       }),
     )
 
-    expect(channel.hotlineOn).to.equal(true)
     expect(channel.description).to.equal('')
+    expect(channel.hotlineOn).to.equal(true)
     expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
+    expect(channel.socketPoolId).to.equal(0)
     expect(channel.vouchMode).to.equal('OFF')
     expect(channel.vouchLevel).to.equal(1)
   })

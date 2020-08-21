@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
@@ -8,6 +8,7 @@ import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 import { membershipFactory } from '../../../support/factories/membership'
+
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
@@ -319,6 +320,34 @@ describe('channel repository', () => {
         [channels[0].phoneNumber, 2],
         [channels[3].phoneNumber, 0],
       ])
+    })
+  })
+
+  describe('#udpateSocketPools', () => {
+    const updatedChannelPhoneNumbers = times(3, genPhoneNumber)
+    const unaffectedPhoneNumber = genPhoneNumber()
+    const updatedSocketPoolId = 42
+    const unaffectedSocketPoolId = 99
+
+    beforeEach(async () => {
+      await Promise.all([
+        db.channel.create(channelFactory({ phoneNumber: unaffectedPhoneNumber, socketPoolId: 99 })),
+        ...updatedChannelPhoneNumbers.map((phoneNumber, idx) =>
+          db.channel.create(channelFactory({ phoneNumber, socketPoolId: idx })),
+        ),
+      ])
+    })
+
+    it('updates many channels to have the same socket pool id', async () => {
+      await channelRepository.updateSocketPoolIds(updatedChannelPhoneNumbers, 42)
+
+      expect(
+        (await channelRepository.findByPhoneNumber(unaffectedPhoneNumber)).socketPoolId,
+      ).to.eql(unaffectedSocketPoolId)
+
+      expect(
+        map(await channelRepository.findManyDeep(updatedChannelPhoneNumbers), 'socketPoolId'),
+      ).to.eql(times(3, () => updatedSocketPoolId))
     })
   })
 
