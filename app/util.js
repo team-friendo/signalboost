@@ -1,4 +1,4 @@
-const { concat, take, drop, isEmpty, sortBy, reverse, get } = require('lodash')
+const { concat, take, drop, isEmpty, get } = require('lodash')
 const uuidV4 = require('uuid/v4')
 const stringHash = require('string-hash')
 const moment = require('moment')
@@ -147,33 +147,12 @@ const defaultErrorOf = err => ({
   message: err.message,
 })
 
-/********* hmmm ************/
-
-const groupIntoBuckets = (itemsWithSizes, bucketSize) => {
-  const itemsSortedBySize = itemsWithSizes.sort(([, sizeA], [, sizeB]) => sizeB - sizeA)
-  const initialState = { buckets: [[]], bucketLevel: 0 }
-  return itemsSortedBySize.reduce(({ buckets, bucketLevel }, [item, size]) => {
-    return bucketLevel >= bucketSize
-      ? // no more room in the bucket! make a new bucket and reset the level counter!
-        {
-          buckets: [...buckets, [item]],
-          bucketLevel: size,
-        }
-      : // there's room! add this item to the current bucket and increment the counter by its size!
-        {
-          buckets: [...buckets.slice(0, -1), [...buckets.slice(-1)[0], item]],
-          bucketLevel: bucketLevel + size,
-        }
-  }, initialState).buckets
-}
-
 module.exports = {
   defaultErrorOf,
   batchesOfN,
   emphasize,
   exec,
   genUuid,
-  groupIntoBuckets,
   hash,
   loggerOf,
   logger,
