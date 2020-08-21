@@ -6,7 +6,7 @@ const { messages, messageTypes, trustLevels } = require('./constants')
 const util = require('../util')
 const { statuses, loggerOf } = util
 const {
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, broadcastSpacing },
 } = require('../config')
 
 /**
@@ -198,6 +198,7 @@ const broadcastMessage = (recipientNumbers, outboundMessage) =>
   // we would like to call `Promise.all` here and launch all the writes at once!
   util.sequence(
     recipientNumbers.map(recipientNumber => () => sendMessage(recipientNumber, outboundMessage)),
+    broadcastSpacing,
   )
 
 const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
