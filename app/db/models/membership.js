@@ -1,5 +1,5 @@
 const { defaultLanguage } = require('../../config')
-const { isPhoneNumber } = require('../validations/phoneNumber')
+const { isPhoneNumber } = require('../validations')
 
 const membershipOf = (sequelize, DataTypes) => {
   const membership = sequelize.define(

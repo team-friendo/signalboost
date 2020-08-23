@@ -1,3 +1,5 @@
+// PHONE NUMBERS
+
 const phoneNumberPattern = /^\+\d{9,15}$/g
 
 const isPhoneNumber = {
@@ -18,4 +20,22 @@ const parseValidPhoneNumber = input => {
   return { input, phoneNumber: validatePhoneNumber(stripped) ? stripped : null }
 }
 
-module.exports = { isPhoneNumber, phoneNumberPattern, validatePhoneNumber, parseValidPhoneNumber }
+// SHA256  HASH
+
+const sha256Pattern = /^[a-fA-F0-9]{64}$/
+
+const isSha256Hash = {
+  is: {
+    args: [sha256Pattern],
+    msg: 'must be valid hex-encoded 32-byte sha256 hash',
+  },
+}
+
+module.exports = {
+  isPhoneNumber,
+  isSha256Hash,
+  parseValidPhoneNumber,
+  phoneNumberPattern,
+  sha256Pattern,
+  validatePhoneNumber,
+}
