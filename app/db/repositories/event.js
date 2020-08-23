@@ -1,10 +1,26 @@
 const app = require('../../../app')
-const { sha256Hash } = require("../../util")
+const { eventTypes } = require('../models/event')
+const { sha256Hash } = require('../../util')
 
+// (string, string) => Promise<Event>
 const log = (eventType, phoneNumber) =>
   app.db.event.create({
     type: eventType,
     phoneNumberHash: sha256Hash(phoneNumber),
   })
 
-module.exports = { log }
+// string => Promise<Event|null>
+const logIfFirstMembership = async memberPhoneNumber => {
+  // NOTE: this function should be called AFTER creating a membership
+  const isFirst = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 1
+  return isFirst ? log(eventTypes.MEMBER_CREATED) : null
+}
+
+// string => Promise<Event|null>
+const logIfLastMembership = async memberPhoneNumber => {
+  // NOTE: this function should be called AFTER creating a membership
+  const isLast = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 0
+  return isLast ? log(eventTypes.MEMBER_DESTROYED) : null
+}
+
+module.exports = { log, logIfFirstMembership, logIfLastMembership }
