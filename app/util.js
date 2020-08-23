@@ -1,6 +1,7 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
 const uuidV4 = require('uuid/v4')
 const stringHash = require('string-hash')
+const crypto = require('crypto')
 const {
   crypto: { hashSalt },
 } = require('./config')
@@ -94,6 +95,12 @@ const prettyPrint = obj => JSON.stringify(obj, null, '  ')
 
 const emphasize = msg => `\n--------\n${msg}----------------\n`
 
+const sha256Hash = str =>
+  crypto
+    .createHash('sha256')
+    .update(str + hashSalt)
+    .digest('hex')
+
 const hash = str => stringHash(str + hashSalt)
 
 const redact = str =>
@@ -134,6 +141,7 @@ module.exports = {
   redact,
   repeatEvery,
   repeatUntilTimeout,
+  sha256Hash,
   sequence,
   statuses,
   wait,
