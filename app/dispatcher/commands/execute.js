@@ -2,10 +2,11 @@ const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
 const messenger = require('../messenger')
 const channelRepository = require('../../db/repositories/channel')
-const membershipRepository = require('../../db/repositories/membership')
-const inviteRepository = require('../../db/repositories/invite')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
+const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
+const inviteRepository = require('../../db/repositories/invite')
+const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberService = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
@@ -112,6 +113,7 @@ const maybeAccept = async (channel, sender, language) => {
 const accept = async (channel, sender, language, cr) =>
   inviteRepository
     .accept(channel.phoneNumber, sender.phoneNumber, language)
+    .then(() => eventRepository.logIfFirstMembership(sender.phoneNumber))
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 
@@ -135,6 +137,7 @@ const addAdmin = async (channel, sender, newAdminPhoneNumber, cr) => {
       channel.phoneNumber,
       newAdminPhoneNumber,
     )
+    await eventRepository.logIfFirstMembership(newAdminPhoneNumber)
     return {
       status: statuses.SUCCESS,
       message: cr.success(newAdminPhoneNumber),
@@ -365,6 +368,7 @@ const maybeAddSubscriber = async (channel, sender, language) => {
 const addSubscriber = (channel, sender, language, cr) =>
   membershipRepository
     .addSubscriber(channel.phoneNumber, sender.phoneNumber, language)
+    .then(() => eventRepository.logIfFirstMembership(sender.phoneNumber))
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
@@ -381,6 +385,7 @@ const removeSender = (channel, sender, cr) => {
   const remove =
     sender.type === ADMIN ? membershipRepository.removeMember : membershipRepository.removeMember
   return remove(channel.phoneNumber, sender.phoneNumber)
+    .then(() => eventRepository.logIfLastMembership(sender.phoneNumber))
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
@@ -423,6 +428,7 @@ const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) 
       : removalNotificationsOfSubscriber(channel, memberPhoneNumber, sender)
   return membershipRepository
     .removeMember(channel.phoneNumber, memberPhoneNumber)
+    .then(() => eventRepository.logIfLastMembership(memberPhoneNumber))
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success(memberPhoneNumber),
