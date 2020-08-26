@@ -83,6 +83,11 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     invalidPhoneNumber,
   },
 
+  // BROADCAST
+  broadcast: {
+    notAdmin,
+  },
+
   // DECLINE
 
   decline: {

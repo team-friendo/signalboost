@@ -55,6 +55,7 @@ const execute = async (executable, dispatchable) => {
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(sender),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
@@ -78,6 +79,7 @@ const execute = async (executable, dispatchable) => {
   }[command] || (() => noop()))()
 
   result.notifications = result.notifications || []
+  console.log({ command, payload, ...result })
   return { command, payload, ...result }
 }
 
@@ -166,6 +168,18 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       message: messagesIn(membership.language).notifications.adminAdded,
     })),
   ]
+}
+
+// BROADCAST
+const maybeBroadcastMessage = sender => {
+  const cr = messagesIn(sender.language).commandResponses.broadcast
+  if (sender.type !== ADMIN)
+    return Promise.resolve({
+      status: statuses.UNAUTHORIZED,
+      message: cr.notAdmin,
+    })
+
+  return { status: statuses.SUCCESS }
 }
 
 // PRIVATE

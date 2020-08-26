@@ -411,6 +411,41 @@ describe('executing commands', () => {
     })
   })
 
+  describe('BROADCAST command', () => {
+    const sdMessage = sdMessageOf(channel, 'BROADCAST hello friendos!')
+
+    describe('when sender is an admin', () => {
+      const dispatchable = { channel, sender: admin, sdMessage }
+
+      it('returns a SUCCESS status and payload', async () => {
+        const response = await processCommand(dispatchable)
+
+        expect(response).to.eql({
+          command: commands.BROADCAST,
+          payload: 'hello friendos!',
+          status: statuses.SUCCESS,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when sender is not an admin', () => {
+      const dispatchable = { channel, sender: subscriber, sdMessage }
+
+      it('returns an error and message', async () => {
+        const response = await processCommand(dispatchable)
+
+        expect(response).to.eql({
+          command: commands.BROADCAST,
+          payload: 'hello friendos!',
+          status: statuses.UNAUTHORIZED,
+          message: CR.broadcast.notAdmin,
+          notifications: [],
+        })
+      })
+    })
+  })
+
   describe('DECLINE command', () => {
     const dispatchable = {
       channel,

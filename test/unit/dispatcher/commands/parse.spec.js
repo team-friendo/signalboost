@@ -20,6 +20,7 @@ describe('parse module', () => {
           'fire the missiles',
           'the ADD foo',
           'the ACCEPT',
+          'the BROADCAST',
           'the DECLINE',
           'the DESTROY',
           'the REMOVE foo',
@@ -167,6 +168,27 @@ describe('parse module', () => {
               command: commands.ADD,
               language,
               payload: e164PhoneNumber,
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('BROADCAST command', () => {
+      it('parses an ADD command and payload regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['BROADCAST hello friendos!', ' broadcast hello friendos!'],
+          },
+        ]
+
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.BROADCAST,
+              language,
+              payload: 'hello friendos!',
             }),
           ),
         )

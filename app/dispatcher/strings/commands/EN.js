@@ -1,6 +1,7 @@
 module.exports = {
   ACCEPT: ['ACCEPT'],
   ADD: ['ADD'],
+  BROADCAST: ['BROADCAST'],
   DECLINE: ['DECLINE'],
   DESTROY: ['DESTROY'],
   DESTROY_CONFIRM: ['CONFIRM DESTROY'],

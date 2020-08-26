@@ -18,6 +18,7 @@ const toggles = {
 const commands = {
   ADD: 'ADD',
   ACCEPT: 'ACCEPT',
+  BROADCAST: 'BROADCAST',
   DECLINE: 'DECLINE',
   DESTROY: 'DESTROY',
   DESTROY_CONFIRM: 'DESTROY_CONFIRM',
