@@ -6,8 +6,10 @@ const common = require('./common')
 const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../db/repositories/channel')
+const eventRepository = require('../../db/repositories/event')
 const logger = require('../logger')
 const fs = require('fs-extra')
+const { eventTypes } = require('../../db/models/event')
 const {
   signal: { keystorePath },
 } = require('../../config')
@@ -19,22 +21,29 @@ const destroy = async ({ phoneNumber, sender }) => {
     const channelInstance = await channelRepository.findDeep(phoneNumber)
     const phoneNumberInstance = await phoneNumberRepository.find(phoneNumber)
 
-    if (channelInstance || phoneNumberInstance) {
-      await destroyChannel(channelInstance, tx)
+    if (!channelInstance && !phoneNumberInstance)
+      return { status: 'ERROR', message: `No records found for ${phoneNumber}` }
+
+    if (phoneNumberInstance) {
       await destroyPhoneNumber(phoneNumberInstance, tx)
-      await signal.unsubscribe(phoneNumber)
-      await destroySignalEntry(phoneNumber)
       await releasePhoneNumber(phoneNumberInstance)
+    }
+
+    if (channelInstance) {
+      await destroyChannel(channelInstance, tx)
+      await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
       await notifyMembersExcept(
         channelInstance,
         messagesIn(defaultLanguage).notifications.channelDestroyed,
         sender,
       )
-      await tx.commit()
-      return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
-    } else {
-      return { status: 'ERROR', message: `No records found for ${phoneNumber}` }
     }
+
+    await signal.unsubscribe(phoneNumber)
+    await destroySignalEntry(phoneNumber)
+    await tx.commit()
+
+    return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
   } catch (err) {
     await tx.rollback()
     return handleDestroyFailure(err, phoneNumber)
@@ -61,13 +70,13 @@ const releasePhoneNumber = async phoneNumberInstance => {
   } catch (error) {
     return error.status === 404
       ? Promise.resolve()
-      : Promise.reject('Failed to release phone number back to Twilio')
+      : Promise.reject(`Failed to release phone number back to Twilio: ${JSON.stringify(error)}`)
   }
 }
 
 // Channel -> Promise<void>
 const destroyPhoneNumber = async (phoneNumberInstance, tx) => {
-  if (phoneNumberInstance == null) return
+  if (phoneNumberInstance === null) return
   try {
     await phoneNumberInstance.destroy({ transaction: tx })
   } catch (error) {

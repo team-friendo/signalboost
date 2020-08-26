@@ -3,6 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
 import channelRepository from '../../../app/db/repositories/channel'
+import eventRepository from '../../../app/db/repositories/event'
 import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
 import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
 import inviteRepository from '../../../app/db/repositories/invite'
@@ -13,6 +14,8 @@ import { deepChannelAttrs } from '../../support/factories/channel'
 import { statuses } from '../../../app/util'
 import { create, addAdmin, list } from '../../../app/registrar/channel'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
+import { eventTypes } from '../../../app/db/models/event'
+import { eventFactory } from '../../support/factories/event'
 const {
   signal: { defaultMessageExpiryTime },
   defaultLanguage,
@@ -69,7 +72,8 @@ describe('channel registrar', () => {
     findAllDeepStub,
     findDeepStub,
     issueStub,
-    setExpirationStub
+    setExpirationStub,
+    logStub
 
   beforeEach(() => {
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
@@ -82,11 +86,12 @@ describe('channel registrar', () => {
     issueStub = sinon.stub(inviteRepository, 'issue')
     sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
     setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
+    logStub = sinon
+      .stub(eventRepository, 'log')
+      .returns(Promise.resolve(eventFactory({ type: eventTypes.CHANNEL_CREATED })))
   })
 
-  afterEach(() => {
-    sinon.restore()
-  })
+  afterEach(() => sinon.restore())
 
   describe('#create', () => {
     beforeEach(() => {
@@ -127,6 +132,11 @@ describe('channel registrar', () => {
               },
             })
           })
+        })
+
+        it('logs the channel creation', async () => {
+          await create({ phoneNumber, name, admins, welcome: notifyStub })
+          expect(logStub.getCall(0).args).to.eql([eventTypes.CHANNEL_CREATED, phoneNumber])
         })
 
         describe('when sending welcome messages succeeds', () => {

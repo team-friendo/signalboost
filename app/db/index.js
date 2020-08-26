@@ -3,6 +3,7 @@ const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
 const { channelOf } = require('./models/channel')
 const { deauthorizationOf } = require('./models/deauthorization')
+const { eventOf } = require('./models/event')
 const { hotlineMessageOf } = require('./models/hotlineMessages')
 const { inviteOf } = require('./models/invite')
 const { membershipOf } = require('./models/membership')
@@ -21,6 +22,7 @@ const run = async () => {
   const db = {
     channel: channelOf(sequelize, Sequelize),
     deauthorization: deauthorizationOf(sequelize, Sequelize),
+    event: eventOf(sequelize, Sequelize),
     hotlineMessage: hotlineMessageOf(sequelize, Sequelize),
     invite: inviteOf(sequelize, Sequelize),
     membership: membershipOf(sequelize, Sequelize),

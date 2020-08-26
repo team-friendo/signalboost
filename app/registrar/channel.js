@@ -1,9 +1,11 @@
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRepository = require('../db/repositories/phoneNumber')
+const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
 const messenger = require('../dispatcher/messenger')
+const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../config')
@@ -38,6 +40,7 @@ const create = async ({ phoneNumber, name, admins }) => {
     await signal.subscribe(phoneNumber)
     const channel = await channelRepository.create(phoneNumber, name, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
+    await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)

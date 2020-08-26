@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { times } from 'lodash'
+import { sample, times } from 'lodash'
 import { processCommand } from '../../../../app/dispatcher/commands'
 import { commands, toggles, vouchModes } from '../../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../../app/util'
@@ -12,9 +12,10 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
+import eventRepository from '../../../../app/db/repositories/event'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
 import phoneNumberService from '../../../../app/registrar/phoneNumber'
-import validator from '../../../../app/db/validations/phoneNumber'
+import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
 import { memberTypes } from '../../../../app/db/repositories/membership'
@@ -26,6 +27,8 @@ import {
 } from '../../../support/factories/membership'
 import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
+import { eventFactory } from '../../../support/factories/event'
+import { eventTypes } from '../../../../app/db/models/event'
 
 describe('executing commands', () => {
   const channel = {
@@ -64,6 +67,18 @@ describe('executing commands', () => {
   const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
   const deauthorizedPhoneNumber = channel.deauthorizations[0].memberPhoneNumber
 
+  let logIfFirstMembershipStub, logIfLastMembershipStub
+
+  beforeEach(() => {
+    logIfFirstMembershipStub = sinon
+      .stub(eventRepository, 'logIfFirstMembership')
+      .returns(Promise.resolve(sample([null, eventFactory(eventTypes.MEMBER_CREATED)])))
+    logIfLastMembershipStub = sinon
+      .stub(eventRepository, 'logIfLastMembership')
+      .returns(Promise.resolve(sample([null, eventFactory(eventTypes.MEMBER_DESTROYED)])))
+  })
+  afterEach(() => sinon.restore())
+
   describe('ACCEPT command', () => {
     const dispatchable = {
       channel: { ...channel, vouchMode: 'ON', vouchLevel: 1 },
@@ -75,9 +90,6 @@ describe('executing commands', () => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
       acceptStub = sinon.stub(inviteRepository, 'accept')
-    })
-    afterEach(() => {
-      sinon.restore()
     })
 
     describe('when sender is already member of channel', () => {
@@ -150,6 +162,12 @@ describe('executing commands', () => {
 
         describe('when accept db call succeeds', () => {
           beforeEach(() => acceptStub.returns(Promise.resolve([membershipFactory(), 1])))
+
+          it('logs membership creation (if applicable)', async () => {
+            await processCommand(_dispatchable)
+            expect(logIfFirstMembershipStub.callCount).to.eql(1)
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.phoneNumber])
+          })
 
           it('returns SUCCESS status', async () => {
             expect(await processCommand(_dispatchable)).to.eql({
@@ -230,9 +248,6 @@ describe('executing commands', () => {
       trustStub = sinon.stub(signal, 'trust')
       destroyDeauthStub = sinon.stub(deauthorizationRepository, 'destroy')
     })
-    afterEach(() => {
-      sinon.restore()
-    })
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -281,6 +296,12 @@ describe('executing commands', () => {
                   },
                 ],
               })
+            })
+
+            it('logs membership creation (if applicable)', async () => {
+              await processCommand(dispatchable)
+              expect(logIfFirstMembershipStub.callCount).to.eql(1)
+              expect(logIfFirstMembershipStub.getCall(0).args).to.eql([newAdminPhoneNumber])
             })
           })
 
@@ -399,7 +420,6 @@ describe('executing commands', () => {
 
     let declineStub
     beforeEach(() => (declineStub = sinon.stub(inviteRepository, 'decline')))
-    afterEach(() => sinon.restore())
 
     describe('when db call succeeds', () => {
       beforeEach(() => declineStub.returns(Promise.resolve(1)))
@@ -485,7 +505,6 @@ describe('executing commands', () => {
 
     let destroyStub
     beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
-    afterEach(() => sinon.restore())
 
     describe('when issuer is an admin', () => {
       const dispatchable = { ..._dispatchable, sender: admin }
@@ -693,9 +712,6 @@ describe('executing commands', () => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       issueInviteStub = sinon.stub(inviteRepository, 'issue')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
-    })
-    afterEach(() => {
-      sinon.restore()
     })
 
     // VOUCHING_ON
@@ -1116,7 +1132,6 @@ describe('executing commands', () => {
     let addSubscriberStub
 
     beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
-    afterEach(() => sinon.restore())
 
     describe('when vouch mode is on', () => {
       const vouchedChannel = { ...channel, vouchMode: vouchModes.ON }
@@ -1161,6 +1176,12 @@ describe('executing commands', () => {
               message: CR.join.success(channel),
               notifications: [],
             })
+          })
+
+          it('logs membership creation (if applicable)', async () => {
+            await processCommand(dispatchable)
+            expect(logIfFirstMembershipStub.callCount).to.eql(1)
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.phoneNumber])
           })
         })
 
@@ -1242,7 +1263,6 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'LEAVE')
     let removeMemberStub
     beforeEach(() => (removeMemberStub = sinon.stub(membershipRepository, 'removeMember')))
-    afterEach(() => sinon.restore())
 
     describe('when sender is subscribed to channel', () => {
       const dispatchable = { channel, sender: subscriber, sdMessage }
@@ -1267,6 +1287,12 @@ describe('executing commands', () => {
             message: CR.leave.success,
             notifications: [],
           })
+        })
+
+        it('logs membership destruction (if applicable)', async () => {
+          await processCommand(dispatchable)
+          expect(logIfLastMembershipStub.callCount).to.eql(1)
+          expect(logIfLastMembershipStub.getCall(0).args).to.eql([subscriber.phoneNumber])
         })
       })
 
@@ -1359,10 +1385,6 @@ describe('executing commands', () => {
       sendMessageStub = sinon.stub(signal, 'sendMessage')
     })
 
-    afterEach(() => {
-      sinon.restore()
-    })
-
     describe('when sender is not an admin', () => {
       const dispatchable = { channel, sender: subscriber, sdMessage }
 
@@ -1429,10 +1451,6 @@ describe('executing commands', () => {
       resolveMemberTypeStub = sinon.stub(membershipRepository, 'resolveMemberType')
     })
 
-    afterEach(() => {
-      sinon.restore()
-    })
-
     describe('when sender is an admin', () => {
       const sender = admin
       beforeEach(() => removeMemberStub.returns(Promise.resolve()))
@@ -1475,6 +1493,12 @@ describe('executing commands', () => {
                   },
                 ],
               })
+            })
+
+            it('logs membership destruction (if applicable)', async () => {
+              await processCommand(dispatchable)
+              expect(logIfLastMembershipStub.callCount).to.eql(1)
+              expect(logIfLastMembershipStub.getCall(0).args).to.eql([removalTargetNumber])
             })
           })
 
@@ -1526,6 +1550,12 @@ describe('executing commands', () => {
                   },
                 ],
               })
+            })
+
+            it('logs membership destruction (if applicable)', async () => {
+              await processCommand(dispatchable)
+              expect(logIfLastMembershipStub.callCount).to.eql(1)
+              expect(logIfLastMembershipStub.getCall(0).args).to.eql([removalTargetNumber])
             })
           })
         })
@@ -1599,7 +1629,6 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'RENAME foo')
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -1692,8 +1721,6 @@ describe('executing commands', () => {
       findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
       findMembershipStub = sinon.stub(membershipRepository, 'findMembership')
     })
-
-    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       describe('when hotline message id exists', () => {
@@ -1791,7 +1818,6 @@ describe('executing commands', () => {
 
     let updateLanguageStub
     beforeEach(() => (updateLanguageStub = sinon.stub(membershipRepository, 'updateLanguage')))
-    afterEach(() => sinon.restore())
 
     describe('when update call succeeds', () => {
       beforeEach(() => {
@@ -1846,7 +1872,6 @@ describe('executing commands', () => {
   describe('TOGGLE commands', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => sinon.restore())
 
     const scenarios = [
       {
@@ -2106,7 +2131,6 @@ describe('executing commands', () => {
 
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const sender = admin
@@ -2202,7 +2226,6 @@ describe('executing commands', () => {
     const sdMessage = sdMessageOf(channel, 'DESCRIPTION foo channel description')
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-    afterEach(() => sinon.restore())
 
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }

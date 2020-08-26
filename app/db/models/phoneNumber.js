@@ -1,4 +1,4 @@
-const { isPhoneNumber } = require('../validations/phoneNumber')
+const { isPhoneNumber } = require('../validations')
 
 const statuses = {
   ERROR: 'ERROR',

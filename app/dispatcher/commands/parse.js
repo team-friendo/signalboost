@@ -1,7 +1,7 @@
 const { map, flattenDeep, isEmpty, get } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
 const { commands } = require('./constants')
-const validator = require('../../db/validations/phoneNumber')
+const validator = require('../../db/validations')
 const { messagesIn } = require('../strings/messages')
 const {
   defaultLanguage,

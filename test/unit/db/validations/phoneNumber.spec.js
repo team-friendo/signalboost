@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import validator from '../../../../app/db/validations/phoneNumber'
+import validator from '../../../../app/db/validations'
 
 describe('#parseValidPhoneNumber', () => {
   describe('correctly formatted phone number', () => {

@@ -1,10 +1,12 @@
+const channelRepository = require('../../db/repositories/channel')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
+const eventRepository = require('../../db/repositories/event')
 const common = require('./common')
 const { defaultLanguage } = require('../../config')
 const signal = require('../../signal')
+const { eventTypes } = require('../../db/models/event')
 const { sdMessageOf } = require('../../signal/constants')
 const { messagesIn } = require('../../dispatcher/strings/messages')
-const channelRepository = require('../../db/repositories/channel')
 
 // ({Database, Socket, string}) -> SignalboostStatus
 const recycle = async ({ phoneNumbers }) => {
@@ -15,6 +17,7 @@ const recycle = async ({ phoneNumbers }) => {
       if (channel) {
         return notifyMembers(channel)
           .then(() => common.destroyChannel(channel))
+          .then(() => eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber))
           .then(() => recordStatusChange(phoneNumber, common.statuses.VERIFIED))
           .then(phoneNumberStatus => ({ status: 'SUCCESS', data: phoneNumberStatus }))
           .catch(err => handleRecycleFailure(err, phoneNumber))

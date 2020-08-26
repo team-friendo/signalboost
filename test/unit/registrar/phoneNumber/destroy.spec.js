@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { expect } from 'chai'
 import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import commonService from '../../../../app/registrar/phoneNumber/common'
@@ -6,16 +5,18 @@ import { destroy } from '../../../../app/registrar/phoneNumber/destroy'
 import sinon from 'sinon'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../app/db/repositories/channel'
+import eventRepository from '../../../../app/db/repositories/event'
 import signal from '../../../../app/signal'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
-import dbService from '../../../../app/db'
+import { deepChannelFactory } from '../../../support/factories/channel'
+import { eventFactory } from '../../../support/factories/event'
+import { eventTypes } from '../../../../app/db/models/event'
 const fs = require('fs-extra')
 
 describe('phone number services -- destroy module', () => {
   // SETUP
   const phoneNumber = '+11111111111'
-  const sock = {}
   let findChannelStub,
     findPhoneNumberStub,
     broadcastMessageStub,
@@ -24,7 +25,8 @@ describe('phone number services -- destroy module', () => {
     destroyPhoneNumberSpy,
     deleteDirStub,
     twilioRemoveSpy,
-    signaldUnsubscribeStub
+    signaldUnsubscribeStub,
+    logEventStub
 
   const destroyChannelSucceeds = () =>
     findChannelStub.callsFake((_, phoneNumber) =>
@@ -35,8 +37,7 @@ describe('phone number services -- destroy module', () => {
       }),
     )
 
-  const channelDoesNotExist = () =>
-    findChannelStub.callsFake((_, phoneNumber) => Promise.resolve(null))
+  const channelDoesNotExist = () => findChannelStub.callsFake(() => Promise.resolve(null))
 
   const destroyChannelFails = () =>
     findChannelStub.callsFake((_, phoneNumber) =>
@@ -48,6 +49,8 @@ describe('phone number services -- destroy module', () => {
         memberships: [],
       }),
     )
+
+  const destroyChannelNotCalled = () => findChannelStub.returns(deepChannelFactory({ phoneNumber }))
 
   const destroyPhoneNumberSucceeds = () =>
     findPhoneNumberStub.callsFake((_, phoneNumber) =>
@@ -72,22 +75,16 @@ describe('phone number services -- destroy module', () => {
   }
 
   const releasePhoneNumberSucceeds = () => {
-    releasePhoneNumberStub.callsFake(sid => ({
+    releasePhoneNumberStub.callsFake(() => ({
       incomingPhoneNumbers: () => ({ remove: () => twilioRemoveSpy() }),
     }))
   }
 
   const releasePhoneNumberFails = () => {
-    releasePhoneNumberStub.throws()
+    releasePhoneNumberStub.throws({ message: 'oh noes!' })
   }
 
-  const broadcastMessageSucceeds = () =>
-    broadcastMessageStub.callsFake(async (phoneNumbers, msg) => await Promise.resolve())
-
-  const broadcastMessageFails = () =>
-    broadcastMessageStub.callsFake(
-      async (phoneNumbers, msg) => await Promise.reject('Failed to broadcast message'),
-    )
+  const broadcastMessageSucceeds = () => broadcastMessageStub.returns(Promise.resolve())
 
   const signaldUnsubscribeFails = () =>
     signaldUnsubscribeStub.throws(() => {
@@ -108,6 +105,9 @@ describe('phone number services -- destroy module', () => {
     releasePhoneNumberStub = sinon.stub(commonService, 'getTwilioClient')
     deleteDirStub = sinon.stub(fs, 'remove').returns(['/var/lib'])
     signaldUnsubscribeStub = sinon.stub(signal, 'unsubscribe')
+    logEventStub = sinon
+      .stub(eventRepository, 'log')
+      .returns(Promise.resolve(eventFactory({ type: eventTypes.CHANNEL_DESTROYED })))
   })
 
   afterEach(() => sinon.restore())
@@ -135,16 +135,26 @@ describe('phone number services -- destroy module', () => {
         })
       })
 
-      describe('when phone number does exist in phone number db', () => {
+      describe('when no channel exists with with given phone number', () => {
         beforeEach(async () => {
-          await channelDoesNotExist()
-          await broadcastMessageSucceeds()
-          await destroySignalEntrySucceeds()
-          await releasePhoneNumberSucceeds()
-          await destroyPhoneNumberSucceeds()
+          channelDoesNotExist()
+          broadcastMessageSucceeds()
+          destroySignalEntrySucceeds()
+          releasePhoneNumberSucceeds()
+          destroyPhoneNumberSucceeds()
         })
 
-        it('runs successfully', async () => {
+        it('destroys the phone number', async () => {
+          await destroy({ phoneNumber })
+          expect(destroyPhoneNumberSpy.callCount).to.eql(1)
+        })
+
+        it('releases the phone number back to twilio', async () => {
+          await destroy({ phoneNumber })
+          expect(twilioRemoveSpy.callCount).to.eql(1)
+        })
+
+        it('returns SUCCESS', async () => {
           const response = await destroy({ phoneNumber })
           expect(response.status).to.eql('SUCCESS')
         })
@@ -161,18 +171,18 @@ describe('phone number services -- destroy module', () => {
       })
     })
 
-    describe('when phone numbers do exist in channels db', () => {
+    describe('when channel exists with given phone number', () => {
       beforeEach(async () => {
         findChannelStub.returns(Promise.resolve({}))
       })
 
       describe('all tasks succeed', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelSucceeds()
-          await destroySignalEntrySucceeds()
-          await releasePhoneNumberSucceeds()
-          await destroyPhoneNumberSucceeds()
+          broadcastMessageSucceeds()
+          destroyChannelSucceeds()
+          destroySignalEntrySucceeds()
+          releasePhoneNumberSucceeds()
+          destroyPhoneNumberSucceeds()
         })
 
         describe('destroy command called from maintainer', () => {
@@ -192,6 +202,14 @@ describe('phone number services -- destroy module', () => {
         it('destroys the channel in the db', async () => {
           await destroy({ phoneNumber })
           expect(destroyChannelSpy.callCount).to.eql(1)
+        })
+
+        it('logs a CHANNEL_DESTROYED event', async () => {
+          await destroy({ phoneNumber })
+          expect(logEventStub.getCall(0).args.slice(0, -1)).to.eql([
+            eventTypes.CHANNEL_DESTROYED,
+            phoneNumber,
+          ])
         })
 
         it('deletes the associated signal data dir', async () => {
@@ -225,9 +243,9 @@ describe('phone number services -- destroy module', () => {
 
       describe('when notifying members fails', () => {
         beforeEach(async () => {
-          await destroyPhoneNumberSucceeds()
-          await destroySignalEntrySucceeds()
-          await releasePhoneNumberSucceeds()
+          destroyPhoneNumberSucceeds()
+          destroySignalEntrySucceeds()
+          releasePhoneNumberSucceeds()
 
           findChannelStub.callsFake((_, phoneNumber) =>
             Promise.resolve({
@@ -256,8 +274,8 @@ describe('phone number services -- destroy module', () => {
 
       describe('when destroying the channel in the db fails', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelFails()
+          broadcastMessageSucceeds()
+          destroyChannelFails()
         })
 
         it('returns an error status', async () => {
@@ -271,10 +289,9 @@ describe('phone number services -- destroy module', () => {
 
       describe('when destroying the phone number in the db fails', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelSucceeds()
-          await destroyPhoneNumberFails()
-          await destroySignalEntrySucceeds()
+          broadcastMessageSucceeds()
+          destroyChannelSucceeds()
+          destroyPhoneNumberFails()
         })
 
         it('returns an error status', async () => {
@@ -289,10 +306,11 @@ describe('phone number services -- destroy module', () => {
 
       describe('when destroying the signal entry data fails', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelSucceeds()
-          await destroyPhoneNumberSucceeds()
-          await destroySignalEntryFails()
+          destroyPhoneNumberSucceeds()
+          releasePhoneNumberSucceeds()
+          destroyChannelSucceeds()
+          broadcastMessageSucceeds()
+          destroySignalEntryFails()
         })
 
         it('returns an error status', async () => {
@@ -307,18 +325,16 @@ describe('phone number services -- destroy module', () => {
 
       describe('when releasing the phone number back to twilio fails', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelSucceeds()
-          await destroyPhoneNumberSucceeds()
-          await destroySignalEntrySucceeds()
-          await releasePhoneNumberFails()
+          destroyPhoneNumberSucceeds()
+          releasePhoneNumberFails()
+          destroyChannelNotCalled()
         })
 
         it('returns an error status', async () => {
           const response = await destroy({ phoneNumber })
           expect(response).to.eql({
             message:
-              'Failed to destroy channel for +11111111111. Error: Failed to release phone number back to Twilio',
+              'Failed to destroy channel for +11111111111. Error: Failed to release phone number back to Twilio: {"message":"oh noes!"}',
             status: 'ERROR',
           })
         })
@@ -326,12 +342,12 @@ describe('phone number services -- destroy module', () => {
 
       describe('when unsubscribing from signald fails', () => {
         beforeEach(async () => {
-          await broadcastMessageSucceeds()
-          await destroyChannelSucceeds()
-          await destroyPhoneNumberSucceeds()
-          await destroySignalEntrySucceeds()
-          await releasePhoneNumberSucceeds()
-          await signaldUnsubscribeFails()
+          broadcastMessageSucceeds()
+          destroyChannelSucceeds()
+          destroyPhoneNumberSucceeds()
+          destroySignalEntrySucceeds()
+          releasePhoneNumberSucceeds()
+          signaldUnsubscribeFails()
         })
 
         it('returns an error status', async () => {
