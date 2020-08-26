@@ -2,11 +2,13 @@ const app = require('../../../app')
 const { eventTypes } = require('../models/event')
 const { sha256Hash } = require('../../util')
 
-// (string, string) => Promise<Event>
-const log = (eventType, phoneNumber) =>
+// (string, string, sequelize.Transaction | null) => Promise<Event>
+const log = (eventType, phoneNumber, transaction = null) =>
   app.db.event.create({
     type: eventType,
     phoneNumberHash: sha256Hash(phoneNumber),
+    // omit the transaction k/v pair if no transaction arg provided
+    ...(transaction ? { transaction } : {}),
   })
 
 // string => Promise<Event|null>
