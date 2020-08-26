@@ -25,4 +25,18 @@ const logIfLastMembership = async memberPhoneNumber => {
   return isLast ? log(eventTypes.MEMBER_DESTROYED) : null
 }
 
+/**
+ * GOTCHA w.r.t. implementation of membership creation/destruction event log:
+ * - when querying the events log to count unique users, it would be tempting
+ *   to simply look for a member created event and count that as a unique user
+ * - however, it might be the case that a member is created and destroyed, then created again
+ *   causing the same user to have two member created events
+ * - in this case, the metrics implementer should query for MEMBER_CREATED records with distinct
+ *   phoneNumberHash fields (which will collapse multiple member created events for the same user
+ *   into one record)
+ * - note that we elect to do this rather than simply delete the MEMBER_DESTROYED event when the
+ *   member re-joins because modeling this usage pattern as multiple created/destroyed lifetimes
+ *   for a given user, more precisely represents how they were engaging with the app
+ ***/
+
 module.exports = { log, logIfFirstMembership, logIfLastMembership }
