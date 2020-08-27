@@ -18,7 +18,7 @@ const {
 } = require('../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'SIGNUP_MESSAGE' | 'COMMAND'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND' | 'PRIVATE MESSAGE' | 'NOOP'
  */
 
 const messageTypes = {
@@ -26,9 +26,10 @@ const messageTypes = {
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
   COMMAND: 'COMMAND',
   PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
+  NOOP: 'NOOP',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE, NOOP } = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -62,6 +63,8 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         commandResult.command,
       ])
       return handleCommandResult({ commandResult, dispatchable })
+    case NOOP:
+      return handleCommandResult({ commandResult, dispatchable })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
   }
@@ -69,10 +72,13 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 
 // (CommandResult, Dispatchable) -> MessageType
 const parseMessageType = (commandResult, { sender }) => {
-  if (commandResult.status === statuses.NOOP) {
-    if (sender.type === ADMIN) return BROADCAST_MESSAGE
-    return HOTLINE_MESSAGE
+  if (commandResult.status === NOOP) {
+    return sender.type === ADMIN ? NOOP : HOTLINE_MESSAGE
   }
+
+  if (commandResult.command === commands.BROADCAST && sender.type === ADMIN)
+    return BROADCAST_MESSAGE
+
   return COMMAND
 }
 
@@ -253,7 +259,7 @@ const addHeader = ({ channel, sdMessage, messageType, language, memberType, mess
   if (messageType === HOTLINE_MESSAGE) {
     prefix = `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
   } else if (messageType === BROADCAST_MESSAGE) {
-    if (memberType === 'ADMIN') {
+    if (memberType === ADMIN) {
       prefix = `[${messagesIn(language).prefixes.broadcastMessage}]\n`
     } else {
       prefix = `[${channel.name}]\n`

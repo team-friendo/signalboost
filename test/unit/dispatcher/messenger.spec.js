@@ -84,8 +84,14 @@ describe('messenger service', () => {
   after(async () => app.stop(testApp))
 
   describe('classifying a command result', () => {
-    it('recognizes a broadcast message', () => {
+    it('recognizes a noop message from an admin', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
+      const dispatchable = { channel, sender: adminSender }
+      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.NOOP)
+    })
+
+    it('recognizes a broadcast message from an admin', () => {
+      const msg = { command: 'BROADCAST', status: statuses.SUCCESS }
       const dispatchable = { channel, sender: adminSender }
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_MESSAGE)
     })
@@ -96,7 +102,7 @@ describe('messenger service', () => {
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
     })
 
-    it('recognizes a broadcast response from a random person', () => {
+    it('recognizes a hotline message from a random person', () => {
       const msg = { command: 'foo', status: statuses.NOOP }
       const dispatchable = { channel, sender: randomSender }
       expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
@@ -148,8 +154,9 @@ describe('messenger service', () => {
             async () =>
               await messenger.dispatch({
                 commandResult: {
-                  status: statuses.NOOP,
-                  messageBody: messages.notifications.noop,
+                  command: commands.BROADCAST,
+                  status: statuses.SUCCESS,
+                  messageBody: messagesIn(adminSender.language).commandResponses.noop.error,
                   notifications: [],
                 },
                 dispatchable: { channel, sender: adminSender, sdMessage },
@@ -192,14 +199,15 @@ describe('messenger service', () => {
           })
         })
 
-        describe('when message has attachments', () => {
+        describe('when message has no attachments', () => {
           const noAttachmentSdMessage = { ...sdMessage, attachments: [] }
           beforeEach(
             async () =>
               await messenger.dispatch({
                 commandResult: {
-                  status: statuses.NOOP,
-                  messageBody: messages.notifications.noop,
+                  command: commands.BROADCAST,
+                  status: statuses.SUCCESS,
+                  messageBody: messagesIn(adminSender.language).commandResponses.noop.error,
                   notifications: [],
                 },
                 dispatchable: {
