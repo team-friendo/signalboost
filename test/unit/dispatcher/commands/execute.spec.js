@@ -737,7 +737,6 @@ describe('executing commands', () => {
   })
 
   // INVITE
-
   describe('INVITE command', () => {
     const inviteePhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
     const sdMessage = sdMessageOf(channel, `INVITE ${inviteePhoneNumbers.join(',')}`)
@@ -2022,7 +2021,7 @@ describe('executing commands', () => {
             command: commands.NOOP,
             payload: '',
             status: statuses.NOOP,
-            message: '',
+            message: messagesIn(admin.language).commandResponses.noop.error,
             notifications: [],
           })
         })
@@ -2152,7 +2151,7 @@ describe('executing commands', () => {
             command: commands.NOOP,
             payload: '',
             status: statuses.NOOP,
-            message: '',
+            message: messagesIn(admin.language).commandResponses.noop.error,
             notifications: [],
           })
         })
@@ -2338,18 +2337,38 @@ describe('executing commands', () => {
   })
 
   describe('invalid command', () => {
-    it('returns NOOP status/message', async () => {
-      const dispatchable = {
-        channel,
-        sender: admin,
-        sdMessage: sdMessageOf(channel, 'foo'),
-      }
-      expect(await processCommand(dispatchable)).to.eql({
-        command: commands.NOOP,
-        payload: '',
-        status: statuses.NOOP,
-        message: '',
-        notifications: [],
+    describe('when an admin sends a message not prefixed by a command ', () => {
+      it('returns NOOP status/message', async () => {
+        const sender = admin
+        const dispatchable = {
+          channel,
+          sender,
+          sdMessage: sdMessageOf(channel, 'foo'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          payload: '',
+          status: statuses.NOOP,
+          message: messagesIn(sender.language).commandResponses.noop.error,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when a subscriber sends a message not prefixed by a command ', () => {
+      it('returns NOOP status/message', async () => {
+        const dispatchable = {
+          channel,
+          sender: subscriber,
+          sdMessage: sdMessageOf(channel, 'foo'),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.NOOP,
+          payload: '',
+          status: statuses.NOOP,
+          message: '',
+          notifications: [],
+        })
       })
     })
   })

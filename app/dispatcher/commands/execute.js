@@ -76,10 +76,9 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-  }[command] || (() => noop()))()
+  }[command] || (() => noop(sender)))()
 
   result.notifications = result.notifications || []
-  console.log({ command, payload, ...result })
   return { command, payload, ...result }
 }
 
@@ -727,8 +726,16 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 }
 
 // NOOP
-const noop = () =>
-  Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '', notifications: [] })
+const noop = sender => {
+  let message = sender.type === ADMIN ? messagesIn(sender.language).commandResponses.noop.error : ''
+
+  return Promise.resolve({
+    command: commands.NOOP,
+    message,
+    status: statuses.NOOP,
+    notifications: [],
+  })
+}
 
 /**********
  * HELPERS

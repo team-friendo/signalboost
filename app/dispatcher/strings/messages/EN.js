@@ -278,6 +278,9 @@ If you already have an invite, try sending ACCEPT`,
     notSubscriber,
   },
 
+  // NOOP
+  noop: `Sorry, didn't understand that! Prefix your message with BROADCAST to broadcast to all the subscribers on this channel. Send HELLO for more commands.`,
+
   // PRIVATE
 
   private: {
