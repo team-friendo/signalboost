@@ -27,8 +27,8 @@ mkdir -p ${backup_dir}
 echo "--- backing up db at $timestamp..."
 
 down="docker-compose -f ${project_root}/docker-compose.yml down"
-up="docker-compose --file ${project_root}/docker-compose.yml up -d db"
-pg_dump="docker-compose --file ${project_root}/docker-compose.yml exec -T db pg_dump -U postgres signalboost"
+up="docker-compose --env-file .env --file ${project_root}/docker-compose.yml up -d db"
+pg_dump="docker-compose --env-file .env --file ${project_root}/docker-compose.yml exec -T db pg_dump -U postgres signalboost"
 db_backup_path="${backup_dir}/sb_db_backup_${timestamp}.gpg"
 
 ${down}
