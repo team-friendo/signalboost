@@ -319,6 +319,11 @@ Si ya tiene usted una invitación, intente enviar ACEPTAR`,
     notSubscriber,
   },
 
+  // NOOP
+  noop: {
+    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {

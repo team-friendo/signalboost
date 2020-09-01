@@ -277,6 +277,11 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     notSubscriber,
   },
 
+  // NOOP
+  noop: {
+    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
+  },
+
   // PRIVATE
 
   private: {

@@ -282,6 +282,11 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     notSubscriber,
   },
 
+  // NOOP
+  noop: {
+    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
+  },
+
   // PRIVATE
 
   private: {

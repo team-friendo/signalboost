@@ -271,7 +271,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // LEAVE
-
   leave: {
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
@@ -279,7 +278,9 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // NOOP
-  noop: `Sorry, didn't understand that! Prefix your message with BROADCAST to broadcast to all the subscribers on this channel. Send HELLO for more commands.`,
+  noop: {
+    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
+  },
 
   // PRIVATE
 
@@ -289,7 +290,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // REMOVE
-
   remove: {
     success: num => `${num} was removed.`,
     notAdmin,
@@ -299,7 +299,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // RENAME
-
   rename: {
     success: (oldName, newName) =>
       `[${newName}]
