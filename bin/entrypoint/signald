@@ -18,6 +18,8 @@ export JAVA_OPTS="-Dcom.sun.management.jmxremote
   -Dcom.sun.management.jmxremote.ssl=false
   -Dcom.sun.management.jmxremote.authenticate=true
   -Dcom.sun.management.jmxremote.password.file=/var/lib/jmx/jmxremote.password
-  -Dcom.sun.management.jmxremote.access.file=/var/lib/jmx/jmxremote.access"
+  -Dcom.sun.management.jmxremote.access.file=/var/lib/jmx/jmxremote.access
+  -Ddd.profiling.enabled=true
+  -javaagent:/var/lib/dd/dd-java-agent.jar"
 
 signald ${v_flag} -d /var/lib/signald

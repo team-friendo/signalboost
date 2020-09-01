@@ -1,6 +1,6 @@
-FROM debian:buster
+FROM azul/zulu-openjdk:8
 
-MAINTAINER Team Friendo <team-friendo@riseup.net>
+LABEL maintainer="Team Friendo <team-friendo@riseup.net>"
 LABEL description="Image for running a signal-boost service overlaid on top of signal-cli."
 
 # ------------------------------------------------------
@@ -39,20 +39,12 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 ENV LC_CTYPE en_US.UTF-8
 
-
 # ------------------------------------------------------
-# --- Install and Configure JVM
+# --- Install datadog java agent
 # ------------------------------------------------------
 
-# Signald attachments break if we use jdk11 (why?!??),
-# but buster does not provide a jdk8 installation candidate,
-# so we grab one from jfrog.io...
-
-RUN wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | apt-key add -
-RUN add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
-RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y adoptopenjdk-8-hotspot
-
-ENV JAVA_HOME "/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64"
+RUN mkdir -p /var/lib/dd
+RUN wget -O /var/lib/dd/dd-java-agent.jar 'https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=com.datadoghq&a=dd-java-agent&v=LATEST'
 
 # ------------------------------------------------------
 # --- Install and Configure Signald (from source)

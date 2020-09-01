@@ -39,6 +39,8 @@ services:
       LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
       SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_AGENT_PORT: 8126
     expose:
       - ${SIGNALD_PORT}
     ports:
@@ -88,6 +90,20 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
     logging: *loki-logging
     restart: unless-stopped
+
+  datadog-agent:
+    container_name: signalboost_dd_agent
+    image: datadog/agent:7
+    ports:
+      - 8126:8126
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DOCKER_CONTENT_TRUST: 1
+      DD_APM_ENABLED: "true"
 
   proxy:
     image: jwilder/nginx-proxy:alpine
