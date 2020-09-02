@@ -1,7 +1,7 @@
 FROM debian:buster
 
-MAINTAINER Team Friendo <team-friendo@riseup.net>
-LABEL Description="Image for running a signal-boost service overlaid on top of signal-cli."
+LABEL maintainer="Team Friendo <team-friendo@riseup.net>"
+LABEL description="Image for running signalboost splashsite in gatsby."
 
 # ------------------------------------------------------
 # --- Install System Dependencies
@@ -102,3 +102,9 @@ RUN set -ex \
 RUN yarn global add gatsby-cli
 
 WORKDIR /splash
+
+#---------------------
+# --- Version
+# --------------------
+
+LABEL version="1.0.0"
