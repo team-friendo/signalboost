@@ -1,4 +1,5 @@
-FROM azul/zulu-openjdk:8
+FROM azul/zulu-openjdk-debian:8
+# Signald attachments break if we use jdk11 (why?!??)
 
 LABEL maintainer="Team Friendo <team-friendo@riseup.net>"
 LABEL description="Image for running a signal-boost service overlaid on top of signal-cli."
@@ -83,4 +84,4 @@ ENTRYPOINT /signalboost/bin/entrypoint/signald
 # ------------------
 # Version
 # ------------------
-LABEL verson="1.0.8"
+LABEL verson="1.0.9"
