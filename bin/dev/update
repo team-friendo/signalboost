@@ -4,11 +4,6 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- building docker images..."
-
-docker build -f docker/signalboost.dockerfile -t "signalboost:latest" .
-docker build -f docker/signald.dockerfile -t "signald:latest" .
-
 echo "--- installing dependencies..."
 
 docker-compose -f docker-compose-dev.yml \
