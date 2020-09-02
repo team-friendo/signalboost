@@ -45,11 +45,17 @@ docker.build.signalboost: ## build the signalboost docker image (accepts optiona
 docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signald $(TAG)
 
+docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build splash $(TAG)
+
 docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signalboost $(TAG)
 
 docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signald $(TAG)
+
+docker.push.splash: ## push the splash site docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push splash $(TAG)
 
 ###################
 # ansible-related #
