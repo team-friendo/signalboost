@@ -24,8 +24,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
-    # as per https://github.com/docker-library/postgres/issues/692
     environment:
+      # as per https://github.com/docker-library/postgres/issues/692
       POSTGRES_HOST_AUTH_METHOD: trust
     logging: *loki-logging
     restart: unless-stopped
@@ -33,6 +33,7 @@ services:
   signald:
     image: registry.0xacab.org/team-friendo/signalboost/signald
     container_name: signalboost_signald
+    env_file: .env
     environment:
       VIRTUAL_HOST: ${SIGNALD_HOST_URL}
       VIRTUAL_PORT: ${SIGNALD_PORT}
