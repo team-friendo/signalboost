@@ -44,16 +44,19 @@
   # UPDATE DOCKER IMAGES #
   ########################
 
-  # - name: Load base dockerfiles
-  #   copy:
-  #     src: files/docker/
-  #     dest: /srv/splash/docker/
-  #   tags: docker
+  - name: Pull latest splash container
+    command: "docker-compose pull splash"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare, docker
 
-  # - name: Build splash container
-  #   command: docker build -f /srv/splash/docker/signalboost_splash.dockerfile -t signalboost_splash:latest /srv/splash
-  #   register: build_output
-  #   tags: docker
+    # to ensure ACMEv2 compatibility
+    # (as per, e.g.: https://github.com/nginx-proxy/docker-letsencrypt-nginx-proxy-companion/issues/598)
+  - name: Pull latest version of letsencrypt companion
+    command: "docker-compose pull letsencrypt"
+    args:
+      chdir: "{{ homedir }}"
+    tags: prepare, docker
 
 
   ####################
