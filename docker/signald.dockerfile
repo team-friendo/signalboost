@@ -84,4 +84,4 @@ ENTRYPOINT /signalboost/bin/entrypoint/signald
 # ------------------
 # Version
 # ------------------
-LABEL verson="1.0.9"
+LABEL version="1.0.9"
