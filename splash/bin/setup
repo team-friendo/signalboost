@@ -8,10 +8,6 @@ echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 source .env
 
-echo "--- building signalboost_splash docker image..."
-docker build -f docker/signalboost_splash.dockerfile -t "signalboost_splash:latest" .
-echo "--- done building signalboost_splash docker image"
-
 echo "--- installing dependencies..."
 docker-compose -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \
