@@ -20,15 +20,18 @@ backup_dir="/srv/signalboost/backups/${timestamp}"
 # make the folder for this backup
 mkdir -p ${backup_dir}
 
+cd ${project_root}
+echo "--- running backups from project root: ${pwd}..."
+
 #############
 # backup db #
 #############
 
 echo "--- backing up db at $timestamp..."
 
-down="docker-compose -f ${project_root}/docker-compose.yml down"
-up="docker-compose --env-file .env --file ${project_root}/docker-compose.yml up -d db"
-pg_dump="docker-compose --env-file .env --file ${project_root}/docker-compose.yml exec -T db pg_dump -U postgres signalboost"
+down="docker-compose down"
+up="docker-compose --env-file .env up -d db"
+pg_dump="docker-compose --env-file .env exec -T db pg_dump -U postgres signalboost"
 db_backup_path="${backup_dir}/sb_db_backup_${timestamp}.gpg"
 
 ${down}
