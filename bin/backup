@@ -21,7 +21,7 @@ backup_dir="/srv/signalboost/backups/${timestamp}"
 mkdir -p ${backup_dir}
 
 cd ${project_root}
-echo "--- running backups from project root: ${pwd}..."
+echo "--- running backups from project root: ${project_root}..."
 
 #############
 # backup db #
