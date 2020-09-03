@@ -74,21 +74,21 @@
   ########
 
   - name: Stop app
-    command: ./bin/shutdown
+    command: "docker-compose down"
     args:
       chdir: "{{ homedir }}"
     tags: stop
-
 
   #########
   # START #
   #########
 
   - name: Start app
-    docker_service:
-      project_src: "{{ homedir }}"
-      state: present
+    command: "docker-compose up -d"
+    args:
+      chdir: "{{ homedir }}"
     register: docker_up_result
+    tags: start
 
   # - debug:
   #     var: docker_up_result
