@@ -48,7 +48,7 @@ services:
     networks:
       - default
     expose:
-      - ${SIGNALD_PORT}
+      - 1312
     ports:
       - 9010:9010
     volumes:
@@ -73,7 +73,7 @@ services:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
       REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
     expose:
-      - ${SIGNALBOOST_PORT}
+      - 3000
     networks:
       - default
     volumes:

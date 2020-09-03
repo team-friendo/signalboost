@@ -36,14 +36,14 @@ services:
     env_file: .env
     environment:
       VIRTUAL_HOST: ${SIGNALD_HOST_URL}
-      VIRTUAL_PORT: ${SIGNALD_PORT}
+      VIRTUAL_PORT: 1312
       LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
       SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
       DD_AGENT_HOST: datadog-agent
       DD_TRACE_AGENT_PORT: 8126
     expose:
-      - ${SIGNALD_PORT}
+      - 1312
     ports:
       - 9010:9010
     networks:
@@ -68,7 +68,7 @@ services:
     env_file: .env
     environment:
       VIRTUAL_HOST: ${SIGNALBOOST_HOST_URL}
-      VIRTUAL_PORT: ${SIGNALBOOST_PORT}
+      VIRTUAL_PORT: 3000
       LETSENCRYPT_HOST: ${SIGNALBOOST_HOST_URL}
       SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
       REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
@@ -76,7 +76,7 @@ services:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
       NODE_ENV: production
     expose:
-      - ${SIGNALBOOST_PORT}
+      - 3000
     networks:
       - proxy-tier
       - default
