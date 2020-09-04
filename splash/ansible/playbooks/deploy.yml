@@ -23,7 +23,7 @@
       repo: https://0xacab.org/team-friendo/signalboost
       dest: "{{ rootdir }}"
       force: true
-      version: "{{ branch | default('master') }}"
+      version: "{{ branch | default('main') }}"
     tags: clone
 
   - name: Deploy environment file using blackbox
