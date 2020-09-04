@@ -44,6 +44,11 @@ Learn more: https://signalboost.info`
 const validPhoneNumberHint = `Phone numbers must include country codes prefixed by a '+'.`
 
 const parseErrors = {
+  missingCommand:
+    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+
+  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. ${validPhoneNumberHint}`,
 
@@ -279,7 +284,7 @@ If you already have an invite, try sending ACCEPT`,
 
   // NOOP
   noop: {
-    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
+    error: `Did you mean to prefix your message with BROADCAST? Send HELP to list commands that you can use.`,
   },
 
   // PRIVATE

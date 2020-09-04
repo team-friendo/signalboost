@@ -43,6 +43,11 @@ Para más información: https://signalboost.info`
 const validPhoneNumberHint = `Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
 const parseErrors = {
+  missingCommand:
+    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+
+  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" no es un número de teléfono válido. ${validPhoneNumberHint}`,
 

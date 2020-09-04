@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import { commands } from '../../../../app/dispatcher/commands/constants'
+import { commands, parseErrorTypes } from '../../../../app/dispatcher/commands/constants'
 import { parseExecutable } from '../../../../app/dispatcher/commands/parse'
 import { languages } from '../../../../app/language'
 import { defaultLanguage } from '../../../../app/config'
@@ -14,8 +14,8 @@ describe('parse module', () => {
   const invalidPhoneNumber = '222-333-4444'
 
   describe('parsing commands', () => {
-    describe('NOOP', () => {
-      it('parses NOOP in any language if message does not begin with a command', () => {
+    describe('a MISSING_COMMAND parseError', () => {
+      it('returns a parseError and message if the message does not begin with a command', () => {
         const msgs = [
           'fire the missiles',
           'the ADD foo',
@@ -96,9 +96,10 @@ describe('parse module', () => {
         ]
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
-            command: commands.NOOP,
-            language: defaultLanguage,
+            command: null,
+            error: messagesIn(defaultLanguage).parseErrors.missingCommand,
             payload: '',
+            type: parseErrorTypes.MISSING_COMMAND,
           }),
         )
       })
@@ -909,7 +910,7 @@ describe('parse module', () => {
 
   describe('validating payloads', () => {
     describe('a no-payload command followed by a payload', () => {
-      it('is parsed as a broadcast message', () => {
+      it('returns an INVALID PAYLOAD parseError', () => {
         const variants = [
           {
             language: languages.EN,
@@ -923,10 +924,10 @@ describe('parse module', () => {
               'leave foo',
               'goodbye foo',
               'english foo',
-              'hotline on now',
-              'hotline off now',
-              'vouching on now',
-              'vouching off now',
+              'hotline on foo',
+              'hotline off foo',
+              'vouching on foo',
+              'vouching off foo',
             ],
           },
           {
@@ -980,9 +981,10 @@ describe('parse module', () => {
         variants.forEach(({ language, messages }) =>
           messages.forEach(msg => {
             expect(parseExecutable(msg)).to.eql({
-              command: commands.NOOP,
-              language,
+              command: null,
               payload: '',
+              error: messagesIn(language).parseErrors.invalidPayload,
+              type: parseErrorTypes.INVALID_PAYLOAD,
             })
           }),
         )
@@ -1023,8 +1025,9 @@ describe('parse module', () => {
         it('returns a parse error', () => {
           expect(parseExecutable(`ADD ${invalidPhoneNumber}`)).to.eql({
             command: commands.ADD,
-            payload: invalidPhoneNumber,
+            payload: '',
             error: messagesIn(languages.EN).parseErrors.invalidPhoneNumber(invalidPhoneNumber),
+            type: parseErrorTypes.INVALID_PAYLOAD,
           })
         })
       })
@@ -1057,9 +1060,10 @@ describe('parse module', () => {
       describe('with one invalid phone number', () => {
         it('returns a parse error', () => {
           variantsOf(`foo`).forEach(({ message, language }) =>
-            expect(parseExecutable(message).error).to.eql(
-              messagesIn(language).parseErrors.invalidPhoneNumber('foo'),
-            ),
+            expect(parseExecutable(message)).to.include({
+              error: messagesIn(language).parseErrors.invalidPhoneNumber('foo'),
+              type: parseErrorTypes.INVALID_PAYLOAD,
+            }),
           )
         })
       })
@@ -1067,9 +1071,13 @@ describe('parse module', () => {
       describe('with many invalid phone numbers', () => {
         it('returns a parse error', () => {
           variantsOf(`foo, ${invalidPhoneNumber}`).forEach(({ message, language }) =>
-            expect(parseExecutable(message).error).to.eql(
-              messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
-            ),
+            expect(parseExecutable(message)).to.include({
+              error: messagesIn(language).parseErrors.invalidPhoneNumbers([
+                'foo',
+                invalidPhoneNumber,
+              ]),
+              type: parseErrorTypes.INVALID_PAYLOAD,
+            }),
           )
         })
       })
@@ -1078,9 +1086,13 @@ describe('parse module', () => {
         it('returns a parse error', () => {
           variantsOf(`foo, ${rawPhoneNumber}, ${invalidPhoneNumber}, ${rawPhoneNumber2}`).forEach(
             ({ message, language }) =>
-              expect(parseExecutable(message).error).to.eql(
-                messagesIn(language).parseErrors.invalidPhoneNumbers(['foo', invalidPhoneNumber]),
-              ),
+              expect(parseExecutable(message)).to.include({
+                error: messagesIn(language).parseErrors.invalidPhoneNumbers([
+                  'foo',
+                  invalidPhoneNumber,
+                ]),
+                type: parseErrorTypes.INVALID_PAYLOAD,
+              }),
           )
         })
       })
@@ -1115,9 +1127,10 @@ describe('parse module', () => {
         ]
         it('returns a parse error', () => {
           variants.forEach(({ language, message }) =>
-            expect(parseExecutable(message).error).to.eql(
-              messagesIn(language).parseErrors.invalidHotlineMessageId('#abc foo'),
-            ),
+            expect(parseExecutable(message)).to.include({
+              error: messagesIn(language).parseErrors.invalidHotlineMessageId('#abc foo'),
+              type: parseErrorTypes.INVALID_PAYLOAD,
+            }),
           )
         })
       })

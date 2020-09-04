@@ -44,6 +44,11 @@ const validPhoneNumberHint =
   'Telefonnummern müssen mit Ländercodes und einem vorangestellten ' + ' beginnen`'
 
 const parseErrors = {
+  missingCommand:
+    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+
+  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" ist keine gültige Telefonnummer. ${validPhoneNumberHint}`,
 

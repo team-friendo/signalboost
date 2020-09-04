@@ -15,6 +15,11 @@ const toggles = {
   HOTLINE: { dbField: 'hotlineOn', name: 'hotline' },
 }
 
+const parseErrorTypes = {
+  MISSING_COMMAND: 'MISSING_COMMAND',
+  INVALID_PAYLOAD: 'INVALID_PAYLOAD',
+}
+
 const commands = {
   ADD: 'ADD',
   ACCEPT: 'ACCEPT',
@@ -29,7 +34,6 @@ const commands = {
   INVITE: 'INVITE',
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
-  NOOP: 'NOOP',
   PRIVATE: 'PRIVATE',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',
@@ -42,4 +46,4 @@ const commands = {
   VOUCHING_ADMIN: 'VOUCHING_ADMIN',
 }
 
-module.exports = { statuses, toggles, commands, vouchModes }
+module.exports = { statuses, toggles, commands, vouchModes, parseErrorTypes }

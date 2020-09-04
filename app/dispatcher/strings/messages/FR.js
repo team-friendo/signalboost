@@ -44,6 +44,11 @@ Pour plus de renseignements: https://signalboost.info`
 const validPhoneNumberHint = `Les numéros de téléphone doivent comprendre l’indicatifs téléphonique du pays précédé par un «+».`
 
 const parseErrors = {
+  missingCommand:
+    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+
+  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" n’est pas un numéro de téléphone valide. ${validPhoneNumberHint}`,
 
