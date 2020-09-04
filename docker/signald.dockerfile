@@ -58,7 +58,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 # build signald from a given commit hash
 
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
-ENV BRANCH "master"
+ENV BRANCH "main"
 ENV COMMIT_HASH "846779eeb00b73b084caa7bc4bcc5ddc5dc8068f"
 
 # fetch repo at desired commit
