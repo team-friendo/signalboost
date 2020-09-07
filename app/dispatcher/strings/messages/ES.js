@@ -510,9 +510,9 @@ En breve recibirá un mensaje de bienvenida en su nuevo canal...`,
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `Acabas de convertirte en administrador de este canal Signalboost [${channelName}] por ${addingAdmin}. ¡Bienvenido!
 
-Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
+Para acceder fácilmente, agregue este número de teléfono (${channelPhoneNumber}) a sus contactos como ${channelName}. Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
 
-Responda con AYUDA para más información.`,
+Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía práctica: https://signalboost.info/how-to.`,
 }
 
 const prefixes = {

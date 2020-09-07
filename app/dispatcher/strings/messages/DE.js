@@ -497,9 +497,9 @@ ${requestMsg}`,
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `Du wurdest gerade als Admin in diesem Signalboost Kanal [${channelName}] hinzugefügt von ${addingAdmin}. Wilkommen!
 
-Als Teilnehmer kann Mensch sich einfach mit einer Signal Nachricht mit dem Text HALLO an ${channelPhoneNumber}  anmelden. Um sich später wieder abzumelden kan eine Nachricht mit dem Text TSCHÜSS an die gleiche Nummer versandt werden.
+    Fügen Sie diese Telefonnummer hinzu, um einen einfachen Zugriff zu erhalten (${channelPhoneNumber}) zu Ihren Kontakten als ${channelName}. Als Teilnehmer kann Mensch sich einfach mit einer Signal Nachricht mit dem Text HALLO an ${channelPhoneNumber}  anmelden. Um sich später wieder abzumelden kan eine Nachricht mit dem Text TSCHÜSS an die gleiche Nummer versandt werden.
 
-Antworte HILFE für mehr Informationen.`,
+    Um eine vollständige Liste der Befehle anzuzeigen, senden Sie HILFE oder lesen Sie unsere Anleitung: https://signalboost.info/how-to.`,
 }
 
 const prefixes = {
