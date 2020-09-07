@@ -10,7 +10,7 @@ const { membershipOf } = require('./models/membership')
 const { messageCountOf } = require('./models/messageCount')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { smsSenderOf } = require('./models/smsSender')
-const { recycleablePhoneNumberOf } = require('./models/recycleablePhoneNumber')
+const { recycleRequestOf } = require('./models/recycleRequest')
 
 const { wait } = require('../util')
 const { maxConnectionAttempts, connectionInterval } = config
@@ -30,7 +30,7 @@ const run = async () => {
     membership: membershipOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
-    recycleablePhoneNumber: recycleablePhoneNumberOf(sequelize, Sequelize),
+    recycleRequest: recycleRequestOf(sequelize, Sequelize),
     smsSender: smsSenderOf(sequelize, Sequelize),
   }
 
