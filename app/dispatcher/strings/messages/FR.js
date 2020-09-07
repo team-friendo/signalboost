@@ -481,13 +481,6 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   setDescription: newDescription =>
     `La description de ce canal est désormais: "${newDescription}."`,
 
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Demande d’abonnement reçu provenant de ${senderNumber}:
-    ${requestMsg}`,
-
-  signupRequestResponse:
-    'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
-
   toRemovedAdmin:
     "Vous venez d'être supprimé e en tant qu'admin de cette chaîne. Envoyez SALUT pour vous réinscrire.",
 

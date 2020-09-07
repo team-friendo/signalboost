@@ -457,13 +457,6 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   setDescription: newDescription => `Channel description set to "${newDescription}."`,
 
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Signup request received from ${senderNumber}:
-    ${requestMsg}`,
-
-  signupRequestResponse:
-    'Thank you for signing up for Signalboost! You will receive a welcome message on your new channel shortly...',
-
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
 
   toRemovedSubscriber:

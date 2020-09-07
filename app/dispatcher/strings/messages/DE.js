@@ -472,13 +472,6 @@ ${
 
   setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
 
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Bitte um Anmeldung erhalten von: ${senderNumber}:
-${requestMsg}`,
-
-  signupRequestResponse:
-    'Danke fürs anmelden bei Signalboost! In kürze erhälst du eine Willkommens-Nachricht auf deinem neuen Kanal...',
-
   toRemovedAdmin:
     'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
 
