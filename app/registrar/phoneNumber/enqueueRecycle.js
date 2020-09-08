@@ -1,4 +1,4 @@
-const signal = require('../../signal/signal')
+const signal = require('../../signal')
 const { isEmpty } = require('lodash')
 const { statuses } = require('../../util')
 const { messagesIn } = require('../../dispatcher/strings/messages')
