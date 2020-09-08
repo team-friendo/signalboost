@@ -481,13 +481,6 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   setDescription: newDescription =>
     `La description de ce canal est désormais: "${newDescription}."`,
 
-  signupRequestReceived: (senderNumber, requestMsg) =>
-    `Demande d’abonnement reçu provenant de ${senderNumber}:
-    ${requestMsg}`,
-
-  signupRequestResponse:
-    'Merci pour votre abonnement avec Signalboost! Vous recevrez bientôt un message d’accueil sur votre nouveau canal...',
-
   toRemovedAdmin:
     "Vous venez d'être supprimé e en tant qu'admin de cette chaîne. Envoyez SALUT pour vous réinscrire.",
 
@@ -514,9 +507,9 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `Vous êtes maintenant un.e admin de ce canal Signalboost [${channelName}]  grâce à ${addingAdmin}. Bienvenue!
 
-On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
+    Pour un accès facile, ajoutez ce numéro de téléphone (${channelPhoneNumber}) à vos contacts sous le nom ${channelName}. On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
 
-Commande AIDE pour plus de renseignements.`,
+Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre guide pratique: https://signalboost.info/how-to.`,
 }
 
 const prefixes = {
