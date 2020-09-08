@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
-import { deepChannelFactory } from '../../../support/factories/channel'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times } from 'lodash'
 import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
@@ -119,6 +119,36 @@ describe('channel repository', () => {
 
     it('returns a channel resources with updated values', () => {
       expect(updatedChannel.name).to.eql('bar')
+    })
+  })
+
+  describe('#destroy', () => {
+    let channel, channelCount
+
+    describe('when given a channel instance', () => {
+      beforeEach(async () => (channel = await db.channel.create(channelFactory())))
+
+      it('deletes the instance', async () => {
+        channelCount = await db.channel.count()
+        expect(await channelRepository.destroy(channel)).to.eql(true)
+        expect(await db.channel.count()).to.eql(channelCount - 1)
+      })
+    })
+
+    describe('when given null', () => {
+      it('does nothing', async () => {
+        channelCount = await db.channel.count()
+        expect(await channelRepository.destroy(channel)).to.eql(false)
+        expect(await db.channel.count()).to.eql(channelCount)
+      })
+    })
+
+    describe('when given a channel but db error occurs', () => {
+      it('rejects with an error', async () => {
+        channelCount = await db.channel.count()
+        expect(await channelRepository.destroy('foobar').catch(e => e)).to.include('Failed')
+        expect(await db.channel.count()).to.eql(channelCount)
+      })
     })
   })
 

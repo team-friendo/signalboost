@@ -30,6 +30,17 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
+// (ChannelInstance | null, Transaction) -> Promise<boolean>
+const destroy = async (channel, tx) => {
+  if (channel == null) return false
+  try {
+    await channel.destroy({ transaction: tx })
+    return true
+  } catch (error) {
+    return Promise.reject('Failed to destroy channel')
+  }
+}
+
 const findAll = () => app.db.channel.findAll()
 
 const findAllDeep = () =>
@@ -89,6 +100,7 @@ const getSubscriberPhoneNumbers = channel =>
 
 module.exports = {
   create,
+  destroy,
   findAll,
   findAllDeep,
   findByPhoneNumber,

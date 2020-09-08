@@ -1,57 +1,38 @@
+const channelRepository = require('../../db/repositories/channel')
 const eventRepository = require('../../db/repositories/event')
+const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const common = require('./common')
+const { notificationKeys } = require('./common')
 const { statuses } = require('../../util')
 const { defaultLanguage } = require('../../config')
-const signal = require('../../signal')
 const { eventTypes } = require('../../db/models/event')
 const { messagesIn } = require('../../dispatcher/strings/messages')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const channelRepository = require('../../db/repositories/channel')
 
 // (string) -> SignalboostStatus
-const recycle = async channelPhoneNumber => {
-  const channel = await channelRepository.findDeep(channelPhoneNumber)
-  if (channel) {
-    return notifyMembers(channel)
-      .then(() => common.destroyChannel(channel))
-      .then(() => eventRepository.log(eventTypes.CHANNEL_DESTROYED, channelPhoneNumber))
-      .then(() => recordStatusChange(channelPhoneNumber, common.statuses.VERIFIED))
-      .then(phoneNumberStatus => ({ status: statuses.SUCCESS, data: phoneNumberStatus }))
-      .catch(err => handleRecycleFailure(err, channelPhoneNumber))
-  } else {
-    return { status: statuses.ERROR, message: `Channel not found for ${channelPhoneNumber}` }
-  }
-}
+const recycle = async phoneNumber => {
+  const channel = await channelRepository.findDeep(phoneNumber)
+  if (!channel) return { status: statuses.ERROR, message: `Channel not found for ${phoneNumber}` }
 
-/********************
- * HELPER FUNCTIONS
- ********************/
-// (Channel) -> Promise([])
-const notifyMembers = async channel => {
-  const recipients = await channelRepository.getMemberPhoneNumbers(channel)
+  try {
+    await common.notifyMembers(channel, notificationKeys.CHANNEL_RECYCLED)
+    await channelRepository.destroy(channel)
+    await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber)
+    const result = await phoneNumberRepository.update(phoneNumber, {
+      status: common.statuses.VERIFIED,
+    })
 
-  return Promise.all(
-    recipients.map(recipient =>
-      signal.sendMessage(
-        recipient.memberPhoneNumber,
-        signal.sdMessageOf(channel, messagesIn(recipient.language).notifications.channelRecycled),
-      ),
-    ),
-  )
-}
-
-// (Database, string, PhoneNumberStatus) -> PhoneNumberStatus
-const recordStatusChange = async (phoneNumber, status) =>
-  phoneNumberRepository.update(phoneNumber, { status }).then(common.extractStatus)
-
-const handleRecycleFailure = async (err, phoneNumber) => {
-  await common.notifyMaintainers(
-    messagesIn(defaultLanguage).notifications.recycleChannelFailed(phoneNumber),
-  )
-
-  return {
-    status: 'ERROR',
-    message: `Failed to recycle channel for ${phoneNumber}. Error: ${err}`,
+    return {
+      status: statuses.SUCCESS,
+      data: common.extractStatus(result),
+    }
+  } catch (err) {
+    await common.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.recycleChannelFailed(phoneNumber),
+    )
+    return {
+      status: 'ERROR',
+      message: `Failed to recycle channel for ${phoneNumber}. Error: ${err}`,
+    }
   }
 }
 

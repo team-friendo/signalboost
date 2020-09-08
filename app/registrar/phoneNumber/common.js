@@ -2,6 +2,8 @@ const { pick } = require('lodash')
 const { statuses } = require('../../db/models/phoneNumber')
 const channelRepository = require('../../db/repositories/channel')
 const signal = require('../../signal')
+const { getAdminMemberships } = require("../../db/repositories/channel")
+const { getAdminPhoneNumbers } = require('../../db/repositories/channel')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const { sdMessageOf } = require('../../signal/constants')
 const {
@@ -11,6 +13,11 @@ const {
 } = require('../../config')
 
 // STRINGS
+
+const notificationKeys = {
+  CHANNEL_DESTROYED: 'channelDestroyed',
+  CHANNEL_RECYCLED: 'channelRecycled',
+}
 
 const errors = {
   searchEmpty: 'search returned empty list',
@@ -40,15 +47,23 @@ const notifyMembersExcept = async (channel, message, sender) => {
 
 // (string) -> Promise<Array<string>>
 const notifyMaintainers = async message => {
-  const adminChannel = await channelRepository.findDeep(supportPhoneNumber)
-  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
-  await signal.broadcastMessage(adminPhoneNumbers, sdMessageOf(adminChannel, message))
+  if (!supportPhoneNumber) return Promise.resolve([])
+  const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
+  const maintainerPhoneNumbers = getAdminPhoneNumbers(supportChannel)
+  await signal.broadcastMessage(maintainerPhoneNumbers, sdMessageOf(supportChannel, message))
 }
 
 // (string, string) -> Promise<Array<string>>
-const notifyAdmins = async (channel, notificationKey) => {
-  const recipients = await channelRepository.getAdminMemberships(channel)
-  return Promise.all(
+const notifyAdmins = async (channel, notificationKey) =>
+  _notifyMany(channel, notificationKey, getAdminMemberships(channel))
+
+// (Channel, string) -> Promise<Array<string>>
+const notifyMembers = async (channel, notificationKey) =>
+  _notifyMany(channel, notificationKey, channel.memberships)
+
+// (Channel, string, Array<Member>) => Promise<Array<string>>
+const _notifyMany = (channel, notificationKey, recipients) =>
+  Promise.all(
     recipients.map(recipient =>
       signal.sendMessage(
         recipient.memberPhoneNumber,
@@ -56,7 +71,6 @@ const notifyAdmins = async (channel, notificationKey) => {
       ),
     ),
   )
-}
 
 // (DB, Socket, ChannelInstance, String) -> Promise<void>
 const destroyChannel = async (channel, tx) => {
@@ -79,8 +93,10 @@ module.exports = {
   errorStatus,
   extractStatus,
   notifyAdmins,
+  notifyMembers,
   notifyMaintainers,
   notifyMembersExcept,
+  notificationKeys,
   destroyChannel,
   getTwilioClient,
   smsUrl,
