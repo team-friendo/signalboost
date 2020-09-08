@@ -2,6 +2,7 @@ const { pick } = require('lodash')
 const { statuses } = require('../../db/models/phoneNumber')
 const channelRepository = require('../../db/repositories/channel')
 const signal = require('../../signal')
+const { messagesIn } = require('../../dispatcher/strings/messages')
 const { sdMessageOf } = require('../../signal/constants')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
@@ -30,18 +31,31 @@ const errorStatus = (error, phoneNumber) => ({
 const extractStatus = phoneNumberInstance =>
   pick(phoneNumberInstance, ['status', 'phoneNumber', 'twilioSid'])
 
-// (Database, Socket, Channel, String, String) -> Promise<void>
+// (Database, Socket, Channel, String, String) -> Promise<Array<string>>
 const notifyMembersExcept = async (channel, message, sender) => {
   if (channel == null) return
   const memberPhoneNumbers = channelRepository.getMemberPhoneNumbersExcept(channel, [sender])
   await signal.broadcastMessage(memberPhoneNumbers, sdMessageOf(channel, message))
 }
 
-// (DB, Socket, String) -> Promise<void>
+// (string) -> Promise<Array<string>>
 const notifyMaintainers = async message => {
   const adminChannel = await channelRepository.findDeep(supportPhoneNumber)
   const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
   await signal.broadcastMessage(adminPhoneNumbers, sdMessageOf(adminChannel, message))
+}
+
+// (string, string) -> Promise<Array<string>>
+const notifyAdmins = async (channel, notificationKey) => {
+  const recipients = await channelRepository.getAdminMemberships(channel)
+  return Promise.all(
+    recipients.map(recipient =>
+      signal.sendMessage(
+        recipient.memberPhoneNumber,
+        sdMessageOf(channel, messagesIn(recipient.language).notifications[notificationKey]),
+      ),
+    ),
+  )
 }
 
 // (DB, Socket, ChannelInstance, String) -> Promise<void>
@@ -64,6 +78,7 @@ module.exports = {
   statuses,
   errorStatus,
   extractStatus,
+  notifyAdmins,
   notifyMaintainers,
   notifyMembersExcept,
   destroyChannel,
