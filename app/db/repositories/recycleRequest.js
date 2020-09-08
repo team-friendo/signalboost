@@ -1,4 +1,15 @@
+const { Op } = require('sequelize')
+const moment = require('moment')
 const app = require('../../../app')
+const phoneNumberRegistrar = require('../../registrar/phoneNumber')
+const { loggerOf } = require('../../util')
+const { repeatEvery } = require('../../util')
+const { mapInvoke } = require('lodash')
+const {
+  job: { recycleInterval, recycleGracePeriod },
+} = require('../../config')
+
+const logger = loggerOf('repository.recycleRequest')
 
 // (string) -> Promise<{ recycleRequest: RecycleRequest, wasCreated: boolean }>
 const requestToRecycle = phoneNumber =>
@@ -9,48 +20,38 @@ const requestToRecycle = phoneNumber =>
       wasCreated,
     }))
 
-/**
- * RECYCLING HELPER FUNCTIONS
- */
-// const {
-//   job: { recyclePhoneNumberInterval, recycleGracePeriod },
-// } = require('../../config')
+const processRecycleRequests = async () => {
+  // admins have a "grace period" of 1 day to use channels before they are recycled
+  const gracePeriodStart = moment().subtract(recycleGracePeriod, 'ms')
 
-//
-// // (String) -> Promise
-// const dequeue = channelPhoneNumber =>
-//   app.db.recycleRequest.destroy({ where: { channelPhoneNumber } })
-//
-// const recyclePhoneNumbers = async () => {
-//   const recycleablePhoneNumbers = await app.db.recycleRequest.findAll({})
-//   // get/await recycleablePhoneNumbers => messageCounts
-//   // find messageCount based on channelPhoneNumber
-//   // dequeue recycleableNumbers that were used within recycleDelay window
-//   recycleablePhoneNumbers
-//     .filter(usedRecently)
-//     .forEach(async ({ channelPhoneNumber }) => await dequeue(channelPhoneNumber))
-//
-//   // recycle channel if enqueued before recycleDelay window
-//   recycleablePhoneNumbers.filter(enqueuedAwhileAgo).forEach(async ({ channelPhoneNumber }) => {
-//     await dequeue(channelPhoneNumber)
-//     await recycle(channelPhoneNumber)
-//   })
-// }
-//
-// // (Object) -> boolean
-// const enqueuedAwhileAgo = ({ createdAt }) => {
-//   // difference between now and grace period
-//   const recycleDelayWindow = moment().subtract(recycleGracePeriod)
-//   return moment(createdAt).diff(recycleDelayWindow) < 0
-// }
-//
-// // (Object) -> boolean
-// const usedRecently = async ({ channelPhoneNumber }) => {
-//   const channel = await channelRepository.findDeep(channelPhoneNumber)
-//
-//   const lastUsed = moment(channel.messageCount.updatedAt)
-//   const recycleDelayWindow = moment().subtract(recycleGracePeriod)
-//   return lastUsed.diff(recycleDelayWindow) > 0
-// }
+  // find all the recycle requests issued over a day ago
+  const matureRequests = await app.db.recycleRequest.find({
+    where: {
+      createdAt: { [Op.lte]: gracePeriodStart },
+    },
+  })
 
-module.exports = { requestToRecycle }
+  // find all the channel phone numbers that haven't been used in the last day
+  const unredeemedChannelPhoneNumbers = mapInvoke(
+    await app.db.messageCount.find({
+      where: {
+        channelPhoneNumber: { [Op.in]: mapInvoke(matureRequests, 'phoneNumber') },
+        updatedAt: { [Op.lte]: gracePeriodStart },
+      },
+    }),
+    'channelPhoneNumber',
+  )
+
+  // recycle all the phone numbers that haven't been used during the 1-day grace period
+  await Promise.all(unredeemedChannelPhoneNumbers.map(phoneNumberRegistrar.recycle))
+
+  // destroy all mature requests (whose numbers have now either been recycled or redeemed)
+  return app.db.recycleRequest.destroy({
+    where: { phoneNumber: { [Op.in]: mapInvoke(matureRequests, 'phoneNumber') } },
+  })
+}
+
+const launchRecycleJob = () =>
+  repeatEvery(() => processRecycleRequests.catch(logger.error), recycleInterval)
+
+module.exports = { requestToRecycle, processRecycleRequests, launchRecycleJob }
