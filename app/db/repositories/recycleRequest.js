@@ -1,15 +1,10 @@
 const { Op } = require('sequelize')
-const moment = require('moment')
 const app = require('../../../app')
-const phoneNumberRegistrar = require('../../registrar/phoneNumber')
-const { loggerOf } = require('../../util')
-const { repeatEvery } = require('../../util')
-const { mapInvoke } = require('lodash')
+const util = require('../../util')
+const { map, partition } = require('lodash')
 const {
-  job: { recycleInterval, recycleGracePeriod },
+  job: { recycleGracePeriod },
 } = require('../../config')
-
-const logger = loggerOf('repository.recycleRequest')
 
 // (string) -> Promise<{ recycleRequest: RecycleRequest, wasCreated: boolean }>
 const requestToRecycle = phoneNumber =>
@@ -20,38 +15,37 @@ const requestToRecycle = phoneNumber =>
       wasCreated,
     }))
 
-const processRecycleRequests = async () => {
-  // admins have a "grace period" of 1 day to use channels before they are recycled
-  const gracePeriodStart = moment().subtract(recycleGracePeriod, 'ms')
-
-  // find all the recycle requests issued over a day ago
-  const matureRequests = await app.db.recycleRequest.find({
-    where: {
-      createdAt: { [Op.lte]: gracePeriodStart },
-    },
+// (Array<string>) -> Promise<any>
+const destroyMany = phoneNumbers =>
+  app.db.recycleRequest.destroy({
+    where: { phoneNumber: { [Op.in]: phoneNumbers } },
   })
 
-  // find all the channel phone numbers that haven't been used in the last day
-  const unredeemedChannelPhoneNumbers = mapInvoke(
-    await app.db.messageCount.find({
-      where: {
-        channelPhoneNumber: { [Op.in]: mapInvoke(matureRequests, 'phoneNumber') },
-        updatedAt: { [Op.lte]: gracePeriodStart },
-      },
+const classifyMatureRecycleRequests = async () => {
+  // channel admins have a 1 day grace period to redeem a channel slated for recycling
+  // by using it. calculate when that grace period started...
+  const gracePeriodStart = util.now().subtract(parseInt(recycleGracePeriod), 'ms')
+
+  // find all the requests issued before the start of the grace period, indicating
+  // channels which should be considered for recycling (b/c their grace period has passed)
+  const matureRequests = await app.db.recycleRequest.findAll({
+    where: { createdAt: { [Op.lte]: gracePeriodStart } },
+  })
+
+  // make lists of redeemed and unredeemed channel phone numbers, where "redeemed" channels
+  // have been used since the start of the grace period, and thus should not be recycled
+  const [redeemed, toRecycle] = partition(
+    await app.db.messageCount.findAll({
+      where: { channelPhoneNumber: { [Op.in]: map(matureRequests, 'phoneNumber') } },
     }),
-    'channelPhoneNumber',
+    messageCount => messageCount.updatedAt > gracePeriodStart,
   )
 
-  // recycle all the phone numbers that haven't been used during the 1-day grace period
-  await Promise.all(unredeemedChannelPhoneNumbers.map(phoneNumberRegistrar.recycle))
-
-  // destroy all mature requests (whose numbers have now either been recycled or redeemed)
-  return app.db.recycleRequest.destroy({
-    where: { phoneNumber: { [Op.in]: mapInvoke(matureRequests, 'phoneNumber') } },
-  })
+  // pluck the channel phone numbers and return them for processing!
+  return {
+    redeemed: map(redeemed, 'channelPhoneNumber'),
+    toRecycle: map(toRecycle, 'channelPhoneNumber'),
+  }
 }
 
-const launchRecycleJob = () =>
-  repeatEvery(() => processRecycleRequests.catch(logger.error), recycleInterval)
-
-module.exports = { requestToRecycle, processRecycleRequests, launchRecycleJob }
+module.exports = { requestToRecycle, classifyMatureRecycleRequests, destroyMany }

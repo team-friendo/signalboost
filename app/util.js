@@ -1,6 +1,7 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
 const uuidV4 = require('uuid/v4')
 const stringHash = require('string-hash')
+const moment = require('moment')
 const crypto = require('crypto')
 const {
   crypto: { hashSalt },
@@ -53,9 +54,11 @@ const sequence = async (asyncFuncs, delay = 0) => {
 const batchesOfN = (arr, n) =>
   isEmpty(arr) ? [] : concat([take(arr, n)], batchesOfN(drop(arr, n), n))
 
-const nowInMillis = () => new Date().getTime()
+const now = () => moment()
 
-const nowTimestamp = () => new Date().toISOString()
+const nowInMillis = () => moment().valueOf()
+
+const nowTimestamp = () => moment().toISOString()
 
 /**************** Logging ****************/
 
@@ -134,6 +137,7 @@ module.exports = {
   loggerOf,
   logger,
   noop,
+  now,
   nowInMillis,
   nowTimestamp,
   prettyPrint,

@@ -1,25 +1,26 @@
 import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
+import moment from 'moment'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
-import recycleService from '../../../../app/registrar/phoneNumber/recycle'
 import recycleRequestRepository from '../../../../app/db/repositories/recycleRequest'
-// const {
-//   job: { recyclePhoneNumberInterval, recycleGracePeriod },
-// } = require('../../../../app/config')
+import util from '../../../../app/util'
+import { values } from 'lodash'
+const {
+  job: { recycleGracePeriod },
+} = require('../../../../app/config')
+
 describe('recycleablePhoneNumber repository', () => {
   const phoneNumber = genPhoneNumber()
-  let db, recycleRequestCount, recycleStub
+  let db, recycleRequestCount
 
   before(async () => (db = (await app.run({ ...testApp, db: dbService })).db))
-  beforeEach(
-    async () => (recycleStub = sinon.stub(recycleService, 'recycle').returns(Promise.resolve())),
-  )
   afterEach(async () => {
     await app.db.recycleRequest.destroy({ where: {} })
+    await app.db.messageCount.destroy({ where: {} })
     sinon.restore()
   })
   after(async () => await app.stop())
@@ -55,96 +56,86 @@ describe('recycleablePhoneNumber repository', () => {
     })
   })
 
-  // xdescribe('recyclePhoneNumbers', () => {
-  //   const now = moment()
-  //   const reclaimedPhoneNumber = genPhoneNumber()
-  //   const recycledPhoneNumber = genPhoneNumber()
-  //   const pendingPhoneNumber = genPhoneNumber()
-  //
-  //   const reclaimedRecycleablePhoneNumber = {
-  //     phoneNumber: reclaimedPhoneNumber,
-  //     whenEnqueued: now.toISOString(),
-  //     createdAt: now.subtract(recycleGracePeriod / 2, 'millis').toISOString(),
-  //   }
-  //   const recycledRecycleablePhoneNumber = {
-  //     phoneNumber: genPhoneNumber(),
-  //     whenEnqueued: now.toISOString(),
-  //     createdAt: now.subtract(recycleGracePeriod + 1, 'millis').toISOString(),
-  //   }
-  //   const pendingRecycleablePhoneNumber = {
-  //     phoneNumber: genPhoneNumber(),
-  //     whenEnqueued: now.toISOString(),
-  //     createdAt: now.subtract(recycleGracePeriod / 2, 'millis').toISOString(),
-  //   }
-  //
-  //   const reclaimedMessageCount = messageCountFactory({
-  //     phoneNumber: reclaimedPhoneNumber,
-  //     updatedAt: now.toISOString(),
-  //   })
-  //   const recycledMessageCount = messageCountFactory({
-  //     phoneNumber: recycledPhoneNumber,
-  //     updatedAt: now.subtract(recycleGracePeriod + 2, 'millis'),
-  //   })
-  //   const pendingMessageCount = messageCountFactory({
-  //     phoneNumber: pendingPhoneNumber,
-  //     updatedAt: now.subtract(recycleGracePeriod + 2, 'millis'),
-  //   })
-  //
-  //   beforeEach(async () => {
-  //     ;[
-  //       reclaimedRecycleablePhoneNumber,
-  //       recycledRecycleablePhoneNumber,
-  //       pendingRecycleablePhoneNumber,
-  //     ].map(x => db.recycleablePhoneNumber.create(x))
-  //     ;[reclaimedMessageCount, recycledMessageCount, pendingMessageCount].map(x =>
-  //       db.messageCount.create(x),
-  //     )
-  //   })
-  //
-  //   describe('a recycleablePhoneNumber that has been used after being enqueued', () => {
-  //     it('is dequeued', async () => {
-  //       expect(
-  //         await db.recycleablePhoneNumber.findOne({
-  //           where: {
-  //             phoneNumber: reclaimedPhoneNumber,
-  //           },
-  //         }),
-  //       ).to.eql(null)
-  //     })
-  //     it('is not recycled', () => {
-  //       expect(recycleStub.callCount).to.eql(0)
-  //     })
-  //   })
-  //
-  //   describe('a recycleablePhoneNumbers whose grace period has expired', () => {
-  //     it('is dequeued', async () => {
-  //       expect(
-  //         (await db.recycleablePhoneNumber.findOne({
-  //           where: {
-  //             phoneNumber: recycledRecycleablePhoneNumber,
-  //           },
-  //         })).phoneNumber,
-  //       ).to.eql(null)
-  //     })
-  //     it('it is recycled', () => {
-  //       expect(recycleStub.callCount).to.eql(1)
-  //       expect(recycleStub.getCall(0).args).to.eql([recycledRecycleablePhoneNumber])
-  //     })
-  //   })
-  //
-  //   describe('a recycleablePhoneNumber that has not been used and whose grace period has expired', () => {
-  //     it('is not dequeued', async () => {
-  //       expect(
-  //         (await db.recycleablePhoneNumber.findOne({
-  //           where: {
-  //             phoneNumber: pendingPhoneNumber,
-  //           },
-  //         })).phoneNumber,
-  //       ).to.eql(pendingPhoneNumber)
-  //     })
-  //     it('is not recycled', () => {
-  //       expect(recycleStub.callCount).to.eql(0)
-  //     })
-  //   })
-  // })
+  describe('processing mature recycle requests', () => {
+    const now = moment().clone()
+    const gracePeriodStart = now.clone().subtract(recycleGracePeriod, 'ms')
+
+    const phoneNumbers = {
+      redeemed: genPhoneNumber(),
+      toRecycle: genPhoneNumber(),
+      pending: genPhoneNumber(),
+    }
+
+    const recycleRequests = {
+      redeemed: {
+        phoneNumber: phoneNumbers.redeemed,
+        // mature (created before start of grace period)
+        createdAt: gracePeriodStart.clone().subtract(1, 'ms'),
+      },
+      toRecycle: {
+        phoneNumber: phoneNumbers.toRecycle,
+        // mature (created before start of grace period)
+        createdAt: gracePeriodStart.clone().subtract(1, 'ms'),
+      },
+      pending: {
+        phoneNumber: phoneNumbers.pending,
+        // not mature (created after start of grace period)
+        createdAt: gracePeriodStart.clone().add(1, 'ms'),
+      },
+    }
+
+    const messageCounts = {
+      redeemed: {
+        channelPhoneNumber: phoneNumbers.redeemed,
+        // used during grace period
+        updatedAt: gracePeriodStart.clone().add(1, 'ms'),
+      },
+      toRecycle: {
+        channelPhoneNumber: phoneNumbers.toRecycle,
+        // not used during grace perdiod
+        updatedAt: gracePeriodStart.clone().subtract(1, 'ms'),
+      },
+      pending: {
+        channelPhoneNumber: phoneNumbers.pending,
+        // does not matter when last used (b/c not mature), but let's say during grace period
+        updatedAt: gracePeriodStart.clone().add(1, 'ms'),
+      },
+    }
+
+    beforeEach(async () => {
+      sinon.stub(util, 'now').returns(now.clone())
+
+      await Promise.all(
+        values(recycleRequests).map(recycleRequest =>
+          app.db.recycleRequest.create(recycleRequest).then(() =>
+            app.db.sequelize.query(`
+          update "recycleRequests"
+            set "createdAt" = '${recycleRequest.createdAt.toISOString()}'
+            where "phoneNumber" = '${recycleRequest.phoneNumber}';
+          `),
+          ),
+        ),
+      )
+
+      await Promise.all(
+        values(messageCounts).map(messageCount =>
+          app.db.messageCount.create(messageCount).then(() =>
+            app.db.sequelize.query(`
+            update "messageCounts"
+              set "updatedAt" = '${messageCount.updatedAt.toISOString()}'
+              where "channelPhoneNumber" = '${messageCount.channelPhoneNumber}';
+            `),
+          ),
+        ),
+      )
+    })
+
+    it('retrieves all mature recycle requests and classifies them as redeemed or toRecycle', async () => {
+      const res = await recycleRequestRepository.classifyMatureRecycleRequests(values(phoneNumbers))
+      expect(res).to.eql({
+        redeemed: [phoneNumbers.redeemed],
+        toRecycle: [phoneNumbers.toRecycle],
+      })
+    })
+  })
 })
