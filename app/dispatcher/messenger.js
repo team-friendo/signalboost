@@ -41,6 +41,8 @@ const { ADMIN } = memberTypes
 const dispatch = async ({ commandResult, dispatchable }) => {
   const messageType = parseMessageType(commandResult, dispatchable)
   const channelPhoneNumber = dispatchable.channel.phoneNumber
+  const { message } = commandResult
+
   switch (messageType) {
     case BROADCAST_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
@@ -48,7 +50,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         BROADCAST_MESSAGE,
         null,
       ])
-      return broadcast(dispatchable)
+      return broadcast(message, dispatchable)
     case HOTLINE_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
         channelPhoneNumber,
@@ -109,7 +111,7 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  ************/
 
 // Dispatchable -> Promise<MessageCount>
-const broadcast = async ({ channel, sdMessage }) => {
+const broadcast = async (message, { channel, sdMessage }) => {
   const recipients = channel.memberships
 
   try {
@@ -133,16 +135,10 @@ const broadcast = async ({ channel, sdMessage }) => {
       await sequence(
         recipientBatches.map(recipientBatch => {
           recipientBatch.map(recipient => {
-            signal.broadcastMessage(
-              [recipient.memberPhoneNumber],
-              addHeader({
-                channel,
-                sdMessage,
-                messageType: BROADCAST_MESSAGE,
-                language: recipient.language,
-                memberType: recipient.type,
-              }),
-            )
+            signal.broadcastMessage([recipient.memberPhoneNumber], {
+              ...sdMessage,
+              messageBody: message,
+            })
           })
         }),
         broadcastBatchInterval,

@@ -55,7 +55,7 @@ const execute = async (executable, dispatchable) => {
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
-    [commands.BROADCAST]: () => maybeBroadcastMessage(sender),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
@@ -170,7 +170,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // BROADCAST
-const maybeBroadcastMessage = sender => {
+const maybeBroadcastMessage = (sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.broadcast
   if (sender.type !== ADMIN)
     return Promise.resolve({
@@ -178,7 +178,9 @@ const maybeBroadcastMessage = sender => {
       message: cr.notAdmin,
     })
 
-  return { status: statuses.SUCCESS }
+  const prefix = messagesIn(sender.language).prefixes.broadcastMessage
+
+  return { status: statuses.SUCCESS, message: addHeader(prefix, payload) }
 }
 
 // PRIVATE
@@ -740,6 +742,11 @@ const noop = sender => {
 /**********
  * HELPERS
  **********/
+
+const addHeader = (prefix, messageBody) => {
+  // adds header to broadcast (TODO: add hotline, and private messages)
+  return `${`[${prefix}]\n`}${messageBody}`
+}
 
 const logAndReturn = (err, statusTuple) => {
   // TODO(@zig): add prometheus error count here (counter: db_error)
