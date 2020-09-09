@@ -3,7 +3,7 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import chaiAsPromised from 'chai-as-promised'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { omit, keys, times } from 'lodash'
+import { omit, keys, times, map } from 'lodash'
 import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
@@ -224,6 +224,26 @@ describe('channel repository', () => {
           'messageCount',
         ])
       })
+    })
+  })
+
+  describe('#findManyDeep', () => {
+    const includedPhoneNumbers = times(2, genPhoneNumber)
+    const excludesPhoneNumbers = times(3, genPhoneNumber)
+
+    beforeEach(async () => {
+      await Promise.all(
+        [...includedPhoneNumbers, ...excludesPhoneNumbers].map(phoneNumber =>
+          db.channel.create(deepChannelFactory({ phoneNumber }), {
+            include: [{ model: db.membership }],
+          }),
+        ),
+      )
+    })
+    it('retrieves all channels with given phone numbers', async () => {
+      const results = await channelRepository.findManyDeep(includedPhoneNumbers)
+      expect(map(results, 'phoneNumber')).to.eql(includedPhoneNumbers)
+      expect(results[0].memberships).not.to.be.empty
     })
   })
 

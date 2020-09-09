@@ -1,3 +1,5 @@
+import { Op } from 'sequelize'
+
 const app = require('../../../app')
 const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
@@ -45,6 +47,17 @@ const findAll = () => app.db.channel.findAll()
 
 const findAllDeep = () =>
   app.db.channel.findAll({
+    include: [
+      { model: app.db.deauthorization },
+      { model: app.db.invite },
+      { model: app.db.membership },
+      { model: app.db.messageCount },
+    ],
+  })
+
+const findManyDeep = phoneNumbers =>
+  app.db.channel.findAll({
+    where: { phoneNumber: { [Op.in]: phoneNumbers } },
     include: [
       { model: app.db.deauthorization },
       { model: app.db.invite },
@@ -105,6 +118,7 @@ module.exports = {
   findAllDeep,
   findByPhoneNumber,
   findDeep,
+  findManyDeep,
   getAllAdminsExcept,
   getAdminMemberships,
   getAdminPhoneNumbers,
