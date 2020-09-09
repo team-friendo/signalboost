@@ -15,13 +15,13 @@ const requestToRecycle = phoneNumber =>
       wasCreated,
     }))
 
-// (Array<string>) -> Promise<any>
+// (Array<string>) -> Promise<void>
 const destroyMany = phoneNumbers =>
   app.db.recycleRequest.destroy({
     where: { phoneNumber: { [Op.in]: phoneNumbers } },
   })
 
-const classifyMatureRecycleRequests = async () => {
+const getMatureRecycleRequests = async () => {
   // channel admins have a 1 day grace period to redeem a channel slated for recycling
   // by using it. calculate when that grace period started...
   const gracePeriodStart = util.now().subtract(parseInt(recycleGracePeriod), 'ms')
@@ -48,4 +48,4 @@ const classifyMatureRecycleRequests = async () => {
   }
 }
 
-module.exports = { requestToRecycle, classifyMatureRecycleRequests, destroyMany }
+module.exports = { requestToRecycle, getMatureRecycleRequests, destroyMany }

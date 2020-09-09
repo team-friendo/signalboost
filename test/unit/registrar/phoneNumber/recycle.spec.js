@@ -3,17 +3,19 @@ import { afterEach, beforeEach, describe, it } from 'mocha'
 import phoneNumberService, {
   recycle,
   requestToRecycle,
+  processRecycleRequests,
 } from '../../../../app/registrar/phoneNumber'
 import sinon from 'sinon'
-import common from '../../../../app/registrar/phoneNumber/common'
-import channelRepository from '../../../../app/db/repositories/channel'
 import eventRepository from '../../../../app/db/repositories/event'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
-import recycleRequestRepository from '../../../../app/db/repositories/recycleRequest'
 import { eventTypes } from '../../../../app/db/models/event'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
-import { times } from 'lodash'
+import channelRepository from '../../../../app/db/repositories/channel'
+import recycleRequestRepository from '../../../../app/db/repositories/recycleRequest'
+import notifier, { notificationKeys } from '../../../../app/notifier'
+import { times, map, flatten } from "lodash"
+import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
+import { eventFactory } from '../../../support/factories/event'
 
 describe('phone number services -- recycle module', () => {
   const phoneNumber = genPhoneNumber()
@@ -32,9 +34,9 @@ describe('phone number services -- recycle module', () => {
     findChannelStub = sinon.stub(channelRepository, 'findDeep')
     destroyChannelStub = sinon.stub(channelRepository, 'destroy')
     logEventStub = sinon.stub(eventRepository, 'log')
-    notifyMaintainersStub = sinon.stub(common, 'notifyMaintainers')
-    notifyMembersStub = sinon.stub(common, 'notifyMembers')
-    notifyAdminsStub = sinon.stub(common, 'notifyAdmins')
+    notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
+    notifyMembersStub = sinon.stub(notifier, 'notifyMembers')
+    notifyAdminsStub = sinon.stub(notifier, 'notifyAdmins')
     requestToRecycleStub = sinon.stub(recycleRequestRepository, 'requestToRecycle')
   })
 
@@ -45,7 +47,7 @@ describe('phone number services -- recycle module', () => {
       Promise.resolve({ phoneNumber, status }),
     )
 
-  describe('issuing a request to recycle several phone numbers', () => {
+  describe('#requestToRecycle', () => {
     describe('when a phone number does not belong to a valid channel', () => {
       beforeEach(async () => {
         findChannelStub.returns(Promise.resolve(null))
@@ -195,7 +197,7 @@ describe('phone number services -- recycle module', () => {
     })
   })
 
-  describe('recycling a phone number', () => {
+  describe('#recycle', () => {
     describe('when the phone number does not belong to a valid channel', () => {
       beforeEach(async () => {
         findChannelStub.returns(Promise.resolve(null))
@@ -223,7 +225,7 @@ describe('phone number services -- recycle module', () => {
         it('returns a failed status', async () => {
           expect(await recycle(phoneNumber)).to.eql({
             status: 'ERROR',
-            message: `Failed to recycle channel for ${phoneNumber}. Error: Failed to broadcast message`,
+            message: `${phoneNumber} failed to be recycled. Error: Failed to broadcast message`,
           })
         })
       })
@@ -268,7 +270,7 @@ describe('phone number services -- recycle module', () => {
               const response = await recycle(phoneNumber)
               expect(response).to.eql({
                 status: 'SUCCESS',
-                data: { phoneNumber: phoneNumber, status: 'VERIFIED' },
+                message: `${phoneNumber} recycled.`,
               })
             })
           })
@@ -284,7 +286,7 @@ describe('phone number services -- recycle module', () => {
               const response = await recycle(phoneNumber)
               expect(response).to.eql({
                 status: 'ERROR',
-                message: `Failed to recycle channel for ${phoneNumber}. Error: DB phoneNumber update failure`,
+                message: `${phoneNumber} failed to be recycled. Error: DB phoneNumber update failure`,
               })
             })
           })
@@ -293,24 +295,92 @@ describe('phone number services -- recycle module', () => {
 
       describe('when the channel destruction fails', () => {
         beforeEach(() => {
-          notifyMembersStub.returns(Promise.resolve())
           destroyChannelStub.callsFake(() => Promise.reject('Failed to destroy channel'))
-        })
-
-        it('notifies the instance maintainers with a channel failure message', async () => {
-          await recycle(phoneNumber)
-          expect(notifyMaintainersStub.getCall(0).args).to.eql([
-            `Failed to recycle channel for phone number: ${phoneNumber}`,
-          ])
         })
 
         it('returns a failed status', async () => {
           const response = await recycle(phoneNumber)
           expect(response).to.eql({
             status: 'ERROR',
-            message: `Failed to recycle channel for ${phoneNumber}. Error: Failed to destroy channel`,
+            message: `${phoneNumber} failed to be recycled. Error: Failed to destroy channel`,
           })
         })
+      })
+    })
+  })
+
+  describe('#processRecycleRequests', () => {
+    const redeemed = times(2, genPhoneNumber)
+    const redeemedChannels = redeemed.map(channelPhoneNumber =>
+      deepChannelFactory({ channelPhoneNumber }),
+    )
+    const toRecycle = times(3, genPhoneNumber)
+    let getMatureRecycleRequestsStub
+
+    beforeEach(() => {
+      // recycle helpers that should always succeed
+      notifyMembersStub.returns(Promise.resolve('42'))
+      logEventStub.returns(Promise.resolve(eventFactory()))
+      updatePhoneNumberStub.returns(phoneNumberFactory())
+      findChannelStub.callsFake(phoneNumber => Promise.resolve(channelFactory({ phoneNumber })))
+
+      // processRecycle helpers that should always succeed
+      sinon.stub(channelRepository, 'findManyDeep').returns(Promise.resolve(redeemedChannels))
+      notifyMaintainersStub.returns(Promise.resolve(['42']))
+      notifyAdminsStub.returns(Promise.resolve(['42', '42']))
+
+      // if this fails, processRecycleRequests will fail
+      getMatureRecycleRequestsStub = sinon.stub(
+        recycleRequestRepository,
+        'getMatureRecycleRequests',
+      )
+    })
+
+    describe('when processing succeeds', () => {
+      beforeEach(async () => {
+        // recycle succeeds twice, fails once
+        destroyChannelStub
+          .onCall(0)
+          .returns(Promise.resolve(true))
+          .onCall(1)
+          .returns(Promise.resolve(true))
+          .onCall(2)
+          .callsFake(() => Promise.reject('BOOM!'))
+        // overall job succeeds
+        getMatureRecycleRequestsStub.returns(Promise.resolve({ redeemed, toRecycle }))
+        await processRecycleRequests()
+      })
+
+      it('recycles unredeemed channels', () => {
+        expect(flatten(map(destroyChannelStub.getCalls(), 'args'))).to.eql(toRecycle)
+      })
+
+      it('notifies admins of redeemed channels of redemption', () => {
+        expect(map(notifyAdminsStub.getCalls(), 'args')).to.eql([
+          [redeemedChannels[0], notificationKeys.CHANNEL_REDEEMED],
+          [redeemedChannels[1], notificationKeys.CHANNEL_REDEEMED],
+        ])
+      })
+
+      it('notifies maintainers of results', () => {
+        expect(notifyMaintainersStub.getCall(0).args).to.eql([
+          '5 recycle requests processed:\n\n' +
+            `${redeemed[0]} redeemed by admins.\n` +
+            `${redeemed[1]} redeemed by admins.\n` +
+            `${toRecycle[0]} recycled.\n` +
+            `${toRecycle[1]} recycled.\n` +
+            `${toRecycle[2]} failed to be recycled. Error: BOOM!`,
+        ])
+      })
+    })
+
+    describe('when job fails', () => {
+      beforeEach(() => getMatureRecycleRequestsStub.callsFake(() => Promise.reject('BOOM!')))
+      it('notifies maintainers of error', async () => {
+        await processRecycleRequests()
+        expect(notifyMaintainersStub.getCall(0).args).to.eql([
+          'Error processing recycle job: BOOM!',
+        ])
       })
     })
   })

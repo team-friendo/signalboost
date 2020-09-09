@@ -3,11 +3,11 @@ const eventRepository = require('../../db/repositories/event')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const recycleRequestRepository = require('../../db/repositories/recycleRequest')
 const common = require('./common')
-const { notificationKeys } = require('./common')
+const notifier = require('../../notifier')
+const { notificationKeys } = notifier
 const { statuses } = require('../../util')
-const { defaultLanguage } = require('../../config')
 const { eventTypes } = require('../../db/models/event')
-const { messagesIn } = require('../../dispatcher/strings/messages')
+const { map } = require('lodash')
 
 // (Array<string>) -> Promise<SignalboostStatus>
 const requestToRecycle = async phoneNumbers => {
@@ -28,7 +28,7 @@ const requestToRecycle = async phoneNumbers => {
             message: `${phoneNumber} has already been enqueued for recycling.`,
           }
 
-        await common.notifyAdmins(channel, 'channelEnqueuedForRecycling')
+        await notifier.notifyAdmins(channel, 'channelEnqueuedForRecycling')
 
         return {
           status: statuses.SUCCESS,
@@ -44,32 +44,50 @@ const requestToRecycle = async phoneNumbers => {
   )
 }
 
+// () -> Promise<Array<string>>
+const processRecycleRequests = async () => {
+  try {
+    const { redeemed, toRecycle } = await recycleRequestRepository.getMatureRecycleRequests()
+    const recycleResults = await Promise.all(toRecycle.map(recycle))
+    await recycleRequestRepository.destroyMany([...redeemed, ...toRecycle])
+    const redeemedChannels = await channelRepository.findManyDeep(redeemed)
+
+    return Promise.all([
+      ...redeemedChannels.map(channel =>
+        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
+      ),
+      notifier.notifyMaintainers(
+        `${redeemed.length + toRecycle.length} recycle requests processed:\n\n` +
+          `${redeemed.map(r => `${r} redeemed by admins.`).join('\n')}` +
+          '\n' +
+          `${map(recycleResults, 'message').join('\n')}`,
+      ),
+    ])
+  } catch (err) {
+    return notifier.notifyMaintainers(`Error processing recycle job: ${err}`)
+  }
+}
+
 // (string) -> SignalboostStatus
 const recycle = async phoneNumber => {
   const channel = await channelRepository.findDeep(phoneNumber)
   if (!channel) return { status: statuses.ERROR, message: `Channel not found for ${phoneNumber}` }
 
   try {
-    await common.notifyMembers(channel, notificationKeys.CHANNEL_RECYCLED)
+    await notifier.notifyMembers(channel, notificationKeys.CHANNEL_RECYCLED)
     await channelRepository.destroy(channel)
     await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber)
-    const result = await phoneNumberRepository.update(phoneNumber, {
-      status: common.statuses.VERIFIED,
-    })
-
+    await phoneNumberRepository.update(phoneNumber, { status: common.statuses.VERIFIED })
     return {
       status: statuses.SUCCESS,
-      data: common.extractStatus(result),
+      message: `${phoneNumber} recycled.`,
     }
   } catch (err) {
-    await common.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.recycleChannelFailed(phoneNumber),
-    )
     return {
       status: 'ERROR',
-      message: `Failed to recycle channel for ${phoneNumber}. Error: ${err}`,
+      message: `${phoneNumber} failed to be recycled. Error: ${err}`,
     }
   }
 }
 
-module.exports = { requestToRecycle, recycle }
+module.exports = { requestToRecycle, processRecycleRequests, recycle }

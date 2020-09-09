@@ -5,7 +5,7 @@ import phoneNumberRegistrar from '../../app/registrar/phoneNumber'
 import inviteRepository from '../../app/db/repositories/invite'
 import smsSenderRepository from '../../app/db/repositories/smsSender'
 import hotlineMessageRepository from '../../app/db/repositories/hotlineMessage'
-import registrar from '../../app/jobs'
+import jobs from '../../app/jobs'
 
 describe('jobs service', () => {
   let registerAllStub, inviteDeletionStub, smsSenderDeletionStub, hotlineMessageDeletionStub
@@ -20,7 +20,7 @@ describe('jobs service', () => {
       smsSenderDeletionStub = sinon.stub(smsSenderRepository, 'deleteExpired')
       hotlineMessageDeletionStub = sinon.stub(hotlineMessageRepository, 'deleteExpired')
       process.env.REREGISTER_ON_STARTUP = '1'
-      await registrar.run()
+      await jobs.run()
     })
 
     after(() => {

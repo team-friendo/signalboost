@@ -4,6 +4,15 @@ const inviteRepository = require('./db/repositories/invite')
 const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const diagnostics = require('./diagnostics')
+const util = require('./util')
+const recycleRequestRepository = require('./db/repositories/recycleRequest')
+const channelRepository = require('./db/repositories/channel')
+const notifier = require('./notifier')
+const { notificationKeys } = require('./notifier')
+const { map } = require('lodash')
+const {
+  job: { recycleInterval },
+} = require('./config')
 
 const run = async () => {
   logger.log('--- Running startup jobs...')
@@ -24,9 +33,13 @@ const run = async () => {
   const messageIdsDeleted = await hotlineMessageRepository.deleteExpired()
   logger.log(`----- Deleted ${messageIdsDeleted} expired sms sender records.`)
 
-  logger.log('----- Launching data cleaning jobs...')
+  logger.log('----- Launching invite scrubbing job...')
   inviteRepository.launchInviteDeletionJob()
-  logger.log('----- Launched data cleaning jobs.')
+  logger.log('----- Launched invite scrubbing job.')
+
+  logger.log('---- Launching recycle request processing job...')
+  util.repeatEvery(recycleInterval, processRecycleRequests)
+  logger.log('---- Launched healthcheck job...')
 
   logger.log('---- Launching healthcheck job...')
   diagnostics.launchHealthcheckJob()
