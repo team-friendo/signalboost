@@ -122,13 +122,12 @@ const validatePayload = commandMatch => {
 // CommandMatch -> CommandMatch | parseError
 const validateNoPayload = commandMatch => {
   // returns an INVALID_PAYLOAD parseError if a payload is found for a non-payload command
-  const { language, matches } = commandMatch
-
+  const { language, matches, command } = commandMatch
   return isEmpty(matches[2])
     ? commandMatch
     : {
-        command: null,
-        error: messagesIn(language).parseErrors.invalidPayload,
+        command,
+        error: messagesIn(language).parseErrors.unnecessaryPayload(matches[1]),
         type: parseErrorTypes.INVALID_PAYLOAD,
       }
 }

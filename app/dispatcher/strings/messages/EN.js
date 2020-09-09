@@ -47,7 +47,10 @@ const parseErrors = {
   missingCommand:
     'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
 
-  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+  unnecessaryPayload: command =>
+    `Sorry, I didn't understand that. Did you mean to send "${command}"? 
+
+Send HELP for a list of all valid commands and how to use them.`,
 
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. ${validPhoneNumberHint}`,
@@ -280,11 +283,6 @@ If you already have an invite, try sending ACCEPT`,
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
     notSubscriber,
-  },
-
-  // NOOP
-  noop: {
-    error: `Did you mean to prefix your message with BROADCAST? Send HELP to list commands that you can use.`,
   },
 
   // PRIVATE

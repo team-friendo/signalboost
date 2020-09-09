@@ -47,8 +47,10 @@ const parseErrors = {
   missingCommand:
     'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
 
-  invalidPayload: "Sorry, I didn't understand that. Send HELP for a list of all valid commands.",
+  unnecessaryPayload: command =>
+    `Sorry, I didn't understand that. Did you mean to send "${command}"? 
 
+Send HELP for a list of all valid commands and how to use them.`,
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" n’est pas un numéro de téléphone valide. ${validPhoneNumberHint}`,
 
@@ -92,6 +94,11 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,
+  },
+
+  // BROADCAST
+  broadcast: {
+    notAdmin,
   },
 
   // DECLINE
@@ -285,11 +292,6 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     success: `Vous êtes maintenant désabonné-e de ce canal. Au revoir!`,
     error: `Oups! Une erreur s’est produite en tentant de vous désabonner de ce canal. Veuillez essayer de nouveau!`,
     notSubscriber,
-  },
-
-  // NOOP
-  noop: {
-    error: `Sorry, didn't understand that! Send HELP to list commands that you can use.`,
   },
 
   // PRIVATE

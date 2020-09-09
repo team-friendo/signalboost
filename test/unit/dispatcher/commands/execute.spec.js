@@ -29,7 +29,7 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
-
+import { defaultLanguage } from '../../../../app/language'
 describe('executing commands', () => {
   const channel = {
     name: 'foobar',
@@ -228,13 +228,13 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'accept my life') }
         expect(await processCommand(_dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.ACCEPT,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('accept'),
           notifications: [],
         })
       })
@@ -377,7 +377,7 @@ describe('executing commands', () => {
         it('returns a ERROR status/message', () => {
           expect(result).to.eql({
             command: commands.ADD,
-            payload: 'foo',
+            payload: '',
             status: statuses.ERROR,
             message: CR.add.invalidPhoneNumber('foo'),
             notifications: [],
@@ -485,13 +485,13 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const _dispatchable = { ...dispatchable, sdMessage: sdMessageOf(channel, 'decline this') }
         expect(await processCommand(_dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.DECLINE,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('decline'),
           notifications: [],
         })
       })
@@ -656,17 +656,17 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
           sdMessage: sdMessageOf(channel, 'help me find the march'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.HELP,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('help'),
           notifications: [],
         })
       })
@@ -719,17 +719,17 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
           sdMessage: sdMessageOf(channel, 'info wars did it'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.INFO,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('info'),
           notifications: [],
         })
       })
@@ -777,9 +777,9 @@ describe('executing commands', () => {
           it('returns ERROR', async () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.INVITE,
-              payload: `foo, ${inviteePhoneNumbers[0]}`,
+              payload: '',
               status: statuses.ERROR,
-              message: messagesIn('EN').parseErrors.invalidPhoneNumber('foo'),
+              message: messagesIn(defaultLanguage).parseErrors.invalidPhoneNumber('foo'),
               notifications: [],
             })
           })
@@ -1276,17 +1276,17 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
           sdMessage: sdMessageOf(channel, 'join us tomorrow!'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.JOIN,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('join'),
           notifications: [],
         })
       })
@@ -1394,17 +1394,17 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
           sdMessage: sdMessageOf(channel, 'leave that to us'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.LEAVE,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('leave'),
           notifications: [],
         })
       })
@@ -1624,10 +1624,10 @@ describe('executing commands', () => {
           expect(removeMemberStub.callCount).to.eql(0)
         })
 
-        it('returns a SUCCESS status / NOOP message', () => {
+        it('returns a SUCCESS status / message', () => {
           expect(result).to.eql({
             command: commands.REMOVE,
-            payload: 'foo',
+            payload: '',
             status: statuses.ERROR,
             message: CR.remove.invalidPhoneNumber('foo'),
             notifications: [],
@@ -1647,7 +1647,7 @@ describe('executing commands', () => {
         expect(removeMemberStub.callCount).to.eql(0)
       })
 
-      it('returns an SUCCESS status / NOT_NOOP message', () => {
+      it('returns an SUCCESS status / message', () => {
         expect(result).to.eql({
           command: commands.REMOVE,
           payload: removalTargetNumber,
@@ -1886,17 +1886,17 @@ describe('executing commands', () => {
     })
 
     describe('when followed by a payload', () => {
-      it('returns a NOOP', async () => {
+      it('returns an error and message', async () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
           sdMessage: sdMessageOf(channel, 'english muffins are ready!'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: commands.SET_LANGUAGE,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('english'),
           notifications: [],
         })
       })
@@ -2010,18 +2010,18 @@ describe('executing commands', () => {
     })
 
     describe('when toggle is followed by a payload', () => {
-      scenarios.forEach(({ commandStr }) => {
+      scenarios.forEach(({ commandStr, command }) => {
         const dispatchable = {
           channel,
           sender: admin,
           sdMessage: sdMessageOf(channel, `${commandStr} foo`),
         }
-        it('returns a NOOP', async () => {
+        it('returns an error and message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.NOOP,
+            command,
             payload: '',
-            status: statuses.NOOP,
-            message: messagesIn(admin.language).commandResponses.noop.error,
+            status: statuses.ERROR,
+            message: messagesIn(admin.language).parseErrors.unnecessaryPayload(commandStr),
             notifications: [],
           })
         })
@@ -2140,18 +2140,18 @@ describe('executing commands', () => {
     })
 
     describe('when VOUCHING command is followed by a payload', () => {
-      vouchingScenarios.forEach(({ commandStr }) => {
+      vouchingScenarios.forEach(({ commandStr, command }) => {
         const dispatchable = {
           channel,
           sender: admin,
           sdMessage: sdMessageOf(channel, `${commandStr} foo`),
         }
-        it('returns a NOOP', async () => {
+        it('returns an error and message', async () => {
           expect(await processCommand(dispatchable)).to.eql({
-            command: commands.NOOP,
+            command,
             payload: '',
-            status: statuses.NOOP,
-            message: messagesIn(admin.language).commandResponses.noop.error,
+            status: statuses.ERROR,
+            message: messagesIn(admin.language).parseErrors.unnecessaryPayload(commandStr),
             notifications: [],
           })
         })
@@ -2338,7 +2338,7 @@ describe('executing commands', () => {
 
   describe('invalid command', () => {
     describe('when an admin sends a message not prefixed by a command ', () => {
-      it('returns NOOP status/message', async () => {
+      it('returns an error and message', async () => {
         const sender = admin
         const dispatchable = {
           channel,
@@ -2346,27 +2346,28 @@ describe('executing commands', () => {
           sdMessage: sdMessageOf(channel, 'foo'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: null,
           payload: '',
-          status: statuses.NOOP,
-          message: messagesIn(sender.language).commandResponses.noop.error,
+          status: statuses.ERROR,
+          message: messagesIn(sender.language).parseErrors.missingCommand,
           notifications: [],
         })
       })
     })
 
     describe('when a subscriber sends a message not prefixed by a command ', () => {
-      it('returns NOOP status/message', async () => {
+      it('returns an error and message', async () => {
+        const sender = subscriber
         const dispatchable = {
           channel,
-          sender: subscriber,
+          sender,
           sdMessage: sdMessageOf(channel, 'foo'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NOOP,
+          command: null,
           payload: '',
-          status: statuses.NOOP,
-          message: '',
+          status: statuses.ERROR,
+          message: messagesIn(sender.language).parseErrors.missingCommand,
           notifications: [],
         })
       })

@@ -911,6 +911,18 @@ describe('parse module', () => {
   describe('validating payloads', () => {
     describe('a no-payload command followed by a payload', () => {
       it('returns an INVALID PAYLOAD parseError', () => {
+        const noPayloadCommands = [
+          commands.ACCEPT,
+          commands.DECLINE,
+          commands.HELP,
+          commands.JOIN,
+          commands.INFO,
+          commands.LEAVE,
+          commands.SET_LANGUAGE,
+          commands.HOTLINE_ON,
+          commands.VOUCHING_ON,
+        ]
+
         const variants = [
           {
             language: languages.EN,
@@ -920,14 +932,10 @@ describe('parse module', () => {
               'help foo',
               'hello foo',
               'info foo',
-              'join foo',
-              'leave foo',
               'goodbye foo',
               'english foo',
               'hotline on foo',
-              'hotline off foo',
               'vouching on foo',
-              'vouching off foo',
             ],
           },
           {
@@ -937,12 +945,11 @@ describe('parse module', () => {
               'rechazar foo',
               'ayuda foo',
               'hola foo',
+              'info foo',
               'adios foo',
               'espanol foo',
-              'línea directa activada ahora',
-              'línea directa desactivada ahora',
-              'atestiguando activada ahora',
-              'atestiguando desactivada ahora',
+              'línea directa activada foo',
+              'atestiguando activada foo',
             ],
           },
           {
@@ -952,38 +959,35 @@ describe('parse module', () => {
               'refuser foo',
               'aide foo',
               'allo foo',
+              'info foo',
               'adieu foo',
               'francais foo',
-              'hotline activee maintenant',
-              'hotline desactivee maintenant',
-              'se porter garant activees maintenant',
-              'se porter garant desactivees maintenant',
+              'hotline activee foo',
+              'se porter garant activee foo',
             ],
           },
           {
             language: languages.DE,
             messages: [
-              'ANNEHMEN foo',
-              'ABLEHNEN foo',
-              'HILFE foo',
-              'HALLO foo',
-              'TSCHÜSS foo',
-              'DEUTSCH foo',
-              'HOTLINE AN foo',
-              'HOTLINE AUS foo',
-              'VERTRAUEN AN foo',
-              'VERTRAUEN EIN foo',
-              'VERTRAUEN AUS foo',
+              'annehmen foo',
+              'ablehnen foo',
+              'hilfe foo',
+              'hallo foo',
+              'info foo',
+              'tschuss foo',
+              'deutsch foo',
+              'hotline an foo',
+              'vertrauen an foo',
             ],
           },
         ]
 
         variants.forEach(({ language, messages }) =>
-          messages.forEach(msg => {
+          messages.forEach((msg, index) => {
             expect(parseExecutable(msg)).to.eql({
-              command: null,
+              command: noPayloadCommands[index],
               payload: '',
-              error: messagesIn(language).parseErrors.invalidPayload,
+              error: messagesIn(language).parseErrors.unnecessaryPayload(msg.slice(0, -4)),
               type: parseErrorTypes.INVALID_PAYLOAD,
             })
           }),
