@@ -5,10 +5,17 @@ const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const diagnostics = require('./diagnostics')
 const util = require('./util')
+const { values } = require('lodash')
 const {
   job: { healthcheckInterval, inviteDeletionInterval, recycleInterval, signaldStartupTime },
   signal: { diagnosticsPhoneNumber },
 } = require('./config')
+
+const cancelations = {
+  deleteInvitesJob: null,
+  recycleJob: null,
+  healtcheckJob: null,
+}
 
 const run = async () => {
   logger.log('--- Running startup jobs...')
@@ -38,14 +45,14 @@ const run = async () => {
    *****************/
 
   logger.log('----- Launching invite scrubbing job...')
-  util.repeatEvery(
+  cancelations.deleteInvitesJob = util.repeatUntilCancelled(
     () => inviteRepository.deleteExpired().catch(logger.error),
     inviteDeletionInterval,
   )
   logger.log('----- Launched invite scrubbing job.')
 
   logger.log('---- Launching recycle request processing job...')
-  util.repeatEvery(
+  cancelations.recycleJob = util.repeatUntilCancelled(
     () => phoneNumberRegistrar.processRecycleRequests().catch(logger.error),
     recycleInterval,
   )
@@ -54,13 +61,20 @@ const run = async () => {
   logger.log('---- Launching healthcheck job...')
   const launchHealthchecks = async () => {
     await util.wait(signaldStartupTime)
-    util.repeatEvery(() => diagnostics.sendHealthchecks().catch(logger.error), healthcheckInterval)
+    cancelations.healtcheckJob = util.repeatUntilCancelled(
+      () => diagnostics.sendHealthchecks().catch(logger.error),
+      healthcheckInterval,
+    )
   }
   if (diagnosticsPhoneNumber) launchHealthchecks()
   logger.log('---- Launched healthcheck job...')
 
   logger.log('--- Startup jobs complete!')
   logger.log('--- Registrar running!')
+
+  return { stop }
 }
 
-module.exports = { run }
+const stop = () => values(cancelations).forEach(fn => fn())
+
+module.exports = { run, stop }

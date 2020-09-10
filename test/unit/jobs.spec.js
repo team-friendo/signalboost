@@ -20,17 +20,6 @@ describe('jobs service', () => {
     processRecycleRequestsStub,
     sendHealthchecksStub
 
-  /****
-   * TODO(aguestuser|2020-09-10):
-   *
-   *  The fact that this suite kicks of long-running recurring jobs but never
-   *  cancels them causes other unit tests to fail non-determinitically, because they
-   *  asserting on the same functions that are called repeatedly in this suite.
-   *
-   *  If this gets annoying enough, we should likely figure out a `jobs.stop()` function
-   *  that cancels all the `repeatEvery` calls a
-   **/
-
   describe('running the service', () => {
     let originalReregisterValue = process.env.REREGISTER_ON_STARTUP
     before(async () => {
@@ -59,6 +48,7 @@ describe('jobs service', () => {
     after(() => {
       process.env.REREGISTER_ON_STARTUP = originalReregisterValue
       sinon.restore()
+      jobs.stop()
     })
 
     describe('one-off jobs', () => {
