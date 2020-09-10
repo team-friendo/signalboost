@@ -1,8 +1,8 @@
 const app = require('../../index')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const { defaultLanguage } = require('../../config')
-const { notifyMembersExcept, destroyChannel } = require('./common')
 const common = require('./common')
+const notifier = require('../../notifier')
 const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../db/repositories/channel')
@@ -14,33 +14,33 @@ const {
   signal: { keystorePath },
 } = require('../../config')
 
-// ({Database, Socket, string}) -> SignalboostStatus
+// ({phoneNumber: string, sender?: string }) -> SignalboostStatus
 const destroy = async ({ phoneNumber, sender }) => {
   let tx = await app.db.sequelize.transaction()
   try {
-    const channelInstance = await channelRepository.findDeep(phoneNumber)
-    const phoneNumberInstance = await phoneNumberRepository.find(phoneNumber)
+    const channel = await channelRepository.findDeep(phoneNumber)
+    const phoneNumberRecord = await phoneNumberRepository.find(phoneNumber)
 
-    if (!channelInstance && !phoneNumberInstance)
+    if (!channel && !phoneNumberRecord)
       return { status: 'ERROR', message: `No records found for ${phoneNumber}` }
 
-    if (phoneNumberInstance) {
-      await destroyPhoneNumber(phoneNumberInstance, tx)
-      await releasePhoneNumber(phoneNumberInstance)
+    if (phoneNumberRecord) {
+      await phoneNumberRepository.destroy(phoneNumber, tx)
+      await releasePhoneNumber(phoneNumber)
     }
 
-    if (channelInstance) {
-      await destroyChannel(channelInstance, tx)
+    if (channel) {
+      await channelRepository.destroy(channel.phoneNumber, tx)
       await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
-      await notifyMembersExcept(
-        channelInstance,
+      await notifier.notifyMembersExcept(
+        channel,
         messagesIn(defaultLanguage).notifications.channelDestroyed,
         sender,
       )
     }
 
     await signal.unsubscribe(phoneNumber)
-    await destroySignalEntry(phoneNumber)
+    await deleteSignalKeystore(phoneNumber)
     await tx.commit()
 
     return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
@@ -53,7 +53,7 @@ const destroy = async ({ phoneNumber, sender }) => {
 // HELPERS
 
 // (DB, string) -> Promise<void>
-const destroySignalEntry = async phoneNumber => {
+const deleteSignalKeystore = async phoneNumber => {
   try {
     await fs.remove(`${keystorePath}/${phoneNumber}`)
     await fs.remove(`${keystorePath}/${phoneNumber}.d`)
@@ -63,10 +63,10 @@ const destroySignalEntry = async phoneNumber => {
 }
 
 // (PhoneNumberInstance) -> Promise<void>
-const releasePhoneNumber = async phoneNumberInstance => {
+const releasePhoneNumber = async phoneNumber => {
   try {
     const twilioClient = common.getTwilioClient()
-    await twilioClient.incomingPhoneNumbers(phoneNumberInstance.twilioSid).remove()
+    await twilioClient.incomingPhoneNumbers(phoneNumber.twilioSid).remove()
   } catch (error) {
     return error.status === 404
       ? Promise.resolve()
@@ -74,24 +74,13 @@ const releasePhoneNumber = async phoneNumberInstance => {
   }
 }
 
-// Channel -> Promise<void>
-const destroyPhoneNumber = async (phoneNumberInstance, tx) => {
-  if (phoneNumberInstance === null) return
-  try {
-    await phoneNumberInstance.destroy({ transaction: tx })
-  } catch (error) {
-    await Promise.reject('Failed to destroy phoneNumber in db')
-  }
-}
-
 // (String, DB, Socket, String) -> SignalboostStatus
 const handleDestroyFailure = async (err, phoneNumber) => {
   logger.log(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
-  await common.notifyMaintainers(
+  await notifier.notifyMaintainers(
     messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
   )
-
   return {
     status: 'ERROR',
     message: `Failed to destroy channel for ${phoneNumber}. Error: ${err}`,

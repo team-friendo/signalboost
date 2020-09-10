@@ -32,15 +32,13 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-// (ChannelInstance | null, Transaction) -> Promise<boolean>
-const destroy = async (channel, tx) => {
-  if (channel == null) return false
-  try {
-    await channel.destroy({ transaction: tx })
-    return true
-  } catch (error) {
-    return Promise.reject('Failed to destroy channel')
-  }
+// (string, Transaction | null) => Promise<boolean>
+const destroy = async (phoneNumber, transaction) => {
+  const numDestroyed = await app.db.channel.destroy({
+    where: { phoneNumber },
+    ...(transaction ? { transaction } : {}),
+  })
+  return numDestroyed > 0
 }
 
 const findAll = () => app.db.channel.findAll()

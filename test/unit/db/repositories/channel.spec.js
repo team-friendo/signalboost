@@ -1,6 +1,5 @@
-import chai, { expect } from 'chai'
+import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
-import chaiAsPromised from 'chai-as-promised'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
@@ -13,8 +12,6 @@ const {
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
-  chai.use(chaiAsPromised)
-
   const channelPhoneNumber = genPhoneNumber()
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
@@ -125,28 +122,20 @@ describe('channel repository', () => {
   describe('#destroy', () => {
     let channel, channelCount
 
-    describe('when given a channel instance', () => {
+    describe('when given the phone number for an existing channel', () => {
       beforeEach(async () => (channel = await db.channel.create(channelFactory())))
 
       it('deletes the instance', async () => {
         channelCount = await db.channel.count()
-        expect(await channelRepository.destroy(channel)).to.eql(true)
+        expect(await channelRepository.destroy(channel.phoneNumber)).to.eql(true)
         expect(await db.channel.count()).to.eql(channelCount - 1)
       })
     })
 
-    describe('when given null', () => {
+    describe('when given the phone number for a non-existent channel', () => {
       it('does nothing', async () => {
         channelCount = await db.channel.count()
-        expect(await channelRepository.destroy(channel)).to.eql(false)
-        expect(await db.channel.count()).to.eql(channelCount)
-      })
-    })
-
-    describe('when given a channel but db error occurs', () => {
-      it('rejects with an error', async () => {
-        channelCount = await db.channel.count()
-        expect(await channelRepository.destroy('foobar').catch(e => e)).to.include('Failed')
+        expect(await channelRepository.destroy(genPhoneNumber())).to.eql(false)
         expect(await db.channel.count()).to.eql(channelCount)
       })
     })
@@ -242,7 +231,7 @@ describe('channel repository', () => {
     })
     it('retrieves all channels with given phone numbers', async () => {
       const results = await channelRepository.findManyDeep(includedPhoneNumbers)
-      expect(map(results, 'phoneNumber')).to.eql(includedPhoneNumbers)
+      expect(map(results, 'phoneNumber')).to.have.members(includedPhoneNumbers)
       expect(results[0].memberships).not.to.be.empty
     })
   })

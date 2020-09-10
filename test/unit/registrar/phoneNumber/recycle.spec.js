@@ -13,7 +13,7 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import channelRepository from '../../../../app/db/repositories/channel'
 import recycleRequestRepository from '../../../../app/db/repositories/recycleRequest'
 import notifier, { notificationKeys } from '../../../../app/notifier'
-import { times, map, flatten } from "lodash"
+import { times, map, flatten } from 'lodash'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
 

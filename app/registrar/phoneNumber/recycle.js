@@ -75,7 +75,7 @@ const recycle = async phoneNumber => {
 
   try {
     await notifier.notifyMembers(channel, notificationKeys.CHANNEL_RECYCLED)
-    await channelRepository.destroy(channel)
+    await channelRepository.destroy(channel.phoneNumber)
     await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber)
     await phoneNumberRepository.update(phoneNumber, { status: common.statuses.VERIFIED })
     return {
