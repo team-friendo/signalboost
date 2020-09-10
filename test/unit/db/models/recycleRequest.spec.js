@@ -12,7 +12,6 @@ describe('recycleRequest model', () => {
   after(async () => await db.stop())
 
   it('has the correct fields', async () => {
-    console.log('bar')
     const recycleRequest = await db.recycleRequest.create({ phoneNumber })
     expect(recycleRequest.phoneNumber).to.be.a('string')
     expect(recycleRequest.createdAt).to.be.a('Date')
