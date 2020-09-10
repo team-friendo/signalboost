@@ -416,6 +416,9 @@ const notifications = {
   channelRecycled:
     'Der Kanal wurde wegen Inaktivität deaktiviert. Gehe auf https://signalboost.info um einen neuen Kanal zu erstellen.',
 
+  channelRedeemed:
+    'Dieser Kanal sollte wegen mangelnder Nutzung deaktiviert werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr deaktiviert. Yay!',
+
   channelRenamed: (oldName, newName) => `Kanal umbenannt von "${oldName}" zu "${newName}."`,
 
   deauthorization: adminPhoneNumber => `

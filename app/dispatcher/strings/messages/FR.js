@@ -413,16 +413,19 @@ const notifications = {
   adminLeft: 'Un-e admin vient de quitter le canal',
 
   channelDestroyed:
-    'La chaîne et tous les enregistrements associés ont été définitivement détruits.',
+    'La canal et tous les enregistrements associés ont été définitivement détruits.',
 
   channelEnqueuedForRecycling:
-    "Bonjour! Cette chaîne est sur le point d'être désactivée faute d'utilisation. Pour éviter qu'il ne soit désactivé, envoyez 'INFO' dans les prochaines 24 heures.Pour plus d'informations, visitez signalboost.info/how-to. ",
+    "Bonjour! Cette canal est sur le point d'être désactivée faute d'utilisation. Pour éviter qu'il ne soit désactivé, envoyez 'INFO' dans les prochaines 24 heures.Pour plus d'informations, visitez signalboost.info/how-to. ",
 
   channelDestructionFailed: phoneNumber =>
-    `Impossible de détruire la chaîne pour le numéro de téléphone: ${phoneNumber}`,
+    `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,
 
   channelRecycled:
-    "Chaîne désactivée par manque d'utilisation. Pour créer une nouvelle chaîne, visitez https://signalboost.info",
+    "Canal désactivée par manque d'utilisation. Pour créer une nouvelle chaîne, visitez https://signalboost.info",
+
+  channelRedeemed:
+    "Cette canal devait être désactivée en raison d'un manque d'utilisation. Cependant, puisque vous avez utilisé la chaîne récemment, elle ne sera plus désactivée. Yay!",
 
   channelRenamed: (oldName, newName) => `Le canal a été renommé de "${oldName}" à "${newName}."`,
 
