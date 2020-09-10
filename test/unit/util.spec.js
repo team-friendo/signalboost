@@ -1,5 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
+import sinon from 'sinon'
 import util from '../../app/util'
 
 describe('utility module', () => {
@@ -89,6 +90,19 @@ describe('utility module', () => {
         })
         expect(util.redact(unredacted)).to.eql(unredacted)
       })
+    })
+  })
+
+  describe('#repeatUntilCancelled', () => {
+    it('calls a function repeatedly until it is cancelled', async () => {
+      const fn = sinon.stub().returns(Promise.resolve())
+      const interval = 20
+      const cancel = util.repeatUntilCancelled(fn, interval)
+      await util.wait(2 * interval)
+      expect(fn.callCount).to.eql(2)
+      cancel()
+      await util.wait(2 * interval)
+      expect(fn.callCount).to.eql(2)
     })
   })
 })

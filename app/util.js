@@ -38,6 +38,19 @@ const repeatUntil = (fn, interval, predicate) =>
         .then(() => wait(interval))
         .then(() => repeatUntil(fn, interval, predicate))
 
+const repeatUntilCancelled = (fn, interval) => {
+  let shouldContinue = true
+  const cancel = () => (shouldContinue = false)
+  const repeat = (fn, interval) =>
+    !shouldContinue
+      ? Promise.resolve()
+      : Promise.resolve(fn())
+          .then(() => wait(interval))
+          .then(() => repeat(fn, interval))
+  repeat(fn, interval)
+  return cancel
+}
+
 const repeatUntilTimeout = (fn, interval, timeout) => {
   const now = nowInMillis()
   repeatUntil(fn, interval, () => nowInMillis() > now + timeout)
@@ -145,6 +158,7 @@ module.exports = {
   redact,
   repeatEvery,
   repeatUntilTimeout,
+  repeatUntilCancelled,
   sha256Hash,
   sequence,
   statuses,
