@@ -14,11 +14,10 @@ const notificationKeys = {
   CHANNEL_REDEEMED: 'channelRedeemed',
 }
 
-// (Database, Socket, Channel, String, String) -> Promise<Array<string>>
-const notifyMembersExcept = async (channel, message, sender) => {
-  if (channel == null) return
-  const memberPhoneNumbers = channelRepository.getMemberPhoneNumbersExcept(channel, [sender])
-  await signal.broadcastMessage(memberPhoneNumbers, sdMessageOf(channel, message))
+// (Channel, String, String) -> Promise<Array<string>>
+const notifyMembersExcept = async (channel, sender, notificationKey) => {
+  const recipients = channelRepository.getMembersExcept(channel, [sender])
+  return _notifyMany(channel, notificationKey, recipients)
 }
 
 // (string) -> Promise<Array<string>>

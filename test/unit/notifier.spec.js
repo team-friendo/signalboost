@@ -3,6 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../app/db/repositories/channel'
 import signal from '../../app/signal'
+import { map } from 'lodash'
 import { deepChannelFactory } from '../support/factories/channel'
 import {
   adminMembershipFactory,
@@ -36,7 +37,7 @@ describe('notifier module', () => {
     it('sends a notification to each admin in their language', async () => {
       await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_RECYCLED)
       expect(sendMessageStub.callCount).to.eql(2)
-      expect(sendMessageStub.getCalls().map(x => x.args)).to.have.deep.members([
+      expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           channel.memberships[0].memberPhoneNumber,
           sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_RECYCLED]),
@@ -53,11 +54,35 @@ describe('notifier module', () => {
     it('sends a notification to each member in their language', async () => {
       await notifier.notifyMembers(channel, notificationKeys.CHANNEL_DESTROYED)
       expect(sendMessageStub.callCount).to.eql(4)
-      expect(sendMessageStub.getCalls().map(x => x.args)).to.have.deep.members([
+      expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           channel.memberships[0].memberPhoneNumber,
           sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED]),
         ],
+        [
+          channel.memberships[1].memberPhoneNumber,
+          sdMessageOf(channel, messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED]),
+        ],
+        [
+          channel.memberships[2].memberPhoneNumber,
+          sdMessageOf(channel, messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED]),
+        ],
+        [
+          channel.memberships[3].memberPhoneNumber,
+          sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED]),
+        ],
+      ])
+    })
+  })
+
+  describe('#notifyMembersExcept', () => {
+    it('sends a language-appropriate notification to all members except the sender', async () => {
+      await notifier.notifyMembersExcept(
+        channel,
+        channel.memberships[0],
+        notificationKeys.CHANNEL_DESTROYED,
+      )
+      expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           channel.memberships[1].memberPhoneNumber,
           sdMessageOf(channel, messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED]),

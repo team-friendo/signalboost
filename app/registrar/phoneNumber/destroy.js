@@ -3,12 +3,14 @@ const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const { defaultLanguage } = require('../../config')
 const common = require('./common')
 const notifier = require('../../notifier')
+const { notificationKeys } = notifier
 const signal = require('../../signal')
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const channelRepository = require('../../db/repositories/channel')
 const eventRepository = require('../../db/repositories/event')
 const logger = require('../logger')
 const fs = require('fs-extra')
+
 const { eventTypes } = require('../../db/models/event')
 const {
   signal: { keystorePath },
@@ -26,17 +28,13 @@ const destroy = async ({ phoneNumber, sender }) => {
 
     if (phoneNumberRecord) {
       await phoneNumberRepository.destroy(phoneNumber, tx)
-      await releasePhoneNumber(phoneNumber)
+      await releasePhoneNumber(phoneNumberRecord)
     }
 
     if (channel) {
       await channelRepository.destroy(channel.phoneNumber, tx)
       await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
-      await notifier.notifyMembersExcept(
-        channel,
-        messagesIn(defaultLanguage).notifications.channelDestroyed,
-        sender,
-      )
+      await notifier.notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED)
     }
 
     await signal.unsubscribe(phoneNumber)
@@ -52,7 +50,7 @@ const destroy = async ({ phoneNumber, sender }) => {
 
 // HELPERS
 
-// (DB, string) -> Promise<void>
+// (string) -> Promise<void>
 const deleteSignalKeystore = async phoneNumber => {
   try {
     await fs.remove(`${keystorePath}/${phoneNumber}`)
@@ -63,10 +61,10 @@ const deleteSignalKeystore = async phoneNumber => {
 }
 
 // (PhoneNumberInstance) -> Promise<void>
-const releasePhoneNumber = async phoneNumber => {
+const releasePhoneNumber = async phoneNumberRecord => {
   try {
     const twilioClient = common.getTwilioClient()
-    await twilioClient.incomingPhoneNumbers(phoneNumber.twilioSid).remove()
+    await twilioClient.incomingPhoneNumbers(phoneNumberRecord.twilioSid).remove()
   } catch (error) {
     return error.status === 404
       ? Promise.resolve()
@@ -74,7 +72,7 @@ const releasePhoneNumber = async phoneNumber => {
   }
 }
 
-// (String, DB, Socket, String) -> SignalboostStatus
+// (Error, string) -> SignalboostStatus
 const handleDestroyFailure = async (err, phoneNumber) => {
   logger.log(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)

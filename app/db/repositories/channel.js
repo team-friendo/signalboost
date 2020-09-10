@@ -1,8 +1,8 @@
-import { Op } from 'sequelize'
-
 const app = require('../../../app')
+const { Op } = require('sequelize')
 const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
+const { map } = require('lodash')
 const {
   signal: { supportPhoneNumber },
 } = require('../../config')
@@ -94,6 +94,10 @@ const isSysadmin = async phoneNumber => {
 
 // all selectors assume you are operating on an already deeply-fetched channel (with all nested attrs avail)
 const getMemberPhoneNumbers = channel => (channel.memberships || []).map(m => m.memberPhoneNumber)
+const getMembersExcept = (channel, members) => {
+  const phoneNumbersToExclude = new Set(map(members, 'memberPhoneNumber'))
+  return channel.memberships.filter(m => !phoneNumbersToExclude.has(m.memberPhoneNumber))
+}
 const getMemberPhoneNumbersExcept = (channel, phoneNumbers) =>
   getMemberPhoneNumbers(channel).filter(pn => !phoneNumbers.includes(pn))
 
@@ -121,6 +125,7 @@ module.exports = {
   getAdminMemberships,
   getAdminPhoneNumbers,
   getMemberPhoneNumbers,
+  getMembersExcept,
   getMemberPhoneNumbersExcept,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
