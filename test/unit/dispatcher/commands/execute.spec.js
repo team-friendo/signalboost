@@ -417,14 +417,27 @@ describe('executing commands', () => {
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
 
-      it('returns a SUCCESS status and payload', async () => {
-        const response = await processCommand(dispatchable)
+      it('returns a SUCCESS status and notifications', async () => {
+        const adminHeader = messagesIn(admin.language).prefixes.broadcastMessage
+        const subscriberHeader = channel.name
+        const adminMemberships = channel.memberships.slice(0, 3)
+        const subscriberMemberships = channel.memberships.slice(3)
 
-        expect(response).to.eql({
+        expect(await processCommand(dispatchable)).to.eql({
           command: commands.BROADCAST,
           payload: 'hello friendos!',
+          message: '',
           status: statuses.SUCCESS,
-          notifications: [],
+          notifications: [
+            ...adminMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: `[${adminHeader}]\nhello friendos!`,
+            })),
+            ...subscriberMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: `[${subscriberHeader}]\nhello friendos!`,
+            }))
+          ],
         })
       })
     })

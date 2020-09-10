@@ -12,9 +12,14 @@ const signal = require('../../signal')
 const logger = require('../logger')
 const { defaultLanguage } = require('../../config')
 const { get, isEmpty, uniq } = require('lodash')
-const { getAllAdminsExcept, getAdminMemberships } = require('../../db/repositories/channel')
+const {
+  getAllAdminsExcept,
+  getAdminMemberships,
+  getSubscriberMemberships,
+} = require('../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
+const membership = require('../../db/models/membership')
 const { ADMIN, NONE } = memberTypes
 
 /**
@@ -55,7 +60,7 @@ const execute = async (executable, dispatchable) => {
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
-    [commands.BROADCAST]: () => maybeBroadcastMessage(sender, payload),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
@@ -77,7 +82,7 @@ const execute = async (executable, dispatchable) => {
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
   }[command] || (() => noop(sender)))()
-
+  
   result.notifications = result.notifications || []
   return { command, payload, ...result }
 }
@@ -170,17 +175,42 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // BROADCAST
-const maybeBroadcastMessage = (sender, payload) => {
+const maybeBroadcastMessage = (channel, sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.broadcast
   if (sender.type !== ADMIN)
     return Promise.resolve({
       status: statuses.UNAUTHORIZED,
       message: cr.notAdmin,
+      notifications: [],
     })
 
-  const prefix = messagesIn(sender.language).prefixes.broadcastMessage
+  return {
+    status: statuses.SUCCESS,
+    message: '',
+    notifications: broadcastNotificationsOf(channel, sender, payload),
+  }
+}
 
-  return { status: statuses.SUCCESS, message: addHeader(prefix, payload) }
+const broadcastNotificationsOf = (channel, sender, messageBody) => {
+  // TODO @mari: these notification headers need to be lnguage specific!  
+  const adminMemberships = getAdminMemberships(channel)
+  const adminMessagePrefix = messagesIn(sender.language).prefixes.broadcastMessage
+  let adminNotifications = [
+    ...adminMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: `${`[${adminMessagePrefix}]\n`}${messageBody}`,
+    })),
+  ]
+
+  const subscriberMemberships = getSubscriberMemberships(channel)
+  let subscriberNotifications = [
+    ...subscriberMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: `${`[${channel.name}]\n`}${messageBody}`,
+    })),
+  ]
+
+  return [...adminNotifications, ...subscriberNotifications]
 }
 
 // PRIVATE
@@ -742,12 +772,6 @@ const noop = sender => {
 /**********
  * HELPERS
  **********/
-
-const addHeader = (prefix, messageBody) => {
-  // adds header to broadcast (TODO: add hotline, and private messages)
-  return `${`[${prefix}]\n`}${messageBody}`
-}
-
 const logAndReturn = (err, statusTuple) => {
   // TODO(@zig): add prometheus error count here (counter: db_error)
   logger.error(err)
