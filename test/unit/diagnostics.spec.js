@@ -10,7 +10,8 @@ import { channelFactory, deepChannelFactory } from '../support/factories/channel
 import { sdMessageOf } from '../../app/signal/constants'
 import { wait } from '../../app/util'
 const {
-  signal: { diagnosticsPhoneNumber, healthcheckInterval, signaldStartupTime },
+  job: { healthcheckInterval },
+  signal: { diagnosticsPhoneNumber, signaldStartupTime },
 } = require('../../app/config')
 
 describe('diagnostics module', () => {
@@ -79,18 +80,6 @@ describe('diagnostics module', () => {
         diagnosticsPhoneNumber,
         sdMessageOf({ phoneNumber: channelPhoneNumbers[0] }, `healthcheck_response 1312`),
       ])
-    })
-  })
-
-  describe('launching a healthcheck job', () => {
-    beforeEach(() => {
-      healthcheckStub.returns(Promise.resolve(42))
-    })
-
-    it('schedules healthchecks to be sent on an interval', async () => {
-      launchHealthcheckJob()
-      await wait(signaldStartupTime + 2 * healthcheckInterval)
-      expect(healthcheckStub.callCount).to.be.at.least(2)
     })
   })
 })

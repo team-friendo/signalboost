@@ -4,7 +4,6 @@ const defaults = {
   broadcastSpacing: 100, // 100 millis
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
-  healtcheckInterval: 1000 * 60 * 15, // 15 min
   healthcheckTimeout: 1000 * 60 * 15, // 15 min
   healtcheckSpacing: 100, // 100 millis
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
@@ -18,7 +17,6 @@ const defaults = {
   signaldRequestTimeout: 1000 * 10, // 10 sec
   signaldVerifyTimeout: 1000 * 30, // 30 sec
   signaldSendTimeout: 1000 * 60 * 60, // 60 min
-  signaldStartupTime: 3000 * 60, // 3 min
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
   diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(`"`, ''),
   welcomeDelay: 3000, // 3 sec
@@ -29,7 +27,6 @@ const test = {
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
   expiryUpdateDelay: 1, // millis
-  healthcheckInterval: 30, // millis
   healthcheckTimeout: 30, // millis
   intervalBetweenRegistrationBatches: 30, // millis
   intervalBetweenRegistrations: 5, // millis,
@@ -40,7 +37,6 @@ const test = {
   signaldSendTimeout: 40, // millis
   signaldRequestTimeout: 10, // millis
   signaldVerifyTimeout: 20, // millis
-  signaldStartupTime: 1, //  millis
   supportPhoneNumber: '+15555555555',
   welcomeDelay: 0.0001, // millis
   diagnosticsPhoneNumber: '+15554443333',
@@ -48,7 +44,6 @@ const test = {
 
 const development = {
   ...defaults,
-  healtcheckInterval: 1000 * 60, // 60 sec
   healthcheckTimeout: 1000 * 60, // 60 sec
 }
 
