@@ -21,7 +21,7 @@ const destroyMany = phoneNumbers =>
     where: { phoneNumber: { [Op.in]: phoneNumbers } },
   })
 
-const getMatureRecycleRequests = async () => {
+const evaluateRecycleRequests = async () => {
   // channel admins have a 1 day grace period to redeem a channel slated for recycling
   // by using it. calculate when that grace period started...
   const gracePeriodStart = util.now().subtract(parseInt(recycleGracePeriod), 'ms')
@@ -48,4 +48,4 @@ const getMatureRecycleRequests = async () => {
   }
 }
 
-module.exports = { requestToRecycle, getMatureRecycleRequests, destroyMany }
+module.exports = { requestToRecycle, evaluateRecycleRequests, destroyMany }

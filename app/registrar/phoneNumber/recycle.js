@@ -47,7 +47,7 @@ const requestToRecycle = async phoneNumbers => {
 // () -> Promise<Array<string>>
 const processRecycleRequests = async () => {
   try {
-    const { redeemed, toRecycle } = await recycleRequestRepository.getMatureRecycleRequests()
+    const { redeemed, toRecycle } = await recycleRequestRepository.evaluateRecycleRequests()
     const recycleResults = await Promise.all(toRecycle.map(recycle))
     await recycleRequestRepository.destroyMany([...redeemed, ...toRecycle])
     const redeemedChannels = await channelRepository.findManyDeep(redeemed)

@@ -315,7 +315,7 @@ describe('phone number services -- recycle module', () => {
       deepChannelFactory({ channelPhoneNumber }),
     )
     const toRecycle = times(3, genPhoneNumber)
-    let getMatureRecycleRequestsStub
+    let evaluateRecycleRequestsStub
 
     beforeEach(() => {
       // recycle helpers that should always succeed
@@ -330,9 +330,9 @@ describe('phone number services -- recycle module', () => {
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
 
       // if this fails, processRecycleRequests will fail
-      getMatureRecycleRequestsStub = sinon.stub(
+      evaluateRecycleRequestsStub = sinon.stub(
         recycleRequestRepository,
-        'getMatureRecycleRequests',
+        'evaluateRecycleRequests',
       )
     })
 
@@ -347,7 +347,7 @@ describe('phone number services -- recycle module', () => {
           .onCall(2)
           .callsFake(() => Promise.reject('BOOM!'))
         // overall job succeeds
-        getMatureRecycleRequestsStub.returns(Promise.resolve({ redeemed, toRecycle }))
+        evaluateRecycleRequestsStub.returns(Promise.resolve({ redeemed, toRecycle }))
         await processRecycleRequests()
       })
 
@@ -375,7 +375,7 @@ describe('phone number services -- recycle module', () => {
     })
 
     describe('when job fails', () => {
-      beforeEach(() => getMatureRecycleRequestsStub.callsFake(() => Promise.reject('BOOM!')))
+      beforeEach(() => evaluateRecycleRequestsStub.callsFake(() => Promise.reject('BOOM!')))
       it('notifies maintainers of error', async () => {
         await processRecycleRequests()
         expect(notifyMaintainersStub.getCall(0).args).to.eql([

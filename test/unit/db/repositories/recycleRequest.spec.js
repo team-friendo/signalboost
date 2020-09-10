@@ -131,7 +131,7 @@ describe('recycleablePhoneNumber repository', () => {
     })
 
     it('retrieves all mature recycle requests and classifies them as redeemed or toRecycle', async () => {
-      const res = await recycleRequestRepository.getMatureRecycleRequests(values(phoneNumbers))
+      const res = await recycleRequestRepository.evaluateRecycleRequests(values(phoneNumbers))
       expect(res).to.eql({
         redeemed: [phoneNumbers.redeemed],
         toRecycle: [phoneNumbers.toRecycle],
