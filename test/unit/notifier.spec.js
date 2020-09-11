@@ -22,13 +22,10 @@ describe('notifier module', () => {
       subscriberMembershipFactory({ language: 'DE' }),
     ],
   })
-  let broadcastMessageStub, sendMessageStub
+  let sendMessageStub
 
   beforeEach(() => {
     sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
-    broadcastMessageStub = sinon
-      .stub(signal, 'broadcastMessage')
-      .callsFake(numbers => numbers.map(() => '42'))
     sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve('42'))
   })
   afterEach(() => sinon.restore())
@@ -102,10 +99,9 @@ describe('notifier module', () => {
   describe('#notifyMaintainers', () => {
     it('sends an untranslated notification to sysadmins of the instance', async () => {
       await notifier.notifyMaintainers('foo')
-      expect(broadcastMessageStub.callCount).to.eql(1)
-      expect(broadcastMessageStub.getCall(0).args).to.eql([
-        [channel.memberships[0].memberPhoneNumber, channel.memberships[1].memberPhoneNumber],
-        sdMessageOf(channel, 'foo'),
+      expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
+        [channel.memberships[0].memberPhoneNumber, sdMessageOf(channel, 'foo')],
+        [channel.memberships[1].memberPhoneNumber, sdMessageOf(channel, 'foo')],
       ])
     })
   })
