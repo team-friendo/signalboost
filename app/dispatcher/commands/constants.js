@@ -34,6 +34,7 @@ const commands = {
   INVITE: 'INVITE',
   JOIN: 'JOIN',
   LEAVE: 'LEAVE',
+  NONE: 'NONE',
   PRIVATE: 'PRIVATE',
   REMOVE: 'REMOVE',
   RENAME: 'RENAME',

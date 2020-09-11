@@ -44,9 +44,6 @@ Learn more: https://signalboost.info`
 const validPhoneNumberHint = `Phone numbers must include country codes prefixed by a '+'.`
 
 const parseErrors = {
-  missingCommand:
-    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
-
   unnecessaryPayload: command =>
     `Sorry, I didn't understand that. Did you mean to send "${command}"? 
 
@@ -394,6 +391,12 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
     success: newDescription => `Channel description changed to "${newDescription}".`,
     dbError: `Whoops! There was an error changing the channel description. Try again!`,
     notAdmin,
+  },
+
+  // NONE
+  none: {
+    error:
+      'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
   },
 }
 

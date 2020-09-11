@@ -14,8 +14,8 @@ describe('parse module', () => {
   const invalidPhoneNumber = '222-333-4444'
 
   describe('parsing commands', () => {
-    describe('a MISSING_COMMAND parseError', () => {
-      it('returns a parseError and message if the message does not begin with a command', () => {
+    describe('when the message does not begin with a command', () => {
+      it('returns a command type of NONE', () => {
         const msgs = [
           'fire the missiles',
           'the ADD foo',
@@ -96,10 +96,9 @@ describe('parse module', () => {
         ]
         msgs.forEach(msg =>
           expect(parseExecutable(msg)).to.eql({
-            command: null,
-            error: messagesIn(defaultLanguage).parseErrors.missingCommand,
+            command: commands.NONE,
+            language: defaultLanguage,
             payload: '',
-            type: parseErrorTypes.MISSING_COMMAND,
           }),
         )
       })

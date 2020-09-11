@@ -407,6 +407,12 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
     dbError: `Oups! Es gab einen Fehler beim Versuch die Beschreibung des Kanals zu ändern. Versuchs nochmal!`,
     notAdmin,
   },
+
+  // NONE
+  none: {
+    error:
+      'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+  },
 }
 
 const notifications = {

@@ -1,4 +1,4 @@
-const { commands, toggles, vouchModes } = require('./constants')
+const { commands, toggles, vouchModes, parseErrorTypes } = require('./constants')
 const { statuses } = require('../../util')
 const messenger = require('../messenger')
 const channelRepository = require('../../db/repositories/channel')
@@ -81,8 +81,8 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-  }[command] || (() => noop(sender)))()
-  
+  }[command] || (() => handleNoCommand(sender)))()
+  // console.log({ command, payload, ...result })
   result.notifications = result.notifications || []
   return { command, payload, ...result }
 }
@@ -192,7 +192,7 @@ const maybeBroadcastMessage = (channel, sender, payload) => {
 }
 
 const broadcastNotificationsOf = (channel, sender, messageBody) => {
-  // TODO @mari: these notification headers need to be lnguage specific!  
+  // TODO @mari: these notification headers need to be lnguage specific!
   const adminMemberships = getAdminMemberships(channel)
   const adminMessagePrefix = messagesIn(sender.language).prefixes.broadcastMessage
   let adminNotifications = [
@@ -758,13 +758,19 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 }
 
 // NOOP
-const noop = sender => {
-  let message = sender.type === ADMIN ? messagesIn(sender.language).commandResponses.noop.error : ''
+const handleNoCommand = sender => {
+  // if sender was an admin, give them a helpful error message
+  if (sender.type === ADMIN)
+    return Promise.resolve({
+      message: messagesIn(sender.language).commandResponses.none.error,
+      status: statuses.ERROR,
+      notifications: [],
+    })
 
+  // otherwise, treat as a hotline message
   return Promise.resolve({
-    command: commands.NOOP,
-    message,
-    status: statuses.NOOP,
+    message: '',
+    status: statuses.SUCCESS,
     notifications: [],
   })
 }

@@ -436,7 +436,7 @@ describe('executing commands', () => {
             ...subscriberMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
               message: `[${subscriberHeader}]\nhello friendos!`,
-            }))
+            })),
           ],
         })
       })
@@ -2359,17 +2359,17 @@ describe('executing commands', () => {
           sdMessage: sdMessageOf(channel, 'foo'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: null,
+          command: commands.NONE,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(sender.language).parseErrors.missingCommand,
+          message: messagesIn(sender.language).commandResponses.none.error,
           notifications: [],
         })
       })
     })
 
     describe('when a subscriber sends a message not prefixed by a command ', () => {
-      it('returns an error and message', async () => {
+      it('returns a success status (to be later treated as a hotline message)', async () => {
         const sender = subscriber
         const dispatchable = {
           channel,
@@ -2377,10 +2377,10 @@ describe('executing commands', () => {
           sdMessage: sdMessageOf(channel, 'foo'),
         }
         expect(await processCommand(dispatchable)).to.eql({
-          command: null,
+          command: commands.NONE,
           payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(sender.language).parseErrors.missingCommand,
+          status: statuses.SUCCESS,
+          message: '',
           notifications: [],
         })
       })

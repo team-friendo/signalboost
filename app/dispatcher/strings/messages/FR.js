@@ -412,6 +412,12 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
     dbError: `Oups! Une erreur s'est produite lors du changement de la description du canal. Veuillez essayer à nouveau!`,
     notAdmin,
   },
+
+  // NONE
+  none: {
+    error:
+      'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+  },
 }
 
 const notifications = {

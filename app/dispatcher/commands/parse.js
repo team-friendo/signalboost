@@ -73,17 +73,12 @@ const findCommandMatch = msg => {
 
 // Array<CommandMatch> -> CommandMatch
 const pickLongestMatch = matchResults => {
-  // filter out empty matches, and return MISSING_COMMAND parseError if none found
+  // filter out empty matches, and return NONE if none found
   // return the longest match (so that, eg, INVITER will get preference over INVITE)
-  // TODO (mari): error should be returned in sender language
   const hits = matchResults.filter(({ matches }) => !isEmpty(matches))
 
   return isEmpty(hits)
-    ? {
-        command: null,
-        error: messagesIn(defaultLanguage).parseErrors.missingCommand,
-        type: parseErrorTypes.MISSING_COMMAND,
-      }
+    ? { command: commands.NONE, language: defaultLanguage }
     : hits.sort((a, b) => b.matches[1].length - a.matches[1].length)[0]
 }
 

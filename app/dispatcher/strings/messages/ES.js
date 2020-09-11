@@ -410,6 +410,12 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
     dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtelo de nuevo!`,
     notAdmin,
   },
+
+  // NONE
+  none: {
+    error:
+      'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+  },
 }
 
 const notifications = {
