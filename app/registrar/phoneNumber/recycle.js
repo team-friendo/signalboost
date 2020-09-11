@@ -51,17 +51,20 @@ const processRecycleRequests = async () => {
     const recycleResults = await Promise.all(toRecycle.map(recycle))
     await recycleRequestRepository.destroyMany([...redeemed, ...toRecycle])
     const redeemedChannels = await channelRepository.findManyDeep(redeemed)
+    const numProcessed = redeemed.length + toRecycle.length
 
     return Promise.all([
       ...redeemedChannels.map(channel =>
         notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
       ),
-      notifier.notifyMaintainers(
-        `${redeemed.length + toRecycle.length} recycle requests processed:\n\n` +
-          `${redeemed.map(r => `${r} redeemed by admins.`).join('\n')}` +
-          '\n' +
-          `${map(recycleResults, 'message').join('\n')}`,
-      ),
+      numProcessed === 0
+        ? Promise.resolve()
+        : notifier.notifyMaintainers(
+            `${redeemed.length + toRecycle.length} recycle requests processed:\n\n` +
+              `${redeemed.map(r => `${r} redeemed by admins.`).join('\n')}` +
+              '\n' +
+              `${map(recycleResults, 'message').join('\n')}`,
+          ),
     ])
   } catch (err) {
     return notifier.notifyMaintainers(`Error processing recycle job: ${err}`)
