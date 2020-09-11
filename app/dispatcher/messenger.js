@@ -8,13 +8,13 @@ const { memberTypes } = require('../db/repositories/membership')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
 const { statuses } = require('../util')
-const { wait, sequence, batchesOfN } = require('../util')
+const { wait, sequence } = require('../util')
 const { loggerOf } = require('../util')
 const logger = loggerOf('messenger')
 const metrics = require('../metrics')
 const { counters } = metrics
 const {
-  signal: { setExpiryInterval, broadcastBatchSize, broadcastBatchInterval },
+  signal: { setExpiryInterval, attachmentSendDelay },
 } = require('../config')
 
 /**
@@ -29,7 +29,7 @@ const messageTypes = {
   NOOP: 'NOOP',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE, NOOP } = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
 
 const { ADMIN } = memberTypes
 
@@ -39,9 +39,8 @@ const { ADMIN } = memberTypes
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult, dispatchable)
+  const messageType = parseMessageType(commandResult)
   const channelPhoneNumber = dispatchable.channel.phoneNumber
-  const { message } = commandResult
 
   switch (messageType) {
     case BROADCAST_MESSAGE:
@@ -50,7 +49,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         BROADCAST_MESSAGE,
         null,
       ])
-      return broadcast(message, dispatchable)
+      return broadcast({ commandResult, dispatchable })
     case HOTLINE_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
         channelPhoneNumber,
@@ -65,21 +64,15 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         commandResult.command,
       ])
       return handleCommandResult({ commandResult, dispatchable })
-    case NOOP:
-      return handleCommandResult({ commandResult, dispatchable })
     default:
       return Promise.reject(`Invalid message. Must be one of: ${values(messageTypes)}`)
   }
 }
 
 // (CommandResult, Dispatchable) -> MessageType
-const parseMessageType = (commandResult, { sender }) => {
-  if (commandResult.status === NOOP) {
-    return sender.type === ADMIN ? NOOP : HOTLINE_MESSAGE
-  }
-
-  if (commandResult.command === commands.BROADCAST && sender.type === ADMIN)
-    return BROADCAST_MESSAGE
+const parseMessageType = ({ command, status }) => {
+  if (command === commands.NONE && status === statuses.SUCCESS) return HOTLINE_MESSAGE
+  if (command === commands.BROADCAST) return BROADCAST_MESSAGE
 
   return COMMAND
 }
@@ -98,9 +91,9 @@ const handleHotlineMessage = dispatchable => {
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
-  const { command, message, status } = commandResult
+  const { command, message, notifications, status } = commandResult
   await respond({ ...dispatchable, message, command, status })
-  await sendNotifications({ commandResult, dispatchable })
+  if (status === statuses.SUCCESS) await sendNotifications(dispatchable.channel, notifications)
   await wait(setExpiryInterval) // to ensure welcome notification arrives first
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   return Promise.resolve()
@@ -111,39 +104,13 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  ************/
 
 // Dispatchable -> Promise<MessageCount>
-const broadcast = async (message, { channel, sdMessage }) => {
-  const recipients = channel.memberships
+const broadcast = async ({ commandResult, dispatchable }) => {
+  const { channel, sdMessage } = dispatchable
+  const { notifications } = commandResult
 
   try {
-    if (isEmpty(sdMessage.attachments)) {
-      await sequence(
-        recipients.map(recipient => () =>
-          signal.sendMessage(
-            recipient.memberPhoneNumber,
-            addHeader({
-              channel,
-              sdMessage,
-              messageType: BROADCAST_MESSAGE,
-              language: recipient.language,
-              memberType: recipient.type,
-            }),
-          ),
-        ),
-      )
-    } else {
-      const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
-      await sequence(
-        recipientBatches.map(recipientBatch => {
-          recipientBatch.map(recipient => {
-            signal.broadcastMessage([recipient.memberPhoneNumber], {
-              ...sdMessage,
-              messageBody: message,
-            })
-          })
-        }),
-        broadcastBatchInterval,
-      )
-    }
+    const delay = isEmpty(sdMessage.attachments) ? 0 : attachmentSendDelay
+    await sendNotifications(channel, notifications, delay)
     return messageCountRepository.countBroadcast(channel)
   } catch (e) {
     logger.error(e)
@@ -198,20 +165,21 @@ const respond = ({ channel, message, sender, command, status }) => {
   })
 }
 
-// ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
-const sendNotifications = ({ commandResult, dispatchable }) => {
-  const { channel } = dispatchable
-  const { status, notifications } = commandResult
-
-  return status === statuses.SUCCESS
-    ? Promise.all(notifications.map(notification => notify({ channel, notification })))
-    : Promise.resolve([])
+// ({ CommandResult, Dispatchable )) -> Promise<Array<string>>
+const sendNotifications = (channel, notifications, delay = 0) => {
+  // NOTE: we would prefer to send batched messages in parallel, but send them in sequence
+  // to work around concurrency bugs in signald that cause significant lags / crashes
+  // when trying to handle messages sent in parallel. At such time as we fix those bugs
+  // we would like to call `Promise.all` here and launch all the writes at once!
+  return sequence(
+    notifications.map(({ recipient, message }) => () =>
+      signal.sendMessage(recipient, sdMessageOf(channel, message)),
+    ),
+    delay,
+  )
 }
 
-// ({Socket, Channel, Notification}) -> Promise<void>
-const notify = ({ channel, notification }) =>
-  signal.sendMessage(notification.recipient, sdMessageOf(channel, notification.message))
-
+// ({ Channel, Notification }) -> Promise<void>
 // ({ CommandResult, Dispatchable }) -> Promise<void>
 const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   // for newly added users, make sure disappearing message timer
@@ -275,5 +243,6 @@ module.exports = {
   addHeader,
   parseMessageType,
   respond,
-  notify,
+  notify: ({ channel, notification }) =>
+    signal.sendMessage(notification.recipient, sdMessageOf(channel, notification.message)),
 }

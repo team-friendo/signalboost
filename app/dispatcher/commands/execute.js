@@ -19,7 +19,6 @@ const {
 } = require('../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
-const membership = require('../../db/models/membership')
 const { ADMIN, NONE } = memberTypes
 
 /**
@@ -82,7 +81,7 @@ const execute = async (executable, dispatchable) => {
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
   }[command] || (() => handleNoCommand(sender)))()
-  // console.log({ command, payload, ...result })
+
   result.notifications = result.notifications || []
   return { command, payload, ...result }
 }
@@ -198,7 +197,7 @@ const broadcastNotificationsOf = (channel, sender, messageBody) => {
   let adminNotifications = [
     ...adminMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: `${`[${adminMessagePrefix}]\n`}${messageBody}`,
+      message: `[${adminMessagePrefix}]\n${messageBody}`,
     })),
   ]
 
@@ -206,7 +205,7 @@ const broadcastNotificationsOf = (channel, sender, messageBody) => {
   let subscriberNotifications = [
     ...subscriberMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: `${`[${channel.name}]\n`}${messageBody}`,
+      message: `[${channel.name}]\n${messageBody}`,
     })),
   ]
 

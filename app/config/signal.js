@@ -1,4 +1,5 @@
 const defaults = {
+  attachmentSendDelay: 2000, // 2 seconds
   broadcastBatchInterval: 1300, // 1.3 seconds
   broadcastBatchSize: 1,
   broadcastSpacing: 100, // 100 millis
@@ -24,6 +25,7 @@ const defaults = {
 
 const test = {
   ...defaults,
+  attachmentSendDelay: 10, // 10 millis
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
   expiryUpdateDelay: 1, // millis

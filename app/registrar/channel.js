@@ -68,10 +68,10 @@ const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
     adminPhoneNumbers.map(async adminPhoneNumber => {
       await messenger.notify({
         channel,
-        notification: {
+        [{
           recipient: adminPhoneNumber,
           message: _welcomeNotificationOf(channel),
-        },
+        }]
       })
       await wait(setExpiryInterval)
       await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)

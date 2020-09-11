@@ -17,9 +17,7 @@ import app from '../../../app'
 import testApp from '../../support/testApp'
 import channelRepository from '../../../app/db/repositories/channel'
 import hotlineMessageRepository from '../../../app/db/repositories/hotlineMessage'
-const {
-  signal: { broadcastBatchSize },
-} = require('../../../app/config')
+import { defaultLanguage } from '../../../app/language'
 
 describe('messenger service', () => {
   const channelPhoneNumber = genPhoneNumber()
@@ -35,7 +33,7 @@ describe('messenger service', () => {
         type: memberTypes.ADMIN,
         channelPhoneNumber,
         memberPhoneNumber: adminPhoneNumbers[0],
-        language: languages.FR,
+        language: defaultLanguage,
       },
       { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[1] },
       { type: memberTypes.ADMIN, channelPhoneNumber, memberPhoneNumber: adminPhoneNumbers[2] },
@@ -58,6 +56,7 @@ describe('messenger service', () => {
   const attachments = [{ filename: 'some/path', width: 42, height: 42 }]
   const sdMessage = {
     type: 'send',
+    username: channel.phoneNumber,
     messageBody: 'please help!',
     recipientNumber: genPhoneNumber(),
     attachments,
@@ -65,17 +64,17 @@ describe('messenger service', () => {
   const adminSender = {
     phoneNumber: adminPhoneNumbers[0],
     type: memberTypes.ADMIN,
-    language: languages.EN,
+    language: defaultLanguage,
   }
   const subscriberSender = {
     phoneNumber: subscriberPhoneNumbers[0],
     type: memberTypes.SUBSCRIBER,
-    language: languages.ES,
+    language: defaultLanguage,
   }
   const randomSender = {
     phoneNumber: genPhoneNumber(),
     type: memberTypes.NONE,
-    language: languages.EN,
+    language: defaultLanguage,
   }
 
   const adminMemberships = channelRepository.getAdminMemberships(channel)
@@ -84,41 +83,31 @@ describe('messenger service', () => {
   after(async () => app.stop(testApp))
 
   describe('classifying a command result', () => {
-    it('recognizes a noop message from an admin', () => {
-      const msg = { command: 'foo', status: statuses.NOOP }
-      const dispatchable = { channel, sender: adminSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.NOOP)
+    describe('when someone sends a non-command prefixed message', () => {
+      it('recognizes an error as a missing command', () => {
+        const msg = { command: 'NONE', status: statuses.ERROR }
+        expect(messenger.parseMessageType(msg)).to.eql(messageTypes.COMMAND)
+      })
+      it('recognizes success as a hotline message', () => {
+        const msg = { command: 'NONE', status: statuses.SUCCESS }
+        expect(messenger.parseMessageType(msg)).to.eql(messageTypes.HOTLINE_MESSAGE)
+      })
     })
 
-    it('recognizes a broadcast message from an admin', () => {
+    it('recognizes a broadcast message', () => {
       const msg = { command: 'BROADCAST', status: statuses.SUCCESS }
-      const dispatchable = { channel, sender: adminSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.BROADCAST_MESSAGE)
-    })
-
-    it('recognizes a hotline message from a subscriber', () => {
-      const msg = { command: 'foo', status: statuses.NOOP }
-      const dispatchable = { channel, sender: subscriberSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
-    })
-
-    it('recognizes a hotline message from a random person', () => {
-      const msg = { command: 'foo', status: statuses.NOOP }
-      const dispatchable = { channel, sender: randomSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.HOTLINE_MESSAGE)
+      expect(messenger.parseMessageType(msg)).to.eql(messageTypes.BROADCAST_MESSAGE)
     })
 
     it('recognizes a command result', () => {
       const msg = { command: 'JOIN', status: statuses.SUCCESS }
-      const dispatchable = { channel, sender: randomSender }
-      expect(messenger.parseMessageType(msg, dispatchable)).to.eql(messageTypes.COMMAND)
+      expect(messenger.parseMessageType(msg)).to.eql(messageTypes.COMMAND)
     })
   })
 
   describe('dispatching a message', () => {
     let broadcastSpy,
       respondSpy,
-      broadcastMessageStub,
       sendMessageStub,
       countCommandStub,
       countBroadcastStub,
@@ -128,7 +117,6 @@ describe('messenger service', () => {
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
       respondSpy = sinon.spy(messenger, 'respond')
-      broadcastMessageStub = sinon.stub(signal, 'broadcastMessage').returns(Promise.resolve())
       sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
       countCommandStub = sinon
         .stub(messageCountRepository, 'countCommand')
@@ -147,80 +135,69 @@ describe('messenger service', () => {
       sinon.restore()
     })
 
-    describe('a broadcast message', () => {
-      describe('when sender is a admin', () => {
-        describe('when message has attachments', () => {
-          beforeEach(
-            async () =>
-              await messenger.dispatch({
-                commandResult: {
-                  command: commands.BROADCAST,
-                  status: statuses.SUCCESS,
-                  messageBody: messagesIn(adminSender.language).commandResponses.noop.error,
-                  notifications: [],
-                },
-                dispatchable: { channel, sender: adminSender, sdMessage },
-              }),
-          )
-          it('does not respond to the sender', () => {
-            expect(respondSpy.callCount).to.eql(0)
-          })
+    describe('sending a broadcast message', () => {
+      const payload = 'foobar'
+      const adminMemberships = channel.memberships.slice(0, 4)
+      const subscriberMemberships = channel.memberships.slice(4)
 
-          it('does not increment the command count for the channel', () => {
-            expect(countCommandStub.callCount).to.eql(0)
-          })
-
-          it('broadcasts the message to all channel subscribers and admins in batches', () => {
-            expect(broadcastMessageStub.getCall(0).args).to.eql([
-              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(0, 1),
-              { ...sdMessage, messageBody: '[DIFFUSER]\nplease help!' },
-            ])
-
-            expect(broadcastMessageStub.getCall(1).args).to.eql([
-              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(1, 1),
-              { ...sdMessage, messageBody: '[BROADCAST]\nplease help!' },
-            ])
-
-            expect(broadcastMessageStub.getCall(2).args).to.eql([
-              [...adminPhoneNumbers, ...subscriberPhoneNumbers].splice(2, 1),
-              { ...sdMessage, messageBody: '[BROADCAST]\nplease help!' },
-            ])
-          })
-
-          it('it increments the broadcast count for the channel exactly once', () => {
-            expect(countBroadcastStub.callCount).to.eql(1)
-            expect(countBroadcastStub.getCall(0).args).to.eql([channel])
-          })
-
-          it('attempts to broadcast in batches of broadcastBatchSize', async () => {
-            expect(broadcastMessageStub.callCount).to.eql(
-              [...adminPhoneNumbers, ...subscriberPhoneNumbers].length / broadcastBatchSize,
-            )
-          })
+      const notifications = [
+        ...adminMemberships.map(m => ({
+          recipient: m.memberPhoneNumber,
+          message: `[BROADCAST]\n${payload}`,
+        })),
+        ...subscriberMemberships.map(m => ({
+          recipient: m.memberPhoneNumber,
+          message: `[${channel.name}]\n${payload}`,
+        })),
+      ]
+      describe('when message has attachments', () => {
+        beforeEach(
+          async () =>
+            await messenger.dispatch({
+              commandResult: {
+                command: commands.BROADCAST,
+                status: statuses.SUCCESS,
+                payload,
+                message: '',
+                notifications,
+              },
+              dispatchable: { channel, sender: adminSender, sdMessage },
+            }),
+        )
+        it('does not respond to the sender', () => {
+          expect(respondSpy.callCount).to.eql(0)
         })
 
-        describe('when message has no attachments', () => {
-          const noAttachmentSdMessage = { ...sdMessage, attachments: [] }
-          beforeEach(
-            async () =>
-              await messenger.dispatch({
-                commandResult: {
-                  command: commands.BROADCAST,
-                  status: statuses.SUCCESS,
-                  messageBody: messagesIn(adminSender.language).commandResponses.noop.error,
-                  notifications: [],
-                },
-                dispatchable: {
-                  channel,
-                  sender: adminSender,
-                  sdMessage: noAttachmentSdMessage,
-                },
-              }),
-          )
+        it('does not increment the command count for the channel', () => {
+          expect(countCommandStub.callCount).to.eql(0)
+        })
 
-          it('it increments the broadcast count for the channel exactly once', () => {
-            expect(countBroadcastStub.callCount).to.eql(1)
-          })
+        it('sends the message and attachments to all channel subscribers and admins', () => {
+          console.log(channel.phoneNumber)
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            adminPhoneNumbers[0],
+            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          ])
+
+          expect(sendMessageStub.getCall(1).args).to.eql([
+            adminPhoneNumbers[1],
+            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          ])
+
+          expect(sendMessageStub.getCall(2).args).to.eql([
+            adminPhoneNumbers[2],
+            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          ])
+
+          expect(sendMessageStub.getCall(3).args).to.eql([
+            subscriberPhoneNumbers[2],
+            { ...sdMessage, messageBody: `[${channel.name}]\n${payload}` },
+          ])
+        })
+
+        it('it increments the broadcast count for the channel exactly once', () => {
+          expect(countBroadcastStub.callCount).to.eql(1)
+          expect(countBroadcastStub.getCall(0).args).to.eql([channel])
         })
       })
     })
