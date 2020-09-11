@@ -7,6 +7,7 @@ import { map } from 'lodash'
 import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import channelRepository from '../../../../app/db/repositories/channel'
 import eventRepository from '../../../../app/db/repositories/event'
+import notifier, { notificationKeys } from '../../../../app/notifier'
 import signal from '../../../../app/signal'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
@@ -16,7 +17,7 @@ import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 
-describe('phone number services -- destroy module', () => {
+describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
   const phoneNumberRecord = phoneNumberFactory({ phoneNumber })
   const channel = deepChannelFactory({ phoneNumber })
@@ -24,7 +25,6 @@ describe('phone number services -- destroy module', () => {
 
   let findChannelStub,
     findPhoneNumberStub,
-    broadcastMessageStub,
     destroyChannelStub,
     destroyPhoneNumberStub,
     deleteDirStub,
@@ -32,7 +32,9 @@ describe('phone number services -- destroy module', () => {
     signaldUnsubscribeStub,
     logEventStub,
     commitStub,
-    rollbackStub
+    rollbackStub,
+    notifyMembersExceptStub,
+    notifyMaintainersStub
 
   before(async () => {
     await app.run(testApp)
@@ -47,9 +49,10 @@ describe('phone number services -- destroy module', () => {
     })
     findChannelStub = sinon.stub(channelRepository, 'findDeep')
     findPhoneNumberStub = sinon.stub(phoneNumberRepository, 'find')
-    broadcastMessageStub = sinon.stub(signal, 'broadcastMessage')
     destroyChannelStub = sinon.stub(channelRepository, 'destroy')
     destroyPhoneNumberStub = sinon.stub(phoneNumberRepository, 'destroy')
+    notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
+    notifyMembersExceptStub = sinon.stub(notifier, 'notifyMembersExcept')
     twilioRemoveStub = sinon.stub()
     sinon.stub(commonService, 'getTwilioClient').callsFake(() => ({
       incomingPhoneNumbers: () => ({ remove: twilioRemoveStub }),
@@ -88,15 +91,8 @@ describe('phone number services -- destroy module', () => {
 
       describe('when phone number exists but no channel uses it', () => {
         beforeEach(async () => {
-          // no channel
-          findChannelStub.returns(Promise.resolve(null))
-          // yes phone number
           findPhoneNumberStub.returns(Promise.resolve(phoneNumberRecord))
-          // all helpers succeed
-          broadcastMessageStub.returns(Promise.resolve())
-          deleteDirStub.returns(Promise.resolve())
-          twilioRemoveStub.returns(Promise.resolve())
-          destroyPhoneNumberStub.returns(Promise.resolve())
+          findChannelStub.returns(Promise.resolve(null))
         })
 
         it('destroys the phone number', async () => {
@@ -116,7 +112,7 @@ describe('phone number services -- destroy module', () => {
 
         it('does not attempt to notify members of non-existent channel', async () => {
           await destroy({ phoneNumber })
-          expect(broadcastMessageStub.callCount).to.eql(0)
+          expect(notifyMembersExceptStub.callCount).to.eql(0)
         })
 
         it('does not attempt to destroy a channel', async () => {
@@ -135,7 +131,8 @@ describe('phone number services -- destroy module', () => {
         beforeEach(async () => {
           findChannelStub.returns(Promise.resolve(channel))
           findPhoneNumberStub.returns(Promise.resolve(phoneNumberRecord))
-          broadcastMessageStub.returns(Promise.resolve())
+          notifyMembersExceptStub.returns(Promise.resolve())
+          notifyMaintainersStub.returns(Promise.resolve())
           deleteDirStub.returns(Promise.resolve())
           twilioRemoveStub.returns(Promise.resolve())
           destroyPhoneNumberStub.returns(Promise.resolve())
@@ -144,18 +141,22 @@ describe('phone number services -- destroy module', () => {
         describe('destroy command called from maintainer', () => {
           it('notifies all the members of the channel of destruction', async () => {
             await destroy({ phoneNumber })
-            expect(broadcastMessageStub.getCall(0).args[0]).to.eql(
-              map(channel.memberships, 'memberPhoneNumber'),
-            )
+            expect(notifyMembersExceptStub.getCall(0).args).to.eql([
+              channel,
+              undefined,
+              notificationKeys.CHANNEL_DESTROYED,
+            ])
           })
         })
 
         describe('destroy command called from admin of channel', () => {
           it('notifies all members of the channel except for the sender', async () => {
             await destroy({ phoneNumber, sender })
-            expect(broadcastMessageStub.getCall(0).args[0]).to.eql(
-              map(channel.memberships, 'memberPhoneNumber').slice(1),
-            )
+            expect(notifyMembersExceptStub.getCall(0).args).to.eql([
+              channel,
+              sender,
+              notificationKeys.CHANNEL_DESTROYED,
+            ])
           })
         })
 
@@ -217,14 +218,11 @@ describe('phone number services -- destroy module', () => {
           destroyChannelStub.returns(Promise.resolve(true))
           destroyPhoneNumberStub.returns(Promise.resolve(true))
           twilioRemoveStub.returns(Promise.resolve())
-          broadcastMessageStub.returns(Promise.resolve())
           deleteDirStub.returns(Promise.resolve())
           // notifying members fails
-          broadcastMessageStub
-            .onCall(0)
-            .callsFake(() => Promise.reject('Failed to broadcast message'))
+          notifyMembersExceptStub.callsFake(() => Promise.reject('Failed to broadcast message'))
           // notifying maintainers of error succeeds
-          broadcastMessageStub.onCall(1).returns(Promise.resolve())
+          notifyMaintainersStub.returns(Promise.resolve())
         })
 
         it('returns an error status', async () => {

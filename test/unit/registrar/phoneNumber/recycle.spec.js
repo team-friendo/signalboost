@@ -17,7 +17,7 @@ import { times, map, flatten } from 'lodash'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
 
-describe('phone number services -- recycle module', () => {
+describe('phone number registrar -- recycle module', () => {
   const phoneNumber = genPhoneNumber()
   const phoneNumbers = times(2, genPhoneNumber)
   let updatePhoneNumberStub,
@@ -315,7 +315,7 @@ describe('phone number services -- recycle module', () => {
       deepChannelFactory({ channelPhoneNumber }),
     )
     const toRecycle = times(3, genPhoneNumber)
-    let evaluateRecycleRequestsStub
+    let evaluateRecycleRequestsStub, destroyRecycleRequestsStub
 
     beforeEach(() => {
       // recycle helpers that should always succeed
@@ -325,15 +325,15 @@ describe('phone number services -- recycle module', () => {
       findChannelStub.callsFake(phoneNumber => Promise.resolve(channelFactory({ phoneNumber })))
 
       // processRecycle helpers that should always succeed
+      destroyRecycleRequestsStub = sinon
+        .stub(recycleRequestRepository, 'destroyMany')
+        .returns(Promise.resolve())
       sinon.stub(channelRepository, 'findManyDeep').returns(Promise.resolve(redeemedChannels))
       notifyMaintainersStub.returns(Promise.resolve(['42']))
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
 
       // if this fails, processRecycleRequests will fail
-      evaluateRecycleRequestsStub = sinon.stub(
-        recycleRequestRepository,
-        'evaluateRecycleRequests',
-      )
+      evaluateRecycleRequestsStub = sinon.stub(recycleRequestRepository, 'evaluateRecycleRequests')
     })
 
     describe('when processing succeeds', () => {
@@ -353,6 +353,10 @@ describe('phone number services -- recycle module', () => {
 
       it('recycles unredeemed channels', () => {
         expect(flatten(map(destroyChannelStub.getCalls(), 'args'))).to.eql(toRecycle)
+      })
+
+      it('destroys all recycle requests that were just evaluated', () => {
+        expect(destroyRecycleRequestsStub.getCall(0).args).to.eql([[...redeemed, ...toRecycle]])
       })
 
       it('notifies admins of redeemed channels of redemption', () => {
