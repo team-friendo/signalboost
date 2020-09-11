@@ -374,21 +374,17 @@ describe('routes', () => {
   })
 
   describe('POST to /phoneNumbers/recycle', () => {
-    let recycleStub
-    beforeEach(() => (recycleStub = sinon.stub(phoneNumberService, 'recycle')))
-    afterEach(() => recycleStub.restore())
+    let requestToRecycle
+    beforeEach(() => (requestToRecycle = sinon.stub(phoneNumberService, 'requestToRecycle')))
+    afterEach(() => requestToRecycle.restore())
 
-    describe('when recycling succeeds', () => {
+    describe('when recycle request succeeds', () => {
       beforeEach(() =>
-        recycleStub.returns(
+        requestToRecycle.returns(
           Promise.resolve([
             {
               status: 'SUCCESS',
-              data: {
-                status: 'VERIFIED',
-                phoneNumber: '+19382223543',
-                twilioSid: 'PNc505ce2a87c34bfbe598c54120865bcf',
-              },
+              message: 'Issued request to recycle +19382223543',
             },
           ]),
         ),
@@ -403,13 +399,13 @@ describe('routes', () => {
       })
     })
 
-    describe('when recycling fails', () => {
+    describe('when recycle request fails', () => {
       beforeEach(() =>
-        recycleStub.returns(
+        requestToRecycle.returns(
           Promise.resolve([
             {
               status: 'ERROR',
-              message: 'Channel not found for +16154804259',
+              message: '+16154804259 has already been enqueued for recycling.',
             },
           ]),
         ),

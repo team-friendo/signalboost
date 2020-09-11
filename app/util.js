@@ -1,6 +1,7 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
 const uuidV4 = require('uuid/v4')
 const stringHash = require('string-hash')
+const moment = require('moment')
 const crypto = require('crypto')
 const {
   crypto: { hashSalt },
@@ -37,6 +38,19 @@ const repeatUntil = (fn, interval, predicate) =>
         .then(() => wait(interval))
         .then(() => repeatUntil(fn, interval, predicate))
 
+const repeatUntilCancelled = (fn, interval) => {
+  let shouldContinue = true
+  const cancel = () => (shouldContinue = false)
+  const repeat = (fn, interval) =>
+    !shouldContinue
+      ? Promise.resolve()
+      : Promise.resolve(fn())
+          .then(() => wait(interval))
+          .then(() => repeat(fn, interval))
+  repeat(fn, interval)
+  return cancel
+}
+
 const repeatUntilTimeout = (fn, interval, timeout) => {
   const now = nowInMillis()
   repeatUntil(fn, interval, () => nowInMillis() > now + timeout)
@@ -53,9 +67,11 @@ const sequence = async (asyncFuncs, delay = 0) => {
 const batchesOfN = (arr, n) =>
   isEmpty(arr) ? [] : concat([take(arr, n)], batchesOfN(drop(arr, n), n))
 
-const nowInMillis = () => new Date().getTime()
+const now = () => moment()
 
-const nowTimestamp = () => new Date().toISOString()
+const nowInMillis = () => moment().valueOf()
+
+const nowTimestamp = () => moment().toISOString()
 
 /**************** Logging ****************/
 
@@ -134,6 +150,7 @@ module.exports = {
   loggerOf,
   logger,
   noop,
+  now,
   nowInMillis,
   nowTimestamp,
   prettyPrint,
@@ -141,6 +158,7 @@ module.exports = {
   redact,
   repeatEvery,
   repeatUntilTimeout,
+  repeatUntilCancelled,
   sha256Hash,
   sequence,
   statuses,

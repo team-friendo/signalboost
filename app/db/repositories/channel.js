@@ -1,6 +1,8 @@
 const app = require('../../../app')
+const { Op } = require('sequelize')
 const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
+const { map } = require('lodash')
 const {
   signal: { supportPhoneNumber },
 } = require('../../config')
@@ -30,10 +32,29 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
+// (string, Transaction | null) => Promise<boolean>
+const destroy = async (phoneNumber, transaction) => {
+  const channel = await findByPhoneNumber(phoneNumber)
+  return channel
+    ? channel.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
+    : false
+}
+
 const findAll = () => app.db.channel.findAll()
 
 const findAllDeep = () =>
   app.db.channel.findAll({
+    include: [
+      { model: app.db.deauthorization },
+      { model: app.db.invite },
+      { model: app.db.membership },
+      { model: app.db.messageCount },
+    ],
+  })
+
+const findManyDeep = phoneNumbers =>
+  app.db.channel.findAll({
+    where: { phoneNumber: { [Op.in]: phoneNumbers } },
     include: [
       { model: app.db.deauthorization },
       { model: app.db.invite },
@@ -72,6 +93,10 @@ const isSysadmin = async phoneNumber => {
 
 // all selectors assume you are operating on an already deeply-fetched channel (with all nested attrs avail)
 const getMemberPhoneNumbers = channel => (channel.memberships || []).map(m => m.memberPhoneNumber)
+const getMembersExcept = (channel, members) => {
+  const phoneNumbersToExclude = new Set(map(members, 'memberPhoneNumber'))
+  return channel.memberships.filter(m => !phoneNumbersToExclude.has(m.memberPhoneNumber))
+}
 const getMemberPhoneNumbersExcept = (channel, phoneNumbers) =>
   getMemberPhoneNumbers(channel).filter(pn => !phoneNumbers.includes(pn))
 
@@ -89,14 +114,17 @@ const getSubscriberPhoneNumbers = channel =>
 
 module.exports = {
   create,
+  destroy,
   findAll,
   findAllDeep,
   findByPhoneNumber,
   findDeep,
+  findManyDeep,
   getAllAdminsExcept,
   getAdminMemberships,
   getAdminPhoneNumbers,
   getMemberPhoneNumbers,
+  getMembersExcept,
   getMemberPhoneNumbersExcept,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,

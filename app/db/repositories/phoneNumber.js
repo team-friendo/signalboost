@@ -10,6 +10,14 @@ const filters = {
 const create = ({ phoneNumber, twilioSid, status }) =>
   app.db.phoneNumber.create({ phoneNumber, twilioSid, status })
 
+// (string, Transaction | null) => Promise<boolean>
+const destroy = async (phoneNumber, transaction) => {
+  const phoneNumberRecord = await find(phoneNumber)
+  return phoneNumberRecord
+    ? phoneNumber.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
+    : false
+}
+
 const find = phoneNumber => app.db.phoneNumber.findOne({ where: { phoneNumber } })
 
 const findAll = () => app.db.phoneNumber.findAll()
@@ -35,4 +43,4 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, create, find, findAll, findAllPurchased, list, update }
+module.exports = { filters, create, destroy, find, findAll, findAllPurchased, list, update }

@@ -5,12 +5,11 @@ import channelRepository from '../../app/db/repositories/channel'
 import metrics, { gauges } from '../../app/metrics'
 import signal from '../../app/signal'
 import { times, zip } from 'lodash'
-import { launchHealthcheckJob, respondToHealthcheck, sendHealthchecks } from '../../app/diagnostics'
+import { respondToHealthcheck, sendHealthchecks } from '../../app/diagnostics'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
 import { sdMessageOf } from '../../app/signal/constants'
-import { wait } from '../../app/util'
 const {
-  signal: { diagnosticsPhoneNumber, healthcheckInterval, signaldStartupTime },
+  signal: { diagnosticsPhoneNumber },
 } = require('../../app/config')
 
 describe('diagnostics module', () => {
@@ -79,18 +78,6 @@ describe('diagnostics module', () => {
         diagnosticsPhoneNumber,
         sdMessageOf({ phoneNumber: channelPhoneNumbers[0] }, `healthcheck_response 1312`),
       ])
-    })
-  })
-
-  describe('launching a healthcheck job', () => {
-    beforeEach(() => {
-      healthcheckStub.returns(Promise.resolve(42))
-    })
-
-    it('schedules healthchecks to be sent on an interval', async () => {
-      launchHealthcheckJob()
-      await wait(signaldStartupTime + 2 * healthcheckInterval)
-      expect(healthcheckStub.callCount).to.be.at.least(2)
     })
   })
 })

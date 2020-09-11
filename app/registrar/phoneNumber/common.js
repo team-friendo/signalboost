@@ -1,12 +1,8 @@
 const { pick } = require('lodash')
 const { statuses } = require('../../db/models/phoneNumber')
-const channelRepository = require('../../db/repositories/channel')
-const signal = require('../../signal')
-const { sdMessageOf } = require('../../signal/constants')
 const {
   twilio: { accountSid, authToken, smsEndpoint },
   api: { host },
-  signal: { supportPhoneNumber },
 } = require('../../config')
 
 // STRINGS
@@ -30,20 +26,6 @@ const errorStatus = (error, phoneNumber) => ({
 const extractStatus = phoneNumberInstance =>
   pick(phoneNumberInstance, ['status', 'phoneNumber', 'twilioSid'])
 
-// (Database, Socket, Channel, String, String) -> Promise<void>
-const notifyMembersExcept = async (channel, message, sender) => {
-  if (channel == null) return
-  const memberPhoneNumbers = channelRepository.getMemberPhoneNumbersExcept(channel, [sender])
-  await signal.broadcastMessage(memberPhoneNumbers, sdMessageOf(channel, message))
-}
-
-// (DB, Socket, String) -> Promise<void>
-const notifyMaintainers = async message => {
-  const adminChannel = await channelRepository.findDeep(supportPhoneNumber)
-  const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(adminChannel)
-  await signal.broadcastMessage(adminPhoneNumbers, sdMessageOf(adminChannel, message))
-}
-
 // (DB, Socket, ChannelInstance, String) -> Promise<void>
 const destroyChannel = async (channel, tx) => {
   if (channel == null) return
@@ -64,8 +46,6 @@ module.exports = {
   statuses,
   errorStatus,
   extractStatus,
-  notifyMaintainers,
-  notifyMembersExcept,
   destroyChannel,
   getTwilioClient,
   smsUrl,

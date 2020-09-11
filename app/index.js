@@ -7,6 +7,7 @@ const app = {
   socketPool: null,
   api: null,
   metrics: null,
+  jobs: null,
 }
 
 app.run = async ({ db, socketPool, api, metrics, jobs, signal }) => {
@@ -40,7 +41,7 @@ app.run = async ({ db, socketPool, api, metrics, jobs, signal }) => {
   logger.log(`...created metrics registry!`)
 
   logger.log('Running startup jobs...')
-  await jobsService.run().catch(logger.fatalError)
+  app.jobs = jobsService.run().catch(logger.fatalError)
   logger.log('...ran startup jobs!')
 
   logger.log('Starting signal service...')
@@ -54,7 +55,12 @@ app.run = async ({ db, socketPool, api, metrics, jobs, signal }) => {
 app.stop = async () => {
   const { logger } = require('./util')
   logger.log('Shutting down signalboost...')
-  await Promise.all([app.socketPool.stop(), app.db.stop(), app.api.stop()])
+  await Promise.all([
+    () => app.socketPool.stop(),
+    () => app.db.stop(),
+    () => app.api.stop(),
+    () => app.jobs.stop(),
+  ])
   logger.log('...Signalboost shut down!')
 }
 

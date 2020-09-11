@@ -1,9 +1,8 @@
-import chai, { expect } from 'chai'
+import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
-import chaiAsPromised from 'chai-as-promised'
 import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { omit, keys, times } from 'lodash'
+import { omit, keys, times, map } from 'lodash'
 import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
@@ -13,8 +12,6 @@ const {
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
-  chai.use(chaiAsPromised)
-
   const channelPhoneNumber = genPhoneNumber()
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
@@ -122,6 +119,34 @@ describe('channel repository', () => {
     })
   })
 
+  describe('#destroy', () => {
+    let channel, channelCount
+
+    describe('when given the phone number for an existing channel', () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(deepChannelFactory(), {
+          include: [{ model: db.membership }],
+        })
+      })
+
+      it('deletes the instance and its associations', async () => {
+        channelCount = await db.channel.count()
+        expect(await channelRepository.destroy(channel.phoneNumber)).to.eql(true)
+        expect(await db.channel.count()).to.eql(channelCount - 1)
+        expect(await db.membership.findOne({ where: { channelPhoneNumber: channel.phoneNumber } }))
+          .to.be.null
+      })
+    })
+
+    describe('when given the phone number for a non-existent channel', () => {
+      it('does nothing', async () => {
+        channelCount = await db.channel.count()
+        expect(await channelRepository.destroy(genPhoneNumber())).to.eql(false)
+        expect(await db.channel.count()).to.eql(channelCount)
+      })
+    })
+  })
+
   describe('#findDeep', () => {
     const attrs = deepChannelFactory()
     let result
@@ -194,6 +219,26 @@ describe('channel repository', () => {
           'messageCount',
         ])
       })
+    })
+  })
+
+  describe('#findManyDeep', () => {
+    const includedPhoneNumbers = times(2, genPhoneNumber)
+    const excludesPhoneNumbers = times(3, genPhoneNumber)
+
+    beforeEach(async () => {
+      await Promise.all(
+        [...includedPhoneNumbers, ...excludesPhoneNumbers].map(phoneNumber =>
+          db.channel.create(deepChannelFactory({ phoneNumber }), {
+            include: [{ model: db.membership }],
+          }),
+        ),
+      )
+    })
+    it('retrieves all channels with given phone numbers', async () => {
+      const results = await channelRepository.findManyDeep(includedPhoneNumbers)
+      expect(map(results, 'phoneNumber')).to.have.members(includedPhoneNumbers)
+      expect(results[0].memberships).not.to.be.empty
     })
   })
 

@@ -14,7 +14,7 @@ import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 const {
-  job: { inviteExpiryInMillis, inviteDeletionInterval },
+  job: { inviteExpiryInMillis },
 } = require('../../../../app/config')
 
 describe('invite repository', () => {
@@ -182,27 +182,6 @@ describe('invite repository', () => {
       await wait(inviteExpiryInMillis)
       await inviteRepository.deleteExpired()
       expect(await db.invite.count()).to.eql(inviteCount - 1)
-    })
-  })
-
-  describe('#launchInviteDeletionJob', () => {
-    beforeEach(async () => {
-      await db.invite.destroy({ where: {}, force: true })
-      await Promise.all([db.invite.create(inviteFactory()), db.invite.create(inviteFactory())])
-      inviteCount = await db.invite.count()
-      inviteRepository.launchInviteDeletionJob()
-    })
-
-    it('launches a job to delete expired invites at a specified interval', async () => {
-      // the test deletion interval is 1/2 the expiry length
-      // so in 4 intervals, we should observe 2 deletions
-      expect(await db.invite.count()).to.eql(inviteCount)
-
-      await wait(inviteDeletionInterval)
-      expect(await db.invite.count()).to.eql(inviteCount)
-
-      await wait(3 * inviteDeletionInterval)
-      expect(await db.invite.count()).to.eql(inviteCount - 2)
     })
   })
 })

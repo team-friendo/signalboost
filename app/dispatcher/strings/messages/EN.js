@@ -401,8 +401,14 @@ const notifications = {
   channelDestructionFailed: phoneNumber =>
     `Failed to destroy channel for phone number: ${phoneNumber}`,
 
+  channelEnqueuedForRecycling:
+    'Hello! This channel is about to be deactivated due to lack of use. To prevent it from being deactivated, send "INFO" within the next 24 hours. For more info, visit signalboost.info/how-to.',
+
   channelRecycled:
     'Channel deactivated due to lack of use. To create a new channel, visit https://signalboost.info',
+
+  channelRedeemed:
+    'This channel was scheduled to be deactivated due to lack of use. However, since you used the channel recently, it will no longer be deactivated. Yay!',
 
   channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
 
