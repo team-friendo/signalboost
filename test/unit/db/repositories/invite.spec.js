@@ -14,7 +14,7 @@ import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 const {
-  job: { inviteExpiryInMillis, inviteDeletionInterval },
+  job: { inviteExpiryInMillis },
 } = require('../../../../app/config')
 
 describe('invite repository', () => {

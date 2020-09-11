@@ -5,13 +5,11 @@ import channelRepository from '../../app/db/repositories/channel'
 import metrics, { gauges } from '../../app/metrics'
 import signal from '../../app/signal'
 import { times, zip } from 'lodash'
-import { launchHealthcheckJob, respondToHealthcheck, sendHealthchecks } from '../../app/diagnostics'
+import { respondToHealthcheck, sendHealthchecks } from '../../app/diagnostics'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
 import { sdMessageOf } from '../../app/signal/constants'
-import { wait } from '../../app/util'
 const {
-  job: { healthcheckInterval },
-  signal: { diagnosticsPhoneNumber, signaldStartupTime },
+  signal: { diagnosticsPhoneNumber },
 } = require('../../app/config')
 
 describe('diagnostics module', () => {

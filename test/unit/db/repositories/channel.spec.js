@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
-import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
+import { deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
 import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
