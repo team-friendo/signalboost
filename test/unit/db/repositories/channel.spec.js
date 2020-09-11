@@ -123,12 +123,18 @@ describe('channel repository', () => {
     let channel, channelCount
 
     describe('when given the phone number for an existing channel', () => {
-      beforeEach(async () => (channel = await db.channel.create(channelFactory())))
+      beforeEach(async () => {
+        channel = await db.channel.create(deepChannelFactory(), {
+          include: [{ model: db.membership }],
+        })
+      })
 
-      it('deletes the instance', async () => {
+      it('deletes the instance and its associations', async () => {
         channelCount = await db.channel.count()
         expect(await channelRepository.destroy(channel.phoneNumber)).to.eql(true)
         expect(await db.channel.count()).to.eql(channelCount - 1)
+        expect(await db.membership.findOne({ where: { channelPhoneNumber: channel.phoneNumber } }))
+          .to.be.null
       })
     })
 
