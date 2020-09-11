@@ -93,7 +93,8 @@ describe('dispatcher service', () => {
           },
         }),
       )
-      await wait(socketDelay)
+      // wait longer b/c we send broadcast messages in sequence
+      await wait(4 * socketDelay)
     })
 
     it('relays the message to all admins and subscribers', () => {

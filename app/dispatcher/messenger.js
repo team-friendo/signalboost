@@ -108,10 +108,10 @@ const broadcast = async ({ channel, sdMessage }) => {
 
   try {
     if (isEmpty(sdMessage.attachments)) {
-      await Promise.all(
-        recipients.map(recipient =>
-          signal.broadcastMessage(
-            [recipient.memberPhoneNumber],
+      await sequence(
+        recipients.map(recipient => () =>
+          signal.sendMessage(
+            recipient.memberPhoneNumber,
             addHeader({
               channel,
               sdMessage,
