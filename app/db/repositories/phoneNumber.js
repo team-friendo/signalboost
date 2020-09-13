@@ -14,7 +14,7 @@ const create = ({ phoneNumber, twilioSid, status }) =>
 const destroy = async (phoneNumber, transaction) => {
   const phoneNumberRecord = await find(phoneNumber)
   return phoneNumberRecord
-    ? phoneNumber.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
+    ? phoneNumberRecord.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
     : false
 }
 
