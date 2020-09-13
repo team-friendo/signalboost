@@ -1885,6 +1885,108 @@ describe('executing commands', () => {
     })
   })
 
+  describe('@ command', () => {
+    const messageId = 1312
+    const crFR = messagesIn(languages.FR).commandResponses
+    const dispatchable = {
+      channel,
+      sender: { ...admin, language: languages.FR },
+      sdMessage: sdMessageOf(channel, '@ #1312 foo'),
+    }
+
+    let findMemberPhoneNumberStub, findMembershipStub
+    beforeEach(() => {
+      findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
+      findMembershipStub = sinon.stub(membershipRepository, 'findMembership')
+    })
+
+    describe('when sender is an admin', () => {
+      describe('when hotline message id exists', () => {
+        beforeEach(() => {})
+
+        describe('when hotline message was from a subscriber', () => {
+          beforeEach(() => {
+            findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+            findMembershipStub.returns(Promise.resolve(subscriber))
+          })
+
+          it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.REPLY,
+              status: statuses.SUCCESS,
+              message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
+              notifications: [
+                {
+                  recipient: subscriber.phoneNumber,
+                  message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+                },
+                ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
+                  recipient: memberPhoneNumber,
+                  message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                })),
+              ],
+              payload: { messageId: 1312, reply: 'foo' },
+            })
+          })
+        })
+      })
+
+      describe('when hotline message was from a non-subscriber', () => {
+        beforeEach(() => {
+          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
+          findMembershipStub.returns(null)
+        })
+
+        it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REPLY,
+            status: statuses.SUCCESS,
+            message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
+            notifications: [
+              {
+                recipient: randomPerson.phoneNumber,
+                message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+              },
+              ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
+                recipient: memberPhoneNumber,
+                message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+              })),
+            ],
+            payload: { messageId: 1312, reply: 'foo' },
+          })
+        })
+      })
+
+      describe('when hotline message id does not exist', () => {
+        beforeEach(() => findMemberPhoneNumberStub.callsFake(() => Promise.reject()))
+
+        it('returns ERROR status', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REPLY,
+            status: statuses.ERROR,
+            message: crFR.hotlineReply.invalidMessageId(messageId),
+            notifications: [],
+            payload: { messageId: 1312, reply: 'foo' },
+          })
+        })
+      })
+    })
+
+    describe('when sender is not an admin', () => {
+      const _dispatchable = { ...dispatchable, sender: subscriber }
+
+      it('returns UNAUTHORIZED status', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.REPLY,
+          status: statuses.UNAUTHORIZED,
+          message: CR.hotlineReply.notAdmin,
+          notifications: [],
+          payload: { messageId: 1312, reply: 'foo' },
+        })
+      })
+    })
+  })
+
   describe('SET_LANGUAGE commands', () => {
     const dispatchable = {
       channel,
