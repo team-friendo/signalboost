@@ -16,7 +16,7 @@ describe('phone number repository', () => {
   before(async () => {
     db = (await app.run({ ...testApp, db: dbService })).db
   })
-  afterEach(async () => await db.phoneNumber.destroy({ where: {} }))
+  afterEach(async () => await db.phoneNumber.destroy({ where: {}, force: true }))
   after(async () => await app.stop())
 
   describe('#create', () => {
@@ -79,6 +79,31 @@ describe('phone number repository', () => {
         expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
           phoneNumberAttrs.slice(0, -1).reverse(),
         )
+      })
+    })
+  })
+
+  describe('#destroy', () => {
+    const phoneNumber = genPhoneNumber()
+    let phoneNumberCount
+
+    describe('when given an existing phone number', () => {
+      beforeEach(async () => {
+        await db.phoneNumber.create(phoneNumberFactory({ phoneNumber }))
+      })
+
+      it('deletes the phone number', async () => {
+        phoneNumberCount = await db.phoneNumber.count()
+        expect(await phoneNumberRepository.destroy(phoneNumber)).to.eql(true)
+        expect(await db.phoneNumber.count()).to.eql(phoneNumberCount - 1)
+      })
+    })
+
+    describe('when given the phone number for a non-existent phoneNumber', () => {
+      it('does nothing', async () => {
+        phoneNumberCount = await db.phoneNumber.count()
+        expect(await phoneNumberRepository.destroy(genPhoneNumber())).to.eql(false)
+        expect(await db.phoneNumber.count()).to.eql(phoneNumberCount)
       })
     })
   })
