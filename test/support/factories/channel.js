@@ -28,6 +28,7 @@ export const deepChannelFactory = attrs => {
     messageCount: messageCountFactory({ channelPhoneNumber }),
     invites: times(2, () => inviteFactory({ channelPhoneNumber })),
     deauthorizations: [deauthorizationFactory({ channelPhoneNumber })],
+    recycleRequest: { channelPhoneNumber },
     ...attrs,
   }
 }
