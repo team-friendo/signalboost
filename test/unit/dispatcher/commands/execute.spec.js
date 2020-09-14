@@ -35,6 +35,7 @@ describe('executing commands', () => {
     name: 'foobar',
     description: 'foobar channel description',
     phoneNumber: '+13333333333',
+    hotlineOn: true,
     vouchMode: vouchModes.OFF,
     deauthorizations: [deauthorizationFactory()],
     memberships: [
@@ -2369,19 +2370,39 @@ describe('executing commands', () => {
     })
 
     describe('when a subscriber sends a message not prefixed by a command ', () => {
-      it('returns a success status (to be later treated as a hotline message)', async () => {
-        const sender = subscriber
-        const dispatchable = {
-          channel,
-          sender,
-          sdMessage: sdMessageOf(channel, 'foo'),
-        }
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.NONE,
-          payload: '',
-          status: statuses.SUCCESS,
-          message: '',
-          notifications: [],
+      describe('when the hotline is enabled', () => {
+        it('returns a success status', async () => {
+          const sender = subscriber
+          const dispatchable = {
+            channel: { ...channel, hotlineOn: true },
+            sender,
+            sdMessage: sdMessageOf(channel, 'foo'),
+          }
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: '',
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when the hotline is disabled', () => {
+        it('returns an error and message', async () => {
+          const sender = subscriber
+          const dispatchable = {
+            channel: { ...channel, hotlineOn: false },
+            sender,
+            sdMessage: sdMessageOf(channel, 'foo'),
+          }
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.ERROR,
+            message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(true),
+            notifications: [],
+          })
         })
       })
     })

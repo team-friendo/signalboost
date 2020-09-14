@@ -1,4 +1,4 @@
-const { commands, toggles, vouchModes, parseErrorTypes } = require('./constants')
+const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
 const messenger = require('../messenger')
 const channelRepository = require('../../db/repositories/channel')
@@ -19,7 +19,7 @@ const {
 } = require('../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
-const { ADMIN, NONE } = memberTypes
+const { ADMIN, SUBSCRIBER, NONE } = memberTypes
 
 /**
  *
@@ -80,7 +80,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-  }[command] || (() => handleNoCommand(sender)))()
+  }[command] || (() => handleNoCommand(channel, sender)))()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
@@ -756,8 +756,8 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
   }))
 }
 
-// NOOP
-const handleNoCommand = sender => {
+// NONE
+const handleNoCommand = (channel, sender) => {
   // if sender was an admin, give them a helpful error message
   if (sender.type === ADMIN)
     return Promise.resolve({
@@ -766,10 +766,19 @@ const handleNoCommand = sender => {
       notifications: [],
     })
 
-  // otherwise, treat as a hotline message
+  // if hotline is on, forward message. otherwise, return an error
+  let message, status
+  if (channel.hotlineOn) {
+    message = ''
+    status = statuses.SUCCESS
+  } else {
+    const cr = messagesIn(sender.language).notifications.hotlineMessagesDisabled
+    message = sender.type === SUBSCRIBER ? cr(true) : cr(false)
+    status = statuses.ERROR
+  }
   return Promise.resolve({
-    message: '',
-    status: statuses.SUCCESS,
+    message,
+    status,
     notifications: [],
   })
 }

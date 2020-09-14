@@ -173,7 +173,6 @@ describe('messenger service', () => {
         })
 
         it('sends the message and attachments to all channel subscribers and admins', () => {
-          console.log(channel.phoneNumber)
           expect(sendMessageStub.getCall(0).args).to.eql([
             adminPhoneNumbers[0],
             { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
