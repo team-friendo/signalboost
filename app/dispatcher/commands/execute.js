@@ -1,5 +1,6 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
+const app = require('../../../app')
 const channelRepository = require('../../db/repositories/channel')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
 const eventRepository = require('../../db/repositories/event')
@@ -9,6 +10,8 @@ const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberService = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
+const docker = require('../../docker')
+const { containerTypes } = require('../../docker')
 const { defaultLanguage } = require('../../config')
 const { get, isEmpty, uniq } = require('lodash')
 const {
@@ -72,6 +75,7 @@ const execute = async (executable, dispatchable) => {
     [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
     [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
+    [commands.RESTART]: () => maybeRestart(channel, sender, payload),
     [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
     [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
     [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
@@ -87,6 +91,26 @@ const execute = async (executable, dispatchable) => {
 /********************
  * COMMAND EXECUTION
  ********************/
+
+const maybeRestart = async (channel, sender, payload) => {
+  console.log('*********** RESTART CALLED ***********')
+  console.log('=========== STOPPING SOCKET POOOL...')
+  await app.socketPool.stop()
+  console.log('=========== STOPPING SIGNALD...')
+  await docker.stopContainer(containerTypes.SIGNALD)
+
+  console.log('=========== STARTING SIGNALD...')
+  await docker.startContainer(containerTypes.SIGNALD)
+
+  console.log('============ ABORTING')
+  process.exit(1)
+
+  // console.log('=========== STARTING SOCKET POOL...')
+  // await app.socketPool.start()
+  // console.log('*********** DONE! ***********')
+  //
+  // return { status: statuses.ERROR, message: 'successful restart!' }
+}
 
 // ACCEPT
 

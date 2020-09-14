@@ -31,7 +31,8 @@ const run = async () => {
 /* ({ create: () => Socket, destroy: () => void}) -> Promise<void> */
 const socketPoolOf = async ({ create, destroy }) => {
   const pool = await createPool({ create, destroy }, { min: poolSize, max: poolSize })
-  pool.stop = () => pool.drain().then(() => pool.clear())
+  // npool.stop = () => pool.drain().then(() => pool.clear())
+  pool.stop = () => pool.clear()
   return pool
 }
 

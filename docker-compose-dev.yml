@@ -85,7 +85,8 @@ services:
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
-    restart: unless-stopped
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
 
   ngrok:
     container_name: signalboost_ngrok
