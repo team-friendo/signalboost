@@ -29,6 +29,7 @@ const { ADMIN, SUBSCRIBER, NONE } = memberTypes
  *   status: string,
  *   message: string,
  *   notifications: Array<{ recipient: Array<string>, message: string }>
+ *   attachments: Array<{ filename: string, width: integer, height: integer }>
  * }
  *
  * type Toggle = toggles.HOTLINE
@@ -59,7 +60,7 @@ const execute = async (executable, dispatchable) => {
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
-    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, payload),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, sdMessage, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
@@ -174,7 +175,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // BROADCAST
-const maybeBroadcastMessage = (channel, sender, payload) => {
+const maybeBroadcastMessage = (channel, sender, sdMessage, payload) => {
   const cr = messagesIn(sender.language).commandResponses.broadcast
   if (sender.type !== ADMIN)
     return Promise.resolve({
@@ -186,11 +187,11 @@ const maybeBroadcastMessage = (channel, sender, payload) => {
   return {
     status: statuses.SUCCESS,
     message: '',
-    notifications: broadcastNotificationsOf(channel, sender, payload),
+    notifications: broadcastNotificationsOf(channel, sender, sdMessage, payload),
   }
 }
 
-const broadcastNotificationsOf = (channel, sender, messageBody) => {
+const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
   // TODO @mari: these notification headers need to be lnguage specific!
   const adminMemberships = getAdminMemberships(channel)
   const adminMessagePrefix = messagesIn(sender.language).prefixes.broadcastMessage
@@ -198,6 +199,7 @@ const broadcastNotificationsOf = (channel, sender, messageBody) => {
     ...adminMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: `[${adminMessagePrefix}]\n${messageBody}`,
+      attachments,
     })),
   ]
 
@@ -206,6 +208,7 @@ const broadcastNotificationsOf = (channel, sender, messageBody) => {
     ...subscriberMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: `[${channel.name}]\n${messageBody}`,
+      attachments,
     })),
   ]
 

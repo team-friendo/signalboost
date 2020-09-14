@@ -172,8 +172,8 @@ const sendNotifications = (channel, notifications, delay = 0) => {
   // when trying to handle messages sent in parallel. At such time as we fix those bugs
   // we would like to call `Promise.all` here and launch all the writes at once!
   return sequence(
-    notifications.map(({ recipient, message }) => () =>
-      signal.sendMessage(recipient, sdMessageOf(channel, message)),
+    notifications.map(({ recipient, message, attachments }) => () =>
+      signal.sendMessage(recipient, { ...sdMessageOf(channel, message), attachments }),
     ),
     delay,
   )

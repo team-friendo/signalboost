@@ -413,7 +413,8 @@ describe('executing commands', () => {
   })
 
   describe('BROADCAST command', () => {
-    const sdMessage = sdMessageOf(channel, 'BROADCAST hello friendos!')
+    const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
+    const sdMessage = { ...sdMessageOf(channel, 'BROADCAST hello friendos!'), attachments }
 
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
@@ -433,10 +434,12 @@ describe('executing commands', () => {
             ...adminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
               message: `[${adminHeader}]\nhello friendos!`,
+              attachments,
             })),
             ...subscriberMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
               message: `[${subscriberHeader}]\nhello friendos!`,
+              attachments,
             })),
           ],
         })

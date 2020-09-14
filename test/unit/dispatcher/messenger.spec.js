@@ -144,10 +144,12 @@ describe('messenger service', () => {
         ...adminMemberships.map(m => ({
           recipient: m.memberPhoneNumber,
           message: `[BROADCAST]\n${payload}`,
+          attachments,
         })),
         ...subscriberMemberships.map(m => ({
           recipient: m.memberPhoneNumber,
           message: `[${channel.name}]\n${payload}`,
+          attachments,
         })),
       ]
       describe('when message has attachments', () => {
