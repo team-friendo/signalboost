@@ -44,31 +44,18 @@ const channelOf = (sequelize, DataTypes) => {
     },
   })
 
+  const associationDefaults = {
+    hooks: true,
+    onDelete: 'cascade',
+  }
+
   channel.associate = db => {
-    channel.hasMany(db.membership, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasMany(db.deauthorization, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasMany(db.invite, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasOne(db.messageCount, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
-
-    channel.hasMany(db.hotlineMessage, {
-      hooks: true,
-      onDelete: 'cascade',
-    })
+    channel.hasMany(db.deauthorization, associationDefaults)
+    channel.hasMany(db.hotlineMessage, associationDefaults)
+    channel.hasMany(db.invite, associationDefaults)
+    channel.hasMany(db.membership, associationDefaults)
+    channel.hasOne(db.messageCount, associationDefaults)
+    channel.hasOne(db.recycleRequest, associationDefaults)
   }
 
   return channel
