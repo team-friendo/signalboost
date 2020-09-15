@@ -47,27 +47,35 @@ const requestToRecycle = async phoneNumbers => {
 // () -> Promise<Array<string>>
 const processRecycleRequests = async () => {
   try {
-    const { redeemed, toRecycle } = await recycleRequestRepository.evaluateRecycleRequests()
-    const recycleResults = await Promise.all(toRecycle.map(recycle))
-    await recycleRequestRepository.destroyMany([...redeemed, ...toRecycle])
-    const redeemedChannels = await channelRepository.findManyDeep(redeemed)
-    const numProcessed = redeemed.length + toRecycle.length
+    const phoneNumbersToRecycle = await recycleRequestRepository.getMatureRecycleRequests()
+    const recycleResults = await Promise.all(phoneNumbersToRecycle.map(recycle))
+    await recycleRequestRepository.destroyMany(phoneNumbersToRecycle)
 
     return Promise.all([
-      ...redeemedChannels.map(channel =>
-        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
-      ),
-      numProcessed === 0
+      phoneNumbersToRecycle.length === 0
         ? Promise.resolve()
         : notifier.notifyMaintainers(
-            `${redeemed.length + toRecycle.length} recycle requests processed:\n\n` +
-              `${redeemed.map(r => `${r} redeemed by admins.`).join('\n')}` +
-              '\n' +
+            `${phoneNumbersToRecycle.length} recycle requests processed:\n\n` +
               `${map(recycleResults, 'message').join('\n')}`,
           ),
     ])
   } catch (err) {
     return notifier.notifyMaintainers(`Error processing recycle job: ${err}`)
+  }
+}
+
+// (Channel) -> Promise<void>
+const redeem = async channel => {
+  try {
+    await recycleRequestRepository.destroy(channel.phoneNumber)
+    await Promise.all([
+      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
+      notifier.notifyMaintainers(
+        `${channel.phoneNumber} had been scheduled for recycling, but was just redeemed.`,
+      ),
+    ])
+  } catch (err) {
+    return notifier.notifyMaintainers(`Error redeeming ${channel.phoneNumber}: ${err}`)
   }
 }
 
@@ -93,4 +101,4 @@ const recycle = async phoneNumber => {
   }
 }
 
-module.exports = { requestToRecycle, processRecycleRequests, recycle }
+module.exports = { requestToRecycle, processRecycleRequests, recycle, redeem }
