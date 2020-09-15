@@ -103,10 +103,14 @@ describe('recycleablePhoneNumber repository', () => {
       expect(await recycleRequestRepository.destroyMany(toBeDeleted)).to.eql(toBeDeleted.length)
       expect(await db.recycleRequest.count()).to.eql(recycleRequestCount - toBeDeleted.length)
       expect(
-        await db.recycleRequest.findAll({ where: { channelPhoneNumber: { [Op.in]: toBeDeleted } } }),
+        await db.recycleRequest.findAll({
+          where: { channelPhoneNumber: { [Op.in]: toBeDeleted } },
+        }),
       ).to.have.length(0)
       expect(
-        await db.recycleRequest.findAll({ where: { channelPhoneNumber: { [Op.in]: toBeIgnored } } }),
+        await db.recycleRequest.findAll({
+          where: { channelPhoneNumber: { [Op.in]: toBeIgnored } },
+        }),
       ).to.have.length(toBeIgnored.length)
     })
   })
