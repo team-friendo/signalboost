@@ -1,25 +1,32 @@
 import { expect } from 'chai'
-import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
-import { times } from 'lodash'
+import { flatten, map, times } from 'lodash'
 import socket from '../../app/socket/write'
 import util from '../../app/util'
 import signal from '../../app/signal'
-import { channelFactory } from '../support/factories/channel'
-import { sendHealthchecks } from '../../app/diagnostics'
+import { channelFactory, deepChannelFactory } from '../support/factories/channel'
+import { failedHealthchecks, sendHealthchecks } from '../../app/diagnostics'
 import { messageTypes } from '../../app/signal/constants'
+
 const {
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, healthcheckTimeout },
 } = require('../../app/config')
 
 describe('diagnostics jobs', () => {
   const uuids = times(3, util.genUuid)
-  let channels, writeStub, readSock
+  let channels, diagnosticsChannel, writeStub, readSock
   const createChannels = async () => {
     channels = await Promise.all(times(3, () => app.db.channel.create(channelFactory())))
+    diagnosticsChannel = await app.db.channel.create(
+      deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }),
+      {
+        include: [{ model: app.db.membership }],
+      },
+    )
   }
 
   const destroyAllChannels = async () => {
@@ -34,7 +41,7 @@ describe('diagnostics jobs', () => {
     await app.db.channel.destroy({ where: {}, force: true })
   }
 
-  const writeToReadSock = outSdMessage => {
+  const echoBackToSocket = outSdMessage => {
     const inSdMessage = {
       type: messageTypes.MESSAGE,
       data: {
@@ -57,11 +64,8 @@ describe('diagnostics jobs', () => {
       await destroyAllChannels()
       await createChannels()
       readSock = await app.socketPool.acquire()
-      writeStub = sinon.stub(socket, 'write').callsFake(writeToReadSock)
       const genUuidStub = sinon.stub(util, 'genUuid')
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
-      //
-      await sendHealthchecks()
     })
     afterEach(async () => {
       await destroyAllChannels()
@@ -69,22 +73,111 @@ describe('diagnostics jobs', () => {
       sinon.restore()
     })
 
-    it('sends a a healthcheck to every channel and gets a response', () => {
-      const messages = times(2 * channels.length, n => writeStub.getCall(n).args[0])
-      expect(messages).to.have.deep.members([
-        ...channels.map((channel, idx) => ({
-          messageBody: `healthcheck ${uuids[idx]}`,
-          recipientAddress: { number: channels[idx].phoneNumber },
-          type: messageTypes.SEND,
-          username: diagnosticsPhoneNumber,
-        })),
-        ...channels.map((channel, idx) => ({
-          messageBody: `healthcheck_response ${uuids[idx]}`,
-          recipientAddress: { number: diagnosticsPhoneNumber },
-          type: messageTypes.SEND,
-          username: channels[idx].phoneNumber,
-        })),
-      ])
+    describe('in a healthy state', () => {
+      beforeEach(async () => {
+        writeStub = sinon.stub(socket, 'write').callsFake(echoBackToSocket)
+        await sendHealthchecks()
+      })
+
+      it('sends a a healthcheck to every channel and gets a response', () => {
+        expect(writeStub.callCount).to.eql(2 * channels.length)
+        expect(flatten(map(writeStub.getCalls(), 'args'))).to.have.deep.members([
+          ...channels.map((channel, idx) => ({
+            messageBody: `healthcheck ${uuids[idx]}`,
+            recipientAddress: { number: channels[idx].phoneNumber },
+            type: messageTypes.SEND,
+            username: diagnosticsPhoneNumber,
+          })),
+          ...channels.map((channel, idx) => ({
+            messageBody: `healthcheck_response ${uuids[idx]}`,
+            recipientAddress: { number: diagnosticsPhoneNumber },
+            type: messageTypes.SEND,
+            username: channels[idx].phoneNumber,
+          })),
+        ])
+      })
+    })
+
+    describe('when a healtcheck fails for the first time', () => {
+      beforeEach(async () => {
+        writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(''))
+        await sendHealthchecks()
+        await util.wait(healthcheckTimeout)
+      })
+
+      it('does not alert maintainers', () => {
+        expect(writeStub.callCount).to.eql(channels.length)
+      })
+
+      it('caches healthcheck failures', () => {
+        expect(failedHealthchecks.size).to.eql(channels.length)
+      })
+    })
+    describe('when a healtcheck fails twice in a row', () => {
+      beforeEach(async function() {
+        this.timeout(8000)
+        writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(''))
+        await sendHealthchecks()
+        await util.wait(healthcheckTimeout)
+        await sendHealthchecks()
+        await util.wait(2 * healthcheckTimeout)
+      })
+
+      it('notifies maintainers', async function() {
+        const numHealtchecks = 2 * channels.length
+        const numAlerts = 2 * channels.length // 2 alerts per channel, since diagnostics has 2 admins
+        expect(writeStub.callCount).to.eql(numHealtchecks + numAlerts)
+        expect(flatten(map(writeStub.getCalls().slice(-numAlerts), 'args'))).to.have.deep.members([
+          {
+            messageBody: `Channel ${channels[0].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            messageBody: `Channel ${channels[0].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+          },
+        ])
+      })
     })
   })
 })
