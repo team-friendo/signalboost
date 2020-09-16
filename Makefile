@@ -157,7 +157,7 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 #############
 
 test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/unit && ./bin/test/integration && ./bin/test/e2e
+	npx eslint app && ./bin/test/unit && ./bin/test/integration
 
 test.unit: ## run unit tests
 	./bin/test/unit
