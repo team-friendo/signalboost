@@ -69,6 +69,17 @@ describe('channel model', () => {
       },
     )
 
+  const createChannelWithRecycleRequest = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        recycleRequest: {},
+      },
+      {
+        include: [{ model: db.recycleRequest }],
+      },
+    )
+
   before(async () => {
     db = await run()
   })
@@ -78,6 +89,7 @@ describe('channel model', () => {
       db.messageCount.destroy({ where: {}, force: true }),
       db.membership.destroy({ where: {}, force: true }),
       db.hotlineMessage.destroy({ where: {}, force: true }),
+      db.recycleRequest.destroy({ where: {}, force: true }),
     ])
     await db.channel.destroy({ where: {}, force: true })
   })
@@ -246,6 +258,29 @@ describe('channel model', () => {
         const hotlineMessageCount = await db.hotlineMessage.count()
         await channel.destroy()
         expect(await db.hotlineMessage.count()).to.eql(hotlineMessageCount - 2)
+      })
+    })
+
+    describe('recycle request', () => {
+      let recycleRequest
+      beforeEach(async () => {
+        channel = await createChannelWithRecycleRequest()
+        recycleRequest = await channel.getRecycleRequest()
+      })
+
+      it('has one recycle request', () => {
+        expect(recycleRequest).to.be.an('object')
+      })
+
+      it('deletes the recycle reqeust when it deletes channel', async () => {
+        const recycleRequestCount = await db.recycleRequest.count()
+        await channel.destroy()
+        expect(await db.recycleRequest.count()).to.eql(recycleRequestCount - 1)
+      })
+
+      it('returns null if no recycle requests exist for the account', async () => {
+        channel = await db.channel.create(channelFactory())
+        expect(await channel.getRecycleRequest()).to.be.null
       })
     })
   })

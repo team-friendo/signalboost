@@ -4,7 +4,7 @@ const { errors } = require('./common')
 const { destroy } = require('./destroy')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
-const { requestToRecycle, recycle, processRecycleRequests } = require('./recycle')
+const { requestToRecycle, processRecycleRequests, recycle, redeem } = require('./recycle')
 const { register, registerAllPurchased, registerAllUnregistered } = require('./register')
 const { handleSms } = require('./sms')
 const { purchase, purchaseN } = require('./purchase')
@@ -25,6 +25,7 @@ module.exports = {
   processRecycleRequests,
   requestToRecycle,
   recycle,
+  redeem,
   register,
   registerAllPurchased,
   registerAllUnregistered,

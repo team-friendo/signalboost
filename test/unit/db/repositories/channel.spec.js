@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
-import { deepChannelFactory } from '../../../support/factories/channel'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
 import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
@@ -21,12 +21,13 @@ describe('channel repository', () => {
   })
   afterEach(async () => {
     await Promise.all([
-      db.channel.destroy({ where: {}, force: true }),
+      db.recycleRequest.destroy({ where: {} }),
       db.membership.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
       db.invite.destroy({ where: {}, force: true }),
       db.deauthorization.destroy({ where: {}, force: true }),
     ])
+    await db.channel.destroy({ where: {}, force: true })
   })
   after(async () => await app.stop())
 
@@ -151,30 +152,57 @@ describe('channel repository', () => {
     const attrs = deepChannelFactory()
     let result
 
-    beforeEach(async () => {
-      channel = await db.channel.create(attrs, {
-        include: [
-          { model: db.deauthorization },
-          { model: db.invite },
-          { model: db.membership },
-          { model: db.messageCount },
-        ],
+    describe("when channel's associons have values", () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(attrs, {
+          include: [
+            { model: db.deauthorization },
+            { model: db.invite },
+            { model: db.membership },
+            { model: db.messageCount },
+            { model: db.recycleRequest },
+          ],
+        })
+        result = await channelRepository.findDeep(channel.phoneNumber)
       })
-      result = await channelRepository.findDeep(channel.phoneNumber)
+
+      it("retrieves all of a channel's fields", () => {
+        expect(result.phoneNumber).to.eql(channel.phoneNumber)
+        expect(result.name).to.eql(channel.name)
+      })
+
+      it("retrieves all of a channel's nested attributes", () => {
+        expect(result.deauthorizations.length).to.eql(attrs.deauthorizations.length)
+        expect(result.invites.length).to.eql(attrs.invites.length)
+        expect(result.memberships.length).to.eql(attrs.memberships.length)
+        expect(omit(result.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
+          attrs.messageCount,
+        )
+        expect(result.recycleRequest.channelPhoneNumber).to.eql(channel.phoneNumber)
+      })
     })
 
-    it('retrieves all of a  channels nested attrs', () => {
-      expect(result.phoneNumber).to.eql(channel.phoneNumber)
-      expect(result.name).to.eql(channel.name)
-    })
+    describe("when channel's associations are empty", () => {
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory(), {
+          include: [
+            { model: db.deauthorization },
+            { model: db.invite },
+            { model: db.membership },
+            { model: db.messageCount },
+            { model: db.recycleRequest },
+          ],
+        })
+        result = await channelRepository.findDeep(channel.phoneNumber)
+      })
 
-    it('retrieves all of a channels nested attrs', () => {
-      expect(result.memberships.length).to.eql(attrs.memberships.length)
-      expect(result.invites.length).to.eql(attrs.invites.length)
-      expect(result.deauthorizations.length).to.eql(attrs.deauthorizations.length)
-      expect(omit(result.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
-        attrs.messageCount,
-      )
+      it("retrieves empty values for channel's nested attributes", () => {
+        expect(result.deauthorizations).to.eql([])
+        expect(result.invites).to.eql([])
+        expect(result.memberships).to.eql([])
+        expect(result.messageCount).to.be.null
+        expect(result.recycleRequest).to.be.null
+      })
     })
   })
 
@@ -190,6 +218,7 @@ describe('channel repository', () => {
               { model: db.invite },
               { model: db.membership },
               { model: db.messageCount },
+              { model: db.recycleRequest },
             ],
           }),
         ),
@@ -217,6 +246,7 @@ describe('channel repository', () => {
           'invites',
           'memberships',
           'messageCount',
+          'recycleRequest',
         ])
       })
     })

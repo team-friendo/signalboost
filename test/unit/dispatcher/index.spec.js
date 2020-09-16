@@ -8,6 +8,7 @@ import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
+import phoneNumberRegistrar from '../../../app/registrar/phoneNumber'
 import signal, { messageTypes } from '../../../app/signal'
 import executor from '../../../app/dispatcher/commands'
 import messenger from '../../../app/dispatcher/messenger'
@@ -357,6 +358,24 @@ describe('dispatcher module', () => {
             },
           },
         ])
+      })
+    })
+
+    describe('messages from a channel with a pending recycle request', () => {
+      let redeemStub
+      beforeEach(() => {
+        findDeepStub.returns(
+          Promise.resolve({
+            ...channel,
+            recycleRequest: { channelPhoneNumber: channel.phoneNumber },
+          }),
+        )
+        redeemStub = sinon.stub(phoneNumberRegistrar, 'redeem').returns(Promise.resolve())
+      })
+
+      it('redeems the channel and relays the message', async () => {
+        await dispatch(JSON.stringify(sdInMessage))
+        expect(redeemStub.getCall(0).args).to.eql([channel])
       })
     })
   })

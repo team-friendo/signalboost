@@ -49,6 +49,7 @@ const findAllDeep = () =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
+      { model: app.db.recycleRequest },
     ],
   })
 
@@ -60,6 +61,7 @@ const findManyDeep = phoneNumbers =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
+      { model: app.db.recycleRequest },
     ],
   })
 
@@ -73,6 +75,7 @@ const findDeep = phoneNumber =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
+      { model: app.db.recycleRequest },
     ],
   })
 
