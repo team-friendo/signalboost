@@ -37,11 +37,44 @@ const DonatePage = () => (
       amount of time we need to spend scaling up.
     </p>
     <h3>Support Signalboost here:</h3>
-    <h4 style={platformHeader}> Credit card:</h4>
+    <h4 style={platformHeader}>
+      If your organization has a tech budget, or if you have the means, consider
+      making a recurring donation:
+    </h4>
     <div style={stripeBtnStyles}>
-      <Checkout price="$5" priceID={process.env.GATSBY_BUTTON_PRICE_ID_5} />
-      <Checkout price="$20" priceID={process.env.GATSBY_BUTTON_PRICE_ID_20} />
-      <Checkout price="$50" priceID={process.env.GATSBY_BUTTON_PRICE_ID_50} />
+      <Checkout
+        price="$5"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_RECURRING_5}
+        mode="subscription"
+      />
+      <Checkout
+        price="$20"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_RECURRING_20}
+        mode="subscription"
+      />
+      <Checkout
+        price="$50"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_RECURRING_50}
+        mode="subscription"
+      />
+    </div>
+    <h4 style={platformHeader}>Or make a one-time donation:</h4>
+    <div style={stripeBtnStyles}>
+      <Checkout
+        price="$5"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_5}
+        mode="payment"
+      />
+      <Checkout
+        price="$20"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_20}
+        mode="payment"
+      />
+      <Checkout
+        price="$50"
+        priceID={process.env.GATSBY_BUTTON_PRICE_ID_50}
+        mode="payment"
+      />
     </div>
     <a href="https://venmo.com/signalboost">
       <h4 style={platformHeader}> Venmo: @signalboost</h4>
