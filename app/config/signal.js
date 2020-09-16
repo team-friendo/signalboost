@@ -4,8 +4,8 @@ const defaults = {
   broadcastSpacing: 100, // 100 millis
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
-  healthcheckTimeout: 1000 * 60 * 15, // 15 min
-  healtcheckSpacing: 100, // 100 millis
+  healthcheckTimeout: 1000 * 60 * 10, // 10 min
+  healthcheckSpacing: 50, // 50 millis
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
@@ -27,7 +27,8 @@ const test = {
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
   expiryUpdateDelay: 1, // millis
-  healthcheckTimeout: 30, // millis
+  healthcheckTimeout: 20, // millis
+  healthcheckSpacing: 1, // millis
   intervalBetweenRegistrationBatches: 30, // millis
   intervalBetweenRegistrations: 5, // millis,
   maxResendInterval: 256, // ~ 2.5 sec,
@@ -44,7 +45,7 @@ const test = {
 
 const development = {
   ...defaults,
-  healthcheckTimeout: 1000 * 60, // 60 sec
+  healthcheckTimeout: 1000 * 30, // 30 sec
 }
 
 module.exports = {
