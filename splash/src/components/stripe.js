@@ -15,12 +15,12 @@ const buttonStyles = {
 
 const stripePromise = loadStripe(process.env.GATSBY_STRIPE_PUBLISHABLE_KEY)
 
-const redirectToCheckout = async (event, priceID) => {
+const redirectToCheckout = async (event, priceID, mode) => {
   event.preventDefault()
   const stripe = await stripePromise
   const { error } = await stripe.redirectToCheckout({
     lineItems: [{ price: priceID, quantity: 1 }],
-    mode: 'payment',
+    mode,
     successUrl: `https://signalboost.info/donate`,
     cancelUrl: `https://signalboost.info/donate`,
   })
@@ -30,9 +30,12 @@ const redirectToCheckout = async (event, priceID) => {
   }
 }
 
-const Checkout = ({ price, priceID }) => {
+const Checkout = ({ price, priceID, mode }) => {
   return (
-    <button style={buttonStyles} onClick={e => redirectToCheckout(e, priceID)}>
+    <button
+      style={buttonStyles}
+      onClick={e => redirectToCheckout(e, priceID, mode)}
+    >
       {price}
     </button>
   )
