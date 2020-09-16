@@ -4,9 +4,8 @@ volumes:
   postgres_data:
   logs:
 
-# NOTE:
-#  you can uncomment the below if you'd like to run unit tests behind a VPN.
-#  do not leave it uncommented as that will mess up CI!
+# the below directive makes it possible to run tests behind a VPN
+# (feel free to comment it out if it breaks anything for you!)
 
 networks:
   default:

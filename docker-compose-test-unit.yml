@@ -1,8 +1,7 @@
 version: '3'
 
-# NOTE:
-#  you can uncomment the below if you'd like to run unit tests behind a VPN.
-#  do not leave it uncommented as that will mess up CI!
+# NOTE: the below directive makes it possible to run tests behind a VPN
+# (feel free to comment it out if it breaks anythuing for you!)
 
 networks:
   default:
