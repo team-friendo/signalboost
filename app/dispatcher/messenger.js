@@ -1,10 +1,8 @@
 const signal = require('../signal')
 const channelRepository = require('../db/repositories/channel')
 const messageCountRepository = require('../db/repositories/messageCount')
-const hotlineMessageRepository = require('../db/repositories/hotlineMessage')
 const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal/constants')
-const { memberTypes } = require('../db/repositories/membership')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
 const { statuses } = require('../util')
@@ -18,20 +16,17 @@ const {
 } = require('../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND' | 'PRIVATE MESSAGE' | 'NOOP'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND' | 'PRIVATE MESSAGE'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
-  COMMAND: 'COMMAND',
   PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
-  NOOP: 'NOOP',
+  COMMAND: 'COMMAND',
 }
 
 const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
-
-const { ADMIN } = memberTypes
 
 /***************
  * DISPATCHING
@@ -56,7 +51,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         HOTLINE_MESSAGE,
         null,
       ])
-      return handleHotlineMessage(dispatchable)
+      return handleHotlineMessage({ commandResult, dispatchable })
     case COMMAND:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
         channelPhoneNumber,
@@ -77,17 +72,9 @@ const parseMessageType = ({ command, status }) => {
   return COMMAND
 }
 
-const handleHotlineMessage = dispatchable => {
-  const {
-    channel: { hotlineOn },
-    sender: { language, type },
-  } = dispatchable
-  const disabledMessage = messagesIn(language).notifications.hotlineMessagesDisabled(
-    type === memberTypes.SUBSCRIBER,
-  )
-  return hotlineOn
-    ? relayHotlineMessage(dispatchable)
-    : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
+const handleHotlineMessage = async ({ commandResult, dispatchable }) => {
+  await handleCommandResult({ commandResult, dispatchable })
+  return messageCountRepository.countHotline(dispatchable.channel)
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
@@ -117,37 +104,6 @@ const broadcast = async ({ commandResult, dispatchable }) => {
   }
 }
 
-// Dispatchable -> Promise<void>
-const relayHotlineMessage = async ({ channel, sender, sdMessage }) => {
-  const { language } = sender
-  const recipients = channelRepository.getAdminMemberships(channel)
-  const response = messagesIn(language).notifications.hotlineMessageSent(channel)
-
-  const messageId = await hotlineMessageRepository.getMessageId({
-    channelPhoneNumber: channel.phoneNumber,
-    memberPhoneNumber: sender.phoneNumber,
-  })
-
-  await Promise.all(
-    recipients.map(recipient =>
-      signal.sendMessage(
-        recipient.memberPhoneNumber,
-        addHeader({
-          channel,
-          sdMessage,
-          messageType: HOTLINE_MESSAGE,
-          language: recipient.language,
-          messageId,
-        }),
-      ),
-    ),
-  )
-
-  return signal
-    .sendMessage(sender.phoneNumber, sdMessageOf(channel, response))
-    .then(() => messageCountRepository.countHotline(channel))
-}
-
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
 const respond = ({ channel, message, sender, command, status }) => {
   // FIX: PRIVATE command sends out all messages including to sender
@@ -172,7 +128,7 @@ const sendNotifications = (channel, notifications, delay = 0) => {
   // when trying to handle messages sent in parallel. At such time as we fix those bugs
   // we would like to call `Promise.all` here and launch all the writes at once!
   return sequence(
-    notifications.map(({ recipient, message, attachments }) => () =>
+    notifications.map(({ recipient, message, attachments = [] }) => () =>
       signal.sendMessage(recipient, { ...sdMessageOf(channel, message), attachments }),
     ),
     delay,
@@ -218,17 +174,9 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
  **********/
 
 /* { Channel, string, string, string, string } -> OutboundSignaldMessage */
-const addHeader = ({ channel, sdMessage, messageType, language, memberType, messageId }) => {
+const addHeader = ({ sdMessage, messageType, language }) => {
   let prefix
-  if (messageType === HOTLINE_MESSAGE) {
-    prefix = `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
-  } else if (messageType === BROADCAST_MESSAGE) {
-    if (memberType === ADMIN) {
-      prefix = `[${messagesIn(language).prefixes.broadcastMessage}]\n`
-    } else {
-      prefix = `[${channel.name}]\n`
-    }
-  } else if (messageType === PRIVATE_MESSAGE) {
+  if (messageType === PRIVATE_MESSAGE) {
     prefix = `[${messagesIn(language).prefixes.privateMessage}]\n`
   }
 
@@ -239,6 +187,7 @@ module.exports = {
   messageTypes,
   /**********/
   broadcast,
+  sendNotifications,
   dispatch,
   addHeader,
   parseMessageType,

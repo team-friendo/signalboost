@@ -68,6 +68,8 @@ describe('executing commands', () => {
   const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
   const deauthorizedPhoneNumber = channel.deauthorizations[0].memberPhoneNumber
 
+  const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
+
   let logIfFirstMembershipStub, logIfLastMembershipStub
 
   beforeEach(() => {
@@ -413,7 +415,6 @@ describe('executing commands', () => {
   })
 
   describe('BROADCAST command', () => {
-    const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
     const sdMessage = { ...sdMessageOf(channel, 'BROADCAST hello friendos!'), attachments }
 
     describe('when sender is an admin', () => {
@@ -2374,19 +2375,37 @@ describe('executing commands', () => {
 
     describe('when a subscriber sends a message not prefixed by a command ', () => {
       describe('when the hotline is enabled', () => {
-        it('returns a success status', async () => {
+        const messageId = '11'
+        let getMessageIdStub
+        beforeEach(() => {
+          getMessageIdStub = sinon.stub(hotlineMessageRepository, 'getMessageId')
+          getMessageIdStub.returns(Promise.resolve(messageId))
+        })
+        it('returns a success status, command response, and notifications', async () => {
           const sender = subscriber
           const dispatchable = {
             channel: { ...channel, hotlineOn: true },
             sender,
-            sdMessage: sdMessageOf(channel, 'foo'),
+            sdMessage: { ...sdMessageOf(channel, 'foo'), attachments },
           }
+
+          const adminMemberships = channel.memberships.slice(0, 3)
+          const prefix = language => {
+            return `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
+          }
+
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NONE,
             payload: '',
             status: statuses.SUCCESS,
-            message: '',
-            notifications: [],
+            message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+            notifications: [
+              ...adminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: `${prefix(membership.language)}foo`,
+                attachments,
+              })),
+            ],
           })
         })
       })
@@ -2402,7 +2421,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NONE,
             payload: '',
-            status: statuses.ERROR,
+            status: statuses.UNAUTHORIZED,
             message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(true),
             notifications: [],
           })

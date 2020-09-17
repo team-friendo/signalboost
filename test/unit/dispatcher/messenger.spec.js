@@ -2,12 +2,10 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times, values } from 'lodash'
-import { languages } from '../../../app/language'
 import { memberTypes } from '../../../app/db/repositories/membership'
 import signal from '../../../app/signal'
 import messageCountRepository from '../../../app/db/repositories/messageCount'
 import messenger, { messageTypes } from '../../../app/dispatcher/messenger'
-import messages from '../../../app/dispatcher/strings/messages/EN'
 import { commands } from '../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../app/util'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
@@ -58,7 +56,6 @@ describe('messenger service', () => {
     type: 'send',
     username: channel.phoneNumber,
     messageBody: 'please help!',
-    recipientNumber: genPhoneNumber(),
     attachments,
   }
   const adminSender = {
@@ -76,8 +73,6 @@ describe('messenger service', () => {
     type: memberTypes.NONE,
     language: defaultLanguage,
   }
-
-  const adminMemberships = channelRepository.getAdminMemberships(channel)
 
   before(async () => app.run(testApp))
   after(async () => app.stop(testApp))
@@ -108,6 +103,7 @@ describe('messenger service', () => {
   describe('dispatching a message', () => {
     let broadcastSpy,
       respondSpy,
+      sendNotificationsSpy,
       sendMessageStub,
       countCommandStub,
       countBroadcastStub,
@@ -117,6 +113,7 @@ describe('messenger service', () => {
     beforeEach(() => {
       broadcastSpy = sinon.spy(messenger, 'broadcast')
       respondSpy = sinon.spy(messenger, 'respond')
+      sendNotificationsSpy = sinon.spy(messenger, 'sendNotifications')
       sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
       countCommandStub = sinon
         .stub(messageCountRepository, 'countCommand')
@@ -152,166 +149,130 @@ describe('messenger service', () => {
           attachments,
         })),
       ]
-      describe('when message has attachments', () => {
-        beforeEach(
-          async () =>
-            await messenger.dispatch({
-              commandResult: {
-                command: commands.BROADCAST,
-                status: statuses.SUCCESS,
-                payload,
-                message: '',
-                notifications,
-              },
-              dispatchable: { channel, sender: adminSender, sdMessage },
-            }),
-        )
-        it('does not respond to the sender', () => {
-          expect(respondSpy.callCount).to.eql(0)
-        })
 
-        it('does not increment the command count for the channel', () => {
-          expect(countCommandStub.callCount).to.eql(0)
-        })
+      beforeEach(
+        async () =>
+          await messenger.dispatch({
+            commandResult: {
+              command: commands.BROADCAST,
+              status: statuses.SUCCESS,
+              payload,
+              message: '',
+              notifications,
+            },
+            dispatchable: { channel, sender: adminSender, sdMessage },
+          }),
+      )
+      it('does not respond to the sender', () => {
+        expect(respondSpy.callCount).to.eql(0)
+      })
 
-        it('sends the message and attachments to all channel subscribers and admins', () => {
-          expect(sendMessageStub.getCall(0).args).to.eql([
-            adminPhoneNumbers[0],
-            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
-          ])
+      it('does not increment the command count for the channel', () => {
+        expect(countCommandStub.callCount).to.eql(0)
+      })
 
-          expect(sendMessageStub.getCall(1).args).to.eql([
-            adminPhoneNumbers[1],
-            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
-          ])
+      it('sends the message and attachments to all channel subscribers and admins', () => {
+        expect(sendMessageStub.getCall(0).args).to.eql([
+          adminPhoneNumbers[0],
+          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+        ])
 
-          expect(sendMessageStub.getCall(2).args).to.eql([
-            adminPhoneNumbers[2],
-            { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
-          ])
+        expect(sendMessageStub.getCall(1).args).to.eql([
+          adminPhoneNumbers[1],
+          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+        ])
 
-          expect(sendMessageStub.getCall(3).args).to.eql([
-            subscriberPhoneNumbers[2],
-            { ...sdMessage, messageBody: `[${channel.name}]\n${payload}` },
-          ])
-        })
+        expect(sendMessageStub.getCall(2).args).to.eql([
+          adminPhoneNumbers[2],
+          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+        ])
 
-        it('it increments the broadcast count for the channel exactly once', () => {
-          expect(countBroadcastStub.callCount).to.eql(1)
-          expect(countBroadcastStub.getCall(0).args).to.eql([channel])
-        })
+        expect(sendMessageStub.getCall(4).args).to.eql([
+          subscriberPhoneNumbers[0],
+          { ...sdMessage, messageBody: `[${channel.name}]\n${payload}` },
+        ])
+      })
+
+      it('it increments the broadcast count for the channel exactly once', () => {
+        expect(countBroadcastStub.callCount).to.eql(1)
+        expect(countBroadcastStub.getCall(0).args).to.eql([channel])
       })
     })
 
-    describe('a hotline message', () => {
-      describe('when sender is a subscriber', () => {
-        describe('and hotline is disabled', () => {
-          const sender = subscriberSender
+    describe('forwarding a hotline message', () => {
+      const sender = subscriberSender
 
-          beforeEach(async () => {
-            await messenger.dispatch({
-              commandResult: {
-                status: statuses.NOOP,
-                messageBody: messages.notifications.noop,
-                notifications: [],
-              },
-              dispatchable: { channel, sender, sdMessage },
-            })
-          })
+      describe('when the hotline is off', () => {
+        const response = messagesIn(sender.language).notifications.hotlineMessagesDisabled(true)
 
-          it('does not broadcast a message', () => {
-            expect(broadcastSpy.callCount).to.eql(0)
-          })
-
-          it('sends an error message to the message sender', () => {
-            const response = messagesIn(sender.language).notifications.hotlineMessagesDisabled(true)
-
-            expect(sendMessageStub.getCall(0).args).to.eql([
-              sender.phoneNumber,
-              sdMessageOf(channel, response),
-            ])
+        beforeEach(async () => {
+          await messenger.dispatch({
+            commandResult: {
+              status: statuses.UNAUTHORIZED,
+              message: response,
+              notifications: [],
+            },
+            dispatchable: { channel, sender, sdMessage },
           })
         })
 
-        describe('and hotline is enabled', () => {
-          const sender = subscriberSender
+        it('does not broadcast a message', () => {
+          expect(broadcastSpy.callCount).to.eql(0)
+        })
 
-          beforeEach(async () => {
-            await messenger.dispatch({
-              commandResult: {
-                status: statuses.NOOP,
-                messageBody: messages.notifications.noop,
-                notifications: [],
-              },
-              dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
-            })
-          })
+        it('does not send out any notifications', () => {
+          expect(sendNotificationsSpy.callCount).to.eql(0)
+        })
 
-          it('forwards the message to channel admins with the header in the correct language', () => {
-            adminMemberships.forEach((membership, index) => {
-              const alert = messenger.addHeader({
-                channel,
-                sdMessage,
-                messageType: messageTypes.HOTLINE_MESSAGE,
-                language: membership.language,
-                messageId,
-              })
-              expect(sendMessageStub.getCall(index).args).to.eql([
-                membership.memberPhoneNumber,
-                alert,
-              ])
-            })
-          })
-
-          it('responds to sender with a hotline message notification in the correct language', () => {
-            const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
-            expect(sendMessageStub.getCall(adminMemberships.length).args).to.eql([
-              sender.phoneNumber,
-              sdMessageOf(channel, response),
-            ])
-          })
-
-          it('counts the hotline message', () => {
-            expect(countHotlineStub.callCount).to.eql(1)
-          })
+        it('responds to the message sender with an error message', () => {
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            sender.phoneNumber,
+            sdMessageOf(channel, response),
+          ])
         })
       })
 
-      describe('when sender is a random person', () => {
-        const sender = randomSender
+      describe('when the hotline is on', () => {
+        const message = `[${messagesIn(sender.language).prefixes.hotlineMessage(11)}]\nplease help!`
 
-        describe('and hotline is enabled', () => {
-          beforeEach(async () => {
-            await messenger.dispatch({
-              commandResult: { status: statuses.NOOP, messageBody: messages.notifications.noop },
-              dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
-            })
+        const notifications = [
+          ...adminPhoneNumbers.map(phoneNumber => ({
+            recipient: phoneNumber,
+            message,
+            attachments,
+          })),
+        ]
+
+        beforeEach(async () => {
+          await messenger.dispatch({
+            commandResult: {
+              status: statuses.SUCCESS,
+              message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+              notifications,
+            },
+            dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
           })
+        })
 
-          it('forwards the message to channel admins with the header in the correct language', () => {
-            adminMemberships.forEach((membership, index) => {
-              const alert = messenger.addHeader({
-                channel,
-                sdMessage,
-                messageType: messageTypes.HOTLINE_MESSAGE,
-                language: membership.language,
-                messageId,
-              })
+        it('responds to sender that their message has been sent', () => {
+          const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            sender.phoneNumber,
+            sdMessageOf(channel, response),
+          ])
+        })
 
-              expect(sendMessageStub.getCall(index).args).to.eql([
-                membership.memberPhoneNumber,
-                alert,
-              ])
-            })
-          })
-
-          it('responds to sender with a broadcast response notification', () => {
-            const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
-            expect(sendMessageStub.getCall(adminMemberships.length).args).to.eql([
-              sender.phoneNumber,
-              sdMessageOf(channel, response),
+        it("forwards the message to all the channel's admins", () => {
+          adminPhoneNumbers.forEach((phoneNumber, index) => {
+            expect(sendMessageStub.getCall(index + 1).args).to.eql([
+              phoneNumber,
+              { ...sdMessage, messageBody: message },
             ])
           })
+        })
+
+        it('counts the hotline message', () => {
+          expect(countHotlineStub.callCount).to.eql(1)
         })
       })
     })
@@ -390,7 +351,7 @@ describe('messenger service', () => {
         adminPhoneNumbers.forEach((phoneNumber, index) => {
           expect(sendMessageStub.getCall(index + 1).args).to.eql([
             phoneNumber,
-            sdMessageOf(channel, 'foobar'),
+            { ...sdMessageOf(channel, 'foobar'), attachments: [] },
           ])
         })
       })
@@ -496,48 +457,6 @@ describe('messenger service', () => {
           })
           expect(setExpirationStub.callCount).to.eql(0)
         })
-      })
-    })
-  })
-
-  describe('message headers', () => {
-    describe('broadcast messages', () => {
-      it('adds a channel name header for non-admins', () => {
-        const msg = {
-          channel,
-          sdMessage: sdMessageOf(channel, 'blah'),
-          messageType: messenger.messageTypes.BROADCAST_MESSAGE,
-          memberType: 'SUBSCRIBER',
-        }
-        expect(messenger.addHeader(msg)).to.eql(sdMessageOf(channel, '[foobar]\nblah'))
-      })
-
-      it('adds a broadcast header for admins', () => {
-        const msg = {
-          channel,
-          sdMessage: sdMessageOf(channel, 'blah'),
-          messageType: messenger.messageTypes.BROADCAST_MESSAGE,
-          memberType: 'ADMIN',
-        }
-        expect(messenger.addHeader(msg)).to.eql(
-          sdMessageOf(channel, `[${messages.prefixes.broadcastMessage}]\nblah`),
-        )
-      })
-    })
-
-    describe('hotline message', () => {
-      it('adds an HOTLINE MESSAGE header', () => {
-        const msg = {
-          channel,
-          sdMessage: sdMessageOf(channel, 'blah'),
-          messageType: messageTypes.HOTLINE_MESSAGE,
-          memberType: 'ADMIN',
-          language: languages.EN,
-          messageId,
-        }
-        expect(messenger.addHeader(msg)).to.eql(
-          sdMessageOf(channel, `[${messages.prefixes.hotlineMessage(messageId)}]\nblah`),
-        )
       })
     })
   })

@@ -81,7 +81,7 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-  }[command] || (() => handleNoCommand(channel, sender)))()
+  }[command] || (() => handleNoCommand(channel, sender, sdMessage)))()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
@@ -192,26 +192,25 @@ const maybeBroadcastMessage = (channel, sender, sdMessage, payload) => {
 }
 
 const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
-  // TODO @mari: these notification headers need to be lnguage specific!
   const adminMemberships = getAdminMemberships(channel)
-  const adminMessagePrefix = messagesIn(sender.language).prefixes.broadcastMessage
-  let adminNotifications = [
+  const subscriberMemberships = getSubscriberMemberships(channel)
+
+  const adminMessagePrefix = language => messagesIn(language).prefixes.broadcastMessage
+  const adminNotifications = [
     ...adminMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: `[${adminMessagePrefix}]\n${messageBody}`,
+      message: `[${adminMessagePrefix(membership.language)}]\n${messageBody}`,
       attachments,
     })),
   ]
 
-  const subscriberMemberships = getSubscriberMemberships(channel)
-  let subscriberNotifications = [
+  const subscriberNotifications = [
     ...subscriberMemberships.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: `[${channel.name}]\n${messageBody}`,
       attachments,
     })),
   ]
-
   return [...adminNotifications, ...subscriberNotifications]
 }
 
@@ -760,7 +759,7 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 }
 
 // NONE
-const handleNoCommand = (channel, sender) => {
+const handleNoCommand = async (channel, sender, sdMessage) => {
   // if sender was an admin, give them a helpful error message
   if (sender.type === ADMIN)
     return Promise.resolve({
@@ -769,21 +768,42 @@ const handleNoCommand = (channel, sender) => {
       notifications: [],
     })
 
-  // if hotline is on, forward message. otherwise, return an error
-  let message, status
+  // if hotline is on, return a response & notifications
+  // if hotline is off, return a response & UNAUTHORIZED
   if (channel.hotlineOn) {
-    message = ''
-    status = statuses.SUCCESS
+    return {
+      message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+      status: statuses.SUCCESS,
+      notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
+    }
   } else {
-    const cr = messagesIn(sender.language).notifications.hotlineMessagesDisabled
-    message = sender.type === SUBSCRIBER ? cr(true) : cr(false)
-    status = statuses.ERROR
+    return {
+      message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(
+        sender.type === SUBSCRIBER,
+      ),
+      status: statuses.UNAUTHORIZED,
+      notifications: [],
+    }
   }
-  return Promise.resolve({
-    message,
-    status,
-    notifications: [],
+}
+
+const hotlineNotificationsOf = async (channel, sender, { messageBody, attachments }) => {
+  const adminMemberships = await channelRepository.getAdminMemberships(channel)
+
+  const messageId = await hotlineMessageRepository.getMessageId({
+    channelPhoneNumber: channel.phoneNumber,
+    memberPhoneNumber: sender.phoneNumber,
   })
+
+  const prefix = language => `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
+
+  return [
+    ...adminMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: `${prefix(sender.language)}${messageBody}`,
+      attachments: attachments,
+    })),
+  ]
 }
 
 /**********
