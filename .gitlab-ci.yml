@@ -20,7 +20,7 @@ test_lint:
 
 test_unit:
   services:
-    - name: postgres:latest
+    - name: postgres:12
       alias: db
   script:
     - yarn install
@@ -31,7 +31,7 @@ test_unit:
 
 test_integration:
   services:
-    - name: postgres:latest
+    - name: postgres:12
       alias: db
   script:
     - yarn install
