@@ -52,7 +52,7 @@ describe('phone number registrar -- destroy module', () => {
     destroyChannelStub = sinon.stub(channelRepository, 'destroy')
     destroyPhoneNumberStub = sinon.stub(phoneNumberRepository, 'destroy')
     notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
-    notifyMembersExceptStub = sinon.stub(notifier, 'notifyMembersExcept')
+    notifyMembersExceptStub = sinon.stub(notifier, 'notifyMembersExcept').returns(Promise.resolve())
     twilioRemoveStub = sinon.stub()
     sinon.stub(commonService, 'getTwilioClient').callsFake(() => ({
       incomingPhoneNumbers: () => ({ remove: twilioRemoveStub }),
@@ -225,18 +225,17 @@ describe('phone number registrar -- destroy module', () => {
           notifyMaintainersStub.returns(Promise.resolve())
         })
 
-        it('returns an error status', async () => {
-          const response = await destroy({ phoneNumber })
-          expect(response).to.eql({
-            message: `Failed to destroy channel for ${phoneNumber}. Error: Failed to broadcast message`,
-            status: 'ERROR',
-          })
+        it('commits the db transaction', async () => {
+          await destroy({ phoneNumber })
+          expect(commitStub.callCount).to.eql(1)
         })
 
-        it('rolls back the db transaction', async () => {
-          await destroy({ phoneNumber })
-          expect(rollbackStub.callCount).to.eql(1)
-          expect(commitStub.callCount).to.eql(0)
+        it('returns a success status', async () => {
+          const response = await destroy({ phoneNumber })
+          expect(response).to.eql({
+            status: 'SUCCESS',
+            msg: 'All records of phone number have been destroyed.',
+          })
         })
       })
 
