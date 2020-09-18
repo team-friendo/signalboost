@@ -7,9 +7,6 @@ import channelRepository, { isSysadmin } from '../../../../app/db/repositories/c
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
-import { wait } from '../../../../app/util'
-import { membershipFactory } from '../../../support/factories/membership'
-import * as phoneNumberRegistrar from '../../../../app/registrar/phoneNumber'
 const {
   signal: { supportPhoneNumber },
 } = require('../../../../app/config')
