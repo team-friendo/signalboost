@@ -1,5 +1,44 @@
 version: '3.4'
 
+#  signald:
+#    image: registry.0xacab.org/team-friendo/signalboost/signald
+#    container_name: signalboost_signald
+#    env_file: .env.dev
+#    environment:
+#      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+#    networks:
+#      - default
+#    expose:
+#      - 1312
+#    ports:
+#      - 9010:9010
+#    volumes:
+#      - ./bin:/signalboost/bin
+#      - ./signald/jmx:/var/lib/jmx
+#      - signal_data:/var/lib/signald/data
+#      - signal_sock:/var/run/signald/
+#    restart: unless-stopped
+
+x-signald-defaults: &signald-defaults
+  image: registry.0xacab.org/team-friendo/signalboost/signald
+  container_name: signalboost_signald
+  env_file: .env.dev
+  environment:
+    SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+  networks:
+    - default
+  expose:
+    - 1312
+  ports:
+    - 9010:9010
+  restart: unless-stopped
+
+x-signald-default-volumes: &signald-default-volumes
+  - ./bin:/signalboost/bin
+  - ./signald/jmx:/var/lib/jmx
+  - ./backups:/backups
+  - signal_data:/var/lib/signald/data
+
 # NOTE:
 #
 # we create a `localdev` network w/ a non-standard subnet mask to be able to use
@@ -27,6 +66,7 @@ volumes:
   signal_data:
   prometheus_data:
   grafana_data:
+  signal
 
 services:
 
@@ -39,25 +79,56 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     restart: always
 
-  signald:
-    image: registry.0xacab.org/team-friendo/signalboost/signald:latest
-    container_name: signalboost_signald
-    env_file: .env.dev
+  signald-0:
+    <<: *signald-defaults
     environment:
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-      METRICS_PORT: 1312
-    networks:
-      - default
+      METRICS_PORT: 5000
     expose:
-      - 1312
-    ports:
-      - 9010:9010
+      - 5000
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-    restart: always
+      - *signald-default-volumes
+      - signal_sock_0:/var/run/signald/
+
+  signald-1:
+    <<: *signald-defaults
+    environment:
+      METRICS_PORT: 5001
+    expose:
+      - 5001
+    volumes:
+      - *signald-default-volumes
+      - signal_sock_1:/var/run/signald/
+
+  signald-2:
+    <<: *signald-defaults
+    environment:
+      METRICS_PORT: 5002
+    expose:
+      - 5002
+    volumes:
+      - *signald-default-volumes
+      - signal_sock_2:/var/run/signald/
+
+  signald-3:
+    <<: *signald-defaults
+    environment:
+      METRICS_PORT: 5003
+    expose:
+      - 5003
+    volumes:
+      - *signald-default-volumes
+      - signal_sock_3:/var/run/signald/
+
+  signald-4:
+    <<: *signald-defaults
+    environment:
+      METRICS_PORT: 5004
+    expose:
+      - 5004
+    volumes:
+      - *signald-default-volumes
+      - signal_sock_4:/var/run/signald/
+
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
@@ -84,9 +155,13 @@ services:
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
       - /var/run/docker.sock:/var/run/docker.sock
+      - signal_sock_0:/var/run/signald/0
+      - signal_sock_1:/var/run/signald/1
+      - signal_sock_2:/var/run/signald/2
+      - signal_sock_3:/var/run/signald/3
+      - signal_sock_4:/var/run/signald/4
     restart: always
 
   ngrok:
