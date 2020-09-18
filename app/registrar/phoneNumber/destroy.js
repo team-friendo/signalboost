@@ -1,4 +1,3 @@
-const { Transaction } = require('sequelize')
 const app = require('../../index')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const { defaultLanguage } = require('../../config')
@@ -19,9 +18,7 @@ const {
 
 // ({phoneNumber: string, sender?: string }) -> SignalboostStatus
 const destroy = async ({ phoneNumber, sender }) => {
-  let tx = await app.db.sequelize.transaction({
-    isolationLevel: Transaction.ISOLATION_LEVELS.READ_UNCOMMITTED,
-  })
+  const tx = await app.db.sequelize.transaction()
 
   try {
     const channel = await channelRepository.findDeep(phoneNumber)
@@ -40,14 +37,17 @@ const destroy = async ({ phoneNumber, sender }) => {
     if (channel) {
       logger.log(`deleting channel ${phoneNumber}...`)
       await channelRepository.destroy(channel.phoneNumber, tx)
-      await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
       logger.log(`...deleted channel ${phoneNumber}`)
 
-      // notify members in the background
+      logger.log(`logging destruction of ${phoneNumber}...`)
+      await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
+      logger.log(`...logged destruction of ${phoneNumber}`)
+
       logger.log(`sending deletion notice to members of: ${phoneNumber}...`)
+      // notify members in the background
       notifier
         .notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED)
-        .then(() => logger.log(`...sent deltion notice to members of: ${phoneNumber}`))
+        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}`))
         .catch(logger.error)
     }
 

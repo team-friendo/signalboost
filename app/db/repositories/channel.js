@@ -33,11 +33,9 @@ const update = (phoneNumber, attrs) =>
     .then(([, [pNumInstance]]) => pNumInstance)
 
 // (string, Transaction | null) => Promise<boolean>
-const destroy = async (phoneNumber, transaction) => {
+const destroy = async (phoneNumber, transaction = null) => {
   const channel = await findByPhoneNumber(phoneNumber)
-  return channel
-    ? channel.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
-    : false
+  return channel ? channel.destroy({ transaction }).then(() => true) : false
 }
 
 const findAll = () => app.db.channel.findAll()

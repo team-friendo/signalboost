@@ -11,11 +11,9 @@ const create = ({ phoneNumber, twilioSid, status }) =>
   app.db.phoneNumber.create({ phoneNumber, twilioSid, status })
 
 // (string, Transaction | null) => Promise<boolean>
-const destroy = async (phoneNumber, transaction) => {
+const destroy = async (phoneNumber, transaction = null) => {
   const phoneNumberRecord = await find(phoneNumber)
-  return phoneNumberRecord
-    ? phoneNumberRecord.destroy({ ...(transaction ? { transaction } : {}) }).then(() => true)
-    : false
+  return phoneNumberRecord ? phoneNumberRecord.destroy({ transaction }).then(() => true) : false
 }
 
 const find = phoneNumber => app.db.phoneNumber.findOne({ where: { phoneNumber } })
