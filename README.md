@@ -1,3 +1,4 @@
+
 # Signalboost
 
 Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
@@ -774,3 +775,14 @@ boost list-channels
 ```
 
 To avoid having to export `SIGNALBOOST_ENV_FILE` in every bash session, you could add the export statement to your `~/.bashrc` or `~/.bash_profile` file (or the equivalent for your favorite shell program).
+
+```
+ __________
+< WELCOME! >
+ ----------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
