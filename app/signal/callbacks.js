@@ -102,8 +102,7 @@ const handle = message => {
 const _handleSendResponse = ({ message, state }) => {
   delete registry[`${messageTypes.SEND}-${message.id}`]
 
-  const { identityFailure } = get(message, 'data[0]')
-  if (identityFailure) {
+  if (get(message, 'data.0.identityFailure')) {
     return _updateFingerprint(message, state)
   }
 
