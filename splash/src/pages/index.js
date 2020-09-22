@@ -2,10 +2,58 @@ import React from 'react'
 import Layout from '../components/layout'
 import SEO from '../components/seo'
 import { Link } from '@reach/router'
+import indexStyles from '../components/index.module.css'
+import messageIcon from '../images/message.svg'
+import selfieIcon from '../images/selfie.svg'
+import moneyIcon from '../images/money.svg'
 
 const IndexPage = () => (
   <Layout>
-    <SEO title="Signalboost: Secure Textblasts and Hotlines for Activists" />
+    <SEO title="Signalboost: communicate with mass audiences securely and directly via message broadcasts and hotlines" />
+    <div className={indexStyles.personas}>
+      <img
+        className={indexStyles.icon__left}
+        src={selfieIcon}
+        alt="Venmo QR code"
+        height="150"
+      />
+      <div className={indexStyles.text__right}>
+        <h3>Mass alerts for emergency rapid response</h3>
+        <p>
+          Mobilize an audience of thousands by sending alerts directly to their
+          phones.
+        </p>
+      </div>
+      <div className={indexStyles.text__left}>
+        <h3>Anonymous and secure tiplines</h3>
+        <p>
+          Empower journalists, legal observers, and human rights defenders with
+          a safe and lightweight way to receive sensitive tips and requests for
+          aid.
+        </p>
+      </div>
+      <img
+        className={indexStyles.icon__right}
+        src={messageIcon}
+        alt="Venmo QR code"
+        height="150"
+      />
+      <img
+        className={indexStyles.icon__left}
+        src={moneyIcon}
+        alt="Venmo QR code"
+        height="150"
+      />
+      <div className={indexStyles.text__right}>
+        <h3>Donation and resource coordination</h3>
+        <p>
+          In the time of Covid-19 and environmental disaster, give organizers on
+          the ground a tool to move resources quickly and anonymously.
+        </p>
+      </div>
+    </div>
+
+    <h2 className={indexStyles.why__signalboost}>Why use Signalboost?</h2>
     <p>
       Signalboost gives grassroots organizers the power to communicate with mass
       audiences <span className="purple">securely</span> and{' '}
@@ -31,7 +79,7 @@ const IndexPage = () => (
       <li>
         Subscribers to Signalboost channels can send in anonymous messages to
         the hotline and admins can respond directly and privately to that
-        susbcriber.
+        subscriber.
       </li>
       <li>
         Subscribers do not see other subscribers' messages to the hotline. Only
@@ -50,74 +98,27 @@ const IndexPage = () => (
         empowers organizers to stay safe while speaking freely.
       </li>
     </ul>
-    <h2 id="getting-started" className="anchor">
-      Getting Started
-    </h2>
-    <h3 className="getting-started-header">
-      1.{' '}
-      <a className="download-signal-link" href="https://signal.org/download/">
-        Download Signal
-      </a>
-    </h3>
-    <h3 className="getting-started-header anchor">
-      2. Subscribe to the Signalboost Announcements and Helpline channel
-    </h3>
-    <p>
-      Send <span className="command">HELLO</span> to{' '}
-      <span className="purple">+1-947-800-5717</span> (that's 947-BOOST-IT!){' '}
-    </p>
-    <p>
-      Send <span className="command">INFO</span> to see details about the
-      channel.
-    </p>{' '}
-    <p>
-      Send <span className="command">HELP</span> to see the other commands you
-      can use.
-    </p>
-    <h3 className="getting-started-header">3. Request your own channel:</h3>
-    <p>
-      Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
-      that includes channel name and the phone numbers of at least 2 admins. For
-      example:
-    </p>
-    <blockquote className="channel-request">
-      <p>Test Channel</p>
-      <p>+1-123-555-5555, +1-123-555-5555</p>
-    </blockquote>
-    <p>
-      You will receive a welcome message as soon as your channel is created.
-    </p>
-    <p>
-      You can write our helpline with questions or a request for a more in-depth
-      training, and we'll get back to you asap!
-    </p>
-    <h3 className="getting-started-header">
-      4. Get subscribers and send announcements
-    </h3>
-    <p>
-      Now, any anyone who sends "HELLO" to your channel number will get
-      announcements you send out!
-    </p>
-    <p>
-      Check out our <Link to="/how-to">How-To Guide</Link> to get started with
-      your channel, learn about other features, and supported languages.
-    </p>
-    <h2>Got questions?</h2>
+    <div className={indexStyles.getting__started}>
+      <Link className={indexStyles.getting__started__link} to="/how-to">
+        Try it out &rarr;
+      </Link>
+    </div>
+    <h2>Questions?</h2>
     <p>
       Check out the <Link to="/faq">FAQ</Link> or{' '}
       <Link to="/how-to">How-To Guide</Link>
     </p>
     <p>
-      Send us an email at{' '}
+      Write our helpline (on Signal):{' '}
+      <span className="purple">+1-947-800-5717</span> or send us an email at{' '}
       <a href="mailto:team-friendo@protonmail.com">
         team-friendo@protonmail.com
       </a>{' '}
-      or <a href="mailto:team-friendo@riseup.net">team-friendo@riseup.net</a>.
-      (Find our{' '}
+      (
       <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
-        PGP key here
+        PGP key
       </a>
-      .)
+      ).
     </p>
     <p>
       Signalboost is completely open source & committed to transparency. You can

@@ -4,6 +4,58 @@ import { Link } from 'gatsby'
 
 export default () => (
   <Layout>
+    <h2 id="getting-started" className="anchor">
+      Getting Started
+    </h2>
+    <h3 className="getting-started-header">
+      1.{' '}
+      <a className="download-signal-link" href="https://signal.org/download/">
+        Download Signal
+      </a>
+    </h3>
+    <h3 className="getting-started-header anchor">
+      2. Subscribe to the Signalboost Announcements and Helpline channel
+    </h3>
+    <p>
+      Send <span className="command">HELLO</span> to{' '}
+      <span className="purple">+1-947-800-5717</span> (that's 947-BOOST-IT!){' '}
+    </p>
+    <p>
+      Send <span className="command">INFO</span> to see details about the
+      channel.
+    </p>{' '}
+    <p>
+      Send <span className="command">HELP</span> to see the other commands you
+      can use.
+    </p>
+    <h3 className="getting-started-header">3. Request your own channel:</h3>
+    <p>
+      Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
+      that includes channel name and the phone numbers of at least 2 admins. For
+      example:
+    </p>
+    <blockquote className="channel-request">
+      <p>Test Channel</p>
+      <p>+1-123-555-5555, +1-123-555-5555</p>
+    </blockquote>
+    <p>
+      You will receive a welcome message as soon as your channel is created.
+    </p>
+    <p>
+      You can write our helpline with questions or a request for a more in-depth
+      training, and we'll get back to you asap!
+    </p>
+    <h3 className="getting-started-header">
+      4. Get subscribers and send announcements
+    </h3>
+    <p>
+      Now, any anyone who sends "HELLO" to your channel number will get
+      announcements you send out!
+    </p>
+    <p>
+      Check out our <Link to="/how-to">How-To Guide</Link> to get started with
+      your channel, learn about other features, and supported languages.
+    </p>
     <p>
       This page is intended primarily for admins who already have Signalboost
       channels. If you need a channel, check out the{' '}
@@ -32,7 +84,6 @@ export default () => (
       channel. For example, if I want to switch my language to Spanish, I would
       send "ESPAÑOL" to the channel.
     </p>
-
     <h2>Disappearing Messages</h2>
     <p>
       By default, messages on Signalboost channels disappear after 1 week.
@@ -42,14 +93,11 @@ export default () => (
       (usually to 1 day or 6 hours) if your broadcasts will contain sensitive
       information.
     </p>
-
     <h2>Commands</h2>
     <h4>HELP</h4>
     <p>Lists the possible commands you can use.</p>
-
     <h4>INFO</h4>
     <p>Shows stats and briefly explains how Signalboost works.</p>
-
     <h3>Managing your channel</h3>
     <h4 id="add-admin" className="anchor">
       ADD / REMOVE +1-555-555-5555
@@ -63,7 +111,6 @@ export default () => (
     </h4>
     <p>Renames channel to "new name"</p>
     <p>Example: RENAME My Cool Signalboost Channel</p>
-
     <h4 id="description" className="anchor">
       DESCRIPTION description of channel
     </h4>
@@ -72,7 +119,6 @@ export default () => (
       Example: DESCRIPTION This is the _super cool activist_ signalboost
       channel! We'll use it to make announcements for the upcoming protest.
     </p>
-
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>
@@ -109,13 +155,11 @@ export default () => (
       This changes the number of invites needed to join the channel; currently
       the vouch level must be between 1 and 10.
     </p>
-
     <p>Example: VOUCH LEVEL 3</p>
     <p>
       After executing this command, anyone who wants to join the channel will
       need 3 invites.
     </p>
-
     <h3>Managing a hotline</h3>
     <h4 id="hotline" className="anchor">
       HOTLINE ON / OFF
@@ -159,7 +203,6 @@ export default () => (
       <p>[PRIVATE REPLY FROM ADMINS]</p>
       <p>Okay, we are sending someone over!</p>
     </blockquote>
-
     <h3>Other useful commands</h3>
     <h4 id="private-messages" className="anchor">
       PRIVATE good morning fellow admins!
@@ -176,7 +219,6 @@ export default () => (
       Signalboost are user-specific, so if you change your language to Spanish
       other admins and subscribers' channels will be unaffected.
     </p>
-
     <h4 id="leave" className="anchor">
       GOODBYE
     </h4>
@@ -186,7 +228,6 @@ export default () => (
       want to obtain admin access again, you will need to ask a current admin to
       add you using the ADD command.
     </p>
-
     <h4 id="destroy" className="anchor">
       DESTROY
     </h4>
