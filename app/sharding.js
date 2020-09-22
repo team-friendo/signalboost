@@ -1,6 +1,7 @@
 const channelRepository = require('./db/repositories/channel')
+const { times } = require('lodash')
 const {
-  socket: { availablePools, bucketSize, tierThresholds },
+  socket: { availablePools, subscribersPerSocket, tierThresholds },
 } = require('./config')
 
 const shardChannels = async () => {
@@ -9,12 +10,12 @@ const shardChannels = async () => {
 
   // Try to group channels into a variable number of buckets, each of which has the smallest
   // possible number of subscribers above a fixed bucket size. (Currently 1000).
-  const channelsInBuckets = groupIntoBuckets(channelsWithSizes)
+  const channelsInBuckets = groupIntoSizedBuckets(channelsWithSizes, subscribersPerSocket)
 
   // If that results in more buckets than availabale socket pools, group channels into a fixed
   // number of tiers, with tiers determined by individual channel subscriber size.
   const channelsInTiers =
-    channelsInBuckets.length >= availablePools && groupIntoTiers(channelsWithSizes)
+    channelsInBuckets.length >= availablePools && groupIntoTiers(channelsWithSizes, tierThresholds)
 
   // make db udpates (requires N queries, where N is number of pools we are sharding into)
   const shards = channelsInTiers || channelsInBuckets
@@ -29,7 +30,26 @@ const shardChannels = async () => {
   // metrics.setGauge(gauges.SHARD_COUNT, shardedChannels.length)
 }
 
-const groupIntoBuckets = itemsWithSizes => {
+const groupEvenly = (channelsWithSizes, numBuckets) => {
+  const initialState = times(numBuckets, () => ({ phoneNumbers: [], subscribers: 0 }))
+  // Maintain invariant that first bucket always has the least subscdribers.
+  // On each iteration, add the channel under consideration into the bucket with least subscribers.
+  // NOTE: sorting incurs time complexity of O(N log N) where N is number of buckets. Since num buckets
+  // is fixed at ~10 that seems fine. In the future we could use a min-heap to cut to O(log N).
+  return channelsWithSizes.reduce(
+    (buckets, [phoneNumber, subscribers]) =>
+      [
+        {
+          phoneNumbers: buckets[0].phoneNumbers.concat(phoneNumber),
+          subscribers: buckets[0].subscribers + subscribers,
+        },
+        ...buckets.slice(1),
+      ].sort((a, b) => a.subscribers - b.subscribers),
+    initialState,
+  )
+}
+
+const groupIntoSizedBuckets = (itemsWithSizes, bucketSize) => {
   const initialState = { buckets: [[]], bucketLevel: 0 }
 
   return itemsWithSizes.reduce(({ buckets, bucketLevel }, [item, size]) => {
@@ -47,12 +67,12 @@ const groupIntoBuckets = itemsWithSizes => {
   }, initialState).buckets
 }
 
-const groupIntoTiers = itemsWithSizes => {
-  tierThresholds.sort((a, b) => b - a) // ensure thresholds are in descending order
+const groupIntoTiers = (itemsWithSizes, _tierThresholds) => {
+  _tierThresholds.sort((a, b) => b - a) // ensure thresholds are in descending order
   const initialState = { tiers: [[]], thresholdIdx: 0 }
 
   return itemsWithSizes.reduce(({ tiers, thresholdIdx }, [item, size]) => {
-    return size >= tierThresholds[thresholdIdx]
+    return size >= _tierThresholds[thresholdIdx]
       ? {
           // item size is above the current threshold! plop it in current tier & maintain threshold!
           tiers: [...tiers.slice(0, -1), [...tiers.slice(-1)[0], item]],
@@ -66,4 +86,4 @@ const groupIntoTiers = itemsWithSizes => {
   }, initialState).tiers
 }
 
-module.exports = { shardChannels, groupIntoBuckets, groupIntoTiers }
+module.exports = { shardChannels, groupEvenly, groupIntoSizedBuckets, groupIntoTiers }
