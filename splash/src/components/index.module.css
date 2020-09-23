@@ -14,6 +14,7 @@
 .icon__right {
   grid-column: 4;
   justify-self: left;
+  margin-top: 40px;
 }
 .text__left {
   grid-column: 1 / 4;

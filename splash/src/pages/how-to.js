@@ -52,18 +52,7 @@ export default () => (
       Now, any anyone who sends "HELLO" to your channel number will get
       announcements you send out!
     </p>
-    <p>
-      Check out our <Link to="/how-to">How-To Guide</Link> to get started with
-      your channel, learn about other features, and supported languages.
-    </p>
-    <p>
-      This page is intended primarily for admins who already have Signalboost
-      channels. If you need a channel, check out the{' '}
-      <Link to="#getting-started">Getting Started</Link> section. If you want to
-      know more about why you should use Signalboost for your activist
-      organizing work, check out our <Link to="/faq">FAQ's.</Link>
-    </p>
-    <h3>Conceptual overview</h3>
+    <h2>Signalboost Guide</h2>
     <p>
       A Signalboost channel is a phone number that keeps track of admins and
       subscribers. Any time an admin sends a message to the channel, it is
@@ -71,7 +60,11 @@ export default () => (
       of the subscribers will see it, but Signalboost will route the broadcast
       so that it appears as if coming from the channel phone number.
     </p>
-    <h3>What is a command?</h3>
+    <p>
+      People have called Signalboost "BCC, but for messaging," "secure SMS
+      blasts," and "Celly, but over Signal."{' '}
+    </p>
+    <h3>Commands & languages</h3>
     <p>
       A command is a word or phrase sent as a Signal message that Signalboost
       will interpret as an instruction. Some commands can only be used by
@@ -84,7 +77,7 @@ export default () => (
       channel. For example, if I want to switch my language to Spanish, I would
       send "ESPAÑOL" to the channel.
     </p>
-    <h2>Disappearing Messages</h2>
+    <h3>Disappearing Messages</h3>
     <p>
       By default, messages on Signalboost channels disappear after 1 week.
       However, admins and admins only can override the 1-week duration using the
