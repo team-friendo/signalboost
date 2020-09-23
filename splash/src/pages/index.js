@@ -3,9 +3,9 @@ import Layout from '../components/layout'
 import SEO from '../components/seo'
 import { Link } from '@reach/router'
 import indexStyles from '../components/index.module.css'
-import messageIcon from '../images/message.svg'
 import selfieIcon from '../images/selfie.svg'
 import moneyIcon from '../images/money.svg'
+import spyIcon from '../images/cute_spy.svg'
 
 const IndexPage = () => (
   <Layout>
@@ -34,7 +34,7 @@ const IndexPage = () => (
       </div>
       <img
         className={indexStyles.icon__right}
-        src={messageIcon}
+        src={spyIcon}
         alt="Venmo QR code"
         height="150"
       />
