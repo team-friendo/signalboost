@@ -20,16 +20,16 @@ const IndexPage = () => (
       <div className={indexStyles.text__right}>
         <h3>Mass alerts for emergency rapid response</h3>
         <p>
-          Mobilize an audience of thousands by sending alerts directly to their
-          phones.
+          Our democracy is under attack. Mobilize thousands of people to protect
+          our civil rights by sending alerts directly to their phones.
         </p>
       </div>
       <div className={indexStyles.text__left}>
-        <h3>Anonymous and secure tiplines</h3>
+        <h3>Private and secure tiplines</h3>
         <p>
           Empower journalists, legal observers, and human rights defenders with
           a safe and lightweight way to receive sensitive tips and requests for
-          aid.
+          aid without exposing anyone's identity.
         </p>
       </div>
       <img
@@ -48,7 +48,7 @@ const IndexPage = () => (
         <h3>Donation and resource coordination</h3>
         <p>
           In the time of Covid-19 and environmental disaster, give organizers on
-          the ground a tool to move resources quickly and anonymously.
+          the ground a tool to move resources quickly and safely.
         </p>
       </div>
     </div>

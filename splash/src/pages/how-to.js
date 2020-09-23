@@ -1,6 +1,6 @@
+import { Link } from 'gatsby'
 import React from 'react'
 import Layout from '../components/layout'
-import { Link } from 'gatsby'
 
 export default () => (
   <Layout>
@@ -39,7 +39,8 @@ export default () => (
       <p>+1-123-555-5555, +1-123-555-5555</p>
     </blockquote>
     <p>
-      You will receive a welcome message as soon as your channel is created.
+      You will receive a welcome message from your new channel phone number as
+      soon as your channel is created.
     </p>
     <p>
       You can write our helpline with questions or a request for a more in-depth
@@ -61,7 +62,7 @@ export default () => (
       so that it appears as if coming from the channel phone number.
     </p>
     <p>
-      People have called Signalboost "BCC, but for messaging," "secure SMS
+      People have described Signalboost as "BCC, but for messaging," "secure SMS
       blasts," and "Celly, but over Signal."{' '}
     </p>
     <h3>Commands & languages</h3>
@@ -72,7 +73,8 @@ export default () => (
       place to start.
     </p>
     <p>
-      Signalboost currently supports English, Spanish, French, and German. To
+      Signalboost currently supports{' '}
+      <span className="purple">English, Spanish, French, and German</span>. To
       switch to your language of choice, type the name of the language into the
       channel. For example, if I want to switch my language to Spanish, I would
       send "ESPAÑOL" to the channel.
@@ -87,10 +89,52 @@ export default () => (
       information.
     </p>
     <h2>Commands</h2>
-    <h4>HELP</h4>
-    <p>Lists the possible commands you can use.</p>
-    <h4>INFO</h4>
-    <p>Shows stats and briefly explains how Signalboost works.</p>
+    <h3>How do I get people to join my channel?</h3>
+    <p>
+      Here's a{' '}
+      <a href="https://www.instagram.com/p/CB31ULDDIjP/">short video</a> of how
+      to get people to subscribe to updates from your channel. They can send{' '}
+      <span className="command">HELLO</span> to your channel phone number or you
+      can <Link to="/how-to#invite">invite them.</Link>
+    </p>
+    <h3>How do I broadcast a message?</h3>
+    <p>
+      If you are a channel admin (i.e., the person who requested the channel),
+      simply send a message to your channel phone number to broadcast. Here's a{' '}
+      <a href="https://www.instagram.com/p/CB4RjYBjp7i/">short video</a> of what
+      that looks like.
+    </p>
+    <h3>How do I respond to a hotline message?</h3>
+    <h4 id="hotline-replies" className="anchor">
+      REPLY
+    </h4>
+    <p>Incoming hotline messages are followed by a hotline #:</p>
+    <blockquote className="command">
+      <p>[HOTLINE #3214]</p>
+      <p>Hello! We need a legal representative at jail support location XYZ.</p>
+    </blockquote>
+    <p>In order to respond to a hotline message, type REPLY:</p>
+    <blockquote className="command">
+      <p>REPLY #3214 Okay, we are sending someone over!</p>
+    </blockquote>
+    <p>And the subscriber you replied to will receive the following message:</p>
+    <blockquote className="command">
+      <p>[PRIVATE REPLY FROM ADMINS]</p>
+      <p>Okay, we are sending someone over!</p>
+    </blockquote>
+    <h3>How can I see a list of commands I can use?</h3>
+    <p>
+      <span className="command">HELP</span> lists the possible commands you can
+      use.
+    </p>
+    <h3>
+      How can I see my channel name, description, and how many people are
+      subscribed?
+    </h3>
+    <p>
+      <span className="command">INFO</span> shows stats and briefly explains how
+      Signalboost works.
+    </p>
     <h3>Managing your channel</h3>
     <h4 id="add-admin" className="anchor">
       ADD / REMOVE +1-555-555-5555
@@ -103,32 +147,39 @@ export default () => (
       RENAME new name
     </h4>
     <p>Renames channel to "new name"</p>
-    <p>Example: RENAME My Cool Signalboost Channel</p>
+    <p>
+      <blockquote className="command">
+        RENAME My Cool Signalboost Channel
+      </blockquote>
+    </p>
     <h4 id="description" className="anchor">
       DESCRIPTION description of channel
     </h4>
     <p>Adds or updates public description of channel.</p>
     <p>
-      Example: DESCRIPTION This is the _super cool activist_ signalboost
-      channel! We'll use it to make announcements for the upcoming protest.
+      <blockquote className="command">
+        DESCRIPTION This is the _super cool activist_ signalboost channel! We'll
+        use it to make announcements for the upcoming protest.
+      </blockquote>
     </p>
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>
     <p>
-      VOUCHING ON: turning vouching on means that an invite (1 by default) is
-      required to join the channel. Both admins and subscribers can invite
-      people to the channel using the INVITE command.
+      <span className="command">VOUCHING ON</span>: turning vouching on means
+      that an invite (1 by default) is required to join the channel. Both admins
+      and subscribers can invite people to the channel using the INVITE command.
     </p>
     <p>
       {' '}
-      VOUCHING OFF: this is the default behavior of the channel; anyone can join
-      by sending HELLO to the channel number.
+      <span className="command">VOUCHING OFF</span>: this is the default
+      behavior of the channel; anyone can join by sending HELLO to the channel
+      number.
     </p>
     <p>
-      VOUCHING ADMIN: this means that an invite from an *admin* is required to
-      join the channel. If other people try to send invites, they will be
-      prevented from doing so.
+      <span className="command">VOUCHING ADMIN</span>: this means that an invite
+      from an *admin* is required to join the channel. If other people try to
+      send invites, they will be prevented from doing so.
     </p>
     <h4 id="invite" className="anchor">
       INVITE +1-555-555-5555
@@ -140,7 +191,9 @@ export default () => (
     <p>
       Multiple invites can be sent by listing phone numbers separated by commas:
     </p>
-    <p>INVITE +1-555-555-5555, +1-333-333-3333</p>
+    <p>
+      <span className="command">INVITE +1-555-555-5555, +1-333-333-3333</span>
+    </p>
     <h4 id="vouch-level" className="anchor">
       VOUCH LEVEL level
     </h4>
@@ -179,23 +232,6 @@ export default () => (
         </li>
       </ul>
     </p>
-    <h4 id="hotline-replies" className="anchor">
-      REPLY
-    </h4>
-    <p>Incoming hotline messages are followed by a hotline #:</p>
-    <blockquote>
-      <p>[HOTLINE #3214]</p>
-      <p>Hello! We need a legal representative at jail support location XYZ.</p>
-    </blockquote>
-    <p>In order to respond to a hotline message, type REPLY:</p>
-    <blockquote>
-      <p>REPLY #3214 Okay, we are sending someone over!</p>
-    </blockquote>
-    <p>And the subscriber you replied to will receive the following message:</p>
-    <blockquote>
-      <p>[PRIVATE REPLY FROM ADMINS]</p>
-      <p>Okay, we are sending someone over!</p>
-    </blockquote>
     <h3>Other useful commands</h3>
     <h4 id="private-messages" className="anchor">
       PRIVATE good morning fellow admins!

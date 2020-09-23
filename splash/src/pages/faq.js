@@ -57,6 +57,13 @@ export default () => (
       is a key part of your identity, using Signalboost helps care for you and
       your friends' current and future safety.
     </p>
+    <p>
+      In order to send messages to the correct recipients, the Signalboost
+      sysadmins store lists of admins and subscribers on activist-maintained
+      infrastructure. We are committed to protecting this information and would
+      love to talk to anyone interested in deploying and maintaining their own
+      instance of Signalboost so that fewer people need to trust us.
+    </p>
     <h3>
       <span name="signal" class="anchor" />
       Do I need to be using Signal to use a Signalboost channel?
