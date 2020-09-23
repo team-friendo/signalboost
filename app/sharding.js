@@ -1,5 +1,6 @@
 const channelRepository = require('./db/repositories/channel')
 const { times } = require('lodash')
+const { MinHeap } = require('mnemonist/heap')
 const {
   socket: { availablePools, subscribersPerSocket, tierThresholds },
 } = require('./config')
@@ -31,22 +32,21 @@ const shardChannels = async () => {
 }
 
 const groupEvenly = (channelsWithSizes, numBuckets) => {
-  const initialState = times(numBuckets, () => ({ phoneNumbers: [], subscribers: 0 }))
-  // Maintain invariant that first bucket always has the least subscdribers.
-  // On each iteration, add the channel under consideration into the bucket with least subscribers.
-  // NOTE: sorting incurs time complexity of O(N log N) where N is number of buckets. Since num buckets
-  // is fixed at ~10 that seems fine. In the future we could use a min-heap to cut to O(log N).
-  return channelsWithSizes.reduce(
-    (buckets, [phoneNumber, subscribers]) =>
-      [
-        {
-          phoneNumbers: buckets[0].phoneNumbers.concat(phoneNumber),
-          subscribers: buckets[0].subscribers + subscribers,
-        },
-        ...buckets.slice(1),
-      ].sort((a, b) => a.subscribers - b.subscribers),
-    initialState,
+  // Iterate over all channels, and on each iteration, add the channel under consideration
+  // into the bucket with least subscribers, producing an even-as-possible distribution
+  // of channel-subscribers across a fixed number of buckets.
+  const buckets = MinHeap.from(
+    times(numBuckets, () => ({ phoneNumbers: [], subscribers: 0 })),
+    (a, b) => a.subscribers - b.subscribers,
   )
+  channelsWithSizes.forEach(([phoneNumber, subscriberCount]) => {
+    const { phoneNumbers, subscribers } = buckets.pop()
+    buckets.push({
+      phoneNumbers: phoneNumbers.concat(phoneNumber),
+      subscribers: subscribers + subscriberCount,
+    })
+  })
+  return buckets.consume()
 }
 
 const groupIntoSizedBuckets = (itemsWithSizes, bucketSize) => {

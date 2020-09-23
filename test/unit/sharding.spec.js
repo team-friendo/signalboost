@@ -88,20 +88,20 @@ describe('sharding module', () => {
       it('groups channels as evenly as possible into a fixed number of buckets', () => {
         expect(groupEvenly(channelsWithSizes, 5)).to.eql([
           {
-            phoneNumbers: ['1', '11', '13'],
-            subscribers: 216, // 200 + 9 + 7
+            phoneNumbers: ['3', '6', '8', '12', '16'],
+            subscribers: 216, // 100 + 53 + 51 + 8 + 4
           },
           {
-            phoneNumbers: ['2', '10', '14', '19'],
-            subscribers: 217, // 200 + 10 + 6 + 1
+            phoneNumbers: ['4', '5', '7', '9', '15', '19'],
+            subscribers: 217, // 55 + 54 + 52 + 50 + 5 + 1
           },
           {
-            phoneNumbers: ['4', '5', '7', '9', '15', '18'],
-            subscribers: 218, // 55 + 54 + 52 + 50 + 5 + 2
+            phoneNumbers: ['2', '10', '14', '18'],
+            subscribers: 218, // 200 + 10 + 6 + 2
           },
           {
-            phoneNumbers: ['3', '6', '8', '12', '16', '17'],
-            subscribers: 219, // 100 + 53 + 51 + 8 + 4 + 3
+            phoneNumbers: ['1', '11', '13', '17'],
+            subscribers: 219, // 200 + 9 + 7 + 3
           },
           {
             phoneNumbers: ['0'],
