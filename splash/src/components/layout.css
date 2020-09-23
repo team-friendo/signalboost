@@ -1,5 +1,5 @@
 html {
-  font-family: "DejaVu Sans Mono", Monaco, monospace;
+  font-family: "Avenir Black", Monaco, monospace;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   background-color: #181920	;
@@ -218,7 +218,7 @@ textarea {
   font: inherit;
 }
 html {
-  font: 112.5%/1.45em "DejaVu Sans Mono", Monaco, monospace;
+  font: 112.5%/1.45em "Avenir Black", Monaco, monospace;
   box-sizing: border-box;
   overflow-y: scroll;
 }
@@ -233,7 +233,7 @@ html {
 }
 body {
   color: hsla(0, 0%, 0%, 0.8);
-  font-family: "DejaVu Sans Mono", Monaco, monospace;
+  font-family: "Avenir Black", Monaco, monospace;
   font-weight: normal;
   word-wrap: break-word;
   font-kerning: normal;
@@ -667,7 +667,6 @@ pre tt:after {
   padding-top: 110px;
   margin-top: -110px;
 }
-
 .purple {
   color: #bd93f9;
 }

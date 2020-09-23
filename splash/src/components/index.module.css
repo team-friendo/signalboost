@@ -1,0 +1,40 @@
+.personas {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+.icon__left {
+  grid-column: 1;
+  justify-self: right;
+  margin-right: 20px;
+}
+.text__right {
+  grid-column: 2 / 5;
+  margin-top: 40px;
+}
+.icon__right {
+  grid-column: 4;
+  justify-self: left;
+  margin-top: 40px;
+}
+.text__left {
+  grid-column: 1 / 4;
+  margin-top: 40px;
+}
+.why__signalboost {
+  margin-top: 50px;
+}
+.getting__started {
+  margin: 70px;
+  text-align: center;
+}
+.getting__started__link {
+  background-color: #8a6bb7;
+  color: white;
+  font-size: 25px;
+  padding: 25px 35px;
+  text-decoration: none;
+  border-radius: 15px;
+}
+.getting__started__link:hover {
+  border-color: white;
+}

@@ -1,17 +1,59 @@
+import { Link } from 'gatsby'
 import React from 'react'
 import Layout from '../components/layout'
-import { Link } from 'gatsby'
 
 export default () => (
   <Layout>
+    <h2 id="getting-started" className="anchor">
+      Getting Started
+    </h2>
+    <h3 className="getting-started-header">
+      1.{' '}
+      <a className="download-signal-link" href="https://signal.org/download/">
+        Download Signal
+      </a>
+    </h3>
+    <h3 className="getting-started-header anchor">
+      2. Subscribe to the Signalboost Announcements and Helpline channel
+    </h3>
     <p>
-      This page is intended primarily for admins who already have Signalboost
-      channels. If you need a channel, check out the{' '}
-      <Link to="#getting-started">Getting Started</Link> section. If you want to
-      know more about why you should use Signalboost for your activist
-      organizing work, check out our <Link to="/faq">FAQ's.</Link>
+      Send <span className="command">HELLO</span> to{' '}
+      <span className="purple">+1-947-800-5717</span> (that's 947-BOOST-IT!){' '}
     </p>
-    <h3>Conceptual overview</h3>
+    <p>
+      Send <span className="command">INFO</span> to see details about the
+      channel.
+    </p>{' '}
+    <p>
+      Send <span className="command">HELP</span> to see the other commands you
+      can use.
+    </p>
+    <h3 className="getting-started-header">3. Request your own channel:</h3>
+    <p>
+      Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
+      that includes channel name and the phone numbers of at least 2 admins. For
+      example:
+    </p>
+    <blockquote className="channel-request">
+      <p>Test Channel</p>
+      <p>+1-123-555-5555, +1-123-555-5555</p>
+    </blockquote>
+    <p>
+      You will receive a welcome message from your new channel phone number as
+      soon as your channel is created.
+    </p>
+    <p>
+      You can write our helpline with questions or a request for a more in-depth
+      training, and we'll get back to you asap!
+    </p>
+    <h3 className="getting-started-header">
+      4. Get subscribers and send announcements
+    </h3>
+    <p>
+      Now, any anyone who sends "HELLO" to your channel number will get
+      announcements you send out!
+    </p>
+    <h2>Signalboost Guide</h2>
     <p>
       A Signalboost channel is a phone number that keeps track of admins and
       subscribers. Any time an admin sends a message to the channel, it is
@@ -19,7 +61,11 @@ export default () => (
       of the subscribers will see it, but Signalboost will route the broadcast
       so that it appears as if coming from the channel phone number.
     </p>
-    <h3>What is a command?</h3>
+    <p>
+      People have described Signalboost as "BCC, but for messaging," "secure SMS
+      blasts," and "Celly, but over Signal."{' '}
+    </p>
+    <h3>Commands & languages</h3>
     <p>
       A command is a word or phrase sent as a Signal message that Signalboost
       will interpret as an instruction. Some commands can only be used by
@@ -27,13 +73,13 @@ export default () => (
       place to start.
     </p>
     <p>
-      Signalboost currently supports English, Spanish, French, and German. To
+      Signalboost currently supports{' '}
+      <span className="purple">English, Spanish, French, and German</span>. To
       switch to your language of choice, type the name of the language into the
       channel. For example, if I want to switch my language to Spanish, I would
       send "ESPAÑOL" to the channel.
     </p>
-
-    <h2>Disappearing Messages</h2>
+    <h3>Disappearing Messages</h3>
     <p>
       By default, messages on Signalboost channels disappear after 1 week.
       However, admins and admins only can override the 1-week duration using the
@@ -42,14 +88,53 @@ export default () => (
       (usually to 1 day or 6 hours) if your broadcasts will contain sensitive
       information.
     </p>
-
     <h2>Commands</h2>
-    <h4>HELP</h4>
-    <p>Lists the possible commands you can use.</p>
-
-    <h4>INFO</h4>
-    <p>Shows stats and briefly explains how Signalboost works.</p>
-
+    <h3>How do I get people to join my channel?</h3>
+    <p>
+      Here's a{' '}
+      <a href="https://www.instagram.com/p/CB31ULDDIjP/">short video</a> of how
+      to get people to subscribe to updates from your channel. They can send{' '}
+      <span className="command">HELLO</span> to your channel phone number or you
+      can <Link to="/how-to#invite">invite them.</Link>
+    </p>
+    <h3>How do I broadcast a message?</h3>
+    <p>
+      If you are a channel admin (i.e., the person who requested the channel),
+      simply send a message to your channel phone number to broadcast. Here's a{' '}
+      <a href="https://www.instagram.com/p/CB4RjYBjp7i/">short video</a> of what
+      that looks like.
+    </p>
+    <h3>How do I respond to a hotline message?</h3>
+    <h4 id="hotline-replies" className="anchor">
+      REPLY
+    </h4>
+    <p>Incoming hotline messages are followed by a hotline #:</p>
+    <blockquote className="command">
+      <p>[HOTLINE #3214]</p>
+      <p>Hello! We need a legal representative at jail support location XYZ.</p>
+    </blockquote>
+    <p>In order to respond to a hotline message, type REPLY:</p>
+    <blockquote className="command">
+      <p>REPLY #3214 Okay, we are sending someone over!</p>
+    </blockquote>
+    <p>And the subscriber you replied to will receive the following message:</p>
+    <blockquote className="command">
+      <p>[PRIVATE REPLY FROM ADMINS]</p>
+      <p>Okay, we are sending someone over!</p>
+    </blockquote>
+    <h3>How can I see a list of commands I can use?</h3>
+    <p>
+      <span className="command">HELP</span> lists the possible commands you can
+      use.
+    </p>
+    <h3>
+      How can I see my channel name, description, and how many people are
+      subscribed?
+    </h3>
+    <p>
+      <span className="command">INFO</span> shows stats and briefly explains how
+      Signalboost works.
+    </p>
     <h3>Managing your channel</h3>
     <h4 id="add-admin" className="anchor">
       ADD / REMOVE +1-555-555-5555
@@ -62,34 +147,39 @@ export default () => (
       RENAME new name
     </h4>
     <p>Renames channel to "new name"</p>
-    <p>Example: RENAME My Cool Signalboost Channel</p>
-
+    <p>
+      <blockquote className="command">
+        RENAME My Cool Signalboost Channel
+      </blockquote>
+    </p>
     <h4 id="description" className="anchor">
       DESCRIPTION description of channel
     </h4>
     <p>Adds or updates public description of channel.</p>
     <p>
-      Example: DESCRIPTION This is the _super cool activist_ signalboost
-      channel! We'll use it to make announcements for the upcoming protest.
+      <blockquote className="command">
+        DESCRIPTION This is the _super cool activist_ signalboost channel! We'll
+        use it to make announcements for the upcoming protest.
+      </blockquote>
     </p>
-
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>
     <p>
-      VOUCHING ON: turning vouching on means that an invite (1 by default) is
-      required to join the channel. Both admins and subscribers can invite
-      people to the channel using the INVITE command.
+      <span className="command">VOUCHING ON</span>: turning vouching on means
+      that an invite (1 by default) is required to join the channel. Both admins
+      and subscribers can invite people to the channel using the INVITE command.
     </p>
     <p>
       {' '}
-      VOUCHING OFF: this is the default behavior of the channel; anyone can join
-      by sending HELLO to the channel number.
+      <span className="command">VOUCHING OFF</span>: this is the default
+      behavior of the channel; anyone can join by sending HELLO to the channel
+      number.
     </p>
     <p>
-      VOUCHING ADMIN: this means that an invite from an *admin* is required to
-      join the channel. If other people try to send invites, they will be
-      prevented from doing so.
+      <span className="command">VOUCHING ADMIN</span>: this means that an invite
+      from an *admin* is required to join the channel. If other people try to
+      send invites, they will be prevented from doing so.
     </p>
     <h4 id="invite" className="anchor">
       INVITE +1-555-555-5555
@@ -101,7 +191,9 @@ export default () => (
     <p>
       Multiple invites can be sent by listing phone numbers separated by commas:
     </p>
-    <p>INVITE +1-555-555-5555, +1-333-333-3333</p>
+    <p>
+      <span className="command">INVITE +1-555-555-5555, +1-333-333-3333</span>
+    </p>
     <h4 id="vouch-level" className="anchor">
       VOUCH LEVEL level
     </h4>
@@ -109,13 +201,11 @@ export default () => (
       This changes the number of invites needed to join the channel; currently
       the vouch level must be between 1 and 10.
     </p>
-
     <p>Example: VOUCH LEVEL 3</p>
     <p>
       After executing this command, anyone who wants to join the channel will
       need 3 invites.
     </p>
-
     <h3>Managing a hotline</h3>
     <h4 id="hotline" className="anchor">
       HOTLINE ON / OFF
@@ -142,24 +232,6 @@ export default () => (
         </li>
       </ul>
     </p>
-    <h4 id="hotline-replies" className="anchor">
-      REPLY
-    </h4>
-    <p>Incoming hotline messages are followed by a hotline #:</p>
-    <blockquote>
-      <p>[HOTLINE #3214]</p>
-      <p>Hello! We need a legal representative at jail support location XYZ.</p>
-    </blockquote>
-    <p>In order to respond to a hotline message, type REPLY:</p>
-    <blockquote>
-      <p>REPLY #3214 Okay, we are sending someone over!</p>
-    </blockquote>
-    <p>And the subscriber you replied to will receive the following message:</p>
-    <blockquote>
-      <p>[PRIVATE REPLY FROM ADMINS]</p>
-      <p>Okay, we are sending someone over!</p>
-    </blockquote>
-
     <h3>Other useful commands</h3>
     <h4 id="private-messages" className="anchor">
       PRIVATE good morning fellow admins!
@@ -176,7 +248,6 @@ export default () => (
       Signalboost are user-specific, so if you change your language to Spanish
       other admins and subscribers' channels will be unaffected.
     </p>
-
     <h4 id="leave" className="anchor">
       GOODBYE
     </h4>
@@ -186,7 +257,6 @@ export default () => (
       want to obtain admin access again, you will need to ask a current admin to
       add you using the ADD command.
     </p>
-
     <h4 id="destroy" className="anchor">
       DESTROY
     </h4>
