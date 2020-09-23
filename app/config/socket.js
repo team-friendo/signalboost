@@ -12,7 +12,7 @@ const test = {
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
   poolSize: 5,
-  availablePools: 6,
+  availablePools: 5,
   subscribersPerSocket: 50,
   tierThresholds: [250, 100, 50, 0],
 }
