@@ -45,7 +45,7 @@ const validPhoneNumberHint = `Phone numbers must include country codes prefixed 
 
 const parseErrors = {
   unnecessaryPayload: command =>
-    `Sorry, I didn't understand that. Did you mean to send "${command}"? 
+    `Sorry, command was not recognized. Did you mean to use "${command}"? 
 
 Send HELP for a list of all valid commands and how to use them.`,
 
@@ -321,9 +321,9 @@ Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Tr
   // SET_LANGUAGE
 
   setLanguage: {
-    success: `I will talk to you in English now! 
+    success: `Your channel language is now set to English! 
     
-Send HELP to list commands I understand.`,
+Send HELP to list commands you can use.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 

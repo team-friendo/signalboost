@@ -47,7 +47,7 @@ const parseErrors = {
     'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
 
   unnecessaryPayload: command =>
-    `Sorry, I didn't understand that. Did you mean to send "${command}"? 
+    `Sorry, command was not recognized. Did you mean to use "${command}"? 
 
 Send HELP for a list of all valid commands and how to use them.`,
 

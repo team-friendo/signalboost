@@ -8,11 +8,12 @@ import membershipRepository, { memberTypes } from '../../../app/db/repositories/
 import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
 import inviteRepository from '../../../app/db/repositories/invite'
 import signal from '../../../app/signal'
+import { sdMessageOf } from '../../../app/signal/constants'
 import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../support/factories/channel'
 import { statuses } from '../../../app/util'
-import { create, addAdmin, list } from '../../../app/registrar/channel'
+import { create, addAdmin, list, _welcomeNotificationOf } from '../../../app/registrar/channel'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
@@ -68,7 +69,7 @@ describe('channel registrar', () => {
     createChannelStub,
     subscribeStub,
     updatePhoneNumberStub,
-    notifyStub,
+    sendMessageStub,
     findAllDeepStub,
     findDeepStub,
     issueStub,
@@ -80,7 +81,7 @@ describe('channel registrar', () => {
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
-    notifyStub = sinon.stub(messenger, 'notify')
+    sendMessageStub = sinon.stub(signal, 'sendMessage')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
     findDeepStub = sinon.stub(channelRepository, 'findDeep')
     issueStub = sinon.stub(inviteRepository, 'issue')
@@ -122,27 +123,24 @@ describe('channel registrar', () => {
         })
 
         it('sends a welcome message to new admins', async () => {
-          await create({ phoneNumber, name, admins, welcome: notifyStub })
+          await create({ phoneNumber, name, admins, welcome: sendMessageStub })
           admins.forEach((adminPhoneNumber, idx) => {
-            expect(notifyStub.getCall(idx).args[0]).to.eql({
-              channel: channelInstance,
-              notification: {
-                message: welcomeNotification,
-                recipient: adminPhoneNumber,
-              },
-            })
+            expect(sendMessageStub.getCall(idx).args).to.eql([
+              adminPhoneNumber,
+              sdMessageOf(channelInstance, _welcomeNotificationOf(channelInstance)),
+            ])
           })
         })
 
         it('logs the channel creation', async () => {
-          await create({ phoneNumber, name, admins, welcome: notifyStub })
+          await create({ phoneNumber, name, admins, welcome: sendMessageStub })
           expect(logStub.getCall(0).args).to.eql([eventTypes.CHANNEL_CREATED, phoneNumber])
         })
 
         describe('when sending welcome messages succeeds', () => {
           beforeEach(() => {
-            notifyStub.onCall(0).returns(Promise.resolve())
-            notifyStub.onCall(1).returns(Promise.resolve())
+            sendMessageStub.onCall(0).returns(Promise.resolve())
+            sendMessageStub.onCall(1).returns(Promise.resolve())
           })
 
           it('sets the expiry time on the channel', async () => {
@@ -167,22 +165,15 @@ describe('channel registrar', () => {
                   supportPhoneNumber,
                   adminPhoneNumber,
                 ])
-                expect(notifyStub.getCall(admins.length + idx).args).to.eql([
-                  {
-                    channel: supportChannel,
-                    notification: {
-                      message: messagesIn(defaultLanguage).notifications.inviteReceived(
-                        supportChannel.name,
-                      ),
-                      recipient: adminPhoneNumber,
-                    },
-                  },
+                expect(sendMessageStub.getCall(admins.length + idx).args).to.eql([
+                  adminPhoneNumber,
+                  sdMessageOf(supportChannel, _welcomeNotificationOf(supportChannel)),
                 ])
               })
             })
 
             describe('when sending invites succeeds', () => {
-              beforeEach(() => notifyStub.returns(Promise.resolve()))
+              beforeEach(() => sendMessageStub.returns(Promise.resolve()))
               it('returns a success message', async function() {
                 expect(await create({ phoneNumber, name, admins })).to.eql({
                   status: 'ACTIVE',
@@ -194,7 +185,7 @@ describe('channel registrar', () => {
             })
             describe('when sending invites fails', () => {
               beforeEach(() =>
-                notifyStub
+                sendMessageStub
                   .onCall(admins.length + 1)
                   .callsFake(() => Promise.reject(new Error('oh noooes!'))),
               )
@@ -235,7 +226,7 @@ describe('channel registrar', () => {
 
         describe('when sending welcome message fails', () => {
           beforeEach(() => {
-            notifyStub.callsFake(() => Promise.reject(new Error('oh noes!')))
+            sendMessageStub.callsFake(() => Promise.reject(new Error('oh noes!')))
           })
 
           it('returns an error message', async () => {
@@ -261,7 +252,7 @@ describe('channel registrar', () => {
         })
 
         it('does not send welcome messages', () => {
-          expect(notifyStub.callCount).to.eql(0)
+          expect(sendMessageStub.callCount).to.eql(0)
         })
 
         it('returns an error message', () => {
@@ -285,7 +276,7 @@ describe('channel registrar', () => {
         })
 
         it('does not send welcome messages', () => {
-          expect(notifyStub.callCount).to.eql(0)
+          expect(sendMessageStub.callCount).to.eql(0)
         })
 
         it('returns an error message', () => {
@@ -318,7 +309,7 @@ describe('channel registrar', () => {
       })
 
       it('does not send welcome messages', () => {
-        expect(notifyStub.callCount).to.eql(0)
+        expect(sendMessageStub.callCount).to.eql(0)
       })
 
       it('returns an error message', () => {
@@ -346,17 +337,14 @@ describe('channel registrar', () => {
 
       it('attempts to send welcome message', async () => {
         await addAdmin({ channelPhoneNumber, adminPhoneNumber })
-        expect(notifyStub.getCall(0).args[0]).to.eql({
-          channel: channelInstance,
-          notification: {
-            message: welcomeNotification,
-            recipient: adminPhoneNumber,
-          },
-        })
+        expect(sendMessageStub.getCall(0).args).to.eql([
+          adminPhoneNumber,
+          sdMessageOf(channelInstance, _welcomeNotificationOf(channelInstance)),
+        ])
       })
 
       describe('when welcome message succeeds', () => {
-        beforeEach(() => notifyStub.returns(Promise.resolve()))
+        beforeEach(() => sendMessageStub.returns(Promise.resolve()))
 
         it('returns a success status', async () => {
           expect(await addAdmin({ channelPhoneNumber, adminPhoneNumber })).to.eql({
@@ -368,7 +356,7 @@ describe('channel registrar', () => {
 
       describe('when welcome message fails', () => {
         const errorStatus = { status: 'ERROR', message: 'error!' }
-        beforeEach(() => notifyStub.callsFake(() => Promise.reject(errorStatus)))
+        beforeEach(() => sendMessageStub.callsFake(() => Promise.reject(errorStatus)))
 
         it('returns an error status', async () => {
           const err = await addAdmin({

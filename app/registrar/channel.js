@@ -15,18 +15,16 @@ const logger = loggerOf()
 const {
   signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval, supportPhoneNumber },
 } = require('../config')
+const { sdMessageOf } = require('../signal/constants')
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   await membershipRepository.addAdmin(channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
-  await messenger.notify({
-    channel,
-    notification: {
-      message: _welcomeNotificationOf(channel),
-      recipient: adminPhoneNumber,
-    },
-  })
+  await signal.sendMessage(
+    adminPhoneNumber,
+    sdMessageOf({ phoneNumber: channelPhoneNumber }, _welcomeNotificationOf(channel)),
+  )
   return {
     status: sbStatuses.SUCCESS,
     message: _welcomeNotificationOf(channel),
@@ -66,13 +64,10 @@ const create = async ({ phoneNumber, name, admins }) => {
 const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
   Promise.all(
     adminPhoneNumbers.map(async adminPhoneNumber => {
-      await messenger.notify({
-        channel,
-        notification: {
-          recipient: adminPhoneNumber,
-          message: _welcomeNotificationOf(channel),
-        },
-      })
+      await signal.sendMessage(
+        adminPhoneNumber,
+        sdMessageOf(channel, _welcomeNotificationOf(channel)),
+      )
       await wait(setExpiryInterval)
       await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
     }),
@@ -89,13 +84,10 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
         supportChannel.phoneNumber,
         adminPhoneNumber,
       )
-      await messenger.notify({
-        channel: supportChannel,
-        notification: {
-          recipient: adminPhoneNumber,
-          message: messagesIn(defaultLanguage).notifications.inviteReceived(supportChannel.name),
-        },
-      })
+      await signal.sendMessage(
+        adminPhoneNumber,
+        sdMessageOf(supportChannel, _welcomeNotificationOf(supportChannel)),
+      )
     }),
   )
 }
@@ -133,4 +125,5 @@ module.exports = {
   create,
   addAdmin,
   list,
+  _welcomeNotificationOf,
 }

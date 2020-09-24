@@ -192,6 +192,4 @@ module.exports = {
   addHeader,
   parseMessageType,
   respond,
-  notify: ({ channel, notification }) =>
-    signal.sendMessage(notification.recipient, sdMessageOf(channel, notification.message)),
 }

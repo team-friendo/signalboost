@@ -246,6 +246,7 @@ describe('messenger service', () => {
         beforeEach(async () => {
           await messenger.dispatch({
             commandResult: {
+              command: commands.NONE,
               status: statuses.SUCCESS,
               message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
               notifications,
