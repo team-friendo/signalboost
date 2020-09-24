@@ -1,5 +1,5 @@
 html {
-  font-family: "Avenir Black", AvenirBlack, "Quicksand Medium", QuicksandMedium, "Century Gothic", CenturyGothic sans-serif;
+  font-family: "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   background-color: #181920	;
@@ -218,7 +218,7 @@ textarea {
   font: inherit;
 }
 html {
-  font: 112.5%/1.45em "Avenir Black", AvenirBlack, "Quicksand Medium", QuicksandMedium, "Century Gothic", CenturyGothic sans-serif;
+  font: 112.5%/1.45em "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
   box-sizing: border-box;
   overflow-y: scroll;
 }
@@ -233,7 +233,7 @@ html {
 }
 body {
   color: hsla(0, 0%, 0%, 0.8);
-  font-family: "Avenir Black", AvenirBlack, "Quicksand Medium", QuicksandMedium, "Century Gothic", CenturyGothic sans-serif;
+  font-family: "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
   font-weight: normal;
   word-wrap: break-word;
   font-kerning: normal;
