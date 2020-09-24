@@ -220,30 +220,27 @@ const maybePrivateMessageAdmins = async (channel, sender, payload, sdMessage) =>
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
+  try {
+    return {
+      status: statuses.SUCCESS,
+      notifications: privateMessageNotificationsOf(channel, sender, payload, sdMessage),
+    }
+  } catch (e) {
+    return { status: statuses.ERROR, message: cr.signalError }
+  }
+}
 
-  // [TODO|aguestuser] the messsage sending side-effect should not happen here...
-  //  - it should live in messenger.dispatch
-  //  - we should return enough information to recognize it as different message type
-  //    or provide the message as a notification as a normal command response
-  //  - no other function in `execute` sends messages and none should. this breaks an otherwise
-  //    clean interface boundary and violates separation of concers
-  //  - sorry i missed it CR!
-  return Promise.all(
-    getAdminMemberships(channel).map(admin => {
-      return signal.sendMessage(
-        admin.memberPhoneNumber,
-        messenger.addHeader({
-          channel,
-          sdMessage: { ...sdMessage, messageBody: payload },
-          messageType: messenger.messageTypes.PRIVATE_MESSAGE,
-          language: admin.language,
-          memberType: admin.type,
-        }),
-      )
-    }),
-  )
-    .then(() => ({ status: statuses.SUCCESS }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.signalError }))
+const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
+  const adminMemberships = getAdminMemberships(channel)
+  const prefix = language => messagesIn(language).prefixes.privateMessage
+
+  return [
+    ...adminMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: `[${prefix(membership.language)}]\n${payload}`,
+      attachments: sdMessage.attachments,
+    })),
+  ]
 }
 
 // DECLINE

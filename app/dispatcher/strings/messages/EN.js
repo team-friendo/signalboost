@@ -7,7 +7,7 @@ const {
   signal: { maxVouchLevel },
 } = require('../../../config')
 
-const systemName = 'the signalboost system administrator'
+const systemName = 'the Signalboost system administrator'
 const notAdmin =
   'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
 const notSubscriber =
@@ -498,7 +498,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!
 
-For easy access, add this phone number (${channelPhoneNumber}) to your contacts as ${channelName}. People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+For easy access, add this phone number (${channelPhoneNumber}) to your contacts as [${channelName}]. People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 
 
 To see a full list of commands, send HELP or check out our how-to guide: https://signalboost.info/how-to.`,

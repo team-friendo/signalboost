@@ -277,7 +277,6 @@ describe('messenger service', () => {
         })
       })
     })
-
     describe('when message is a command response', () => {
       beforeEach(async () => {
         await messenger.dispatch({

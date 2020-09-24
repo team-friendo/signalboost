@@ -421,7 +421,7 @@ describe('executing commands', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
 
       it('returns a SUCCESS status and notifications', async () => {
-        const adminHeader = messagesIn(admin.language).prefixes.broadcastMessage
+        const adminHeader = language => messagesIn(language).prefixes.broadcastMessage
         const subscriberHeader = channel.name
         const adminMemberships = channel.memberships.slice(0, 3)
         const subscriberMemberships = channel.memberships.slice(3)
@@ -434,7 +434,7 @@ describe('executing commands', () => {
           notifications: [
             ...adminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: `[${adminHeader}]\nhello friendos!`,
+              message: `[${adminHeader(membership.language)}]\nhello friendos!`,
               attachments,
             })),
             ...subscriberMemberships.map(membership => ({
@@ -1430,12 +1430,7 @@ describe('executing commands', () => {
   })
 
   describe('PRIVATE command', () => {
-    let sendMessageStub
-    const sdMessage = sdMessageOf(channel, 'PRIVATE hello this is private!')
-
-    beforeEach(async () => {
-      sendMessageStub = sinon.stub(signal, 'sendMessage')
-    })
+    const sdMessage = { ...sdMessageOf(channel, 'PRIVATE hello this is private!'), attachments }
 
     describe('when sender is not an admin', () => {
       const dispatchable = { channel, sender: subscriber, sdMessage }
@@ -1453,40 +1448,22 @@ describe('executing commands', () => {
 
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
+      const adminMemberships = channel.memberships.slice(0, 3)
+      const header = language => messagesIn(language).prefixes.privateMessage
 
-      it('returns a success status', async () => {
+      it('returns a success status and notifications for each admin', async () => {
         const result = await processCommand(dispatchable)
         expect(result).to.eql({
           command: commands.PRIVATE,
           payload: 'hello this is private!',
           status: statuses.SUCCESS,
-          notifications: [],
-        })
-      })
-
-      it('only messages admins', async () => {
-        await processCommand(dispatchable)
-        const bystanderPhoneNumbers = bystanderAdminMemberships
-          .concat([admin])
-          .map(m => m.memberPhoneNumber)
-          .sort()
-        const sendMessageNumbers = sendMessageStub
-          .getCalls()
-          .map(call => call.args[0])
-          .sort()
-        expect(sendMessageNumbers).to.eql(bystanderPhoneNumbers)
-      })
-
-      it('handles a signal sendMessage error', async () => {
-        sendMessageStub.returns(Promise.reject('signal failure'))
-
-        const result = await processCommand(dispatchable)
-        expect(result).to.eql({
-          command: commands.PRIVATE,
-          message: messagesIn(subscriber.language).commandResponses.private.signalError,
-          payload: 'hello this is private!',
-          status: statuses.ERROR,
-          notifications: [],
+          notifications: [
+            ...adminMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: `[${header(membership.language)}]\nhello this is private!`,
+              attachments,
+            })),
+          ],
         })
       })
     })

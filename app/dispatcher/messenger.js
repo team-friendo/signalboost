@@ -1,7 +1,6 @@
 const signal = require('../signal')
 const channelRepository = require('../db/repositories/channel')
 const messageCountRepository = require('../db/repositories/messageCount')
-const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal/constants')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
@@ -16,17 +15,16 @@ const {
 } = require('../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND' | 'PRIVATE MESSAGE'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
-  PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
   COMMAND: 'COMMAND',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND } = messageTypes
 
 /***************
  * DISPATCHING
@@ -105,10 +103,8 @@ const broadcast = async ({ commandResult, dispatchable }) => {
 }
 
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
-const respond = ({ channel, message, sender, command, status }) => {
-  // FIX: PRIVATE command sends out all messages including to sender
+const respond = ({ channel, message, sender, command }) => {
   // because respond doesn't handle attachments, don't want to repeat message here
-  if (command === commands.PRIVATE && status === statuses.SUCCESS) return
   return signal.sendMessage(sender.phoneNumber, sdMessageOf(channel, message)).then(async () => {
     // Don't count INFO commands from sysadmins. Why?
     // Sysadmins ping channels with INFO as an informal health checks very frequently.
@@ -169,27 +165,12 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   }
 }
 
-/**********
- * HELPERS
- **********/
-
-/* { Channel, string, string, string, string } -> OutboundSignaldMessage */
-const addHeader = ({ sdMessage, messageType, language }) => {
-  let prefix
-  if (messageType === PRIVATE_MESSAGE) {
-    prefix = `[${messagesIn(language).prefixes.privateMessage}]\n`
-  }
-
-  return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
-}
-
 module.exports = {
   messageTypes,
   /**********/
   broadcast,
   sendNotifications,
   dispatch,
-  addHeader,
   parseMessageType,
   respond,
 }
