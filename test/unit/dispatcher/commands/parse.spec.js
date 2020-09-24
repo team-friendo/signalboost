@@ -698,12 +698,12 @@ describe('parse module', () => {
       })
     })
 
-    describe('REPLY command', () => {
+    describe.only('REPLY command', () => {
       it('parses a REPLY command regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['REPLY #1312', ' reply #1312 '],
+            messages: ['REPLY #1312', ' reply #1312 ', '@ #1312', '@1312'],
           },
           {
             language: languages.ES,
