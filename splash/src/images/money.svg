@@ -10,7 +10,7 @@
    id="emoji"
    viewBox="0 0 72 72"
    version="1.1"
-   sodipodi:docname="money_2.svg"
+   sodipodi:docname="money.svg"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
   <metadata
      id="metadata2409">
@@ -35,15 +35,15 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1276"
-     inkscape:window-height="1401"
+     inkscape:window-width="2560"
+     inkscape:window-height="1440"
      id="namedview2405"
      showgrid="false"
      inkscape:zoom="6.5555556"
      inkscape:cx="33.098843"
      inkscape:cy="46.790503"
-     inkscape:window-x="1280"
-     inkscape:window-y="18"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:current-layer="emoji" />
   <rect
@@ -261,16 +261,4 @@
        stroke="#000000"
        fill="none" />
   </g>
-  <path
-     inkscape:connector-curvature="0"
-     style="fill:#6846a6;fill-opacity:1;stroke:none;stroke-width:2.11125875;stroke-miterlimit:10"
-     stroke-miterlimit="10"
-     d="m 9.1525424,-92.346679 c 11.5648316,0 20.9399716,9.53034 20.9399716,21.28662 v 10.694511 5.05121 H -11.78743 v -5.05121 -10.694511 c 0,-11.75628 9.3751394,-21.28662 20.9399724,-21.28662"
-     id="path71" />
-  <polygon
-     style="fill:#ff79c6;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-     stroke-miterlimit="10"
-     points="62.1381,46.1136 46.6142,38.4016 31.0902,46.1136 31.0902,30.6897 46.6142,38.4016 62.1381,30.6897 "
-     id="polygon73"
-     transform="matrix(1.0469986,0,0,1.0643313,-55.211729,-64.973773)" />
 </svg>
