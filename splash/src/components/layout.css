@@ -1,16 +1,66 @@
+@font-face {
+  font-family: 'Avenir Black';
+  font-style: normal;
+  src: url('../fonts/AvenirBlack.eot'); /*IE9 compat modes*/
+  src: local('Avenir Black'), local('AvenirBlack'),
+  url(../fonts/AvenirBlack.otf) format('opentype'),
+  url(../fonts/AvenirBlack.eot?#iefix) format('embedded-opentype'), /*IE6-IE8*/
+  url(../fonts/AvenirBlack.ttf) format('truetype'), /* Safari, Android, iOS */
+  url(../fonts/AvenirBlack.woff2) format('woff2'), /*Super Modern Browsers*/
+  url(../fonts/AvenirBlack.woff) format('woff'), /*Modern Browsers*/
+  url(../fonts/AvenirBlack.svg#AvenirBlack) format('svg'); /*Legacy iOS*/
+}
+
+@font-face {
+  font-family: 'Avenir Light';
+  font-style: normal;
+  src: url('../fonts/AvenirLight.eot'); /*IE9 compat modes*/
+  src: local('Avenir Light'), local('AvenirLight'),
+  url(../fonts/AvenirLight.otf) format('opentype'),
+  url(../fonts/AvenirLight.eot?#iefix) format('embedded-opentype'), /*IE6-IE8*/
+  url(../fonts/AvenirLight.ttf) format('truetype'), /* Safari, Android, iOS */
+  url(../fonts/AvenirLight.woff2) format('woff2'), /*Super Modern Browsers*/
+  url(../fonts/AvenirLight.woff) format('woff'), /*Modern Browsers*/
+  url(../fonts/AvenirLight.svg#AvenirBlack) format('svg'); /*Legacy iOS*/
+}
+
+
 html {
-  font-family: "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   background-color: #181920	;
   color: #f8f8f2;
+  font: 112.5%/1.45em "Avenir Black";
+  font-weight: normal;
+  box-sizing: border-box;
+  overflow-y: scroll;
 }
+
+* {
+  box-sizing: inherit;
+}
+*:before {
+  box-sizing: inherit;
+}
+*:after {
+  box-sizing: inherit;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #f8f8f2;
+  color: hsla(0, 0%, 0%, 0.8);
+
+  word-wrap: break-word;
+  font-kerning: normal;
+  -moz-font-feature-settings: "kern", "liga", "clig", "calt";
+  -ms-font-feature-settings: "kern", "liga", "clig", "calt";
+  -webkit-font-feature-settings: "kern", "liga", "clig", "calt";
+  font-feature-settings: "kern", "liga", "clig", "calt";
 }
+
 header {
   background-color: #bd93f9;
   position: fixed;
@@ -217,31 +267,7 @@ textarea {
   -webkit-appearance: button;
   font: inherit;
 }
-html {
-  font: 112.5%/1.45em "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
-  box-sizing: border-box;
-  overflow-y: scroll;
-}
-* {
-  box-sizing: inherit;
-}
-*:before {
-  box-sizing: inherit;
-}
-*:after {
-  box-sizing: inherit;
-}
-body {
-  color: hsla(0, 0%, 0%, 0.8);
-  font-family: "Avenir Black", Nunito, "Quicksand Medium", sans-serif;
-  font-weight: normal;
-  word-wrap: break-word;
-  font-kerning: normal;
-  -moz-font-feature-settings: "kern", "liga", "clig", "calt";
-  -ms-font-feature-settings: "kern", "liga", "clig", "calt";
-  -webkit-font-feature-settings: "kern", "liga", "clig", "calt";
-  font-feature-settings: "kern", "liga", "clig", "calt";
-}
+
 img {
   max-width: 100%;
   margin-left: 0;
@@ -663,14 +689,23 @@ pre tt:after {
   color: #ff79c6;
   text-decoration: underline;
 }
-.channel-request {
+
+.command {
+  font: 100%/1.45em "Avenir Light";
+  font-weight: 200;
   border-radius: 5px;
-  padding: 15px;
-  background-color: rgba(40, 42, 54);
+  background-color: rgba(43, 46, 59);
+  padding: 5px;
+}
+
+.command.blockquote {
+  padding: 15px!important;
+}
+
+
+.command.blockquote-skinny {
+  padding: 15px!important;
   display: inline-block;
 }
-.command {
-  border-radius: 5px;
-  padding: 5px;
-  background-color: rgba(43, 46, 59);
-}
+
+
