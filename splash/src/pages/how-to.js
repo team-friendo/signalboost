@@ -34,9 +34,8 @@ export default () => (
       that includes channel name and the phone numbers of at least 2 admins. For
       example:
     </p>
-    <blockquote className="channel-request">
-      <p>Test Channel</p>
-      <p>+1-123-555-5555, +1-123-555-5555</p>
+    <blockquote className="command blockquote-skinny">
+      <p>Test Channel +1-123-555-5555, +1-123-555-5555</p>
     </blockquote>
     <p>
       You will receive a welcome message from your new channel phone number as
@@ -109,18 +108,23 @@ export default () => (
       REPLY
     </h4>
     <p>Incoming hotline messages are followed by a hotline #:</p>
-    <blockquote className="command">
-      <p>[HOTLINE #3214]</p>
-      <p>Hello! We need a legal representative at jail support location XYZ.</p>
+    <blockquote className="command blockquote">
+      <p>
+        [HOTLINE #3214] <br />
+        Hello! We need a legal representative at jail support location XYZ.
+      </p>
     </blockquote>
     <p>In order to respond to a hotline message, type REPLY:</p>
-    <blockquote className="command">
+    <blockquote className="command blockquote">
       <p>REPLY #3214 Okay, we are sending someone over!</p>
     </blockquote>
     <p>And the subscriber you replied to will receive the following message:</p>
-    <blockquote className="command">
-      <p>[PRIVATE REPLY FROM ADMINS]</p>
-      <p>Okay, we are sending someone over!</p>
+    <blockquote className="command blockquote">
+      <p>
+        [PRIVATE REPLY FROM ADMINS]
+        <br />
+        Okay, we are sending someone over!
+      </p>
     </blockquote>
     <h3>How can I see a list of commands I can use?</h3>
     <p>
@@ -148,7 +152,7 @@ export default () => (
     </h4>
     <p>Renames channel to "new name"</p>
     <p>
-      <blockquote className="command">
+      <blockquote className="command blockquote">
         RENAME My Cool Signalboost Channel
       </blockquote>
     </p>
@@ -157,7 +161,7 @@ export default () => (
     </h4>
     <p>Adds or updates public description of channel.</p>
     <p>
-      <blockquote className="command">
+      <blockquote className="command blockquote">
         DESCRIPTION This is the _super cool activist_ signalboost channel! We'll
         use it to make announcements for the upcoming protest.
       </blockquote>
@@ -192,16 +196,20 @@ export default () => (
       Multiple invites can be sent by listing phone numbers separated by commas:
     </p>
     <p>
-      <span className="command">INVITE +1-555-555-5555, +1-333-333-3333</span>
+      <blockquote className="command blockquote">
+        INVITE +1-555-555-5555, +1-333-333-3333
+      </blockquote>
     </p>
     <h4 id="vouch-level" className="anchor">
       VOUCH LEVEL level
     </h4>
     <p>
-      This changes the number of invites needed to join the channel; currently
-      the vouch level must be between 1 and 10.
+      This changes the number of invites needed to join the channel. For
+      example:
     </p>
-    <p>Example: VOUCH LEVEL 3</p>
+    <p>
+      <blockquote className="command blockquote">VOUCH LEVEL 3</blockquote>
+    </p>
     <p>
       After executing this command, anyone who wants to join the channel will
       need 3 invites.
@@ -217,7 +225,7 @@ export default () => (
       because it will have the following header:
     </p>
     <p>
-      <b>[HOTLINE #3214]</b>
+      <blockquote className="command blockquote">[HOTLINE #3214]</blockquote>
     </p>
     <p>
       If you decide to turn the hotline on:
