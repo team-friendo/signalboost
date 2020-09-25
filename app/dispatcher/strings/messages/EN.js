@@ -45,7 +45,7 @@ const validPhoneNumberHint = `Phone numbers must include country codes prefixed 
 
 const parseErrors = {
   unnecessaryPayload: command =>
-    `Sorry, command was not recognized. Did you mean to use "${command}"? 
+    `Sorry, that command was not recognized. Did you mean to use "${command}"? 
 
 Send HELP for a list of all valid commands and how to use them.`,
 
@@ -128,29 +128,32 @@ INFO
 
 ----------------------------------------------
 
+BROADCAST hello everyone / ! hello everyone
+-> broadcasts "hello everyone" to all the subscribers of this channel
+
+REPLY #1312
+-> sends private reply to [HOTLINE #1312]
+
+INVITE +1-555-555-5555, +1-444-444-4444
+-> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to this channel
+
+ADD +1-555-555-5555
+-> adds +1-555-555-5555 as an admin of the channel
+
+PRIVATE good evening admins
+-> sends private message "good evening admins" to all admins of the channel
+
 RENAME new name
 -> renames channel to "new name"
 
 DESCRIPTION description of channel
 -> adds or updates public description of channel
 
-INVITE +1-555-555-5555, +1-444-444-4444
--> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to the channel
-
-ADD +1-555-555-5555
--> adds +1-555-555-5555 as an admin of the channel
-
-REMOVE +1-555-555-5555
--> removes +1-555-555-5555 from the channel
+ESPAÑOL / FRANÇAIS / DEUTSCH
+-> switches language to Spanish, French or German
 
 HOTLINE ON / OFF
 -> enables or disables hotline
-
-REPLY #1312
--> sends private reply to [HOTLINE #1312]
-
-PRIVATE good evening admins
--> sends private message "good evening admins" to all admins of the channel
 
 VOUCHING ON / OFF / ADMIN 
 -> toggles vouching on/off. When ON, people must be invited to join the channel. When ADMIN, only admins can send those invites.
@@ -158,8 +161,8 @@ VOUCHING ON / OFF / ADMIN
 VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
 
-ESPAÑOL / FRANÇAIS / DEUTSCH
--> switches language to Spanish, French or German
+REMOVE +1-555-555-5555
+-> removes +1-555-555-5555 from the channel
 
 GOODBYE
 -> leaves this channel
