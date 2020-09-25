@@ -27,7 +27,7 @@ const trustAndResend = async updatableFingerprint => {
   const signal = require('../signal')
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
-  if (sdMessage) await signal.sendMessage(memberPhoneNumber, sdMessage)
+  if (sdMessage) await signal.sendMessage(sdMessage)
   return trustResult
 }
 
@@ -60,11 +60,11 @@ const _sendDeauthAlerts = (channelPhoneNumber, deauthorizedNumber, adminMembersh
   return Promise.all(
     adminMemberships.map(({ memberPhoneNumber, language }) =>
       signal.sendMessage(
-        memberPhoneNumber,
-        sdMessageOf(
-          { phoneNumber: channelPhoneNumber },
-          messagesIn(language).notifications.deauthorization(deauthorizedNumber),
-        ),
+        sdMessageOf({
+          sender: channelPhoneNumber,
+          recipient: memberPhoneNumber,
+          message: messagesIn(language).notifications.deauthorization(deauthorizedNumber),
+        }),
       ),
     ),
   )

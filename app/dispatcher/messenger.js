@@ -108,16 +108,20 @@ const broadcast = async ({ commandResult, dispatchable }) => {
 // (Database, Socket, Channel, string, Sender) -> Promise<void>
 const respond = ({ channel, message, sender, command }) => {
   // because respond doesn't handle attachments, don't want to repeat message here
-  return signal.sendMessage(sender.phoneNumber, sdMessageOf(channel, message)).then(async () => {
-    // Don't count INFO commands from sysadmins. Why?
-    // Sysadmins ping channels with INFO as an informal health checks very frequently.
-    // Counting these pings would prevent us from detecting stale channels for recycling, which
-    // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
-    const shouldCount = !(
-      command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
+  return signal
+    .sendMessage(
+      sdMessageOf({ sender: channel.phoneNumber, recipient: sender.phoneNumber, message }),
     )
-    return shouldCount && messageCountRepository.countCommand(channel)
-  })
+    .then(async () => {
+      // Don't count INFO commands from sysadmins. Why?
+      // Sysadmins ping channels with INFO as an informal health checks very frequently.
+      // Counting these pings would prevent us from detecting stale channels for recycling, which
+      // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
+      const shouldCount = !(
+        command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
+      )
+      return shouldCount && messageCountRepository.countCommand(channel)
+    })
 }
 
 // ({ CommandResult, Dispatchable )) -> Promise<Array<string>>
@@ -128,7 +132,9 @@ const sendNotifications = (channel, notifications, delay = 0) => {
   // we would like to call `Promise.all` here and launch all the writes at once!
   return sequence(
     notifications.map(({ recipient, message, attachments = [] }) => () =>
-      signal.sendMessage(recipient, { ...sdMessageOf(channel, message), attachments }),
+      signal.sendMessage(
+        sdMessageOf({ sender: channel.phoneNumber, recipient, message, attachments }),
+      ),
     ),
     delay,
   )

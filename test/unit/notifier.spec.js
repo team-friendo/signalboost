@@ -36,12 +36,18 @@ describe('notifier module', () => {
       expect(sendMessageStub.callCount).to.eql(2)
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
-          channel.memberships[0].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_RECYCLED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[0].memberPhoneNumber,
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_RECYCLED],
+          }),
         ],
         [
-          channel.memberships[1].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('FR').notifications[notificationKeys.CHANNEL_RECYCLED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[1].memberPhoneNumber,
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_RECYCLED],
+          }),
         ],
       ])
     })
@@ -53,20 +59,32 @@ describe('notifier module', () => {
       expect(sendMessageStub.callCount).to.eql(4)
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
-          channel.memberships[0].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[0].memberPhoneNumber,
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
         [
-          channel.memberships[1].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[1].memberPhoneNumber,
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
         [
-          channel.memberships[2].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[2].memberPhoneNumber,
+            message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
         [
-          channel.memberships[3].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[3].memberPhoneNumber,
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
       ])
     })
@@ -81,16 +99,25 @@ describe('notifier module', () => {
       )
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
-          channel.memberships[1].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[1].memberPhoneNumber,
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
         [
-          channel.memberships[2].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[2].memberPhoneNumber,
+            message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
         [
-          channel.memberships[3].memberPhoneNumber,
-          sdMessageOf(channel, messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED]),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[3].memberPhoneNumber,
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
+          }),
         ],
       ])
     })
@@ -100,8 +127,20 @@ describe('notifier module', () => {
     it('sends an untranslated notification to sysadmins of the instance', async () => {
       await notifier.notifyMaintainers('foo')
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
-        [channel.memberships[0].memberPhoneNumber, sdMessageOf(channel, 'foo')],
-        [channel.memberships[1].memberPhoneNumber, sdMessageOf(channel, 'foo')],
+        [
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[0].memberPhoneNumber,
+            message: 'foo',
+          }),
+        ],
+        [
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: channel.memberships[1].memberPhoneNumber,
+            message: 'foo',
+          }),
+        ],
       ])
     })
   })

@@ -54,11 +54,11 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
 // (string, string) => Promise<string>
 const respondToHealthcheck = (channelPhoneNumber, healthcheckId) =>
   signal.sendMessage(
-    diagnosticsPhoneNumber,
-    sdMessageOf(
-      { phoneNumber: channelPhoneNumber },
-      `${messageTypes.HEALTHCHECK_RESPONSE} ${healthcheckId}`,
-    ),
+    sdMessageOf({
+      sender: channelPhoneNumber,
+      recipient: diagnosticsPhoneNumber,
+      message: `${messageTypes.HEALTHCHECK_RESPONSE} ${healthcheckId}`,
+    }),
   )
 
 module.exports = {

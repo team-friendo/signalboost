@@ -127,7 +127,7 @@ describe('signal module', () => {
       const sdMessage = {
         type: 'send',
         username: channelPhoneNumber,
-        recipientAddress: null,
+        recipientAddress: { number: '+12223334444' },
         messageBody: 'hello world!',
         attachments: [],
       }
@@ -158,7 +158,7 @@ describe('signal module', () => {
           .returns(new Date(whenSent))
           .onCall(1)
           .returns(new Date(whenSent + elapsed))
-        res = await signal.sendMessage('+12223334444', sdMessage)
+        res = await signal.sendMessage(sdMessage)
       })
 
       it('writes the message to the signald socket', () => {
@@ -184,34 +184,6 @@ describe('signal module', () => {
           elapsed,
           [channelPhoneNumber],
         ])
-      })
-    })
-
-    it('broadcasts a signal message', async () => {
-      const sdMessage = {
-        type: 'send',
-        username: channelPhoneNumber,
-        recipientAddress: null,
-        messageBody: 'hello world!',
-        attachments: [],
-      }
-      const recipients = ['+11111111111', '+12222222222']
-      await signal.broadcastMessage(recipients, sdMessage)
-
-      expect(writeStub.getCall(0).args[0]).to.eql({
-        type: 'send',
-        username: channelPhoneNumber,
-        recipientAddress: { number: '+11111111111' },
-        messageBody: 'hello world!',
-        attachments: [],
-      })
-
-      expect(writeStub.getCall(1).args[0]).to.eql({
-        type: 'send',
-        username: channelPhoneNumber,
-        recipientAddress: { number: '+12222222222' },
-        messageBody: 'hello world!',
-        attachments: [],
       })
     })
 

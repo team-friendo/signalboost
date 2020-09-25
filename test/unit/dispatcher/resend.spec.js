@@ -64,10 +64,7 @@ describe('resend module', () => {
 
         await wait(minResendInterval)
         expect(sendStub.callCount).to.eql(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([
-          outSdMessage.recipientAddress.number,
-          outSdMessage,
-        ])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage])
       })
 
       it('it adds the message to the resendQueue', async () => {
@@ -102,10 +99,7 @@ describe('resend module', () => {
 
         await wait(2 * minResendInterval)
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([
-          outSdMessage.recipientAddress.number,
-          outSdMessage,
-        ])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {

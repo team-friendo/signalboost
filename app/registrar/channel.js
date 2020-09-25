@@ -20,14 +20,11 @@ const { sdMessageOf } = require('../signal/constants')
 const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   await membershipRepository.addAdmin(channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
+  const message = _welcomeNotificationOf(channel)
   await signal.sendMessage(
-    adminPhoneNumber,
-    sdMessageOf({ phoneNumber: channelPhoneNumber }, _welcomeNotificationOf(channel)),
+    sdMessageOf({ sender: channelPhoneNumber, recipient: adminPhoneNumber, message }),
   )
-  return {
-    status: sbStatuses.SUCCESS,
-    message: _welcomeNotificationOf(channel),
-  }
+  return { status: sbStatuses.SUCCESS, message }
 }
 
 /* ({ phoneNumber: string, name: string, admins: Array<string> }) => Promise<ChannelStatus> */
@@ -64,8 +61,11 @@ const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
   Promise.all(
     adminPhoneNumbers.map(async adminPhoneNumber => {
       await signal.sendMessage(
-        adminPhoneNumber,
-        sdMessageOf(channel, _welcomeNotificationOf(channel)),
+        sdMessageOf({
+          sender: channel.phoneNumber,
+          recipient: adminPhoneNumber,
+          message: _welcomeNotificationOf(channel),
+        }),
       )
       await wait(setExpiryInterval)
       await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
@@ -84,8 +84,11 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
         adminPhoneNumber,
       )
       await signal.sendMessage(
-        adminPhoneNumber,
-        sdMessageOf(supportChannel, _welcomeNotificationOf(supportChannel)),
+        sdMessageOf({
+          sender: supportChannel.phoneNumber,
+          recipient: adminPhoneNumber,
+          message: _welcomeNotificationOf(supportChannel),
+        }),
       )
     }),
   )

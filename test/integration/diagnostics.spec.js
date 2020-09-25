@@ -93,6 +93,7 @@ describe('diagnostics jobs', () => {
             recipientAddress: { number: diagnosticsPhoneNumber },
             type: messageTypes.SEND,
             username: channels[idx].phoneNumber,
+            attachments: [],
           })),
         ])
       })
@@ -135,6 +136,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
           {
             messageBody: `Channel ${channels[0].phoneNumber} failed to respond to healthcheck`,
@@ -143,6 +145,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
           {
             messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
@@ -151,6 +154,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
           {
             messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
@@ -159,6 +163,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
           {
             messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
@@ -167,6 +172,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
           {
             messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
@@ -175,6 +181,7 @@ describe('diagnostics jobs', () => {
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
+            attachments: [],
           },
         ])
       })

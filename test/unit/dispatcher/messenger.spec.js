@@ -173,23 +173,39 @@ describe('messenger service', () => {
 
       it('sends the message and attachments to all channel subscribers and admins', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
-          adminPhoneNumbers[0],
-          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: adminPhoneNumbers[0],
+            message: `[BROADCAST]\n${payload}`,
+            attachments,
+          }),
         ])
 
         expect(sendMessageStub.getCall(1).args).to.eql([
-          adminPhoneNumbers[1],
-          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: adminPhoneNumbers[1],
+            message: `[BROADCAST]\n${payload}`,
+            attachments,
+          }),
         ])
 
         expect(sendMessageStub.getCall(2).args).to.eql([
-          adminPhoneNumbers[2],
-          { ...sdMessage, messageBody: `[BROADCAST]\n${payload}` },
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: adminPhoneNumbers[2],
+            message: `[BROADCAST]\n${payload}`,
+            attachments,
+          }),
         ])
 
         expect(sendMessageStub.getCall(4).args).to.eql([
-          subscriberPhoneNumbers[0],
-          { ...sdMessage, messageBody: `[${channel.name}]\n${payload}` },
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: subscriberPhoneNumbers[0],
+            message: `[${channel.name}]\n${payload}`,
+            attachments,
+          }),
         ])
       })
 
@@ -226,8 +242,11 @@ describe('messenger service', () => {
 
         it('responds to the message sender with an error message', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
-            sender.phoneNumber,
-            sdMessageOf(channel, response),
+            sdMessageOf({
+              sender: channel.phoneNumber,
+              recipient: sender.phoneNumber,
+              message: response,
+            }),
           ])
         })
       })
@@ -258,16 +277,23 @@ describe('messenger service', () => {
         it('responds to sender that their message has been sent', () => {
           const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
           expect(sendMessageStub.getCall(0).args).to.eql([
-            sender.phoneNumber,
-            sdMessageOf(channel, response),
+            sdMessageOf({
+              sender: channel.phoneNumber,
+              recipient: sender.phoneNumber,
+              message: response,
+            }),
           ])
         })
 
         it("forwards the message to all the channel's admins", () => {
           adminPhoneNumbers.forEach((phoneNumber, index) => {
             expect(sendMessageStub.getCall(index + 1).args).to.eql([
-              phoneNumber,
-              { ...sdMessage, messageBody: message },
+              sdMessageOf({
+                sender: channel.phoneNumber,
+                recipient: phoneNumber,
+                message,
+                attachments,
+              }),
             ])
           })
         })
@@ -300,8 +326,11 @@ describe('messenger service', () => {
 
       it('sends a command result to the message sender', () => {
         expect(sendMessageStub.getCall(0).args).to.eql([
-          adminSender.phoneNumber,
-          sdMessageOf(channel, 'yay!'),
+          sdMessageOf({
+            sender: channel.phoneNumber,
+            recipient: adminSender.phoneNumber,
+            message: 'yay!',
+          }),
         ])
       })
 
@@ -350,8 +379,12 @@ describe('messenger service', () => {
       it('sends out each notification', () => {
         adminPhoneNumbers.forEach((phoneNumber, index) => {
           expect(sendMessageStub.getCall(index + 1).args).to.eql([
-            phoneNumber,
-            { ...sdMessageOf(channel, 'foobar'), attachments: [] },
+            sdMessageOf({
+              sender: channel.phoneNumber,
+              recipient: phoneNumber,
+              message: 'foobar',
+              attachments: [],
+            }),
           ])
         })
       })
@@ -365,7 +398,7 @@ describe('messenger service', () => {
               dispatchable: {
                 channel,
                 sender: randomSender,
-                sdMessage: sdMessageOf(channel, command),
+                sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: command }),
               },
               commandResult: {
                 command,
@@ -392,7 +425,10 @@ describe('messenger service', () => {
               dispatchable: {
                 channel,
                 sender: randomSender,
-                sdMessage: sdMessageOf(channel, `${command} ${rawNewMemberPhoneNumber}`),
+                sdMessage: sdMessageOf({
+                  sender: channel.phoneNumber,
+                  message: `${command} ${rawNewMemberPhoneNumber}`,
+                }),
               },
               commandResult: {
                 command,
@@ -426,7 +462,7 @@ describe('messenger service', () => {
               dispatchable: {
                 channel,
                 sender: randomSender,
-                sdMessage: sdMessageOf(channel, command),
+                sdMessage: sdMessageOf({ sender: channel, message: command }),
               },
               commandResult: {
                 command,
@@ -447,7 +483,7 @@ describe('messenger service', () => {
             dispatchable: {
               channel,
               sender: randomSender,
-              sdMessage: sdMessageOf(channel, commands.JOIN),
+              sdMessage: sdMessageOf({ sender: channel, message: commands.JOIN }),
             },
             commandResult: {
               command: commands.JOIN,

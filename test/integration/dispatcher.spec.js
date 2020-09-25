@@ -21,6 +21,7 @@ import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 describe('dispatcher service', () => {
   const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
+  const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
@@ -88,7 +89,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: '! foobar',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -106,28 +107,28 @@ describe('dispatcher service', () => {
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[0].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[1].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
-          attachments: [],
+          attachments,
         },
       ])
     })
@@ -148,7 +149,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'a screaming came across the sky',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -167,20 +168,21 @@ describe('dispatcher service', () => {
           },
           type: 'send',
           username: channel.phoneNumber,
+          attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
-          attachments: [],
+          attachments,
         },
       ])
     })
@@ -200,7 +202,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'HELLO',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -225,6 +227,7 @@ describe('dispatcher service', () => {
         recipientAddress: { number: randoPhoneNumber },
         type: 'send',
         username: channel.phoneNumber,
+        attachments: [],
       })
     })
   })
@@ -245,7 +248,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'REPLY #1 it has happened before but there is nothing to compare it to now',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -261,21 +264,21 @@ describe('dispatcher service', () => {
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: randoPhoneNumber },
           messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
-          attachments: [],
+          attachments,
         },
       ])
     })
@@ -295,7 +298,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'PRIVATE There was a wall. It did not look important.',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -311,14 +314,14 @@ describe('dispatcher service', () => {
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
-          attachments: [],
+          attachments,
         },
       ])
     })

@@ -125,8 +125,11 @@ describe('channel registrar', () => {
           await create({ phoneNumber, name, admins, welcome: sendMessageStub })
           admins.forEach((adminPhoneNumber, idx) => {
             expect(sendMessageStub.getCall(idx).args).to.eql([
-              adminPhoneNumber,
-              sdMessageOf(channelInstance, _welcomeNotificationOf(channelInstance)),
+              sdMessageOf({
+                sender: channelInstance.phoneNumber,
+                recipient: adminPhoneNumber,
+                message: _welcomeNotificationOf(channelInstance),
+              }),
             ])
           })
         })
@@ -165,8 +168,11 @@ describe('channel registrar', () => {
                   adminPhoneNumber,
                 ])
                 expect(sendMessageStub.getCall(admins.length + idx).args).to.eql([
-                  adminPhoneNumber,
-                  sdMessageOf(supportChannel, _welcomeNotificationOf(supportChannel)),
+                  sdMessageOf({
+                    sender: supportChannel.phoneNumber,
+                    recipient: adminPhoneNumber,
+                    message: _welcomeNotificationOf(supportChannel),
+                  }),
                 ])
               })
             })
@@ -337,8 +343,11 @@ describe('channel registrar', () => {
       it('attempts to send welcome message', async () => {
         await addAdmin({ channelPhoneNumber, adminPhoneNumber })
         expect(sendMessageStub.getCall(0).args).to.eql([
-          adminPhoneNumber,
-          sdMessageOf(channelInstance, _welcomeNotificationOf(channelInstance)),
+          sdMessageOf({
+            sender: channelInstance.phoneNumber,
+            recipient: adminPhoneNumber,
+            message: _welcomeNotificationOf(channelInstance),
+          }),
         ])
       })
 

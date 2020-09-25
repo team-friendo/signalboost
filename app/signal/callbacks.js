@@ -3,6 +3,7 @@ const metrics = require('../metrics')
 const { histograms } = metrics
 const { messageTypes } = require('./constants')
 const util = require('../util')
+const { sdMessageOf } = require('./constants')
 const { statuses } = util
 const { get } = require('lodash')
 const {
@@ -119,7 +120,7 @@ const _updateFingerprint = async (message, state) => {
     channelPhoneNumber,
     memberPhoneNumber,
     fingerprint: identityFailure,
-    sdMessage: { type: messageTypes.SEND, username: channelPhoneNumber, messageBody },
+    sdMessage: sdMessageOf({ sender: channelPhoneNumber, message: messageBody }),
   })
 }
 
