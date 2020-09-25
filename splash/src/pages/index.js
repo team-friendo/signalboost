@@ -112,7 +112,7 @@ const IndexPage = () => (
       Write our helpline (on Signal):{' '}
       <span className="purple">+1-947-800-5717</span> or send us an email at{' '}
       <a href="mailto:signalboost@protonmail.com">signalboost@protonmail.com</a>{' '}
-      (or, if you prerfer old-school:{' '}
+      (or, if you prefer old-school:{' '}
       <a href="mailto:signalboost@riseup.net">signalboost@riseup.net</a> +{' '}
       <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
         PGP
