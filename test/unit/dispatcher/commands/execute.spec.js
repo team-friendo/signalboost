@@ -30,6 +30,7 @@ import { deauthorizationFactory } from '../../../support/factories/deauthorizati
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
 import { defaultLanguage } from '../../../../app/language'
+
 describe('executing commands', () => {
   const channel = {
     name: 'foobar',
@@ -44,6 +45,7 @@ describe('executing commands', () => {
     ],
     messageCount: { broadcastIn: 42 },
   }
+  const adminMemberships = channel.memberships.slice(0, 3)
   const bystanderAdminMemberships = channel.memberships.slice(1, 3)
   const admin = {
     ...channel.memberships[0],
@@ -1742,7 +1744,7 @@ describe('executing commands', () => {
     const dispatchable = {
       channel,
       sender: { ...admin, language: languages.FR },
-      sdMessage: sdMessageOf(channel, 'REPLY #1312 foo'),
+      sdMessage: { ...sdMessageOf(channel, 'REPLY #1312 foo'), attachments },
     }
 
     let findMemberPhoneNumberStub, findMembershipStub
@@ -1770,10 +1772,12 @@ describe('executing commands', () => {
                 {
                   recipient: subscriber.phoneNumber,
                   message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+                  attachments,
                 },
-                ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
+                ...adminMemberships.map(({ memberPhoneNumber }) => ({
                   recipient: memberPhoneNumber,
                   message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                  attachments,
                 })),
               ],
               payload: { messageId: 1312, reply: 'foo' },
@@ -1797,10 +1801,12 @@ describe('executing commands', () => {
               {
                 recipient: randomPerson.phoneNumber,
                 message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+                attachments,
               },
-              ...bystanderAdminMemberships.map(({ memberPhoneNumber }) => ({
+              ...adminMemberships.map(({ memberPhoneNumber }) => ({
                 recipient: memberPhoneNumber,
                 message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                attachments,
               })),
             ],
             payload: { messageId: 1312, reply: 'foo' },
