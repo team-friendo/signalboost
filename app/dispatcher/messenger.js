@@ -77,7 +77,7 @@ const handleHotlineMessage = async ({ commandResult, dispatchable }) => {
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, notifications, status } = commandResult
-  await respond({ ...dispatchable, message, command, status })
+  if (command !== commands.REPLY) await respond({ ...dispatchable, message, command, status })
   if (status === statuses.SUCCESS) await sendNotifications(dispatchable.channel, notifications)
   await wait(setExpiryInterval) // to ensure welcome notification arrives first
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })

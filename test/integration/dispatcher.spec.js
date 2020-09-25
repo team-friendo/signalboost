@@ -7,7 +7,7 @@ import db from '../../app/db'
 import socket from '../../app/socket/write'
 import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
-import { times } from 'lodash'
+import { times, map, flatten } from 'lodash'
 import { wait } from '../../app/util'
 import {
   adminMembershipFactory,
@@ -19,7 +19,7 @@ import { languages } from '../../app/language'
 import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 
 describe('dispatcher service', () => {
-  const socketDelay = 200
+  const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
   let channel, admins, subscribers, writeStub, readSock
 
@@ -73,7 +73,7 @@ describe('dispatcher service', () => {
   after(async () => await app.stop())
 
   describe('dispatching a broadcast message', () => {
-    beforeEach(async () => {
+    beforeEach(async function() {
       await createChannelWithMembers()
       readSock.emit(
         'data',
@@ -86,7 +86,7 @@ describe('dispatcher service', () => {
             },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              body: 'foobar',
+              body: '! foobar',
               expiresInSeconds: channel.messageExpiryTime,
               attachments: [],
             },
@@ -94,11 +94,12 @@ describe('dispatcher service', () => {
         }),
       )
       // wait longer b/c we send broadcast messages in sequence
-      await wait(4 * socketDelay)
+      this.timeout(12 * socketDelay)
+      await wait(6 * socketDelay)
     })
 
     it('relays the message to all admins and subscribers', () => {
-      const messages = times(4, n => writeStub.getCall(n)).map(call => call.args[0])
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
         {
           type: 'send',
@@ -155,9 +156,18 @@ describe('dispatcher service', () => {
       await wait(2 * socketDelay)
     })
 
-    it('relays the hotline message to all admins', () => {
-      const messages = times(2, n => writeStub.getCall(n)).map(c => c.args[0])
+    it('responds to the sender and relays the hotline message to all admins', () => {
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
+        {
+          messageBody:
+            'Your message was forwarded to the admins of [#red-alert].\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
+          recipientAddress: {
+            number: randoPhoneNumber,
+          },
+          type: 'send',
+          username: channel.phoneNumber,
+        },
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -244,25 +254,28 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline reply to hotline message sender and all admins', () => {
-      const messages = times(3, n => writeStub.getCall(n)).map(c => c.args[0])
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          attachments: [],
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: randoPhoneNumber },
           messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
+          attachments: [],
         },
       ])
     })

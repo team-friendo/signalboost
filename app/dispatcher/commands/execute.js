@@ -73,7 +73,7 @@ const execute = async (executable, dispatchable) => {
     [commands.PRIVATE]: () => maybePrivateMessageAdmins(channel, sender, payload, sdMessage),
     [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
-    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, payload),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
     [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
     [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
@@ -543,15 +543,15 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
 
 // REPLY
 
-const maybeReplyToHotlineMessage = (channel, sender, hotlineReply) => {
+const maybeReplyToHotlineMessage = (channel, sender, { attachments }, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  return replyToHotlineMessage(channel, sender, hotlineReply, cr)
+  return replyToHotlineMessage(channel, sender, attachments, hotlineReply, cr)
 }
 
-const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
+const replyToHotlineMessage = async (channel, sender, attachments, hotlineReply, cr) => {
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineReply.messageId,
@@ -570,6 +570,7 @@ const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
         hotlineReply,
         memberPhoneNumber,
         language,
+        attachments,
       ),
     }
   } catch (e) {
@@ -586,6 +587,7 @@ const hotlineReplyNotificationsOf = (
   hotlineReply,
   memberPhoneNumber,
   language,
+  attachments,
 ) => [
   {
     recipient: memberPhoneNumber,
@@ -593,10 +595,12 @@ const hotlineReplyNotificationsOf = (
       hotlineReply,
       memberTypes.SUBSCRIBER,
     ),
+    attachments,
   },
-  ...getAllAdminsExcept(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
+  ...getAdminMemberships(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
     recipient: memberPhoneNumber,
     message: messagesIn(language).notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    attachments,
   })),
 ]
 
