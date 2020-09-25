@@ -58,15 +58,11 @@ describe('phone number registrar -- recycle module', () => {
         expect(await requestToRecycle(phoneNumbers)).to.have.deep.members([
           {
             status: 'ERROR',
-            message: `${
-              phoneNumbers[0]
-            } must be associated with a channel in order to be recycled.`,
+            message: `${phoneNumbers[0]} must be associated with a channel in order to be recycled.`,
           },
           {
             status: 'ERROR',
-            message: `${
-              phoneNumbers[1]
-            } must be associated with a channel in order to be recycled.`,
+            message: `${phoneNumbers[1]} must be associated with a channel in order to be recycled.`,
           },
         ])
       })
@@ -181,9 +177,7 @@ describe('phone number registrar -- recycle module', () => {
           },
           {
             status: 'ERROR',
-            message: `${
-              _phoneNumbers[1]
-            } must be associated with a channel in order to be recycled.`,
+            message: `${_phoneNumbers[1]} must be associated with a channel in order to be recycled.`,
           },
           {
             status: 'ERROR',

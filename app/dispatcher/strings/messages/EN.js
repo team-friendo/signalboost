@@ -59,7 +59,7 @@ Send HELP for a list of all valid commands and how to use them.`,
     `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} does not contain a valid hotline message number. A valid hotline message number looks like: #123`,
+    `${payload} does not contain a valid hotline message number. A valid hotline message number looks like: 123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -68,9 +68,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
-      channel.description
-    }
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
@@ -131,8 +129,8 @@ INFO
 BROADCAST hello everyone / ! hello everyone
 -> broadcasts "hello everyone" to all the subscribers of this channel
 
-REPLY #1312
--> sends private reply to [HOTLINE #1312]
+REPLY @1312
+-> sends private reply to [HOTLINE @1312]
 
 INVITE +1-555-555-5555, +1-444-444-4444
 -> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to this channel
@@ -266,9 +264,7 @@ ${failedPhoneNumbers.join(',')}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
-      channel.description
-    }
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -318,7 +314,7 @@ Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Tr
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Sorry, the hotline message identifier #${messageId} has expired or never existed.`,
+      `Sorry, the hotline message identifier @${messageId} has expired or never existed.`,
   },
 
   // SET_LANGUAGE
@@ -508,10 +504,10 @@ To see a full list of commands, send HELP or check out our how-to guide: https:/
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineMessage: messageId => `HOTLINE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `REPLY TO HOTLINE #${messageId}`
+      ? `REPLY TO HOTLINE @${messageId}`
       : `PRIVATE REPLY FROM ADMINS`,
   broadcastMessage: `BROADCAST`,
   privateMessage: `PRIVATE`,

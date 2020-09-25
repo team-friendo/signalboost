@@ -64,7 +64,7 @@ Envoyez une aide pour obtenir une liste de toutes les commandes valides et comme
     `"${invalidVouchLevel} n'est pas un niveau de porter garant valide. Veuillez utiliser un nombre compris entre 1 et ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} ne contient pas de numéro de message hotline valide. Un numéro de message de hotline valide ressemble à: #123`,
+    `${payload} ne contient pas de numéro de message hotline valide. Un numéro de message de hotline valide ressemble à: 123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -73,16 +73,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${
-      channel.name
-    }] . ${channel.description}
+    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${channel.name}] . ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de ce canal',
     belowVouchLevel: (channel, required, actual) =>
-      `Désolé, ${
-        channel.name
-      } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
+      `Désolé, ${channel.name} nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
     dbError:
       "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
   },
@@ -140,8 +136,8 @@ INFO
 DIFFUSER bonjour à tous / ! bonjour à tous
 -> diffuse "bonjour à tous" à tous les abonnés de cette chaîne
 
-RÉPONDRE #1312
--> Envoie une réponse privée à [HOTLINE #1312]
+RÉPONDRE @1312
+-> Envoie une réponse privée à [HOTLINE @1312]
 
 INVITE +33612345678, +336187654321
 -> Inviter +33612345678 et +336187654321 à s’inscrire au canal
@@ -278,9 +274,7 @@ ${failedPhoneNumbers.join(',')}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonné-e au canal Signalboost [${channel.name}]. ${
-        channel.description
-      }
+      `Bonjour! Vous êtes maintenant abonné-e au canal Signalboost [${channel.name}]. ${channel.description}
 
 Répondez avec AIDE pour en savoir plus ou AUREVOIR pour vous désinscrire.`,
     inviteRequired: `Désolé! Les invitations sont nécessaires pour s'abonner à ce canal. Demandez à un-e ami-e de vous inviter!
@@ -333,7 +327,7 @@ Oups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Désolé, l'identifiant de message de la hotline #${messageId} a expiré ou n'a jamais existé.`,
+      `Désolé, l'identifiant de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
   },
 
   // SET_LANGUAGE
@@ -541,10 +535,10 @@ Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre gui
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineMessage: messageId => `HOTLINE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `RÉPONSE AU HOTLINE #${messageId}`
+      ? `RÉPONSE AU HOTLINE @${messageId}`
       : `RÉPONSE PRIVÉE DES ADMINS`,
   broadcastMessage: `DIFFUSER`,
   privateMessage: `PRIVÉ`,

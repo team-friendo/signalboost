@@ -1783,7 +1783,7 @@ describe('executing commands', () => {
       sender: { ...admin, language: languages.FR },
       sdMessage: sdMessageOf({
         sender: channel.phoneNumber,
-        message: 'REPLY #1312 foo',
+        message: 'REPLY @1312 foo',
         attachments,
       }),
     }
@@ -1808,7 +1808,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.REPLY,
               status: statuses.SUCCESS,
-              message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
+              message: `[RÉPONSE AU HOTLINE @${messageId}]\nfoo`,
               notifications: [
                 {
                   recipient: subscriber.phoneNumber,
@@ -1817,7 +1817,7 @@ describe('executing commands', () => {
                 },
                 ...adminMemberships.map(({ memberPhoneNumber }) => ({
                   recipient: memberPhoneNumber,
-                  message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                  message: `[REPLY TO HOTLINE @${messageId}]\nfoo`,
                   attachments,
                 })),
               ],
@@ -1837,7 +1837,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
-            message: `[RÉPONSE AU HOTLINE #${messageId}]\nfoo`,
+            message: `[RÉPONSE AU HOTLINE @${messageId}]\nfoo`,
             notifications: [
               {
                 recipient: randomPerson.phoneNumber,
@@ -1846,7 +1846,7 @@ describe('executing commands', () => {
               },
               ...adminMemberships.map(({ memberPhoneNumber }) => ({
                 recipient: memberPhoneNumber,
-                message: `[REPLY TO HOTLINE #${messageId}]\nfoo`,
+                message: `[REPLY TO HOTLINE @${messageId}]\nfoo`,
                 attachments,
               })),
             ],

@@ -61,7 +61,7 @@ Envíe AYUDA para obtener una lista de todos los comandos válidos y cómo usarl
     `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} no contiene un número válido de mensaje de línea directa. Un número válido de mensaje de línea directa se ve así: #123`,
+    `${payload} no contiene un número válido de mensaje de línea directa. Un número válido de mensaje de línea directa se ve así: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -70,16 +70,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `¡Hola! Ahora usted está suscrito al canal [${
-      channel.name
-    }] de Signalboost. ${channel.description}
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowVouchLevel: (channel, required, actual) =>
-      `Lo sentimos, ${
-        channel.name
-      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
   },
 
@@ -140,8 +136,8 @@ INFO
 TRANSMITIR hola a todos / ! hola a todos 
 -> transmite "hola a todos" a todos los suscriptores de este canal
 
-RESPONDER #1312
--> envía una respuesta privada a [LÍNEA DIRECTA #1312]
+RESPONDER @1312
+-> envía una respuesta privada a [LÍNEA DIRECTA @1312]
 
 INVITAR +1-555-555-5555, +1-444-444-4444
 -> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
@@ -308,16 +304,14 @@ ${failedPhoneNumbers.join(',')}`,
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Lo sentimos, el identificador de mensaje de línea directa #${messageId} ha caducado o nunca ha existido.`,
+      `Lo sentimos, el identificador de mensaje de línea directa @${messageId} ha caducado o nunca ha existido.`,
   },
 
   // JOIN
 
   join: {
     success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
-        channel.description
-      }
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${channel.description}
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
@@ -537,10 +531,10 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `LÍNEA DIRECTA #${messageId}`,
+  hotlineMessage: messageId => `LÍNEA DIRECTA @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `RESPONDER A LA LÍNEA DIRECTA #${messageId}`
+      ? `RESPONDER A LA LÍNEA DIRECTA @${messageId}`
       : `RESPUESTA PRIVADA DE ADMINS`,
   broadcastMessage: `TRANSMITIR`,
   privateMessage: `PRIVADO`,

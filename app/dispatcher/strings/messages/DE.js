@@ -62,7 +62,7 @@ Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu 
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: #123`,
+    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: 123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -71,9 +71,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${
-      channel.name
-    }] angemeldet. ${channel.description}
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${channel.name}] angemeldet. ${channel.description}
 
 Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     alreadyMember: 'Ups! Du bist schon Teilnehmer an diesem Kanal.',
@@ -136,8 +134,8 @@ INFO
 SENDEN hallo an alle / ! hallo an alle
 -> sendet "hallo an alle" an alle Abonnenten dieses Kanals
 
-ANTWORTEN #1312
--> Sendet eine private Antwort an [HOTLINE #1312]
+ANTWORTEN @1312
+-> Sendet eine private Antwort an [HOTLINE @1312]
 
 EINLADEN +491701234567, +491707654321
 -> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
@@ -274,9 +272,7 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${
-      channel.name
-    }] Signalboost Kanal angemeldet. ${channel.description}
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${channel.name}] Signalboost Kanal angemeldet. ${channel.description}
 
 Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzumelden.`,
     inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freunde nach einer Einladung!
@@ -330,7 +326,7 @@ Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Entschuldigung, die Hotline-Nachrichtenkennung #${messageId} ist abgelaufen oder hat nie existiert.`,
+      `Entschuldigung, die Hotline-Nachrichtenkennung @${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
   // SET_LANGUAGE
@@ -525,10 +521,10 @@ ${
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineMessage: messageId => `HOTLINE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `ANTWORT AUF HOTLINE #${messageId}`
+      ? `ANTWORT AUF HOTLINE @${messageId}`
       : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
   privateMessage: `PRIVAT`,
