@@ -1,6 +1,5 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
-const messenger = require('../messenger')
 const channelRepository = require('../../db/repositories/channel')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
 const eventRepository = require('../../db/repositories/event')
