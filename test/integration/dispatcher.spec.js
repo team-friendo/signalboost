@@ -280,4 +280,47 @@ describe('dispatcher service', () => {
       ])
     })
   })
+
+  describe('dispatching a PRIVATE message', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      readSock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: { number: admins[0].memberPhoneNumber },
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              body: 'PRIVATE There was a wall. It did not look important.',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments: [],
+            },
+          },
+        }),
+      )
+      await wait(2 * socketDelay)
+    })
+
+    it('relays the private message to all admins', () => {
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
+      expect(messages).to.have.deep.members([
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
+          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          attachments: [],
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
+          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          attachments: [],
+        },
+      ])
+    })
+  })
 })
