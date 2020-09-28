@@ -1,0 +1,51 @@
+# Provides script for repairing a broken write-ahead log as per:
+# https://stackoverflow.com/questions/8799474/postgresql-error-panic-could-not-locate-a-valid-checkpoint-record
+#
+# This failure is detectable via the following observations:
+# - #incidents alerts that server is down
+# - inspecting `Traffic` dash confirms it went down shortly after backup job
+# - restart fails to bring app back up
+# - app logs show: "could not connect to db after 100 attempts"
+# - db logs show: "PANIC:  could not locate a valid checkpoint record"
+
+---
+- name: Repair corrupted postgres write-ahead log
+  become: true
+  hosts: signalboost
+
+  vars:
+    homedir: /srv/signalboost
+    env_file: "files/.env"
+    secrets_method: blackbox
+
+  tasks:
+
+  - name: Deploy environment file using blackbox
+    command: ./bin/blackbox/postdeploy
+    args:
+      chdir: "{{ homedir }}"
+    tags: secrets
+    when: secrets_method == "blackbox"
+
+  - name: Deploy environment file by copying local file
+    copy:
+      src: "{{ env_file }}"
+      dest: "{{ homedir }}/.env"
+    tags: secrets
+    when: secrets_method == "copy"
+
+  - name: Spin down
+    command: docker-compose down
+    args:
+      chdir: "{{ homedir }}"
+
+  - name: Repair postgres write-ahead-log
+    command: docker-compose --env-file .env exec -u postgres pg_resetwal /var/lib/postgresql/data
+    args:
+      chdir: "{{ homedir }}"
+
+  - name: Spin up
+    command: docker-compose --env-file .env up -d
+    args:
+      chdir: "{{ homedir }}"
+
