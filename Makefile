@@ -91,6 +91,9 @@ ansible.harden: # deploy the app to prod
 ansible.backup: # backup the app from prod to sb_backup host
 	cd ansible && ansible-playbook -i inventory playbooks/backup.yml
 
+ansible.repair.db: # repair corrupted postgres write-ahead-log
+	cd ansible && ansible-playbook -i inventory playbooks/repair_db.yml
+
 ansible.restore: # restore from backup on sb_backup host to prod
 	cd ansible && ansible-playbook -i inventory playbooks/restore.yml
 
