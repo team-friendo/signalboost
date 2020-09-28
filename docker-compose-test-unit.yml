@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
   test_runner:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: signalboost_test_runner
     entrypoint: /signalboost/bin/entrypoint/test-unit
     #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
