@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   signald:
-    image: registry.0xacab.org/team-friendo/signalboost/signald
+    image: registry.0xacab.org/team-friendo/signalboost/signald:latest
     container_name: signalboost_signald
     env_file: .env
     environment:
@@ -59,7 +59,7 @@ services:
     restart: unless-stopped
 
   app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: signalboost_app
     depends_on:
       - db
