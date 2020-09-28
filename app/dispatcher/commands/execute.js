@@ -27,9 +27,7 @@ const { ADMIN, SUBSCRIBER, NONE } = memberTypes
  *   payload: string,
  *   status: string,
  *   message: string,
- *   notifications: Array<{ recipient: Array<string>, message: string }>
- *   attachments: Array<{ filename: string, width: integer, height: integer }>
- * }
+ *   notifications: Array<{ recipient: string, message: string, attachments: Array<signal.OutboundSignaldAttachment> }>
  *
  * type Toggle = toggles.HOTLINE
  **/
@@ -195,21 +193,18 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
   const subscriberMemberships = getSubscriberMemberships(channel)
 
   const adminMessagePrefix = language => messagesIn(language).prefixes.broadcastMessage
-  const adminNotifications = [
-    ...adminMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: `[${adminMessagePrefix(membership.language)}]\n${messageBody}`,
-      attachments,
-    })),
-  ]
+  const adminNotifications = adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${adminMessagePrefix(membership.language)}]\n${messageBody}`,
+    attachments,
+  }))
 
-  const subscriberNotifications = [
-    ...subscriberMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: `[${channel.name}]\n${messageBody}`,
-      attachments,
-    })),
-  ]
+  const subscriberNotifications = subscriberMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${channel.name}]\n${messageBody}`,
+    attachments,
+  }))
+
   return [...adminNotifications, ...subscriberNotifications]
 }
 
@@ -233,13 +228,11 @@ const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
   const adminMemberships = getAdminMemberships(channel)
   const prefix = language => messagesIn(language).prefixes.privateMessage
 
-  return [
-    ...adminMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: `[${prefix(membership.language)}]\n${payload}`,
-      attachments: sdMessage.attachments,
-    })),
-  ]
+  return adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${prefix(membership.language)}]\n${payload}`,
+    attachments: sdMessage.attachments,
+  }))
 }
 
 // DECLINE
@@ -797,13 +790,11 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
   const prefix = language => `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
 
-  return [
-    ...adminMemberships.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: `${prefix(sender.language)}${messageBody}`,
-      attachments: attachments,
-    })),
-  ]
+  return adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `${prefix(sender.language)}${messageBody}`,
+    attachments: attachments,
+  }))
 }
 
 /**********

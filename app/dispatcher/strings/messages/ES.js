@@ -44,7 +44,7 @@ const validPhoneNumberHint = `Los números de teléfono deben incluir códigos d
 
 const parseErrors = {
   missingCommand:
-    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+    '¿Quería prefijar su mensaje con TRANSMITIR? Envíe AYUDA para ver una lista de todos los comandos..',
 
   unnecessaryPayload: command =>
     `Lo siento, ese comando no fue reconocido. ¿Querías usar ${command}?
@@ -417,7 +417,7 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
   // NONE
   none: {
     error:
-      '¿Querías prefijar tu mensaje con BROADCAST? Envíe AYUDA para ver una lista de todos los comandos.',
+      '¿Querías prefijar tu mensaje con TRANSMITIR? Envíe AYUDA para ver una lista de todos los comandos.',
   },
 }
 

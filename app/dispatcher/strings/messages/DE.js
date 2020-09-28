@@ -45,12 +45,12 @@ const validPhoneNumberHint =
 
 const parseErrors = {
   missingCommand:
-    'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
+    'Did you mean to prefix your message with SENDEN? Send HILFE to see a list of all commands.',
 
   unnecessaryPayload: command =>
     `Sorry, dieser Befehl wurde nicht erkannt. Wollten Sie ${command} verwenden?
 
-Senden Sie HELP, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
+Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
 
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" ist keine gültige Telefonnummer. ${validPhoneNumberHint}`,
@@ -415,7 +415,7 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
   // NONE
   none: {
     error:
-      'Wollten Sie Ihrer Nachricht BROADCAST voranstellen? Senden Sie HELP, um eine Liste aller Befehle anzuzeigen.',
+      'Wollten Sie Ihrer Nachricht SENDEN voranstellen? Senden Sie HILFE, um eine Liste aller Befehle anzuzeigen.',
   },
 }
 
