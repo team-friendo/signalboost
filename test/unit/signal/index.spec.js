@@ -76,7 +76,7 @@ describe('signal module', () => {
     })
 
     it('sends an unsubscribe command', () => {
-      signal.unsubscribe(channelPhoneNumber)
+      signal.unsubscribe(channelPhoneNumber, 0)
 
       expect(writeStub.getCall(0).args[0]).to.eql({
         type: 'unsubscribe',
@@ -163,7 +163,7 @@ describe('signal module', () => {
           .returns(new Date(whenSent))
           .onCall(1)
           .returns(new Date(whenSent + elapsed))
-        res = await signal.sendMessage(sdMessage)
+        res = await signal.sendMessage(sdMessage, channel)
       })
 
       it('writes the message to the signald socket', () => {

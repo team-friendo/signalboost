@@ -56,7 +56,7 @@ describe('resend module', () => {
       const outSdMessage = signal.parseOutboundSdMessage(inSdMessage)
       beforeEach(() => {
         sendCount = sendStub.callCount
-        resendInterval = enqueueResend(inSdMessage)
+        resendInterval = enqueueResend(inSdMessage, 0)
       })
 
       it('resends the message in minResendInverval seconds', async () => {
@@ -64,7 +64,7 @@ describe('resend module', () => {
 
         await wait(minResendInterval)
         expect(sendStub.callCount).to.eql(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage, 0])
       })
 
       it('it adds the message to the resendQueue', async () => {
@@ -91,7 +91,7 @@ describe('resend module', () => {
           sdMessage: outSdMessage,
           lastResendInterval: minResendInterval,
         }
-        enqueueResend(outSdMessage)
+        enqueueResend(outSdMessage, 0)
       })
 
       it('resends the message in <2 * last resend interval> seconds', async () => {
@@ -99,7 +99,7 @@ describe('resend module', () => {
 
         await wait(2 * minResendInterval)
         expect(sendStub.callCount).to.be.at.least(sendCount + 1)
-        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage])
+        expect(last(sendStub.getCalls()).args).to.eql([outSdMessage, 0])
       })
 
       it("it updates the messages's lastResendInterval in the resendQueue", async () => {

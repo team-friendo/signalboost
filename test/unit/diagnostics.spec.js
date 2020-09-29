@@ -168,14 +168,15 @@ describe('diagnostics module', () => {
 
   describe('responding to a healthcheck', () => {
     it('responds to the diagnostics number with id of incoming healthcheck', async () => {
-      await respondToHealthcheck(channelPhoneNumbers[0], '1312')
+      await respondToHealthcheck(channels[0], '1312')
       expect(sendMessageStub.callCount).to.eql(1)
       expect(sendMessageStub.getCall(0).args).to.eql([
         sdMessageOf({
-          sender: channelPhoneNumbers[0],
+          sender: channels[0].phoneNumber,
           recipient: diagnosticsPhoneNumber,
           message: `healthcheck_response 1312`,
         }),
+        channels[0].socketPoolId,
       ])
     })
   })

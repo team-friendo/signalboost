@@ -111,6 +111,7 @@ const getChannelsSortedBySize = async () =>
     )
     .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
 
+// (string, number) => Promise<number>
 const updateSocketPoolIds = async (channelPhoneNumbers, socketPoolId) =>
   app.db.channel.update(
     { socketPoolId },

@@ -27,8 +27,9 @@ const trustAndResend = async updatableFingerprint => {
   const signal = require('../signal')
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
-  if (sdMessage) await signal.sendMessage(sdMessage)
-  return trustResult
+  const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
+  if (sdMessage) await signal.sendMessage(sdMessage, channel.socketPoolId)
+  return trustResult // we catch errors in `updateFingerPrint`
 }
 
 // (Database, Socket, UpdatableFingerprint) -> Promise<SignalBoostStatus>
@@ -42,7 +43,7 @@ const deauthorize = async updatableFingerprint => {
     )
     await deauthorizationRepository.create(channelPhoneNumber, memberPhoneNumber, fingerprint)
     await _sendDeauthAlerts(
-      channelPhoneNumber,
+      channel,
       memberPhoneNumber,
       channelRepository.getAllAdminsExcept(channel, [memberPhoneNumber]),
     )
@@ -55,16 +56,17 @@ const deauthorize = async updatableFingerprint => {
   }
 }
 
-const _sendDeauthAlerts = (channelPhoneNumber, deauthorizedNumber, adminMemberships) => {
+const _sendDeauthAlerts = (channel, deauthorizedNumber, adminMemberships) => {
   const signal = require('../signal')
   return Promise.all(
     adminMemberships.map(({ memberPhoneNumber, language }) =>
       signal.sendMessage(
         sdMessageOf({
-          sender: channelPhoneNumber,
+          sender: channel.phoneNumber,
           recipient: memberPhoneNumber,
           message: messagesIn(language).notifications.deauthorization(deauthorizedNumber),
         }),
+        channel.socketPoolId,
       ),
     ),
   )

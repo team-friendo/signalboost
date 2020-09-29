@@ -27,6 +27,19 @@ describe('safety numbers registrar module', () => {
     message: 'Good morning!',
   })
   const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage }
+  const channel = channelFactory({
+    phoneNumber: channelPhoneNumber,
+    memberships: [
+      adminMembershipFactory({
+        channelPhoneNumber,
+        memberPhoneNumber: otherAdminPhoneNumbers[0],
+      }),
+      adminMembershipFactory({
+        channelPhoneNumber,
+        memberPhoneNumber: otherAdminPhoneNumbers[1],
+      }),
+    ],
+  })
 
   let resolveMemberTypeStub, trustStub, sendMessageStub, removeMemberStub, createDeauthStub
 
@@ -37,23 +50,8 @@ describe('safety numbers registrar module', () => {
     removeMemberStub = sinon.stub(membershipRepository, 'removeMember')
     createDeauthStub = sinon.stub(deauthorizationRepository, 'create')
 
-    sinon.stub(channelRepository, 'findDeep').returns(
-      Promise.resolve(
-        channelFactory({
-          phoneNumber: channelPhoneNumber,
-          memberships: [
-            adminMembershipFactory({
-              channelPhoneNumber,
-              memberPhoneNumber: otherAdminPhoneNumbers[0],
-            }),
-            adminMembershipFactory({
-              channelPhoneNumber,
-              memberPhoneNumber: otherAdminPhoneNumbers[1],
-            }),
-          ],
-        }),
-      ),
-    )
+    sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channel))
+    sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
   })
 
   afterEach(() => {
@@ -83,7 +81,7 @@ describe('safety numbers registrar module', () => {
         it('attempts to resend the original message', async () => {
           await updateFingerprint(updatableFingerprint).catch(a => a)
 
-          expect(sendMessageStub.getCall(0).args).to.eql([sdMessage])
+          expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketPoolId])
         })
 
         describe('when resending the original message succeeds', () => {
@@ -150,7 +148,7 @@ describe('safety numbers registrar module', () => {
     })
     it('resends the message', async () => {
       await updateFingerprint(updatableFingerprint)
-      expect(sendMessageStub.getCall(0).args).to.eql([sdMessage])
+      expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketPoolId])
     })
 
     it('resolves with a success status', async () => {
@@ -191,6 +189,7 @@ describe('safety numbers registrar module', () => {
               recipient: otherAdminPhoneNumbers[0],
               message: messagesIn(defaultLanguage).notifications.deauthorization(memberPhoneNumber),
             }),
+            channel.socketPoolId,
           ])
         })
 

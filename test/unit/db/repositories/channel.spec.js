@@ -253,7 +253,7 @@ describe('channel repository', () => {
 
     it('fetches all attributes and nested resources for each channel', () => {
       channels.forEach(ch => {
-        expect(keys(ch.toJSON())).to.eql([
+        expect(keys(ch.toJSON())).to.have.members([
           'phoneNumber',
           'name',
           'description',
@@ -268,6 +268,7 @@ describe('channel repository', () => {
           'memberships',
           'messageCount',
           'recycleRequest',
+          'socketPoolId',
         ])
       })
     })

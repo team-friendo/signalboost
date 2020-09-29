@@ -44,8 +44,8 @@ describe('sharding module', () => {
         .stub(channelRepository, 'getChannelsSortedBySize')
         .returns(Promise.resolve(channelsWithSizes))
       updateSocketPoolsStub = sinon
-        .stub(channelRepository, 'updateSocketPools')
-        .returns(Promise.resolve())
+        .stub(channelRepository, 'updateSocketPoolIds')
+        .returns(Promise.resolve(1))
       setGaugeStub = sinon.stub(metrics, 'setGauge').returns(undefined)
 
       await assignChannelsToSocketPools()
@@ -63,16 +63,16 @@ describe('sharding module', () => {
 
     it('records sharding results in a prometheus gauge', () => {
       expect(map(setGaugeStub.getCalls(), 'args')).to.eql([
-        [gauges.CHANNELS_IN_SOCKET_POOL, 5, 0],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 216, 0],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 6, 1],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 217, 1],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 4, 2],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 218, 2],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 4, 3],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 219, 3],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 1, 4],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 1000, 4],
+        [gauges.CHANNELS_IN_SOCKET_POOL, 5, [0]],
+        [gauges.MEMBERS_IN_SOCKET_POOL, 216, [0]],
+        [gauges.CHANNELS_IN_SOCKET_POOL, 6, [1]],
+        [gauges.MEMBERS_IN_SOCKET_POOL, 217, [1]],
+        [gauges.CHANNELS_IN_SOCKET_POOL, 4, [2]],
+        [gauges.MEMBERS_IN_SOCKET_POOL, 218, [2]],
+        [gauges.CHANNELS_IN_SOCKET_POOL, 4, [3]],
+        [gauges.MEMBERS_IN_SOCKET_POOL, 219, [3]],
+        [gauges.CHANNELS_IN_SOCKET_POOL, 1, [4]],
+        [gauges.MEMBERS_IN_SOCKET_POOL, 1000, [4]],
       ])
     })
   })

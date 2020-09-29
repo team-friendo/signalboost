@@ -35,6 +35,7 @@ const {
  *  type UpdatableFingerprint = {
  *   channelPhoneNumber: string,
  *   memberPhoneNumber: string,
+ *   socketPoolId: number,
  *   fingerprint: string,
  *   sdMessage: SdMessage,
  * }
@@ -120,8 +121,7 @@ const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
 // (Channel | null, Sender | null, SdMessage) -> Promise<function | null>
 const detectInterventions = async (channel, sender, inboundMsg) => {
   const healthcheckId = detectHealthcheck(inboundMsg)
-  if (healthcheckId)
-    return () => diagnostics.respondToHealthcheck(channel.phoneNumber, healthcheckId)
+  if (healthcheckId) return () => diagnostics.respondToHealthcheck(channel, healthcheckId)
 
   // return early from healthcheck responses to avoid infinite feedback loops!
   const isHealthcheckResponse = detectHealthcheckResponse(inboundMsg)
@@ -151,18 +151,13 @@ const relay = async (channel, sender, inboundMsg) => {
  *****************/
 
 // InboundSdMessage => void
-const logAndResendRateLimitedMessage = rateLimitedMessage => {
-  const _channelPhoneNumber = rateLimitedMessage.username
-  const resendInterval = resend.enqueueResend(rateLimitedMessage)
-  logger.log(
-    messagesIn(defaultLanguage).notifications.rateLimitOccurred(
-      _channelPhoneNumber,
-      resendInterval,
-    ),
-  )
+const logAndResendRateLimitedMessage = async rateLimitedMessage => {
+  const channelPhoneNumber = rateLimitedMessage.username
+  const socketPoolId = await channelRepository.getSocketPoolId(channelPhoneNumber)
+  const resendInterval = resend.enqueueResend(rateLimitedMessage, socketPoolId)
   metrics.incrementCounter(ERRORS, [
     resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
-    _channelPhoneNumber,
+    channelPhoneNumber,
   ])
 }
 
@@ -281,4 +276,4 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
 
 // EXPORTS
 
-module.exports = { dispatch }
+module.exports = { dispatch, detectHealthcheck, detectHealthcheckResponse }

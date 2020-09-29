@@ -43,21 +43,22 @@ const destroy = async ({ phoneNumber, sender }) => {
       await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
       logger.log(`...logged destruction of ${phoneNumber}`)
 
-      logger.log(`sending deletion notice to members of: ${phoneNumber}...`)
-      // notify members in the background
+      logger.log(`sending deletion notice to members of: ${phoneNumber} in background...`)
       notifier
         .notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED)
-        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}`))
+        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
         .catch(logger.error)
+
+      logger.log(`unsubscribing from ${phoneNumber}...`)
+      await signal.unsubscribe(phoneNumber, channel.socketPoolId)
+      logger.log(`unsubscribed from ${phoneNumber}.`)
     }
 
     logger.log(`destroying signald data for ${phoneNumber}...`)
-    await signal.unsubscribe(phoneNumber)
     await deleteSignalKeystore(phoneNumber)
-    logger.log(`destroyed signald data for ${phoneNumber}...`)
+    logger.log(`destroyed signald data for ${phoneNumber}.`)
 
     await tx.commit()
-
     return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
   } catch (err) {
     await tx.rollback()

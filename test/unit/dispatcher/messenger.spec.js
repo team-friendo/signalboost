@@ -179,6 +179,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
+          channel.socketPoolId,
         ])
 
         expect(sendMessageStub.getCall(1).args).to.eql([
@@ -188,6 +189,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
+          channel.socketPoolId,
         ])
 
         expect(sendMessageStub.getCall(2).args).to.eql([
@@ -197,6 +199,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
+          channel.socketPoolId,
         ])
 
         expect(sendMessageStub.getCall(4).args).to.eql([
@@ -206,6 +209,7 @@ describe('messenger service', () => {
             message: `[${channel.name}]\n${payload}`,
             attachments,
           }),
+          channel.socketPoolId,
         ])
       })
 
@@ -247,6 +251,7 @@ describe('messenger service', () => {
               recipient: sender.phoneNumber,
               message: response,
             }),
+            channel.socketPoolId,
           ])
         })
       })
@@ -282,6 +287,7 @@ describe('messenger service', () => {
               recipient: sender.phoneNumber,
               message: response,
             }),
+            channel.socketPoolId,
           ])
         })
 
@@ -294,6 +300,7 @@ describe('messenger service', () => {
                 message,
                 attachments,
               }),
+              channel.socketPoolId,
             ])
           })
         })
@@ -333,6 +340,7 @@ describe('messenger service', () => {
               recipient: adminSender.phoneNumber,
               message: 'yay!',
             }),
+            channel.socketPoolId,
           ])
         })
 
@@ -451,6 +459,7 @@ describe('messenger service', () => {
               message: 'foobar',
               attachments: [],
             }),
+            channel.socketPoolId,
           ])
         })
       })

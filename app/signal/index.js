@@ -94,7 +94,9 @@ const logger = loggerOf('signal')
 const run = async () => {
   logger.log(`--- Subscribing to channels...`)
   const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
-  const numListening = await Promise.all(channels.map(ch => subscribe(ch.phoneNumber)))
+  const numListening = await Promise.all(
+    channels.map(({ phoneNumber, socketPoolId }) => subscribe(phoneNumber, socketPoolId)),
+  )
   logger.log(`--- Subscribed to ${numListening.length} / ${channels.length} channels!`)
 }
 
@@ -157,11 +159,14 @@ const isAlive = () => {
 
 // (string, string || null) -> Promise<SignalboostStatus>
 const register = async (phoneNumber, captchaToken) => {
-  socketWriter.write({
-    type: messageTypes.REGISTER,
-    username: phoneNumber,
-    ...(captchaToken ? { captcha: captchaToken } : {}),
-  })
+  socketWriter.write(
+    {
+      type: messageTypes.REGISTER,
+      username: phoneNumber,
+      ...(captchaToken ? { captcha: captchaToken } : {}),
+    },
+    0,
+  )
   // Since a registration isn't meaningful without a verification code,
   // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
   // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below
@@ -181,21 +186,21 @@ const verify = (phoneNumber, code) =>
   // Its response will be picked up by the callback for the REGISTER command that triggered it.
   // Therefore, all we need to do with this response is signal to twilio whether socketWriter socketWriter.write worked.
   socketWriter
-    .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
+    .write({ type: messageTypes.VERIFY, username: phoneNumber, code }, 0)
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
-// string -> Promise<string>
-const subscribe = phoneNumber =>
-  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
+// (string, number) -> Promise<string>
+const subscribe = (phoneNumber, socketPoolId) =>
+  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber }, socketPoolId)
 
-// string -> Promise<string>
-const unsubscribe = phoneNumber =>
-  socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
+// (string, number) -> Promise<string>
+const unsubscribe = (phoneNumber, socketPoolId) =>
+  socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber }, socketPoolId)
 
-// OutboundSignaldMessage -> Promise<string>
-const sendMessage = async sdMessage => {
-  const id = await socketWriter.write(sdMessage)
+// (OutboundSignaldMessage, number) -> Promise<string>
+const sendMessage = async (sdMessage, socketPoolId) => {
+  const id = await socketWriter.write(sdMessage, socketPoolId)
   callbacks.register({
     id,
     messageType: messageTypes.SEND,
@@ -210,6 +215,7 @@ const sendMessage = async sdMessage => {
 }
 
 const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
+  // TODO: needs socketPoolId
   socketWriter.write({
     type: messageTypes.SET_EXPIRATION,
     username: channelPhoneNumber,

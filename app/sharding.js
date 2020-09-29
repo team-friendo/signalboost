@@ -7,6 +7,7 @@ const {
   socket: { availablePools },
 } = require('./config')
 
+// () => Promise<Array<number>>
 const assignChannelsToSocketPools = async () => {
   // Get channels along with their member counts, sorted in descending order by member count
   const channelsWithSizes = await channelRepository.getChannelsSortedBySize()

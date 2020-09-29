@@ -115,6 +115,7 @@ const respond = ({ channel, message, sender, command }) => {
   return signal
     .sendMessage(
       sdMessageOf({ sender: channel.phoneNumber, recipient: sender.phoneNumber, message }),
+      channel.socketPoolId,
     )
     .then(async () => {
       // Don't count INFO commands from sysadmins. Why?
@@ -138,6 +139,7 @@ const sendNotifications = (channel, notifications, delay = 0) => {
     notifications.map(({ recipient, message, attachments = [] }) => () =>
       signal.sendMessage(
         sdMessageOf({ sender: channel.phoneNumber, recipient, message, attachments }),
+        channel.socketPoolId,
       ),
     ),
     delay,
