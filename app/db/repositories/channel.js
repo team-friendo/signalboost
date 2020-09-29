@@ -117,6 +117,11 @@ const updateSocketPoolIds = async (channelPhoneNumbers, socketPoolId) =>
     { where: { phoneNumber: { [Op.in]: channelPhoneNumbers } } },
   )
 
+const getSocketPoolId = async channelPhoneNumber => {
+  const channel = await findByPhoneNumber(channelPhoneNumber)
+  return channel && channel.socketPoolId
+}
+
 // () => Promise<Channel>
 const getDiagnosticsChannel = async () => {
   if (!diagnosticsPhoneNumber) return null
@@ -171,6 +176,7 @@ module.exports = {
   getMemberPhoneNumbers,
   getMembersExcept,
   getMemberPhoneNumbersExcept,
+  getSocketPoolId,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
   isMaintainer,
