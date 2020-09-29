@@ -105,4 +105,4 @@ describe('utility module', () => {
       expect(fn.callCount).to.eql(2)
     })
   })
-g})
+})
