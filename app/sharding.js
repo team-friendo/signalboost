@@ -13,11 +13,11 @@ const assignChannelsToSocketPools = async () => {
   // Distribute channels as evenly as possible by member count across available socket pools
   const channelsInBuckets = groupEvenlyBySize(channelsWithSizes, availablePools)
   // Create socket pool assignments (and log them so maintainers can create more pools if needed)
-  await Promise.all(
+  return Promise.all(
     channelsInBuckets.map(({ channelPhoneNumbers, memberCount }, idx) => {
-      metrics.setGauge(gauges.CHANNELS_IN_SOCKET_POOL, channelPhoneNumbers.length, idx)
-      metrics.setGauge(gauges.MEMBERS_IN_SOCKET_POOL, memberCount, idx)
-      return channelRepository.updateSocketPools(channelPhoneNumbers, idx)
+      metrics.setGauge(gauges.CHANNELS_IN_SOCKET_POOL, channelPhoneNumbers.length, [idx])
+      metrics.setGauge(gauges.MEMBERS_IN_SOCKET_POOL, memberCount, [idx])
+      return channelRepository.updateSocketPoolIds(channelPhoneNumbers, idx)
     }),
   )
 }

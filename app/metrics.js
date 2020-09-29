@@ -79,7 +79,7 @@ const run = () => {
       labelNames: ['socketPoolIndex'],
     }),
     [g.MEMBERS_IN_SOCKET_POOL]: new prometheus.Gauge({
-      name: 'channels_in_socket_pool',
+      name: 'members_in_socket_pool',
       help: 'Number of channel members in a given socket pool shard',
       registers: [register],
       labelNames: ['socketPoolIndex'],
