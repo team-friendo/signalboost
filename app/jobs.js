@@ -5,6 +5,7 @@ const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const diagnostics = require('./diagnostics')
 const util = require('./util')
+const sharding = require('./sharding')
 const { values } = require('lodash')
 const {
   job: { healthcheckInterval, inviteDeletionInterval, recycleInterval, signaldStartupTime },
@@ -23,6 +24,11 @@ const run = async () => {
   /******************
    * ONE-OFF JOBS
    *****************/
+
+  logger.log('----- Assigning channels to socket pool shards...')
+  // TODO: `sharding` should probably be `sockets`
+  await sharding.assignChannelsToSocketPools()
+  logger.log('----- Assigned channels to socket pool shards!')
 
   if (process.env.REREGISTER_ON_STARTUP === '1') {
     logger.log('----- Registering phone numbers...')
