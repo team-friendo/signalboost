@@ -38,39 +38,53 @@ export default () => (
       <p>Test Channel +1-123-555-5555, +1-123-555-5555</p>
     </blockquote>
     <p>
-      You will receive a welcome message from your new channel phone number as
-      soon as your channel is created.
+      This channel is staffed by the Signalboost sysadmins, and we will get to
+      your request as soon as possible.
     </p>
     <p>
-      You can write our helpline with questions or a request for a more in-depth
-      training, and we'll get back to you asap!
+      You will receive a welcome message from your new channel phone number as
+      soon as your channel is created:
     </p>
+    <blockquote className="command blockquote-skinny">
+      <p>
+        You were just made an admin of the Signalboost channel [Your Channel
+        Name] by the Signalboost system administrator. Welcome!
+      </p>
+      <p>
+        For easy access, add this phone number (+11235555555) to your contacts
+        as [Your Channel Name]. People can subscribe to this channel by sending
+        HELLO to +11235555555 and unsubscribe by sending GOODBYE. To see a full
+        list of commands, send HELP or check out our how-to guide:
+        https://signalboost.info/how-to.
+      </p>
+    </blockquote>
     <h3 className="getting-started-header">
-      4. Get subscribers and send announcements
+      4. Build an audience (or keep things under wraps)
     </h3>
     <p>
-      Now, any anyone who sends "HELLO" to your channel number will get
-      announcements you send out!
+      In order to receive announcements or send in hotline messages, people need
+      to subscribe to your channel phone number.
     </p>
-    <h2>Signalboost Guide</h2>
     <p>
-      A Signalboost channel is a phone number that keeps track of admins and
-      subscribers. Any time an admin sends a message to the channel, it is
-      interpreted as a command or a broadcast. If admins send a broadcast, all
-      of the subscribers will see it, but Signalboost will route the broadcast
-      so that it appears as if coming from the channel phone number.
+      If you'd like a larger audience, you can post your channel phone number on
+      social media. Anyone who sends <span className="command">HELLO</span> will
+      be subscribed.
+    </p>
+    <p>
+      If you're concerned about security and want to keep your messages more
+      private, only share your channel phone number with trusted friends, or
+      consider using <Link to="/how-to#vouching">vouching</Link>.
+    </p>
+    <h2 className="guide-header">Signalboost Guide</h2>
+    <p>
+      Here's a more comprehensive guide to all of the features Signalboost
+      offers.
     </p>
     <p>
       People have described Signalboost as "BCC, but for messaging," "secure SMS
       blasts," and "Celly, but over Signal."{' '}
     </p>
-    <h3>Commands & languages</h3>
-    <p>
-      A command is a word or phrase sent as a Signal message that Signalboost
-      will interpret as an instruction. Some commands can only be used by
-      admins. If you're unsure which command to use, the HELP command is a great
-      place to start.
-    </p>
+    <h3>Languages</h3>
     <p>
       Signalboost currently supports{' '}
       <span className="purple">English, Spanish, French, and German</span>. To
@@ -159,6 +173,21 @@ export default () => (
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
     </p>
+    <h4 id="invite" className="anchor">
+      INVITE +1-555-555-5555
+    </h4>
+    <p>
+      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
+      the phone number with a + and country code!
+    </p>
+    <p>
+      Multiple invites can be sent by listing phone numbers separated by commas:
+    </p>
+    <p>
+      <blockquote className="command blockquote">
+        INVITE +1-555-555-5555, +1-333-333-3333
+      </blockquote>
+    </p>
     <h4 id="rename" className="anchor">
       RENAME new name
     </h4>
@@ -196,21 +225,6 @@ export default () => (
       <span className="command">VOUCHING ADMIN</span>: this means that an invite
       from an *admin* is required to join the channel. If other people try to
       send invites, they will be prevented from doing so.
-    </p>
-    <h4 id="invite" className="anchor">
-      INVITE +1-555-555-5555
-    </h4>
-    <p>
-      Invites +1-555-555-5555 to subscribe to the channel. Remember to preface
-      the phone number with a + and country code!
-    </p>
-    <p>
-      Multiple invites can be sent by listing phone numbers separated by commas:
-    </p>
-    <p>
-      <blockquote className="command blockquote">
-        INVITE +1-555-555-5555, +1-333-333-3333
-      </blockquote>
     </p>
     <h4 id="vouch-level" className="anchor">
       VOUCH LEVEL level

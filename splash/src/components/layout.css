@@ -685,6 +685,11 @@ pre tt:after {
 .getting-started-header {
   font-size: 20px;
 }
+
+.guide-header {
+  margin-top: 100px;
+}
+
 .download-signal-link {
   color: #ff79c6;
   text-decoration: underline;
@@ -701,7 +706,6 @@ pre tt:after {
 .command.blockquote {
   padding: 15px!important;
 }
-
 
 .command.blockquote-skinny {
   padding: 15px!important;
