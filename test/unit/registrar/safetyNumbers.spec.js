@@ -21,7 +21,11 @@ describe('safety numbers registrar module', () => {
   const otherAdminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   const fingerprint =
     '05 45 8d 63 1c c4 14 55 bf 6d 24 9f ec cb af f5 8d e4 c8 d2 78 43 3c 74 8d 52 61 c4 4a e7 2c 3d 53 '
-  const sdMessage = sdMessageOf({ phoneNumber: channelPhoneNumber }, 'Good morning!')
+  const sdMessage = sdMessageOf({
+    sender: channelPhoneNumber,
+    recipient: memberPhoneNumber,
+    message: 'Good morning!',
+  })
   const updatableFingerprint = { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage }
 
   let resolveMemberTypeStub, trustStub, sendMessageStub, removeMemberStub, createDeauthStub
@@ -79,7 +83,7 @@ describe('safety numbers registrar module', () => {
         it('attempts to resend the original message', async () => {
           await updateFingerprint(updatableFingerprint).catch(a => a)
 
-          expect(sendMessageStub.getCall(0).args).to.eql([memberPhoneNumber, sdMessage])
+          expect(sendMessageStub.getCall(0).args).to.eql([sdMessage])
         })
 
         describe('when resending the original message succeeds', () => {
@@ -146,7 +150,7 @@ describe('safety numbers registrar module', () => {
     })
     it('resends the message', async () => {
       await updateFingerprint(updatableFingerprint)
-      expect(sendMessageStub.getCall(0).args).to.eql([memberPhoneNumber, sdMessage])
+      expect(sendMessageStub.getCall(0).args).to.eql([sdMessage])
     })
 
     it('resolves with a success status', async () => {
@@ -182,11 +186,11 @@ describe('safety numbers registrar module', () => {
           await updateFingerprint(updatableFingerprint).catch(a => a)
           expect(sendMessageStub.callCount).to.eql(2)
           expect(sendMessageStub.getCall(0).args).to.eql([
-            otherAdminPhoneNumbers[0],
-            sdMessageOf(
-              { phoneNumber: channelPhoneNumber },
-              messagesIn(defaultLanguage).notifications.deauthorization(memberPhoneNumber),
-            ),
+            sdMessageOf({
+              sender: channelPhoneNumber,
+              recipient: otherAdminPhoneNumbers[0],
+              message: messagesIn(defaultLanguage).notifications.deauthorization(memberPhoneNumber),
+            }),
           ])
         })
 

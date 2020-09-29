@@ -29,10 +29,18 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
-const sdMessageOf = (channel, messageBody) => ({
+// ({ sender: string, recipient?: string, message: string, attachments: Array<SignaldOutboundAttachment> | null }) => SignaldOutboundMessage
+// `sender` and `recipient` are both e164 phone numbers
+const sdMessageOf = ({ sender, recipient, message, attachments }) => ({
   type: messageTypes.SEND,
-  username: channel.phoneNumber,
-  messageBody,
+  username: sender,
+  recipientAddress: { number: recipient },
+  messageBody: message,
+  attachments: attachments || [],
 })
 
-module.exports = { messageTypes, trustLevels, sdMessageOf }
+const sdRecipientAddressOf = number => ({
+  number,
+})
+
+module.exports = { messageTypes, trustLevels, sdMessageOf, sdRecipientAddressOf }

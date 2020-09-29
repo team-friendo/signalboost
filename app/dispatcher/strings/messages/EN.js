@@ -7,7 +7,7 @@ const {
   signal: { maxVouchLevel },
 } = require('../../../config')
 
-const systemName = 'the signalboost system administrator'
+const systemName = 'the Signalboost system administrator'
 const notAdmin =
   'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
 const notSubscriber =
@@ -44,6 +44,11 @@ Learn more: https://signalboost.info`
 const validPhoneNumberHint = `Phone numbers must include country codes prefixed by a '+'.`
 
 const parseErrors = {
+  unnecessaryPayload: command =>
+    `Sorry, that command was not recognized. Did you mean to use "${command}"? 
+
+Send HELP for a list of all valid commands and how to use them.`,
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" is not a valid phone number. ${validPhoneNumberHint}`,
 
@@ -83,6 +88,11 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     invalidPhoneNumber,
   },
 
+  // BROADCAST
+  broadcast: {
+    notAdmin,
+  },
+
   // DECLINE
 
   decline: {
@@ -118,29 +128,32 @@ INFO
 
 ----------------------------------------------
 
+BROADCAST hello everyone / ! hello everyone
+-> broadcasts "hello everyone" to all the subscribers of this channel
+
+REPLY #1312
+-> sends private reply to [HOTLINE #1312]
+
+INVITE +1-555-555-5555, +1-444-444-4444
+-> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to this channel
+
+ADD +1-555-555-5555
+-> adds +1-555-555-5555 as an admin of the channel
+
+PRIVATE good evening admins
+-> sends private message "good evening admins" to all admins of the channel
+
 RENAME new name
 -> renames channel to "new name"
 
 DESCRIPTION description of channel
 -> adds or updates public description of channel
 
-INVITE +1-555-555-5555, +1-444-444-4444
--> invites +1-555-555-5555 and +1-444-444-4444 to subscribe to the channel
-
-ADD +1-555-555-5555
--> adds +1-555-555-5555 as an admin of the channel
-
-REMOVE +1-555-555-5555
--> removes +1-555-555-5555 from the channel
+ESPAÑOL / FRANÇAIS / DEUTSCH
+-> switches language to Spanish, French or German
 
 HOTLINE ON / OFF
 -> enables or disables hotline
-
-REPLY #1312
--> sends private reply to [HOTLINE #1312]
-
-PRIVATE good evening admins
--> sends private message "good evening admins" to all admins of the channel
 
 VOUCHING ON / OFF / ADMIN 
 -> toggles vouching on/off. When ON, people must be invited to join the channel. When ADMIN, only admins can send those invites.
@@ -148,8 +161,8 @@ VOUCHING ON / OFF / ADMIN
 VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
 
-ESPAÑOL / FRANÇAIS / DEUTSCH
--> switches language to Spanish, French or German
+REMOVE +1-555-555-5555
+-> removes +1-555-555-5555 from the channel
 
 GOODBYE
 -> leaves this channel
@@ -266,7 +279,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // LEAVE
-
   leave: {
     success: `You've been removed from the channel! Bye!`,
     error: `Whoops! There was an error removing you from the channel. Please try again!`,
@@ -281,7 +293,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // REMOVE
-
   remove: {
     success: num => `${num} was removed.`,
     notAdmin,
@@ -291,7 +302,6 @@ If you already have an invite, try sending ACCEPT`,
   },
 
   // RENAME
-
   rename: {
     success: (oldName, newName) =>
       `[${newName}]
@@ -314,9 +324,9 @@ Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Tr
   // SET_LANGUAGE
 
   setLanguage: {
-    success: `I will talk to you in English now! 
+    success: `Your channel language is now set to English! 
     
-Send HELP to list commands I understand.`,
+Send HELP to list commands you can use.`,
     dbError: 'Whoops! Failed to store your language preference. Please try again!',
   },
 
@@ -384,6 +394,12 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
     success: newDescription => `Channel description changed to "${newDescription}".`,
     dbError: `Whoops! There was an error changing the channel description. Try again!`,
     notAdmin,
+  },
+
+  // NONE
+  none: {
+    error:
+      'Did you mean to prefix your message with BROADCAST? Send HELP to see a list of all commands.',
   },
 }
 
@@ -485,7 +501,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!
 
-For easy access, add this phone number (${channelPhoneNumber}) to your contacts as ${channelName}. People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
+For easy access, add this phone number (${channelPhoneNumber}) to your contacts as [${channelName}]. People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
 
 
 To see a full list of commands, send HELP or check out our how-to guide: https://signalboost.info/how-to.`,

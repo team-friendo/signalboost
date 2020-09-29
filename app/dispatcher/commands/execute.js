@@ -1,6 +1,5 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
-const messenger = require('../messenger')
 const channelRepository = require('../../db/repositories/channel')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
 const eventRepository = require('../../db/repositories/event')
@@ -12,10 +11,14 @@ const signal = require('../../signal')
 const logger = require('../logger')
 const { defaultLanguage } = require('../../config')
 const { get, isEmpty, uniq } = require('lodash')
-const { getAllAdminsExcept, getAdminMemberships } = require('../../db/repositories/channel')
+const {
+  getAllAdminsExcept,
+  getAdminMemberships,
+  getSubscriberMemberships,
+} = require('../../db/repositories/channel')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
-const { ADMIN, NONE } = memberTypes
+const { ADMIN, SUBSCRIBER, NONE } = memberTypes
 
 /**
  *
@@ -24,8 +27,7 @@ const { ADMIN, NONE } = memberTypes
  *   payload: string,
  *   status: string,
  *   message: string,
- *   notifications: Array<{ recipient: Array<string>, message: string }>
- * }
+ *   notifications: Array<{ recipient: string, message: string, attachments: Array<signal.OutboundSignaldAttachment> }>
  *
  * type Toggle = toggles.HOTLINE
  **/
@@ -55,6 +57,7 @@ const execute = async (executable, dispatchable) => {
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, sdMessage, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
@@ -68,14 +71,14 @@ const execute = async (executable, dispatchable) => {
     [commands.PRIVATE]: () => maybePrivateMessageAdmins(channel, sender, payload, sdMessage),
     [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
-    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, payload),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
     [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
     [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
     [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-  }[command] || (() => noop()))()
+  }[command] || (() => handleNoCommand(channel, sender, sdMessage)))()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
@@ -168,36 +171,68 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
   ]
 }
 
+// BROADCAST
+const maybeBroadcastMessage = (channel, sender, sdMessage, payload) => {
+  const cr = messagesIn(sender.language).commandResponses.broadcast
+  if (sender.type !== ADMIN)
+    return Promise.resolve({
+      status: statuses.UNAUTHORIZED,
+      message: cr.notAdmin,
+      notifications: [],
+    })
+
+  return {
+    status: statuses.SUCCESS,
+    message: '',
+    notifications: broadcastNotificationsOf(channel, sender, sdMessage, payload),
+  }
+}
+
+const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
+  const adminMemberships = getAdminMemberships(channel)
+  const subscriberMemberships = getSubscriberMemberships(channel)
+
+  const adminMessagePrefix = language => messagesIn(language).prefixes.broadcastMessage
+  const adminNotifications = adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${adminMessagePrefix(membership.language)}]\n${messageBody}`,
+    attachments,
+  }))
+
+  const subscriberNotifications = subscriberMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${channel.name}]\n${messageBody}`,
+    attachments,
+  }))
+
+  return [...adminNotifications, ...subscriberNotifications]
+}
+
 // PRIVATE
 const maybePrivateMessageAdmins = async (channel, sender, payload, sdMessage) => {
   const cr = messagesIn(sender.language).commandResponses.private
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
+  try {
+    return {
+      status: statuses.SUCCESS,
+      notifications: privateMessageNotificationsOf(channel, sender, payload, sdMessage),
+    }
+  } catch (e) {
+    return { status: statuses.ERROR, message: cr.signalError }
+  }
+}
 
-  // [TODO|aguestuser] the messsage sending side-effect should not happen here...
-  //  - it should live in messenger.dispatch
-  //  - we should return enough information to recognize it as different message type
-  //    or provide the message as a notification as a normal command response
-  //  - no other function in `execute` sends messages and none should. this breaks an otherwise
-  //    clean interface boundary and violates separation of concers
-  //  - sorry i missed it CR!
-  return Promise.all(
-    getAdminMemberships(channel).map(admin => {
-      return signal.sendMessage(
-        admin.memberPhoneNumber,
-        messenger.addHeader({
-          channel,
-          sdMessage: { ...sdMessage, messageBody: payload },
-          messageType: messenger.messageTypes.PRIVATE_MESSAGE,
-          language: admin.language,
-          memberType: admin.type,
-        }),
-      )
-    }),
-  )
-    .then(() => ({ status: statuses.SUCCESS }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.signalError }))
+const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
+  const adminMemberships = getAdminMemberships(channel)
+  const prefix = language => messagesIn(language).prefixes.privateMessage
+
+  return adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `[${prefix(membership.language)}]\n${payload}`,
+    attachments: sdMessage.attachments,
+  }))
 }
 
 // DECLINE
@@ -501,15 +536,15 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
 
 // REPLY
 
-const maybeReplyToHotlineMessage = (channel, sender, hotlineReply) => {
+const maybeReplyToHotlineMessage = (channel, sender, { attachments }, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-  return replyToHotlineMessage(channel, sender, hotlineReply, cr)
+  return replyToHotlineMessage(channel, sender, attachments, hotlineReply, cr)
 }
 
-const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
+const replyToHotlineMessage = async (channel, sender, attachments, hotlineReply, cr) => {
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineReply.messageId,
@@ -528,6 +563,7 @@ const replyToHotlineMessage = async (channel, sender, hotlineReply, cr) => {
         hotlineReply,
         memberPhoneNumber,
         language,
+        attachments,
       ),
     }
   } catch (e) {
@@ -544,6 +580,7 @@ const hotlineReplyNotificationsOf = (
   hotlineReply,
   memberPhoneNumber,
   language,
+  attachments,
 ) => [
   {
     recipient: memberPhoneNumber,
@@ -551,10 +588,12 @@ const hotlineReplyNotificationsOf = (
       hotlineReply,
       memberTypes.SUBSCRIBER,
     ),
+    attachments,
   },
-  ...getAllAdminsExcept(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
+  ...getAdminMemberships(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
     recipient: memberPhoneNumber,
     message: messagesIn(language).notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    attachments,
   })),
 ]
 
@@ -712,14 +751,55 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
   }))
 }
 
-// NOOP
-const noop = () =>
-  Promise.resolve({ command: commands.NOOP, status: statuses.NOOP, message: '', notifications: [] })
+// NONE
+const handleNoCommand = async (channel, sender, sdMessage) => {
+  // if sender was an admin, give them a helpful error message
+  if (sender.type === ADMIN)
+    return Promise.resolve({
+      message: messagesIn(sender.language).commandResponses.none.error,
+      status: statuses.ERROR,
+      notifications: [],
+    })
+
+  // if hotline is on, return a response & notifications
+  // if hotline is off, return a response & UNAUTHORIZED
+  if (channel.hotlineOn) {
+    return {
+      message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+      status: statuses.SUCCESS,
+      notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
+    }
+  } else {
+    return {
+      message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(
+        sender.type === SUBSCRIBER,
+      ),
+      status: statuses.UNAUTHORIZED,
+      notifications: [],
+    }
+  }
+}
+
+const hotlineNotificationsOf = async (channel, sender, { messageBody, attachments }) => {
+  const adminMemberships = await channelRepository.getAdminMemberships(channel)
+
+  const messageId = await hotlineMessageRepository.getMessageId({
+    channelPhoneNumber: channel.phoneNumber,
+    memberPhoneNumber: sender.phoneNumber,
+  })
+
+  const prefix = language => `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
+
+  return adminMemberships.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: `${prefix(sender.language)}${messageBody}`,
+    attachments: attachments,
+  }))
+}
 
 /**********
  * HELPERS
  **********/
-
 const logAndReturn = (err, statusTuple) => {
   // TODO(@zig): add prometheus error count here (counter: db_error)
   logger.error(err)

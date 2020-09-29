@@ -98,8 +98,20 @@ export default () => (
     </p>
     <h3>How do I broadcast a message?</h3>
     <p>
-      If you are a channel admin (i.e., the person who requested the channel),
-      simply send a message to your channel phone number to broadcast. Here's a{' '}
+      If you're an admin, use the <span className="command">BROADCAST</span>{' '}
+      command or the <span className="command">!</span> shortcut to broadcast a
+      message to all the members of a channel:
+    </p>
+    <p>
+      <blockquote className="command blockquote">
+        BROADCAST Hello everyone! Community Meeting at 6pm this evening.
+      </blockquote>
+      <blockquote className="command blockquote">
+        ! Hello everyone! Community Meeting at 6pm this evening.
+      </blockquote>
+    </p>
+    <p>
+      Here's a{' '}
       <a href="https://www.instagram.com/p/CB4RjYBjp7i/">short video</a> of what
       that looks like.
     </p>

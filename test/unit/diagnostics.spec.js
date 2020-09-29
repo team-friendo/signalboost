@@ -79,8 +79,11 @@ describe('diagnostics module', () => {
       await respondToHealthcheck(channelPhoneNumbers[0], '1312')
       expect(sendMessageStub.callCount).to.eql(1)
       expect(sendMessageStub.getCall(0).args).to.eql([
-        diagnosticsPhoneNumber,
-        sdMessageOf({ phoneNumber: channelPhoneNumbers[0] }, `healthcheck_response 1312`),
+        sdMessageOf({
+          sender: channelPhoneNumbers[0],
+          recipient: diagnosticsPhoneNumber,
+          message: `healthcheck_response 1312`,
+        }),
       ])
     })
   })

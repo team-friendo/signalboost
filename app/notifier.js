@@ -43,10 +43,11 @@ const _notifyMany = ({ channel, recipients, notificationKey, message }) =>
   sequence(
     recipients.map(recipient => () =>
       signal.sendMessage(
-        recipient.memberPhoneNumber,
-        message
-          ? sdMessageOf(channel, message)
-          : sdMessageOf(channel, messagesIn(recipient.language).notifications[notificationKey]),
+        sdMessageOf({
+          sender: channel.phoneNumber,
+          recipient: recipient.memberPhoneNumber,
+          message: message || messagesIn(recipient.language).notifications[notificationKey],
+        }),
       ),
     ),
   )

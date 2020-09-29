@@ -1,36 +1,30 @@
 const signal = require('../signal')
 const channelRepository = require('../db/repositories/channel')
 const messageCountRepository = require('../db/repositories/messageCount')
-const hotlineMessageRepository = require('../db/repositories/hotlineMessage')
-const { messagesIn } = require('./strings/messages')
 const { sdMessageOf } = require('../signal/constants')
-const { memberTypes } = require('../db/repositories/membership')
 const { values, isEmpty } = require('lodash')
 const { commands } = require('./commands/constants')
 const { statuses } = require('../util')
-const { wait, sequence, batchesOfN } = require('../util')
+const { wait, sequence } = require('../util')
 const { loggerOf } = require('../util')
 const logger = loggerOf('messenger')
 const metrics = require('../metrics')
 const { counters } = metrics
 const {
-  signal: { setExpiryInterval, broadcastBatchSize, broadcastBatchInterval },
+  signal: { setExpiryInterval, attachmentSendDelay },
 } = require('../config')
 
 /**
- * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'SIGNUP_MESSAGE' | 'COMMAND'
+ * type MessageType = 'BROADCAST_MESSAGE' | 'HOTLINE_MESSAGE' | 'COMMAND'
  */
 
 const messageTypes = {
   BROADCAST_MESSAGE: 'BROADCAST_MESSAGE',
   HOTLINE_MESSAGE: 'HOTLINE_MESSAGE',
   COMMAND: 'COMMAND',
-  PRIVATE_MESSAGE: 'PRIVATE_MESSAGE',
 }
 
-const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND, PRIVATE_MESSAGE } = messageTypes
-
-const { ADMIN } = memberTypes
+const { BROADCAST_MESSAGE, HOTLINE_MESSAGE, COMMAND } = messageTypes
 
 /***************
  * DISPATCHING
@@ -38,8 +32,9 @@ const { ADMIN } = memberTypes
 
 // (CommandResult, Dispatchable) -> Promise<void>
 const dispatch = async ({ commandResult, dispatchable }) => {
-  const messageType = parseMessageType(commandResult, dispatchable)
+  const messageType = parseMessageType(commandResult)
   const channelPhoneNumber = dispatchable.channel.phoneNumber
+
   switch (messageType) {
     case BROADCAST_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
@@ -47,14 +42,14 @@ const dispatch = async ({ commandResult, dispatchable }) => {
         BROADCAST_MESSAGE,
         null,
       ])
-      return broadcast(dispatchable)
+      return broadcast({ commandResult, dispatchable })
     case HOTLINE_MESSAGE:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
         channelPhoneNumber,
         HOTLINE_MESSAGE,
         null,
       ])
-      return handleHotlineMessage(dispatchable)
+      return handleHotlineMessage({ commandResult, dispatchable })
     case COMMAND:
       metrics.incrementCounter(counters.SIGNALBOOST_MESSAGES, [
         channelPhoneNumber,
@@ -68,31 +63,25 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 }
 
 // (CommandResult, Dispatchable) -> MessageType
-const parseMessageType = (commandResult, { sender }) => {
-  if (commandResult.status === statuses.NOOP) {
-    if (sender.type === ADMIN) return BROADCAST_MESSAGE
-    return HOTLINE_MESSAGE
-  }
+const parseMessageType = ({ command, status }) => {
+  if (command === commands.NONE && status === statuses.SUCCESS) return HOTLINE_MESSAGE
+  if (command === commands.BROADCAST && status === statuses.SUCCESS) return BROADCAST_MESSAGE
+
   return COMMAND
 }
 
-const handleHotlineMessage = dispatchable => {
-  const {
-    channel: { hotlineOn },
-    sender: { language, type },
-  } = dispatchable
-  const disabledMessage = messagesIn(language).notifications.hotlineMessagesDisabled(
-    type === memberTypes.SUBSCRIBER,
-  )
-  return hotlineOn
-    ? relayHotlineMessage(dispatchable)
-    : respond({ ...dispatchable, status: statuses.UNAUTHORIZED, message: disabledMessage })
+const handleHotlineMessage = async ({ commandResult, dispatchable }) => {
+  await handleCommandResult({ commandResult, dispatchable })
+  return messageCountRepository.countHotline(dispatchable.channel)
 }
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
-  const { command, message, status } = commandResult
-  await respond({ ...dispatchable, message, command, status })
-  await sendNotifications({ commandResult, dispatchable })
+  const { command, message, notifications, status } = commandResult
+  // We don't respond to REPLY or PRIVATE commands b/c their senders receive notifications instead.
+  // Rationale: these commands are more like relayable messages than they are actual commands.
+  if (![commands.REPLY, commands.PRIVATE].includes(command))
+    await respond({ ...dispatchable, message, command, status })
+  if (status === statuses.SUCCESS) await sendNotifications(dispatchable.channel, notifications)
   await wait(setExpiryInterval) // to ensure welcome notification arrives first
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })
   return Promise.resolve()
@@ -103,113 +92,55 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
  ************/
 
 // Dispatchable -> Promise<MessageCount>
-const broadcast = async ({ channel, sdMessage }) => {
-  const recipients = channel.memberships
+const broadcast = async ({ commandResult, dispatchable }) => {
+  const { channel, sdMessage } = dispatchable
+  const { notifications } = commandResult
 
   try {
-    if (isEmpty(sdMessage.attachments)) {
-      await sequence(
-        recipients.map(recipient => () =>
-          signal.sendMessage(
-            recipient.memberPhoneNumber,
-            addHeader({
-              channel,
-              sdMessage,
-              messageType: BROADCAST_MESSAGE,
-              language: recipient.language,
-              memberType: recipient.type,
-            }),
-          ),
-        ),
-      )
-    } else {
-      const recipientBatches = batchesOfN(recipients, broadcastBatchSize)
-      await sequence(
-        recipientBatches.map(recipientBatch => {
-          recipientBatch.map(recipient => {
-            signal.broadcastMessage(
-              [recipient.memberPhoneNumber],
-              addHeader({
-                channel,
-                sdMessage,
-                messageType: BROADCAST_MESSAGE,
-                language: recipient.language,
-                memberType: recipient.type,
-              }),
-            )
-          })
-        }),
-        broadcastBatchInterval,
-      )
-    }
+    const delay = isEmpty(sdMessage.attachments) ? 0 : attachmentSendDelay
+    await sendNotifications(channel, notifications, delay)
     return messageCountRepository.countBroadcast(channel)
   } catch (e) {
     logger.error(e)
   }
 }
 
-// Dispatchable -> Promise<void>
-const relayHotlineMessage = async ({ channel, sender, sdMessage }) => {
-  const { language } = sender
-  const recipients = channelRepository.getAdminMemberships(channel)
-  const response = messagesIn(language).notifications.hotlineMessageSent(channel)
+// (Database, Socket, Channel, string, Sender) -> Promise<void>
+const respond = ({ channel, message, sender, command }) => {
+  // because respond doesn't handle attachments, don't want to repeat message here
+  return signal
+    .sendMessage(
+      sdMessageOf({ sender: channel.phoneNumber, recipient: sender.phoneNumber, message }),
+    )
+    .then(async () => {
+      // Don't count INFO commands from sysadmins. Why?
+      // Sysadmins ping channels with INFO as an informal health checks very frequently.
+      // Counting these pings would prevent us from detecting stale channels for recycling, which
+      // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
+      const shouldCount = !(
+        command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
+      )
+      return shouldCount && messageCountRepository.countCommand(channel)
+    })
+}
 
-  const messageId = await hotlineMessageRepository.getMessageId({
-    channelPhoneNumber: channel.phoneNumber,
-    memberPhoneNumber: sender.phoneNumber,
-  })
-
-  await Promise.all(
-    recipients.map(recipient =>
+// ({ CommandResult, Dispatchable )) -> Promise<Array<string>>
+const sendNotifications = (channel, notifications, delay = 0) => {
+  // NOTE: we would prefer to send batched messages in parallel, but send them in sequence
+  // to work around concurrency bugs in signald that cause significant lags / crashes
+  // when trying to handle messages sent in parallel. At such time as we fix those bugs
+  // we would like to call `Promise.all` here and launch all the writes at once!
+  return sequence(
+    notifications.map(({ recipient, message, attachments = [] }) => () =>
       signal.sendMessage(
-        recipient.memberPhoneNumber,
-        addHeader({
-          channel,
-          sdMessage,
-          messageType: HOTLINE_MESSAGE,
-          language: recipient.language,
-          messageId,
-        }),
+        sdMessageOf({ sender: channel.phoneNumber, recipient, message, attachments }),
       ),
     ),
+    delay,
   )
-
-  return signal
-    .sendMessage(sender.phoneNumber, sdMessageOf(channel, response))
-    .then(() => messageCountRepository.countHotline(channel))
 }
 
-// (Database, Socket, Channel, string, Sender) -> Promise<void>
-const respond = ({ channel, message, sender, command, status }) => {
-  // FIX: PRIVATE command sends out all messages including to sender
-  // because respond doesn't handle attachments, don't want to repeat message here
-  if (command === commands.PRIVATE && status === statuses.SUCCESS) return
-  return signal.sendMessage(sender.phoneNumber, sdMessageOf(channel, message)).then(async () => {
-    // Don't count INFO commands from sysadmins. Why?
-    // Sysadmins ping channels with INFO as an informal health checks very frequently.
-    // Counting these pings would prevent us from detecting stale channels for recycling, which
-    // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
-    const shouldCount = !(
-      command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
-    )
-    return shouldCount && messageCountRepository.countCommand(channel)
-  })
-}
-
-// ({ CommandResult, Dispatchable )) -> Promise<SignalboostStatus>
-const sendNotifications = ({ commandResult, dispatchable }) => {
-  const { channel } = dispatchable
-  const { status, notifications } = commandResult
-
-  return status === statuses.SUCCESS
-    ? Promise.all(notifications.map(notification => notify({ channel, notification })))
-    : Promise.resolve([])
-}
-
-// ({Socket, Channel, Notification}) -> Promise<void>
-const notify = ({ channel, notification }) =>
-  signal.sendMessage(notification.recipient, sdMessageOf(channel, notification.message))
-
+// ({ Channel, Notification }) -> Promise<void>
 // ({ CommandResult, Dispatchable }) -> Promise<void>
 const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   // for newly added users, make sure disappearing message timer
@@ -243,35 +174,12 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
   }
 }
 
-/**********
- * HELPERS
- **********/
-
-/* { Channel, string, string, string, string } -> OutboundSignaldMessage */
-const addHeader = ({ channel, sdMessage, messageType, language, memberType, messageId }) => {
-  let prefix
-  if (messageType === HOTLINE_MESSAGE) {
-    prefix = `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
-  } else if (messageType === BROADCAST_MESSAGE) {
-    if (memberType === 'ADMIN') {
-      prefix = `[${messagesIn(language).prefixes.broadcastMessage}]\n`
-    } else {
-      prefix = `[${channel.name}]\n`
-    }
-  } else if (messageType === PRIVATE_MESSAGE) {
-    prefix = `[${messagesIn(language).prefixes.privateMessage}]\n`
-  }
-
-  return { ...sdMessage, messageBody: `${prefix}${sdMessage.messageBody}` }
-}
-
 module.exports = {
   messageTypes,
   /**********/
   broadcast,
+  sendNotifications,
   dispatch,
-  addHeader,
   parseMessageType,
   respond,
-  notify,
 }

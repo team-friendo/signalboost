@@ -43,6 +43,14 @@ Para más información: https://signalboost.info`
 const validPhoneNumberHint = `Los números de teléfono deben incluir códigos del país con el prefijo '+'.`
 
 const parseErrors = {
+  missingCommand:
+    '¿Quería prefijar su mensaje con TRANSMITIR? Envíe AYUDA para ver una lista de todos los comandos..',
+
+  unnecessaryPayload: command =>
+    `Lo siento, ese comando no fue reconocido. ¿Querías usar ${command}?
+
+Envíe AYUDA para obtener una lista de todos los comandos válidos y cómo usarlos.`,
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" no es un número de teléfono válido. ${validPhoneNumberHint}`,
 
@@ -86,6 +94,11 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
       `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
   },
 
+  // BROADCAST
+  broadcast: {
+    notAdmin,
+  },
+
   // DECLINE
 
   decline: {
@@ -124,11 +137,11 @@ INFO
 
 ----------------------------------------------
 
-RENOMBRAR nuevo nombre
--> cambia el nombre del canal a "nuevo nombre"
+TRANSMITIR hola a todos / ! hola a todos 
+-> transmite "hola a todos" a todos los suscriptores de este canal
 
-DESCRIPCIÓN descripción del canal
--> agrega o actualiza la descripción pública del canal
+RESPONDER #1312
+-> envía una respuesta privada a [LÍNEA DIRECTA #1312]
 
 INVITAR +1-555-555-5555, +1-444-444-4444
 -> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
@@ -136,17 +149,20 @@ INVITAR +1-555-555-5555, +1-444-444-4444
 AGREGAR + 1-555-555-5555
 -> agrega + 1-555-555-5555 como admin de este canal
 
-QUITAR + 1-555-555-5555
--> quita + 1-555-555-5555 del canal
+PRIVADO buenas noches, admins
+-> envía un mensaje privado "buenas noches, admins" a todos los administradores del canal
+
+RENOMBRAR nuevo nombre
+-> cambia el nombre del canal a "nuevo nombre"
+
+DESCRIPCIÓN descripción del canal
+-> agrega o actualiza la descripción pública del canal
+
+ENGLISH / FRANÇAIS / DEUTSCH
+-> cambia idiomas a Inglés, Francés o Alemán
 
 LÍNEA DIRECTA ACTIVADA / DESACTIVADA
 -> habilita o deshabilita mensajes anónimos a los admins
-
-RESPONDER #1312
--> envía una respuesta privada a [LÍNEA DIRECTA #1312]
-
-PRIVADO buenas noches, admins
--> envía un mensaje privado "buenas noches, admins" a todos los administradores del canal
 
 ATESTIGUANDO ACTIVADA / ADMIN / DESACTIVADA
 -> activa / desactiva atestiguando. Cuando está ACTIVADA, se debe invitar a las personas a unirse al canal. Cuando ADMIN, solo los administradores pueden enviar esas invitaciones.
@@ -154,8 +170,8 @@ ATESTIGUANDO ACTIVADA / ADMIN / DESACTIVADA
 NIVEL DE ATESTIGUAR nivel
 -> cambia el numero de invitaciónes requeridos para unirse a este canal 
 
-ENGLISH / FRANÇAIS / DEUTSCH
--> cambia idiomas a Inglés, Francés o Alemán
+QUITAR + 1-555-555-5555
+-> quita + 1-555-555-5555 del canal
 
 ADIÓS
 -> le saca del canal
@@ -396,6 +412,12 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
     success: newDescription => `La descripción del canal cambió a "${newDescription}".`,
     dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtelo de nuevo!`,
     notAdmin,
+  },
+
+  // NONE
+  none: {
+    error:
+      '¿Querías prefijar tu mensaje con TRANSMITIR? Envíe AYUDA para ver una lista de todos los comandos.',
   },
 }
 

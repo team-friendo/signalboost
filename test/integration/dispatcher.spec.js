@@ -7,7 +7,7 @@ import db from '../../app/db'
 import socket from '../../app/socket/write'
 import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
-import { times } from 'lodash'
+import { times, map, flatten } from 'lodash'
 import { wait } from '../../app/util'
 import {
   adminMembershipFactory,
@@ -19,8 +19,9 @@ import { languages } from '../../app/language'
 import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 
 describe('dispatcher service', () => {
-  const socketDelay = 200
+  const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
+  const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
@@ -73,7 +74,7 @@ describe('dispatcher service', () => {
   after(async () => await app.stop())
 
   describe('dispatching a broadcast message', () => {
-    beforeEach(async () => {
+    beforeEach(async function() {
       await createChannelWithMembers()
       readSock.emit(
         'data',
@@ -86,47 +87,48 @@ describe('dispatcher service', () => {
             },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              body: 'foobar',
+              body: '! foobar',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
       )
       // wait longer b/c we send broadcast messages in sequence
-      await wait(4 * socketDelay)
+      this.timeout(12 * socketDelay)
+      await wait(6 * socketDelay)
     })
 
     it('relays the message to all admins and subscribers', () => {
-      const messages = times(4, n => writeStub.getCall(n)).map(call => call.args[0])
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[BROADCAST]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[0].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[1].memberPhoneNumber },
           messageBody: `[${channel.name}]\nfoobar`,
-          attachments: [],
+          attachments,
         },
       ])
     })
@@ -147,7 +149,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'a screaming came across the sky',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -155,22 +157,32 @@ describe('dispatcher service', () => {
       await wait(2 * socketDelay)
     })
 
-    it('relays the hotline message to all admins', () => {
-      const messages = times(2, n => writeStub.getCall(n)).map(c => c.args[0])
+    it('responds to the sender and relays the hotline message to all admins', () => {
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
+        {
+          messageBody:
+            'Your message was forwarded to the admins of [#red-alert].\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
+          recipientAddress: {
+            number: randoPhoneNumber,
+          },
+          type: 'send',
+          username: channel.phoneNumber,
+          attachments: [],
+        },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
-          attachments: [],
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[HOTLINE #1]\na screaming came across the sky`,
-          attachments: [],
+          attachments,
         },
       ])
     })
@@ -190,7 +202,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'HELLO',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -215,6 +227,7 @@ describe('dispatcher service', () => {
         recipientAddress: { number: randoPhoneNumber },
         type: 'send',
         username: channel.phoneNumber,
+        attachments: [],
       })
     })
   })
@@ -235,7 +248,7 @@ describe('dispatcher service', () => {
               timestamp: new Date().toISOString(),
               body: 'REPLY #1 it has happened before but there is nothing to compare it to now',
               expiresInSeconds: channel.messageExpiryTime,
-              attachments: [],
+              attachments,
             },
           },
         }),
@@ -244,25 +257,71 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline reply to hotline message sender and all admins', () => {
-      const messages = times(3, n => writeStub.getCall(n)).map(c => c.args[0])
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
       expect(messages).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: randoPhoneNumber },
           messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
+        },
+      ])
+    })
+  })
+
+  describe('dispatching a PRIVATE message', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      readSock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: { number: admins[0].memberPhoneNumber },
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              body: 'PRIVATE There was a wall. It did not look important.',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments,
+            },
+          },
+        }),
+      )
+      await wait(2 * socketDelay)
+    })
+
+    it('relays the private message to all admins', () => {
+      const messages = flatten(map(writeStub.getCalls(), 'args'))
+      expect(messages).to.have.deep.members([
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
+          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          attachments,
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
+          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          attachments,
         },
       ])
     })

@@ -4,7 +4,6 @@ const phoneNumberRepository = require('../db/repositories/phoneNumber')
 const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
-const messenger = require('../dispatcher/messenger')
 const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
@@ -15,22 +14,17 @@ const logger = loggerOf()
 const {
   signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval, supportPhoneNumber },
 } = require('../config')
+const { sdMessageOf } = require('../signal/constants')
 
 // ({ Database, Socket, string, string }) -> Promise<SignalboostStatus>
 const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   await membershipRepository.addAdmin(channelPhoneNumber, adminPhoneNumber)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
-  await messenger.notify({
-    channel,
-    notification: {
-      message: _welcomeNotificationOf(channel),
-      recipient: adminPhoneNumber,
-    },
-  })
-  return {
-    status: sbStatuses.SUCCESS,
-    message: _welcomeNotificationOf(channel),
-  }
+  const message = _welcomeNotificationOf(channel)
+  await signal.sendMessage(
+    sdMessageOf({ sender: channelPhoneNumber, recipient: adminPhoneNumber, message }),
+  )
+  return { status: sbStatuses.SUCCESS, message }
 }
 
 /* ({ phoneNumber: string, name: string, admins: Array<string> }) => Promise<ChannelStatus> */
@@ -66,13 +60,13 @@ const create = async ({ phoneNumber, name, admins }) => {
 const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
   Promise.all(
     adminPhoneNumbers.map(async adminPhoneNumber => {
-      await messenger.notify({
-        channel,
-        notification: {
+      await signal.sendMessage(
+        sdMessageOf({
+          sender: channel.phoneNumber,
           recipient: adminPhoneNumber,
           message: _welcomeNotificationOf(channel),
-        },
-      })
+        }),
+      )
       await wait(setExpiryInterval)
       await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
     }),
@@ -89,13 +83,13 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
         supportChannel.phoneNumber,
         adminPhoneNumber,
       )
-      await messenger.notify({
-        channel: supportChannel,
-        notification: {
+      await signal.sendMessage(
+        sdMessageOf({
+          sender: supportChannel.phoneNumber,
           recipient: adminPhoneNumber,
-          message: messagesIn(defaultLanguage).notifications.inviteReceived(supportChannel.name),
-        },
-      })
+          message: _welcomeNotificationOf(supportChannel),
+        }),
+      )
     }),
   )
 }
@@ -133,4 +127,5 @@ module.exports = {
   create,
   addAdmin,
   list,
+  _welcomeNotificationOf,
 }

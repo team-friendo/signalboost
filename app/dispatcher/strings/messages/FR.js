@@ -44,6 +44,14 @@ Pour plus de renseignements: https://signalboost.info`
 const validPhoneNumberHint = `Les numéros de téléphone doivent comprendre l’indicatifs téléphonique du pays précédé par un «+».`
 
 const parseErrors = {
+  missingCommand:
+    'Vouliez-vous préfixer votre message avec DIFFUSER? Envoyez AIDE pour voir une liste de toutes les commandes.',
+
+  unnecessaryPayload: command =>
+    `Désolé, la commande n'a pas été reconnue. Vouliez-vous utiliser ${command}?
+
+Envoyez une aide pour obtenir une liste de toutes les commandes valides et comment les utiliser.`,
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" n’est pas un numéro de téléphone valide. ${validPhoneNumberHint}`,
 
@@ -89,6 +97,11 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     invalidPhoneNumber,
   },
 
+  // BROADCAST
+  broadcast: {
+    notAdmin,
+  },
+
   // DECLINE
 
   decline: {
@@ -124,11 +137,11 @@ INFO
 
 ----------------------------------------------
 
-RENOMMER nouveau nom
--> Renommer le canal en “nouveau nom”
+DIFFUSER bonjour à tous / ! bonjour à tous
+-> diffuse "bonjour à tous" à tous les abonnés de cette chaîne
 
-DESCRIPTION description du canal
--> Ajouter ou mettre à jour la description publique du canal
+RÉPONDRE #1312
+-> Envoie une réponse privée à [HOTLINE #1312]
 
 INVITE +33612345678, +336187654321
 -> Inviter +33612345678 et +336187654321 à s’inscrire au canal
@@ -136,17 +149,20 @@ INVITE +33612345678, +336187654321
 AJOUTER +33612345678
 -> Ajouter +33612345678 en tant qu'admin du canal
 
-SUPPRIMER +33612345678
--> Supprimer +33612345678 del canal
+PRIVÉ bonsoir, admins
+-> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
+
+RENOMMER nouveau nom
+-> Renommer le canal en “nouveau nom”
+
+DESCRIPTION description du canal
+-> Ajouter ou mettre à jour la description publique du canal
+
+ESPAÑOL / ENGLISH / DEUTSCH
+-> Changer la langue pour l'espagnol, l'anglais ou l'allemand
 
 HOTLINE ON / OFF
 -> Activer ou désactiver la hotline
-
-RÉPONDRE #1312
--> Envoie une réponse privée à [HOTLINE #1312]
-
-PRIVÉ bonsoir, admins
--> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
 
 SE PORTER GARANT ON / OFF / ADMIN
 -> active / désactive l'activation de se porter garant. Lorsque cette option est ON, les personnes doivent être invitées à rejoindre la chaîne. Lorsque ADMIN, seuls les administrateurs peuvent envoyer ces invitations.
@@ -154,8 +170,8 @@ SE PORTER GARANT ON / OFF / ADMIN
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
 
-ESPAÑOL / ENGLISH / DEUTSCH
--> Changer la langue pour l'espagnol, l'anglais ou l'allemand
+SUPPRIMER +33612345678
+-> Supprimer +33612345678 del canal
 
 AUREVOIR
 -> Se désabonner du canal
@@ -399,6 +415,12 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
     success: newDescription => `La description du canal a été remplacée par "${newDescription}".`,
     dbError: `Oups! Une erreur s'est produite lors du changement de la description du canal. Veuillez essayer à nouveau!`,
     notAdmin,
+  },
+
+  // NONE
+  none: {
+    error:
+      'Vouliez-vous préfixer votre message avec DIFFUSER? Envoyez AIDE pour voir une liste de toutes les commandes.',
   },
 }
 

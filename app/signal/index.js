@@ -6,7 +6,7 @@ const { messages, messageTypes, trustLevels } = require('./constants')
 const util = require('../util')
 const { statuses, loggerOf } = util
 const {
-  signal: { diagnosticsPhoneNumber, broadcastSpacing },
+  signal: { diagnosticsPhoneNumber },
 } = require('../config')
 
 /**
@@ -173,10 +173,9 @@ const subscribe = phoneNumber =>
 const unsubscribe = phoneNumber =>
   socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
 
-// (string, OutboundSignaldMessage) -> Promise<string>
-const sendMessage = async (recipientNumber, sdMessage) => {
-  const recipientAddress = { number: recipientNumber }
-  const id = await socketWriter.write({ ...sdMessage, recipientAddress })
+// OutboundSignaldMessage -> Promise<string>
+const sendMessage = async sdMessage => {
+  const id = await socketWriter.write(sdMessage)
   callbacks.register({
     id,
     messageType: messageTypes.SEND,
@@ -189,17 +188,6 @@ const sendMessage = async (recipientNumber, sdMessage) => {
   })
   return id
 }
-
-// (Array<string>, OutboundSignaldMessage) -> Promise<Array<string>>
-const broadcastMessage = (recipientNumbers, outboundMessage) =>
-  // NOTE: we would prefer to broadcast messages in parallel, but send them in sequence
-  // to work around concurrency bugs in signald that cause significant lags / crashes
-  // when trying to handle messages sent in parallel. At such time as we fix those bugs
-  // we would like to call `Promise.all` here and launch all the writes at once!
-  util.sequence(
-    recipientNumbers.map(recipientNumber => () => sendMessage(recipientNumber, outboundMessage)),
-    broadcastSpacing,
-  )
 
 const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
   socketWriter.write({
@@ -228,6 +216,10 @@ const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
 
 // InboundMessage|ResendRequest -> OutboundMessage
 const parseOutboundSdMessage = inboundSdMessage => {
+  // handles both (1) inbound messages (of type "message") and (2) outbound messages (of type "send")
+  // - for (1) it will flip the recipient "username" field into a sender "username" field, ignore the
+  //   sourceAddress field, and set `recipientAddress` to undefined (b/c it was absent in inbound msg)
+  // - for (2) it will maintain cardinality of sender/recipient, and restore recipientAddress to orginal value
   const {
     recipientAddress,
     data: { username, dataMessage },
@@ -273,7 +265,6 @@ module.exports = {
   messages,
   messageTypes,
   trustLevels,
-  broadcastMessage,
   healthcheck,
   parseOutboundSdMessage,
   parseOutboundAttachment,

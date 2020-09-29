@@ -41,7 +41,7 @@ const enqueueResend = inSdMessage => {
 
 const _resendAfter = async (outSdMessage, resendInterval) => {
   await wait(resendInterval)
-  signal.sendMessage(outSdMessage.recipientAddress.number, outSdMessage)
+  signal.sendMessage(outSdMessage)
 }
 
 // SdMessage -> string

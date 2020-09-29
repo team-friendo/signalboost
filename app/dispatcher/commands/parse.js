@@ -1,6 +1,6 @@
 const { map, flattenDeep, isEmpty, get } = require('lodash')
 const { commandsByLanguage } = require('../strings/commands')
-const { commands } = require('./constants')
+const { commands, parseErrorTypes } = require('./constants')
 const validator = require('../../db/validations')
 const { messagesIn } = require('../strings/messages')
 const {
@@ -24,9 +24,10 @@ const {
  * }
  *
  * type ParseError = {
- *   command: string,
+ *   command: string | null,
  *   payload: string,
  *   error: string,
+ *   type: parseErrorType
  * }
  *
  * type CommandMatch = {
@@ -45,9 +46,10 @@ const {
 
 // string -> ParseExecutableResult
 const parseExecutable = msg => {
-  const { command, language, error, matches } = findCommandMatch(msg) || {}
+  const { command, language, matches, error, type } = findCommandMatch(msg) || {}
   const payload = !isEmpty(matches) ? matches[2] : ''
-  return error ? { command, payload, error } : { command, payload, language }
+
+  return error ? { command, payload, error, type } : { command, payload, language }
 }
 
 // string -> CommandMatch
@@ -71,11 +73,12 @@ const findCommandMatch = msg => {
 
 // Array<CommandMatch> -> CommandMatch
 const pickLongestMatch = matchResults => {
-  // filter out empty matches, and return NOOP if none found
+  // filter out empty matches, and return NONE if none found
   // return the longest match (so that, eg, INVITER will get preference over INVITE)
   const hits = matchResults.filter(({ matches }) => !isEmpty(matches))
+
   return isEmpty(hits)
-    ? { command: commands.NOOP, language: defaultLanguage }
+    ? { command: commands.NONE, language: defaultLanguage }
     : hits.sort((a, b) => b.matches[1].length - a.matches[1].length)[0]
 }
 
@@ -111,12 +114,17 @@ const validatePayload = commandMatch => {
   }
 }
 
-// CommandMatch -> CommandMatch
+// CommandMatch -> CommandMatch | parseError
 const validateNoPayload = commandMatch => {
-  // substitutes a NOOP command (signaling a broadcast message) if payload found for a no-payload command
-  // so that (e.g) "hello everyone on the channel!" is not interpreted as a command
-  const { language, matches } = commandMatch
-  return isEmpty(matches[2]) ? commandMatch : { command: commands.NOOP, language, matches: [] }
+  // returns an INVALID_PAYLOAD parseError if a payload is found for a non-payload command
+  const { language, matches, command } = commandMatch
+  return isEmpty(matches[2])
+    ? commandMatch
+    : {
+        command,
+        error: messagesIn(language).parseErrors.unnecessaryPayload(matches[1]),
+        type: parseErrorTypes.INVALID_PAYLOAD,
+      }
 }
 
 // CommandMatch -> CommandMatch | ParseError
@@ -131,7 +139,11 @@ const validatePhoneNumber = commandMatch => {
   const { phoneNumber } = validator.parseValidPhoneNumber(rawPhoneNumber)
 
   return !phoneNumber
-    ? { command, matches, error: parseErrors.invalidPhoneNumber(rawPhoneNumber) }
+    ? {
+        command,
+        error: parseErrors.invalidPhoneNumber(rawPhoneNumber),
+        type: parseErrorTypes.INVALID_PAYLOAD,
+      }
     : { command, language, matches: [...matches.slice(0, 2), phoneNumber] }
 }
 
@@ -145,10 +157,20 @@ const validatePhoneNumberList = commandMatch => {
   const invalidNumbers = parsedPhoneNumbers.filter(pn => !pn.phoneNumber).map(pn => pn.input)
 
   if (invalidNumbers.length > 1) {
-    return { command, matches, error: parseErrors.invalidPhoneNumbers(invalidNumbers) }
+    return {
+      command,
+      payload: rawPhoneNumbers,
+      error: parseErrors.invalidPhoneNumbers(invalidNumbers),
+      type: parseErrorTypes.INVALID_PAYLOAD,
+    }
   }
   if (invalidNumbers.length === 1) {
-    return { command, matches, error: parseErrors.invalidPhoneNumber(invalidNumbers[0]) }
+    return {
+      command,
+      payload: rawPhoneNumbers,
+      error: parseErrors.invalidPhoneNumber(invalidNumbers[0]),
+      type: parseErrorTypes.INVALID_PAYLOAD,
+    }
   }
   return {
     command,
@@ -167,7 +189,12 @@ const validateVouchLevel = commandMatch => {
     Number.isInteger(vouchLevel) && vouchLevel > 0 && vouchLevel <= maxVouchLevel
 
   return !isValidVouchLevel
-    ? { command, matches, error: parseErrors.invalidVouchLevel(matches[2]) }
+    ? {
+        command,
+        matches,
+        error: parseErrors.invalidVouchLevel(matches[2]),
+        type: parseErrorTypes.INVALID_PAYLOAD,
+      }
     : commandMatch
 }
 
@@ -180,7 +207,12 @@ const validateMessageId = commandMatch => {
   const validationMatches = new RegExp(`^#(\\d+)([^]*)`, 'i').exec(payload.trim())
 
   return isEmpty(validationMatches)
-    ? { command, matches, error: parseErrors.invalidHotlineMessageId(payload) }
+    ? {
+        command,
+        matches,
+        error: parseErrors.invalidHotlineMessageId(payload),
+        type: parseErrorTypes.INVALID_PAYLOAD,
+      }
     : {
         ...commandMatch,
         matches: [

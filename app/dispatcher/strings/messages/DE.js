@@ -44,6 +44,14 @@ const validPhoneNumberHint =
   'Telefonnummern müssen mit Ländercodes und einem vorangestellten ' + ' beginnen`'
 
 const parseErrors = {
+  missingCommand:
+    'Did you mean to prefix your message with SENDEN? Send HILFE to see a list of all commands.',
+
+  unnecessaryPayload: command =>
+    `Sorry, dieser Befehl wurde nicht erkannt. Wollten Sie ${command} verwenden?
+
+Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
+
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" ist keine gültige Telefonnummer. ${validPhoneNumberHint}`,
 
@@ -85,6 +93,11 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     invalidPhoneNumber,
   },
 
+  // BROADCAST
+  broadcast: {
+    notAdmin,
+  },
+
   // DECLINE
 
   decline: {
@@ -120,11 +133,11 @@ INFO
 
 ----------------------------------------------
 
-UMBENENNEN neuer name
--> Benennt den Kanal in "neuer name" um
+SENDEN hallo an alle / ! hallo an alle
+-> sendet "hallo an alle" an alle Abonnenten dieses Kanals
 
-BESCHREIBUNG beschreibung des kanals
--> Fügt eine öffentliche Beschreibung des Kanals hinzu oder erneuert diese
+ANTWORTEN #1312
+-> Sendet eine private Antwort an [HOTLINE #1312]
 
 EINLADEN +491701234567, +491707654321
 -> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
@@ -132,17 +145,21 @@ EINLADEN +491701234567, +491707654321
 HINZUFÜGEN +491701234567
 -> Fügt +491701234567 als Admin des Kanals hinzu
 
-ENTFERNEN +491701234567
--> Entfernt +491701234567 aus dem Kanal
+PRIVAT Guten Abend, Admins
+-> Dendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
+
+UMBENENNEN neuer name
+-> Benennt den Kanal in "neuer name" um
+
+BESCHREIBUNG beschreibung des kanals
+-> Fügt eine öffentliche Beschreibung des Kanals hinzu oder erneuert diese
+
+
+ESPAÑOL / FRANÇAIS / ENGLISH
+-> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
 
 HOTLINE AN / AUS
 -> Schaltet die Hotline Funktion an oder aus
-
-ANTWORTEN #1312
--> Sendet eine private Antwort an [HOTLINE #1312]
-
-PRIVAT Guten Abend, Admins
--> Dendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
 
 VERTRAUEN AN / AUS / ADMIN
 -> Schaltet die Gutscheine EIN / AUS. Wenn EIN, müssen Personen eingeladen werden, dem Kanal beizutreten. Bei ADMIN können nur Administratoren diese Einladungen senden.
@@ -150,11 +167,11 @@ VERTRAUEN AN / AUS / ADMIN
 VERTRAUENS-LEVEL level
 -> Verändert die Zahl der benötigten Einladungen um dem Kanal beitreten zu können
 
-ESPAÑOL / FRANÇAIS / ENGLISH
--> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
-
 TSCHÜSS
 -> Entfernt dich aus diesem Kanal
+
+ENTFERNEN +491701234567
+-> Entfernt +491701234567 aus dem Kanal
 
 VERNICHTEN
 -> Löscht den Kanal und alle zugehörigen Daten unwiderruflich`,
@@ -393,6 +410,12 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
     success: newDescription => `Beschreibung des Kanals wurde geändert zu "${newDescription}".`,
     dbError: `Oups! Es gab einen Fehler beim Versuch die Beschreibung des Kanals zu ändern. Versuchs nochmal!`,
     notAdmin,
+  },
+
+  // NONE
+  none: {
+    error:
+      'Wollten Sie Ihrer Nachricht SENDEN voranstellen? Senden Sie HILFE, um eine Liste aller Befehle anzuzeigen.',
   },
 }
 

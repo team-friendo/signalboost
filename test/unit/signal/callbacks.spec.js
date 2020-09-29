@@ -308,7 +308,10 @@ describe('callback registry', () => {
               channelPhoneNumber,
               memberPhoneNumber,
               fingerprint,
-              sdMessage: sdMessageOf({ phoneNumber: channelPhoneNumber }, messageBody),
+              sdMessage: sdMessageOf({
+                sender: channelPhoneNumber,
+                message: messageBody,
+              }),
             },
           ])
         })
