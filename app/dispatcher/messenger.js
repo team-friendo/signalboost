@@ -65,7 +65,7 @@ const dispatch = async ({ commandResult, dispatchable }) => {
 // (CommandResult, Dispatchable) -> MessageType
 const parseMessageType = ({ command, status }) => {
   if (command === commands.NONE && status === statuses.SUCCESS) return HOTLINE_MESSAGE
-  if (command === commands.BROADCAST) return BROADCAST_MESSAGE
+  if (command === commands.BROADCAST && status === statuses.SUCCESS) return BROADCAST_MESSAGE
 
   return COMMAND
 }
