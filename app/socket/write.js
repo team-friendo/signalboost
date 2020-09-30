@@ -4,6 +4,10 @@ const { emphasize, redact } = util
 const metrics = require('../metrics')
 const { statuses, promisifyCallback } = require('../util')
 const logger = util.loggerOf('socket.write')
+const {
+  counters: { SIGNALD_MESSAGES },
+  messageDirection: { OUTBOUND },
+} = metrics
 
 // object -> Promise<void>
 const write = data => {
@@ -18,13 +22,12 @@ const write = data => {
           promisifyCallback(
             () => {
               app.socketPool.release(sock)
-
               logger.debug(emphasize(redact(msg)))
-              metrics.incrementCounter(metrics.counters.SIGNALD_MESSAGES, [
-                data.type,
-                data.username,
-                metrics.messageDirection.OUTBOUND,
-              ])
+
+              const type = (data.messageBody || '').includes('healthcheck')
+                ? 'healthcheck'
+                : data.type
+              metrics.incrementCounter(SIGNALD_MESSAGES, [type, data.username, OUTBOUND])
 
               return resolve(id)
             },
