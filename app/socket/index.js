@@ -2,15 +2,16 @@ const { createPool } = require('generic-pool')
 const net = require('net')
 const fs = require('fs-extra')
 const dispatcher = require('../dispatcher')
+const { times } = require('lodash')
 const { wait, loggerOf } = require('../util.js')
 const {
-  socket: { connectionInterval, maxConnectionAttempts, poolSize },
+  socket: { connectionInterval, maxConnectionAttempts, poolSize, availablePools },
 } = require('../config')
 
 // CONSTANTS
 
 const logger = loggerOf('socket')
-const SIGNALD_SOCKET_PATH = '/var/run/signald/signald.sock'
+const signaldSocketDir = '/var/run/signald-sockets'
 const messages = {
   error: {
     socketTimeout: 'Maximum signald connection attempts exceeded.',
@@ -22,10 +23,14 @@ const messages = {
 
 // () => Promise<Pool>
 const run = async () => {
-  logger.log('Initializing socket pool...')
-  const pool = await socketPoolOf({ create: getSocketConnection, destroy: sock => sock.destroy() })
-  logger.log(`...initialized pool of ${pool.size} sockets.`)
-  return pool
+  logger.log('Initializing socket pools...')
+  const pools = await Promise.all(
+    times(availablePools, idx =>
+      socketPoolOf({ create: () => getSocketConnection(idx), destroy: sock => sock.destroy() }),
+    ),
+  )
+  logger.log(`...initialized ${pools.length} pools of ${pools[0].size} sockets.`)
+  return pools
 }
 
 /* ({ create: () => Socket, destroy: () => void}) -> Promise<void> */
@@ -36,23 +41,24 @@ const socketPoolOf = async ({ create, destroy }) => {
   return pool
 }
 
-// number -> Promise<Socket>
-const getSocketConnection = async (attempts = 0) => {
-  if (!(await fs.pathExists(SIGNALD_SOCKET_PATH))) {
+// (number, number) -> Promise<Socket>
+const getSocketConnection = async (idx, attempts = 0) => {
+  const socketFilePath = `${signaldSocketDir}/${idx}/signald.sock`
+  if (!(await fs.pathExists(socketFilePath))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
     } else {
-      return wait(connectionInterval).then(() => getSocketConnection(attempts + 1))
+      return wait(connectionInterval).then(() => getSocketConnection(idx, attempts + 1))
     }
   } else {
-    return connect()
+    return connect(socketFilePath)
   }
 }
 
-// () -> Promise<Socket>
-const connect = () => {
+// (string) -> Promise<Socket>
+const connect = socketFilePath => {
   try {
-    const sock = net.createConnection(SIGNALD_SOCKET_PATH)
+    const sock = net.createConnection(socketFilePath)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
     sock.on('data', msg => dispatcher.dispatch(msg).catch(logger.error))

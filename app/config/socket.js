@@ -2,7 +2,7 @@ const defaults = {
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
   poolSize: 1,
-  availablePools: 12,
+  availablePools: 10,
   subscribersPerSocket: 1000,
   tierThresholds: [1000, 250, 125, 50, 0],
 }
@@ -17,8 +17,12 @@ const test = {
   tierThresholds: [250, 100, 50, 0],
 }
 
+const development = {
+  availablePools: 5,
+}
+
 module.exports = {
-  development: defaults,
+  development,
   test,
   production: defaults,
 }

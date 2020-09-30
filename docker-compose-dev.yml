@@ -21,23 +21,13 @@ version: '3.4'
 
 x-signald-defaults: &signald-defaults
   image: registry.0xacab.org/team-friendo/signalboost/signald
-  container_name: signalboost_signald
   env_file: .env.dev
   environment:
     SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
   networks:
     - default
-  expose:
-    - 1312
-  ports:
-    - 9010:9010
   restart: unless-stopped
 
-x-signald-default-volumes: &signald-default-volumes
-  - ./bin:/signalboost/bin
-  - ./signald/jmx:/var/lib/jmx
-  - ./backups:/backups
-  - signal_data:/var/lib/signald/data
 
 # NOTE:
 #
@@ -62,11 +52,15 @@ networks:
 volumes:
 
   postgres_data:
-  signal_sock:
-  signal_data:
   prometheus_data:
   grafana_data:
-  signal
+  signal_data:
+  sibnald_socks:
+  signald_sock_0:
+  signald_sock_1:
+  signald_sock_2:
+  signald_sock_3:
+  signald_sock_4:
 
 services:
 
@@ -79,63 +73,93 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     restart: always
 
-  signald-0:
+  signald_0:
     <<: *signald-defaults
+    container_name: signalboost_signald_0
     environment:
       METRICS_PORT: 5000
     expose:
       - 5000
+    # TODO: DRY up volume lists with multiple files as per:
+    # https://stackoverflow.com/questions/61178058/docker-compose-merge-arrays-for-yaml-aliases-and-anchors
     volumes:
-      - *signald-default-volumes
-      - signal_sock_0:/var/run/signald/
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+      - signal_data:/var/lib/signald/data
+      - signald_sock_0:/var/run/signald/
 
-  signald-1:
+  signald_1:
     <<: *signald-defaults
+    container_name: signalboost_signald_1
     environment:
       METRICS_PORT: 5001
     expose:
       - 5001
     volumes:
-      - *signald-default-volumes
-      - signal_sock_1:/var/run/signald/
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+      - signal_data:/var/lib/signald/data
+      # this is the only part that changes
+      - signald_sock_1:/var/run/signald/
 
-  signald-2:
+
+  signald_2:
     <<: *signald-defaults
+    container_name: signalboost_signald_2
     environment:
       METRICS_PORT: 5002
     expose:
       - 5002
     volumes:
-      - *signald-default-volumes
-      - signal_sock_2:/var/run/signald/
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+      - signal_data:/var/lib/signald/data
+      # this is the only part that changes
+      - signald_sock_2:/var/run/signald/
 
-  signald-3:
+  signald_3:
     <<: *signald-defaults
+    container_name: signalboost_signald_3
     environment:
       METRICS_PORT: 5003
     expose:
       - 5003
     volumes:
-      - *signald-default-volumes
-      - signal_sock_3:/var/run/signald/
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+      - signal_data:/var/lib/signald/data
+      # this is the only part that changes
+      - signald_sock_3:/var/run/signald/
 
-  signald-4:
+  signald_4:
     <<: *signald-defaults
+    container_name: signalboost_signald_4
     environment:
       METRICS_PORT: 5004
     expose:
       - 5004
     volumes:
-      - *signald-default-volumes
-      - signal_sock_4:/var/run/signald/
-
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+      - signal_data:/var/lib/signald/data
+      # this is the only part that changes
+      - signald_sock_4:/var/run/signald/
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: signalboost_app
     depends_on:
       - db
-      - signald
+      - signald_0
+      - signald_1
+      - signald_2
+      - signald_3
+      - signald_4
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env.dev
     environment:
@@ -157,11 +181,11 @@ services:
       - signal_data:/var/lib/signald/data
       - ./yarn.lock:/signalboost/yarn.lock
       - /var/run/docker.sock:/var/run/docker.sock
-      - signal_sock_0:/var/run/signald/0
-      - signal_sock_1:/var/run/signald/1
-      - signal_sock_2:/var/run/signald/2
-      - signal_sock_3:/var/run/signald/3
-      - signal_sock_4:/var/run/signald/4
+      - signald_sock_0:/var/run/signald-sockets/0
+      - signald_sock_1:/var/run/signald-sockets/1
+      - signald_sock_2:/var/run/signald-sockets/2
+      - signald_sock_3:/var/run/signald-sockets/3
+      - signald_sock_4:/var/run/signald-sockets/4
     restart: always
 
   ngrok:

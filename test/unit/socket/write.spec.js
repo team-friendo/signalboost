@@ -15,23 +15,23 @@ describe('writing to a socket', () => {
     sinon.stub(util, 'genUuid').returns('acab')
     await app.run({
       ...testApp,
-      socketPool: {
+      socketPools: {
         run: () =>
-          Promise.resolve(
+          Promise.all([
             socketPoolOf({
               create: () => Promise.resolve({ write: writeStub }),
               destroy: () => Promise.resolve(),
             }),
-          ),
+          ]),
       },
     })
-    acquireSpy = sinon.spy(app.socketPool, 'acquire')
-    releaseSpy = sinon.spy(app.socketPool, 'release')
+    acquireSpy = sinon.spy(app.socketPools[0], 'acquire')
+    releaseSpy = sinon.spy(app.socketPools[0], 'release')
   })
   afterEach(() => sinon.restore())
 
   it('acquires a socket from the pool, writes a signald-encoded message to it and releases it', async () => {
-    await write({ foo: 'bar' })
+    await write({ foo: 'bar' }, 0)
     expect(acquireSpy.callCount).to.eql(1)
     expect(writeStub.getCall(0).args[0]).to.eql('{"foo":"bar","id":"acab"}\n')
     expect(releaseSpy.callCount).to.eql(1)

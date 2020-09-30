@@ -105,7 +105,7 @@ const run = async () => {
  ******************/
 
 // string -> Promise<number>
-const healthcheck = async channelPhoneNumber => {
+const healthcheck = async (channelPhoneNumber, socketPoolId) => {
   // - sends a message from the diagnostics channel to a user channel to see if the user channel is alive.
   //   message is in the form: `healthcheck <uuid>`
   // - the user channel signals aliveness in `dispatcher.command.execute` by echoing
@@ -116,12 +116,15 @@ const healthcheck = async channelPhoneNumber => {
   //   (1) the response time (in seconds) of the healthcheck
   ///  (2) -1 if the the healthcheck timed out
   const id = util.genUuid()
-  socketWriter.write({
-    type: messageTypes.SEND,
-    username: diagnosticsPhoneNumber,
-    messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
-    recipientAddress: { number: channelPhoneNumber },
-  })
+  socketWriter.write(
+    {
+      type: messageTypes.SEND,
+      username: diagnosticsPhoneNumber,
+      messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
+      recipientAddress: { number: channelPhoneNumber },
+    },
+    socketPoolId,
+  )
   return new Promise((resolve, reject) =>
     callbacks.register({
       messageType: messageTypes.HEALTHCHECK,

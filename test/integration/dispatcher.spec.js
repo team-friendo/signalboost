@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
@@ -7,7 +7,7 @@ import db from '../../app/db'
 import socket from '../../app/socket/write'
 import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
-import { times, map, flatten } from 'lodash'
+import { map, flatten, times } from 'lodash'
 import { wait } from '../../app/util'
 import {
   adminMembershipFactory,
@@ -19,18 +19,19 @@ import { languages } from '../../app/language'
 import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 
 describe('dispatcher service', () => {
+  const socketPoolId = 1
   const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
   const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
   const getSentMessages = () =>
-    flatten(map(writeStub.getCalls(), 'args')).filter(
+    flatten(map(writeStub.getCalls(), call => call.args[0])).filter(
       msg => !(msg.messageBody || '').includes('healthcheck'),
     )
 
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
-    channel = await app.db.channel.create(channelFactory())
+    channel = await app.db.channel.create(channelFactory({ socketPoolId }))
     admins = await Promise.all(
       times(2, () =>
         app.db.membership.create(
@@ -60,7 +61,7 @@ describe('dispatcher service', () => {
 
   before(async () => await app.run({ ...testApp, db, signal }))
   beforeEach(async () => {
-    readSock = await app.socketPool.acquire()
+    readSock = await app.socketPools[socketPoolId].acquire()
     writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
@@ -73,7 +74,7 @@ describe('dispatcher service', () => {
       restartIdentity: true,
     })
     await app.db.channel.destroy({ where: {}, force: true })
-    await app.socketPool.release(readSock)
+    await app.socketPools[socketPoolId].release(readSock)
     sinon.restore()
   })
   after(async () => await app.stop())

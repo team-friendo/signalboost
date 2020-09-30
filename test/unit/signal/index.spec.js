@@ -36,9 +36,9 @@ describe('signal module', () => {
   let writeStub
 
   const emit = async msg => {
-    const sock = await app.socketPool.acquire()
+    const sock = await app.socketPools[0].acquire()
     sock.emit('data', JSON.stringify(msg) + '\n')
-    app.socketPool.release(sock)
+    app.socketPools[0].release(sock)
   }
   const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
@@ -118,9 +118,10 @@ describe('signal module', () => {
         })
 
         it('returns the response time', async () => {
-          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(oneMinuteInMillis / 1000)
+          expect(await signal.healthcheck(channelPhoneNumber, 0)).to.eql(oneMinuteInMillis / 1000)
         })
       })
+
       describe('when healthcheck times out', () => {
         it('returns -1', async () => {
           expect(await signal.healthcheck(channelPhoneNumber)).to.eql(-1)
