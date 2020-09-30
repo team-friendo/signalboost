@@ -174,14 +174,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[HOTLINE #1]\na screaming came across the sky`,
+          messageBody: `[HOTLINE @1]\na screaming came across the sky`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[HOTLINE #1]\na screaming came across the sky`,
+          messageBody: `[HOTLINE @1]\na screaming came across the sky`,
           attachments,
         },
       ])
