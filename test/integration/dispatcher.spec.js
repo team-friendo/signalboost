@@ -246,7 +246,7 @@ describe('dispatcher service', () => {
             source: { number: admins[0].memberPhoneNumber },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              body: 'REPLY #1 it has happened before but there is nothing to compare it to now',
+              body: 'REPLY @1 it has happened before but there is nothing to compare it to now',
               expiresInSeconds: channel.messageExpiryTime,
               attachments,
             },
@@ -263,14 +263,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO HOTLINE @1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[REPLY TO HOTLINE #1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO HOTLINE @1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {
