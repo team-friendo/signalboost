@@ -79,8 +79,12 @@ const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, notifications, status } = commandResult
   // We don't respond to REPLY or PRIVATE commands b/c their senders receive notifications instead.
   // Rationale: these commands are more like relayable messages than they are actual commands.
-  if (![commands.REPLY, commands.PRIVATE].includes(command))
-    await respond({ ...dispatchable, message, command, status })
+  const relayableException =
+    (command === commands.REPLY && status === statuses.SUCCESS) ||
+    (command === commands.PRIVATE && status === statuses.SUCCESS)
+
+  if (!relayableException) await respond({ ...dispatchable, message, command, status })
+
   if (status === statuses.SUCCESS) await sendNotifications(dispatchable.channel, notifications)
   await wait(setExpiryInterval) // to ensure welcome notification arrives first
   await setExpiryTimeForNewUsers({ commandResult, dispatchable })

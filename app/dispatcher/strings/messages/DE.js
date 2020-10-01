@@ -62,7 +62,7 @@ Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu 
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: 123`,
+    `Haben Sie versucht, auf eine Hotline-Nachricht zu antworten? Entschuldigung, ${payload} ist keine gültige Hotline-ID. Eine gültige Hotline-ID sieht wie folgt aus: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber

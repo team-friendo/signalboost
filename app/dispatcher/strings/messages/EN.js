@@ -59,7 +59,7 @@ Send HELP for a list of all valid commands and how to use them.`,
     `"${vouchLevel}" is not a valid vouch level. Please use a number between 1 and ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} does not contain a valid hotline message number. A valid hotline message number looks like: 123`,
+    `Were you trying to reply to a hotline message? Sorry, ${payload} is not a valid hotline ID. A valid hotline ID looks like: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -318,7 +318,7 @@ Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Tr
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Sorry, the hotline message identifier @${messageId} has expired or never existed.`,
+      `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
   // SET_LANGUAGE
