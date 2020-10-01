@@ -140,7 +140,7 @@ INFO
 TRANSMITIR hola a todos / ! hola a todos 
 -> transmite "hola a todos" a todos los suscriptores de este canal
 
-RESPONDER @1312
+@1312
 -> envía una respuesta privada a [LÍNEA DIRECTA @1312]
 
 INVITAR +1-555-555-5555, +1-444-444-4444

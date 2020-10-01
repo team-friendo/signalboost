@@ -140,7 +140,7 @@ INFO
 DIFFUSER bonjour à tous / ! bonjour à tous
 -> diffuse "bonjour à tous" à tous les abonnés de cette chaîne
 
-RÉPONDRE @1312
+@1312
 -> Envoie une réponse privée à [HOTLINE @1312]
 
 INVITE +33612345678, +336187654321

@@ -136,7 +136,7 @@ INFO
 SENDEN hallo an alle / ! hallo an alle
 -> sendet "hallo an alle" an alle Abonnenten dieses Kanals
 
-ANTWORTEN @1312
+@1312
 -> Sendet eine private Antwort an [HOTLINE @1312]
 
 EINLADEN +491701234567, +491707654321

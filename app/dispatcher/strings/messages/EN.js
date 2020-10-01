@@ -131,7 +131,7 @@ INFO
 BROADCAST hello everyone / ! hello everyone
 -> broadcasts "hello everyone" to all the subscribers of this channel
 
-REPLY @1312
+@1312
 -> sends private reply to [HOTLINE @1312]
 
 INVITE +1-555-555-5555, +1-444-444-4444
