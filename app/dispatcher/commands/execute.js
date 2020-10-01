@@ -54,33 +54,31 @@ const execute = async (executable, dispatchable) => {
   }
 
   // otherwise, dispatch on the command issued, and process it!
-  const result = await (
-    {
-      [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
-      [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
-      [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, sdMessage, payload),
-      [commands.DECLINE]: () => decline(channel, sender, language),
-      [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
-      [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
-      [commands.HELP]: () => showHelp(channel, sender),
-      [commands.HOTLINE_ON]: () => maybeToggleSettingOn(channel, sender, toggles.HOTLINE),
-      [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(channel, sender, toggles.HOTLINE),
-      [commands.INFO]: () => showInfo(channel, sender),
-      [commands.INVITE]: () => maybeInvite(channel, sender, payload, language),
-      [commands.JOIN]: () => maybeAddSubscriber(channel, sender, language),
-      [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
-      [commands.PRIVATE]: () => maybePrivateMessageAdmins(channel, sender, payload, sdMessage),
-      [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
-      [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
-      [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
-      [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
-      [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
-      [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
-      [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
-      [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
-      [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
-    }[command] || (() => handleNoCommand(channel, sender, sdMessage))
-  )()
+  const result = await ({
+    [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
+    [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
+    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, sdMessage, payload),
+    [commands.DECLINE]: () => decline(channel, sender, language),
+    [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
+    [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
+    [commands.HELP]: () => showHelp(channel, sender),
+    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(channel, sender, toggles.HOTLINE),
+    [commands.INFO]: () => showInfo(channel, sender),
+    [commands.INVITE]: () => maybeInvite(channel, sender, payload, language),
+    [commands.JOIN]: () => maybeAddSubscriber(channel, sender, language),
+    [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
+    [commands.PRIVATE]: () => maybePrivateMessageAdmins(channel, sender, payload, sdMessage),
+    [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
+    [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
+    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
+    [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
+    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
+    [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
+    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
+    [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
+    [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
+  }[command] || (() => handleNoCommand(channel, sender, sdMessage)))()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
@@ -322,10 +320,7 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (!isEmpty(errors)) {
     return {
       status: statuses.ERROR,
-      message: cr.dbErrors(
-        errors.map(e => e.inviteePhoneNumber),
-        inviteResults.length,
-      ),
+      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
       notifications,
     }
   }

@@ -68,7 +68,9 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
+      channel.description
+    }
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
@@ -264,7 +266,9 @@ ${failedPhoneNumbers.join(',')}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${channel.description}
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
+      channel.description
+    }
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
