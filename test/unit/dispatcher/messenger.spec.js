@@ -303,42 +303,108 @@ describe('messenger service', () => {
         })
       })
     })
-    describe('when message is a command response', () => {
-      beforeEach(async () => {
-        await messenger.dispatch({
-          dispatchable: { channel, sender: adminSender, sdMessage: commands.JOIN },
-          commandResult: {
-            command: commands.JOIN,
-            status: statuses.SUCCESS,
-            message: 'yay!',
-            notifications: [],
-          },
+
+    describe('when message has a command result', () => {
+      describe('a successful command result', () => {
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: { channel, sender: adminSender, sdMessage: commands.JOIN },
+            commandResult: {
+              command: commands.JOIN,
+              status: statuses.SUCCESS,
+              message: 'yay!',
+              notifications: [],
+            },
+          })
+        })
+
+        it('does not broadcast a message', () => {
+          expect(broadcastSpy.callCount).to.eql(0)
+        })
+
+        it('does not increment the broadcast count', () => {
+          expect(countBroadcastStub.callCount).to.eql(0)
+        })
+
+        it('sends a command result to the message sender', () => {
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            sdMessageOf({
+              sender: channel.phoneNumber,
+              recipient: adminSender.phoneNumber,
+              message: 'yay!',
+            }),
+          ])
+        })
+
+        it('increments the command count for the channel', () => {
+          expect(countCommandStub.getCall(0).args).to.eql([channel])
         })
       })
+      describe('a command result with an error', () => {
+        const errorMessage = messagesIn(defaultLanguage).parseErrors.invalidHotlineMessageId('foo')
 
-      it('does not broadcast a message', () => {
-        expect(broadcastSpy.callCount).to.eql(0)
-      })
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: { channel, sender: adminSender, sdMessage: commands.REPLY },
+            commandResult: {
+              command: commands.REPLY,
+              status: statuses.ERROR,
+              message: errorMessage,
+              notifications: [],
+            },
+          })
+        })
 
-      it('does not increment the broadcast count', () => {
-        expect(countBroadcastStub.callCount).to.eql(0)
-      })
-
-      it('sends a command result to the message sender', () => {
-        expect(sendMessageStub.getCall(0).args).to.eql([
-          sdMessageOf({
-            sender: channel.phoneNumber,
-            recipient: adminSender.phoneNumber,
-            message: 'yay!',
-          }),
-        ])
-      })
-
-      it('increments the command count for the channel', () => {
-        expect(countCommandStub.getCall(0).args).to.eql([channel])
+        it('sends a command result to the message sender', () => {
+          expect(sendMessageStub.getCall(0).args).to.eql([
+            sdMessageOf({
+              sender: channel.phoneNumber,
+              recipient: adminSender.phoneNumber,
+              message: errorMessage,
+            }),
+          ])
+        })
       })
     })
 
+    // special case for private && hotline replies
+    describe('when message has a command result but should not be responded to', () => {
+      describe('a hotline reply', () => {
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: { channel, sender: adminSender, sdMessage: commands.REPLY },
+            commandResult: {
+              command: commands.REPLY,
+              status: statuses.SUCCESS,
+              message: 'hello!',
+              notifications: [],
+            },
+          })
+        })
+
+        it('does not respond to the sender', () => {
+          expect(respondSpy.callCount).to.eql(0)
+        })
+      })
+
+      describe('a private message', () => {
+        beforeEach(async () => {
+          await messenger.dispatch({
+            dispatchable: { channel, sender: adminSender, sdMessage: commands.PRIVATE },
+            commandResult: {
+              command: commands.PRIVATE,
+              status: statuses.SUCCESS,
+              message: 'hello!',
+              notifications: [],
+            },
+          })
+        })
+
+        it('does not respond to the sender', () => {
+          expect(respondSpy.callCount).to.eql(0)
+        })
+      })
+    })
     describe('when command result is INFO from a sysadmin', () => {
       beforeEach(async () => {
         sinon.stub(channelRepository, 'isSysadmin').returns(Promise.resolve(true))

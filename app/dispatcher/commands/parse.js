@@ -202,9 +202,8 @@ const validateVouchLevel = commandMatch => {
 const validateMessageId = commandMatch => {
   const { command, language, matches } = commandMatch
   const parseErrors = messagesIn(language).parseErrors
-
   const payload = matches[2]
-  const validationMatches = new RegExp(`^#(\\d+)([^]*)`, 'i').exec(payload.trim())
+  const validationMatches = new RegExp(`(\\d+)([^]*)`, 'i').exec(payload.trim())
 
   return isEmpty(validationMatches)
     ? {

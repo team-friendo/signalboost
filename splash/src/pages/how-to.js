@@ -115,20 +115,21 @@ export default () => (
       <a href="https://www.instagram.com/p/CB4RjYBjp7i/">short video</a> of what
       that looks like.
     </p>
-    <h3>How do I respond to a hotline message?</h3>
-    <h4 id="hotline-replies" className="anchor">
-      REPLY
-    </h4>
-    <p>Incoming hotline messages are followed by a hotline #:</p>
+    <h3 id="hotline-replies" className="anchor">
+      How do I respond to a hotline message?
+    </h3>
+    <p>Incoming hotline messages are followed by an @id:</p>
     <blockquote className="command blockquote">
       <p>
-        [HOTLINE #3214] <br />
+        [HOTLINE @3214] <br />
         Hello! We need a legal representative at jail support location XYZ.
       </p>
     </blockquote>
-    <p>In order to respond to a hotline message, type REPLY:</p>
+    <p>
+      In order to respond privately to that person, type @ followed by the id:
+    </p>
     <blockquote className="command blockquote">
-      <p>REPLY #3214 Okay, we are sending someone over!</p>
+      <p>@3214 Okay, we are sending someone over!</p>
     </blockquote>
     <p>And the subscriber you replied to will receive the following message:</p>
     <blockquote className="command blockquote">

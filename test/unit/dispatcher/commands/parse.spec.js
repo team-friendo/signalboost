@@ -703,7 +703,7 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['REPLY #1312', ' reply #1312 '],
+            messages: ['REPLY #1312', 'reply #1312 ', '@ #1312', '@1312'],
           },
           {
             language: languages.ES,

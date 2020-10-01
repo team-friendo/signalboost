@@ -61,7 +61,7 @@ Envíe AYUDA para obtener una lista de todos los comandos válidos y cómo usarl
     `"${invalidVouchLevel}", no es un nivel de atestiguando válido. Use un número entre 1 y ${maxVouchLevel}, por favor.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} no contiene un número válido de mensaje de línea directa. Un número válido de mensaje de línea directa se ve así: #123`,
+    `¿Estabas intentando responder a un mensaje de la línea directa? Lo siento, ${payload} no es una identificación de línea directa válida. Un ID de línea directa válido se ve así: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -140,8 +140,8 @@ INFO
 TRANSMITIR hola a todos / ! hola a todos 
 -> transmite "hola a todos" a todos los suscriptores de este canal
 
-RESPONDER #1312
--> envía una respuesta privada a [LÍNEA DIRECTA #1312]
+@1312
+-> envía una respuesta privada a [LÍNEA DIRECTA @1312]
 
 INVITAR +1-555-555-5555, +1-444-444-4444
 -> invita a +1-555-555-5555 y +1-444-444-4444 a suscribirse al canal
@@ -308,7 +308,7 @@ ${failedPhoneNumbers.join(',')}`,
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Lo sentimos, el identificador de mensaje de línea directa #${messageId} ha caducado o nunca ha existido.`,
+      `Lo sentimos, el identificador de mensaje de línea directa @${messageId} ha caducado o nunca ha existido.`,
   },
 
   // JOIN
@@ -537,10 +537,10 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `LÍNEA DIRECTA #${messageId}`,
+  hotlineMessage: messageId => `LÍNEA DIRECTA @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `RESPONDER A LA LÍNEA DIRECTA #${messageId}`
+      ? `RESPONDER A LA LÍNEA DIRECTA @${messageId}`
       : `RESPUESTA PRIVADA DE ADMINS`,
   broadcastMessage: `TRANSMITIR`,
   privateMessage: `PRIVADO`,

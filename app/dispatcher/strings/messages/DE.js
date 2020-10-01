@@ -62,7 +62,7 @@ Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu 
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `${payload} enthält keine gültige Hotline-Nachrichtennummer. Eine gültige Hotline-Nachrichtennummer sieht folgendermaßen aus: #123`,
+    `Haben Sie versucht, auf eine Hotline-Nachricht zu antworten? Entschuldigung, ${payload} ist keine gültige Hotline-ID. Eine gültige Hotline-ID sieht wie folgt aus: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -136,8 +136,8 @@ INFO
 SENDEN hallo an alle / ! hallo an alle
 -> sendet "hallo an alle" an alle Abonnenten dieses Kanals
 
-ANTWORTEN #1312
--> Sendet eine private Antwort an [HOTLINE #1312]
+@1312
+-> Sendet eine private Antwort an [HOTLINE @1312]
 
 EINLADEN +491701234567, +491707654321
 -> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
@@ -330,7 +330,7 @@ Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Entschuldigung, die Hotline-Nachrichtenkennung #${messageId} ist abgelaufen oder hat nie existiert.`,
+      `Entschuldigung, die Hotline-Nachrichtenkennung @${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
   // SET_LANGUAGE
@@ -525,10 +525,10 @@ ${
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE #${messageId}`,
+  hotlineMessage: messageId => `HOTLINE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN
-      ? `ANTWORT AUF HOTLINE #${messageId}`
+      ? `ANTWORT AUF HOTLINE @${messageId}`
       : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
   privateMessage: `PRIVAT`,
