@@ -232,6 +232,7 @@ describe('dispatcher module', () => {
       const expiryUpdate = merge({}, sdInMessage, {
         data: {
           dataMessage: {
+            body: '',
             expiresInSeconds: 60,
             messageBody: '',
           },

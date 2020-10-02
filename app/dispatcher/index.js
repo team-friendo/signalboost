@@ -82,21 +82,40 @@ const dispatch = async msg => {
   // handle callbacks for messages that have request/response semantics
   callbacks.handle(inboundMsg)
 
-  // maybe return early if we receive system messages that prompt interventions...
+  // process any side-effects
+  const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
+  await util.sequence(sideEffects)
+
+  // return early if we receive system messages that prompt interventions
   const interventions = await detectInterventions(channel, sender, inboundMsg)
   if (interventions) return interventions()
-  // ...or if we get a  non-relayable messsage:
+
+  // ... or if we recieve a non-relayable message
   if (!_isMessage(inboundMsg) || _isEmpty(inboundMsg)) return Promise.resolve()
 
   // else, follow the happy path!
-  const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
-  await util.sequence(sideEffects)
   return relay(channel, sender, inboundMsg)
 }
 
 /**********************
  * DISPATCH HELPERS
  **********************/
+
+// (Channel, string, SdMessage) => Promise<Array<function>>
+const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
+  let sideEffects = []
+
+  // Don't return early here b/c that would prevent processing of HELLO commands on channels w/ disappearing messages
+  const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
+  if (isNumber(newExpiryTime))
+    sideEffects.push(() => updateExpiryTime(sender, channel, newExpiryTime))
+
+  // Don't return early here b/c the person "redeemed" channel by sending normal message that should be processed!
+  if (channel && channel.recycleRequest)
+    sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
+
+  return sideEffects
+}
 
 // (Channel | null, Sender | null, SdMessage) -> Promise<function | null>
 const detectInterventions = async (channel, sender, inboundMsg) => {
@@ -113,21 +132,6 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
 
   const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
-}
-
-const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
-  let sideEffects = []
-
-  // Don't return early here b/c that would prevent processing of HELLO commands on channels w/ disappearing messages
-  const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
-  if (isNumber(newExpiryTime))
-    sideEffects.push(() => updateExpiryTime(sender, channel, newExpiryTime))
-
-  // Don't return early here b/c the person "redeemed" channel by sending normal message that should be processed!
-  if (channel && channel.recycleRequest)
-    sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
-
-  return sideEffects
 }
 
 const relay = async (channel, sender, inboundMsg) => {
