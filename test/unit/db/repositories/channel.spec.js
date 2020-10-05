@@ -261,6 +261,7 @@ describe('channel repository', () => {
           'hotlineOn',
           'vouchMode',
           'vouchLevel',
+          'nextAdminId',
           'createdAt',
           'updatedAt',
           'deauthorizations',
