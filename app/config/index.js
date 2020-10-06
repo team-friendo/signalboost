@@ -17,6 +17,10 @@ module.exports = {
   db: getConfig(dbConfigsByEnv),
   defaultLanguage,
   job: getConfig(jobConfigsByEnv),
+  maintainerPassphrase: (process.env.SIGNALBOOST_MAINTAINER_PASSPHRASE || 'slithy toves').replace(
+    /"/g,
+    '',
+  ),
   projectRoot: process.env.PROJECT_ROOT,
   signal: getConfig(signalConfigsByEnv),
   socket: getConfig(socketConfigsByEnv),
