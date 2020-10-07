@@ -16,7 +16,6 @@ module.exports = {
   REMOVE: ['REMOVE'],
   RENAME: ['RENAME'],
   REPLY: ['REPLY', '@'],
-  REPLY: ['REPLY'],
   RESTART: ['RESTART'],
   SET_LANGUAGE: ['ENGLISH', 'INGLÉS', 'INGLES', 'ANGLAIS', 'ENGLISCH'],
   SET_DESCRIPTION: ['DESCRIPTION'],
