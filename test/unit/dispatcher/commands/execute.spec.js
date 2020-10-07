@@ -1956,7 +1956,16 @@ describe('executing commands', () => {
             command: commands.RESTART,
             status: statuses.SUCCESS,
             message: 'Signalboost restarted successfully!',
-            notifications: [],
+            notifications: [
+              {
+                message: `Signalboost restarted by ${admin.phoneNumber}`,
+                recipient: adminMemberships[1].memberPhoneNumber,
+              },
+              {
+                message: `Signalboost restarted by ${admin.phoneNumber}`,
+                recipient: adminMemberships[2].memberPhoneNumber,
+              },
+            ],
             payload: maintainerPassphrase,
           })
         })
@@ -1964,7 +1973,7 @@ describe('executing commands', () => {
 
       describe('when restart fails', () => {
         beforeEach(() => {
-          isSysadminStub.returns(Promise.resolve(true))
+          isMaintainerStub.returns(Promise.resolve(true))
           isAliveStub.callsFake(() => Promise.reject('not alive!'))
         })
 

@@ -628,7 +628,11 @@ const maybeRestart = async (channel, sender, payload) => {
     await signal.isAlive() // ensure signald is actually running
     logger.log('--- RESTART SUCCEEDED')
 
-    return { status: statuses.SUCCESS, message: 'Signalboost restarted successfully!' }
+    return {
+      status: statuses.SUCCESS,
+      message: 'Signalboost restarted successfully!',
+      notifications: await _restartNotificationsOf(sender),
+    }
   } catch (err) {
     logger.error({ ...err, message: `--- RESTART FAILED: ${err.message || err}` })
     return {
@@ -636,6 +640,16 @@ const maybeRestart = async (channel, sender, payload) => {
       message: `Failed to restart Signalboost: ${err.message || err}`,
     }
   }
+}
+
+const _restartNotificationsOf = async sender => {
+  const maintainers = (await channelRepository.getMaintainers()).filter(
+    m => m.memberPhoneNumber !== sender.phoneNumber,
+  )
+  return maintainers.map(maintainer => ({
+    recipient: maintainer.memberPhoneNumber,
+    message: `Signalboost restarted by ${sender.phoneNumber}`,
+  }))
 }
 
 // SET_LANGUAGE
