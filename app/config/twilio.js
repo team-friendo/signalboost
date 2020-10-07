@@ -6,8 +6,14 @@ const defaults = {
   smsQuotaDurationInMillis: 1000 * 60 * 60 * 24 * 31, // 1 month
 }
 
+const test = {
+  ...defaults,
+  accountSid: 'AC-fakeSid',
+  authToken: 'fakeToken',
+}
+
 module.exports = {
   development: defaults,
-  test: defaults,
+  test,
   production: defaults,
 }
