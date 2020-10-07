@@ -152,6 +152,34 @@ describe('callback registry', () => {
         expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
       })
     })
+
+    describe('for a VERSION message', () => {
+      it('registers a VERSION response handler', () => {
+        callbacks.register({
+          messageType: messageTypes.VERSION,
+          id: 0,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql({
+          callback: callbacks._handleVersionResponse,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: undefined,
+        })
+      })
+
+      it('deletes the handler after a timeout', async () => {
+        callbacks.register({
+          messageType: messageTypes.VERSION,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        await util.wait(signaldRequestTimeout)
+        expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql(undefined)
+      })
+    })
   })
 
   describe('handling responses', () => {
@@ -356,6 +384,36 @@ describe('callback registry', () => {
         callbacks.handle(healthcheckResponse)
         expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
       })
+    })
+  })
+
+  describe('a VERSION response', () => {
+    const version = '+git2020-10-06r6cf17ecb.0'
+    const versionResponse = {
+      type: messageTypes.VERSION,
+      data: {
+        name: 'signald',
+        version,
+        branch: 'master',
+        commit: '6cf17ecb7b82f2ba209a0b9059c7355d88773b78',
+      },
+    }
+    beforeEach(() => {
+      callbacks.register({
+        id: 0,
+        messageType: messageTypes.VERSION,
+        resolve: resolveStub,
+        reject: rejectStub,
+      })
+      callbacks.handle(versionResponse)
+    })
+
+    it('resolves a promise with the running signald version', () => {
+      expect(resolveStub.getCall(0).args).to.eql([version])
+    })
+
+    it('deletes the registry entry', () => {
+      expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql(undefined)
     })
   })
 
