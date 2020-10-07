@@ -617,7 +617,7 @@ const maybeRestart = async (channel, sender, payload) => {
       logger.log(`--- RESTART ABORTED: UNAUTHORIZED`)
       return {
         status: statuses.UNAUTHORIZED,
-        message: 'Trying to restart Signalboost? You are not authorized to do that!',
+        message: messagesIn(sender.language).notifications.restartNotAuthorized,
       }
     }
     // do the restarting:
@@ -630,14 +630,14 @@ const maybeRestart = async (channel, sender, payload) => {
 
     return {
       status: statuses.SUCCESS,
-      message: 'Signalboost restarted successfully!',
+      message: messagesIn(sender.language).notifications.restartSuccessResponse,
       notifications: await _restartNotificationsOf(sender),
     }
   } catch (err) {
     logger.error({ ...err, message: `--- RESTART FAILED: ${err.message || err}` })
     return {
       status: statuses.ERROR,
-      message: `Failed to restart Signalboost: ${err.message || err}`,
+      message: messagesIn(sender.language).notifications.restartFailure(err.message || err),
     }
   }
 }
@@ -648,7 +648,10 @@ const _restartNotificationsOf = async sender => {
   )
   return maintainers.map(maintainer => ({
     recipient: maintainer.memberPhoneNumber,
-    message: `Signalboost restarted by ${sender.phoneNumber}`,
+    // TODO(aguestuser|2020-10-07): replace `sender.phoneNumber` here with an adminId once those exist! :)
+    message: messagesIn(maintainer.language).notifications.restartSuccessNotification(
+      sender.phoneNumber,
+    ),
   }))
 }
 

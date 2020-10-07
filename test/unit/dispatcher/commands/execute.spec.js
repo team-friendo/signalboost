@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { sample, times, merge } from 'lodash'
+import { sample, times, merge, values } from 'lodash'
 import { processCommand } from '../../../../app/dispatcher/commands'
 import { commands, toggles, vouchModes } from '../../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../../app/util'
@@ -34,6 +34,7 @@ import { maintainerPassphrase } from '../../../../app/config'
 import app from '../../../../app'
 
 describe('executing commands', () => {
+  const language = sample(values(languages))
   const channel = {
     name: 'foobar',
     description: 'foobar channel description',
@@ -42,8 +43,10 @@ describe('executing commands', () => {
     vouchMode: vouchModes.OFF,
     deauthorizations: [deauthorizationFactory()],
     memberships: [
-      ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
-      ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
+      ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333', language })),
+      ...times(2, () =>
+        subscriberMembershipFactory({ channelPhoneNumber: '+13333333333', language }),
+      ),
     ],
     messageCount: { broadcastIn: 42 },
   }
@@ -1914,7 +1917,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESTART,
           status: statuses.UNAUTHORIZED,
-          message: 'Trying to restart Signalboost? You are not authorized to do that!',
+          message: messagesIn(admin.language).notifications.restartNotAuthorized,
           notifications: [],
           payload: maintainerPassphrase,
         })
@@ -1931,7 +1934,7 @@ describe('executing commands', () => {
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.RESTART,
           status: statuses.UNAUTHORIZED,
-          message: 'Trying to restart Signalboost? You are not authorized to do that!',
+          message: messagesIn(admin.language).notifications.restartNotAuthorized,
           notifications: [],
           payload: 'foobar',
         })
@@ -1955,14 +1958,18 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.RESTART,
             status: statuses.SUCCESS,
-            message: 'Signalboost restarted successfully!',
+            message: messagesIn(admin.language).notifications.restartSuccessResponse,
             notifications: [
               {
-                message: `Signalboost restarted by ${admin.phoneNumber}`,
+                message: messagesIn(
+                  adminMemberships[1].language,
+                ).notifications.restartSuccessNotification(admin.phoneNumber),
                 recipient: adminMemberships[1].memberPhoneNumber,
               },
               {
-                message: `Signalboost restarted by ${admin.phoneNumber}`,
+                message: messagesIn(
+                  adminMemberships[1].language,
+                ).notifications.restartSuccessNotification(admin.phoneNumber),
                 recipient: adminMemberships[2].memberPhoneNumber,
               },
             ],

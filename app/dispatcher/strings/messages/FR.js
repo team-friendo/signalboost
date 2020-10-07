@@ -503,6 +503,12 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
+  restartNotAuthorized:
+    "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",
+  restartSuccessNotification: adminId => `Signalboost a été redémarré par ${adminId}`,
+  restartSuccessResponse: 'Signalboost a été redémarré avec succès',
+  restartFailure: errorMessage => `Échec du redémarrage de Signalboost: ${errorMessage}`,
+
   safetyNumberChanged:
     'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',
 

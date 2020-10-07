@@ -501,6 +501,12 @@ ${
 
   setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
 
+  restartNotAuthorized:
+    'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',
+  restartSuccessNotification: adminId => `Signalboost wurde von ${adminId} neu gestartet`,
+  restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
+  restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
+
   toRemovedAdmin:
     'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
 

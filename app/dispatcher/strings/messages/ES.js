@@ -508,6 +508,12 @@ ${
   recycleChannelFailed: phoneNumber =>
     `Error al reciclar el canal para el número de teléfono: ${phoneNumber}`,
 
+  restartNotAuthorized:
+    '¿Estás intentando reiniciar Signalboost? ¡No estás autorizado para hacer eso!',
+  restartSuccessNotification: adminId => `Signalboost fue reiniciado por ${adminId}`,
+  restartSuccessResponse: '¡Signalboost se reinició correctamente!',
+  restartFailure: errorMessage => `No se pudo reiniciar Signalboost: ${errorMessage}`,
+
   safetyNumberChanged:
     'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
 
