@@ -27,6 +27,7 @@ describe('membership model', () => {
     expect(membership.memberPhoneNumber).to.be.a('string')
     expect(membership.type).to.be.a('string')
     expect(membership.language).to.be.a('string')
+    expect(membership.adminId).to.be.a('number')
     expect(membership.createdAt).to.be.a('Date')
     expect(membership.updatedAt).to.be.a('Date')
   })
