@@ -611,7 +611,7 @@ const maybeRestart = async (channel, sender, payload) => {
   // authenticate user and password:
   try {
     if (
-      !(await channelRepository.isSysadmin(sender.phoneNumber)) ||
+      !(await channelRepository.isMaintainer(sender.phoneNumber)) ||
       !(payload === maintainerPassphrase)
     ) {
       logger.log(`--- RESTART ABORTED: UNAUTHORIZED`)

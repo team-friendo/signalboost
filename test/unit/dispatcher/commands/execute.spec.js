@@ -1896,10 +1896,11 @@ describe('executing commands', () => {
         message: `${commands.RESTART} ${maintainerPassphrase}`,
       }),
     }
-    let isSysadminStub, abortStub, isAliveStub, stopStub, runStub
+    let isMaintainerStub, abortStub, isAliveStub, stopStub, runStub
 
     beforeEach(() => {
-      isSysadminStub = sinon.stub(channelRepository, 'isSysadmin')
+      isMaintainerStub = sinon.stub(channelRepository, 'isMaintainer')
+      sinon.stub(channelRepository, 'getMaintainers').returns(Promise.resolve(adminMemberships))
       abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
       stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
       runStub = sinon.stub(app, 'run').returns(Promise.resolve())
@@ -1907,7 +1908,7 @@ describe('executing commands', () => {
     })
 
     describe('when sent by non-sysadmin', () => {
-      beforeEach(() => isSysadminStub.returns(Promise.resolve(false)))
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(false)))
 
       it('returns UNAUTHORIZED', async () => {
         expect(await processCommand(dispatchable)).to.eql({
@@ -1921,7 +1922,7 @@ describe('executing commands', () => {
     })
 
     describe('when sent by sysadmin with wrong pass', () => {
-      beforeEach(() => isSysadminStub.returns(Promise.resolve(true)))
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
       const _dispatchable = merge({}, dispatchable, {
         sdMessage: { messageBody: `${commands.RESTART} foobar` },
       })
@@ -1938,7 +1939,7 @@ describe('executing commands', () => {
     })
 
     describe('when sent by sysadmin with correct pass', () => {
-      beforeEach(() => isSysadminStub.returns(Promise.resolve(true)))
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
 
       describe('in all cases', () => {
         it('tries to restart signald and signalboost', async () => {

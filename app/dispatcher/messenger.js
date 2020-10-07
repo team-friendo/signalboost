@@ -122,7 +122,7 @@ const respond = ({ channel, message, sender, command }) => {
       // Counting these pings would prevent us from detecting stale channels for recycling, which
       // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
       const shouldCount = !(
-        command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
+        command === commands.INFO && (await channelRepository.isMaintainer(sender.phoneNumber))
       )
       return shouldCount && messageCountRepository.countCommand(channel)
     })
