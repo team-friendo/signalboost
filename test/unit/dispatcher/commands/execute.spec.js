@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
-import { sample, times } from 'lodash'
+import { sample, times, merge } from 'lodash'
 import { processCommand } from '../../../../app/dispatcher/commands'
 import { commands, toggles, vouchModes } from '../../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../../app/util'
@@ -30,6 +30,8 @@ import { deauthorizationFactory } from '../../../support/factories/deauthorizati
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
 import { defaultLanguage } from '../../../../app/language'
+import { maintainerPassphrase } from '../../../../app/config'
+import app from '../../../../app'
 
 describe('executing commands', () => {
   const channel = {
@@ -1880,6 +1882,99 @@ describe('executing commands', () => {
           message: CR.hotlineReply.notAdmin,
           notifications: [],
           payload: { messageId: 1312, reply: 'foo' },
+        })
+      })
+    })
+  })
+
+  describe('RESTART command', () => {
+    const dispatchable = {
+      channel,
+      sender: admin,
+      sdMessage: sdMessageOf({
+        sender: channel.phoneNumber,
+        message: `${commands.RESTART} ${maintainerPassphrase}`,
+      }),
+    }
+    let isSysadminStub, abortStub, isAliveStub, stopStub, runStub
+
+    beforeEach(() => {
+      isSysadminStub = sinon.stub(channelRepository, 'isSysadmin')
+      abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
+      stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
+      runStub = sinon.stub(app, 'run').returns(Promise.resolve())
+      isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
+    })
+
+    describe('when sent by non-sysadmin', () => {
+      beforeEach(() => isSysadminStub.returns(Promise.resolve(false)))
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: 'Trying to restart Signalboost? You are not authorized to do that!',
+          notifications: [],
+          payload: maintainerPassphrase,
+        })
+      })
+    })
+
+    describe('when sent by sysadmin with wrong pass', () => {
+      beforeEach(() => isSysadminStub.returns(Promise.resolve(true)))
+      const _dispatchable = merge({}, dispatchable, {
+        sdMessage: { messageBody: `${commands.RESTART} foobar` },
+      })
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: 'Trying to restart Signalboost? You are not authorized to do that!',
+          notifications: [],
+          payload: 'foobar',
+        })
+      })
+    })
+
+    describe('when sent by sysadmin with correct pass', () => {
+      beforeEach(() => isSysadminStub.returns(Promise.resolve(true)))
+
+      describe('in all cases', () => {
+        it('tries to restart signald and signalboost', async () => {
+          await processCommand(dispatchable)
+          ;[abortStub, stopStub, runStub, isAliveStub].forEach(stub =>
+            expect(stub.callCount).to.eql(1),
+          )
+        })
+      })
+
+      describe('when restart succeeds', () => {
+        it('returns SUCCESS', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESTART,
+            status: statuses.SUCCESS,
+            message: 'Signalboost restarted successfully!',
+            notifications: [],
+            payload: maintainerPassphrase,
+          })
+        })
+      })
+
+      describe('when restart fails', () => {
+        beforeEach(() => {
+          isSysadminStub.returns(Promise.resolve(true))
+          isAliveStub.callsFake(() => Promise.reject('not alive!'))
+        })
+
+        it('returns ERROR', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESTART,
+            status: statuses.ERROR,
+            message: 'Failed to restart Signalboost: not alive!',
+            notifications: [],
+            payload: maintainerPassphrase,
+          })
         })
       })
     })

@@ -10,18 +10,21 @@ const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberService = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
-const docker = require('../../docker')
-const { containerTypes } = require('../../docker')
-const { defaultLanguage } = require('../../config')
+const util = require('../../util')
 const { get, isEmpty, uniq } = require('lodash')
+const { messagesIn } = require('../strings/messages')
+const { memberTypes } = require('../../db/repositories/membership')
+const { ADMIN, SUBSCRIBER, NONE } = memberTypes
 const {
   getAllAdminsExcept,
   getAdminMemberships,
   getSubscriberMemberships,
 } = require('../../db/repositories/channel')
-const { messagesIn } = require('../strings/messages')
-const { memberTypes } = require('../../db/repositories/membership')
-const { ADMIN, SUBSCRIBER, NONE } = memberTypes
+const {
+  defaultLanguage,
+  maintainerPassphrase,
+  signal: { restartDelay },
+} = require('../../config')
 
 /**
  *
@@ -91,26 +94,6 @@ const execute = async (executable, dispatchable) => {
 /********************
  * COMMAND EXECUTION
  ********************/
-
-const maybeRestart = async (channel, sender, payload) => {
-  console.log('*********** RESTART CALLED ***********')
-  console.log('=========== STOPPING SOCKET POOOL...')
-  await app.socketPool.stop()
-  console.log('=========== STOPPING SIGNALD...')
-  await docker.stopContainer(containerTypes.SIGNALD)
-
-  console.log('=========== STARTING SIGNALD...')
-  await docker.startContainer(containerTypes.SIGNALD)
-
-  console.log('============ ABORTING')
-  process.exit(1)
-
-  // console.log('=========== STARTING SOCKET POOL...')
-  // await app.socketPool.start()
-  // console.log('*********** DONE! ***********')
-  //
-  // return { status: statuses.ERROR, message: 'successful restart!' }
-}
 
 // ACCEPT
 
@@ -621,42 +604,38 @@ const hotlineReplyNotificationsOf = (
   })),
 ]
 
-// ON / OFF TOGGLES FOR RESPONSES
+// RESTART
 
-// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOn = (channel, sender, toggle) =>
-  _maybeToggleSetting(channel, sender, toggle, true)
+const maybeRestart = async (channel, sender, payload) => {
+  logger.log(`--- RESTART INITIATED by ${util.hash(sender.phoneNumber)}...`)
+  // authenticate user and password:
+  try {
+    if (
+      !(await channelRepository.isSysadmin(sender.phoneNumber)) ||
+      !(payload === maintainerPassphrase)
+    ) {
+      logger.log(`--- RESTART ABORTED: UNAUTHORIZED`)
+      return {
+        status: statuses.UNAUTHORIZED,
+        message: 'Trying to restart Signalboost? You are not authorized to do that!',
+      }
+    }
+    // do the restarting:
+    await signal.abort() // rely on docker-compose semantics to restart signald
+    await app.stop()
+    await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
+    await app.run({})
+    await signal.isAlive() // ensure signald is actually running
+    logger.log('--- RESTART SUCCEEDED')
 
-// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOff = (channel, sender, toggle) =>
-  _maybeToggleSetting(channel, sender, toggle, false)
-
-// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
-const _maybeToggleSetting = (channel, sender, toggle, isOn) => {
-  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
-  if (sender.type !== ADMIN) {
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
+    return { status: statuses.SUCCESS, message: 'Signalboost restarted successfully!' }
+  } catch (err) {
+    logger.error({ ...err, message: `--- RESTART FAILED: ${err.message || err}` })
+    return {
+      status: statuses.ERROR,
+      message: `Failed to restart Signalboost: ${err.message || err}`,
+    }
   }
-  return _toggleSetting(channel, sender, toggle, isOn, cr)
-}
-
-// (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
-const _toggleSetting = (channel, sender, toggle, isOn, cr) =>
-  channelRepository
-    .update(channel.phoneNumber, { [toggle.dbField]: isOn })
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(isOn, channel.vouchLevel),
-      notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
-    }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
-
-const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
-  const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
-  return recipients.map(membership => ({
-    recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
-  }))
 }
 
 // SET_LANGUAGE
@@ -694,6 +673,44 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: messagesIn(sender.language).notifications.setDescription(newDescription),
+  }))
+}
+
+// TOGGLES FOR SET COMMANDS RESPONSES
+
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOn = (channel, sender, toggle) =>
+  _maybeToggleSetting(channel, sender, toggle, true)
+
+// (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
+const maybeToggleSettingOff = (channel, sender, toggle) =>
+  _maybeToggleSetting(channel, sender, toggle, false)
+
+// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
+const _maybeToggleSetting = (channel, sender, toggle, isOn) => {
+  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
+  if (sender.type !== ADMIN) {
+    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
+  }
+  return _toggleSetting(channel, sender, toggle, isOn, cr)
+}
+
+// (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
+const _toggleSetting = (channel, sender, toggle, isOn, cr) =>
+  channelRepository
+    .update(channel.phoneNumber, { [toggle.dbField]: isOn })
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(isOn, channel.vouchLevel),
+      notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
+    }))
+    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
+
+const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
+  const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
+  return recipients.map(membership => ({
+    recipient: membership.memberPhoneNumber,
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
   }))
 }
 
