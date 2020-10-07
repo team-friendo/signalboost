@@ -22,7 +22,7 @@ services:
       - proxy-tier
     volumes:
       - ./:/splash
-    restart: unless-stopped
+    restart: always
 
   proxy:
     image: jwilder/nginx-proxy:alpine
@@ -39,12 +39,12 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
       - proxy-tier
-    restart: unless-stopped
+    restart: always
 
   letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion
     container_name: letsencrypt
-    restart: unless-stopped
+    restart: always
     volumes:
       - certs:/etc/nginx/certs
       - vhost.d:/etc/nginx/vhost.d

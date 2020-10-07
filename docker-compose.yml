@@ -28,7 +28,7 @@ services:
       # as per https://github.com/docker-library/postgres/issues/692
       POSTGRES_HOST_AUTH_METHOD: trust
     logging: *loki-logging
-    restart: unless-stopped
+    restart: always
 
   signald:
     image: registry.0xacab.org/team-friendo/signalboost/signald:latest
@@ -56,7 +56,7 @@ services:
       - signal_sock:/var/run/signald/
       - ./backups:/backups
     logging: *loki-logging
-    restart: unless-stopped
+    restart: always
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
@@ -90,7 +90,7 @@ services:
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
     logging: *loki-logging
-    restart: unless-stopped
+    restart: always
 
   datadog-agent:
     container_name: signalboost_dd_agent
@@ -122,12 +122,12 @@ services:
     networks:
       - proxy-tier
     logging: *loki-logging
-    restart: unless-stopped
+    restart: always
 
   letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion
     container_name: signalboost_letsencrypt
-    restart: unless-stopped
+    restart: always
     volumes:
       - certs:/etc/nginx/certs
       - html:/usr/share/nginx/html

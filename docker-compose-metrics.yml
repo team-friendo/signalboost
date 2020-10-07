@@ -25,7 +25,7 @@ services:
       - VIRTUAL_HOST=${PROM_HOST}
       - VIRTUAL_PORT=${PROM_PORT}
       - LETSENCRYPT_HOST=${PROM_HOST}
-    restart: unless-stopped
+    restart: always
 
   loki:
     image: grafana/loki:1.5.0
@@ -42,7 +42,7 @@ services:
       - VIRTUAL_HOST=${LOKI_HOST}
       - VIRTUAL_PORT=${LOKI_PORT}
       - LETSENCRYPT_HOST=${LOKI_HOST}
-    restart: unless-stopped
+    restart: always
   
   grafana:
     image: grafana/grafana:7.0.3
@@ -60,7 +60,7 @@ services:
       - VIRTUAL_PORT=${METRICS_PORT}
       - LETSENCRYPT_HOST=${METRICS_HOST}
       - GF_SERVER_HTTP_PORT=5000
-    restart: unless-stopped
+    restart: always
 
   proxy:
     image: jwilder/nginx-proxy:alpine
@@ -75,12 +75,12 @@ services:
       - html:/usr/share/nginx/html
       - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
       - /var/run/docker.sock:/tmp/docker.sock:ro
-    restart: unless-stopped
+    restart: always
 
   letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion
     container_name: signalboost_letsencrypt
-    restart: unless-stopped
+    restart: always
     volumes:
       - certs:/etc/nginx/certs
       - html:/usr/share/nginx/html

@@ -37,7 +37,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
-    restart: unless-stopped
+    restart: always
 
   signald:
     image: registry.0xacab.org/team-friendo/signalboost/signald:latest
@@ -56,7 +56,7 @@ services:
       - ./signald/jmx:/var/lib/jmx
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
-    restart: unless-stopped
+    restart: always
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
@@ -100,7 +100,7 @@ services:
     env_file: .env.dev
     environment:
       - NGROK_PORT=app:3000
-    restart: unless-stopped
+    restart: always
 
   prometheus:
     image: prom/prometheus:v2.18.1
@@ -116,7 +116,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus_data'
       - '--log.level=debug'
-    restart: unless-stopped
+    restart: always
 
   grafana:
     image: grafana/grafana:7.0.3
@@ -132,4 +132,4 @@ services:
       - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
     environment:
       - GF_SERVER_HTTP_PORT=5000
-    restart: unless-stopped
+    restart: always
