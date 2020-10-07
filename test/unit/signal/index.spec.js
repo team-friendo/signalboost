@@ -61,6 +61,11 @@ describe('signal module', () => {
       await app.stop()
     })
 
+    it('sends an abort command', () => {
+      signal.abort()
+      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }])
+    })
+
     it('sends a subscribe command', () => {
       signal.subscribe(channelPhoneNumber)
 

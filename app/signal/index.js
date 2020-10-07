@@ -136,6 +136,11 @@ const healthcheck = async channelPhoneNumber => {
  ********************/
 
 // () => Promise<string>
+const abort = () =>
+  // sends a poison pill to signald, causing it to shut down
+  socketWriter.write({ type: messageTypes.ABORT })
+
+// () => Promise<string>
 const isAlive = () => {
   // checks to see if signald is a live by asking for version.
   // resolves with version or rejects with error.
@@ -280,6 +285,7 @@ module.exports = {
   messages,
   messageTypes,
   trustLevels,
+  abort,
   healthcheck,
   isAlive,
   parseOutboundSdMessage,

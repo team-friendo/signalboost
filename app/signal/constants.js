@@ -1,4 +1,5 @@
 const messageTypes = {
+  ABORT: 'abort',
   ERROR: 'unexpected_error',
   GET_IDENTITIES: 'get_identities',
   HEALTHCHECK: 'healthcheck',
