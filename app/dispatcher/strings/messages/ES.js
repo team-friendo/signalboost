@@ -547,11 +547,9 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `LÍNEA DIRECTA @${messageId}`,
+  hotlineMessage: messageId => `LÍNEA DIRECTA DESDE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN
-      ? `RESPONDER A LA LÍNEA DIRECTA @${messageId}`
-      : `RESPUESTA PRIVADA DE ADMINS`,
+    memberType === memberTypes.ADMIN ? `RESPUESTA A @${messageId}` : `RESPUESTA PRIVADA DE ADMINS`,
   broadcastMessage: `TRANSMITIR`,
   privateMessage: `PRIVADO`,
 }

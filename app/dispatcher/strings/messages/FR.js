@@ -550,11 +550,9 @@ Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre gui
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE @${messageId}`,
+  hotlineMessage: messageId => `HOTLINE DE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN
-      ? `RÉPONSE AU HOTLINE @${messageId}`
-      : `RÉPONSE PRIVÉE DES ADMINS`,
+    memberType === memberTypes.ADMIN ? `RÉPONSE Á @${messageId}` : `RÉPONSE PRIVÉE DES ADMINS`,
   broadcastMessage: `DIFFUSER`,
   privateMessage: `PRIVÉ`,
 }
