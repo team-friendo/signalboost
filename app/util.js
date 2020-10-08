@@ -13,7 +13,14 @@ const genUuid = uuidV4
 
 /**************** Promises ****************/
 
-const exec = require('util').promisify(require('child_process').exec)
+const exec = (cmd, logger = console) =>
+  require('util')
+    .promisify(require('child_process').exec)(cmd)
+    .then((stdout, stderr) => {
+      logger.log(stdout)
+      logger.error({ message: stderr })
+    })
+    .catch(logger.error)
 
 const promisifyCallback = (resolve, reject) => (err, res) => {
   if (err) reject(err)

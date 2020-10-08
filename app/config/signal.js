@@ -14,12 +14,13 @@ const defaults = {
   maxVouchLevel: 10,
   minResendInterval: 60 * 1000, // 1 min
   registrationBatchSize: 4,
+  restartDelay: 5000, // 5 sec
   setExpiryInterval: 2000, // 2 sec
   signaldRequestTimeout: 1000 * 10, // 10 sec
   signaldVerifyTimeout: 1000 * 30, // 30 sec
   signaldSendTimeout: 1000 * 60 * 60, // 60 min
-  supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(`"`, ''),
-  diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(`"`, ''),
+  supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(/"/g, ''),
+  diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(/"/g, ''),
   welcomeDelay: 3000, // 3 sec
 }
 
@@ -36,6 +37,7 @@ const test = {
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // millis
+  restartDelay: 1, // millis
   setExpiryInterval: 1, // millis
   signaldSendTimeout: 40, // millis
   signaldRequestTimeout: 10, // millis

@@ -4,7 +4,7 @@ const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
-  signal: { supportPhoneNumber },
+  signal: { diagnosticsPhoneNumber },
 } = require('../../config')
 
 const logger = loggerOf('db.repositories.channel')
@@ -77,15 +77,28 @@ const findDeep = phoneNumber =>
     ],
   })
 
-const isSysadmin = async phoneNumber => {
-  if (!supportPhoneNumber) return false
+// string => Promise<boolean>
+const isMaintainer = async phoneNumber => {
+  if (!diagnosticsPhoneNumber) return false
   try {
-    const sysadminPhoneNumbers = getAdminPhoneNumbers(await findDeep(supportPhoneNumber))
-    return sysadminPhoneNumbers.includes(phoneNumber)
+    const maintainerPhoneNumbers = getAdminPhoneNumbers(await getDiagnosticsChannel())
+    return maintainerPhoneNumbers.includes(phoneNumber)
   } catch (e) {
     logger.error(e)
     return false
   }
+}
+
+// () => Promise<Channel>
+const getDiagnosticsChannel = async () => {
+  if (!diagnosticsPhoneNumber) return null
+  return findDeep(diagnosticsPhoneNumber)
+}
+
+// () => Promise<Array<Membership>>
+const getMaintainers = async () => {
+  if (!diagnosticsPhoneNumber) return []
+  return getAdminMemberships(await getDiagnosticsChannel())
 }
 
 /************
@@ -124,11 +137,13 @@ module.exports = {
   getAllAdminsExcept,
   getAdminMemberships,
   getAdminPhoneNumbers,
+  getDiagnosticsChannel,
+  getMaintainers,
   getMemberPhoneNumbers,
   getMembersExcept,
   getMemberPhoneNumbersExcept,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
-  isSysadmin,
+  isMaintainer,
   update,
 }

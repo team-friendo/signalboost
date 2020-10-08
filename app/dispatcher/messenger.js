@@ -122,7 +122,7 @@ const respond = ({ channel, message, sender, command }) => {
       // Counting these pings would prevent us from detecting stale channels for recycling, which
       // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
       const shouldCount = !(
-        command === commands.INFO && (await channelRepository.isSysadmin(sender.phoneNumber))
+        command === commands.INFO && (await channelRepository.isMaintainer(sender.phoneNumber))
       )
       return shouldCount && messageCountRepository.countCommand(channel)
     })
@@ -154,6 +154,9 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
 
   if (status !== statuses.SUCCESS) return Promise.resolve()
 
+  //TODO(aguestuser|2020-10-08):
+  // - this is the ONLY path in which we use the `payload` field on the `CommandResult` returns from `processCommands`
+  // - perhaps we can think of a different way to recover the e164 numbers here and drop `payload` from `CommandResult`?
   switch (command) {
     case commands.ADD:
       // in ADD case, payload is an e164 phone number

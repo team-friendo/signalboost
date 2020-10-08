@@ -70,6 +70,7 @@ const _callbackFor = messageType =>
     [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
+    [messageTypes.VERSION]: _handleVersionResponse,
   }[messageType])
 
 // SignaldMessageType => number
@@ -79,6 +80,7 @@ const _timeoutFor = messageType =>
     [messageTypes.SEND]: signaldSendTimeout,
     [messageTypes.TRUST]: signaldRequestTimeout,
     [messageTypes.VERIFY]: signaldVerifyTimeout,
+    [messageTypes.VERSION]: signaldRequestTimeout,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
@@ -93,7 +95,7 @@ const handle = message => {
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
-    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${message.id}`],
+    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-0`],
   }[message.type] || { callback: util.noop }
   callback({ message, resolve, reject, state })
 }
@@ -165,6 +167,11 @@ const _handleHealthcheckResponse = ({ message, resolve, state }) => {
   resolve((util.nowInMillis() - state.whenSent) / 1000)
 }
 
+const _handleVersionResponse = ({ message, resolve }) => {
+  delete registry[`${messageTypes.VERSION}-0`]
+  resolve(message.data.version)
+}
+
 // HELPERS
 const _parseHealthcheckResponseId = sdMessage =>
   get(sdMessage, 'data.dataMessage.body', '')
@@ -181,4 +188,5 @@ module.exports = {
   _handleSendResponse,
   _handleTrustResponse,
   _handleVerifyResponse,
+  _handleVersionResponse,
 }

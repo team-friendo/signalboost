@@ -425,14 +425,13 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
 }
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `Un-e nouvel-le admin ${addedAdmin} a été ajouté e par ${commandIssuer}`,
+  adminAdded: `Un-e nouvel-le admin a été ajouté.`,
 
   adminRemoved: "Un-e admin vient d'être supprimé.",
 
   subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
 
-  adminLeft: 'Un-e admin vient de quitter le canal',
+  adminLeft: 'Un-e admin vient de quitter le canal.',
 
   channelDestroyed:
     'La canal et tous les enregistrements associés ont été définitivement détruits.',
@@ -502,6 +501,16 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
+
+  restartRequesterNotAuthorized:
+    "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",
+  restartChannelNotAuthorized:
+    'Vous essayez de redémarrer Signalboost? Vous utilisez le mauvais canal pour cela! Réessayez sur le canal de diagnostic.',
+  restartPassNotAuthorized:
+    'Vous essayez de redémarrer Signalboost? Vous avez utilisé la mauvaise phrase de passe pour cela!',
+  restartSuccessNotification: adminId => `Signalboost a été redémarré par ${adminId}`,
+  restartSuccessResponse: 'Signalboost a été redémarré avec succès',
+  restartFailure: errorMessage => `Échec du redémarrage de Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
     'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',

@@ -1,16 +1,15 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach } from 'mocha'
+import { afterEach, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
-import { sample, times } from 'lodash'
+import { mapValues, merge, sample, times, values } from 'lodash'
 import { processCommand } from '../../../../app/dispatcher/commands'
 import { commands, toggles, vouchModes } from '../../../../app/dispatcher/commands/constants'
 import { statuses } from '../../../../app/util'
-import { languages } from '../../../../app/language'
-import { commandResponses as CR } from '../../../../app/dispatcher/strings/messages/EN'
+import { defaultLanguage, languages } from '../../../../app/language'
 import signal from '../../../../app/signal'
 import channelRepository from '../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../app/db/repositories/invite'
-import membershipRepository from '../../../../app/db/repositories/membership'
+import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
 import eventRepository from '../../../../app/db/repositories/event'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
@@ -18,7 +17,6 @@ import phoneNumberService from '../../../../app/registrar/phoneNumber'
 import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
-import { memberTypes } from '../../../../app/db/repositories/membership'
 import { sdMessageOf } from '../../../../app/signal/constants'
 import {
   adminMembershipFactory,
@@ -29,9 +27,58 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
-import { defaultLanguage } from '../../../../app/language'
+import app from '../../../../app'
+const {
+  auth: { maintainerPassphrase },
+  signal: { diagnosticsPhoneNumber },
+} = require('../../../../app/config')
 
 describe('executing commands', () => {
+  /********************************************************
+   * Fancy test setup ahoy! Motivation: we want to usefully assert on distinctions between:
+   *
+   * (1) the language a command was issued in
+   * (2) the language of the recipient of command responses
+   * (3) the language of the recipient of notifications
+   * (4) the language that a notification, parse error, or command response is ulimately issued in
+   *
+   * Where all of the above may differ from one another.
+   *
+   * To do that we:
+   *
+   * - pick a random language to use for commands issued in each run of this test suite, and assign it to
+   *   `language`
+   * - import the command mapping for the given language, then call `mapValues` on it to remove all but the
+   *   first command variant from the map's value
+   * - this yields a map from command keyword to a single command string variant
+   *   for use in tests called `localizedCmds`.
+   *
+   * Usage of `localizedCmds` in TEST SETUP is as follows:
+   *
+   * - every time you want to issue a command in a setup step, use `localizedCmds.<COMMAND_KEYWORD>`.
+   * - this will to generate commands in different languages for every run of this test suite
+   * - eg, if `language` is set to `'ES'`, then `localizedCmds.ACCEPT` would genereat `'ACCEPTAR'`
+   *
+   * We also provide helper functions to generate message strings (command responses, notifications, or parse errors)
+   * in either the language of the message recipient's membership or in the langauge the command was issued in
+   * (for instances where we can't infer membership of the sender or know they don't have one)
+   *
+   *********************************************************/
+
+  // generate map of command strings in a random language
+  const language = sample(values(languages))
+  const localizedCmds = mapValues(
+    require(`../../../../app/dispatcher/strings/commands/${language}`),
+    commandVariants => commandVariants[0],
+  )
+  // provide language+member-specific selectors
+  const commandResponsesInCommandLang = messagesIn(language).commandResponses
+  const parseErrorsInCommandLang = messagesIn(language).parseErrors
+  const notificationsInCommandLang = messagesIn(language).notifications
+  const commandResponsesFor = sender => messagesIn(sender.language).commandResponses
+  const notificationsFor = member => messagesIn(member.language).notifications
+  const prefixesFor = member => messagesIn(member.language).prefixes
+
   const channel = {
     name: 'foobar',
     description: 'foobar channel description',
@@ -40,8 +87,18 @@ describe('executing commands', () => {
     vouchMode: vouchModes.OFF,
     deauthorizations: [deauthorizationFactory()],
     memberships: [
-      ...times(3, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
-      ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
+      ...times(3, () =>
+        adminMembershipFactory({
+          channelPhoneNumber: '+13333333333',
+          language: sample(values(languages)),
+        }),
+      ),
+      ...times(2, () =>
+        subscriberMembershipFactory({
+          channelPhoneNumber: '+13333333333',
+          language: sample(values(languages)),
+        }),
+      ),
     ],
     messageCount: { broadcastIn: 42 },
   }
@@ -59,7 +116,7 @@ describe('executing commands', () => {
   const randomPerson = {
     phoneNumber: genPhoneNumber(),
     type: memberTypes.NONE,
-    language: languages.EN,
+    language,
   }
   const newAdminPhoneNumber = genPhoneNumber()
   const newAdminMembership = adminMembershipFactory({
@@ -88,7 +145,7 @@ describe('executing commands', () => {
     const dispatchable = {
       channel: { ...channel, vouchMode: 'ON', vouchLevel: 1 },
       sender: randomPerson,
-      sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: 'ACCEPT' }),
+      sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: localizedCmds.ACCEPT }),
     }
     let isMemberStub, countInvitesStub, acceptStub
     beforeEach(() => {
@@ -104,7 +161,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           payload: '',
           status: statuses.ERROR,
-          message: CR.accept.alreadyMember,
+          message: commandResponsesFor(randomPerson).accept.alreadyMember,
           notifications: [],
         })
       })
@@ -124,7 +181,11 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.ERROR,
-              message: CR.accept.belowVouchLevel(channel, channel.vouchLevel, 0),
+              message: commandResponsesInCommandLang.accept.belowVouchLevel(
+                channel,
+                channel.vouchLevel,
+                0,
+              ),
               notifications: [],
             })
           })
@@ -139,7 +200,7 @@ describe('executing commands', () => {
                 command: commands.ACCEPT,
                 payload: '',
                 status: statuses.SUCCESS,
-                message: CR.accept.success(channel),
+                message: commandResponsesInCommandLang.accept.success(channel),
                 notifications: [],
               })
             })
@@ -153,7 +214,7 @@ describe('executing commands', () => {
                 command: commands.ACCEPT,
                 payload: '',
                 status: statuses.ERROR,
-                message: CR.accept.dbError,
+                message: messagesIn(randomPerson.language).commandResponses.accept.dbError,
                 notifications: [],
               })
             })
@@ -179,7 +240,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.SUCCESS,
-              message: CR.accept.success(channel),
+              message: commandResponsesInCommandLang.accept.success(channel),
               notifications: [],
             })
           })
@@ -193,7 +254,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.ERROR,
-              message: CR.accept.dbError,
+              message: messagesIn(randomPerson.language).commandResponses.accept.dbError,
               notifications: [],
             })
           })
@@ -209,7 +270,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           payload: '',
           status: statuses.ERROR,
-          message: CR.accept.dbError,
+          message: commandResponsesInCommandLang.accept.dbError,
           notifications: [],
         })
       })
@@ -226,7 +287,7 @@ describe('executing commands', () => {
           command: commands.ACCEPT,
           payload: '',
           status: statuses.ERROR,
-          message: CR.accept.dbError,
+          message: commandResponsesInCommandLang.accept.dbError,
           notifications: [],
         })
       })
@@ -236,13 +297,13 @@ describe('executing commands', () => {
       it('returns an error and message', async () => {
         const _dispatchable = {
           ...dispatchable,
-          sdMessage: sdMessageOf({ sender: channel, message: 'accept my life' }),
+          sdMessage: sdMessageOf({ sender: channel, message: `${localizedCmds.ACCEPT} my life` }),
         }
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.ACCEPT,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('accept'),
+          message: messagesIn(language).parseErrors.unnecessaryPayload(localizedCmds.ACCEPT),
           notifications: [],
         })
       })
@@ -261,7 +322,10 @@ describe('executing commands', () => {
       const sender = admin
 
       describe('when payload is a valid phone number', () => {
-        const sdMessage = sdMessageOf({ sender: channel, message: `ADD ${rawNewAdminPhoneNumber}` })
+        const sdMessage = sdMessageOf({
+          sender: channel,
+          message: `${localizedCmds.ADD} ${rawNewAdminPhoneNumber}`,
+        })
         // to simulate situation in which we have not yet added the admin...
         const _channel = { ...channel, memberships: channel.memberships.slice(1) }
         const dispatchable = { channel: _channel, sender, sdMessage }
@@ -282,7 +346,7 @@ describe('executing commands', () => {
                 command: commands.ADD,
                 payload: newAdminPhoneNumber,
                 status: statuses.SUCCESS,
-                message: CR.add.success(newAdminPhoneNumber),
+                message: commandResponsesFor(sender).add.success(newAdminPhoneNumber),
                 notifications: [
                   // welcome message to newly added admin
                   {
@@ -321,7 +385,7 @@ describe('executing commands', () => {
                 command: commands.ADD,
                 payload: newAdminPhoneNumber,
                 status: statuses.ERROR,
-                message: CR.add.dbError(newAdminPhoneNumber),
+                message: commandResponsesFor(sender).add.dbError(newAdminPhoneNumber),
                 notifications: [],
               })
             })
@@ -331,7 +395,7 @@ describe('executing commands', () => {
         describe('when new admin has been previously deauthorized', () => {
           const sdMessage = sdMessageOf({
             sender: channel,
-            message: `ADD ${deauthorizedPhoneNumber}`,
+            message: `${localizedCmds.ADD} ${deauthorizedPhoneNumber}`,
           })
           const dispatchable = { channel, sender, sdMessage }
 
@@ -358,6 +422,7 @@ describe('executing commands', () => {
                       adminMembershipFactory({
                         channelPhoneNumber: chPnum,
                         memberPhoneNumber: adminPnum,
+                        language,
                       }),
                     ),
                   ),
@@ -367,7 +432,9 @@ describe('executing commands', () => {
                 it('returns a SUCCESS status, message, and notifications', async () => {
                   const result = await processCommand(dispatchable)
                   expect(result.status).to.eql(statuses.SUCCESS)
-                  expect(result.message).to.eql(CR.add.success(deauthorizedPhoneNumber))
+                  expect(result.message).to.eql(
+                    commandResponsesFor(sender).add.success(deauthorizedPhoneNumber),
+                  )
                   expect(result.notifications.length).to.eql(3)
                 })
               })
@@ -380,7 +447,7 @@ describe('executing commands', () => {
         const dispatchable = {
           channel,
           sender,
-          sdMessage: sdMessageOf({ sender: channel, message: 'ADD foo' }),
+          sdMessage: sdMessageOf({ sender: channel, message: `${localizedCmds.ADD} foo` }),
         }
         let result
         beforeEach(async () => (result = await processCommand(dispatchable)))
@@ -394,7 +461,7 @@ describe('executing commands', () => {
             command: commands.ADD,
             payload: '',
             status: statuses.ERROR,
-            message: CR.add.invalidPhoneNumber('foo'),
+            message: messagesIn(language).parseErrors.invalidPhoneNumber('foo'),
             notifications: [],
           })
         })
@@ -419,7 +486,7 @@ describe('executing commands', () => {
           command: commands.ADD,
           payload: newAdminPhoneNumber,
           status: statuses.UNAUTHORIZED,
-          message: CR.add.notAdmin,
+          message: commandResponsesFor(subscriber).add.notAdmin,
           notifications: [],
         })
       })
@@ -429,7 +496,7 @@ describe('executing commands', () => {
   describe('BROADCAST command', () => {
     const sdMessage = sdMessageOf({
       sender: channel.phoneNumber,
-      message: 'BROADCAST hello friendos!',
+      message: `${localizedCmds.BROADCAST} hello friendos!`,
       attachments,
     })
 
@@ -473,7 +540,7 @@ describe('executing commands', () => {
           command: commands.BROADCAST,
           payload: 'hello friendos!',
           status: statuses.UNAUTHORIZED,
-          message: CR.broadcast.notAdmin,
+          message: commandResponsesFor(subscriber).broadcast.notAdmin,
           notifications: [],
         })
       })
@@ -484,7 +551,7 @@ describe('executing commands', () => {
     const dispatchable = {
       channel,
       sender: randomPerson,
-      sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: 'DECLINE' }),
+      sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: localizedCmds.DECLINE }),
     }
 
     let declineStub
@@ -498,7 +565,7 @@ describe('executing commands', () => {
           command: commands.DECLINE,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.decline.success,
+          message: commandResponsesInCommandLang.decline.success,
           notifications: [],
         })
       })
@@ -512,7 +579,7 @@ describe('executing commands', () => {
           command: commands.DECLINE,
           payload: '',
           status: statuses.ERROR,
-          message: CR.decline.dbError,
+          message: commandResponsesInCommandLang.decline.dbError,
           notifications: [],
         })
       })
@@ -522,13 +589,13 @@ describe('executing commands', () => {
       it('returns an error and message', async () => {
         const _dispatchable = {
           ...dispatchable,
-          sdMessage: sdMessageOf({ sender: channel, message: 'decline this' }),
+          sdMessage: sdMessageOf({ sender: channel, message: `${localizedCmds.DECLINE} this` }),
         }
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.DECLINE,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('decline'),
+          message: messagesIn(language).parseErrors.unnecessaryPayload(localizedCmds.DECLINE),
           notifications: [],
         })
       })
@@ -538,7 +605,7 @@ describe('executing commands', () => {
   describe('DESTROY command', () => {
     const _dispatchable = {
       channel,
-      sdMessage: sdMessageOf({ sender: channel, message: 'DESTROY' }),
+      sdMessage: sdMessageOf({ sender: channel, message: localizedCmds.DESTROY }),
     }
 
     describe('when issuer is an admin', () => {
@@ -548,7 +615,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.DESTROY,
           status: statuses.SUCCESS,
-          message: CR.destroy.confirm,
+          message: commandResponsesFor(admin).destroy.confirm,
           payload: '',
           notifications: [],
         })
@@ -563,7 +630,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.DESTROY,
             status: statuses.UNAUTHORIZED,
-            message: CR.destroy.notAdmin,
+            message: commandResponsesFor(sender).destroy.notAdmin,
             payload: '',
             notifications: [],
           })
@@ -575,7 +642,7 @@ describe('executing commands', () => {
   describe('DESTROY_CONFIRM command', () => {
     const _dispatchable = {
       channel,
-      sdMessage: sdMessageOf({ sender: channel, message: 'CONFIRM DESTROY' }),
+      sdMessage: sdMessageOf({ sender: channel, message: localizedCmds.DESTROY_CONFIRM }),
     }
 
     let destroyStub
@@ -602,7 +669,7 @@ describe('executing commands', () => {
             command: commands.DESTROY_CONFIRM,
             payload: '',
             status: statuses.SUCCESS,
-            message: CR.destroy.success,
+            message: commandResponsesFor(admin).destroy.success,
             notifications: [],
           })
         })
@@ -616,7 +683,7 @@ describe('executing commands', () => {
             command: commands.DESTROY_CONFIRM,
             payload: '',
             status: statuses.ERROR,
-            message: CR.destroy.error,
+            message: commandResponsesFor(admin).destroy.error,
             notifications: [],
           })
         })
@@ -642,7 +709,7 @@ describe('executing commands', () => {
             command: commands.DESTROY_CONFIRM,
             status: statuses.UNAUTHORIZED,
             payload: '',
-            message: CR.destroy.notAdmin,
+            message: commandResponsesFor(sender).destroy.notAdmin,
             notifications: [],
           })
         })
@@ -651,7 +718,7 @@ describe('executing commands', () => {
   })
 
   describe('HELP command', () => {
-    const sdMessage = sdMessageOf({ sender: channel, message: 'HELP' })
+    const sdMessage = sdMessageOf({ sender: channel, message: localizedCmds.HELP })
 
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
@@ -661,7 +728,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.help.admin,
+          message: commandResponsesFor(admin).help.admin,
           notifications: [],
         })
       })
@@ -675,7 +742,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.help.subscriber,
+          message: commandResponsesFor(subscriber).help.subscriber,
           notifications: [],
         })
       })
@@ -689,7 +756,7 @@ describe('executing commands', () => {
           command: commands.HELP,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.help.subscriber,
+          message: commandResponsesFor(randomPerson).help.subscriber,
           notifications: [],
         })
       })
@@ -700,13 +767,18 @@ describe('executing commands', () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
-          sdMessage: sdMessageOf({ sender: channel, message: 'help me find the march' }),
+          sdMessage: sdMessageOf({
+            sender: channel,
+            message: `${localizedCmds.HELP} me find the march`,
+          }),
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.HELP,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('help'),
+          message: messagesIn(randomPerson.language).parseErrors.unnecessaryPayload(
+            localizedCmds.HELP,
+          ),
           notifications: [],
         })
       })
@@ -714,7 +786,7 @@ describe('executing commands', () => {
   })
 
   describe('INFO command', () => {
-    const sdMessage = sdMessageOf({ sender: channel.phoneNumber, message: 'INFO' })
+    const sdMessage = sdMessageOf({ sender: channel.phoneNumber, message: localizedCmds.INFO })
 
     describe('when sender is an admin', () => {
       const dispatchable = { channel, sender: admin, sdMessage }
@@ -724,7 +796,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.info[memberTypes.ADMIN](channel),
+          message: commandResponsesFor(admin).info[memberTypes.ADMIN](channel),
           notifications: [],
         })
       })
@@ -738,7 +810,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.info[memberTypes.SUBSCRIBER](channel),
+          message: commandResponsesFor(subscriber).info[memberTypes.SUBSCRIBER](channel),
           notifications: [],
         })
       })
@@ -752,7 +824,7 @@ describe('executing commands', () => {
           command: commands.INFO,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.info[memberTypes.NONE](channel),
+          message: commandResponsesFor(randomPerson).info[memberTypes.NONE](channel),
           notifications: [],
         })
       })
@@ -763,13 +835,18 @@ describe('executing commands', () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
-          sdMessage: sdMessageOf({ sender: channel, message: 'info wars did it' }),
+          sdMessage: sdMessageOf({
+            sender: channel,
+            message: `${localizedCmds.INFO} wars did it`,
+          }),
         }
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.INFO,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('info'),
+          // TODO(aguestuser|2020-10-07): we should maybe make an effort to return this in the sender language?
+          //  (currently we infer the langauge from the command, but, uniquely, INFO always defaults to english)
+          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload(localizedCmds.INFO),
           notifications: [],
         })
       })
@@ -781,7 +858,7 @@ describe('executing commands', () => {
     const inviteePhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
     const sdMessage = sdMessageOf({
       sender: channel,
-      message: `INVITE ${inviteePhoneNumbers.join(',')}`,
+      message: `${localizedCmds.INVITE} ${inviteePhoneNumbers.join(',')}`,
     })
 
     let isMemberStub, issueInviteStub, countInvitesStub
@@ -803,7 +880,7 @@ describe('executing commands', () => {
             command: commands.INVITE,
             payload: inviteePhoneNumbers,
             status: statuses.UNAUTHORIZED,
-            message: CR.invite.notSubscriber,
+            message: commandResponsesFor(randomPerson).invite.notSubscriber,
             notifications: [],
           })
         })
@@ -850,7 +927,7 @@ describe('executing commands', () => {
                 command: commands.INVITE,
                 payload: inviteePhoneNumbers,
                 status: statuses.SUCCESS,
-                message: CR.invite.success(2),
+                message: commandResponsesFor(admin).invite.success(2),
                 notifications: [],
               })
             })
@@ -876,7 +953,7 @@ describe('executing commands', () => {
                     command: commands.INVITE,
                     payload: inviteePhoneNumbers,
                     status: statuses.SUCCESS,
-                    message: CR.invite.success(2),
+                    message: commandResponsesFor(admin).invite.success(2),
                     notifications: [],
                   })
                 })
@@ -895,16 +972,14 @@ describe('executing commands', () => {
                     command: commands.INVITE,
                     payload: inviteePhoneNumbers,
                     status: statuses.ERROR,
-                    message: CR.invite.dbErrors(
+                    message: commandResponsesFor(admin).invite.dbErrors(
                       [inviteePhoneNumbers[1]],
                       inviteePhoneNumbers.length,
                     ),
                     notifications: [
                       {
                         recipient: inviteePhoneNumbers[0],
-                        message: messagesIn(
-                          vouchingOnChannel.language,
-                        ).notifications.inviteReceived(vouchingOnChannel.name),
+                        message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
                       },
                     ],
                   })
@@ -929,19 +1004,15 @@ describe('executing commands', () => {
                   command: commands.INVITE,
                   payload: inviteePhoneNumbers,
                   status: statuses.SUCCESS,
-                  message: CR.invite.success(2),
+                  message: commandResponsesFor(admin).invite.success(2),
                   notifications: [
                     {
                       recipient: inviteePhoneNumbers[0],
-                      message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                        vouchingOnChannel.name,
-                      ),
+                      message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
                     },
                     {
                       recipient: inviteePhoneNumbers[1],
-                      message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                        vouchingOnChannel.name,
-                      ),
+                      message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
                     },
                   ],
                 })
@@ -953,9 +1024,9 @@ describe('executing commands', () => {
         describe('when given duplicate invitee phone numbers', () => {
           const _sdMessage = {
             ...sdMessage,
-            messageBody: `INVITE ${inviteePhoneNumbers.join(', ')}, ${inviteePhoneNumbers.join(
+            messageBody: `${localizedCmds.INVITE} ${inviteePhoneNumbers.join(
               ', ',
-            )}`,
+            )}, ${inviteePhoneNumbers.join(', ')}`,
           }
           const dispatchable = {
             sdMessage: _sdMessage,
@@ -980,19 +1051,15 @@ describe('executing commands', () => {
                 command: commands.INVITE,
                 payload: [...inviteePhoneNumbers, ...inviteePhoneNumbers],
                 status: statuses.SUCCESS,
-                message: CR.invite.success(2),
+                message: commandResponsesFor(admin).invite.success(2),
                 notifications: [
                   {
                     recipient: inviteePhoneNumbers[0],
-                    message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                      vouchingOnChannel.name,
-                    ),
+                    message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
                   },
                   {
                     recipient: inviteePhoneNumbers[1],
-                    message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                      vouchingOnChannel.name,
-                    ),
+                    message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
                   },
                 ],
               })
@@ -1009,7 +1076,7 @@ describe('executing commands', () => {
               message: `INVITAR ${inviteePhoneNumbers[0]}`,
             }),
             channel: vouchingOnChannel,
-            sender: admin,
+            sender: { ...admin, language: languages.EN },
           }
 
           let res
@@ -1023,7 +1090,7 @@ describe('executing commands', () => {
               command: commands.INVITE,
               payload: [inviteePhoneNumbers[0]],
               status: statuses.SUCCESS,
-              message: CR.invite.success(1),
+              message: messagesIn(languages.EN).commandResponses.invite.success(1),
               notifications: [
                 {
                   recipient: inviteePhoneNumbers[0],
@@ -1055,19 +1122,15 @@ describe('executing commands', () => {
             command: commands.INVITE,
             payload: inviteePhoneNumbers,
             status: statuses.SUCCESS,
-            message: CR.invite.success(2),
+            message: commandResponsesFor(subscriber).invite.success(2),
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                  vouchingOnChannel.name,
-                ),
+                message: messagesIn(language).notifications.inviteReceived(vouchingOnChannel.name),
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(vouchingOnChannel.language).notifications.inviteReceived(
-                  vouchingOnChannel.name,
-                ),
+                message: messagesIn(language).notifications.inviteReceived(vouchingOnChannel.name),
               },
             ],
           })
@@ -1101,17 +1164,17 @@ describe('executing commands', () => {
             command: commands.INVITE,
             payload: inviteePhoneNumbers,
             status: statuses.SUCCESS,
-            message: CR.invite.success(2),
+            message: commandResponsesFor(admin).invite.success(2),
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(vouchingAdminChannel.language).notifications.inviteReceived(
+                message: messagesIn(language).notifications.inviteReceived(
                   vouchingAdminChannel.name,
                 ),
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(vouchingAdminChannel.language).notifications.inviteReceived(
+                message: messagesIn(language).notifications.inviteReceived(
                   vouchingAdminChannel.name,
                 ),
               },
@@ -1139,7 +1202,7 @@ describe('executing commands', () => {
               command: commands.INVITE,
               payload: inviteePhoneNumbers,
               status: statuses.UNAUTHORIZED,
-              message: CR.invite.notSubscriber,
+              message: commandResponsesFor(sender).invite.notSubscriber,
               notifications: [],
             })
           })
@@ -1164,19 +1227,23 @@ describe('executing commands', () => {
             command: commands.INVITE,
             payload: inviteePhoneNumbers,
             status: statuses.SUCCESS,
-            message: CR.invite.success(2),
+            message: commandResponsesFor(admin).invite.success(2),
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(
-                  extraVouchedChannel.language,
-                ).notifications.vouchedInviteReceived(extraVouchedChannel.name, 1, 2),
+                message: messagesIn(language).notifications.vouchedInviteReceived(
+                  extraVouchedChannel.name,
+                  1,
+                  2,
+                ),
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(
-                  extraVouchedChannel.language,
-                ).notifications.vouchedInviteReceived(extraVouchedChannel.name, 1, 2),
+                message: messagesIn(language).notifications.vouchedInviteReceived(
+                  extraVouchedChannel.name,
+                  1,
+                  2,
+                ),
               },
             ],
           })
@@ -1194,15 +1261,15 @@ describe('executing commands', () => {
           command: commands.INVITE,
           payload: inviteePhoneNumbers,
           status: statuses.SUCCESS,
-          message: CR.invite.success(2),
+          message: commandResponsesFor(admin).invite.success(2),
           notifications: [
             {
               recipient: inviteePhoneNumbers[0],
-              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+              message: messagesIn(language).notifications.inviteReceived(channel.name),
             },
             {
               recipient: inviteePhoneNumbers[1],
-              message: messagesIn(channel.language).notifications.inviteReceived(channel.name),
+              message: messagesIn(language).notifications.inviteReceived(channel.name),
             },
           ],
         })
@@ -1211,7 +1278,7 @@ describe('executing commands', () => {
   })
 
   describe('JOIN command', () => {
-    const sdMessage = sdMessageOf({ sender: channel, message: 'JOIN' })
+    const sdMessage = sdMessageOf({ sender: channel, message: localizedCmds.JOIN })
     let addSubscriberStub
 
     beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
@@ -1225,7 +1292,7 @@ describe('executing commands', () => {
           command: commands.JOIN,
           payload: '',
           status: statuses.ERROR,
-          message: CR.join.inviteRequired,
+          message: commandResponsesInCommandLang.join.inviteRequired,
           notifications: [],
         })
       })
@@ -1243,7 +1310,7 @@ describe('executing commands', () => {
             expect(addSubscriberStub.getCall(0).args).to.eql([
               channel.phoneNumber,
               randomPerson.phoneNumber,
-              languages.EN,
+              language,
             ])
           })
         })
@@ -1256,7 +1323,7 @@ describe('executing commands', () => {
               command: commands.JOIN,
               payload: '',
               status: statuses.SUCCESS,
-              message: CR.join.success(channel),
+              message: commandResponsesInCommandLang.join.success(channel),
               notifications: [],
             })
           })
@@ -1276,7 +1343,7 @@ describe('executing commands', () => {
               command: commands.JOIN,
               payload: '',
               status: statuses.ERROR,
-              message: CR.join.error,
+              message: commandResponsesInCommandLang.join.error,
               notifications: [],
             })
           })
@@ -1297,7 +1364,7 @@ describe('executing commands', () => {
             command: commands.JOIN,
             payload: '',
             status: statuses.ERROR,
-            message: CR.join.alreadyMember,
+            message: commandResponsesInCommandLang.join.alreadyMember,
             notifications: [],
           })
         })
@@ -1317,7 +1384,7 @@ describe('executing commands', () => {
             command: commands.JOIN,
             payload: '',
             status: statuses.ERROR,
-            message: CR.join.alreadyMember,
+            message: commandResponsesInCommandLang.join.alreadyMember,
             notifications: [],
           })
         })
@@ -1367,7 +1434,7 @@ describe('executing commands', () => {
             command: commands.LEAVE,
             payload: '',
             status: statuses.SUCCESS,
-            message: CR.leave.success,
+            message: commandResponsesFor(subscriber).leave.success,
             notifications: [],
           })
         })
@@ -1387,7 +1454,7 @@ describe('executing commands', () => {
             command: commands.LEAVE,
             payload: '',
             status: statuses.ERROR,
-            message: CR.leave.error,
+            message: commandResponsesFor(subscriber).leave.error,
             notifications: [],
           })
         })
@@ -1408,7 +1475,7 @@ describe('executing commands', () => {
           command: commands.LEAVE,
           payload: '',
           status: statuses.UNAUTHORIZED,
-          message: CR.leave.notSubscriber,
+          message: commandResponsesFor(randomPerson).leave.notSubscriber,
           notifications: [],
         })
       })
@@ -1433,7 +1500,7 @@ describe('executing commands', () => {
           command: commands.LEAVE,
           payload: '',
           status: statuses.SUCCESS,
-          message: CR.leave.success,
+          message: commandResponsesFor(admin).leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
             recipient: membership.memberPhoneNumber,
             message: messagesIn(membership.language).notifications.adminLeft,
@@ -1447,14 +1514,17 @@ describe('executing commands', () => {
         const dispatchable = {
           channel,
           sender: randomPerson,
-          sdMessage: sdMessageOf({ sender: channel, message: 'leave that to us' }),
+          sdMessage: sdMessageOf({
+            sender: channel,
+            message: `${localizedCmds.LEAVE} that to us`,
+          }),
         }
 
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.LEAVE,
           payload: '',
           status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('leave'),
+          message: parseErrorsInCommandLang.unnecessaryPayload(localizedCmds.LEAVE),
           notifications: [],
         })
       })
@@ -1476,7 +1546,7 @@ describe('executing commands', () => {
           command: commands.PRIVATE,
           payload: 'hello this is private!',
           status: statuses.UNAUTHORIZED,
-          message: CR.private.notAdmin,
+          message: commandResponsesFor(subscriber).private.notAdmin,
           notifications: [],
         })
       })
@@ -1506,7 +1576,8 @@ describe('executing commands', () => {
   })
 
   describe('REMOVE command', () => {
-    const removalTargetNumber = channel.memberships[1].memberPhoneNumber
+    const removalTarget = channel.memberships[1]
+    const removalTargetNumber = removalTarget.memberPhoneNumber
     let validateStub, removeMemberStub, resolveMemberTypeStub
 
     beforeEach(() => {
@@ -1523,7 +1594,7 @@ describe('executing commands', () => {
       describe('when payload is a valid phone number', () => {
         const sdMessage = sdMessageOf({
           sender: channel.phoneNumber,
-          message: `REMOVE ${removalTargetNumber}`,
+          message: `${localizedCmds.REMOVE} ${removalTargetNumber}`,
         })
         const dispatchable = { channel, sender, sdMessage }
         beforeEach(() => validateStub.returns(true))
@@ -1547,17 +1618,17 @@ describe('executing commands', () => {
                 command: commands.REMOVE,
                 payload: removalTargetNumber,
                 status: statuses.SUCCESS,
-                message: CR.remove.success(removalTargetNumber),
+                message: commandResponsesFor(admin).remove.success(removalTargetNumber),
                 notifications: [
                   // removed
                   {
                     recipient: removalTargetNumber,
-                    message: messagesIn(languages.EN).notifications.toRemovedAdmin,
+                    message: notificationsFor(removalTarget).toRemovedAdmin,
                   },
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: messagesIn(languages.EN).notifications.adminRemoved,
+                    message: notificationsFor(channel.memberships[2]).adminRemoved,
                   },
                 ],
               })
@@ -1578,7 +1649,7 @@ describe('executing commands', () => {
                 command: commands.REMOVE,
                 payload: removalTargetNumber,
                 status: statuses.ERROR,
-                message: CR.remove.dbError(removalTargetNumber),
+                message: commandResponsesFor(admin).remove.dbError(removalTargetNumber),
                 notifications: [],
               })
             })
@@ -1604,17 +1675,17 @@ describe('executing commands', () => {
                 command: commands.REMOVE,
                 payload: removalTargetNumber,
                 status: statuses.SUCCESS,
-                message: CR.remove.success(removalTargetNumber),
+                message: commandResponsesFor(admin).remove.success(removalTargetNumber),
                 notifications: [
                   // removed
                   {
                     recipient: removalTargetNumber,
-                    message: messagesIn(languages.EN).notifications.toRemovedSubscriber,
+                    message: notificationsFor(removalTarget).toRemovedSubscriber,
                   },
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: messagesIn(languages.EN).notifications.subscriberRemoved,
+                    message: notificationsFor(channel.memberships[2]).subscriberRemoved,
                   },
                 ],
               })
@@ -1641,7 +1712,7 @@ describe('executing commands', () => {
               command: commands.REMOVE,
               payload: removalTargetNumber,
               status: statuses.ERROR,
-              message: CR.remove.targetNotMember(removalTargetNumber),
+              message: commandResponsesFor(admin).remove.targetNotMember(removalTargetNumber),
               notifications: [],
             })
           })
@@ -1649,7 +1720,7 @@ describe('executing commands', () => {
       })
 
       describe('when payload is not a valid phone number', async () => {
-        const sdMessage = sdMessageOf({ sender: channel, message: 'REMOVE foo' })
+        const sdMessage = sdMessageOf({ sender: channel, message: `${localizedCmds.REMOVE} foo` })
         const dispatchable = { channel, sender, sdMessage }
         let result
         beforeEach(async () => (result = await processCommand(dispatchable)))
@@ -1663,7 +1734,7 @@ describe('executing commands', () => {
             command: commands.REMOVE,
             payload: '',
             status: statuses.ERROR,
-            message: CR.remove.invalidPhoneNumber('foo'),
+            message: parseErrorsInCommandLang.invalidPhoneNumber('foo'),
             notifications: [],
           })
         })
@@ -1686,7 +1757,7 @@ describe('executing commands', () => {
           command: commands.REMOVE,
           payload: removalTargetNumber,
           status: statuses.UNAUTHORIZED,
-          message: CR.remove.notAdmin,
+          message: commandResponsesInCommandLang.remove.notAdmin,
           notifications: [],
         })
       })
@@ -1714,14 +1785,11 @@ describe('executing commands', () => {
             command: commands.RENAME,
             payload: 'foo',
             status: statuses.SUCCESS,
-            message: CR.rename.success(channel.name, 'foo'),
+            message: commandResponsesFor(admin).rename.success(channel.name, 'foo'),
             notifications: [
               ...bystanderAdminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: messagesIn(membership.language).notifications.channelRenamed(
-                  channel.name,
-                  'foo',
-                ),
+                message: notificationsFor(membership).channelRenamed(channel.name, 'foo'),
               })),
             ],
           })
@@ -1739,7 +1807,7 @@ describe('executing commands', () => {
             command: commands.RENAME,
             payload: 'foo',
             status: statuses.ERROR,
-            message: CR.rename.dbError(channel.name, 'foo'),
+            message: commandResponsesFor(admin).rename.dbError(channel.name, 'foo'),
             notifications: [],
           })
         })
@@ -1754,7 +1822,7 @@ describe('executing commands', () => {
           command: commands.RENAME,
           payload: 'foo',
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.notAdmin,
+          message: commandResponsesFor(subscriber).rename.notAdmin,
           notifications: [],
         })
       })
@@ -1768,7 +1836,7 @@ describe('executing commands', () => {
           command: commands.RENAME,
           payload: 'foo',
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.notAdmin,
+          message: commandResponsesInCommandLang.rename.notAdmin,
           notifications: [],
         })
       })
@@ -1777,13 +1845,12 @@ describe('executing commands', () => {
 
   describe('REPLY command', () => {
     const messageId = 1312
-    const crFR = messagesIn(languages.FR).commandResponses
     const dispatchable = {
       channel,
-      sender: { ...admin, language: languages.FR },
+      sender: admin,
       sdMessage: sdMessageOf({
         sender: channel.phoneNumber,
-        message: 'REPLY @1312 foo',
+        message: `${localizedCmds.REPLY} @${messageId} foo`,
         attachments,
       }),
     }
@@ -1795,58 +1862,32 @@ describe('executing commands', () => {
     })
 
     describe('when sender is an admin', () => {
-      describe('when hotline message id exists', () => {
-        beforeEach(() => {})
-
-        describe('when hotline message was from a subscriber', () => {
-          beforeEach(() => {
-            findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
-            findMembershipStub.returns(Promise.resolve(subscriber))
-          })
-
-          it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
-            expect(await processCommand(dispatchable)).to.eql({
-              command: commands.REPLY,
-              status: statuses.SUCCESS,
-              message: `[RÉPONSE AU HOTLINE @${messageId}]\nfoo`,
-              notifications: [
-                {
-                  recipient: subscriber.phoneNumber,
-                  message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
-                  attachments,
-                },
-                ...adminMemberships.map(({ memberPhoneNumber }) => ({
-                  recipient: memberPhoneNumber,
-                  message: `[REPLY TO HOTLINE @${messageId}]\nfoo`,
-                  attachments,
-                })),
-              ],
-              payload: { messageId: 1312, reply: 'foo' },
-            })
-          })
-        })
-      })
-
-      describe('when hotline message was from a non-subscriber', () => {
+      describe('when admin specifies a valid hotline id for message sent by subscriber', () => {
         beforeEach(() => {
-          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
-          findMembershipStub.returns(null)
+          findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+          findMembershipStub.returns(Promise.resolve(subscriber))
         })
 
-        it('returns SUCCESS with notifications for admins and subscriber associated with id', async () => {
+        it('returns SUCCESS w/ localized notifications for admins and hotline sender', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
-            message: `[RÉPONSE AU HOTLINE @${messageId}]\nfoo`,
+            message: `[${prefixesFor(admin).hotlineReplyOf(messageId, memberTypes.ADMIN)}]\nfoo`,
             notifications: [
               {
-                recipient: randomPerson.phoneNumber,
-                message: '[PRIVATE REPLY FROM ADMINS]\nfoo',
+                recipient: subscriber.phoneNumber,
+                message: `[${prefixesFor(subscriber).hotlineReplyOf(
+                  messageId,
+                  memberTypes.SUBSCRIBER,
+                )}]\nfoo`,
                 attachments,
               },
-              ...adminMemberships.map(({ memberPhoneNumber }) => ({
-                recipient: memberPhoneNumber,
-                message: `[REPLY TO HOTLINE @${messageId}]\nfoo`,
+              ...adminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: `[${prefixesFor(membership).hotlineReplyOf(
+                  messageId,
+                  memberTypes.ADMIN,
+                )}]\nfoo`,
                 attachments,
               })),
             ],
@@ -1855,16 +1896,70 @@ describe('executing commands', () => {
         })
       })
 
-      describe('when hotline message id does not exist', () => {
+      describe('when admin specifies valid hotline id for message from a non-subscriber', () => {
+        beforeEach(() => {
+          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
+          findMembershipStub.returns(null)
+        })
+
+        it('returns SUCCESS w/ localized notifications for admins and non-localized notification for hotline sender', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REPLY,
+            status: statuses.SUCCESS,
+            message: `[${prefixesFor(admin).hotlineReplyOf(messageId, memberTypes.ADMIN)}]\nfoo`,
+            notifications: [
+              {
+                recipient: randomPerson.phoneNumber,
+                message: `[${messagesIn(defaultLanguage).prefixes.hotlineReplyOf(
+                  messageId,
+                  memberTypes.SUBSCRIBER,
+                )}]\nfoo`,
+                attachments,
+              },
+              ...adminMemberships.map(membership => ({
+                recipient: membership.memberPhoneNumber,
+                message: `[${prefixesFor(membership).hotlineReplyOf(
+                  messageId,
+                  memberTypes.ADMIN,
+                )}]\nfoo`,
+                attachments,
+              })),
+            ],
+            payload: { messageId: 1312, reply: 'foo' },
+          })
+        })
+      })
+
+      describe('when admin specifies an id that does not exist', () => {
         beforeEach(() => findMemberPhoneNumberStub.callsFake(() => Promise.reject()))
 
         it('returns ERROR status', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.ERROR,
-            message: crFR.hotlineReply.invalidMessageId(messageId),
+            message: commandResponsesFor(admin).hotlineReply.invalidMessageId(messageId),
             notifications: [],
             payload: { messageId: 1312, reply: 'foo' },
+          })
+        })
+      })
+
+      describe('when admin specifies an invalid id', () => {
+        const _dispatchable = merge({}, dispatchable, {
+          sdMessage: {
+            messageBody: `${localizedCmds.REPLY} @ us if you can come tonight`,
+          },
+        })
+
+        it('returns an ERROR', async () => {
+          expect(await processCommand(_dispatchable)).to.eql({
+            command: commands.REPLY,
+            status: statuses.ERROR,
+            message: parseErrorsInCommandLang.invalidHotlineMessageId(
+              '@ us if you can come tonight',
+            ),
+            notifications: [],
+            payload: '@ us if you can come tonight',
           })
         })
       })
@@ -1877,9 +1972,134 @@ describe('executing commands', () => {
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.REPLY,
           status: statuses.UNAUTHORIZED,
-          message: CR.hotlineReply.notAdmin,
+          message: commandResponsesFor(subscriber).hotlineReply.notAdmin,
           notifications: [],
           payload: { messageId: 1312, reply: 'foo' },
+        })
+      })
+    })
+  })
+
+  describe('RESTART command', () => {
+    const dispatchable = {
+      channel: { ...channel, phoneNumber: diagnosticsPhoneNumber },
+      sender: admin,
+      sdMessage: sdMessageOf({
+        sender: channel.phoneNumber,
+        message: `${localizedCmds.RESTART} ${maintainerPassphrase}`,
+      }),
+    }
+    let isMaintainerStub, abortStub, isAliveStub, stopStub, runStub
+
+    beforeEach(() => {
+      isMaintainerStub = sinon.stub(channelRepository, 'isMaintainer')
+      sinon.stub(channelRepository, 'getMaintainers').returns(Promise.resolve(adminMemberships))
+      abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
+      stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
+      runStub = sinon.stub(app, 'run').returns(Promise.resolve())
+      isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
+    })
+
+    describe('when sent by non-maintainer', () => {
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(false)))
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: notificationsFor(admin).restartRequesterNotAuthorized,
+          notifications: [],
+          payload: maintainerPassphrase,
+        })
+      })
+    })
+
+    describe('when sent by maintainer on wrong channel with correct passphrase', () => {
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
+      const _dispatchable = merge({}, dispatchable, {
+        channel,
+        sdMessage: { messageBody: `${localizedCmds.RESTART} ${maintainerPassphrase}` },
+      })
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: notificationsFor(admin).restartChannelNotAuthorized,
+          notifications: [],
+          payload: maintainerPassphrase,
+        })
+      })
+    })
+
+    describe('when sent by maintainer on diagnostics channel with wrong passphrase', () => {
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
+      const _dispatchable = merge({}, dispatchable, {
+        sdMessage: { messageBody: `${localizedCmds.RESTART} foobar` },
+      })
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: notificationsFor(admin).restartPassNotAuthorized,
+          notifications: [],
+          payload: 'foobar',
+        })
+      })
+    })
+
+    describe('when sent by maintainer on diagnostics channel with correct passphrase', () => {
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
+
+      describe('in all cases', () => {
+        it('tries to restart signald and signalboost', async () => {
+          await processCommand(dispatchable)
+          ;[abortStub, stopStub, runStub, isAliveStub].forEach(stub =>
+            expect(stub.callCount).to.eql(1),
+          )
+        })
+      })
+
+      describe('when restart succeeds', () => {
+        it('returns SUCCESS', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESTART,
+            status: statuses.SUCCESS,
+            message: messagesIn(admin.language).notifications.restartSuccessResponse,
+            notifications: [
+              {
+                message: notificationsFor(adminMemberships[1]).restartSuccessNotification(
+                  admin.phoneNumber,
+                ),
+                recipient: adminMemberships[1].memberPhoneNumber,
+              },
+              {
+                message: notificationsFor(adminMemberships[2]).restartSuccessNotification(
+                  admin.phoneNumber,
+                ),
+                recipient: adminMemberships[2].memberPhoneNumber,
+              },
+            ],
+            payload: maintainerPassphrase,
+          })
+        })
+      })
+
+      describe('when restart fails', () => {
+        beforeEach(() => {
+          isMaintainerStub.returns(Promise.resolve(true))
+          isAliveStub.callsFake(() => Promise.reject('not alive!'))
+        })
+
+        it('returns ERROR', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.RESTART,
+            status: statuses.ERROR,
+            message: notificationsFor(admin).restartFailure('not alive!'),
+            notifications: [],
+            payload: maintainerPassphrase,
+          })
         })
       })
     })
@@ -1954,13 +2174,13 @@ describe('executing commands', () => {
         ...toggles.HOTLINE,
         isOn: true,
         command: commands.HOTLINE_ON,
-        commandStr: 'HOTLINE ON',
+        commandStr: localizedCmds.HOTLINE_ON,
       },
       {
         ...toggles.HOTLINE,
         isOn: false,
         command: commands.HOTLINE_OFF,
-        commandStr: 'HOTLINE OFF',
+        commandStr: localizedCmds.HOTLINE_OFF,
       },
     ]
 
@@ -1992,7 +2212,7 @@ describe('executing commands', () => {
               command,
               status: statuses.SUCCESS,
               payload: '',
-              message: CR.toggles[name].success(isOn),
+              message: commandResponsesFor(sender).toggles[name].success(isOn),
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
@@ -2011,7 +2231,7 @@ describe('executing commands', () => {
               command,
               payload: '',
               status: statuses.ERROR,
-              message: CR.toggles[name].dbError(isOn),
+              message: commandResponsesFor(sender).toggles[name].dbError(isOn),
               notifications: [],
             })
           })
@@ -2028,7 +2248,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.UNAUTHORIZED,
-            message: CR.toggles[name].notAdmin,
+            message: commandResponsesFor(sender).toggles[name].notAdmin,
             notifications: [],
           })
         })
@@ -2044,7 +2264,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.UNAUTHORIZED,
-            message: CR.toggles[name].notAdmin,
+            message: commandResponsesFor(sender).toggles[name].notAdmin,
             notifications: [],
           })
         })
@@ -2063,7 +2283,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.ERROR,
-            message: messagesIn(admin.language).parseErrors.unnecessaryPayload(commandStr),
+            message: parseErrorsInCommandLang.unnecessaryPayload(commandStr),
             notifications: [],
           })
         })
@@ -2079,17 +2299,17 @@ describe('executing commands', () => {
     const vouchingScenarios = [
       {
         command: commands.VOUCHING_ON,
-        commandStr: 'VOUCHING ON',
+        commandStr: localizedCmds.VOUCHING_ON,
         mode: 'ON',
       },
       {
         command: commands.VOUCHING_OFF,
-        commandStr: 'VOUCHING OFF',
+        commandStr: localizedCmds.VOUCHING_OFF,
         mode: 'OFF',
       },
       {
         command: commands.VOUCHING_ADMIN,
-        commandStr: 'VOUCHING ADMIN',
+        commandStr: localizedCmds.VOUCHING_ADMIN,
         mode: 'ADMIN',
       },
     ]
@@ -2111,10 +2331,6 @@ describe('executing commands', () => {
         })
 
         describe('when db update succeeds', () => {
-          const notificationMsg = messagesIn(sender.language).notifications.vouchModeChanged(
-            vouchModes[mode],
-          )
-
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
           it('returns a SUCCESS status, message, and notifications', async () => {
@@ -2122,11 +2338,12 @@ describe('executing commands', () => {
               command,
               status: statuses.SUCCESS,
               payload: '',
-              message: CR.vouchMode.success(vouchModes[mode]),
+              message: commandResponsesFor(sender).vouchMode.success(vouchModes[mode]),
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: notificationMsg,
+                  // message: notificationMsg,
+                  message: notificationsFor(membership).vouchModeChanged(vouchModes[mode]),
                 })),
               ],
             })
@@ -2141,7 +2358,7 @@ describe('executing commands', () => {
               command,
               payload: '',
               status: statuses.ERROR,
-              message: CR.vouchMode.dbError,
+              message: commandResponsesFor(sender).vouchMode.dbError,
               notifications: [],
             })
           })
@@ -2157,7 +2374,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.UNAUTHORIZED,
-            message: CR.vouchMode.notAdmin,
+            message: commandResponsesFor(sender).vouchMode.notAdmin,
             notifications: [],
           })
         })
@@ -2172,7 +2389,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.UNAUTHORIZED,
-            message: CR.vouchMode.notAdmin,
+            message: commandResponsesInCommandLang.vouchMode.notAdmin,
             notifications: [],
           })
         })
@@ -2191,7 +2408,7 @@ describe('executing commands', () => {
             command,
             payload: '',
             status: statuses.ERROR,
-            message: messagesIn(admin.language).parseErrors.unnecessaryPayload(commandStr),
+            message: parseErrorsInCommandLang.unnecessaryPayload(commandStr),
             notifications: [],
           })
         })
@@ -2213,7 +2430,7 @@ describe('executing commands', () => {
       describe('when sender sets a valid vouch level', () => {
         const sdMessage = sdMessageOf({
           sender: channel.phoneNumber,
-          message: `VOUCH LEVEL ${validVouchLevel}`,
+          message: `${localizedCmds.VOUCH_LEVEL} ${validVouchLevel}`,
         })
         const dispatchable = { channel, sender, sdMessage }
 
@@ -2227,7 +2444,7 @@ describe('executing commands', () => {
             expect(result).to.eql({
               command: commands.VOUCH_LEVEL,
               status: statuses.SUCCESS,
-              message: messagesIn(channel.language).commandResponses.vouchLevel.success(
+              message: messagesIn(sender.language).commandResponses.vouchLevel.success(
                 validVouchLevel,
               ),
               payload: `${validVouchLevel}`,
@@ -2250,7 +2467,7 @@ describe('executing commands', () => {
             expect(await processCommand(dispatchable)).to.eql({
               command: commands.VOUCH_LEVEL,
               status: statuses.ERROR,
-              message: CR.vouchLevel.dbError,
+              message: commandResponsesFor(sender).vouchLevel.dbError,
               payload: `${validVouchLevel}`,
               notifications: [],
             })
@@ -2261,7 +2478,7 @@ describe('executing commands', () => {
       describe('when sender sets an invalid vouch level', () => {
         const sdMessage = sdMessageOf({
           sender: channel,
-          message: `VOUCH LEVEL ${invalidVouchLevel}`,
+          message: `${localizedCmds.VOUCH_LEVEL} ${invalidVouchLevel}`,
         })
         const dispatchable = { channel, sender, sdMessage }
 
@@ -2274,9 +2491,7 @@ describe('executing commands', () => {
           expect(result).to.eql({
             command: commands.VOUCH_LEVEL,
             status: statuses.ERROR,
-            message: messagesIn(channel.language).commandResponses.vouchLevel.invalid(
-              invalidVouchLevel,
-            ),
+            message: parseErrorsInCommandLang.invalidVouchLevel(invalidVouchLevel),
             payload: `${invalidVouchLevel}`,
             notifications: [],
           })
@@ -2294,7 +2509,7 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.VOUCH_LEVEL,
           status: statuses.UNAUTHORIZED,
-          message: CR.vouchLevel.notAdmin,
+          message: commandResponsesFor(sender).vouchLevel.notAdmin,
           payload: `${validVouchLevel}`,
           notifications: [],
         })
@@ -2327,13 +2542,11 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             status: statuses.SUCCESS,
             payload: 'foo channel description',
-            message: CR.description.success('foo channel description'),
+            message: commandResponsesFor(admin).description.success('foo channel description'),
             notifications: [
               ...bystanderAdminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: messagesIn(membership.language).notifications.setDescription(
-                  'foo channel description',
-                ),
+                message: notificationsFor(membership).setDescription('foo channel description'),
               })),
             ],
           })
@@ -2351,7 +2564,7 @@ describe('executing commands', () => {
             command: commands.SET_DESCRIPTION,
             payload: 'foo channel description',
             status: statuses.ERROR,
-            message: CR.description.dbError,
+            message: commandResponsesFor(admin).description.dbError,
             notifications: [],
           })
         })
@@ -2365,7 +2578,7 @@ describe('executing commands', () => {
           command: commands.SET_DESCRIPTION,
           payload: 'foo channel description',
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.notAdmin,
+          message: commandResponsesFor(subscriber).rename.notAdmin,
           notifications: [],
         })
       })
@@ -2378,7 +2591,7 @@ describe('executing commands', () => {
           command: commands.SET_DESCRIPTION,
           payload: 'foo channel description',
           status: statuses.UNAUTHORIZED,
-          message: CR.rename.notAdmin,
+          message: commandResponsesInCommandLang.rename.notAdmin,
           notifications: [],
         })
       })
@@ -2421,19 +2634,17 @@ describe('executing commands', () => {
           }
 
           const adminMemberships = channel.memberships.slice(0, 3)
-          const prefix = language => {
-            return `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`
-          }
-
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NONE,
             payload: '',
             status: statuses.SUCCESS,
-            message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+            message: notificationsFor(sender).hotlineMessageSent(channel),
             notifications: [
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: `${prefix(membership.language)}foo`,
+                message: `[${messagesIn(membership.language).prefixes.hotlineMessage(
+                  messageId,
+                )}]\nfoo`,
                 attachments,
               })),
             ],

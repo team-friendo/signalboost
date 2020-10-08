@@ -23,7 +23,7 @@ const messages = {
 // () => Promise<Pool>
 const run = async () => {
   logger.log('Initializing socket pool...')
-  const pool = await socketPoolOf({ create: getSocketConnection, destroy: destroySocketConnection })
+  const pool = await socketPoolOf({ create: getSocketConnection, destroy: sock => sock.destroy() })
   logger.log(`...initialized pool of ${pool.size} sockets.`)
   return pool
 }
@@ -31,7 +31,8 @@ const run = async () => {
 /* ({ create: () => Socket, destroy: () => void}) -> Promise<void> */
 const socketPoolOf = async ({ create, destroy }) => {
   const pool = await createPool({ create, destroy }, { min: poolSize, max: poolSize })
-  pool.stop = () => pool.drain().then(() => pool.clear())
+  pool.run = run
+  pool.stop = () => pool.clear()
   return pool
 }
 
@@ -61,12 +62,8 @@ const connect = () => {
   }
 }
 
-// Socket -> void
-const destroySocketConnection = sock => sock.destroy()
-
 module.exports = {
   run,
   getSocketConnection,
-  destroySocketConnection,
   socketPoolOf,
 }

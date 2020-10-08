@@ -407,7 +407,7 @@ describe('messenger service', () => {
     })
     describe('when command result is INFO from a sysadmin', () => {
       beforeEach(async () => {
-        sinon.stub(channelRepository, 'isSysadmin').returns(Promise.resolve(true))
+        sinon.stub(channelRepository, 'isMaintainer').returns(Promise.resolve(true))
         await messenger.dispatch({
           dispatchable: { channel, sender: adminSender, sdMessage: commands.JOIN },
           commandResult: {

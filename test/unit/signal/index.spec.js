@@ -61,6 +61,11 @@ describe('signal module', () => {
       await app.stop()
     })
 
+    it('sends an abort command', () => {
+      signal.abort()
+      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }])
+    })
+
     it('sends a subscribe command', () => {
       signal.subscribe(channelPhoneNumber)
 
@@ -333,6 +338,35 @@ describe('signal module', () => {
           expect(await signal.verify(channelPhoneNumber, '123-456')).to.eql({
             status: 'SUCCESS',
             message: 'OK',
+          })
+        })
+      })
+    })
+
+    describe('checking to see if signald is alive', () => {
+      const version = '+git2020-10-06r6cf17ecb.0'
+      const versionResponse = {
+        type: messageTypes.VERSION,
+        data: {
+          name: 'signald',
+          version,
+          branch: 'master',
+          commit: '6cf17ecb7b82f2ba209a0b9059c7355d88773b78',
+        },
+      }
+
+      describe('when signald is alive', () => {
+        it('resolves with the version of signald that is running', async () => {
+          wait(5).then(() => emit(versionResponse))
+          expect(await signal.isAlive()).to.eql(version)
+        })
+      })
+
+      describe('when signald is not alive', () => {
+        it('rejects with an error', async () => {
+          expect(await signal.isAlive().catch(e => e)).to.eql({
+            message: 'Singald response timed out for request of type: version',
+            status: 'ERROR',
           })
         })
       })

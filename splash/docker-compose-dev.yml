@@ -15,4 +15,4 @@ services:
       - default
     volumes:
       - ./:/splash
-    restart: unless-stopped
+    restart: always

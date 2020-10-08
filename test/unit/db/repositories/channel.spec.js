@@ -3,18 +3,23 @@ import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
-import channelRepository, { isSysadmin } from '../../../../app/db/repositories/channel'
+import channelRepository, { isMaintainer } from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 const {
-  signal: { supportPhoneNumber },
+  signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
   const channelPhoneNumber = genPhoneNumber()
   const adminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
   let db, channel
+
+  const createDiagnosticsChannel = async () =>
+    db.channel.create(deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }), {
+      include: [{ model: db.membership }],
+    })
 
   before(async () => {
     db = (await app.run({ ...testApp, db: dbService })).db
@@ -272,30 +277,43 @@ describe('channel repository', () => {
     })
   })
 
-  describe('#isSysadmin', () => {
-    let supportChannel, adminPhoneNumber, subscriberPhoneNumber
+  describe('#getDiagnosticsChannel', () => {
+    it('returns the diagnostics channel and its deep attributes', async () => {
+      const diagnosticsChannel = await createDiagnosticsChannel()
+      const foundChannel = await channelRepository.getDiagnosticsChannel()
+      expect(foundChannel.phoneNumber).to.eql(diagnosticsChannel.phoneNumber)
+      expect(foundChannel.memberships.length).to.eql(diagnosticsChannel.memberships.length)
+    })
+  })
+
+  describe('#isMaintainer', () => {
+    let diagnosticsChannel, adminPhoneNumber, subscriberPhoneNumber
 
     beforeEach(async () => {
-      supportChannel = await db.channel.create(
-        deepChannelFactory({ phoneNumber: supportPhoneNumber }),
-        {
-          include: [{ model: db.membership }],
-        },
-      )
-      adminPhoneNumber = supportChannel.memberships[0].memberPhoneNumber
-      subscriberPhoneNumber = supportChannel.memberships[2].memberPhoneNumber
+      diagnosticsChannel = await createDiagnosticsChannel()
+      adminPhoneNumber = diagnosticsChannel.memberships[0].memberPhoneNumber
+      subscriberPhoneNumber = diagnosticsChannel.memberships[2].memberPhoneNumber
     })
 
-    it('returns true for an admin for the support channel', async () => {
-      expect(await isSysadmin(adminPhoneNumber)).to.eql(true)
+    it('returns true for an admin for the diagnostics channel', async () => {
+      expect(await isMaintainer(adminPhoneNumber)).to.eql(true)
     })
 
-    it('returns false for a subscriber to the support channel', async () => {
-      expect(await isSysadmin(subscriberPhoneNumber)).to.eql(false)
+    it('returns false for a subscriber to the diagnostics channel', async () => {
+      expect(await isMaintainer(subscriberPhoneNumber)).to.eql(false)
     })
 
     it('returns false for a random number', async () => {
-      expect(await isSysadmin(genPhoneNumber())).to.eql(false)
+      expect(await isMaintainer(genPhoneNumber())).to.eql(false)
+    })
+  })
+
+  describe('#getMaintainers', () => {
+    it('returns the admins of the diagnostics channel', async () => {
+      const diagnosticsChannel = await createDiagnosticsChannel()
+      expect(map(await channelRepository.getMaintainers(), 'memberPhoneNumber')).to.have.members(
+        map(diagnosticsChannel.memberships.slice(0, 2), 'memberPhoneNumber'),
+      )
     })
   })
 })

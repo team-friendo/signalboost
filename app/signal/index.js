@@ -135,6 +135,26 @@ const healthcheck = async channelPhoneNumber => {
  * SIGNALD COMMANDS
  ********************/
 
+// () => Promise<string>
+const abort = () =>
+  // sends a poison pill to signald, causing it to shut down
+  socketWriter.write({ type: messageTypes.ABORT })
+
+// () => Promise<string>
+const isAlive = () => {
+  // checks to see if signald is a live by asking for version.
+  // resolves with version or rejects with error.
+  socketWriter.write({ type: messageTypes.VERSION })
+  return new Promise((resolve, reject) =>
+    callbacks.register({
+      id: 0,
+      messageType: messageTypes.VERSION,
+      resolve,
+      reject,
+    }),
+  )
+}
+
 // (string, string || null) -> Promise<SignalboostStatus>
 const register = async (phoneNumber, captchaToken) => {
   socketWriter.write({
@@ -265,7 +285,9 @@ module.exports = {
   messages,
   messageTypes,
   trustLevels,
+  abort,
   healthcheck,
+  isAlive,
   parseOutboundSdMessage,
   parseOutboundAttachment,
   parseVerificationCode,

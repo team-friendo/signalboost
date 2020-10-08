@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
-    restart: unless-stopped
+    restart: always
 
   signald:
     image: registry.0xacab.org/team-friendo/signalboost/signald:latest
@@ -26,7 +26,7 @@ services:
       - ./bin:/signalboost/bin
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
-    restart: unless-stopped
+    restart: always
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
@@ -53,7 +53,7 @@ services:
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
-    restart: unless-stopped
+    restart: always
 
   ngrok:
     container_name: signalboost_ngrok
@@ -68,7 +68,7 @@ services:
       - default
     environment:
       - NGROK_PORT=app:3000
-    restart: unless-stopped
+    restart: always
 
 
   test_runner:
