@@ -537,7 +537,10 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.channelRenamed(channel.name, newChannelName),
+    message: messagesIn(membership.language).notifications.channelRenamed(
+      channel.name,
+      newChannelName,
+    ),
   }))
 }
 
@@ -689,7 +692,7 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.setDescription(newDescription),
+    message: messagesIn(membership.language).notifications.setDescription(newDescription),
   }))
 }
 
@@ -850,7 +853,7 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
   return adminMemberships.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: `${prefix(sender.language)}${messageBody}`,
+    message: `${prefix(membership.language)}${messageBody}`,
     attachments: attachments,
   }))
 }

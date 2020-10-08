@@ -425,14 +425,13 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
 }
 
 const notifications = {
-  adminAdded: (commandIssuer, addedAdmin) =>
-    `Un-e nouvel-le admin ${addedAdmin} a été ajouté e par ${commandIssuer}`,
+  adminAdded: `Un-e nouvel-le admin a été ajouté.`,
 
   adminRemoved: "Un-e admin vient d'être supprimé.",
 
   subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
 
-  adminLeft: 'Un-e admin vient de quitter le canal',
+  adminLeft: 'Un-e admin vient de quitter le canal.',
 
   channelDestroyed:
     'La canal et tous les enregistrements associés ont été définitivement détruits.',

@@ -154,6 +154,9 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
 
   if (status !== statuses.SUCCESS) return Promise.resolve()
 
+  //TODO(aguestuser|2020-10-08):
+  // - this is the ONLY path in which we use the `payload` field on the `CommandResult` returns from `processCommands`
+  // - perhaps we can think of a different way to recover the e164 numbers here and drop `payload` from `CommandResult`?
   switch (command) {
     case commands.ADD:
       // in ADD case, payload is an e164 phone number
