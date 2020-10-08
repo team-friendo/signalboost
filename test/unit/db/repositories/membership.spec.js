@@ -49,6 +49,13 @@ describe('membership repository', () => {
         )
       })
 
+      it('gives each admin an id', async () => {
+        const adminMemberships = await channel.getMemberships()
+        adminMemberships.forEach((admin, id) => {
+          expect(admin.adminId).to.eql(id + 1)
+        })
+      })
+
       it('associates the admins with the channel', async () => {
         const fetchedAdmins = await channel.getMemberships()
         expect(fetchedAdmins.map(a => a.get())).to.have.deep.members(admins.map(a => a.get()))
