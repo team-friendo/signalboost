@@ -474,7 +474,12 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   recycleChannelFailed: phoneNumber => `Failed to recycle channel for phone number: ${phoneNumber}`,
 
-  restartNotAuthorized: 'Trying to restart Signalboost? You are not authorized to do that!',
+  restartRequesterNotAuthorized:
+    'Trying to restart Signalboost? You are not authorized to do that!',
+  restartChannelNotAuthorized:
+    'Trying to restart Signalboost? You are using the wrong channel for that! Try again on the diagnostics channel.',
+  restartPassNotAuthorized:
+    'Trying to restart Signalboost? You used the wrong passphrase for that!',
   restartSuccessNotification: adminId => `Signalboost was restarted by ${adminId}`,
   restartSuccessResponse: 'Signalboost was restarted successfully!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,

@@ -22,8 +22,8 @@ const {
 } = require('../../db/repositories/channel')
 const {
   defaultLanguage,
-  maintainerPassphrase,
-  signal: { restartDelay },
+  auth: { maintainerPassphrase },
+  signal: { restartDelay, diagnosticsPhoneNumber },
 } = require('../../config')
 
 /**
@@ -611,17 +611,12 @@ const hotlineReplyNotificationsOf = (
 
 const maybeRestart = async (channel, sender, payload) => {
   logger.log(`--- RESTART INITIATED by ${util.hash(sender.phoneNumber)}...`)
-  // authenticate user and password:
   try {
-    if (
-      !(await channelRepository.isMaintainer(sender.phoneNumber)) ||
-      !(payload === maintainerPassphrase)
-    ) {
-      logger.log(`--- RESTART ABORTED: UNAUTHORIZED`)
-      return {
-        status: statuses.UNAUTHORIZED,
-        message: messagesIn(sender.language).notifications.restartNotAuthorized,
-      }
+    // authenticate user and password:
+    const { isAuthorized, message } = await _authenticateRestart(channel, sender, payload)
+    if (!isAuthorized) {
+      logger.log(`--- RESTART UNAUTHORIZED: ${message}`)
+      return { status: statuses.UNAUTHORIZED, message }
     }
     // do the restarting:
     await signal.abort() // rely on docker-compose semantics to restart signald
@@ -643,6 +638,27 @@ const maybeRestart = async (channel, sender, payload) => {
       message: messagesIn(sender.language).notifications.restartFailure(err.message || err),
     }
   }
+}
+
+// (Channel, Sender, string) => Promise<{isAuthorized: boolen, message: string}>
+const _authenticateRestart = async (channel, sender, payload) => {
+  // make sure that restart requester is the right person on the right channel with the right passphrase
+  // before allowing restart to proceed
+  const n = messagesIn(sender.language).notifications
+  try {
+    if (!(await channelRepository.isMaintainer(sender.phoneNumber)))
+      return { isAuthorized: false, message: n.restartRequesterNotAuthorized }
+    if (channel.phoneNumber !== diagnosticsPhoneNumber)
+      return { isAuthorized: false, message: n.restartChannelNotAuthorized }
+    if (payload !== maintainerPassphrase)
+      return { isAuthorized: false, message: n.restartPassNotAuthorized }
+    // yay! all systems go!
+    return { isAuthorized: true, message: '' }
+  } catch (e) {
+    return { isAuthorized: false, message: e.message }
+  }
+
+  //messagesIn(sender.language).notifications.restartRequesterNotAuthorized,
 }
 
 const _restartNotificationsOf = async sender => {

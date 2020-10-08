@@ -502,8 +502,12 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   recycleChannelFailed: phoneNumber =>
     `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
 
-  restartNotAuthorized:
+  restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",
+  restartChannelNotAuthorized:
+    'Vous essayez de redémarrer Signalboost? Vous utilisez le mauvais canal pour cela! Réessayez sur le canal de diagnostic.',
+  restartPassNotAuthorized:
+    'Vous essayez de redémarrer Signalboost? Vous avez utilisé la mauvaise phrase de passe pour cela!',
   restartSuccessNotification: adminId => `Signalboost a été redémarré par ${adminId}`,
   restartSuccessResponse: 'Signalboost a été redémarré avec succès',
   restartFailure: errorMessage => `Échec du redémarrage de Signalboost: ${errorMessage}`,

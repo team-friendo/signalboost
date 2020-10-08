@@ -501,8 +501,12 @@ ${
 
   setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
 
-  restartNotAuthorized:
+  restartRequesterNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',
+  restartChannelNotAuthorized:
+    'Versuchen Sie, Signalboost neu zu starten? Sie benutzen dafür den falschen Kanal! Versuchen Sie es erneut auf dem Diagnosekanal.',
+  restartPassNotAuthorized:
+    'Versuchen Sie, Signalboost neu zu starten? Sie haben dafür die falsche Passphrase verwendet!',
   restartSuccessNotification: adminId => `Signalboost wurde von ${adminId} neu gestartet`,
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,

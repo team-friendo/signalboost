@@ -27,8 +27,11 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
-import { maintainerPassphrase } from '../../../../app/config'
 import app from '../../../../app'
+const {
+  auth: { maintainerPassphrase },
+  signal: { diagnosticsPhoneNumber },
+} = require('../../../../app/config')
 
 describe('executing commands', () => {
   /********************************************************
@@ -1979,7 +1982,7 @@ describe('executing commands', () => {
 
   describe('RESTART command', () => {
     const dispatchable = {
-      channel,
+      channel: { ...channel, phoneNumber: diagnosticsPhoneNumber },
       sender: admin,
       sdMessage: sdMessageOf({
         sender: channel.phoneNumber,
@@ -1997,38 +2000,56 @@ describe('executing commands', () => {
       isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
     })
 
-    describe('when sent by non-sysadmin', () => {
+    describe('when sent by non-maintainer', () => {
       beforeEach(() => isMaintainerStub.returns(Promise.resolve(false)))
 
       it('returns UNAUTHORIZED', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.RESTART,
           status: statuses.UNAUTHORIZED,
-          message: notificationsFor(admin).restartNotAuthorized,
+          message: notificationsFor(admin).restartRequesterNotAuthorized,
           notifications: [],
           payload: maintainerPassphrase,
         })
       })
     })
 
-    describe('when sent by sysadmin with wrong pass', () => {
+    describe('when sent by maintainer on wrong channel with correct passphrase', () => {
       beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
       const _dispatchable = merge({}, dispatchable, {
-        sdMessage: { messageBody: `BOOST RESTART foobar` },
+        channel,
+        sdMessage: { messageBody: `${localizedCmds.RESTART} ${maintainerPassphrase}` },
       })
 
       it('returns UNAUTHORIZED', async () => {
         expect(await processCommand(_dispatchable)).to.eql({
           command: commands.RESTART,
           status: statuses.UNAUTHORIZED,
-          message: notificationsFor(admin).restartNotAuthorized,
+          message: notificationsFor(admin).restartChannelNotAuthorized,
+          notifications: [],
+          payload: maintainerPassphrase,
+        })
+      })
+    })
+
+    describe('when sent by maintainer on diagnostics channel with wrong passphrase', () => {
+      beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
+      const _dispatchable = merge({}, dispatchable, {
+        sdMessage: { messageBody: `${localizedCmds.RESTART} foobar` },
+      })
+
+      it('returns UNAUTHORIZED', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.RESTART,
+          status: statuses.UNAUTHORIZED,
+          message: notificationsFor(admin).restartPassNotAuthorized,
           notifications: [],
           payload: 'foobar',
         })
       })
     })
 
-    describe('when sent by sysadmin with correct pass', () => {
+    describe('when sent by maintainer on diagnostics channel with correct passphrase', () => {
       beforeEach(() => isMaintainerStub.returns(Promise.resolve(true)))
 
       describe('in all cases', () => {
