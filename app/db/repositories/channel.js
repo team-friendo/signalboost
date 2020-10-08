@@ -16,16 +16,23 @@ const logger = loggerOf('db.repositories.channel')
  ***********/
 
 const create = async (phoneNumber, name, adminPhoneNumbers) => {
-  const memberships = adminPhoneNumbers.map(pNum => ({
+  const memberships = adminPhoneNumbers.map((pNum, idx) => ({
     type: memberTypes.ADMIN,
     memberPhoneNumber: pNum,
+    adminId: idx + 1,
   }))
+
+  const nextAdminId = memberships.length + 1
   const channel = await findByPhoneNumber(phoneNumber)
   const include = [{ model: app.db.messageCount }, { model: app.db.membership }]
+
   return !channel
-    ? app.db.channel.create({ phoneNumber, name, memberships, messageCount: {} }, { include })
+    ? app.db.channel.create(
+        { phoneNumber, name, memberships, messageCount: {}, nextAdminId },
+        { include },
+      )
     : channel
-        .update({ name, memberships, returning: true }, { include })
+        .update({ name, memberships, returning: true, nextAdminId }, { include })
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 

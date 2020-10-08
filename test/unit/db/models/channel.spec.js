@@ -122,12 +122,9 @@ describe('channel model', () => {
         messageExpiryTime: undefined,
         socketId: undefined,
         vouchLevel: undefined,
-<<<<<<< HEAD
         vouchMode: undefined,
         subscriberLimit: undefined,
-=======
         nextAdminId: undefined,
->>>>>>> [268] add model and tests for nextAdminId
       }),
     )
 
@@ -136,11 +133,8 @@ describe('channel model', () => {
     expect(channel.socketId).to.equal(0)
     expect(channel.vouchMode).to.equal('OFF')
     expect(channel.vouchLevel).to.equal(1)
-<<<<<<< HEAD
     expect(channel.subscriberLimit).to.equal(500)
-=======
     expect(channel.nextAdminId).to.equal(1)
->>>>>>> [268] add model and tests for nextAdminId
   })
 
   describe('validations', () => {
