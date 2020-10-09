@@ -174,14 +174,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[HOTLINE @1]\na screaming came across the sky`,
+          messageBody: `[HOTLINE FROM @1]\na screaming came across the sky`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[HOTLINE @1]\na screaming came across the sky`,
+          messageBody: `[HOTLINE FROM @1]\na screaming came across the sky`,
           attachments,
         },
       ])
@@ -263,14 +263,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[REPLY TO HOTLINE @1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO @1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[REPLY TO HOTLINE @1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO @1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {

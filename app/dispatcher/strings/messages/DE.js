@@ -7,7 +7,7 @@ const {
   signal: { maxVouchLevel },
 } = require('../../../config')
 
-const systemName = 'Signalboost Systemadministrator*in'
+const systemName = 'Signalboost Systemadministrator'
 const notAdmin =
   'Tut uns leid, nur Admins können diesen Befehl ausführen. Sende HILFE um eine Liste an gültigen Befehlen zu erhalten.'
 const notSubscriber =
@@ -535,11 +535,9 @@ ${
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE @${messageId}`,
+  hotlineMessage: messageId => `HOTLINE VON @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN
-      ? `ANTWORT AUF HOTLINE @${messageId}`
-      : `PRIVATE ANTWORT VON ADMINS`,
+    memberType === memberTypes.ADMIN ? `HOTLINE AN @${messageId}` : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
   privateMessage: `PRIVAT`,
 }
