@@ -5,6 +5,7 @@ const deauthorizationRepository = require('../../db/repositories/deauthorization
 const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
+const banRepository = require('../../db/repositories/ban')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
@@ -67,6 +68,7 @@ const execute = async (executable, dispatchable) => {
   const result = await {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
+    [commands.BAN]: () => maybeBanSender(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
     [commands.CHANNEL]: () => maybeCreateChannel(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
@@ -240,6 +242,32 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       ]),
     })),
   ]
+}
+
+// BAN
+const maybeBanSender = async (channel, sender, hotlineMessage) => {
+  const cr = messagesIn(sender.language).commandResponses.ban
+
+  if (sender.type !== ADMIN) {
+    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
+  }
+
+  const phoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(hotlineMessage.messageId)
+
+  const checkBanStatus = await banRepository.resolveBanStatus(phoneNumber)
+  return checkBanStatus === banRepository.banStatus.BANNED
+    ? { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
+    : banMember(channel, phoneNumber, sender, cr)
+}
+
+const banMember = async (channel, memberPhoneNumber, cr) => {
+  return banRepository
+    .banMember(channel.phoneNumber, memberPhoneNumber)
+    .then(() => ({
+      status: statuses.SUCCESS,
+      message: cr.success(memberPhoneNumber),
+    }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(memberPhoneNumber) }))
 }
 
 // BROADCAST

@@ -245,6 +245,14 @@ You are not subscribed to channel ${channel.phoneNumber}. Send HELLO to subscrib
 
 ${support}`,
   },
+  // BAN
+  ban: {
+    success: messageId => `The sender of hotline message ${messageId} has been banned.`,
+    notAdmin,
+    alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
+    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    invalidPhoneNumber,
+  },
 
   // INVITE
 

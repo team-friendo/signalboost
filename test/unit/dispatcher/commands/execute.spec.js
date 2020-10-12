@@ -11,6 +11,7 @@ import diagnostics from '../../../../app/diagnostics'
 import channelRepository, {
   getSubscriberMemberships,
 } from '../../../../app/db/repositories/channel'
+import banRepository from '../../../../app/db/repositories/ban'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
@@ -489,6 +490,53 @@ describe('executing commands', () => {
         }
         await processCommand(dispatchable)
         expect(addAdminStub.callCount).to.eql(0)
+      })
+    })
+  })
+
+  describe('BAN command', () => {
+    const messageId = 1312
+    const cr = messagesIn(languages.EN).commandResponses
+    const  dispatchable = {
+      channel,
+      sender: { ...admin, language: languages.EN },
+      sdMessage: sdMessageOf({
+        sender: channel.phoneNumber,
+        message: 'BAN @1312',
+        attachments,
+      }),
+    }
+
+    let resolveBanStatusStub, findMemberPhoneNumberStub
+    beforeEach(() => {
+      findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
+      resolveBanStatusStub = sinon.stub(banRepository, 'resolveBanStatus')
+    })
+
+    describe('when member is not already banned', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+        resolveBanStatusStub.returns(Promise.resolve('NONE'))
+      })
+
+      it('returns SUCCESS with notifications for admins and banned member', async ()  => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.SUCCESS,
+          message: `BAN ${messageId}`,
+          notifications: [
+            {
+              recipient: subscriber.phoneNumber,
+              message: 'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
+              attachments,
+            },
+            ...adminMemberships.map(({ memberPhoneNumber }) => ({
+              recipient: memberPhoneNumber,
+              message: `The sender of hotline message ${messageId} has been banned.`
+            })),
+          ],
+          payload: { /* what goes in here? */ },
+        })
       })
     })
   })
