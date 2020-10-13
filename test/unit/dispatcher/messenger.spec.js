@@ -26,6 +26,7 @@ describe('messenger service', () => {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
     messageExpiryTime: 60,
+    socketPoolId: 42,
     memberships: [
       {
         type: memberTypes.ADMIN,
@@ -370,6 +371,7 @@ describe('messenger service', () => {
               recipient: adminSender.phoneNumber,
               message: errorMessage,
             }),
+            channel.socketPoolId,
           ])
         })
       })

@@ -25,10 +25,14 @@ const messages = {
 const run = async () => {
   logger.log('Initializing socket pools...')
   const pools = await Promise.all(
-    times(availablePools, idx =>
-      socketPoolOf({ create: () => getSocketConnection(idx), destroy: sock => sock.destroy() }),
+    times(availablePools, socketPooldId =>
+      socketPoolOf({
+        create: () => getSocketConnection(socketPooldId),
+        destroy: sock => sock.destroy(),
+      }),
     ),
   )
+  pools.stop = Promise.all(pools.map(p => p.stop()))
   logger.log(`...initialized ${pools.length} pools of ${pools[0].size} sockets.`)
   return pools
 }
@@ -42,26 +46,29 @@ const socketPoolOf = async ({ create, destroy }) => {
 }
 
 // (number, number) -> Promise<Socket>
-const getSocketConnection = async (idx, attempts = 0) => {
-  const socketFilePath = `${signaldSocketDir}/${idx}/signald.sock`
+const getSocketConnection = async (socketPoolId, attempts = 0) => {
+  const socketFilePath = `${signaldSocketDir}/${socketPoolId}/signald.sock`
   if (!(await fs.pathExists(socketFilePath))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
     } else {
-      return wait(connectionInterval).then(() => getSocketConnection(idx, attempts + 1))
+      return wait(connectionInterval).then(() => getSocketConnection(socketPoolId, attempts + 1))
     }
   } else {
-    return connect(socketFilePath)
+    return connect(
+      socketFilePath,
+      socketPoolId,
+    )
   }
 }
 
-// (string) -> Promise<Socket>
-const connect = socketFilePath => {
+// (string, number) -> Promise<Socket>
+const connect = (socketFilePath, socketPoolId) => {
   try {
     const sock = net.createConnection(socketFilePath)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    sock.on('data', msg => dispatcher.dispatch(msg).catch(logger.error))
+    sock.on('data', dispatcher.dispatcherOf(socketPoolId))
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
     return Promise.reject(new Error(messages.error.socketConnectError(e.message)))

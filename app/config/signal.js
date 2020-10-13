@@ -19,6 +19,7 @@ const defaults = {
   signaldRequestTimeout: 1000 * 10, // 10 sec
   signaldVerifyTimeout: 1000 * 30, // 30 sec
   signaldSendTimeout: 1000 * 60 * 60, // 60 min
+  signaldRestartTimeout: 1000 * 60 * 5, // 5 min
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(/"/g, ''),
   diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(/"/g, ''),
   welcomeDelay: 3000, // 3 sec
@@ -42,6 +43,7 @@ const test = {
   signaldSendTimeout: 40, // millis
   signaldRequestTimeout: 10, // millis
   signaldVerifyTimeout: 20, // millis
+  signaldRestartTimeout: 25, // millis
   supportPhoneNumber: '+15555555555',
   welcomeDelay: 0.0001, // millis
   diagnosticsPhoneNumber: '+15554443333',

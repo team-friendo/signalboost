@@ -140,19 +140,19 @@ const healthcheck = async (channelPhoneNumber, socketPoolId) => {
  * SIGNALD COMMANDS
  ********************/
 
-// () => Promise<string>
-const abort = () =>
+// string => Promise<string>
+const abort = socketPoolId =>
   // sends a poison pill to signald, causing it to shut down
-  socketWriter.write({ type: messageTypes.ABORT })
+  socketWriter.write({ type: messageTypes.ABORT }, socketPoolId)
 
-// () => Promise<string>
-const isAlive = () => {
+// string => Promise<string>
+const isAlive = socketPoolId => {
   // checks to see if signald is a live by asking for version.
   // resolves with version or rejects with error.
-  socketWriter.write({ type: messageTypes.VERSION })
+  socketWriter.write({ type: messageTypes.VERSION }, socketPoolId)
   return new Promise((resolve, reject) =>
     callbacks.register({
-      id: 0,
+      id: socketPoolId,
       messageType: messageTypes.VERSION,
       resolve,
       reject,

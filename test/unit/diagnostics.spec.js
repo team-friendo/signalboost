@@ -12,6 +12,7 @@ import { channelFactory, deepChannelFactory } from '../support/factories/channel
 import { sdMessageOf } from '../../app/signal/constants'
 const {
   signal: { diagnosticsPhoneNumber },
+  socket: { availablePools },
 } = require('../../app/config')
 
 describe('diagnostics module', () => {
@@ -125,9 +126,8 @@ describe('diagnostics module', () => {
         })
 
         it('restarts signalboost', () => {
-          ;[abortStub, stopStub, runStub, isAliveStub].forEach(stub =>
-            expect(stub.callCount).to.eql(1),
-          )
+          ;[abortStub, isAliveStub].forEach(stub => expect(stub.callCount).to.eql(availablePools))
+          ;[stopStub, runStub].forEach(stub => expect(stub.callCount).to.eql(1))
         })
 
         it('notifies maintainers when restart succeeds', () => {
@@ -154,7 +154,7 @@ describe('diagnostics module', () => {
         })
 
         it('attempts to restart signalboost', () => {
-          expect(isAliveStub.callCount).to.eql(1)
+          expect(isAliveStub.callCount).to.eql(availablePools)
         })
 
         it('notifies maintainers of restart failure', () => {

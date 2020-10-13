@@ -62,8 +62,8 @@ describe('signal module', () => {
     })
 
     it('sends an abort command', () => {
-      signal.abort()
-      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }])
+      signal.abort(42)
+      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }, 42])
     })
 
     it('sends a subscribe command', () => {

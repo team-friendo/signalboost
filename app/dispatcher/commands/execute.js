@@ -11,7 +11,7 @@ const phoneNumberService = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
-const { get, isEmpty, uniq } = require('lodash')
+const { get, isEmpty, times, uniq } = require('lodash')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
 const { ADMIN, SUBSCRIBER, NONE } = memberTypes
@@ -22,6 +22,7 @@ const {
 } = require('../../db/repositories/channel')
 const {
   defaultLanguage,
+  socket: { availablePools },
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber },
 } = require('../../config')

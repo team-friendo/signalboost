@@ -5,10 +5,11 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { filter, isEmpty, partition, zip } = require('lodash')
+const { times, filter, isEmpty, partition, zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
+  socket: { availablePools },
 } = require('./config')
 
 const logger = util.loggerOf('diagnostics')
@@ -78,11 +79,15 @@ const _restartAndNotify = async () => {
 
 // () => Promise<string>
 const restart = async () => {
-  await signal.abort() // rely on docker-compose semantics to restart signald
+  // send all signald instances a poison pill (causing them to shutdown and restart)
+  await Promise.all(times(availablePools, socketPoolId => signal.abort(socketPoolId)))
+  // restart all signalboost application components (without shutting down signalboost process)
   await app.stop()
   await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
   await app.run({})
-  return signal.isAlive() // ensure signald is actually running
+  // ensure that all signald instances are responsive before proceeding
+  await util.wait(restartDelay)
+  await Promise.all(times(availablePools, socketPoolId => signal.isAlive(socketPoolId)))
 }
 
 // (Channel, string) => Promise<string>

@@ -58,8 +58,11 @@ const {
  * }
  */
 
-// string -> Promise<SignalBoostStatus>
-const dispatch = async msg => {
+// number => string => Promise<SignalboostStatus>
+const dispatcherOf = socketPoolId => msg => dispatch(msg, socketPoolId).catch(logger.error)
+
+// (string, number) -> Promise<SignalBoostStatus>
+const dispatch = async (msg, socketPoolId) => {
   logger.debug(emphasize(redact(msg)))
 
   // parse basic info from message
@@ -81,7 +84,7 @@ const dispatch = async msg => {
     : []
 
   // handle callbacks for messages that have request/response semantics
-  callbacks.handle(inboundMsg)
+  callbacks.handle(inboundMsg, socketPoolId)
 
   // process any side-effects
   const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
@@ -276,4 +279,4 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
 
 // EXPORTS
 
-module.exports = { dispatch, detectHealthcheck, detectHealthcheckResponse }
+module.exports = { dispatch, dispatcherOf }

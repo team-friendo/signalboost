@@ -3,7 +3,10 @@ import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
-import channelRepository, { getChannelsSortedBySize, isMaintainer } from '../../../../app/db/repositories/channel'
+import channelRepository, {
+  getChannelsSortedBySize,
+  isMaintainer,
+} from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
