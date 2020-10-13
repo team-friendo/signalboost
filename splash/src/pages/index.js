@@ -120,14 +120,22 @@ const IndexPage = () => (
       ).
     </p>
     <p>
-      Signalboost is completely open source & committed to transparency. You can
-      read our{' '}
-      <a href="https://0xacab.org/team-friendo/signalboost">source code</a> and{' '}
-      <a href="https://0xacab.org/team-friendo/signalboost/-/wikis/Team-Friendo-Values-and-CoC">
-        code of conduct
-      </a>{' '}
-      on Gitlab.
+      Signalboost is open source, committed to transparency, and cares about
+      your digital safety. We encourage you to read the following:{' '}
     </p>
+    <ul>
+      <li>
+        <Link to="/privacy-policy">Privacy Policy</Link>
+      </li>
+      <li>
+        <a href="https://0xacab.org/team-friendo/signalboost">Source code</a>
+      </li>
+      <li>
+        <a href="https://0xacab.org/team-friendo/signalboost/-/wikis/Team-Friendo-Values-and-CoC">
+          Code of conduct
+        </a>
+      </li>
+    </ul>
   </Layout>
 )
 
