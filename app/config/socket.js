@@ -1,7 +1,7 @@
 const defaults = {
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
-  poolSize: 1,
+  poolSize: 5,
 }
 
 const test = {
