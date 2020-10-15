@@ -45,6 +45,7 @@ services:
     env_file: .env.dev
     environment:
       SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+      METRICS_PORT: 1312
     networks:
       - default
     expose:
