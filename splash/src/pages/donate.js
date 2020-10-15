@@ -21,26 +21,26 @@ const DonatePage = () => (
   <Layout>
     <h2>Help us build the tech the movement needs.</h2>
     <p>
-      Over the past year, Signalboost has grown to support 50+ channels with
-      over 10,000 subscribers.
+      We believe in building ethical tech that doesn't make money from spying on
+      you or monetizing your data. Since we make this software for liberation,
+      not profit, we rely on the material support of our community to keep the
+      project afloat.
     </p>
     <p>
-      These channels have coordinated jail support for those recently arrested,
-      sent updates on marches to thousands of participants, and have mobilized
-      actions, crowdsourced resources, and facilitated food delivery for an
-      occupation.
+      We are humbled and inspired by the people using Signalboost to organize -
+      from protest and occupation organizers to journalists and human rights
+      defenders to mental health professionals. We remain deeply committed to
+      protecting your digital safety, even if it means we sometimes have to foot
+      the bill.
     </p>
     <p>
-      We are a collective of technologists dedicated to providing this tool for
-      free, without the influence of large corporations. In the past few months
-      our users have grown exponentially - increasing our server costs and the
-      amount of time we need to spend scaling up.
+      It costs us a few bucks per month per channel to keep things up and
+      running. Consider writing us into your organization's tech budget or make
+      a one-time donation - either way, the funds go towards supporting this
+      project and helping other organizers stay safe.
     </p>
     <h3>Support Signalboost here:</h3>
-    <h4 style={platformHeader}>
-      If your organization has a tech budget, or if you have the means, consider
-      making a recurring donation:
-    </h4>
+    <h4 style={platformHeader}>Make a recurring donation:</h4>
     <div style={stripeBtnStyles}>
       <Checkout
         price="$5"
