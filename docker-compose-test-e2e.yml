@@ -20,6 +20,9 @@ services:
   signald:
     image: registry.0xacab.org/team-friendo/signalboost/signald:latest
     container_name: signalboost_signald
+    environment:
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+      METRICS_PORT: 1312
     networks:
       - default
     volumes:
