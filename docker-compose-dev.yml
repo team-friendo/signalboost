@@ -1,192 +1,69 @@
 version: '3.4'
 
-#  signald:
-#    image: registry.0xacab.org/team-friendo/signalboost/signald
-#    container_name: signalboost_signald
-#    env_file: .env.dev
-#    environment:
-#      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-#    networks:
-#      - default
-#    expose:
-#      - 1312
-#    ports:
-#      - 9010:9010
-#    volumes:
-#      - ./bin:/signalboost/bin
-#      - ./signald/jmx:/var/lib/jmx
-#      - signal_data:/var/lib/signald/data
-#      - signal_sock:/var/run/signald/
-#    restart: unless-stopped
+# see docker-compose.yml for defaults extended here
 
-x-signald-defaults: &signald-defaults
-  image: registry.0xacab.org/team-friendo/signalboost/signald
+x-signald-overrides: &signald-overrides
   env_file: .env.dev
-  environment:
-    SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-  networks:
-    - default
-  restart: unless-stopped
 
-
-# NOTE:
-#
-# we create a `localdev` network w/ a non-standard subnet mask to be able to use
-# use docker from behdind a VPN, which is often necessary to auth w/ Signal.
-# (see: https://github.com/docker/for-linux/issues/418#issuecomment-491323611)
-#
-# USAGE:
-#
-# for this to work you must first run the following (which is done automatically
-# by `make _.setup`):
-#
-# ```bash
-# docker network create localdev --subnet 10.0.1.0/24
-# ```
-
-networks:
+networks: # see [1]
   default:
     external:
       name: localdev
 
-volumes:
-
-  postgres_data:
-  prometheus_data:
-  grafana_data:
-  signal_data:
-  sibnald_socks:
-  signald_sock_0:
-  signald_sock_1:
-  signald_sock_2:
-  signald_sock_3:
-  signald_sock_4:
-
 services:
 
-  db:
-    image: postgres:12
-    container_name: signalboost_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
-    restart: always
+  app:
+    env_file: .env.dev
 
   signald_0:
-    <<: *signald-defaults
-    container_name: signalboost_signald_0
-    environment:
-      METRICS_PORT: 5000
-    expose:
-      - 5000
-    # TODO: DRY up volume lists with multiple files as per:
-    # https://stackoverflow.com/questions/61178058/docker-compose-merge-arrays-for-yaml-aliases-and-anchors
+    <<: *signald-overrides
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - ./backups:/backups
-      - signal_data:/var/lib/signald/data
       - signald_sock_0:/var/run/signald/
 
   signald_1:
-    <<: *signald-defaults
-    container_name: signalboost_signald_1
-    environment:
-      METRICS_PORT: 5001
-    expose:
-      - 5001
+    <<: *signald-overrides
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - ./backups:/backups
-      - signal_data:/var/lib/signald/data
-      # this is the only part that changes
       - signald_sock_1:/var/run/signald/
 
-
   signald_2:
-    <<: *signald-defaults
-    container_name: signalboost_signald_2
-    environment:
-      METRICS_PORT: 5002
-    expose:
-      - 5002
+    <<: *signald-overrides
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - ./backups:/backups
-      - signal_data:/var/lib/signald/data
-      # this is the only part that changes
       - signald_sock_2:/var/run/signald/
 
   signald_3:
-    <<: *signald-defaults
-    container_name: signalboost_signald_3
-    environment:
-      METRICS_PORT: 5003
-    expose:
-      - 5003
+    <<: *signald-overrides
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - ./backups:/backups
-      - signal_data:/var/lib/signald/data
-      # this is the only part that changes
       - signald_sock_3:/var/run/signald/
 
   signald_4:
-    <<: *signald-defaults
-    container_name: signalboost_signald_4
-    environment:
-      METRICS_PORT: 5004
-    expose:
-      - 5004
+    <<: *signald-overrides
     volumes:
-      - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - ./backups:/backups
-      - signal_data:/var/lib/signald/data
-      # this is the only part that changes
       - signald_sock_4:/var/run/signald/
 
-  app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
-    container_name: signalboost_app
-    depends_on:
-      - db
-      - signald_0
-      - signald_1
-      - signald_2
-      - signald_3
-      - signald_4
-    entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env.dev
-    environment:
-      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
-      PROJECT_ROOT: ${PWD}
-      NODE_ENV: ${NODE_ENV:-development}
-      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
-      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
-    expose:
-      - 3000
-    networks:
-      - default
+  signald_5:
+    <<: *signald-overrides
     volumes:
-      - ./.sequelizerc:/signalboost/.sequelizerc
-      - ./app:/signalboost/app
-      - ./bin:/signalboost/bin
-      - ./node_modules:/signalboost/node_modules
-      - ./package.json:/signalboost/package.json
-      - signal_data:/var/lib/signald/data
-      - ./yarn.lock:/signalboost/yarn.lock
-      - /var/run/docker.sock:/var/run/docker.sock
-      - signald_sock_0:/var/run/signald-sockets/0
-      - signald_sock_1:/var/run/signald-sockets/1
-      - signald_sock_2:/var/run/signald-sockets/2
-      - signald_sock_3:/var/run/signald-sockets/3
-      - signald_sock_4:/var/run/signald-sockets/4
-    restart: always
+      - signald_sock_5:/var/run/signald/
+
+  signald_6:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_6:/var/run/signald/
+
+  signald_7:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_7:/var/run/signald/
+
+  signald_8:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_8:/var/run/signald/
+
+  signald_9:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_9:/var/run/signald/
 
   ngrok:
     container_name: signalboost_ngrok
@@ -202,34 +79,18 @@ services:
       - NGROK_PORT=app:3000
     restart: always
 
-  prometheus:
-    image: prom/prometheus:v2.18.1
-    ports:
-      - 9090:9090
-    user: root
-    networks:
-      - default
-    volumes:
-      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus_data
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus_data'
-      - '--log.level=debug'
-    restart: always
-
-  grafana:
-    image: grafana/grafana:7.0.3
-    depends_on:
-      - prometheus
-    ports:
-      - 5000:5000
-    networks:
-      - default
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning/:/etc/grafana/provisioning/
-      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
-    environment:
-      - GF_SERVER_HTTP_PORT=5000
-    restart: always
+# -----------------------------
+# [1] NOTE:
+#
+# we create a `localdev` network w/ a non-standard subnet mask to be able to use
+# use docker from behdind a VPN, which is often necessary to auth w/ Signal.
+# (see: https://github.com/docker/for-linux/issues/418#issuecomment-491323611)
+#
+# USAGE:
+#
+# for this to work you must first run the following (which is done automatically
+# by `make _.setup`):
+#
+# ```bash
+# docker network create localdev --subnet 10.0.1.0/24
+# ```

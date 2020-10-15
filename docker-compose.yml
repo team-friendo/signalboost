@@ -1,63 +1,42 @@
 version: '3.4'
 
-#
-# ANCHORS
-#
-
-x-loki-logging: &loki-logging
-  options:
-    loki-url: ${LOKI_URL}
-  driver: loki
-
-x-signald-default-volumes: &signald-default-volumes
-  - ./bin:/signalboost/bin
-  - ./signald/jmx:/var/lib/jmx
-  - ./backups:/backups
-  - signal_data:/var/lib/signald/data
-  #- signal_sock:/var/run/signald/
-
-x-signald-defaults: &signald-defaults
-  image: registry.0xacab.org/team-friendo/signalboost/signald:latest
-  container_name: signalboost_signald
-  env_file: .env
+x-signald-base: &signald-base
+  image: registry.0xacab.org/team-friendo/signalboost/signald
   environment:
     VIRTUAL_HOST: ${SIGNALD_HOST_URL}
-    VIRTUAL_PORT: 1312
-    METRICS_PORT: 1312
     LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
     SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
     SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-    DD_AGENT_HOST: datadog-agent
-    DD_TRACE_AGENT_PORT: 8126
-  expose:
-    - 500
-  ports:
-    - 9010:9010
   networks:
     - default
-    - proxy-tier
-  logging: *loki-logging
-  restart: unless-stopped
+  volumes:
+    - ./bin:/signalboost/bin
+    - ./signald/jmx:/var/lib/jmx
+    - ./backups:/backups
+    - signal_data:/var/lib/signald/data
+    # NOTE: we delegate merging this volumes array to docker-compose's merge logic for multiple files as per:
+    # https://stackoverflow.com/questions/61178058/docker-compose-merge-arrays-for-yaml-aliases-and-anchors
+    # as a result, we do not provide `signald_sock_<N>` mount values below, although we would like to!!
+  restart: always
 
-
-#
-# NAMED RESOURCES
-#
-
-networks:
-  proxy-tier:
 
 volumes:
-  certs:
-  html:
-  nextcloud:
-  postgres_data:
-  signal_sock:
-  signal_data:
 
-#
-# SERVICES
-#
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  signal_data:
+  signald_sock_0:
+  signald_sock_1:
+  signald_sock_2:
+  signald_sock_3:
+  signald_sock_4:
+  signald_sock_5:
+  signald_sock_6:
+  signald_sock_7:
+  signald_sock_8:
+  signald_sock_9:
+
 
 services:
 
@@ -66,11 +45,40 @@ services:
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    # as per https://github.com/docker-library/postgres/issues/692
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
-    logging: *loki-logging
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:v2.18.1
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - default
+    volumes:
+      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus_data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus_data'
+      - '--log.level=debug'
+    restart: always
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+      - prometheus
+    ports:
+      - 5000:5000
+    networks:
+      - default
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
+    environment:
+      - GF_SERVER_HTTP_PORT=5000
     restart: always
 
   app:
@@ -78,22 +86,27 @@ services:
     container_name: signalboost_app
     depends_on:
       - db
-      - signald
+      - signald_0
+      - signald_1
+      - signald_2
+      - signald_3
+      - signald_4
+      - signald_5
+      - signald_6
+      - signald_7
+      - signald_8
+      - signald_9
     entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env
+    env_file: .env.dev
     environment:
-      VIRTUAL_HOST: ${SIGNALBOOST_HOST_URL}
-      VIRTUAL_PORT: 3000
-      LETSENCRYPT_HOST: ${SIGNALBOOST_HOST_URL}
-      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
-      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
-      PROJECT_ROOT: $PWD
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
+      PROJECT_ROOT: ${PWD}
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
+      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
     expose:
       - 3000
     networks:
-      - proxy-tier
       - default
     volumes:
       - ./.sequelizerc:/signalboost/.sequelizerc
@@ -102,92 +115,106 @@ services:
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - ./yarn.lock:/signalboost/yarn.lock
+      - /var/run/docker.sock:/var/run/docker.sock
       - signal_data:/var/lib/signald/data
-      - signal_sock_0:/var/run/signald/0
-      - signal_sock_1:/var/run/signald/1
-      - signal_sock_1:/var/run/signald/1
-    logging: *loki-logging
+      - signald_sock_0:/var/run/signald-sockets/0
+      - signald_sock_1:/var/run/signald-sockets/1
+      - signald_sock_2:/var/run/signald-sockets/2
+      - signald_sock_3:/var/run/signald-sockets/3
+      - signald_sock_4:/var/run/signald-sockets/4
+      - signald_sock_5:/var/run/signald-sockets/5
+      - signald_sock_6:/var/run/signald-sockets/6
+      - signald_sock_7:/var/run/signald-sockets/7
+      - signald_sock_8:/var/run/signald-sockets/8
+      - signald_sock_9:/var/run/signald-sockets/9
     restart: always
 
-  signald-0:
-    <<: *signald-defaults
+  signald_0:
+    <<: *signald-base
+    container_name: signalboost_signald_0
     environment:
+      VIRTUAL_PORT: 5000
       METRICS_PORT: 5000
     expose:
       - 5000
-    volumes:
-      <<: *signald-default-volumes
-      - signal_sock_1:/var/run/signald/
 
-  signald-1:
-    <<: *signald-defaults
+  signald_1:
+    <<: *signald-base
+    container_name: signalboost_signald_1
     environment:
+      VIRTUAL_PORT: 5001
       METRICS_PORT: 5001
     expose:
       - 5001
-    volumes:
-      <<: *signald-default-volumes
-      - signal_sock_1:/var/run/signald/
 
-  signald-2:
-    <<: *signald-defaults
+  signald_2:
+    <<: *signald-base
+    container_name: signalboost_signald_2
     environment:
+      VIRTUAL_PORT: 5002
       METRICS_PORT: 5002
     expose:
-      - 5002
-    volumes:
-      <<: *signald-default-volumes
-      - signal_sock_2:/var/run/signald/
+      - 5003
 
-  signald-3:
-    <<: *signald-defaults
+  signald_3:
+    <<: *signald-base
+    container_name: signalboost_signald_3
     environment:
+      VIRTUAL_PORT: 5003
       METRICS_PORT: 5003
     expose:
       - 5003
-    volumes:
-      <<: *signald-default-volumes
-      - signal_sock_3:/var/run/signald/
 
-  signald-4:
-    <<: *signald-defaults
+  signald_4:
+    <<: *signald-base
+    container_name: signalboost_signald_4
     environment:
+      VIRTUAL_PORT: 5004
       METRICS_PORT: 5004
     expose:
       - 5004
-    volumes:
-      <<: *signald-default-volumes
-      - signal_sock_4:/var/run/signald/
 
-  proxy:
-    image: jwilder/nginx-proxy:alpine
-    container_name: signalboost_proxy
-    ports:
-      - 80:80
-      - 443:443
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-    volumes:
-      - certs:/etc/nginx/certs:ro
-      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - proxy-tier
-    logging: *loki-logging
-    restart: always
+  signald_5:
+    <<: *signald-base
+    container_name: signalboost_signald_5
+    environment:
+      VIRTUAL_PORT: 5005
+      METRICS_PORT: 5005
+    expose:
+      - 5005
 
-  letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    container_name: signalboost_letsencrypt
-    restart: always
-    volumes:
-      - certs:/etc/nginx/certs
-      - html:/usr/share/nginx/html
-      - ./nginx/vhost.d:/etc/nginx/vhost.d
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy-tier
-    logging: *loki-logging
-    depends_on:
-      - proxy
+  signald_6:
+    <<: *signald-base
+    container_name: signalboost_signald_6
+    environment:
+      VIRTUAL_PORT: 5006
+      METRICS_PORT: 5006
+    expose:
+      - 5006
+
+  signald_7:
+    <<: *signald-base
+    container_name: signalboost_signald_7
+    environment:
+      VIRTUAL_PORT: 5007
+      METRICS_PORT: 5007
+    expose:
+      - 5007
+
+  signald_8:
+    <<: *signald-base
+    container_name: signalboost_signald_8
+    environment:
+      VIRTUAL_PORT: 5008
+      METRICS_PORT: 5008
+    expose:
+      - 5008
+
+  signald_9:
+    <<: *signald-base
+    container_name: signalboost_signald_9
+    environment:
+      VIRTUAL_PORT: 5009
+      METRICS_PORT: 5009
+    expose:
+      - 5009

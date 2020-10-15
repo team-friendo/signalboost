@@ -6,12 +6,15 @@ cd ../.. # cd to project root
 
 if [ -z $(docker ps -qf name=signalboost_app) ];then
   echo "--- starting app and running migrations..."
-  docker-compose -f docker-compose-dev.yml run --entrypoint /signalboost/bin/db/migrate app
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+  run --entrypoint /signalboost/bin/db/migrate app
   echo "--- shutting down app"
-  docker-compose -f docker-compose-dev.yml down
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+  down
 else
   echo "--- running migrations..."
-  docker-compose -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+  exec app /signalboost/bin/db/migrate
 fi
 
 echo "--- DONE!"

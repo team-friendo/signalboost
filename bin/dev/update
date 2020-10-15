@@ -6,13 +6,13 @@ cd ../.. # cd to project root
 
 echo "--- installing dependencies..."
 
-docker-compose -f docker-compose-dev.yml \
+docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \
                app
 
 echo "--- running migrations..."
 
-docker-compose -f docker-compose-dev.yml \
+docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/migrate \
                app
 

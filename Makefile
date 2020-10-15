@@ -126,34 +126,42 @@ db.migrate.status: # check migration statuses
 ##########################
 
 dev.up: ## run signalboost in local dev mode
-	docker-compose -f docker-compose-dev.yml up -d ngrok app
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d ngrok app
 
 dev.up.v: ## run signalboost in local dev mode with verbose logging
-	SIGNALBOOST_VERBOSE_LOG=1 docker-compose -f docker-compose-dev.yml up -d ngrok app
+	SIGNALBOOST_VERBOSE_LOG=1 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d ngrok app
 
 dev.up.metrics: ## run signalboost in local dev mode with prometheus/grafana
-	docker-compose -f docker-compose-dev.yml up -d
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d
 
 dev.down: ## gracefully stop all signalboost container
-	docker-compose -f docker-compose-dev.yml down
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	down
 
 dev.abort: ## force stop all running signalboost containers
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
 
 dev.logs: ## show logs for all docker containers
-	docker-compose -f docker-compose-dev.yml logs -f
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	logs -f
 
 dev.restart: ## force stop and start the app again
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
-	docker-compose -f docker-compose-dev.yml up -d ngrok app
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d ngrok app
 
 dev.restart.v: ## force stop and start the app again with verbose loggins
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
-	SIGNALBOOST_VERBOSE_LOG=1 docker-compose -f docker-compose-dev.yml up -d ngrok app
+	SIGNALBOOST_VERBOSE_LOG=1 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d ngrok app
 
 dev.restart.metrics: ## force stop and start the app again (with prometheus/grafana)
 	docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id && \
-	docker-compose -f docker-compose-dev.yml up -d
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d
 
 #############
 # run tests #

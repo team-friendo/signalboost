@@ -1,0 +1,127 @@
+version: '3.4'
+
+# this file contains configs for prod isntance of signalboost
+# see docker-compose.yml for defaults extended here
+
+x-loki-logging: &loki-logging
+  options:
+    loki-url: ${LOKI_URL}
+  driver: loki
+
+x-signald-overrides: &signald-overrides
+  networks:
+    - proxy-tier
+  logging: *loki-logging
+
+networks:
+  proxy-tier:
+
+volumes:
+  certs:
+  html:
+
+services:
+
+  app:
+    env_file: .env
+    environment:
+      LETSENCRYPT_HOST: ${SIGNALBOOST_HOST_URL}
+      NODE_ENV: production
+      VIRTUAL_HOST: ${SIGNALBOOST_HOST_URL}
+      VIRTUAL_PORT: 3000
+    logging: *loki-logging
+    networks:
+      - proxy-tier
+
+  signald_0:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_0}
+    volumes:
+      - signald_sock_0:/var/run/signald/
+
+  signald_1:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_1}
+    volumes:
+      - signald_sock_1:/var/run/signald/
+
+  signald_2:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_2}
+    volumes:
+      - signald_sock_2:/var/run/signald/
+
+  signald_3:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_3}
+    volumes:
+      - signald_sock_3:/var/run/signald/
+
+  signald_4:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_4}
+    volumes:
+      - signald_sock_4:/var/run/signald/
+
+  signald_5:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
+    volumes:
+      - signald_sock_5:/var/run/signald/
+
+  signald_6:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_6}
+    volumes:
+      - signald_sock_6:/var/run/signald/
+
+  signald_7:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_7}
+    volumes:
+      - signald_sock_7:/var/run/signald/
+
+  signald_8:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_8}
+    volumes:
+      - signald_sock_8:/var/run/signald/
+
+  signald_9:
+    <<: *signald-overrides
+    VIRTUAL_HOST: ${SIGNALD_HOST_URL_9}
+    volumes:
+      - signald_sock_9:/var/run/signald/
+
+  proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: signalboost_proxy
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy-tier
+    logging: *loki-logging
+    restart: always
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: signalboost_letsencrypt
+    restart: always
+    volumes:
+      - certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy-tier
+    logging: *loki-logging
+    depends_on:
+      - proxy
