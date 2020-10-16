@@ -214,15 +214,13 @@ describe('dispatcher module', () => {
       beforeEach(async () => {
         enqueueResendStub.returns(minResendInterval)
         incrementCounterStub = sinon.stub(metrics, 'incrementCounter')
-        sinon
-          .stub(channelRepository, 'getSocketPoolId')
-          .returns(Promise.resolve(channel.socketPoolId))
+        sinon.stub(channelRepository, 'getSocketPoolId').returns(Promise.resolve(channel.socketId))
         await dispatch(JSON.stringify(sdErrorMessage), {})
         await wait(2 * socketDelay)
       })
 
       it('enqueues the message for resending', () => {
-        expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage, channel.socketPoolId])
+        expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage, channel.socketId])
       })
 
       it('logs the rate limit error', () => {

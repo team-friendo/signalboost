@@ -26,7 +26,7 @@ const sendHealthchecks = async () => {
     )
     const responseTimes = await util.sequence(
       channels.map(({ phoneNumber }) => () =>
-        signal.healthcheck(phoneNumber, diagnosticsChannel.socketPoolId),
+        signal.healthcheck(phoneNumber, diagnosticsChannel.socketId),
       ),
       healthcheckSpacing,
     )
@@ -80,14 +80,14 @@ const _restartAndNotify = async () => {
 // () => Promise<string>
 const restart = async () => {
   // send all signald instances a poison pill (causing them to shutdown and restart)
-  await Promise.all(times(availablePools, socketPoolId => signal.abort(socketPoolId)))
+  await Promise.all(times(availablePools, socketId => signal.abort(socketId)))
   // restart all signalboost application components (without shutting down signalboost process)
   await app.stop()
   await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
   await app.run({})
   // ensure that all signald instances are responsive before proceeding
   await util.wait(restartDelay)
-  await Promise.all(times(availablePools, socketPoolId => signal.isAlive(socketPoolId)))
+  await Promise.all(times(availablePools, socketId => signal.isAlive(socketId)))
 }
 
 // (Channel, string) => Promise<string>
@@ -98,7 +98,7 @@ const respondToHealthcheck = (channel, healthcheckId) =>
       recipient: diagnosticsPhoneNumber,
       message: `${messageTypes.HEALTHCHECK_RESPONSE} ${healthcheckId}`,
     }),
-    channel.socketPoolId,
+    channel.socketId,
   )
 
 module.exports = {

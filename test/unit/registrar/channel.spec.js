@@ -130,7 +130,7 @@ describe('channel registrar', () => {
                 recipient: adminPhoneNumber,
                 message: _welcomeNotificationOf(channelInstance),
               }),
-              channelInstance.socketPoolId,
+              channelInstance.socketId,
             ])
           })
         })
@@ -174,7 +174,7 @@ describe('channel registrar', () => {
                     recipient: adminPhoneNumber,
                     message: _welcomeNotificationOf(supportChannel),
                   }),
-                  supportChannel.socketPoolId,
+                  supportChannel.socketId,
                 ])
               })
             })
@@ -350,7 +350,7 @@ describe('channel registrar', () => {
             recipient: adminPhoneNumber,
             message: _welcomeNotificationOf(channelInstance),
           }),
-          channelInstance.socketPoolId,
+          channelInstance.socketId,
         ])
       })
 

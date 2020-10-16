@@ -15,16 +15,12 @@ const assignChannelsToSocketPools = async () => {
   const channelsInBuckets = groupEvenlyBySize(channelsWithSizes, availablePools)
   // Create socket pool assignments (and log them so maintainers can create more pools if needed)
   return Promise.all(
-    channelsInBuckets.map(
-      ({ channelPhoneNumbers, maxMemberCount, totalMemberCount }, socketPoolId) => {
-        metrics.setGauge(gauges.SOCKET_POOL_NUM_CHANNELS, channelPhoneNumbers.length, [
-          socketPoolId,
-        ])
-        metrics.setGauge(gauges.SOCKET_POOL_NUM_MEMBERS, totalMemberCount, [socketPoolId])
-        metrics.setGauge(gauges.SOCKET_POOL_LARGEST_CHANNEL, maxMemberCount, [socketPoolId])
-        return channelRepository.updateSocketPoolIds(channelPhoneNumbers, socketPoolId)
-      },
-    ),
+    channelsInBuckets.map(({ channelPhoneNumbers, maxMemberCount, totalMemberCount }, socketId) => {
+      metrics.setGauge(gauges.SOCKET_POOL_NUM_CHANNELS, channelPhoneNumbers.length, [socketId])
+      metrics.setGauge(gauges.SOCKET_POOL_NUM_MEMBERS, totalMemberCount, [socketId])
+      metrics.setGauge(gauges.SOCKET_POOL_LARGEST_CHANNEL, maxMemberCount, [socketId])
+      return channelRepository.updateSocketPoolIds(channelPhoneNumbers, socketId)
+    }),
   )
 }
 

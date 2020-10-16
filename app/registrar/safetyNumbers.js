@@ -28,7 +28,7 @@ const trustAndResend = async updatableFingerprint => {
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
   const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
-  if (sdMessage) await signal.sendMessage(sdMessage, channel.socketPoolId)
+  if (sdMessage) await signal.sendMessage(sdMessage, channel.socketId)
   return trustResult // we catch errors in `updateFingerPrint`
 }
 
@@ -66,7 +66,7 @@ const _sendDeauthAlerts = (channel, deauthorizedNumber, adminMemberships) => {
           recipient: memberPhoneNumber,
           message: messagesIn(language).notifications.deauthorization(deauthorizedNumber),
         }),
-        channel.socketPoolId,
+        channel.socketId,
       ),
     ),
   )

@@ -50,7 +50,7 @@ const destroy = async ({ phoneNumber, sender }) => {
         .catch(logger.error)
 
       logger.log(`unsubscribing from ${phoneNumber}...`)
-      await signal.unsubscribe(phoneNumber, channel.socketPoolId)
+      await signal.unsubscribe(phoneNumber, channel.socketId)
       logger.log(`unsubscribed from ${phoneNumber}.`)
     }
 

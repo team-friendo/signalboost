@@ -42,7 +42,7 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 1,
     },
-    socketPoolId: {
+    socketId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,

@@ -90,7 +90,7 @@ const _timeoutFor = messageType =>
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse, number) -> CallbackRoute
-const handle = (message, socketPoolId) => {
+const handle = (message, socketId) => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
     [messageTypes.MESSAGE]:
@@ -102,7 +102,7 @@ const handle = (message, socketPoolId) => {
     [messageTypes.VERIFICATION_ERROR]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     // hmm... how to infer the correct socket pool id here?
-    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${socketPoolId}`],
+    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${socketId}`],
   }[message.type] || { callback: util.noop }
   callback({ message, resolve, reject, state })
 }

@@ -35,7 +35,7 @@ const {
  *  type UpdatableFingerprint = {
  *   channelPhoneNumber: string,
  *   memberPhoneNumber: string,
- *   socketPoolId: number,
+ *   socketId: number,
  *   fingerprint: string,
  *   sdMessage: SdMessage,
  * }
@@ -59,10 +59,10 @@ const {
  */
 
 // number => string => Promise<SignalboostStatus>
-const dispatcherOf = socketPoolId => msg => dispatch(msg, socketPoolId).catch(logger.error)
+const dispatcherOf = socketId => msg => dispatch(msg, socketId).catch(logger.error)
 
 // (string, number) -> Promise<SignalBoostStatus>
-const dispatch = async (msg, socketPoolId) => {
+const dispatch = async (msg, socketId) => {
   logger.debug(emphasize(redact(msg)))
 
   // parse basic info from message
@@ -84,7 +84,7 @@ const dispatch = async (msg, socketPoolId) => {
     : []
 
   // handle callbacks for messages that have request/response semantics
-  callbacks.handle(inboundMsg, socketPoolId)
+  callbacks.handle(inboundMsg, socketId)
 
   // process any side-effects
   const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
@@ -156,8 +156,8 @@ const relay = async (channel, sender, inboundMsg) => {
 // InboundSdMessage => void
 const logAndResendRateLimitedMessage = async rateLimitedMessage => {
   const channelPhoneNumber = rateLimitedMessage.username
-  const socketPoolId = await channelRepository.getSocketPoolId(channelPhoneNumber)
-  const resendInterval = resend.enqueueResend(rateLimitedMessage, socketPoolId)
+  const socketId = await channelRepository.getSocketPoolId(channelPhoneNumber)
+  const resendInterval = resend.enqueueResend(rateLimitedMessage, socketId)
   metrics.incrementCounter(ERRORS, [
     resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
     channelPhoneNumber,

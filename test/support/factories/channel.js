@@ -14,7 +14,7 @@ export const channelFactory = attrs => ({
   name: '#red-alert',
   messageExpiryTime: defaultMessageExpiryTime,
   description: 'the food channel',
-  socketPoolId: random(0, 9),
+  socketId: random(0, 9),
   ...attrs,
 })
 

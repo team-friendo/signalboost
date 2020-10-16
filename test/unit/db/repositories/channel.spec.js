@@ -271,7 +271,7 @@ describe('channel repository', () => {
           'memberships',
           'messageCount',
           'recycleRequest',
-          'socketPoolId',
+          'socketId',
         ])
       })
     })
@@ -335,9 +335,9 @@ describe('channel repository', () => {
 
     beforeEach(async () => {
       await Promise.all([
-        db.channel.create(channelFactory({ phoneNumber: unaffectedPhoneNumber, socketPoolId: 99 })),
+        db.channel.create(channelFactory({ phoneNumber: unaffectedPhoneNumber, socketId: 99 })),
         ...updatedChannelPhoneNumbers.map((phoneNumber, idx) =>
-          db.channel.create(channelFactory({ phoneNumber, socketPoolId: idx })),
+          db.channel.create(channelFactory({ phoneNumber, socketId: idx })),
         ),
       ])
     })
@@ -345,12 +345,12 @@ describe('channel repository', () => {
     it('updates many channels to have the same socket pool id', async () => {
       await channelRepository.updateSocketPoolIds(updatedChannelPhoneNumbers, 42)
 
-      expect(
-        (await channelRepository.findByPhoneNumber(unaffectedPhoneNumber)).socketPoolId,
-      ).to.eql(unaffectedSocketPoolId)
+      expect((await channelRepository.findByPhoneNumber(unaffectedPhoneNumber)).socketId).to.eql(
+        unaffectedSocketPoolId,
+      )
 
       expect(
-        map(await channelRepository.findManyDeep(updatedChannelPhoneNumbers), 'socketPoolId'),
+        map(await channelRepository.findManyDeep(updatedChannelPhoneNumbers), 'socketId'),
       ).to.eql(times(3, () => updatedSocketPoolId))
     })
   })

@@ -10,20 +10,20 @@ const {
 } = metrics
 
 // (object, number) -> Promise<void>
-const write = (data, socketPoolId) => {
+const write = (data, socketId) => {
   const id = util.genUuid()
   const msg = JSON.stringify({ ...data, id }) + '\n'
 
   return new Promise((resolve, reject) =>
-    app.socketPools[socketPoolId]
+    app.socketPools[socketId]
       .acquire()
       .then(sock =>
         sock.write(
           msg,
           promisifyCallback(
             () => {
-              app.socketPools[socketPoolId].release(sock)
-              logger.debug(emphasize(`[socket ${socketPoolId}]\n${redact(msg)}`))
+              app.socketPools[socketId].release(sock)
+              logger.debug(emphasize(`[socket ${socketId}]\n${redact(msg)}`))
 
               const type = (data.messageBody || '').includes('healthcheck')
                 ? 'healthcheck'
@@ -33,7 +33,7 @@ const write = (data, socketPoolId) => {
               return resolve(id)
             },
             e => {
-              app.socketPools[socketPoolId].release(sock)
+              app.socketPools[socketId].release(sock)
               return reject({
                 status: statuses.ERROR,
                 message: `Error writing message ${id}: ${e.message}`,

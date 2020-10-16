@@ -176,7 +176,7 @@ describe('diagnostics module', () => {
           recipient: diagnosticsPhoneNumber,
           message: `healthcheck_response 1312`,
         }),
-        channels[0].socketPoolId,
+        channels[0].socketId,
       ])
     })
   })

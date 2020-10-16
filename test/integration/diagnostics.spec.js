@@ -17,12 +17,12 @@ const {
 } = require('../../app/config')
 
 describe('diagnostics jobs', () => {
-  const socketPoolId = 1
+  const socketId = 1
   const uuids = times(9, util.genUuid)
   let channels, diagnosticsChannel, writeStub, readSock
   const createChannels = async () => {
     channels = await Promise.all(
-      times(3, () => app.db.channel.create(channelFactory({ socketPoolId }))),
+      times(3, () => app.db.channel.create(channelFactory({ socketId }))),
     )
     diagnosticsChannel = await app.db.channel.create(
       deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }),
@@ -66,7 +66,7 @@ describe('diagnostics jobs', () => {
     beforeEach(async () => {
       await destroyAllChannels()
       await createChannels()
-      readSock = await app.socketPools[socketPoolId].acquire()
+      readSock = await app.socketPools[socketId].acquire()
       const genUuidStub = sinon.stub(util, 'genUuid')
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
     })
@@ -74,7 +74,7 @@ describe('diagnostics jobs', () => {
       try {
         sinon.restore()
         await destroyAllChannels()
-        await app.socketPools[socketPoolId].release(readSock)
+        await app.socketPools[socketId].release(readSock)
       } catch (ignored) {
         /**/
       }
@@ -96,7 +96,7 @@ describe('diagnostics jobs', () => {
               type: messageTypes.SEND,
               username: diagnosticsPhoneNumber,
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ]),
           ...channels.map((channel, idx) => [
             {
@@ -106,7 +106,7 @@ describe('diagnostics jobs', () => {
               username: channels[idx].phoneNumber,
               attachments: [],
             },
-            channel.socketPoolId,
+            channel.socketId,
           ]),
         ])
       })
@@ -160,7 +160,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -174,7 +174,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -188,7 +188,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -202,7 +202,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -216,7 +216,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -230,7 +230,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -242,7 +242,7 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
@@ -254,47 +254,47 @@ describe('diagnostics jobs', () => {
               username: diagnosticsPhoneNumber,
               attachments: [],
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'abort',
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'subscribe',
               username: channels[0].phoneNumber,
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'subscribe',
               username: channels[1].phoneNumber,
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'subscribe',
               username: channels[2].phoneNumber,
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'subscribe',
               username: diagnosticsPhoneNumber,
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
           [
             {
               type: 'version',
             },
-            diagnosticsChannel.socketPoolId,
+            diagnosticsChannel.socketId,
           ],
         ])
       })

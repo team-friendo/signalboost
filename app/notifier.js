@@ -48,7 +48,7 @@ const _notifyMany = ({ channel, recipients, notificationKey, message }) =>
           recipient: recipient.memberPhoneNumber,
           message: message || messagesIn(recipient.language).notifications[notificationKey],
         }),
-        channel.socketPoolId,
+        channel.socketId,
       ),
     ),
   )

@@ -46,29 +46,29 @@ const socketPoolOf = async ({ create, destroy }) => {
 }
 
 // (number, number) -> Promise<Socket>
-const getSocketConnection = async (socketPoolId, attempts = 0) => {
-  const socketFilePath = `${signaldSocketDir}/${socketPoolId}/signald.sock`
+const getSocketConnection = async (socketId, attempts = 0) => {
+  const socketFilePath = `${signaldSocketDir}/${socketId}/signald.sock`
   if (!(await fs.pathExists(socketFilePath))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
     } else {
-      return wait(connectionInterval).then(() => getSocketConnection(socketPoolId, attempts + 1))
+      return wait(connectionInterval).then(() => getSocketConnection(socketId, attempts + 1))
     }
   } else {
     return connect(
       socketFilePath,
-      socketPoolId,
+      socketId,
     )
   }
 }
 
 // (string, number) -> Promise<Socket>
-const connect = (socketFilePath, socketPoolId) => {
+const connect = (socketFilePath, socketId) => {
   try {
     const sock = net.createConnection(socketFilePath)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    sock.on('data', dispatcher.dispatcherOf(socketPoolId))
+    sock.on('data', dispatcher.dispatcherOf(socketId))
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
     return Promise.reject(new Error(messages.error.socketConnectError(e.message)))

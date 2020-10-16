@@ -19,7 +19,7 @@ import { languages } from '../../app/language'
 import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
 
 describe('dispatcher service', () => {
-  const socketPoolId = 1
+  const socketId = 1
   const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
   const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
@@ -31,7 +31,7 @@ describe('dispatcher service', () => {
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
-    channel = await app.db.channel.create(channelFactory({ socketPoolId }))
+    channel = await app.db.channel.create(channelFactory({ socketId }))
     admins = await Promise.all(
       times(2, () =>
         app.db.membership.create(
@@ -61,7 +61,7 @@ describe('dispatcher service', () => {
 
   before(async () => await app.run({ ...testApp, db, signal }))
   beforeEach(async () => {
-    readSock = await app.socketPools[socketPoolId].acquire()
+    readSock = await app.socketPools[socketId].acquire()
     writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
@@ -74,7 +74,7 @@ describe('dispatcher service', () => {
       restartIdentity: true,
     })
     await app.db.channel.destroy({ where: {}, force: true })
-    await app.socketPools[socketPoolId].release(readSock)
+    await app.socketPools[socketId].release(readSock)
     sinon.restore()
   })
   after(async () => await app.stop())

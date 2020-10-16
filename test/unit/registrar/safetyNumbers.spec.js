@@ -81,7 +81,7 @@ describe('safety numbers registrar module', () => {
         it('attempts to resend the original message', async () => {
           await updateFingerprint(updatableFingerprint).catch(a => a)
 
-          expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketPoolId])
+          expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketId])
         })
 
         describe('when resending the original message succeeds', () => {
@@ -148,7 +148,7 @@ describe('safety numbers registrar module', () => {
     })
     it('resends the message', async () => {
       await updateFingerprint(updatableFingerprint)
-      expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketPoolId])
+      expect(sendMessageStub.getCall(0).args).to.eql([sdMessage, channel.socketId])
     })
 
     it('resolves with a success status', async () => {
@@ -189,7 +189,7 @@ describe('safety numbers registrar module', () => {
               recipient: otherAdminPhoneNumbers[0],
               message: messagesIn(defaultLanguage).notifications.deauthorization(memberPhoneNumber),
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
 

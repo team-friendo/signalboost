@@ -26,7 +26,7 @@ describe('messenger service', () => {
     name: 'foobar',
     phoneNumber: channelPhoneNumber,
     messageExpiryTime: 60,
-    socketPoolId: 42,
+    socketId: 42,
     memberships: [
       {
         type: memberTypes.ADMIN,
@@ -180,7 +180,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
-          channel.socketPoolId,
+          channel.socketId,
         ])
 
         expect(sendMessageStub.getCall(1).args).to.eql([
@@ -190,7 +190,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
-          channel.socketPoolId,
+          channel.socketId,
         ])
 
         expect(sendMessageStub.getCall(2).args).to.eql([
@@ -200,7 +200,7 @@ describe('messenger service', () => {
             message: `[BROADCAST]\n${payload}`,
             attachments,
           }),
-          channel.socketPoolId,
+          channel.socketId,
         ])
 
         expect(sendMessageStub.getCall(4).args).to.eql([
@@ -210,7 +210,7 @@ describe('messenger service', () => {
             message: `[${channel.name}]\n${payload}`,
             attachments,
           }),
-          channel.socketPoolId,
+          channel.socketId,
         ])
       })
 
@@ -252,7 +252,7 @@ describe('messenger service', () => {
               recipient: sender.phoneNumber,
               message: response,
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
       })
@@ -288,7 +288,7 @@ describe('messenger service', () => {
               recipient: sender.phoneNumber,
               message: response,
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
 
@@ -301,7 +301,7 @@ describe('messenger service', () => {
                 message,
                 attachments,
               }),
-              channel.socketPoolId,
+              channel.socketId,
             ])
           })
         })
@@ -341,7 +341,7 @@ describe('messenger service', () => {
               recipient: adminSender.phoneNumber,
               message: 'yay!',
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
 
@@ -371,7 +371,7 @@ describe('messenger service', () => {
               recipient: adminSender.phoneNumber,
               message: errorMessage,
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
       })
@@ -461,7 +461,7 @@ describe('messenger service', () => {
               message: 'foobar',
               attachments: [],
             }),
-            channel.socketPoolId,
+            channel.socketId,
           ])
         })
       })
