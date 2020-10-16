@@ -15,8 +15,9 @@ const _histograms = {
 
 const _gauges = {
   CHANNEL_HEALTH: 'CHANNEL_HEALTH',
-  CHANNELS_IN_SOCKET_POOL: 'CHANNELS_IN_SOCKET_POOL',
-  MEMBERS_IN_SOCKET_POOL: 'MEMBERS_IN_SOCKET_POOL',
+  SOCKET_POOL_LARGEST_CHANNEL: 'SOCKET_POOL_LARGEST_CHANNEL',
+  SOCKET_POOL_NUM_CHANNELS: 'SOCKET_POOL_NUM_CHANNELS',
+  SOCKET_POOL_NUM_MEMBERS: 'SOCKET_POOL_NUM_MEMBERS',
 }
 
 const messageDirection = {
@@ -72,15 +73,21 @@ const run = () => {
       registers: [register],
       labelNames: ['channelPhoneNumber'],
     }),
-    [g.CHANNELS_IN_SOCKET_POOL]: new prometheus.Gauge({
-      name: 'channels_in_socket_pool',
+    [g.SOCKET_POOL_NUM_CHANNELS]: new prometheus.Gauge({
+      name: 'socket_pool_num_channels',
       help: 'Number of channels in a given socket pool shard',
       registers: [register],
       labelNames: ['socketPoolIndex'],
     }),
-    [g.MEMBERS_IN_SOCKET_POOL]: new prometheus.Gauge({
-      name: 'members_in_socket_pool',
-      help: 'Number of channel members in a given socket pool shard',
+    [g.SOCKET_POOL_NUM_MEMBERS]: new prometheus.Gauge({
+      name: 'socket_pool_num_members',
+      help: 'Number of members in all channels in a given socket pool shard',
+      registers: [register],
+      labelNames: ['socketPoolIndex'],
+    }),
+    [g.SOCKET_POOL_LARGEST_CHANNEL]: new prometheus.Gauge({
+      name: 'socket_pool_largest_channel',
+      help: 'Number of members on the largest channel in a given socket pool shard',
       registers: [register],
       labelNames: ['socketPoolIndex'],
     }),

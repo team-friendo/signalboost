@@ -63,16 +63,21 @@ describe('sharding module', () => {
 
     it('records sharding results in a prometheus gauge', () => {
       expect(map(setGaugeStub.getCalls(), 'args')).to.eql([
-        [gauges.CHANNELS_IN_SOCKET_POOL, 5, [0]],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 216, [0]],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 6, [1]],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 217, [1]],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 4, [2]],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 218, [2]],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 4, [3]],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 219, [3]],
-        [gauges.CHANNELS_IN_SOCKET_POOL, 1, [4]],
-        [gauges.MEMBERS_IN_SOCKET_POOL, 1000, [4]],
+        [gauges.SOCKET_POOL_NUM_CHANNELS, 5, [0]],
+        [gauges.SOCKET_POOL_NUM_MEMBERS, 216, [0]],
+        [gauges.SOCKET_POOL_LARGEST_CHANNEL, 100, [0]],
+        [gauges.SOCKET_POOL_NUM_CHANNELS, 6, [1]],
+        [gauges.SOCKET_POOL_NUM_MEMBERS, 217, [1]],
+        [gauges.SOCKET_POOL_LARGEST_CHANNEL, 55, [1]],
+        [gauges.SOCKET_POOL_NUM_CHANNELS, 4, [2]],
+        [gauges.SOCKET_POOL_NUM_MEMBERS, 218, [2]],
+        [gauges.SOCKET_POOL_LARGEST_CHANNEL, 200, [2]],
+        [gauges.SOCKET_POOL_NUM_CHANNELS, 4, [3]],
+        [gauges.SOCKET_POOL_NUM_MEMBERS, 219, [3]],
+        [gauges.SOCKET_POOL_LARGEST_CHANNEL, 200, [3]],
+        [gauges.SOCKET_POOL_NUM_CHANNELS, 1, [4]],
+        [gauges.SOCKET_POOL_NUM_MEMBERS, 1000, [4]],
+        [gauges.SOCKET_POOL_LARGEST_CHANNEL, 1000, [4]],
       ])
     })
   })
@@ -82,23 +87,28 @@ describe('sharding module', () => {
       expect(groupEvenly(channelsWithSizes, 5)).to.eql([
         {
           channelPhoneNumbers: ['3', '6', '8', '12', '16'],
-          memberCount: 216, // 100 + 53 + 51 + 8 + 4
+          totalMemberCount: 216, // 100 + 53 + 51 + 8 + 4
+          maxMemberCount: 100,
         },
         {
           channelPhoneNumbers: ['4', '5', '7', '9', '15', '19'],
-          memberCount: 217, // 55 + 54 + 52 + 50 + 5 + 1
+          totalMemberCount: 217, // 55 + 54 + 52 + 50 + 5 + 1
+          maxMemberCount: 55,
         },
         {
           channelPhoneNumbers: ['2', '10', '14', '18'],
-          memberCount: 218, // 200 + 10 + 6 + 2
+          totalMemberCount: 218, // 200 + 10 + 6 + 2
+          maxMemberCount: 200,
         },
         {
           channelPhoneNumbers: ['1', '11', '13', '17'],
-          memberCount: 219, // 200 + 9 + 7 + 3
+          totalMemberCount: 219, // 200 + 9 + 7 + 3
+          maxMemberCount: 200,
         },
         {
           channelPhoneNumbers: ['0'],
-          memberCount: 1000,
+          totalMemberCount: 1000,
+          maxMemberCount: 1000,
         },
       ])
     })

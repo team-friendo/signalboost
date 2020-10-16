@@ -1,7 +1,7 @@
 const channelRepository = require('./db/repositories/channel')
 const metrics = require('./metrics')
 const { gauges } = metrics
-const { times } = require('lodash')
+const { times, isEmpty } = require('lodash')
 const { MinHeap } = require('mnemonist/heap')
 const {
   socket: { availablePools },
@@ -15,27 +15,41 @@ const assignChannelsToSocketPools = async () => {
   const channelsInBuckets = groupEvenlyBySize(channelsWithSizes, availablePools)
   // Create socket pool assignments (and log them so maintainers can create more pools if needed)
   return Promise.all(
-    channelsInBuckets.map(({ channelPhoneNumbers, memberCount }, idx) => {
-      metrics.setGauge(gauges.CHANNELS_IN_SOCKET_POOL, channelPhoneNumbers.length, [idx])
-      metrics.setGauge(gauges.MEMBERS_IN_SOCKET_POOL, memberCount, [idx])
-      return channelRepository.updateSocketPoolIds(channelPhoneNumbers, idx)
-    }),
+    channelsInBuckets.map(
+      ({ channelPhoneNumbers, maxMemberCount, totalMemberCount }, socketPoolId) => {
+        metrics.setGauge(gauges.SOCKET_POOL_NUM_CHANNELS, channelPhoneNumbers.length, [
+          socketPoolId,
+        ])
+        metrics.setGauge(gauges.SOCKET_POOL_NUM_MEMBERS, totalMemberCount, [socketPoolId])
+        metrics.setGauge(gauges.SOCKET_POOL_LARGEST_CHANNEL, maxMemberCount, [socketPoolId])
+        return channelRepository.updateSocketPoolIds(channelPhoneNumbers, socketPoolId)
+      },
+    ),
   )
 }
 
+// (Tuple<string,number>, number) =>
+//   Array<channelPhoneNumbers: Array<string>, totalMemberCount: number, maxMemberCount: number}>
 const groupEvenlyBySize = (channelsWithSizes, numBuckets) => {
   // Iterate over all channels, and on each iteration, add the channel under consideration
   // into the bucket with least members, producing an even-as-possible distribution
   // of channel-members across a fixed number of buckets.
   const buckets = MinHeap.from(
-    times(numBuckets, () => ({ channelPhoneNumbers: [], memberCount: 0 })),
-    (a, b) => a.memberCount - b.memberCount,
+    times(numBuckets, () => ({
+      channelPhoneNumbers: [],
+      totalMemberCount: 0,
+      maxMemberCount: 0,
+    })),
+    (a, b) => a.totalMemberCount - b.totalMemberCount,
   )
-  channelsWithSizes.forEach(([channelPhoneNumber, _memberCount]) => {
-    const { channelPhoneNumbers, memberCount } = buckets.pop()
+  channelsWithSizes.forEach(([channelPhoneNumber, memberCount]) => {
+    const { channelPhoneNumbers, totalMemberCount, maxMemberCount } = buckets.pop()
     buckets.push({
       channelPhoneNumbers: channelPhoneNumbers.concat(channelPhoneNumber),
-      memberCount: memberCount + _memberCount,
+      totalMemberCount: totalMemberCount + memberCount,
+      // The first memberCount will always be the largest b/c we sorted
+      // channelsWithSizes in descending order of size in our db query.
+      maxMemberCount: isEmpty(channelPhoneNumbers) ? memberCount : maxMemberCount,
     })
   })
   return buckets.consume()
