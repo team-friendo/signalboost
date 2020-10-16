@@ -14,7 +14,7 @@ const {
 } = require('../../app/config')
 
 describe('jobs service', () => {
-  let assignChannelsToSocketPoolsStub,
+  let assignChannelsToSocketsStub,
     registerAllStub,
     deleteInvitesStub,
     deleteSmsSendersStub,
@@ -26,8 +26,8 @@ describe('jobs service', () => {
     let originalReregisterValue = process.env.REREGISTER_ON_STARTUP
     before(async () => {
       // one-off jobs
-      assignChannelsToSocketPoolsStub = sinon
-        .stub(sharding, 'assignChannelsToSocketPools')
+      assignChannelsToSocketsStub = sinon
+        .stub(sharding, 'assignChannelsToSockets')
         .returns(Promise.resolve([1, 2, 3]))
       registerAllStub = sinon
         .stub(phoneNumberRegistrar, 'registerAllUnregistered')
@@ -58,7 +58,7 @@ describe('jobs service', () => {
 
     describe('one-off jobs', () => {
       it('assigns channels to socket pools', () => {
-        expect(assignChannelsToSocketPoolsStub.callCount).to.be.above(0)
+        expect(assignChannelsToSocketsStub.callCount).to.be.above(0)
       })
 
       it('registers any unregistered phone numbers with signal', () => {

@@ -5,7 +5,7 @@ const dispatcher = require('../dispatcher')
 const { times } = require('lodash')
 const { wait, loggerOf } = require('../util.js')
 const {
-  socket: { connectionInterval, maxConnectionAttempts, poolSize, availablePools },
+  socket: { connectionInterval, maxConnectionAttempts, poolSize, availableSockets },
 } = require('../config')
 
 // CONSTANTS
@@ -25,7 +25,7 @@ const messages = {
 const run = async () => {
   logger.log('Initializing socket pools...')
   const pools = await Promise.all(
-    times(availablePools, socketPooldId =>
+    times(availableSockets, socketPooldId =>
       socketPoolOf({
         create: () => getSocketConnection(socketPooldId),
         destroy: sock => sock.destroy(),

@@ -27,7 +27,7 @@ const run = async () => {
 
   logger.log('----- Assigning channels to socket pool shards...')
   // TODO: `sharding` should probably be `sockets`
-  await sharding.assignChannelsToSocketPools()
+  await sharding.assignChannelsToSockets()
   logger.log('----- Assigned channels to socket pool shards!')
 
   if (process.env.REREGISTER_ON_STARTUP === '1') {

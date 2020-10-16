@@ -330,8 +330,8 @@ describe('channel repository', () => {
   describe('#udpateSocketPools', () => {
     const updatedChannelPhoneNumbers = times(3, genPhoneNumber)
     const unaffectedPhoneNumber = genPhoneNumber()
-    const updatedSocketPoolId = 42
-    const unaffectedSocketPoolId = 99
+    const updatedSocketId = 42
+    const unaffectedSocketId = 99
 
     beforeEach(async () => {
       await Promise.all([
@@ -343,15 +343,15 @@ describe('channel repository', () => {
     })
 
     it('updates many channels to have the same socket pool id', async () => {
-      await channelRepository.updateSocketPoolIds(updatedChannelPhoneNumbers, 42)
+      await channelRepository.updateSocketIds(updatedChannelPhoneNumbers, 42)
 
       expect((await channelRepository.findByPhoneNumber(unaffectedPhoneNumber)).socketId).to.eql(
-        unaffectedSocketPoolId,
+        unaffectedSocketId,
       )
 
       expect(
         map(await channelRepository.findManyDeep(updatedChannelPhoneNumbers), 'socketId'),
-      ).to.eql(times(3, () => updatedSocketPoolId))
+      ).to.eql(times(3, () => updatedSocketId))
     })
   })
 

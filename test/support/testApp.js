@@ -3,7 +3,7 @@ import dispatcher from '../../app/dispatcher'
 import { createPool } from 'generic-pool'
 import { times } from 'lodash'
 const {
-  socket: { poolSize, availablePools },
+  socket: { poolSize, availableSockets },
 } = require('../../app/config')
 
 const stubOf = (resource = defaultResource) => ({
@@ -25,7 +25,7 @@ const dbResource = {
 }
 
 const socketPoolsResource = () =>
-  times(availablePools, () => {
+  times(availableSockets, () => {
     const pool = createPool(
       {
         create: () => {

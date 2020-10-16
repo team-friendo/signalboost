@@ -214,7 +214,7 @@ describe('dispatcher module', () => {
       beforeEach(async () => {
         enqueueResendStub.returns(minResendInterval)
         incrementCounterStub = sinon.stub(metrics, 'incrementCounter')
-        sinon.stub(channelRepository, 'getSocketPoolId').returns(Promise.resolve(channel.socketId))
+        sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(channel.socketId))
         await dispatch(JSON.stringify(sdErrorMessage), {})
         await wait(2 * socketDelay)
       })

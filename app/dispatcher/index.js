@@ -156,7 +156,7 @@ const relay = async (channel, sender, inboundMsg) => {
 // InboundSdMessage => void
 const logAndResendRateLimitedMessage = async rateLimitedMessage => {
   const channelPhoneNumber = rateLimitedMessage.username
-  const socketId = await channelRepository.getSocketPoolId(channelPhoneNumber)
+  const socketId = await channelRepository.getSocketId(channelPhoneNumber)
   const resendInterval = resend.enqueueResend(rateLimitedMessage, socketId)
   metrics.incrementCounter(ERRORS, [
     resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,

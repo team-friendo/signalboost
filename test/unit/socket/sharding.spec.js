@@ -2,7 +2,7 @@ import { expect } from 'chai'
 import sinon from 'sinon'
 import { map } from 'lodash'
 import { afterEach, beforeEach, describe, it } from 'mocha'
-import { groupEvenly, assignChannelsToSocketPools } from '../../../app/socket/sharding'
+import { groupEvenly, assignChannelsToSockets } from '../../../app/socket/sharding'
 import channelRepository from '../../../app/db/repositories/channel'
 import metrics, { gauges } from '../../../app/metrics'
 
@@ -37,18 +37,18 @@ describe('sharding module', () => {
 
   afterEach(() => sinon.restore())
 
-  describe('#assignChannelsToSocketPools', () => {
+  describe('#assignChannelsToSockets', () => {
     let updateSocketPoolsStub, setGaugeStub
     beforeEach(async () => {
       sinon
         .stub(channelRepository, 'getChannelsSortedBySize')
         .returns(Promise.resolve(channelsWithSizes))
       updateSocketPoolsStub = sinon
-        .stub(channelRepository, 'updateSocketPoolIds')
+        .stub(channelRepository, 'updateSocketIds')
         .returns(Promise.resolve(1))
       setGaugeStub = sinon.stub(metrics, 'setGauge').returns(undefined)
 
-      await assignChannelsToSocketPools()
+      await assignChannelsToSockets()
     })
 
     it('assigns channels to socket pools using a bucketing strategy', async () => {

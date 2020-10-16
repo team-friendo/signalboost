@@ -22,7 +22,7 @@ const {
 } = require('../../db/repositories/channel')
 const {
   defaultLanguage,
-  socket: { availablePools },
+  socket: { availableSockets },
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber },
 } = require('../../config')

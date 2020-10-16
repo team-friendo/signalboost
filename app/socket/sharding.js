@@ -4,22 +4,22 @@ const { gauges } = metrics
 const { times, isEmpty } = require('lodash')
 const { MinHeap } = require('mnemonist/heap')
 const {
-  socket: { availablePools },
+  socket: { availableSockets },
 } = require('../config')
 
 // () => Promise<Array<number>>
-const assignChannelsToSocketPools = async () => {
+const assignChannelsToSockets = async () => {
   // Get channels along with their member counts, sorted in descending order by member count
   const channelsWithSizes = await channelRepository.getChannelsSortedBySize()
   // Distribute channels as evenly as possible by member count across available socket pools
-  const channelsInBuckets = groupEvenlyBySize(channelsWithSizes, availablePools)
+  const channelsInBuckets = groupEvenlyBySize(channelsWithSizes, availableSockets)
   // Create socket pool assignments (and log them so maintainers can create more pools if needed)
   return Promise.all(
     channelsInBuckets.map(({ channelPhoneNumbers, maxMemberCount, totalMemberCount }, socketId) => {
       metrics.setGauge(gauges.SOCKET_POOL_NUM_CHANNELS, channelPhoneNumbers.length, [socketId])
       metrics.setGauge(gauges.SOCKET_POOL_NUM_MEMBERS, totalMemberCount, [socketId])
       metrics.setGauge(gauges.SOCKET_POOL_LARGEST_CHANNEL, maxMemberCount, [socketId])
-      return channelRepository.updateSocketPoolIds(channelPhoneNumbers, socketId)
+      return channelRepository.updateSocketIds(channelPhoneNumbers, socketId)
     }),
   )
 }
@@ -51,4 +51,4 @@ const groupEvenlyBySize = (channelsWithSizes, numBuckets) => {
   return buckets.consume()
 }
 
-module.exports = { assignChannelsToSocketPools, groupEvenly: groupEvenlyBySize }
+module.exports = { assignChannelsToSockets, groupEvenly: groupEvenlyBySize }
