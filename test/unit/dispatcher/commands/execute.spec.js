@@ -7,6 +7,7 @@ import { commands, toggles, vouchModes } from '../../../../app/dispatcher/comman
 import { statuses } from '../../../../app/util'
 import { defaultLanguage, languages } from '../../../../app/language'
 import signal from '../../../../app/signal'
+import diagnostics from '../../../../app/diagnostics'
 import channelRepository from '../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
@@ -27,7 +28,6 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
-import app from '../../../../app'
 const {
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber },
@@ -1989,15 +1989,12 @@ describe('executing commands', () => {
         message: `${localizedCmds.RESTART} ${maintainerPassphrase}`,
       }),
     }
-    let isMaintainerStub, abortStub, isAliveStub, stopStub, runStub
+    let isMaintainerStub, restartStub //, abortStub, isAliveStub, stopStub, runStub
 
     beforeEach(() => {
       isMaintainerStub = sinon.stub(channelRepository, 'isMaintainer')
       sinon.stub(channelRepository, 'getMaintainers').returns(Promise.resolve(adminMemberships))
-      abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
-      stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
-      runStub = sinon.stub(app, 'run').returns(Promise.resolve())
-      isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
+      restartStub = sinon.stub(diagnostics, 'restart').returns(Promise.resolve('v0.0.1'))
     })
 
     describe('when sent by non-maintainer', () => {
@@ -2055,9 +2052,7 @@ describe('executing commands', () => {
       describe('in all cases', () => {
         it('tries to restart signald and signalboost', async () => {
           await processCommand(dispatchable)
-          ;[abortStub, stopStub, runStub, isAliveStub].forEach(stub =>
-            expect(stub.callCount).to.eql(1),
-          )
+          expect(restartStub.callCount).to.eql(1)
         })
       })
 
@@ -2089,14 +2084,14 @@ describe('executing commands', () => {
       describe('when restart fails', () => {
         beforeEach(() => {
           isMaintainerStub.returns(Promise.resolve(true))
-          isAliveStub.callsFake(() => Promise.reject('not alive!'))
+          restartStub.callsFake(() => Promise.reject('isAlive failed!'))
         })
 
         it('returns ERROR', async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.RESTART,
             status: statuses.ERROR,
-            message: notificationsFor(admin).restartFailure('not alive!'),
+            message: notificationsFor(admin).restartFailure('isAlive failed!'),
             notifications: [],
             payload: maintainerPassphrase,
           })

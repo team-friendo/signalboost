@@ -49,7 +49,7 @@ const test = {
 
 const development = {
   ...defaults,
-  healthcheckTimeout: 1000 * 30, // 30 sec
+  healthcheckTimeout: 1000 * 10, // 10 sec
 }
 
 module.exports = {
