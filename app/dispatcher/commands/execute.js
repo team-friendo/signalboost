@@ -1,8 +1,8 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
-const app = require('../../../app')
 const channelRepository = require('../../db/repositories/channel')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
+const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const inviteRepository = require('../../db/repositories/invite')
@@ -23,7 +23,7 @@ const {
 const {
   defaultLanguage,
   auth: { maintainerPassphrase },
-  signal: { restartDelay, diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber },
 } = require('../../config')
 
 /**
@@ -619,11 +619,7 @@ const maybeRestart = async (channel, sender, payload) => {
       return { status: statuses.UNAUTHORIZED, message }
     }
     // do the restarting:
-    await signal.abort() // rely on docker-compose semantics to restart signald
-    await app.stop()
-    await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
-    await app.run({})
-    await signal.isAlive() // ensure signald is actually running
+    await diagnostics.restart()
     logger.log('--- RESTART SUCCEEDED')
 
     return {

@@ -17,7 +17,7 @@ const {
 } = require('../../app/config')
 
 describe('diagnostics jobs', () => {
-  const uuids = times(3, util.genUuid)
+  const uuids = times(9, util.genUuid)
   let channels, diagnosticsChannel, writeStub, readSock
   const createChannels = async () => {
     channels = await Promise.all(times(3, () => app.db.channel.create(channelFactory())))
@@ -68,9 +68,13 @@ describe('diagnostics jobs', () => {
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
     })
     afterEach(async () => {
-      await destroyAllChannels()
-      await app.socketPool.release(readSock)
-      sinon.restore()
+      try {
+        sinon.restore()
+        await destroyAllChannels()
+        await app.socketPool.release(readSock)
+      } catch (ignored) {
+        /**/
+      }
     })
 
     describe('in a healthy state', () => {
@@ -114,6 +118,7 @@ describe('diagnostics jobs', () => {
         expect(failedHealthchecks.size).to.eql(channels.length)
       })
     })
+
     describe('when a healtcheck fails twice in a row', () => {
       beforeEach(async function() {
         this.timeout(8000)
@@ -121,16 +126,25 @@ describe('diagnostics jobs', () => {
         await sendHealthchecks()
         await util.wait(healthcheckTimeout)
         await sendHealthchecks()
-        await util.wait(2 * healthcheckTimeout)
+        await util.wait(1.5 * healthcheckTimeout)
       })
 
-      it('notifies maintainers', async function() {
+      it('notifies maintainers and restarts signalboost', async function() {
         const numHealtchecks = 2 * channels.length
-        const numAlerts = 2 * channels.length // 2 alerts per channel, since diagnostics has 2 admins
-        expect(writeStub.callCount).to.eql(numHealtchecks + numAlerts)
-        expect(flatten(map(writeStub.getCalls().slice(-numAlerts), 'args'))).to.have.deep.members([
+        const numRestartMessages = 14
+        expect(writeStub.callCount).to.be.above(numHealtchecks + numRestartMessages)
+        expect(
+          flatten(
+            map(
+              writeStub.getCalls().slice(numHealtchecks, numHealtchecks + numRestartMessages),
+              'args',
+            ),
+          ),
+        ).to.have.deep.members([
           {
-            messageBody: `Channel ${channels[0].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[0].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[0].memberPhoneNumber,
             },
@@ -139,7 +153,9 @@ describe('diagnostics jobs', () => {
             attachments: [],
           },
           {
-            messageBody: `Channel ${channels[0].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[0].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[1].memberPhoneNumber,
             },
@@ -148,7 +164,9 @@ describe('diagnostics jobs', () => {
             attachments: [],
           },
           {
-            messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[1].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[0].memberPhoneNumber,
             },
@@ -157,7 +175,9 @@ describe('diagnostics jobs', () => {
             attachments: [],
           },
           {
-            messageBody: `Channel ${channels[1].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[1].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[1].memberPhoneNumber,
             },
@@ -166,7 +186,9 @@ describe('diagnostics jobs', () => {
             attachments: [],
           },
           {
-            messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[2].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[0].memberPhoneNumber,
             },
@@ -175,13 +197,55 @@ describe('diagnostics jobs', () => {
             attachments: [],
           },
           {
-            messageBody: `Channel ${channels[2].phoneNumber} failed to respond to healthcheck`,
+            messageBody: `Channel ${
+              channels[2].phoneNumber
+            } failed to respond to 2 consecutive healthchecks.`,
             recipientAddress: {
               number: diagnosticsChannel.memberships[1].memberPhoneNumber,
             },
             type: 'send',
             username: diagnosticsPhoneNumber,
             attachments: [],
+          },
+          {
+            messageBody: 'Restarting Signalboost due to failed healthchecks...',
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+            attachments: [],
+          },
+          {
+            messageBody: 'Restarting Signalboost due to failed healthchecks...',
+            recipientAddress: {
+              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            },
+            type: 'send',
+            username: diagnosticsPhoneNumber,
+            attachments: [],
+          },
+          {
+            type: 'abort',
+          },
+          {
+            type: 'subscribe',
+            username: channels[0].phoneNumber,
+          },
+          {
+            type: 'subscribe',
+            username: channels[1].phoneNumber,
+          },
+          {
+            type: 'subscribe',
+            username: channels[2].phoneNumber,
+          },
+          {
+            type: 'subscribe',
+            username: diagnosticsPhoneNumber,
+          },
+          {
+            type: 'version',
           },
         ])
       })

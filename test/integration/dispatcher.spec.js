@@ -22,6 +22,11 @@ describe('dispatcher service', () => {
   const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
   const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
+  const getSentMessages = () =>
+    flatten(map(writeStub.getCalls(), 'args')).filter(
+      msg => !(msg.messageBody || '').includes('healthcheck'),
+    )
+
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
@@ -100,8 +105,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the message to all admins and subscribers', () => {
-      const messages = flatten(map(writeStub.getCalls(), 'args'))
-      expect(messages).to.have.deep.members([
+      expect(getSentMessages()).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -158,8 +162,7 @@ describe('dispatcher service', () => {
     })
 
     it('responds to the sender and relays the hotline message to all admins', () => {
-      const messages = flatten(map(writeStub.getCalls(), 'args'))
-      expect(messages).to.have.deep.members([
+      expect(getSentMessages()).to.have.deep.members([
         {
           messageBody:
             'Your message was forwarded to the admins of [#red-alert].\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
@@ -221,14 +224,24 @@ describe('dispatcher service', () => {
       ).not.to.eql(null)
     })
 
-    it('sends a welcome message to the sender', () => {
-      expect(writeStub.getCall(0).args[0]).to.eql({
-        messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
-        recipientAddress: { number: randoPhoneNumber },
-        type: 'send',
-        username: channel.phoneNumber,
-        attachments: [],
-      })
+    it('sends a welcome message to the sender and sets the expiration timer', () => {
+      expect(getSentMessages()).to.eql([
+        {
+          messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
+          recipientAddress: { number: randoPhoneNumber },
+          type: 'send',
+          username: channel.phoneNumber,
+          attachments: [],
+        },
+        {
+          expiresInSeconds: channel.messageExpiryTime,
+          recipientAddress: {
+            number: randoPhoneNumber,
+          },
+          type: 'set_expiration',
+          username: channel.phoneNumber,
+        },
+      ])
     })
   })
 
@@ -257,8 +270,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline reply to hotline message sender and all admins', () => {
-      const messages = flatten(map(writeStub.getCalls(), 'args'))
-      expect(messages).to.have.deep.members([
+      expect(getSentMessages()).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -307,8 +319,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the private message to all admins', () => {
-      const messages = flatten(map(writeStub.getCalls(), 'args'))
-      expect(messages).to.have.deep.members([
+      expect(getSentMessages()).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,

@@ -12,9 +12,10 @@ const testInterval = 50
 
 const development = {
   ...defaults,
-  healthcheckInterval: 1000 * 60, // 60 sec
+  healthcheckInterval: 1000 * 10, // 10 sec
   recycleInterval: 1000 * 5, // 5 secs
   recycleGracePeriod: 1000 * 30, // 30 sec
+  signaldStartupTime: 1000 * 5, // 5 sec
 }
 
 const test = {
