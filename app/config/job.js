@@ -1,5 +1,5 @@
 const defaults = {
-  healthcheckInterval: 1000 * 60 * 5, // 5 min
+  healthcheckInterval: 1000 * 60 * 3, // 3 min
   hotlineMessageExpiryInMillis: 1000 * 60 * 60 * 24 * 28, // 4 weeks
   inviteDeletionInterval: 1000 * 60 * 60, // 1 hour
   inviteExpiryInMillis: 1000 * 60 * 60 * 24 * 14, // 2 weeks
