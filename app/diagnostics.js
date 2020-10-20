@@ -82,7 +82,7 @@ const restart = async () => {
   await app.stop()
   await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
   await app.run({})
-  await signal.isAlive() // ensure signald is actually running
+  return signal.isAlive() // ensure signald is actually running
 }
 
 // (string, string) => Promise<string>
