@@ -251,11 +251,11 @@ const maybeBanSender = async (channel, sender, hotlineMessage) => {
   if (sender.type !== ADMIN) {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
-
+  // check if hotlineMessage.messageId is a thing
   const phoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(hotlineMessage.messageId)
 
-  const checkBanStatus = await banRepository.resolveBanStatus(phoneNumber)
-  return checkBanStatus === banRepository.banStatus.BANNED
+  const isBanned = await banRepository.isBanned(phoneNumber)
+  return isBanned
     ? { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
     : banMember(channel, phoneNumber, sender, cr)
 }

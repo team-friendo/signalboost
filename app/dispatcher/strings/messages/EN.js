@@ -251,7 +251,8 @@ ${support}`,
     notAdmin,
     alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
     dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
-    invalidPhoneNumber,
+    invalidHotlineMessageId: messageId =>
+      `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
   // INVITE

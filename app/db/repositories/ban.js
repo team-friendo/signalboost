@@ -1,15 +1,14 @@
 const app = require('../../../app')
-const { defaultLanguage } = require('../../config')
 
-const banStatus = {
-  BANNED: 'BANNED',
-  NONE: 'NONE',
-}
-
-const resolveBanStatus = phoneNumber => {
-  //check if member is banned
+const isBanned = (channelPhoneNumber, memberPhoneNumber) => {
+  app.db.ban.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }).then(Boolean)
 }
 
 const banMember = (channelPhoneNumber, memberPhoneNumber) => {
-  //create record for banned member
+  app.db.ban.create({ channelPhoneNumber, memberPhoneNumber })
+}
+
+module.exports = {
+  isBanned,
+  banMember,
 }

@@ -497,7 +497,7 @@ describe('executing commands', () => {
   describe('BAN command', () => {
     const messageId = 1312
     const cr = messagesIn(languages.EN).commandResponses
-    const  dispatchable = {
+    const dispatchable = {
       channel,
       sender: { ...admin, language: languages.EN },
       sdMessage: sdMessageOf({
@@ -507,19 +507,19 @@ describe('executing commands', () => {
       }),
     }
 
-    let resolveBanStatusStub, findMemberPhoneNumberStub
+    let isBannedStub, findMemberPhoneNumberStub
     beforeEach(() => {
       findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
-      resolveBanStatusStub = sinon.stub(banRepository, 'resolveBanStatus')
+      isBannedStub = sinon.stub(banRepository, 'isBanned')
     })
 
     describe('when member is not already banned', () => {
       beforeEach(() => {
         findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
-        resolveBanStatusStub.returns(Promise.resolve('NONE'))
+        isBannedStub.returns(false)
       })
 
-      it('returns SUCCESS with notifications for admins and banned member', async ()  => {
+      it('returns SUCCESS with notifications for admins and banned member', async () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.SUCCESS,
@@ -527,15 +527,18 @@ describe('executing commands', () => {
           notifications: [
             {
               recipient: subscriber.phoneNumber,
-              message: 'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
+              message:
+                'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
               attachments,
             },
             ...adminMemberships.map(({ memberPhoneNumber }) => ({
               recipient: memberPhoneNumber,
-              message: `The sender of hotline message ${messageId} has been banned.`
+              message: `The sender of hotline message ${messageId} has been banned.`,
             })),
           ],
-          payload: { /* what goes in here? */ },
+          payload: {
+            /* what goes in here? */
+          },
         })
       })
     })

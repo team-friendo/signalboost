@@ -1,5 +1,6 @@
 const signal = require('../signal')
 const callbacks = require('../signal/callbacks')
+const banRepository = require('../db/repositories/ban')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRegistrar = require('../registrar/phoneNumber')
@@ -101,6 +102,10 @@ const dispatch = async (msg, socketId) => {
   await util.sequence(sideEffects)
 
   // return early if we recieve a non-relayable message
+  const isBanned = await detectBan(channel, sender)
+  if (isBanned) return Promise.resolve()
+
+  // ... or if we recieve a non-relayable message
   if (!_isMessage(inboundMsg) || _isEmpty(inboundMsg)) return Promise.resolve()
 
   // else, follow the happy path!
@@ -127,6 +132,7 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
 }
 
+<<<<<<< HEAD
 // (Channel, string, SdMessage) => Promise<Array<function>>
 const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
   let sideEffects = []
@@ -141,6 +147,10 @@ const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
     sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
 
   return sideEffects
+=======
+const detectBan = async (channel, sender) => {
+  return await banRepository.isBanned(channel.phoneNumber, sender.phoneNumber)
+>>>>>>> polish up db, start tests
 }
 
 const relay = async (channel, sender, inboundMsg) => {
