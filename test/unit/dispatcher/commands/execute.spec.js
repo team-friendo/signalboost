@@ -31,7 +31,6 @@ import { eventTypes } from '../../../../app/db/models/event'
 const {
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber },
-  socket: { availableSockets },
 } = require('../../../../app/config')
 
 describe('executing commands', () => {
