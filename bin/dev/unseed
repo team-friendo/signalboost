@@ -6,7 +6,7 @@ cd ../.. # cd to project root
 
 echo "--- running containers..."
 
-docker-compose -f docker-compose-dev.yml \
+docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
                run --entrypoint /signalboost/bin/db/unseed \
                app
 

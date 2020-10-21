@@ -93,8 +93,10 @@ const logger = loggerOf('signal')
 
 const run = async () => {
   logger.log(`--- Subscribing to channels...`)
-  const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
-  const numListening = await Promise.all(channels.map(ch => subscribe(ch.phoneNumber)))
+  const channels = await channelRepository.findAll().catch(logger.fatalError)
+  const numListening = await Promise.all(
+    channels.map(({ phoneNumber, socketId }) => subscribe(phoneNumber, socketId)),
+  )
   logger.log(`--- Subscribed to ${numListening.length} / ${channels.length} channels!`)
 }
 
@@ -103,7 +105,7 @@ const run = async () => {
  ******************/
 
 // string -> Promise<number>
-const healthcheck = async channelPhoneNumber => {
+const healthcheck = async (channelPhoneNumber, socketId) => {
   // - sends a message from the diagnostics channel to a user channel to see if the user channel is alive.
   //   message is in the form: `healthcheck <uuid>`
   // - the user channel signals aliveness in `dispatcher.command.execute` by echoing
@@ -114,12 +116,15 @@ const healthcheck = async channelPhoneNumber => {
   //   (1) the response time (in seconds) of the healthcheck
   ///  (2) -1 if the the healthcheck timed out
   const id = util.genUuid()
-  socketWriter.write({
-    type: messageTypes.SEND,
-    username: diagnosticsPhoneNumber,
-    messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
-    recipientAddress: { number: channelPhoneNumber },
-  })
+  socketWriter.write(
+    {
+      type: messageTypes.SEND,
+      username: diagnosticsPhoneNumber,
+      messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
+      recipientAddress: { number: channelPhoneNumber },
+    },
+    socketId,
+  )
   return new Promise((resolve, reject) =>
     callbacks.register({
       messageType: messageTypes.HEALTHCHECK,
@@ -135,19 +140,19 @@ const healthcheck = async channelPhoneNumber => {
  * SIGNALD COMMANDS
  ********************/
 
-// () => Promise<string>
-const abort = () =>
+// string => Promise<string>
+const abort = socketId =>
   // sends a poison pill to signald, causing it to shut down
-  socketWriter.write({ type: messageTypes.ABORT })
+  socketWriter.write({ type: messageTypes.ABORT }, socketId)
 
-// () => Promise<string>
-const isAlive = () => {
+// string => Promise<string>
+const isAlive = socketId => {
   // checks to see if signald is a live by asking for version.
   // resolves with version or rejects with error.
-  socketWriter.write({ type: messageTypes.VERSION })
+  socketWriter.write({ type: messageTypes.VERSION }, socketId)
   return new Promise((resolve, reject) =>
     callbacks.register({
-      id: 0,
+      id: socketId,
       messageType: messageTypes.VERSION,
       resolve,
       reject,
@@ -157,11 +162,14 @@ const isAlive = () => {
 
 // (string, string || null) -> Promise<SignalboostStatus>
 const register = async (phoneNumber, captchaToken) => {
-  socketWriter.write({
-    type: messageTypes.REGISTER,
-    username: phoneNumber,
-    ...(captchaToken ? { captcha: captchaToken } : {}),
-  })
+  socketWriter.write(
+    {
+      type: messageTypes.REGISTER,
+      username: phoneNumber,
+      ...(captchaToken ? { captcha: captchaToken } : {}),
+    },
+    0,
+  )
   // Since a registration isn't meaningful without a verification code,
   // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
   // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below
@@ -181,21 +189,21 @@ const verify = (phoneNumber, code) =>
   // Its response will be picked up by the callback for the REGISTER command that triggered it.
   // Therefore, all we need to do with this response is signal to twilio whether socketWriter socketWriter.write worked.
   socketWriter
-    .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
+    .write({ type: messageTypes.VERIFY, username: phoneNumber, code }, 0)
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
-// string -> Promise<string>
-const subscribe = phoneNumber =>
-  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
+// (string, number) -> Promise<string>
+const subscribe = (phoneNumber, socketId) =>
+  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber }, socketId)
 
-// string -> Promise<string>
-const unsubscribe = phoneNumber =>
-  socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber })
+// (string, number) -> Promise<string>
+const unsubscribe = (phoneNumber, socketId) =>
+  socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber }, socketId)
 
-// OutboundSignaldMessage -> Promise<string>
-const sendMessage = async sdMessage => {
-  const id = await socketWriter.write(sdMessage)
+// (OutboundSignaldMessage, number) -> Promise<string>
+const sendMessage = async (sdMessage, socketId) => {
+  const id = await socketWriter.write(sdMessage, socketId)
   callbacks.register({
     id,
     messageType: messageTypes.SEND,
@@ -210,6 +218,7 @@ const sendMessage = async sdMessage => {
 }
 
 const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
+  // TODO: needs socketId
   socketWriter.write({
     type: messageTypes.SET_EXPIRATION,
     username: channelPhoneNumber,

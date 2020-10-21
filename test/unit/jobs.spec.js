@@ -7,13 +7,15 @@ import smsSenderRepository from '../../app/db/repositories/smsSender'
 import hotlineMessageRepository from '../../app/db/repositories/hotlineMessage'
 import jobs from '../../app/jobs'
 import diagnostics from '../../app/diagnostics'
+import sharding from '../../app/socket/sharding'
 import util from '../../app/util'
 const {
   job: { testInterval },
 } = require('../../app/config')
 
 describe('jobs service', () => {
-  let registerAllStub,
+  let assignChannelsToSocketsStub,
+    registerAllStub,
     deleteInvitesStub,
     deleteSmsSendersStub,
     deleteHotlineMessagesStub,
@@ -24,6 +26,9 @@ describe('jobs service', () => {
     let originalReregisterValue = process.env.REREGISTER_ON_STARTUP
     before(async () => {
       // one-off jobs
+      assignChannelsToSocketsStub = sinon
+        .stub(sharding, 'assignChannelsToSockets')
+        .returns(Promise.resolve([1, 2, 3]))
       registerAllStub = sinon
         .stub(phoneNumberRegistrar, 'registerAllUnregistered')
         .returns(Promise.resolve([]))
@@ -52,6 +57,10 @@ describe('jobs service', () => {
     })
 
     describe('one-off jobs', () => {
+      it('assigns channels to socket pools', () => {
+        expect(assignChannelsToSocketsStub.callCount).to.be.above(0)
+      })
+
       it('registers any unregistered phone numbers with signal', () => {
         expect(registerAllStub.callCount).to.be.above(0)
       })

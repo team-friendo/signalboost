@@ -400,12 +400,12 @@ describe('callback registry', () => {
     }
     beforeEach(() => {
       callbacks.register({
-        id: 0,
+        id: 42,
         messageType: messageTypes.VERSION,
         resolve: resolveStub,
         reject: rejectStub,
       })
-      callbacks.handle(versionResponse)
+      callbacks.handle(versionResponse, 42)
     })
 
     it('resolves a promise with the running signald version', () => {

@@ -1,5 +1,5 @@
 import { adminMembershipFactory, subscriberMembershipFactory } from './membership'
-import { get, times } from 'lodash'
+import { get, times, random } from 'lodash'
 import { messageCountFactory } from './messageCount'
 import { memberTypes } from '../../../app/db/repositories/membership'
 import { inviteFactory } from './invite'
@@ -14,6 +14,7 @@ export const channelFactory = attrs => ({
   name: '#red-alert',
   messageExpiryTime: defaultMessageExpiryTime,
   description: 'the food channel',
+  socketId: random(0, 9),
   ...attrs,
 })
 

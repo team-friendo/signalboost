@@ -1,77 +1,69 @@
-version: '3'
+version: '3.4'
 
-volumes:
+# TODO(aguestuser|2020-10-15)
+# - this config file likely does not work with our current e2e test setup
+# - but that's okay because we don't currently run e2e tests as part of our dev or CI flow!
+# - we leave this sketch here as a courtesey to future devs who might impl. e2e tests and want
+#   a place to start!
 
-  postgres_data:
-  signal_sock:
-  signal_data:
+x-signald-overrides: &signald-overrides
+  # TODO: probably want an .env.e2e file?
+  env_file: .env.dev
 
 services:
 
-  db:
-    image: postgres:12
-    container_name: signalboost_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
-    restart: always
-
-  signald:
-    image: registry.0xacab.org/team-friendo/signalboost/signald:latest
-    container_name: signalboost_signald
-    environment:
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-      METRICS_PORT: 1312
-    networks:
-      - default
-    volumes:
-      - ./bin:/signalboost/bin
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-    restart: always
-
   app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
-    container_name: signalboost_app
-    depends_on:
-      - db
-      - signald
-    entrypoint: /signalboost/bin/entrypoint/app
-    #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
     env_file: .env.dev
-    environment:
-      PROJECT_ROOT: "$PWD"
-      NODE_ENV: "${NODE_ENV:-development}"
-    ports:
-      - 3000:3000
-    networks:
-      - default
-    volumes:
-      - ./.sequelizerc:/signalboost/.sequelizerc
-      - ./app:/signalboost/app
-      - ./bin:/signalboost/bin
-      - ./node_modules:/signalboost/node_modules
-      - ./package.json:/signalboost/package.json
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-      - ./yarn.lock:/signalboost/yarn.lock
-    restart: always
 
-  ngrok:
-    container_name: signalboost_ngrok
-    ports:
-      - 0.0.0.0:4040:4040
-    image: wernight/ngrok
-    links:
-      - app
-    #TODO(aguestuser|2020-03-20): we should probably have an .env.test?
-    env_file: .env.dev
-    networks:
-      - default
-    environment:
-      - NGROK_PORT=app:3000
-    restart: always
+  signald_0:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_0:/var/run/signald/
+
+  signald_1:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_1:/var/run/signald/
+
+  signald_2:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_2:/var/run/signald/
+
+  signald_3:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_3:/var/run/signald/
+
+  signald_4:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_4:/var/run/signald/
+
+  signald_5:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_5:/var/run/signald/
+
+  signald_6:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_6:/var/run/signald/
+
+  signald_7:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_7:/var/run/signald/
+
+  signald_8:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_8:/var/run/signald/
+
+  signald_9:
+    <<: *signald-overrides
+    volumes:
+      - signald_sock_9:/var/run/signald/
 
 
   test_runner:

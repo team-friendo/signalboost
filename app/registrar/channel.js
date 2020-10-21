@@ -23,6 +23,7 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   const message = _welcomeNotificationOf(channel)
   await signal.sendMessage(
     sdMessageOf({ sender: channelPhoneNumber, recipient: adminPhoneNumber, message }),
+    channel.socketId,
   )
   return { status: sbStatuses.SUCCESS, message }
 }
@@ -30,7 +31,7 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 /* ({ phoneNumber: string, name: string, admins: Array<string> }) => Promise<ChannelStatus> */
 const create = async ({ phoneNumber, name, admins }) => {
   try {
-    // create the channel
+    // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber)
     const channel = await channelRepository.create(phoneNumber, name, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
@@ -66,6 +67,7 @@ const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
           recipient: adminPhoneNumber,
           message: _welcomeNotificationOf(channel),
         }),
+        channel.socketId,
       )
       await wait(setExpiryInterval)
       await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
@@ -89,6 +91,7 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
           recipient: adminPhoneNumber,
           message: _welcomeNotificationOf(supportChannel),
         }),
+        supportChannel.socketId,
       )
     }),
   )

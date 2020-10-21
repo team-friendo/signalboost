@@ -7,7 +7,13 @@ const { sdMessageOf } = require('./constants')
 const { statuses } = util
 const { get } = require('lodash')
 const {
-  signal: { healthcheckTimeout, signaldRequestTimeout, signaldSendTimeout, signaldVerifyTimeout },
+  signal: {
+    healthcheckTimeout,
+    signaldRequestTimeout,
+    signaldRestartTimeout,
+    signaldSendTimeout,
+    signaldVerifyTimeout,
+  },
 } = require('../config')
 
 /**
@@ -80,11 +86,11 @@ const _timeoutFor = messageType =>
     [messageTypes.SEND]: signaldSendTimeout,
     [messageTypes.TRUST]: signaldRequestTimeout,
     [messageTypes.VERIFY]: signaldVerifyTimeout,
-    [messageTypes.VERSION]: signaldRequestTimeout,
+    [messageTypes.VERSION]: signaldRestartTimeout,
   }[messageType])
 
-// (IncomingSignaldMessage | SendResponse) -> CallbackRoute
-const handle = message => {
+// (IncomingSignaldMessage | SendResponse, number) -> CallbackRoute
+const handle = (message, socketId) => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
     [messageTypes.MESSAGE]:
@@ -95,7 +101,8 @@ const handle = message => {
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
-    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-0`],
+    // hmm... how to infer the correct socket pool id here?
+    [messageTypes.VERSION]: registry[`${messageTypes.VERSION}-${socketId}`],
   }[message.type] || { callback: util.noop }
   callback({ message, resolve, reject, state })
 }

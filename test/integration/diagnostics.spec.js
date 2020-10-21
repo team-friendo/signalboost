@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
-import { flatten, map, times } from 'lodash'
+import { map, times } from 'lodash'
 import socket from '../../app/socket/write'
 import util from '../../app/util'
 import signal from '../../app/signal'
@@ -19,8 +19,12 @@ const {
 describe('diagnostics jobs', () => {
   const uuids = times(9, util.genUuid)
   let channels, diagnosticsChannel, writeStub, readSock
+
+  const isNotHealthcheck = call =>
+    !((call.args[0].messageBody || '').slice(0, 11) === 'healthcheck')
+
   const createChannels = async () => {
-    channels = await Promise.all(times(3, () => app.db.channel.create(channelFactory())))
+    channels = await Promise.all(times(4, () => app.db.channel.create(channelFactory())))
     diagnosticsChannel = await app.db.channel.create(
       deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }),
       {
@@ -56,14 +60,19 @@ describe('diagnostics jobs', () => {
     readSock.emit('data', JSON.stringify(inSdMessage))
   }
 
-  before(async () => await app.run({ ...testApp, db, signal }))
-  after(async () => await app.stop())
+  before(async () => {
+    await app.run({ ...testApp, db, signal })
+  })
+
+  after(async () => {
+    await app.stop()
+  })
 
   describe('healthcheck', () => {
     beforeEach(async () => {
-      await destroyAllChannels()
+      // await destroyAllChannels()
       await createChannels()
-      readSock = await app.socketPool.acquire()
+      readSock = await app.socketPools[0].acquire()
       const genUuidStub = sinon.stub(util, 'genUuid')
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
     })
@@ -71,7 +80,7 @@ describe('diagnostics jobs', () => {
       try {
         sinon.restore()
         await destroyAllChannels()
-        await app.socketPool.release(readSock)
+        await app.socketPools[0].release(readSock)
       } catch (ignored) {
         /**/
       }
@@ -85,20 +94,26 @@ describe('diagnostics jobs', () => {
 
       it('sends a a healthcheck to every channel and gets a response', () => {
         expect(writeStub.callCount).to.eql(2 * channels.length)
-        expect(flatten(map(writeStub.getCalls(), 'args'))).to.have.deep.members([
-          ...channels.map((channel, idx) => ({
-            messageBody: `healthcheck ${uuids[idx]}`,
-            recipientAddress: { number: channels[idx].phoneNumber },
-            type: messageTypes.SEND,
-            username: diagnosticsPhoneNumber,
-          })),
-          ...channels.map((channel, idx) => ({
-            messageBody: `healthcheck_response ${uuids[idx]}`,
-            recipientAddress: { number: diagnosticsPhoneNumber },
-            type: messageTypes.SEND,
-            username: channels[idx].phoneNumber,
-            attachments: [],
-          })),
+        expect(map(writeStub.getCalls(), 'args')).to.have.deep.members([
+          ...channels.map((channel, idx) => [
+            {
+              messageBody: `healthcheck ${uuids[idx]}`,
+              recipientAddress: { number: channels[idx].phoneNumber },
+              type: messageTypes.SEND,
+              username: diagnosticsPhoneNumber,
+            },
+            diagnosticsChannel.socketId,
+          ]),
+          ...channels.map((channel, idx) => [
+            {
+              messageBody: `healthcheck_response ${uuids[idx]}`,
+              recipientAddress: { number: diagnosticsPhoneNumber },
+              type: messageTypes.SEND,
+              username: channels[idx].phoneNumber,
+              attachments: [],
+            },
+            channel.socketId,
+          ]),
         ])
       })
     })
@@ -130,123 +145,258 @@ describe('diagnostics jobs', () => {
       })
 
       it('notifies maintainers and restarts signalboost', async function() {
+        // refetch socket ids b/c restart will trigger shard job which reassigns sockets
+        const reshardedDiagnosticsChannelSocket = (await app.db.channel.findOne({
+          where: { phoneNumber: diagnosticsPhoneNumber },
+        })).socketId
+        const reshardedChannelSockets = (await Promise.all(
+          channels.map(({ phoneNumber }) => app.db.channel.findOne({ where: { phoneNumber } })),
+        )).map(c => c.socketId)
         const numHealtchecks = 2 * channels.length
-        const numRestartMessages = 14
+        const numRestartMessages = 21
+
         expect(writeStub.callCount).to.be.above(numHealtchecks + numRestartMessages)
         expect(
-          flatten(
-            map(
-              writeStub.getCalls().slice(numHealtchecks, numHealtchecks + numRestartMessages),
-              'args',
-            ),
+          map(
+            writeStub
+              .getCalls()
+              .filter(isNotHealthcheck)
+              .slice(0, -2), // omit timeout messages
+            //.slice(numHealtchecks, numHealtchecks + numRestartMessages),
+            'args',
           ),
         ).to.have.deep.members([
-          {
-            messageBody: `Channel ${
-              channels[0].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+          [
+            {
+              messageBody: `Channel ${
+                channels[0].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: `Channel ${
-              channels[0].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[0].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: `Channel ${
-              channels[1].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[1].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: `Channel ${
-              channels[1].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[1].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: `Channel ${
-              channels[2].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[2].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: `Channel ${
-              channels[2].phoneNumber
-            } failed to respond to 2 consecutive healthchecks.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[2].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: 'Restarting Signalboost due to failed healthchecks...',
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[3].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            messageBody: 'Restarting Signalboost due to failed healthchecks...',
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: `Channel ${
+                channels[3].phoneNumber
+              } failed to respond to 2 consecutive healthchecks.`,
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
             },
-            type: 'send',
-            username: diagnosticsPhoneNumber,
-            attachments: [],
-          },
-          {
-            type: 'abort',
-          },
-          {
-            type: 'subscribe',
-            username: channels[0].phoneNumber,
-          },
-          {
-            type: 'subscribe',
-            username: channels[1].phoneNumber,
-          },
-          {
-            type: 'subscribe',
-            username: channels[2].phoneNumber,
-          },
-          {
-            type: 'subscribe',
-            username: diagnosticsPhoneNumber,
-          },
-          {
-            type: 'version',
-          },
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: 'Restarting Signalboost due to failed healthchecks...',
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[0].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
+            },
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              messageBody: 'Restarting Signalboost due to failed healthchecks...',
+              recipientAddress: {
+                number: diagnosticsChannel.memberships[1].memberPhoneNumber,
+              },
+              type: 'send',
+              username: diagnosticsPhoneNumber,
+              attachments: [],
+            },
+            diagnosticsChannel.socketId,
+          ],
+          [
+            {
+              type: 'abort',
+            },
+            reshardedDiagnosticsChannelSocket,
+          ],
+          [
+            {
+              type: 'abort',
+            },
+            reshardedChannelSockets[0],
+          ],
+          [
+            {
+              type: 'abort',
+            },
+            reshardedChannelSockets[1],
+          ],
+          [
+            {
+              type: 'abort',
+            },
+            reshardedChannelSockets[2],
+          ],
+          [
+            {
+              type: 'abort',
+            },
+            reshardedChannelSockets[3],
+          ],
+          [
+            {
+              type: 'subscribe',
+              username: diagnosticsPhoneNumber,
+            },
+            reshardedDiagnosticsChannelSocket,
+          ],
+          [
+            {
+              type: 'subscribe',
+              username: channels[0].phoneNumber,
+            },
+            reshardedChannelSockets[0],
+          ],
+          [
+            {
+              type: 'subscribe',
+              username: channels[1].phoneNumber,
+            },
+            reshardedChannelSockets[1],
+          ],
+          [
+            {
+              type: 'subscribe',
+              username: channels[2].phoneNumber,
+            },
+            reshardedChannelSockets[2],
+          ],
+          [
+            {
+              type: 'subscribe',
+              username: channels[3].phoneNumber,
+            },
+            reshardedChannelSockets[3],
+          ],
+          [
+            {
+              type: 'version',
+            },
+            reshardedDiagnosticsChannelSocket,
+          ],
+          [
+            {
+              type: 'version',
+            },
+            reshardedChannelSockets[0],
+          ],
+          [
+            {
+              type: 'version',
+            },
+            reshardedChannelSockets[1],
+          ],
+          [
+            {
+              type: 'version',
+            },
+            reshardedChannelSockets[2],
+          ],
+          [
+            {
+              type: 'version',
+            },
+            reshardedChannelSockets[3],
+          ],
         ])
       })
     })

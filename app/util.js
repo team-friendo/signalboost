@@ -67,7 +67,7 @@ const repeatUntilTimeout = (fn, interval, timeout) => {
 const sequence = async (asyncFuncs, delay = 0) => {
   const [hd, tl] = [asyncFuncs[0] || (() => []), asyncFuncs.slice(1)]
   return [await hd()].concat(
-    tl.length === 0 ? [] : await wait(delay).then(() => sequence(asyncFuncs.slice(1), delay)),
+    tl.length === 0 ? [] : await wait(delay).then(() => sequence(tl, delay)),
   )
 }
 

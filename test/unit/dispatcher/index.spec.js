@@ -1,13 +1,14 @@
 import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach, before, after } from 'mocha'
 import sinon from 'sinon'
-import { times, merge } from 'lodash'
+import { times, merge, map } from 'lodash'
 import { languages } from '../../../app/language'
 import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
+import metrics from '../../../app/metrics'
 import phoneNumberRegistrar from '../../../app/registrar/phoneNumber'
 import signal, { messageTypes } from '../../../app/signal'
 import executor from '../../../app/dispatcher/commands'
@@ -208,23 +209,28 @@ describe('dispatcher module', () => {
           request: originalSdMessage,
         },
       }
+      let incrementCounterStub
 
       beforeEach(async () => {
         enqueueResendStub.returns(minResendInterval)
+        incrementCounterStub = sinon.stub(metrics, 'incrementCounter')
+        sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(channel.socketId))
         await dispatch(JSON.stringify(sdErrorMessage), {})
         await wait(2 * socketDelay)
       })
 
-      describe('and there is not a support channel', () => {
-        beforeEach(async () => {
-          findDeepStub.returns(Promise.resolve(null))
-          await dispatch(JSON.stringify(sdErrorMessage), {})
-          await wait(2 * socketDelay)
-        })
+      it('enqueues the message for resending', () => {
+        expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage, channel.socketId])
+      })
 
-        it('enqueues the message for resending', () => {
-          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage])
-        })
+      it('logs the rate limit error', () => {
+        expect(map(incrementCounterStub.getCalls(), 'args')).to.have.deep.members([
+          [
+            metrics.counters.SIGNALD_MESSAGES,
+            [signal.messageTypes.ERROR, channel.phoneNumber, metrics.messageDirection.INBOUND],
+          ],
+          [metrics.counters.ERRORS, [metrics.errorTypes.RATE_LIMIT_RESENDING, channel.phoneNumber]],
+        ])
       })
     })
 

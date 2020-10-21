@@ -36,9 +36,9 @@ describe('signal module', () => {
   let writeStub
 
   const emit = async msg => {
-    const sock = await app.socketPool.acquire()
+    const sock = await app.socketPools[0].acquire()
     sock.emit('data', JSON.stringify(msg) + '\n')
-    app.socketPool.release(sock)
+    app.socketPools[0].release(sock)
   }
   const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
@@ -62,8 +62,8 @@ describe('signal module', () => {
     })
 
     it('sends an abort command', () => {
-      signal.abort()
-      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }])
+      signal.abort(42)
+      expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }, 42])
     })
 
     it('sends a subscribe command', () => {
@@ -76,7 +76,7 @@ describe('signal module', () => {
     })
 
     it('sends an unsubscribe command', () => {
-      signal.unsubscribe(channelPhoneNumber)
+      signal.unsubscribe(channelPhoneNumber, 0)
 
       expect(writeStub.getCall(0).args[0]).to.eql({
         type: 'unsubscribe',
@@ -118,9 +118,10 @@ describe('signal module', () => {
         })
 
         it('returns the response time', async () => {
-          expect(await signal.healthcheck(channelPhoneNumber)).to.eql(oneMinuteInMillis / 1000)
+          expect(await signal.healthcheck(channelPhoneNumber, 0)).to.eql(oneMinuteInMillis / 1000)
         })
       })
+
       describe('when healthcheck times out', () => {
         it('returns -1', async () => {
           expect(await signal.healthcheck(channelPhoneNumber)).to.eql(-1)
@@ -163,7 +164,7 @@ describe('signal module', () => {
           .returns(new Date(whenSent))
           .onCall(1)
           .returns(new Date(whenSent + elapsed))
-        res = await signal.sendMessage(sdMessage)
+        res = await signal.sendMessage(sdMessage, channel)
       })
 
       it('writes the message to the signald socket', () => {

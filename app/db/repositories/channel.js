@@ -89,6 +89,37 @@ const isMaintainer = async phoneNumber => {
   }
 }
 
+// () => Promsie<Array<string, number>>
+const getChannelsSortedBySize = async () =>
+  app.db.sequelize
+    .query(
+      `
+      with non_empty as (
+       select "channelPhoneNumber", count ("channelPhoneNumber") as kount from memberships
+         group by "channelPhoneNumber"
+      ),
+      empty as (
+        select "phoneNumber" as "channelPhoneNumber", 0 as kount from channels
+          where "phoneNumber" not in (select distinct "channelPhoneNumber" from memberships)
+      )
+      select * from non_empty union select * from empty
+      order by kount desc;
+      `,
+      {
+        type: app.db.sequelize.QueryTypes.SELECT,
+      },
+    )
+    .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
+
+// (string, number) => Promise<number>
+const updateSocketIds = async (channelPhoneNumbers, socketId) =>
+  app.db.channel.update({ socketId }, { where: { phoneNumber: { [Op.in]: channelPhoneNumbers } } })
+
+const getSocketId = async channelPhoneNumber => {
+  const channel = await findByPhoneNumber(channelPhoneNumber)
+  return channel && channel.socketId
+}
+
 // () => Promise<Channel>
 const getDiagnosticsChannel = async () => {
   if (!diagnosticsPhoneNumber) return null
@@ -139,11 +170,14 @@ module.exports = {
   getAdminPhoneNumbers,
   getDiagnosticsChannel,
   getMaintainers,
+  getChannelsSortedBySize,
   getMemberPhoneNumbers,
   getMembersExcept,
   getMemberPhoneNumbersExcept,
+  getSocketId,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
   isMaintainer,
   update,
+  updateSocketIds,
 }

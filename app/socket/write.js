@@ -9,20 +9,21 @@ const {
   messageDirection: { OUTBOUND },
 } = metrics
 
-// object -> Promise<void>
-const write = data => {
+// (object, number) -> Promise<void>
+const write = (data, socketId) => {
   const id = util.genUuid()
-  const msg = signaldEncode({ ...data, id })
+  const msg = JSON.stringify({ ...data, id }) + '\n'
+
   return new Promise((resolve, reject) =>
-    app.socketPool
+    app.socketPools[socketId]
       .acquire()
       .then(sock =>
         sock.write(
           msg,
           promisifyCallback(
             () => {
-              app.socketPool.release(sock)
-              logger.debug(emphasize(redact(msg)))
+              app.socketPools[socketId].release(sock)
+              logger.debug(emphasize(`[socket ${socketId}]\n${redact(msg)}`))
 
               const type = (data.messageBody || '').includes('healthcheck')
                 ? 'healthcheck'
@@ -32,7 +33,7 @@ const write = data => {
               return resolve(id)
             },
             e => {
-              app.socketPool.release(sock)
+              app.socketPools[socketId].release(sock)
               return reject({
                 status: statuses.ERROR,
                 message: `Error writing message ${id}: ${e.message}`,
@@ -45,10 +46,6 @@ const write = data => {
   )
 }
 
-// object -> string
-const signaldEncode = data => JSON.stringify(data) + '\n'
-
 module.exports = {
   write,
-  signaldEncode,
 }

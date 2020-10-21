@@ -5,10 +5,11 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { filter, isEmpty, zip } = require('lodash')
+const { times, filter, isEmpty, partition, zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
+  socket: { availableSockets },
 } = require('./config')
 
 const logger = util.loggerOf('diagnostics')
@@ -19,20 +20,20 @@ const failedHealthchecks = new Set()
 // () => Promise<string>
 const sendHealthchecks = async () => {
   try {
-    const channelPhoneNumbers = (await channelRepository.findAll())
-      .map(channel => channel.phoneNumber)
-      .filter(phoneNumber => phoneNumber !== diagnosticsPhoneNumber)
-
+    const [[diagnosticsChannel], channels] = partition(
+      await channelRepository.findAll(),
+      channel => channel.phoneNumber === diagnosticsPhoneNumber,
+    )
     const responseTimes = await util.sequence(
-      channelPhoneNumbers.map(phoneNumber => () => signal.healthcheck(phoneNumber)),
+      channels.map(({ phoneNumber }) => () =>
+        signal.healthcheck(phoneNumber, diagnosticsChannel.socketId),
+      ),
       healthcheckSpacing,
     )
-
     const fatalHealtcheckFailures = await Promise.all(
-      zip(channelPhoneNumbers, responseTimes).map(([channelPhoneNumber, responseTime]) => {
-        metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [channelPhoneNumber])
-        if (responseTime === -1)
-          return _handleFailedHealtcheck(channelPhoneNumber, channelPhoneNumbers.length)
+      zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
+        metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
+        if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
       }),
     )
 
@@ -78,21 +79,26 @@ const _restartAndNotify = async () => {
 
 // () => Promise<string>
 const restart = async () => {
-  await signal.abort() // rely on docker-compose semantics to restart signald
+  // send all signald instances a poison pill (causing them to shutdown and restart)
+  await Promise.all(times(availableSockets, socketId => signal.abort(socketId)))
+  // restart all signalboost application components (without shutting down signalboost process)
   await app.stop()
   await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
   await app.run({})
-  return signal.isAlive() // ensure signald is actually running
+  // ensure that all signald instances are responsive before proceeding
+  await util.wait(restartDelay)
+  await Promise.all(times(availableSockets, socketId => signal.isAlive(socketId)))
 }
 
-// (string, string) => Promise<string>
-const respondToHealthcheck = (channelPhoneNumber, healthcheckId) =>
+// (Channel, string) => Promise<string>
+const respondToHealthcheck = (channel, healthcheckId) =>
   signal.sendMessage(
     sdMessageOf({
-      sender: channelPhoneNumber,
+      sender: channel.phoneNumber,
       recipient: diagnosticsPhoneNumber,
       message: `${messageTypes.HEALTHCHECK_RESPONSE} ${healthcheckId}`,
     }),
+    channel.socketId,
   )
 
 module.exports = {

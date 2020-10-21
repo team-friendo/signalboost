@@ -41,6 +41,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[0].memberPhoneNumber,
             message: messagesIn('DE').notifications[notificationKeys.CHANNEL_RECYCLED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -48,6 +49,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[1].memberPhoneNumber,
             message: messagesIn('FR').notifications[notificationKeys.CHANNEL_RECYCLED],
           }),
+          channel.socketId,
         ],
       ])
     })
@@ -64,6 +66,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[0].memberPhoneNumber,
             message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -71,6 +74,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[1].memberPhoneNumber,
             message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -78,6 +82,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[2].memberPhoneNumber,
             message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -85,6 +90,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[3].memberPhoneNumber,
             message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
       ])
     })
@@ -104,6 +110,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[1].memberPhoneNumber,
             message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -111,6 +118,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[2].memberPhoneNumber,
             message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -118,6 +126,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[3].memberPhoneNumber,
             message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED],
           }),
+          channel.socketId,
         ],
       ])
     })
@@ -133,6 +142,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[0].memberPhoneNumber,
             message: 'foo',
           }),
+          channel.socketId,
         ],
         [
           sdMessageOf({
@@ -140,6 +150,7 @@ describe('notifier module', () => {
             recipient: channel.memberships[1].memberPhoneNumber,
             message: 'foo',
           }),
+          channel.socketId,
         ],
       ])
     })

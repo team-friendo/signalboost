@@ -15,6 +15,9 @@ const _histograms = {
 
 const _gauges = {
   CHANNEL_HEALTH: 'CHANNEL_HEALTH',
+  SOCKET_POOL_LARGEST_CHANNEL: 'SOCKET_POOL_LARGEST_CHANNEL',
+  SOCKET_POOL_NUM_CHANNELS: 'SOCKET_POOL_NUM_CHANNELS',
+  SOCKET_POOL_NUM_MEMBERS: 'SOCKET_POOL_NUM_MEMBERS',
 }
 
 const messageDirection = {
@@ -69,6 +72,24 @@ const run = () => {
       help: 'Response time to health check message (0 indicates no response)',
       registers: [register],
       labelNames: ['channelPhoneNumber'],
+    }),
+    [g.SOCKET_POOL_NUM_CHANNELS]: new prometheus.Gauge({
+      name: 'socket_pool_num_channels',
+      help: 'Number of channels in a given socket pool shard',
+      registers: [register],
+      labelNames: ['socketPoolIndex'],
+    }),
+    [g.SOCKET_POOL_NUM_MEMBERS]: new prometheus.Gauge({
+      name: 'socket_pool_num_members',
+      help: 'Number of members in all channels in a given socket pool shard',
+      registers: [register],
+      labelNames: ['socketPoolIndex'],
+    }),
+    [g.SOCKET_POOL_LARGEST_CHANNEL]: new prometheus.Gauge({
+      name: 'socket_pool_largest_channel',
+      help: 'Number of members on the largest channel in a given socket pool shard',
+      registers: [register],
+      labelNames: ['socketPoolIndex'],
     }),
   }
 
