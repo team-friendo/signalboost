@@ -6,8 +6,11 @@ cd ../.. # cd to project root
 
 if [ -z $(docker ps -qf name=signalboost_db) ];then
   echo "--- starting db container..."
-  docker-compose -f docker-compose-dev.yml run -d db
+  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+  run -d db
+
   sleep 4
+
   echo "--- running psql..."
   docker exec -it \
          $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}') \
