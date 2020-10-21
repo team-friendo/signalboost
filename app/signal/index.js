@@ -93,7 +93,7 @@ const logger = loggerOf('signal')
 
 const run = async () => {
   logger.log(`--- Subscribing to channels...`)
-  const channels = await channelRepository.findAllDeep().catch(logger.fatalError)
+  const channels = await channelRepository.findAll().catch(logger.fatalError)
   const numListening = await Promise.all(
     channels.map(({ phoneNumber, socketId }) => subscribe(phoneNumber, socketId)),
   )
