@@ -35,61 +35,71 @@ services:
 
   signald_0:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_0}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_0}
     volumes:
       - signald_sock_0:/var/run/signald/
 
   signald_1:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_1}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_1}
     volumes:
       - signald_sock_1:/var/run/signald/
 
   signald_2:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_2}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_2}
     volumes:
       - signald_sock_2:/var/run/signald/
 
   signald_3:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_3}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_3}
     volumes:
       - signald_sock_3:/var/run/signald/
 
   signald_4:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_4}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_4}
     volumes:
       - signald_sock_4:/var/run/signald/
 
   signald_5:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
     volumes:
       - signald_sock_5:/var/run/signald/
 
   signald_6:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_6}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_6}
     volumes:
       - signald_sock_6:/var/run/signald/
 
   signald_7:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_7}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_7}
     volumes:
       - signald_sock_7:/var/run/signald/
 
   signald_8:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_8}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_8}
     volumes:
       - signald_sock_8:/var/run/signald/
 
   signald_9:
     <<: *signald-overrides
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL_9}
+    environment:
+      VIRTUAL_HOST: ${SIGNALD_HOST_URL_9}
     volumes:
       - signald_sock_9:/var/run/signald/
 
