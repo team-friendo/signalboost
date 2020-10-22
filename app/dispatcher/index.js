@@ -175,6 +175,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
         channel.phoneNumber,
         sender.phoneNumber,
         channel.messageExpiryTime,
+        channel.socketId,
       )
     case memberTypes.ADMIN:
       // enforce a disappearing message time set by an admin
@@ -183,7 +184,12 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
         channel.memberships
           .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
           .map(m =>
-            signal.setExpiration(channel.phoneNumber, m.memberPhoneNumber, messageExpiryTime),
+            signal.setExpiration(
+              channel.phoneNumber,
+              m.memberPhoneNumber,
+              messageExpiryTime,
+              channel.socketId,
+            ),
           ),
       )
   }

@@ -110,6 +110,10 @@ describe('channel registrar', () => {
           expect(createChannelStub.getCall(0).args).to.eql([phoneNumber, name, admins])
         })
 
+        it('subscribes to the new channel', () => {
+          expect(subscribeStub.getCall(0).args).to.eql([phoneNumber, 0])
+        })
+
         it('sets the phone number resource status to active', () => {
           expect(updatePhoneNumberStub.getCall(0).args).to.eql([phoneNumber, { status: 'ACTIVE' }])
         })
@@ -147,12 +151,13 @@ describe('channel registrar', () => {
           })
 
           it('sets the expiry time on the channel', async () => {
-            await create({ phoneNumber, name, admins })
+            const channel = await create({ phoneNumber, name, admins })
             admins.forEach((adminPhoneNumber, idx) => {
               expect(setExpirationStub.getCall(idx).args).to.eql([
                 channelPhoneNumber,
                 adminPhoneNumber,
                 defaultMessageExpiryTime,
+                channel.socketId,
               ])
             })
           })

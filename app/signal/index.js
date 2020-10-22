@@ -217,14 +217,18 @@ const sendMessage = async (sdMessage, socketId) => {
   return id
 }
 
-const setExpiration = (channelPhoneNumber, memberPhoneNumber, expiresInSeconds) =>
-  // TODO: needs socketId
-  socketWriter.write({
-    type: messageTypes.SET_EXPIRATION,
-    username: channelPhoneNumber,
-    recipientAddress: { number: memberPhoneNumber },
-    expiresInSeconds,
-  })
+const setExpiration = async (channelPhoneNumber, memberPhoneNumber, expiresInSeconds, socketId) => {
+  const id = await socketWriter.write(
+    {
+      type: messageTypes.SET_EXPIRATION,
+      username: channelPhoneNumber,
+      recipientAddress: { number: memberPhoneNumber },
+      expiresInSeconds,
+    },
+    socketId,
+  )
+  return id
+}
 
 // (String, String, String?) -> Promise<SignalboostStatus>
 const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
