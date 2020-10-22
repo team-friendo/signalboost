@@ -1,0 +1,181 @@
+version: '3.4'
+
+# NOTE:
+#
+# we create a `localdev` network w/ a non-standard subnet mask to be able to use
+# use docker from behdind a VPN, which is often necessary to auth w/ Signal.
+# (see: https://github.com/docker/for-linux/issues/418#issuecomment-491323611)
+#
+# USAGE:
+#
+# for this to work you must first run the following (which is done automatically
+# by `make _.setup`):
+#
+# ```bash
+# docker network create localdev --subnet 10.0.1.0/24
+# ```
+
+networks:
+  default:
+    external:
+      name: localdev
+
+volumes:
+  postgres_data:
+  signal_sock:
+  signal_data:
+
+services:
+  db:
+    image: postgres:12
+    container_name: load_test_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+
+  signald:
+    image: registry.0xacab.org/team-friendo/signalboost/signald
+    container_name: load_test_signald
+    env_file: .env.dev
+    environment:
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+    networks:
+      - default
+    expose:
+      - 1312
+    ports:
+      - 9010:9010
+    volumes:
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+    restart: unless-stopped
+
+  app:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    container_name: load_test_app
+    depends_on:
+      - db
+      - signald
+    entrypoint: /signalboost/bin/entrypoint/app
+    env_file: .env.dev
+    environment:
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
+      PROJECT_ROOT: ${PWD}
+      NODE_ENV: ${NODE_ENV:-development}
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
+    expose:
+      - 3000
+    networks:
+      - default
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+      - ./yarn.lock:/signalboost/yarn.lock
+    restart: unless-stopped
+
+  orchestrator-signald:
+    image: registry.0xacab.org/team-friendo/signalboost/signald
+    container_name: load_test_orchestrator_signald
+    env_file: .env.dev
+    environment:
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+    networks:
+      - default
+    expose:
+      - 1313
+    ports:
+      - 9011:9011
+    volumes:
+      - ./bin:/signalboost/bin
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+    restart: unless-stopped
+
+  orchestrator:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    container_name: load_test_orchestrator
+    depends_on:
+      - db
+      - orchestrator-signald
+    entrypoint: /signalboost/bin/entrypoint/app
+    env_file: .env.dev
+    expose:
+      - 3001
+    networks:
+      - default
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+      - ./yarn.lock:/signalboost/yarn.lock
+    restart: unless-stopped
+
+  signal-server:
+    image: registry.gitlab.com/signald/test-infrastructure/signal-server:3.21
+    container_name: load_test_signal_server
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8081"
+
+  redis:
+    image: redis
+    container_name: load_test_signal_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  helper-api:
+    image: registry.gitlab.com/signald/test-infrastructure/test-helper:master
+    container_name: load_test_helper_api
+    restart: always
+    environment:
+      DB: "host=db user=signal dbname=signal password=password sslmode=disable"
+    ports:
+      - "127.0.0.1:8082:8082"
+
+  ngrok:
+    container_name: load_test_app_ngrok
+    ports:
+      - 0.0.0.0:4040:4040
+    networks:
+      - default
+    image: wernight/ngrok
+    links:
+      - app
+    env_file: .env.dev
+    environment:
+      - NGROK_PORT=app:3000
+    restart: unless-stopped
+
+  orchestrator-ngrok:
+    container_name: load_test_orchestrator_ngrok
+    ports:
+      - 0.0.0.0:4041:4040
+    networks:
+      - default
+    image: wernight/ngrok
+    links:
+      - signal-server
+    env_file: .env.dev
+    environment:
+      - NGROK_PORT=signal-server:8080
+    restart: unless-stopped

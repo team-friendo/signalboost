@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- setting up signal-server..."
+docker-compose -f docker-compose-test-load.yml up -d db
+
+sleep 2
+
+psql postgresql://postgres@localhost:5432 -c "CREATE USER signal WITH PASSWORD 'password';"
+psql postgresql://postgres@localhost:5432 -c "CREATE DATABASE signal;"
+
+echo "--- running load test..."
+docker-compose -f docker-compose-test-load.yml up signal-server redis orchestrator-ngrok
+
+echo "--- stopping load test..."
+# docker-compose -f docker-compose-test-load.yml down
+echo "--- DONE!"
+
+popd
