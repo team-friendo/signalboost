@@ -62,7 +62,7 @@
     tags: prepare, docker
 
   - name: Pull latest signald container
-    command: "docker-compose pull signald"
+    command: "docker-compose pull signald_0"
     args:
       chdir: "{{ homedir }}"
     tags: prepare, docker
