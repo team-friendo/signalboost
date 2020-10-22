@@ -5,8 +5,8 @@ const defaults = {
   broadcastSpacing: 100, // 100 millis
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
-  healthcheckTimeout: 1000 * 60 * 5, // 5 min
-  healthcheckSpacing: 50, // 50 millis
+  healthcheckTimeout: 1000 * 60 * 10, // 10 min
+  healthcheckSpacing: 100, // 100 millis
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
   keystorePath: '/var/lib/signald/data', // given by docker-compose file(s)
