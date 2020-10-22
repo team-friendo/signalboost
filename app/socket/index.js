@@ -32,7 +32,7 @@ const run = async () => {
       }),
     ),
   )
-  pools.stop = Promise.all(pools.map(p => p.stop()))
+  pools.stop = () => Promise.all(pools.map(p => p.stop()))
   logger.log(`...initialized ${pools.length} pools of ${pools[0].size} sockets.`)
   return pools
 }
