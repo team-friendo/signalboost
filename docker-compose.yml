@@ -3,20 +3,10 @@ version: '3.4'
 x-signald-base: &signald-base
   image: registry.0xacab.org/team-friendo/signalboost/signald
   environment:
-    VIRTUAL_HOST: ${SIGNALD_HOST_URL}
-    LETSENCRYPT_HOST: ${SIGNALD_HOST_URL}
     SIGNALBOOST_HOST_IP: ${SIGNALBOOST_HOST_IP}
     SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
   networks:
     - default
-  volumes:
-    - ./bin:/signalboost/bin
-    - ./signald/jmx:/var/lib/jmx
-    - ./backups:/backups
-    - signal_data:/var/lib/signald/data
-    # NOTE: we delegate merging this volumes array to docker-compose's merge logic for multiple files as per:
-    # https://stackoverflow.com/questions/61178058/docker-compose-merge-arrays-for-yaml-aliases-and-anchors
-    # as a result, we do not provide `signald_sock_<N>` mount values below, although we would like to!!
   restart: always
 
 
@@ -133,19 +123,35 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_0
     environment:
-      VIRTUAL_PORT: 5000
       METRICS_PORT: 5000
     expose:
       - 5000
+    volumes:
+      - signald_sock_0:/var/run/signald/
+      # NOTE: we would like to DRY this up by extracting the below 4 volumes to &signald-base,
+      # but can't b/c yml doesn't support list merging and leveraging docker-compose's ability
+      # to merge lists between base and override files seems indirect and confusing (and unDRY)
+      # when we would have to place socket file overrides that are the same in dev and prod
+      # in the respective override files for dev and prod.for context see:
+      # https://stackoverflow.com/questions/61178058/docker-compose-merge-arrays-for-yaml-aliases-and-anchors
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_1:
     <<: *signald-base
     container_name: signalboost_signald_1
     environment:
-      VIRTUAL_PORT: 5001
       METRICS_PORT: 5001
     expose:
       - 5001
+    volumes:
+      - signald_sock_1:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_2:
     <<: *signald-base
@@ -155,6 +161,12 @@ services:
       METRICS_PORT: 5002
     expose:
       - 5003
+    volumes:
+      - signald_sock_2:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_3:
     <<: *signald-base
@@ -164,6 +176,12 @@ services:
       METRICS_PORT: 5003
     expose:
       - 5003
+    volumes:
+      - signald_sock_3:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_4:
     <<: *signald-base
@@ -173,6 +191,12 @@ services:
       METRICS_PORT: 5004
     expose:
       - 5004
+    volumes:
+      - signald_sock_4:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_5:
     <<: *signald-base
@@ -182,6 +206,12 @@ services:
       METRICS_PORT: 5005
     expose:
       - 5005
+    volumes:
+      - signald_sock_5:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_6:
     <<: *signald-base
@@ -191,6 +221,12 @@ services:
       METRICS_PORT: 5006
     expose:
       - 5006
+    volumes:
+      - signald_sock_6:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_7:
     <<: *signald-base
@@ -200,6 +236,12 @@ services:
       METRICS_PORT: 5007
     expose:
       - 5007
+    volumes:
+      - signald_sock_7:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_8:
     <<: *signald-base
@@ -209,6 +251,12 @@ services:
       METRICS_PORT: 5008
     expose:
       - 5008
+    volumes:
+      - signald_sock_8:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
 
   signald_9:
     <<: *signald-base
@@ -218,3 +266,9 @@ services:
       METRICS_PORT: 5009
     expose:
       - 5009
+    volumes:
+      - signald_sock_9:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups

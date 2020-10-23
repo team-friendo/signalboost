@@ -17,53 +17,33 @@ services:
 
   signald_0:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_0:/var/run/signald/
 
   signald_1:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_1:/var/run/signald/
 
   signald_2:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_2:/var/run/signald/
 
   signald_3:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_3:/var/run/signald/
 
   signald_4:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_4:/var/run/signald/
 
   signald_5:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_5:/var/run/signald/
 
   signald_6:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_6:/var/run/signald/
 
   signald_7:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_7:/var/run/signald/
 
   signald_8:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_8:/var/run/signald/
 
   signald_9:
     <<: *signald-overrides
-    volumes:
-      - signald_sock_9:/var/run/signald/
 
   ngrok:
     container_name: signalboost_ngrok
