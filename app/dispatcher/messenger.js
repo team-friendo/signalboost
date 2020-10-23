@@ -163,12 +163,22 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
     case commands.ADD:
       // in ADD case, payload is an e164 phone number
       // must be e164, else parse step would have failed and cmd could not have executed successfully
-      return signal.setExpiration(channel.phoneNumber, payload, channel.messageExpiryTime)
+      return signal.setExpiration(
+        channel.phoneNumber,
+        payload,
+        channel.messageExpiryTime,
+        channel.socketId,
+      )
     case commands.INVITE:
       // in INVITE case, payload is an array of e164 phone numbers (must be e164 for same reasons as ADD above)
       return Promise.all(
         payload.map(memberPhoneNumber =>
-          signal.setExpiration(channel.phoneNumber, memberPhoneNumber, channel.messageExpiryTime),
+          signal.setExpiration(
+            channel.phoneNumber,
+            memberPhoneNumber,
+            channel.messageExpiryTime,
+            channel.socketId,
+          ),
         ),
       )
     case commands.JOIN:
@@ -177,6 +187,7 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
         channel.phoneNumber,
         sender.phoneNumber,
         channel.messageExpiryTime,
+        channel.socketId,
       )
     default:
       return Promise.resolve()

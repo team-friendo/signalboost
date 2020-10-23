@@ -271,6 +271,7 @@ describe('dispatcher module', () => {
               channel.phoneNumber,
               membership.memberPhoneNumber,
               60,
+              channel.socketId,
             ]),
           )
         })
@@ -290,6 +291,7 @@ describe('dispatcher module', () => {
             channel.phoneNumber,
             subscriberPhoneNumber,
             defaultMessageExpiryTime,
+            channel.socketId,
           ])
         })
       })

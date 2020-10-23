@@ -488,6 +488,7 @@ describe('messenger service', () => {
               channel.phoneNumber,
               randomSender.phoneNumber,
               channel.messageExpiryTime,
+              channel.socketId,
             ])
           })
         })
@@ -522,6 +523,7 @@ describe('messenger service', () => {
               channel.phoneNumber,
               parsedNewMemberPhoneNumber,
               channel.messageExpiryTime,
+              channel.socketId,
             ])
           })
         })

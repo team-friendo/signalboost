@@ -32,7 +32,7 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 const create = async ({ phoneNumber, name, admins }) => {
   try {
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
-    await signal.subscribe(phoneNumber)
+    await signal.subscribe(phoneNumber, 0)
     const channel = await channelRepository.create(phoneNumber, name, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
@@ -70,7 +70,12 @@ const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
         channel.socketId,
       )
       await wait(setExpiryInterval)
-      await signal.setExpiration(channel.phoneNumber, adminPhoneNumber, defaultMessageExpiryTime)
+      await signal.setExpiration(
+        channel.phoneNumber,
+        adminPhoneNumber,
+        defaultMessageExpiryTime,
+        channel.socketId,
+      )
     }),
   )
 
