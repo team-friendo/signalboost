@@ -68,6 +68,7 @@ describe('safety numbers registrar module', () => {
           channelPhoneNumber,
           memberPhoneNumber,
           fingerprint,
+          channel.socketId,
         ])
       })
 
@@ -144,7 +145,12 @@ describe('safety numbers registrar module', () => {
     })
     it("trusts the rando's new fingerprint", async () => {
       await updateFingerprint(updatableFingerprint)
-      expect(trustStub.getCall(0).args).to.eql([channelPhoneNumber, memberPhoneNumber, fingerprint])
+      expect(trustStub.getCall(0).args).to.eql([
+        channelPhoneNumber,
+        memberPhoneNumber,
+        fingerprint,
+        channel.socketId,
+      ])
     })
     it('resends the message', async () => {
       await updateFingerprint(updatableFingerprint)

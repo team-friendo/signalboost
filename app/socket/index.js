@@ -25,9 +25,9 @@ const messages = {
 const run = async () => {
   logger.log('Initializing socket pools...')
   const pools = await Promise.all(
-    times(availableSockets, socketPooldId =>
+    times(availableSockets, socketId =>
       socketPoolOf({
-        create: () => getSocketConnection(socketPooldId),
+        create: () => getSocketConnection(socketId),
         destroy: sock => sock.destroy(),
       }),
     ),

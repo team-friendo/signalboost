@@ -140,8 +140,9 @@ const addAdmin = async (channel, sender, newAdminPhoneNumber, cr) => {
   try {
     const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
     if (deauth) {
-      await signal.trust(channel.phoneNumber, newAdminPhoneNumber, deauth.fingerprint)
-      await deauthorizationRepository.destroy(channel.phoneNumber, newAdminPhoneNumber)
+      const { phoneNumber, socketId } = channel
+      await signal.trust(phoneNumber, newAdminPhoneNumber, deauth.fingerprint, socketId)
+      await deauthorizationRepository.destroy(phoneNumber, newAdminPhoneNumber)
     }
     const newAdminMembership = await membershipRepository.addAdmin(
       channel.phoneNumber,

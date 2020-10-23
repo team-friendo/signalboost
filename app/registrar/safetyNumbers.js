@@ -26,8 +26,13 @@ const updateFingerprint = async updatableFingerprint => {
 const trustAndResend = async updatableFingerprint => {
   const signal = require('../signal')
   const { channelPhoneNumber, memberPhoneNumber, fingerprint, sdMessage } = updatableFingerprint
-  const trustResult = await signal.trust(channelPhoneNumber, memberPhoneNumber, fingerprint)
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
+  const trustResult = await signal.trust(
+    channelPhoneNumber,
+    memberPhoneNumber,
+    fingerprint,
+    channel.socketId,
+  )
   if (sdMessage) await signal.sendMessage(sdMessage, channel.socketId)
   return trustResult // we catch errors in `updateFingerPrint`
 }

@@ -230,14 +230,17 @@ const setExpiration = async (channelPhoneNumber, memberPhoneNumber, expiresInSec
   return id
 }
 
-// (String, String, String?) -> Promise<SignalboostStatus>
-const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint) => {
-  const id = await socketWriter.write({
-    type: messageTypes.TRUST,
-    username: channelPhoneNumber,
-    recipientAddress: { number: memberPhoneNumber },
-    fingerprint,
-  })
+// (String, String, String, number) -> Promise<SignalboostStatus>
+const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint, socketId) => {
+  const id = await socketWriter.write(
+    {
+      type: messageTypes.TRUST,
+      username: channelPhoneNumber,
+      recipientAddress: { number: memberPhoneNumber },
+      fingerprint,
+    },
+    socketId,
+  )
   return new Promise((resolve, reject) => {
     callbacks.register({ messageType: messageTypes.TRUST, id, resolve, reject })
   })
