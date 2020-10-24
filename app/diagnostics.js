@@ -5,7 +5,7 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { times, filter, isEmpty, partition, zip } = require('lodash')
+const { times, isEmpty, partition, zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
