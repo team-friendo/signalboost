@@ -5,7 +5,7 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { times, isEmpty, partition, zip } = require('lodash')
+const { times, filter, isEmpty, partition, zip } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
@@ -36,13 +36,16 @@ const sendHealthchecks = async () => {
     )
     logger.log(`Received responses for ${responseTimes.length} healthchecks.`)
 
-    const fatalHealtcheckFailures = (await Promise.all(
-      zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
-        metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
-        if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
-      }),
-    )).filter(x => x.isFatal)
-    logger.log(`Observed ${fatalHealtcheckFailures.length} fatal healthcheck failures.`)
+    const fatalHealtcheckFailures = filter(
+      await Promise.all(
+        zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
+          metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
+          if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
+        }),
+      ),
+      'isFatal',
+    )
+    console.log(`Observed ${fatalHealtcheckFailures.length} fatal healthcheck failures.`)
 
     return !isEmpty(fatalHealtcheckFailures) ? _restartAndNotify() : Promise.resolve('')
   } catch (e) {
@@ -57,7 +60,6 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
   if (channelPhoneNumber === process.env.SIGNALBOOST_HEALTHCHECK_BLACKLIST)
     return { isFatal: false }
   if (failedHealthchecks.has(channelPhoneNumber)) {
-    logger.log(`Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`)
     await notifier.notifyMaintainers(
       `Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`,
     )
