@@ -416,6 +416,7 @@ describe('channel registrar', () => {
               {
                 name: 'foo',
                 phoneNumber: '+11111111111',
+                socketId: 0,
                 hash: 3092098404,
                 admins: 2,
                 subscribers: 2,
@@ -424,6 +425,7 @@ describe('channel registrar', () => {
               {
                 name: 'bar',
                 phoneNumber: '+19999999999',
+                socketId: 1,
                 hash: 3536709732,
                 admins: 1,
                 subscribers: 1,

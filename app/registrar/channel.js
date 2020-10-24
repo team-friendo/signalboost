@@ -126,6 +126,7 @@ const list = db =>
 const _formatForList = ch => ({
   ...pick(ch, ['name', 'phoneNumber']),
   hash: hash(ch.phoneNumber),
+  socketId: ch.socketId,
   admins: channelRepository.getAdminMemberships(ch).length,
   subscribers: channelRepository.getSubscriberMemberships(ch).length,
   messageCount: pick(ch.messageCount, ['broadcastIn', 'commandIn', 'hotlineIn']),

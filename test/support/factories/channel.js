@@ -61,6 +61,7 @@ export const deepChannelAttrs = [
         memberPhoneNumber: '+15555555555',
       },
     ],
+    socketId: 0,
     messageCount: {
       broadcastIn: 2,
       broadcastOut: 4,
@@ -106,6 +107,7 @@ export const deepChannelAttrs = [
         memberPhoneNumber: '+17777777777',
       },
     ],
+    socketId: 1,
     messageCount: {
       broadcastIn: 100,
       broadcastOut: 100,
