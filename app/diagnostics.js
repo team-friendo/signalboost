@@ -19,27 +19,32 @@ const failedHealthchecks = new Set()
 
 // () => Promise<string>
 const sendHealthchecks = async () => {
+  logger.log('Sending healthchecks...')
+
   try {
     const [[diagnosticsChannel], channels] = partition(
       await channelRepository.findAll(),
       channel => channel.phoneNumber === diagnosticsPhoneNumber,
     )
+    logger.log(`Sent ${channels.length} healthchecks.`)
+
     const responseTimes = await util.sequence(
       channels.map(({ phoneNumber }) => () =>
         signal.healthcheck(phoneNumber, diagnosticsChannel.socketId),
       ),
       healthcheckSpacing,
     )
-    const fatalHealtcheckFailures = await Promise.all(
+    logger.log(`Received responses for ${responseTimes.length} healthchecks.`)
+
+    const fatalHealtcheckFailures = (await Promise.all(
       zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
         metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
         if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
       }),
-    )
+    )).filter(x => x.isFatal)
+    logger.log(`Observed ${fatalHealtcheckFailures.length} fatal healthcheck failures.`)
 
-    return !isEmpty(filter(fatalHealtcheckFailures, 'isFatal'))
-      ? _restartAndNotify()
-      : Promise.resolve('')
+    return !isEmpty(fatalHealtcheckFailures) ? _restartAndNotify() : Promise.resolve('')
   } catch (e) {
     logger.error(e)
   }
@@ -52,6 +57,7 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
   if (channelPhoneNumber === process.env.SIGNALBOOST_HEALTHCHECK_BLACKLIST)
     return { isFatal: false }
   if (failedHealthchecks.has(channelPhoneNumber)) {
+    logger.log(`Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`)
     await notifier.notifyMaintainers(
       `Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`,
     )
