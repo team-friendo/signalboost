@@ -157,10 +157,9 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_2
     environment:
-      VIRTUAL_PORT: 5002
       METRICS_PORT: 5002
     expose:
-      - 5003
+      - 5002
     volumes:
       - signald_sock_2:/var/run/signald/
       - signal_data:/var/lib/signald/data
@@ -172,7 +171,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_3
     environment:
-      VIRTUAL_PORT: 5003
       METRICS_PORT: 5003
     expose:
       - 5003
@@ -187,7 +185,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_4
     environment:
-      VIRTUAL_PORT: 5004
       METRICS_PORT: 5004
     expose:
       - 5004
@@ -202,7 +199,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_5
     environment:
-      VIRTUAL_PORT: 5005
       METRICS_PORT: 5005
     expose:
       - 5005
@@ -217,7 +213,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_6
     environment:
-      VIRTUAL_PORT: 5006
       METRICS_PORT: 5006
     expose:
       - 5006
@@ -232,7 +227,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_7
     environment:
-      VIRTUAL_PORT: 5007
       METRICS_PORT: 5007
     expose:
       - 5007
@@ -247,7 +241,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_8
     environment:
-      VIRTUAL_PORT: 5008
       METRICS_PORT: 5008
     expose:
       - 5008
@@ -262,7 +255,6 @@ services:
     <<: *signald-base
     container_name: signalboost_signald_9
     environment:
-      VIRTUAL_PORT: 5009
       METRICS_PORT: 5009
     expose:
       - 5009
