@@ -20,6 +20,7 @@ describe('parse module', () => {
           'fire the missiles',
           'the ADD foo',
           'the ACCEPT',
+          'the BAN',
           'the BROADCAST',
           'the DECLINE',
           'the DESTROY',
@@ -42,6 +43,7 @@ describe('parse module', () => {
           'la AGREGAR foo',
           'la ACEPTAR',
           'la AYUDA',
+          'la PROHIBIR',
           'la INFO',
           'la INVITAR',
           'la HOLA',
@@ -60,6 +62,7 @@ describe('parse module', () => {
 
           'le AJOUTER',
           'le ACCEPTER',
+          'le INTERDIRE',
           'le REFUSER',
           'le AIDE',
           'le INFO',
@@ -178,8 +181,32 @@ describe('parse module', () => {
       })
     })
 
+    describe('BAN command', () => {
+      it('parses an BAN command and payload regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['BAN @1312', ' ban @1312'],
+          },
+        ]
+
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.BAN,
+              language,
+              payload: {
+                messageId: 1312,
+                reply: '',
+              },
+            }),
+          ),
+        )
+      })
+    })
+
     describe('BROADCAST command', () => {
-      it('parses an ADD command and payload regardless of casing, spacing, accents, or language', () => {
+      it('parses a BROADCAST command and payload regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
