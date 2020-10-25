@@ -494,19 +494,8 @@ describe('executing commands', () => {
     })
   })
 
-  describe.only('BAN command', () => {
+  describe('BAN command', () => {
     const messageId = 1312
-    const cr = messagesIn(languages.EN).commandResponses
-    const dispatchable = {
-      channel,
-      sender: { ...admin, language: languages.EN },
-      sdMessage: sdMessageOf({
-        sender: channel.phoneNumber,
-        message: 'BAN @1312',
-        attachments,
-      }),
-    }
-
     let isBannedStub, findMemberPhoneNumberStub, banMemberStub
     beforeEach(() => {
       findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
@@ -514,19 +503,77 @@ describe('executing commands', () => {
       banMemberStub = sinon.stub(banRepository, 'banMember')
     })
 
+    describe('non-admin tries to ban', () => {
+      it('returns ERROR unauthorized', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...subscriber, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: 'BAN',
+          status: statuses.UNAUTHORIZED,
+          message:
+            'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.',
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
+    describe('when member is already banned', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+        isBannedStub.returns(Promise.resolve(true))
+      })
+
+      it('returns ERROR alreadybanned', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+        
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message: `The sender of hotline message ${messageId} is already banned.`,
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
     describe('when member is not already banned', () => {
       beforeEach(() => {
         findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
         isBannedStub.returns(Promise.resolve(false))
-        banMemberStub.returns(Promise.resolve('hello'))
+        banMemberStub.returns(Promise.resolve())
       })
 
       it('returns SUCCESS with notifications for admins and banned member', async () => {
-        console.log(await processCommand(dispatchable))
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+        
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.SUCCESS,
-          message: `BAN ${messageId}`,
+          message: `The sender of hotline message ${messageId} has been banned.`,
           notifications: [],
           payload: { messageId: 1312, reply: '' },
         })

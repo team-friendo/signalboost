@@ -252,20 +252,25 @@ const maybeBanSender = async (channel, sender, hotlineMessage) => {
     return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
   }
   // check if hotlineMessage.messageId is a thing
-  const phoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(hotlineMessage.messageId)
+  const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
+    hotlineMessage.messageId,
+  )
 
-  const isBanned = await banRepository.isBanned(phoneNumber)
+  const isBanned = await banRepository.isBanned(memberPhoneNumber)
   return isBanned
-    ? { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
-    : banMember(channel, phoneNumber, sender, cr)
+    ? {
+        status: statuses.ERROR,
+        message: cr.alreadyBanned(hotlineMessage.messageId),
+      }
+    : banMember(channel.phoneNumber, memberPhoneNumber, hotlineMessage.messageId, cr)
 }
 
-const banMember = async (channel, memberPhoneNumber, cr) => {
+const banMember = async (channelPhoneNumber, memberPhoneNumber, messageId, cr) => {
   return banRepository
-    .banMember(channel.phoneNumber, memberPhoneNumber)
+    .banMember(channelPhoneNumber.phoneNumber, memberPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(memberPhoneNumber),
+      message: cr.success(messageId),
     }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 }
