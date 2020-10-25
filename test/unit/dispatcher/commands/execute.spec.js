@@ -494,7 +494,7 @@ describe('executing commands', () => {
     })
   })
 
-  describe('BAN command', () => {
+  describe.only('BAN command', () => {
     const messageId = 1312
     const cr = messagesIn(languages.EN).commandResponses
     const dispatchable = {
@@ -507,38 +507,28 @@ describe('executing commands', () => {
       }),
     }
 
-    let isBannedStub, findMemberPhoneNumberStub
+    let isBannedStub, findMemberPhoneNumberStub, banMemberStub
     beforeEach(() => {
       findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
       isBannedStub = sinon.stub(banRepository, 'isBanned')
+      banMemberStub = sinon.stub(banRepository, 'banMember')
     })
 
     describe('when member is not already banned', () => {
       beforeEach(() => {
         findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
-        isBannedStub.returns(false)
+        isBannedStub.returns(Promise.resolve(false))
+        banMemberStub.returns(Promise.resolve('hello'))
       })
 
       it('returns SUCCESS with notifications for admins and banned member', async () => {
+        console.log(await processCommand(dispatchable))
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.SUCCESS,
           message: `BAN ${messageId}`,
-          notifications: [
-            {
-              recipient: subscriber.phoneNumber,
-              message:
-                'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
-              attachments,
-            },
-            ...adminMemberships.map(({ memberPhoneNumber }) => ({
-              recipient: memberPhoneNumber,
-              message: `The sender of hotline message ${messageId} has been banned.`,
-            })),
-          ],
-          payload: {
-            /* what goes in here? */
-          },
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
         })
       })
     })

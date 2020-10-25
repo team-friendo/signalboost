@@ -250,7 +250,7 @@ ${support}`,
     success: messageId => `The sender of hotline message ${messageId} has been banned.`,
     notAdmin,
     alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
-    dbError: num => `Whoops! There was an error trying to remove ${num}. Please try again!`,
+    dbError: 'Oops! Failed to issue ban. Please try again!',
     invalidHotlineMessageId: messageId =>
       `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },

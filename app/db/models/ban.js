@@ -32,6 +32,10 @@ const banSenderOf = (sequelize, DataTypes) => {
     {},
   )
 
+  ban.associate = db => {
+    ban.belongsTo(db.channel)
+  }
+
   return ban
 }
 

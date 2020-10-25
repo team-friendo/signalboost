@@ -267,7 +267,7 @@ const banMember = async (channel, memberPhoneNumber, cr) => {
       status: statuses.SUCCESS,
       message: cr.success(memberPhoneNumber),
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError(memberPhoneNumber) }))
+    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 }
 
 // BROADCAST
