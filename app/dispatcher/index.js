@@ -244,11 +244,14 @@ const detectUpdatableFingerprint = async inSdMessage => {
     memberPhoneNumber,
   )
   const language = membership ? membership.language : defaultLanguage
+  const fingerprint = get(inSdMessage, 'data.fingerprint', '')
+
+  logger.log(`Received new fingerprint for channel ${channelPhoneNumber}: ${fingerprint}`)
 
   return {
     channelPhoneNumber,
     memberPhoneNumber,
-    fingerprint: get(inSdMessage, 'data.fingerprint', ''),
+    fingerprint,
     sdMessage: {
       type: signal.messageTypes.SEND,
       username: channelPhoneNumber,

@@ -45,7 +45,6 @@ const sendHealthchecks = async () => {
       ),
       'isFatal',
     )
-    console.log(`Observed ${fatalHealtcheckFailures.length} fatal healthcheck failures.`)
 
     return !isEmpty(fatalHealtcheckFailures) ? _restartAndNotify() : Promise.resolve('')
   } catch (e) {
@@ -56,10 +55,10 @@ const sendHealthchecks = async () => {
 // string -> Promise<{isFatal: boolean}>
 const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
   // Alert maintainers if channel has failed 2 consecutive healthchecks,
-  // and return flag signaling fatal failure. (Ignore "boy who cried wolf" numbers, for now.)
-  if (channelPhoneNumber === process.env.SIGNALBOOST_HEALTHCHECK_BLACKLIST)
-    return { isFatal: false }
+  // and return flag signaling fatal failure.
+  logger.log(`Healthcheck failure: ${channelPhoneNumber}`)
   if (failedHealthchecks.has(channelPhoneNumber)) {
+    logger.log(`Fatal healthcheck failure: ${channelPhoneNumber}`)
     await notifier.notifyMaintainers(
       `Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`,
     )
