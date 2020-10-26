@@ -28,10 +28,11 @@ const sendHealthchecks = async () => {
     )
 
     logger.log(`Sending ${channels.length} healthchecks...`)
-    const responseTimes = await Promise.all(
-      channels.map(({ phoneNumber }) =>
+    const responseTimes = await util.sequence(
+      channels.map(({ phoneNumber }) => () =>
         signal.healthcheck(phoneNumber, diagnosticsChannel.socketId),
       ),
+      healthcheckSpacing,
     )
     logger.log(`Received responses for ${responseTimes.length} healthchecks.`)
 
