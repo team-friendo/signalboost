@@ -19,20 +19,19 @@ const failedHealthchecks = new Set()
 
 // () => Promise<string>
 const sendHealthchecks = async () => {
-  logger.log('Sending healthchecks...')
+  logger.log('Healthcheck job running...')
 
   try {
     const [[diagnosticsChannel], channels] = partition(
       await channelRepository.findAll(),
       channel => channel.phoneNumber === diagnosticsPhoneNumber,
     )
-    logger.log(`Sent ${channels.length} healthchecks.`)
 
-    const responseTimes = await util.sequence(
-      channels.map(({ phoneNumber }) => () =>
+    logger.log(`Sending ${channels.length} healthchecks...`)
+    const responseTimes = await Promise.all(
+      channels.map(({ phoneNumber }) =>
         signal.healthcheck(phoneNumber, diagnosticsChannel.socketId),
       ),
-      healthcheckSpacing,
     )
     logger.log(`Received responses for ${responseTimes.length} healthchecks.`)
 
