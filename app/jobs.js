@@ -67,10 +67,9 @@ const run = async () => {
   logger.log('---- Launching healthcheck job...')
   const launchHealthchecks = async () => {
     await util.wait(signaldStartupTime)
-    cancelations.healtcheckJob = util.repeatUntilCancelled(
-      () => diagnostics.sendHealthchecks().catch(logger.error),
-      healthcheckInterval,
-    )
+    cancelations.healtcheckJob = util.repeatUntilCancelled(() => {
+      diagnostics.sendHealthchecks().catch(logger.error)
+    }, healthcheckInterval)
   }
   if (diagnosticsPhoneNumber) launchHealthchecks().catch(launchHealthchecks)
   logger.log('---- Launched healthcheck job...')
