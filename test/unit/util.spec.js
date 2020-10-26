@@ -18,6 +18,34 @@ describe('utility module', () => {
       expect(result).to.eql([1, 2, 3])
       expect(elapsed).to.be.at.least(200)
     })
+
+    it('rejects a catchable promise if any function throws', async () => {
+      const asyncFuncs = [
+        () => Promise.resolve(1),
+        () => {
+          throw new Error('oh noes!')
+        },
+        () => Promise.resolve(3),
+      ]
+      try {
+        await util.sequence(asyncFuncs, 100)
+      } catch (e) {
+        expect(e.message).to.eql('oh noes!')
+      }
+    })
+
+    it('rejects a catchable promise if any function rejects a promise', async () => {
+      const asyncFuncs = [
+        () => Promise.resolve(1),
+        () => Promise.reject('oh noes!'),
+        () => Promise.resolve(3),
+      ]
+      try {
+        await util.sequence(asyncFuncs, 100)
+      } catch (e) {
+        expect(e).to.eql('oh noes!')
+      }
+    })
   })
 
   describe('#batchesOfN', () => {
