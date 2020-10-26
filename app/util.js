@@ -103,7 +103,9 @@ const loggerOf = prefix =>
         },
         error: e =>
           console.error(
-            `[${prefix} | ${nowTimestamp()}] ${get(e, 'errors[0].message', e.message)}\n${e.stack}`,
+            `[${prefix} | ${nowTimestamp()}] ${get(e, 'errors[0].message', e.message || e)}\n${
+              e.stack
+            }`,
           ),
         fatalError: e => {
           console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)

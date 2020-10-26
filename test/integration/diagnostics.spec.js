@@ -90,6 +90,7 @@ describe('diagnostics jobs', () => {
       beforeEach(async () => {
         writeStub = sinon.stub(socket, 'write').callsFake(echoBackToSocket)
         await sendHealthchecks()
+        await util.wait(healthcheckTimeout - 1)
       })
 
       it('sends a a healthcheck to every channel and gets a response', () => {
@@ -130,18 +131,16 @@ describe('diagnostics jobs', () => {
       })
 
       it('caches healthcheck failures', () => {
-        expect(failedHealthchecks.size).to.eql(channels.length)
+        expect(failedHealthchecks.size).to.be.at.least(channels.length)
       })
     })
 
     describe('when a healtcheck fails twice in a row', () => {
       beforeEach(async function() {
-        this.timeout(8000)
         writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(''))
         await sendHealthchecks()
         await util.wait(healthcheckTimeout)
         await sendHealthchecks()
-        await util.wait(1.5 * healthcheckTimeout)
       })
 
       it('notifies maintainers and restarts signalboost', async function() {

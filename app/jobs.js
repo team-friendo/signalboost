@@ -72,7 +72,7 @@ const run = async () => {
       healthcheckInterval,
     )
   }
-  if (diagnosticsPhoneNumber) launchHealthchecks()
+  if (diagnosticsPhoneNumber) launchHealthchecks().catch(launchHealthchecks)
   logger.log('---- Launched healthcheck job...')
 
   logger.log('--- Startup jobs complete!')
