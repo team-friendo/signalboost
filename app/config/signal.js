@@ -5,7 +5,7 @@ const defaults = {
   broadcastSpacing: 100, // 100 millis
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   expiryUpdateDelay: 200, // 200 millis
-  healthcheckTimeout: 1000 * 60 * 10, // 10 min
+  healthcheckTimeout: 1000 * 60 * 15, // 15 min
   healthcheckSpacing: 100, // 100 millis
   intervalBetweenRegistrationBatches: 120000, // 2 minutes
   intervalBetweenRegistrations: 2000, // 2 seconds
