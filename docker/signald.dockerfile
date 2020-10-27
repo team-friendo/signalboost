@@ -57,6 +57,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # build signald from a given commit hash
 
+ARG SIGNAL_URL
+ENV SIGNAL_URL=${SIGNAL_URL}
+
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 ENV BRANCH "main"
 ENV COMMIT_HASH "846779eeb00b73b084caa7bc4bcc5ddc5dc8068f"
@@ -68,7 +71,7 @@ RUN git init && \
     git reset --hard $COMMIT_HASH
 
 # build from source
-RUN make installDist && make setup
+RUN SIGNAL_URL="https://${SIGNAL_URL}" make installDist && make setup
 
 # put signald binary on path
 RUN ln -s ${PWD}/build/install/signald/bin/signald /usr/local/bin/signald

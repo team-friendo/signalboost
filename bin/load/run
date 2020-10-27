@@ -4,7 +4,31 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- setting up signal-server..."
+check-until-ngrok-url-available(){
+  echo "checking orchestrator ngrok..."
+  # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
+
+  if [[ "$(uname)" == 'Darwin' ]]
+    then # we are in Mac and must use sed -E
+      host_url=$(curl --max-time 5 -s localhost:4041/api/tunnels | \
+        jq ".tunnels[0].public_url" | \
+        sed -E 's/(http|https):\/\///' | \
+        cut -c 2- | rev | cut -c 2- | rev)
+
+    else # we are in Linux and may use sed -re
+      host_url=$(curl --max-time 5 -s localhost:4041/api/tunnels | \
+        jq ".tunnels[0].public_url" | \
+        sed -re 's/(http|https):\/\///' | \
+        cut -c 2- | rev | cut -c 2- | rev)
+  fi
+
+  if [[ -z ${host_url} ]] || [[ ${#host_url} -lt 20 ]];then
+    sleep 1
+    check-until-ngrok-url-available
+  fi
+}
+
+echo "--- setting up signal-server database..."
 docker-compose -f docker-compose-test-load.yml up -d db
 
 sleep 2
@@ -13,7 +37,16 @@ psql postgresql://postgres@localhost:5432 -c "CREATE USER signal WITH PASSWORD '
 psql postgresql://postgres@localhost:5432 -c "CREATE DATABASE signal;"
 
 echo "--- running load test..."
-docker-compose -f docker-compose-test-load.yml up signal-server redis orchestrator-ngrok
+docker-compose -f docker-compose-test-load.yml up -d signal-server redis orchestrator-ngrok
+
+check-until-ngrok-url-available
+echo "NGROK URL: $host_url"
+
+echo "--- building signald with local SIGNAL_URL..."
+
+docker build --build-arg SIGNAL_URL=${host_url} -t team-friendo/signalboost/signald:load -f ./docker/signald.dockerfile .
+
+docker-compose -f docker-compose-test-load.yml up -d orchestrator-signald
 
 echo "--- stopping load test..."
 # docker-compose -f docker-compose-test-load.yml down

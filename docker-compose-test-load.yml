@@ -86,7 +86,7 @@ services:
     restart: unless-stopped
 
   orchestrator-signald:
-    image: registry.0xacab.org/team-friendo/signalboost/signald
+    image: team-friendo/signalboost/signald:load
     container_name: load_test_orchestrator_signald
     env_file: .env.dev
     environment:
