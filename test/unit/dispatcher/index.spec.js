@@ -7,6 +7,7 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
+import banRepository from '../../../app/db/repositories/ban'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import metrics from '../../../app/metrics'
 import phoneNumberRegistrar from '../../../app/registrar/phoneNumber'
@@ -109,7 +110,11 @@ describe('dispatcher module', () => {
     processCommandStub,
     dispatchStub,
     enqueueResendStub,
+<<<<<<< HEAD
     respondToHealthcheckStub
+=======
+    isBannedStub
+>>>>>>> index rewrite and tests
 
   before(async () => await app.run(testApp))
 
@@ -119,9 +124,13 @@ describe('dispatcher module', () => {
 
     findDeepStub = sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channels[0]))
 
+<<<<<<< HEAD
     respondToHealthcheckStub = sinon
       .stub(diagnostics, 'respondToHealthcheck')
       .returns(Promise.resolve('42'))
+=======
+    isBannedStub = sinon.stub(banRepository, 'isBanned').returns(Promise.resolve(false))
+>>>>>>> index rewrite and tests
 
     findMembershipStub = sinon
       .stub(membershipRepository, 'findMembership')
@@ -144,6 +153,34 @@ describe('dispatcher module', () => {
 
   describe('handling an incoming message', () => {
     describe('deciding whether to dispatch a message', () => {
+      describe('when message is from a banned user', () => {
+        beforeEach(() => {
+          isBannedStub.returns(Promise.resolve(true))
+        })
+        afterEach(() => {
+          isBannedStub.restore()
+        })
+        it('ignores the message', async () => {
+          await dispatch(
+            JSON.stringify({
+              type: 'message',
+              data: {
+                username: channel.phoneNumber,
+                source: genPhoneNumber(),
+                dataMessage: {
+                  timestamp: new Date().toISOString(),
+                  body: 'foobar',
+                  expiresInSeconds: channel.messageExpiryTime,
+                  attachments: [],
+                },
+              },
+            }),
+          )
+          expect(processCommandStub.callCount).to.eql(0)
+          expect(dispatchStub.callCount).to.eql(0)
+        })
+      })
+
       describe('when message is not of type "message"', () => {
         it('ignores the message', async () => {
           await dispatch(
