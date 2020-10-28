@@ -1,10 +1,11 @@
-const { messageTypes } = require('../app/constants')
+const { messageTypes } = require('../app/signal/constants')
 const util = require('../app/util')
 const { statuses } = util
 const { get } = require('lodash')
 const {
   signal: { signaldVerifyTimeout },
 } = require('../app/config')
+const logger = require('../app/registrar/logger')
 
 /**
  * type Callback = ({
@@ -67,7 +68,8 @@ const _timeoutFor = messageType =>
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
 const handle = message => {
-  // called from dispatcher.relay
+  logger.log(JSON.stringify(message, null, 2))
+
   const { callback, resolve, reject, state } = {
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],

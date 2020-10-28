@@ -126,7 +126,7 @@ services:
     restart: unless-stopped
 
   signal_server:
-    image: registry.gitlab.com/signald/test-infrastructure/signal-server:3.21
+    image: registry.0xacab.org/team-friendo/signalboost/signal-server:3.21
     container_name: load_test_signal_server
     depends_on:
       - db

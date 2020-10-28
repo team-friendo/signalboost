@@ -1,4 +1,5 @@
 const { createPool } = require('generic-pool')
+const callbacks = require('../callbacks')
 const net = require('net')
 const fs = require('fs-extra')
 const { wait, loggerOf } = require('../../app/util')
@@ -53,7 +54,7 @@ const connect = () => {
     const sock = net.createConnection(SIGNALD_SOCKET_PATH)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    sock.on('data', msg => dispatcher.dispatch(msg).catch(logger.error))
+    sock.on('data', msg => callbacks.handle(JSON.parse(msg)))
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
     return Promise.reject(new Error(messages.error.socketConnectError(e.message)))
