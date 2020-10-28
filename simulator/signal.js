@@ -1,7 +1,8 @@
 const socketWriter = require('./socket/write')
 const callbacks = require('./callbacks')
 const { pick, isEmpty } = require('lodash')
-const { messages, messageTypes, trustLevels } = require('../app/constants')
+const fetch = require("node-fetch")
+const { messages, messageTypes, trustLevels } = require('../app/signal/constants')
 const util = require('../app/util')
 const { statuses, loggerOf } = util
 const {
@@ -94,11 +95,14 @@ const run = async (botPhoneNumbers) => {
   logger.log(`--- Creating bot phoneNumbers...`)
   try {
     await Promise.all(botPhoneNumbers.map(register))
-    return Promise.all(botPhoneNumbers.map(subscribe))
+    logger.log(`--- Created boot phoneNumbers!`)
+    await Promise.all(botPhoneNumbers.map(subscribe))
+    logger.log(`--- Subscribed bot phoneNumbers!`)
+    return
   } catch (e) {
+    logger.log(`--- Error creating bot phoneNumbers...  `)
     logger.error(e)
   }
-  logger.log(`--- Created bot phoneNumbers!`)
 }
 
 /********************
@@ -113,10 +117,9 @@ const register = async (phoneNumber, captchaToken) => {
     ...(captchaToken ? { captcha: captchaToken } : {}),
   })
 
+  await util.wait(3000)
   await verify(phoneNumber)
-  // Since a registration isn't meaningful without a verification code,
-  // we resolve `register` by invoking the callback handler fo the response to the VERIFY request
-  // that will be issued to signald after twilio callback (POST /twilioSms) triggers `verify` below
+
   return new Promise((resolve, reject) =>
     callbacks.register({
       messageType: messageTypes.VERIFY,
@@ -129,15 +132,18 @@ const register = async (phoneNumber, captchaToken) => {
 
 // (string, string) -> Promise<SignalboostStatus>
 const verify = async (phoneNumber) => {
-  const code = await fetch("signal_sms_codes:8082/helper/verification-code", {
+
+  const params = new URLSearchParams()
+  params.append('number', phoneNumber)
+
+  const code = await fetch("http://signal_sms_codes:8082/helper/verification-code", {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ number: phoneNumber })
+    body: params
   }).then(response => response.json())
 
-  socketWriter
+  logger.log("VERIFY CODE: " + code)
+
+  return socketWriter
     .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
