@@ -28,16 +28,24 @@ check-until-ngrok-url-available(){
   fi
 }
 
+### START DB
+
 echo "--- setting up signal-server database..."
 docker-compose -f docker-compose-test-load.yml up -d db
 
 sleep 2
 
+### MIGRATIONS
+
 psql postgresql://postgres@localhost:5432 -c "CREATE USER signal WITH PASSWORD 'password';"
 psql postgresql://postgres@localhost:5432 -c "CREATE DATABASE signal;"
 
+docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin/db/setup app
+
+### RUN SERVICES
+
 echo "--- running load test..."
-docker-compose -f docker-compose-test-load.yml up -d signal-server redis orchestrator-ngrok
+docker-compose -f docker-compose-test-load.yml up -d signal_server redis ngrok_simulator signal_sms_codes signalboost_ngrok app simulator
 
 check-until-ngrok-url-available
 echo "NGROK URL: $host_url"
@@ -46,7 +54,9 @@ echo "--- building signald with local SIGNAL_URL..."
 
 docker build --build-arg SIGNAL_URL=${host_url} -t team-friendo/signalboost/signald:load -f ./docker/signald.dockerfile .
 
-docker-compose -f docker-compose-test-load.yml up -d orchestrator-signald
+docker-compose -f docker-compose-test-load.yml up -d signald_app signald_simulator
+
+### STOP SERVICES
 
 echo "--- stopping load test..."
 # docker-compose -f docker-compose-test-load.yml down
