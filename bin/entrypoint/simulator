@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -eu
+
+echo "--- running simulator..."
+cd /signalboost
+npx nodemon simulator/run
