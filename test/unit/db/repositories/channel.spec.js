@@ -272,6 +272,7 @@ describe('channel repository', () => {
           'messageCount',
           'recycleRequest',
           'socketId',
+          'subscriberLimit',
         ])
       })
     })

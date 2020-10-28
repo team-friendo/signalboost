@@ -4,6 +4,7 @@ const defaults = {
   broadcastBatchSize: 1,
   broadcastSpacing: 100, // 100 millis
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
+  defaultSubscriberLimit: 500,
   expiryUpdateDelay: 200, // 200 millis
   healthcheckTimeout: 1000 * 60 * 15, // 15 min
   healthcheckSpacing: 100, // 100 millis
