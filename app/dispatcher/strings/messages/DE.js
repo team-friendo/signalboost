@@ -12,6 +12,8 @@ const notAdmin =
   'Tut uns leid, nur Admins können diesen Befehl ausführen. Sende HILFE um eine Liste an gültigen Befehlen zu erhalten.'
 const notSubscriber =
   'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
+const subscriberLimitReached = subscriberLimit =>
+  `Entschuldigung, dieser Kanal hat sein Limit von ${subscriberLimit} Abonnenten erreicht.`
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
 
 const vouchModeDisplay = {
@@ -81,6 +83,7 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
       `Sorry, für ${channel.name} brauchst du ${required} Einladung(en). Du hast ${actual}.`,
     dbError:
       'Tut uns Leid! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!',
+    subscriberLimitReached,
   },
 
   // ADD
@@ -261,6 +264,7 @@ ${support}`,
     success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
     adminOnly: 'Leider können nur Administratoren Personen zu diesem Kanal einladen.',
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
+
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
         allPhoneNumbers.length
@@ -269,6 +273,9 @@ ${support}`,
   Bitte versuchen Sie erneut, EINLADEN für die folgenden Telefonnummern auszugeben:
   
   ${failedPhoneNumbers.join(',')}`,
+
+    subscriberLimitReached: (subscriberLimit, numInvitees) =>
+      `Versuchen Sie, ${subscriberLimit} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal hat ein Limit von ${numInvitees} Abonnenten.`,
   },
 
   // JOIN
@@ -284,6 +291,7 @@ Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzume
 Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     dbError: `Ups! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs nochmal!`,
     alreadyMember: `Ups! Du bist schon Teilnehmer an diesem Kanal.`,
+    subscriberLimitReached,
   },
 
   // LEAVE

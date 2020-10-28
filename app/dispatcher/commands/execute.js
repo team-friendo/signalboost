@@ -101,6 +101,13 @@ const maybeAccept = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.accept
 
   try {
+    // don't accept if channel has reached its subscriber limit
+    if (!channelRepository.canAddSubscribers(channel))
+      return {
+        status: statuses.ERROR,
+        message: cr.subscriberLimitReached(channel.subscriberLimit),
+      }
+
     // don't accept invite if sender is already a member
     if (await membershipRepository.isMember(channel.phoneNumber, sender.phoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyMember }
@@ -310,6 +317,12 @@ const showInfo = async (channel, sender) => {
 
 const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
+
+  if (!channelRepository.canAddSubscribers(channel, inviteePhoneNumbers.length))
+    return {
+      status: statuses.ERROR,
+      message: cr.subscriberLimitReached(channel.subscriberLimit, inviteePhoneNumbers.length),
+    }
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
   if (sender.type !== ADMIN && channel.vouchMode === vouchModes.ADMIN)
     return { status: statuses.UNAUTHORIZED, message: cr.adminOnly }
@@ -402,6 +415,11 @@ const inviteNotificationOf = (
 
 const maybeAddSubscriber = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.join
+  if (!channelRepository.canAddSubscribers(channel))
+    return {
+      status: statuses.ERROR,
+      message: cr.subscriberLimitReached(channel.subscriberLimit),
+    }
   if (sender.type !== NONE) return { status: statuses.ERROR, message: cr.alreadyMember }
   if (channel.vouchMode !== vouchModes.OFF)
     return { status: statuses.ERROR, message: cr.inviteRequired }

@@ -12,6 +12,8 @@ const notAdmin =
   'Lo sentimos, solo los admins pueden emitir ese comando. Envíe AYUDA para obtener una lista de comandos válidos.'
 const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
+const subscriberLimitReached = subscriberLimit =>
+  `Lo sentimos, este canal ha alcanzado su límite de ${subscriberLimit} suscriptores.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
 const vouchModeDisplay = {
@@ -81,6 +83,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
         channel.name
       } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
+    subscriberLimitReached,
   },
 
   // ADD
@@ -264,6 +267,7 @@ ${support}`,
     success: n => (n === 1 ? `Se emitió la invitación` : `Se emitieron ${n} invitaciones`),
     adminOnly: 'Lo siento, solo administradores pueden emitir invitaciones para este canal.',
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
+
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `¡Ay! No se pudo emitir las invitaciónes para ${
         failedPhoneNumbers.length
@@ -272,6 +276,34 @@ ${support}`,
 Intenta emitir nuevamente INVITAR para los siguientes números:
       
 ${failedPhoneNumbers.join(',')}`,
+
+    subscriberLimitReached: (subscriberLimit, numInvitees) =>
+      `¿Estas intentando invitar a ${subscriberLimit} nuevos suscriptores? Lo sentimos, eso haría que este canal exceda su límite de ${numInvitees} suscriptores.`,
+  },
+
+  // JOIN
+
+  join: {
+    success: channel =>
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
+        channel.description
+      }
+
+Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
+    inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
+
+Si ya tiene usted una invitación, intente enviar ACEPTAR`,
+    dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
+    alreadyMember: `¡Ay! Ya usted es miembro del canal.`,
+    subscriberLimitReached,
+  },
+
+  // LEAVE
+
+  leave: {
+    success: `¡Usted ha sido eliminado del canal! ¡Adiós!`,
+    error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtelo de nuevo!`,
+    notSubscriber,
   },
 
   // PRIVATE
@@ -309,30 +341,6 @@ ${failedPhoneNumbers.join(',')}`,
     notAdmin,
     invalidMessageId: messageId =>
       `Lo sentimos, el identificador de mensaje de línea directa @${messageId} ha caducado o nunca ha existido.`,
-  },
-
-  // JOIN
-
-  join: {
-    success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
-        channel.description
-      }
-
-Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
-    inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
-
-Si ya tiene usted una invitación, intente enviar ACEPTAR`,
-    dbError: `¡Ay! Se produjo un error al agregarlo al canal. ¡Inténtelo de nuevo! :)`,
-    alreadyMember: `¡Ay! Ya usted es miembro del canal.`,
-  },
-
-  // LEAVE
-
-  leave: {
-    success: `¡Usted ha sido eliminado del canal! ¡Adiós!`,
-    error: `¡Lo siento! Se produjo un error al eliminarlo del canal. ¡Inténtelo de nuevo!`,
-    notSubscriber,
   },
 
   // SET_LANGUAGE
