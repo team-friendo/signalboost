@@ -46,11 +46,27 @@ export default () => (
       training, and we'll get back to you asap!
     </p>
     <h3 className="getting-started-header">
-      4. Get subscribers and send announcements
+      4. Send announcements to (up to 500) subscribers
     </h3>
     <p>
       Now, any anyone who sends "HELLO" to your channel number will get
       announcements you send out!
+    </p>
+    <p>
+      You can publish your channel phone number on Instagram or keep it to a
+      close circle. Importantly, after your channel hits 500 subscribers, new
+      members will be prevented from subscribing until existing subscribers
+      leave. Your channel will also take longer to send out broadcasts the
+      bigger it grows. (At a few hundred subscribers, expect broadcasts to take
+      5-10 minutes.)
+    </p>
+    <p>
+      If you are in an urgent situation and would like to request a larger
+      channel you can do so via 947-BOOSTIT (+1-947-800-5717). However, large
+      channels put stress on our servers and team. We are working hard to make
+      Signalboost support channels bigger than 500, but that work requires time
+      and resources. You can help us get there by
+      <Link to="/donate">donating!</Link>
     </p>
     <h2>Signalboost Guide</h2>
     <p>
