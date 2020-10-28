@@ -5,6 +5,8 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { inviteFactory } from './invite'
 import { genPhoneNumber } from './phoneNumber'
 import { deauthorizationFactory } from './deauthorization'
+import { banFactory } from './ban'
+
 const {
   signal: { defaultMessageExpiryTime },
 } = require('../../../app/config')
@@ -26,6 +28,7 @@ export const deepChannelFactory = attrs => {
     ],
     messageCount: messageCountFactory({ channelPhoneNumber }),
     invites: times(2, () => inviteFactory({ channelPhoneNumber })),
+    bans: times(2, () => banFactory({ channelPhoneNumber })),
     deauthorizations: [deauthorizationFactory({ channelPhoneNumber })],
     destructionRequest: { channelPhoneNumber },
     ...attrs,
@@ -78,6 +81,16 @@ export const deepChannelAttrs = [
         inviteePhoneNumber: '+12222222224',
       },
     ],
+    bans: [
+      {
+        channelPhoneNumber: '+11111111111',
+        memberPhoneNumber: '+10000000001',
+      },
+      {
+        channelPhoneNumber: '+11111111111',
+        memberPhoneNumber: '+10000000002',
+      },
+    ],
     deauthorizations: [
       {
         channelPhoneNumber: '+11111111111',
@@ -120,6 +133,12 @@ export const deepChannelAttrs = [
         channelPhoneNumber: '+19999999999',
         inviterPhoneNumber: '+16666666666',
         inviteePhoneNumber: '+16666666668',
+      },
+    ],
+    bans: [
+      {
+        channelPhoneNumber: '+11111111111',
+        memberPhoneNumber: '+10000000000',
       },
     ],
   },

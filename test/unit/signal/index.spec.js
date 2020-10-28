@@ -13,7 +13,8 @@ import socket from '../../../app/socket/write'
 import util from '../../../app/util'
 import metrics from '../../../app/metrics'
 import channelRepository from '../../../app/db/repositories/channel'
-import membershipRepository from '../../../app/db/repositories/membership'
+import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
+import banRepository from '../../../app/db/repositories/ban'
 import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
@@ -50,11 +51,17 @@ describe('signal module', () => {
     beforeEach(async () => {
       writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
       sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
+<<<<<<< HEAD
       sinon
         .stub(membershipRepository, 'findMembership')
         .returns(
           Promise.resolve(adminMembershipFactory({ channelPhoneNumber: channel.phoneNumber })),
         )
+=======
+      sinon.stub(membershipRepository, 'resolveMemberType').returns(memberTypes.NONE)
+      sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(memberTypes.NONE)
+      sinon.stub(banRepository, 'isBanned').returns(Promise.resolve(false))
+>>>>>>> ban and channel factories, channel and signal/index tests
       sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
     })
     afterEach(async () => {
