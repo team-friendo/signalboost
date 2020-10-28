@@ -157,7 +157,12 @@ const getSubscriberMemberships = channel =>
 const getSubscriberPhoneNumbers = channel =>
   getSubscriberMemberships(channel).map(m => m.memberPhoneNumber)
 
+// (ChannelInstance, number) => boolean
+const canAddSubscribers = (channel, numSubscribers = 1) =>
+  getSubscriberMemberships(channel).length + numSubscribers <= channel.subscriberLimit
+
 module.exports = {
+  canAddSubscribers,
   create,
   destroy,
   findAll,
