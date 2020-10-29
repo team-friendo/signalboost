@@ -8,13 +8,13 @@ const util = require('./util')
 const sharding = require('./socket/sharding')
 const { values } = require('lodash')
 const {
-  job: { healthcheckInterval, inviteDeletionInterval, recycleInterval, signaldStartupTime },
+  job: { healthcheckInterval, inviteDeletionInterval, destructionInterval, signaldStartupTime },
   signal: { diagnosticsPhoneNumber },
 } = require('./config')
 
 const cancelations = {
   deleteInvitesJob: null,
-  recycleJob: null,
+  destructionJob: null,
   healtcheckJob: null,
 }
 
@@ -57,12 +57,12 @@ const run = async () => {
   )
   logger.log('----- Launched invite scrubbing job.')
 
-  logger.log('---- Launching recycle request processing job...')
-  cancelations.recycleJob = util.repeatUntilCancelled(
-    () => phoneNumberRegistrar.processRecycleRequests().catch(logger.error),
-    recycleInterval,
+  logger.log('---- Launching destruction request processing job...')
+  cancelations.destructionJob = util.repeatUntilCancelled(
+    () => phoneNumberRegistrar.processDestructionRequests().catch(logger.error),
+    destructionInterval,
   )
-  logger.log('---- Launched recycle request job...')
+  logger.log('---- Launched destruction request job...')
 
   logger.log('---- Launching healthcheck job...')
   const launchHealthchecks = async () => {

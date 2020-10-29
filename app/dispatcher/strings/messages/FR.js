@@ -443,7 +443,7 @@ const notifications = {
   channelDestroyed:
     'La canal et tous les enregistrements associés ont été définitivement détruits.',
 
-  channelEnqueuedForRecycling:
+  channelEnqueuedForDestruction:
     "Bonjour! Cette canal est sur le point d'être désactivée faute d'utilisation. Pour éviter qu'il ne soit désactivé, envoyez 'INFO' dans les prochaines 24 heures.Pour plus d'informations, visitez signalboost.info/how-to. ",
 
   channelDestructionFailed: phoneNumber =>
@@ -506,8 +506,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
       : `le message a dépassé le seuil de renvoi et ne sera pas renvoyé`
   }`,
 
-  recycleChannelFailed: phoneNumber =>
-    `Échec du recyclage de la chaîne pour le numéro de téléphone: ${phoneNumber}`,
+  destroyChannelFailed: phoneNumber =>
+    `Échec de la destruction du canal pour le numéro de téléphone: ${phoneNumber}`,
 
   restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",

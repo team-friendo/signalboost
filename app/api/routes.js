@@ -69,7 +69,7 @@ const routesOf = async router => {
 
   router.post('/phoneNumbers/recycle', async ctx => {
     const { phoneNumbers } = ctx.request.body
-    const result = await phoneNumberService.requestToRecycle(phoneNumbers.split(','))
+    const result = await phoneNumberService.requestToDestroy(phoneNumbers.split(','))
     merge(ctx, { status: httpStatusOfMany(result), body: result })
   })
 

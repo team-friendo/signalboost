@@ -1,7 +1,7 @@
 const { isPhoneNumber } = require('../validations')
 
-const recycleRequestOf = (sequelize, Sequelize) => {
-  const recycleRequest = sequelize.define('recycleRequest', {
+const destructionRequestOf = (sequelize, Sequelize) => {
+  const destructionRequest = sequelize.define('destructionRequest', {
     channelPhoneNumber: {
       type: Sequelize.STRING,
       primaryKey: true,
@@ -27,11 +27,11 @@ const recycleRequestOf = (sequelize, Sequelize) => {
     },
   })
 
-  recycleRequest.associate = db => {
-    recycleRequest.belongsTo(db.channel)
+  destructionRequest.associate = db => {
+    destructionRequest.belongsTo(db.channel)
   }
 
-  return recycleRequest
+  return destructionRequest
 }
 
-module.exports = { recycleRequestOf }
+module.exports = { destructionRequestOf }

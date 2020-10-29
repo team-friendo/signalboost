@@ -374,17 +374,17 @@ describe('routes', () => {
   })
 
   describe('POST to /phoneNumbers/recycle', () => {
-    let requestToRecycle
-    beforeEach(() => (requestToRecycle = sinon.stub(phoneNumberService, 'requestToRecycle')))
-    afterEach(() => requestToRecycle.restore())
+    let requestToDestroy
+    beforeEach(() => (requestToDestroy = sinon.stub(phoneNumberService, 'requestToDestroy')))
+    afterEach(() => requestToDestroy.restore())
 
-    describe('when recycle request succeeds', () => {
+    describe('when destruction request succeeds', () => {
       beforeEach(() =>
-        requestToRecycle.returns(
+        requestToDestroy.returns(
           Promise.resolve([
             {
               status: 'SUCCESS',
-              message: 'Issued request to recycle +19382223543',
+              message: 'Issued request to destroy +19382223543',
             },
           ]),
         ),
@@ -399,13 +399,13 @@ describe('routes', () => {
       })
     })
 
-    describe('when recycle request fails', () => {
+    describe('when destruction request fails', () => {
       beforeEach(() =>
-        requestToRecycle.returns(
+        requestToDestroy.returns(
           Promise.resolve([
             {
               status: 'ERROR',
-              message: '+16154804259 has already been enqueued for recycling.',
+              message: '+16154804259 has already been enqueued for destruction.',
             },
           ]),
         ),

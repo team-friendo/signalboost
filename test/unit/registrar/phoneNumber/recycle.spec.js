@@ -2,8 +2,8 @@ import { expect } from 'chai'
 import { afterEach, beforeEach, describe, it } from 'mocha'
 import phoneNumberService, {
   recycle,
-  requestToRecycle,
-  processRecycleRequests,
+  requestToDestroy,
+  processDestructionRequests,
 } from '../../../../app/registrar/phoneNumber'
 import sinon from 'sinon'
 import eventRepository from '../../../../app/db/repositories/event'
@@ -11,7 +11,7 @@ import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import { eventTypes } from '../../../../app/db/models/event'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import channelRepository from '../../../../app/db/repositories/channel'
-import recycleRequestRepository from '../../../../app/db/repositories/recycleRequest'
+import destructionRequestRepository from '../../../../app/db/repositories/destructionRequest'
 import notifier, { notificationKeys } from '../../../../app/notifier'
 import { times, map, flatten } from 'lodash'
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
@@ -28,7 +28,7 @@ describe('phone number registrar -- recycle module', () => {
     notifyAdminsStub,
     notifyMaintainersStub,
     notifyMembersStub,
-    requestToRecycleStub
+    requestToDestroyStub
 
   beforeEach(() => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
@@ -38,7 +38,7 @@ describe('phone number registrar -- recycle module', () => {
     notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
     notifyMembersStub = sinon.stub(notifier, 'notifyMembers')
     notifyAdminsStub = sinon.stub(notifier, 'notifyAdmins')
-    requestToRecycleStub = sinon.stub(recycleRequestRepository, 'requestToRecycle')
+    requestToDestroyStub = sinon.stub(destructionRequestRepository, 'requestToDestroy')
   })
 
   afterEach(() => sinon.restore())
@@ -48,25 +48,25 @@ describe('phone number registrar -- recycle module', () => {
       Promise.resolve({ phoneNumber, status }),
     )
 
-  describe('#requestToRecycle', () => {
+  describe('#requestToDestroy', () => {
     describe('when a phone number does not belong to a valid channel', () => {
       beforeEach(async () => {
         findChannelStub.returns(Promise.resolve(null))
       })
 
       it('returns an ERROR status and message', async () => {
-        expect(await requestToRecycle(phoneNumbers)).to.have.deep.members([
+        expect(await requestToDestroy(phoneNumbers)).to.have.deep.members([
           {
             status: 'ERROR',
             message: `${
               phoneNumbers[0]
-            } must be associated with a channel in order to be recycled.`,
+            } must be associated with a channel in order to be destroyed.`,
           },
           {
             status: 'ERROR',
             message: `${
               phoneNumbers[1]
-            } must be associated with a channel in order to be recycled.`,
+            } must be associated with a channel in order to be destroyed.`,
           },
         ])
       })
@@ -77,18 +77,18 @@ describe('phone number registrar -- recycle module', () => {
         findChannelStub.callsFake(phoneNumber => Promise.resolve(channelFactory({ phoneNumber })))
       })
 
-      describe('when a recycle request has already been issued for the phone number', () => {
+      describe('when a destruction request has already been issued for the phone number', () => {
         beforeEach(() => {
-          requestToRecycleStub.returns(Promise.resolve({ wasCreated: false }))
+          requestToDestroyStub.returns(Promise.resolve({ wasCreated: false }))
         })
 
-        it('attempts to issue a recycle request', async () => {
-          await requestToRecycle(phoneNumbers)
-          expect(requestToRecycleStub.callCount).to.eql(2)
+        it('attempts to issue a destruction request', async () => {
+          await requestToDestroy(phoneNumbers)
+          expect(requestToDestroyStub.callCount).to.eql(2)
         })
 
         it('returns an ERROR status and message', async () => {
-          expect(await requestToRecycle(phoneNumbers)).to.have.deep.members([
+          expect(await requestToDestroy(phoneNumbers)).to.have.deep.members([
             {
               status: 'ERROR',
               message: `${phoneNumbers[0]} has already been enqueued for recycling.`,
@@ -101,13 +101,13 @@ describe('phone number registrar -- recycle module', () => {
         })
       })
 
-      describe('when no recycle requests have been issued for any phone numbers', () => {
+      describe('when no destruction requests have been issued for any phone numbers', () => {
         beforeEach(() => {
-          requestToRecycleStub.returns(Promise.resolve({ wasCreated: true }))
+          requestToDestroyStub.returns(Promise.resolve({ wasCreated: true }))
         })
 
         it('returns a SUCCESS status and message', async () => {
-          expect(await requestToRecycle(phoneNumbers)).to.have.deep.members([
+          expect(await requestToDestroy(phoneNumbers)).to.have.deep.members([
             {
               status: 'SUCCESS',
               message: `Issued request to recycle ${phoneNumbers[0]}.`,
@@ -119,8 +119,8 @@ describe('phone number registrar -- recycle module', () => {
           ])
         })
 
-        it('notifies the channel admins that their channel will be recycled soon', async () => {
-          await requestToRecycle(phoneNumbers)
+        it('notifies the channel admins that their channel will be destroyed soon', async () => {
+          await requestToDestroy(phoneNumbers)
           notifyAdminsStub
             .getCalls()
             .map(call => call.args)
@@ -136,16 +136,16 @@ describe('phone number registrar -- recycle module', () => {
       beforeEach(() => findChannelStub.callsFake(() => Promise.reject('DB err')))
 
       it('returns an ERROR status and message', async () => {
-        const result = await requestToRecycle(phoneNumbers)
+        const result = await requestToDestroy(phoneNumbers)
 
         expect(result).to.have.deep.members([
           {
             status: 'ERROR',
-            message: `Database error trying to issue recycle request for ${phoneNumbers[0]}.`,
+            message: `Database error trying to issue destruction request for ${phoneNumbers[0]}.`,
           },
           {
             status: 'ERROR',
-            message: `Database error trying to issue recycle request for ${phoneNumbers[1]}.`,
+            message: `Database error trying to issue destruction request for ${phoneNumbers[1]}.`,
           },
         ])
       })
@@ -167,23 +167,23 @@ describe('phone number registrar -- recycle module', () => {
           .callsFake(createChannelFake)
           .onCall(3)
           .callsFake(createChannelFake)
-        requestToRecycleStub
+        requestToDestroyStub
           .onCall(0)
           .callsFake(requestNotIssuedFake)
           .onCall(1)
           .callsFake(requestIssuedFake)
       })
       it('returns different results for each phone number', async () => {
-        expect(await requestToRecycle(_phoneNumbers)).to.eql([
+        expect(await requestToDestroy(_phoneNumbers)).to.eql([
           {
             status: 'ERROR',
-            message: `Database error trying to issue recycle request for ${_phoneNumbers[0]}.`,
+            message: `Database error trying to issue destruction request for ${_phoneNumbers[0]}.`,
           },
           {
             status: 'ERROR',
             message: `${
               _phoneNumbers[1]
-            } must be associated with a channel in order to be recycled.`,
+            } must be associated with a channel in order to be destroyed.`,
           },
           {
             status: 'ERROR',
@@ -226,7 +226,7 @@ describe('phone number registrar -- recycle module', () => {
         it('returns a failed status', async () => {
           expect(await recycle(phoneNumber)).to.eql({
             status: 'ERROR',
-            message: `${phoneNumber} failed to be recycled. Error: Failed to broadcast message`,
+            message: `${phoneNumber} failed to be destroyed. Error: Failed to broadcast message`,
           })
         })
       })
@@ -267,11 +267,11 @@ describe('phone number registrar -- recycle module', () => {
               expect(destroyChannelStub.callCount).to.eql(1)
             })
 
-            it('returns successful recycled phone number statuses', async () => {
+            it('returns successful destroyed phone number statuses', async () => {
               const response = await recycle(phoneNumber)
               expect(response).to.eql({
                 status: 'SUCCESS',
-                message: `${phoneNumber} recycled.`,
+                message: `${phoneNumber} destroyed.`,
               })
             })
           })
@@ -287,7 +287,7 @@ describe('phone number registrar -- recycle module', () => {
               const response = await recycle(phoneNumber)
               expect(response).to.eql({
                 status: 'ERROR',
-                message: `${phoneNumber} failed to be recycled. Error: DB phoneNumber update failure`,
+                message: `${phoneNumber} failed to be destroyed. Error: DB phoneNumber update failure`,
               })
             })
           })
@@ -303,16 +303,16 @@ describe('phone number registrar -- recycle module', () => {
           const response = await recycle(phoneNumber)
           expect(response).to.eql({
             status: 'ERROR',
-            message: `${phoneNumber} failed to be recycled. Error: Failed to destroy channel`,
+            message: `${phoneNumber} failed to be destroyed. Error: Failed to destroy channel`,
           })
         })
       })
     })
   })
 
-  describe('#processRecycleRequests', () => {
-    const toRecycle = times(3, genPhoneNumber)
-    let getMatureRecycleRequestsStub, destroyRecycleRequestsStub
+  describe('#processDestructionRequests', () => {
+    const toDestroy = times(3, genPhoneNumber)
+    let getMatureDestructionRequestsStub, destroyDestructionRequestsStub
 
     beforeEach(() => {
       // recycle helpers that should always succeed
@@ -322,16 +322,16 @@ describe('phone number registrar -- recycle module', () => {
       findChannelStub.callsFake(phoneNumber => Promise.resolve(channelFactory({ phoneNumber })))
 
       // processRecycle helpers that should always succeed
-      destroyRecycleRequestsStub = sinon
-        .stub(recycleRequestRepository, 'destroyMany')
-        .returns(Promise.resolve(toRecycle.length))
+      destroyDestructionRequestsStub = sinon
+        .stub(destructionRequestRepository, 'destroyMany')
+        .returns(Promise.resolve(toDestroy.length))
       notifyMaintainersStub.returns(Promise.resolve(['42']))
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
 
-      // if this fails, processRecycleRequests will fail
-      getMatureRecycleRequestsStub = sinon.stub(
-        recycleRequestRepository,
-        'getMatureRecycleRequests',
+      // if this fails, processDestructionRequests will fail
+      getMatureDestructionRequestsStub = sinon.stub(
+        destructionRequestRepository,
+        'getMatureDestructionRequests',
       )
     })
 
@@ -346,32 +346,32 @@ describe('phone number registrar -- recycle module', () => {
           .onCall(2)
           .callsFake(() => Promise.reject('BOOM!'))
         // overall job succeeds
-        getMatureRecycleRequestsStub.returns(Promise.resolve(toRecycle))
-        await processRecycleRequests()
+        getMatureDestructionRequestsStub.returns(Promise.resolve(toDestroy))
+        await processDestructionRequests()
       })
 
-      it('recycles channels with mature recycle requests', () => {
-        expect(flatten(map(destroyChannelStub.getCalls(), 'args'))).to.eql(toRecycle)
+      it('recycles channels with mature destruction requests', () => {
+        expect(flatten(map(destroyChannelStub.getCalls(), 'args'))).to.eql(toDestroy)
       })
 
-      it('destroys all recycle requests that were just processed', () => {
-        expect(destroyRecycleRequestsStub.getCall(0).args).to.eql([toRecycle])
+      it('destroys all destruction requests that were just processed', () => {
+        expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([toDestroy])
       })
 
       it('notifies maintainers of results', () => {
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          '3 recycle requests processed:\n\n' +
-            `${toRecycle[0]} recycled.\n` +
-            `${toRecycle[1]} recycled.\n` +
-            `${toRecycle[2]} failed to be recycled. Error: BOOM!`,
+          '3 destruction requests processed:\n\n' +
+            `${toDestroy[0]} destroyed.\n` +
+            `${toDestroy[1]} destroyed.\n` +
+            `${toDestroy[2]} failed to be destroyed. Error: BOOM!`,
         ])
       })
     })
 
     describe('when job fails', () => {
-      beforeEach(() => getMatureRecycleRequestsStub.callsFake(() => Promise.reject('BOOM!')))
+      beforeEach(() => getMatureDestructionRequestsStub.callsFake(() => Promise.reject('BOOM!')))
       it('notifies maintainers of error', async () => {
-        await processRecycleRequests()
+        await processDestructionRequests()
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
           'Error processing recycle job: BOOM!',
         ])
@@ -380,19 +380,19 @@ describe('phone number registrar -- recycle module', () => {
   })
   describe('#redeem', () => {
     const channelToRedeem = deepChannelFactory({ phoneNumber })
-    let destroyRecycleRequestStub
-    beforeEach(() => (destroyRecycleRequestStub = sinon.stub(recycleRequestRepository, 'destroy')))
+    let destroyDestructionRequestStub
+    beforeEach(() => (destroyDestructionRequestStub = sinon.stub(destructionRequestRepository, 'destroy')))
 
     describe('when all tasks succeed', () => {
       beforeEach(async () => {
-        destroyRecycleRequestStub.returns(Promise.resolve(1))
+        destroyDestructionRequestStub.returns(Promise.resolve(1))
         notifyMaintainersStub.returns(Promise.resolve(['42']))
         notifyAdminsStub.returns(Promise.resolve(['42', '42']))
         await redeem(channelToRedeem)
       })
 
-      it('deletes the recycle requests for redeemed channels', () => {
-        expect(destroyRecycleRequestStub.getCall(0).args).to.eql([phoneNumber])
+      it('deletes the destruction requests for redeemed channels', () => {
+        expect(destroyDestructionRequestStub.getCall(0).args).to.eql([phoneNumber])
       })
 
       it('notifies admins of redeemed channels of redemption', () => {

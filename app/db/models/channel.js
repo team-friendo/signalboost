@@ -65,7 +65,7 @@ const channelOf = (sequelize, DataTypes) => {
     channel.hasMany(db.invite, associationDefaults)
     channel.hasMany(db.membership, associationDefaults)
     channel.hasOne(db.messageCount, associationDefaults)
-    channel.hasOne(db.recycleRequest, associationDefaults)
+    channel.hasOne(db.destructionRequest, associationDefaults)
   }
 
   return channel

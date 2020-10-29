@@ -370,13 +370,13 @@ describe('dispatcher module', () => {
       })
     })
 
-    describe('messages from a channel with a pending recycle request', () => {
+    describe('messages from a channel with a pending destruction request', () => {
       let redeemStub
       beforeEach(() => {
         findDeepStub.returns(
           Promise.resolve({
             ...channel,
-            recycleRequest: { channelPhoneNumber: channel.phoneNumber },
+            destructionRequest: { channelPhoneNumber: channel.phoneNumber },
           }),
         )
         redeemStub = sinon.stub(phoneNumberRegistrar, 'redeem').returns(Promise.resolve())

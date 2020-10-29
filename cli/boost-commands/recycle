@@ -6,7 +6,7 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "  boost recycle -p +12223334444,+15556667777"
   echo ""
   echo "Valid options are:"
-  echo "  -p : phone numbers to be recycled"
+  echo "  -p : phone numbers to be destroyed"
   echo "  -e : path to .env file (in dev, use .env.dev)";
   echo ""
   echo "Warning: This will delete all channel/membership data related to these phone numbers!"
@@ -33,7 +33,7 @@ check-env ${env_file}
 
 if [[ -z "$phone_numbers" ]]
 then
-  echo "> ERROR: you must provide at least one phone number after the -p flag to recycle"
+  echo "> ERROR: you must provide at least one phone number after the -p flag to destroy"
   exit 1
 elif [[ ! ${phone_numbers} =~ ^(\+[0-9]{9,15}(,?))+$ ]];then
   echo "> ERROR: -p must be a comma-delimited list of valid phone numbers prefixed by a country code"

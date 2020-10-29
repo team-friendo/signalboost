@@ -45,7 +45,7 @@ describe('channel repository', () => {
   })
   afterEach(async () => {
     await Promise.all([
-      db.recycleRequest.destroy({ where: {} }),
+      db.destructionRequest.destroy({ where: {} }),
       db.membership.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
       db.invite.destroy({ where: {}, force: true }),
@@ -184,7 +184,7 @@ describe('channel repository', () => {
             { model: db.invite },
             { model: db.membership },
             { model: db.messageCount },
-            { model: db.recycleRequest },
+            { model: db.destructionRequest },
           ],
         })
         result = await channelRepository.findDeep(channel.phoneNumber)
@@ -202,7 +202,7 @@ describe('channel repository', () => {
         expect(omit(result.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
           attrs.messageCount,
         )
-        expect(result.recycleRequest.channelPhoneNumber).to.eql(channel.phoneNumber)
+        expect(result.destructionRequest.channelPhoneNumber).to.eql(channel.phoneNumber)
       })
     })
 
@@ -214,7 +214,7 @@ describe('channel repository', () => {
             { model: db.invite },
             { model: db.membership },
             { model: db.messageCount },
-            { model: db.recycleRequest },
+            { model: db.destructionRequest },
           ],
         })
         result = await channelRepository.findDeep(channel.phoneNumber)
@@ -225,7 +225,7 @@ describe('channel repository', () => {
         expect(result.invites).to.eql([])
         expect(result.memberships).to.eql([])
         expect(result.messageCount).to.be.null
-        expect(result.recycleRequest).to.be.null
+        expect(result.destructionRequest).to.be.null
       })
     })
   })
@@ -242,7 +242,7 @@ describe('channel repository', () => {
               { model: db.invite },
               { model: db.membership },
               { model: db.messageCount },
-              { model: db.recycleRequest },
+              { model: db.destructionRequest },
             ],
           }),
         ),
@@ -270,7 +270,7 @@ describe('channel repository', () => {
           'invites',
           'memberships',
           'messageCount',
-          'recycleRequest',
+          'destructionRequest',
           'socketId',
           'subscriberLimit',
         ])

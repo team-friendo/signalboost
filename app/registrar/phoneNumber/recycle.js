@@ -1,7 +1,7 @@
 const channelRepository = require('../../db/repositories/channel')
 const eventRepository = require('../../db/repositories/event')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const recycleRequestRepository = require('../../db/repositories/recycleRequest')
+const destructionRequestRepository = require('../../db/repositories/destructionRequest')
 const common = require('./common')
 const notifier = require('../../notifier')
 const { notificationKeys } = notifier
@@ -10,7 +10,7 @@ const { eventTypes } = require('../../db/models/event')
 const { map } = require('lodash')
 
 // (Array<string>) -> Promise<SignalboostStatus>
-const requestToRecycle = async phoneNumbers => {
+const requestToDestroy = async phoneNumbers => {
   return await Promise.all(
     phoneNumbers.map(async phoneNumber => {
       try {
@@ -18,10 +18,10 @@ const requestToRecycle = async phoneNumbers => {
         if (!channel)
           return {
             status: statuses.ERROR,
-            message: `${phoneNumber} must be associated with a channel in order to be recycled.`,
+            message: `${phoneNumber} must be associated with a channel in order to be destroyed.`,
           }
 
-        const { wasCreated } = await recycleRequestRepository.requestToRecycle(phoneNumber)
+        const { wasCreated } = await destructionRequestRepository.requestToDestroy(phoneNumber)
         if (!wasCreated)
           return {
             status: statuses.ERROR,
@@ -37,7 +37,7 @@ const requestToRecycle = async phoneNumbers => {
       } catch (e) {
         return {
           status: statuses.ERROR,
-          message: `Database error trying to issue recycle request for ${phoneNumber}.`,
+          message: `Database error trying to issue destruction request for ${phoneNumber}.`,
         }
       }
     }),
@@ -45,18 +45,18 @@ const requestToRecycle = async phoneNumbers => {
 }
 
 // () -> Promise<Array<string>>
-const processRecycleRequests = async () => {
+const processDestructionRequests = async () => {
   try {
-    const phoneNumbersToRecycle = await recycleRequestRepository.getMatureRecycleRequests()
-    const recycleResults = await Promise.all(phoneNumbersToRecycle.map(recycle))
-    await recycleRequestRepository.destroyMany(phoneNumbersToRecycle)
+    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionRequests()
+    const destructionResults = await Promise.all(phoneNumbersToDestroy.map(recycle))
+    await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
 
     return Promise.all([
-      phoneNumbersToRecycle.length === 0
+      phoneNumbersToDestroy.length === 0
         ? Promise.resolve()
         : notifier.notifyMaintainers(
-            `${phoneNumbersToRecycle.length} recycle requests processed:\n\n` +
-              `${map(recycleResults, 'message').join('\n')}`,
+            `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
+              `${map(destructionResults, 'message').join('\n')}`,
           ),
     ])
   } catch (err) {
@@ -67,7 +67,7 @@ const processRecycleRequests = async () => {
 // (Channel) -> Promise<void>
 const redeem = async channel => {
   try {
-    await recycleRequestRepository.destroy(channel.phoneNumber)
+    await destructionRequestRepository.destroy(channel.phoneNumber)
     await Promise.all([
       notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
       notifier.notifyMaintainers(
@@ -91,14 +91,14 @@ const recycle = async phoneNumber => {
     await phoneNumberRepository.update(phoneNumber, { status: common.statuses.VERIFIED })
     return {
       status: statuses.SUCCESS,
-      message: `${phoneNumber} recycled.`,
+      message: `${phoneNumber} destroyed.`,
     }
   } catch (err) {
     return {
       status: 'ERROR',
-      message: `${phoneNumber} failed to be recycled. Error: ${err}`,
+      message: `${phoneNumber} failed to be destroyed. Error: ${err}`,
     }
   }
 }
 
-module.exports = { requestToRecycle, processRecycleRequests, recycle, redeem }
+module.exports = { requestToDestroy, processDestructionRequests, recycle, redeem }
