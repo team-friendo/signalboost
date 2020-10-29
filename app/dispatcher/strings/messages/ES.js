@@ -277,8 +277,8 @@ Intenta emitir nuevamente INVITAR para los siguientes números:
       
 ${failedPhoneNumbers.join(',')}`,
 
-    subscriberLimitReached: (subscriberLimit, numInvitees) =>
-      `¿Estas intentando invitar a ${subscriberLimit} nuevos suscriptores? Lo sentimos, eso haría que este canal exceda su límite de ${numInvitees} suscriptores.`,
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `¿Estás intentando invitar a ${numInvitees} nuevos suscriptores? Lo sentimos, este canal está limitado a ${subscriberLimit} suscriptores y ya tiene ${subscriberCount} suscriptores.`,
   },
 
   // JOIN

@@ -276,8 +276,8 @@ Veuillez réessayer d'émettre INVITER pour les numéros suivants:
 
 ${failedPhoneNumbers.join(',')}`,
 
-    subscriberLimitReached: (subscriberLimit, numInvitees) =>
-      `Essayez-vous d'inviter ${numInvitees} nouveaux abonnés? Désolé, cette chaîne a une limite de ${subscriberLimit} abonnés.`,
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `Vous essayez d'inviter ${numInvitees} nouveaux abonnés? Désolé, cette canal est limitée à ${subscriberLimit} abonnés et compte déjà ${subscriberCount} abonnés.`,
   },
 
   // JOIN

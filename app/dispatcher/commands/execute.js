@@ -321,7 +321,11 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (!channelRepository.canAddSubscribers(channel, inviteePhoneNumbers.length))
     return {
       status: statuses.ERROR,
-      message: cr.subscriberLimitReached(channel.subscriberLimit, inviteePhoneNumbers.length),
+      message: cr.subscriberLimitReached(
+        inviteePhoneNumbers.length,
+        channel.subscriberLimit,
+        getSubscriberMemberships(channel).length,
+      ),
     }
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
   if (sender.type !== ADMIN && channel.vouchMode === vouchModes.ADMIN)

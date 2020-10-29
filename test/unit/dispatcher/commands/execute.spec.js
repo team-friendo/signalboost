@@ -887,7 +887,8 @@ describe('executing commands', () => {
     })
 
     describe('when invites would cause channel to exceed subscriber limit', () => {
-      const subscriberLimit = getSubscriberMemberships(channel).length + 1
+      const subscriberCount = getSubscriberMemberships(channel).length
+      const subscriberLimit = subscriberCount + 1
       const dispatchable = { channel: { ...channel, subscriberLimit }, sdMessage, sender: admin }
 
       it('returns an ERROR status', async () => {
@@ -896,8 +897,9 @@ describe('executing commands', () => {
           payload: inviteePhoneNumbers,
           status: statuses.ERROR,
           message: commandResponsesFor(admin).invite.subscriberLimitReached(
+            inviteePhoneNumbers.length,
             subscriberLimit,
-            2,
+            subscriberCount,
           ),
           notifications: [],
         })

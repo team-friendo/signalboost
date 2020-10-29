@@ -265,8 +265,8 @@ Please trying issuing INVITE again for the following numbers:
 
 ${failedPhoneNumbers.join(',')}`,
 
-    subscriberLimitReached: (subscriberLimit, numInvitees) =>
-      `Trying to invite ${numInvitees} new subscriber(s)? Sorry, this channel has a limit of ${subscriberLimit} subscribers.`,
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `Trying to invite ${numInvitees} new subscriber(s)? Sorry, this channel is limited to ${subscriberLimit} subscribers and already has ${subscriberCount} subscribers.`,
   },
 
   // JOIN

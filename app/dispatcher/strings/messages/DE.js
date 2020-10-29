@@ -274,8 +274,8 @@ ${support}`,
   
   ${failedPhoneNumbers.join(',')}`,
 
-    subscriberLimitReached: (subscriberLimit, numInvitees) =>
-      `Versuchen Sie, ${subscriberLimit} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal hat ein Limit von ${numInvitees} Abonnenten.`,
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `Versuchen Sie, ${numInvitees} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal ist auf ${subscriberLimit} Abonnenten begrenzt und hat bereits ${subscriberCount} Abonnenten.`,
   },
 
   // JOIN
