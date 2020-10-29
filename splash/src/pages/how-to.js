@@ -54,18 +54,19 @@ export default () => (
     </p>
     <p>
       You can publish your channel phone number on Instagram or keep it to a
-      close circle. Importantly, after your channel hits 500 subscribers, new
-      members will be prevented from subscribing until existing subscribers
-      leave. Your channel will also take longer to send out broadcasts the
-      bigger it grows. (At a few hundred subscribers, expect broadcasts to take
-      5-10 minutes.)
+      close circle. Note: after your channel hits 500 subscribers, new users
+      will be prevented from subscribing until existing subscribers leave. Your
+      channel will also take longer to send broadcasts the bigger it grows: ~1-2
+      minutes on a channel with 250 subscribers vs. ~5-10 minutes on a channel
+      with 500 subscribers.
     </p>
     <p>
       If you are in an urgent situation and would like to request a larger
-      channel you can do so via 947-BOOSTIT (+1-947-800-5717). However, large
-      channels put stress on our servers and team. We are working hard to make
-      Signalboost support channels bigger than 500, but that work requires time
-      and resources. You can help us get there by
+      channel you can do so by sending us a special request via Signal message
+      at 947-BOOSTIT (+1-947-800-5717). However, please note that large channels
+      put stress on our servers and team. We are working hard to make
+      Signalboost support channels over 500 subscribers, but that work requires
+      time and resources. You can help us get there by{' '}
       <Link to="/donate">donating!</Link>
     </p>
     <h2>Signalboost Guide</h2>
