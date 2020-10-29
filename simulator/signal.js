@@ -8,94 +8,20 @@ const { statuses, loggerOf } = util
 const {
   signal: { diagnosticsPhoneNumber, broadcastSpacing },
 } = require('../app/config')
-
-/**
- *
- * type Address = {
- *   number: ?string,
- *   uuid: ?string,
- * }
- *
- * type InboundSignaldMessage = {
- *   type: "message",
- *   data: {
- *     username: string,
- *     source: Address,
- *     sourceDevice: number,
- *     type: string,
- *     dataMessage: ?{
- *       timestamp: number,
- *       body: string,
- *       expiresInSeconds: number,
- *       endSession: bool,
- *       profileKeyUpdate: bool,
- *       attachments: Array<InAttachment>?,
- *     }
- *   }
- * }
- *
- * type InboundAttachment = {
- *   contentType: string,
- *   id: number,
- *   size: number,
- *   storedFilename: string,
- *   width: number,
- *   height: number,
- *   voiceNote: boolean,
- *   preview: { present: boolean },
- *   key: string, (base64)
- *   digest: string, (base64)
- * }
- *
- * type ResendRequest = {
- *   type: "send",
- *   username: string,
- *   recipientAddress, ?Address, (must include either recipientId or recipientGroupId)
- *   messageBody: string,
- *   attachments: Array<InAttachment>,
- *   quote: ?QuoteObject, (ingoring)
- * }
- *
- * type OutboundSignaldMessage = {
- *   type: "send",
- *   username: string,
- *   recipientAddress, ?Address, (must include either recipientId or recipientGroupId)
- *   recipientGroupId: ?string,
- *   messageBody: string,
- *   attachments: Array<OutAttachment>,
- *   quote: ?QuoteObject, (ingoring)
- * }
- *
- * type OutboundAttachment = {
- *   filename: string (The filename of the attachment) == `storedFilename`
- *   caption: string (An optional caption) == ../../dataMessage.message
- *   width: int (The width of the image) == width
- *   height: int (The height of the image) == height
- *   voiceNote: bool (True if this attachment is a voice note) == voiceNote
- *   preview: string (The preview data to send, base64 encoded) == preview
- * }
- *
- * type SignalIdentity -= {
- *   trust_level: "TRUSTED" | "TRUSTED_UNVERIFIED" | "UNTRUSTED"
- *   added: string, // millis from epoc
- *   fingerprint: string // 32 space-separated 32 hex octets
- *   safety_number: string, // 60 digit number
- *   username: string, // valid phone number
- * }
- *
- * */
-
 const logger = loggerOf('signal')
 
 /**********************
  * STARTUP
  **********************/
 
-const run = async (botPhoneNumbers) => {
+const run = async (botPhoneNumbers, dbPool) => {
   logger.log(`--- Creating bot phoneNumbers...`)
   try {
-    await Promise.all(botPhoneNumbers.map(register))
-    logger.log(`--- Created boot phoneNumbers!`)
+    for (pn of botPhoneNumbers) {
+      await register(pn, null, dbPool)
+      await util.wait(1000)
+    }
+    logger.log(`--- Created bot phoneNumbers!!`)
     await Promise.all(botPhoneNumbers.map(subscribe))
     logger.log(`--- Subscribed bot phoneNumbers!`)
     return
@@ -110,15 +36,17 @@ const run = async (botPhoneNumbers) => {
  ********************/
 
 // (string, string || null) -> Promise<SignalboostStatus>
-const register = async (phoneNumber, captchaToken) => {
+const register = async (phoneNumber, captchaToken, dbPool) => {
+  logger.log(`${phoneNumber}: Registering...`)
   socketWriter.write({
     type: messageTypes.REGISTER,
     username: phoneNumber,
     ...(captchaToken ? { captcha: captchaToken } : {}),
   })
 
-  await util.wait(3000)
-  await verify(phoneNumber)
+  await util.wait(10000)
+  logger.log(`${phoneNumber}: Verifying...`)
+  await verify(phoneNumber, dbPool)
 
   return new Promise((resolve, reject) =>
     callbacks.register({
@@ -131,22 +59,30 @@ const register = async (phoneNumber, captchaToken) => {
 }
 
 // (string, string) -> Promise<SignalboostStatus>
-const verify = async (phoneNumber) => {
+const verify = async (phoneNumber, dbPool) => {
 
   const params = new URLSearchParams()
   params.append('number', phoneNumber)
 
-  const code = await fetch("http://signal_sms_codes:8082/helper/verification-code", {
-    method: 'POST',
-    body: params
-  }).then(response => response.json())
-
-  logger.log("VERIFY CODE: " + code)
+  const code = await fetchVerificationCode(phoneNumber, dbPool)
 
   return socketWriter
     .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
+}
+
+const fetchVerificationCode = async (phoneNumber, dbPool) => {  
+  const query = "SELECT verification_code FROM pending_accounts WHERE number = $1;"
+  
+  try {
+    const { rows } = await dbPool.query(query, [phoneNumber])
+    const verification_code = rows[0]["verification_code"]
+    return verification_code
+  } catch (e) {
+    logger.error(`${phoneNumber}: Failed to fetch verification code`)
+    logger.error(e)
+  }
 }
 
 // string -> Promise<string>

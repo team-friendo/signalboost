@@ -68,8 +68,6 @@ const _timeoutFor = messageType =>
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
 const handle = message => {
-  logger.log(JSON.stringify(message, null, 2))
-
   const { callback, resolve, reject, state } = {
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
