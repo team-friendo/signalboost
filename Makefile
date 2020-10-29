@@ -120,6 +120,11 @@ db.migrate.down: # undo last migration
 db.migrate.status: # check migration statuses
 	./bin/dev/migrate-status
 
+dev.psql: # get a psql shell on dev db
+	./bin/dev/psql
+
+prod.psql: # get a psql shell on prod db
+	./bin/prod/psql
 
 ##########################
 # start and stop the app #

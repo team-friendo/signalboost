@@ -4,17 +4,22 @@ pushd `pwd` > /dev/null # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- running db container..."
+if [ -z $(docker ps -qf name=signalboost_db) ];then
+  echo "--- starting db container..."
+  docker-compose up -d db
 
-docker-compose -f docker-compose.yml run -d db
+  sleep 4
 
-sleep 4
+  echo "--- running psql..."
+  docker-compose exec db psql -U postgres -d signalboost
 
-echo "--- running psql..."
+  echo "--- shutting down db..."
+  docker-compose stop db
 
-docker exec -it \
-       $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}') \
-       psql -U postgres -d \
-       signalboost
+else
+  echo "--- running psql..."
+  docker-compose exec db psql -U postgres -d signalboost
+fi
+
 
 popd > /dev/null
