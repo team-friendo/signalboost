@@ -346,34 +346,6 @@ describe('routes', () => {
   })
 
   describe('DELETE to /phoneNumbers', () => {
-    let destroyStub
-    beforeEach(() => (destroyStub = sinon.stub(phoneNumberService, 'destroy')))
-    afterEach(() => destroyStub.restore())
-
-    describe('destroy service is successful', () => {
-      it('returns a success status', async () => {
-        destroyStub.returns({ status: 'SUCCESS' })
-        await request(api.server)
-          .delete('/phoneNumbers')
-          .set('Token', authToken)
-          .send({ phoneNumber: '+12223334444' })
-          .expect(200)
-      })
-    })
-
-    describe('destroy service is unsuccessful', () => {
-      it('returns an error status', async () => {
-        destroyStub.returns({ status: 'ERROR' })
-        await request(api.server)
-          .delete('/phoneNumbers')
-          .set('Token', authToken)
-          .send({ phoneNumber: '+12223334444' })
-          .expect(500)
-      })
-    })
-  })
-
-  describe('POST to /phoneNumbers/recycle', () => {
     let requestToDestroy
     beforeEach(() => (requestToDestroy = sinon.stub(phoneNumberService, 'requestToDestroy')))
     afterEach(() => requestToDestroy.restore())
@@ -392,7 +364,7 @@ describe('routes', () => {
 
       it('returns success status', async () => {
         await request(api.server)
-          .post('/phoneNumbers/recycle')
+          .delete('/phoneNumbers')
           .set('Token', authToken)
           .send({ phoneNumbers: '+19382223543' })
           .expect(200)
@@ -413,7 +385,7 @@ describe('routes', () => {
 
       it('returns error status', async () => {
         await request(api.server)
-          .post('/phoneNumbers/recycle')
+          .delete('/phoneNumbers')
           .set('Token', authToken)
           .send({ phoneNumbers: '+16154804259' })
           .expect(500)

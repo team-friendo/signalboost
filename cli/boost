@@ -24,7 +24,6 @@ print_usage(){
   echo "  list-channels"
   echo "  list-numbers"
   echo "  release-numbers"
-  echo "  recycle"
   echo "  register"
   echo ""
   echo "To learn what these commands do, run:"
@@ -41,9 +40,7 @@ if [[ $command != "help" ]] &&
      [[ $command != "list-channels" ]] &&
      [[ $command != "list-numbers" ]] &&
      [[ $command != "release-numbers" ]] &&
-     [[ $command != "recycle" ]] &&
-
- [[ $command != "register" ]]
+     [[ $command != "register" ]]
 then
   print_usage
   exit 1

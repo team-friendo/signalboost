@@ -60,14 +60,6 @@ const routesOf = async router => {
   })
 
   router.delete('/phoneNumbers', async ctx => {
-    const { phoneNumber } = ctx.request.body
-    const result = await phoneNumberService.destroy({
-      phoneNumber,
-    })
-    merge(ctx, { status: httpStatusOf(result.status), body: result })
-  })
-
-  router.post('/phoneNumbers/recycle', async ctx => {
     const { phoneNumbers } = ctx.request.body
     const result = await phoneNumberService.requestToDestroy(phoneNumbers.split(','))
     merge(ctx, { status: httpStatusOfMany(result), body: result })
