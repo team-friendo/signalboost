@@ -1,6 +1,6 @@
 const { isPhoneNumber } = require('../validations')
 const {
-  signal: { defaultMessageExpiryTime },
+  signal: { defaultMessageExpiryTime, defaultSubscriberLimit },
 } = require('../../config')
 
 const channelOf = (sequelize, DataTypes) => {
@@ -46,6 +46,11 @@ const channelOf = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    subscriberLimit: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: defaultSubscriberLimit,
     },
   })
 

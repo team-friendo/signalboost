@@ -8,7 +8,9 @@ import { statuses } from '../../../../app/util'
 import { defaultLanguage, languages } from '../../../../app/language'
 import signal from '../../../../app/signal'
 import diagnostics from '../../../../app/diagnostics'
-import channelRepository from '../../../../app/db/repositories/channel'
+import channelRepository, {
+  getSubscriberMemberships,
+} from '../../../../app/db/repositories/channel'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
@@ -85,6 +87,7 @@ describe('executing commands', () => {
     phoneNumber: '+13333333333',
     hotlineOn: true,
     vouchMode: vouchModes.OFF,
+    subscriberLimit: 1000,
     deauthorizations: [deauthorizationFactory()],
     memberships: [
       ...times(3, () =>
@@ -152,6 +155,21 @@ describe('executing commands', () => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
       acceptStub = sinon.stub(inviteRepository, 'accept')
+    })
+
+    describe('when channel has reached its subscriber limit', () => {
+      const subscriberLimit = getSubscriberMemberships(channel).length
+      const _dispatchable = merge({}, dispatchable, { channel: { subscriberLimit } })
+
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(_dispatchable)).to.eql({
+          command: commands.ACCEPT,
+          payload: '',
+          status: statuses.ERROR,
+          message: commandResponsesFor(randomPerson).accept.subscriberLimitReached(subscriberLimit),
+          notifications: [],
+        })
+      })
     })
 
     describe('when sender is already member of channel', () => {
@@ -868,6 +886,26 @@ describe('executing commands', () => {
       countInvitesStub = sinon.stub(inviteRepository, 'count')
     })
 
+    describe('when invites would cause channel to exceed subscriber limit', () => {
+      const subscriberCount = getSubscriberMemberships(channel).length
+      const subscriberLimit = subscriberCount + 1
+      const dispatchable = { channel: { ...channel, subscriberLimit }, sdMessage, sender: admin }
+
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.INVITE,
+          payload: inviteePhoneNumbers,
+          status: statuses.ERROR,
+          message: commandResponsesFor(admin).invite.subscriberLimitReached(
+            inviteePhoneNumbers.length,
+            subscriberLimit,
+            subscriberCount,
+          ),
+          notifications: [],
+        })
+      })
+    })
+
     // VOUCHING_ON
     describe('when vouch mode is ON', () => {
       const vouchingOnChannel = { ...channel, vouchMode: vouchModes.ON, vouchLevel: 1 }
@@ -1282,6 +1320,25 @@ describe('executing commands', () => {
     let addSubscriberStub
 
     beforeEach(() => (addSubscriberStub = sinon.stub(membershipRepository, 'addSubscriber')))
+
+    describe('when channel has reached its subscriber limit', () => {
+      const subscriberLimit = getSubscriberMemberships(channel).length
+      const dispatchable = {
+        channel: { ...channel, subscriberLimit },
+        sender: randomPerson,
+        sdMessage,
+      }
+
+      it('responds with an ERROR', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.JOIN,
+          payload: '',
+          status: statuses.ERROR,
+          message: commandResponsesFor(randomPerson).join.subscriberLimitReached(subscriberLimit),
+          notifications: [],
+        })
+      })
+    })
 
     describe('when vouch mode is on', () => {
       const vouchedChannel = { ...channel, vouchMode: vouchModes.ON }

@@ -12,7 +12,8 @@ const notAdmin =
   'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.'
 const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
-
+const subscriberLimitReached = subscriberLimit =>
+  `Sorry, this channel has reached its limit of ${subscriberLimit} subscribers.`
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const vouchModeDisplay = {
@@ -77,6 +78,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     belowVouchLevel: (channel, required, actual) =>
       `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
     dbError: 'Whoops! There was an error accepting your invite. Please try again!',
+    subscriberLimitReached,
   },
 
   // ADD
@@ -254,6 +256,7 @@ ${support}`,
     success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
     adminOnly: 'Sorry, only admins can invite people to this channel.',
     dbError: 'Oops! Failed to issue invitation. Please try again. :)',
+
     dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
       failedPhoneNumbers.length
     } out of ${inviteCount} phone numbers.
@@ -261,6 +264,9 @@ ${support}`,
 Please trying issuing INVITE again for the following numbers:
 
 ${failedPhoneNumbers.join(',')}`,
+
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `Trying to invite ${numInvitees} new subscriber(s)? Sorry, this channel is limited to ${subscriberLimit} subscribers and already has ${subscriberCount} subscribers.`,
   },
 
   // JOIN
@@ -276,6 +282,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
 If you already have an invite, try sending ACCEPT`,
     dbError: `Whoops! There was an error adding you to the channel. Please try again!`,
     alreadyMember: `Whoops! You are already a member of this channel.`,
+    subscriberLimitReached,
   },
 
   // LEAVE

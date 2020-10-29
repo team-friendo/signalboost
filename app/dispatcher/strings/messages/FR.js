@@ -12,7 +12,8 @@ const notAdmin =
   'Désolé, seul-e-s les admins sont autorisé-e-s à exécuter cette commande. Envoyez AIDE pour une liste de commandes valides.'
 const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné-e à ce canal. Envoyez BONJOUR pour vous abonner."
-
+const subscriberLimitReached = subscriberLimit =>
+  `Désolé, cette canal a atteint sa limite de ${subscriberLimit} abonnés.`
 const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
 
 const vouchModeDisplay = {
@@ -85,6 +86,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
       } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
     dbError:
       "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
+    subscriberLimitReached,
   },
 
   // ADD
@@ -264,6 +266,7 @@ ${support}`,
     success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
     adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette chaîne.',
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
+
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Oups! Échec de l'envoi des invitations pour ${
         failedPhoneNumbers.length
@@ -272,6 +275,9 @@ ${support}`,
 Veuillez réessayer d'émettre INVITER pour les numéros suivants:
 
 ${failedPhoneNumbers.join(',')}`,
+
+    subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
+      `Vous essayez d'inviter ${numInvitees} nouveaux abonnés? Désolé, cette canal est limitée à ${subscriberLimit} abonnés et compte déjà ${subscriberCount} abonnés.`,
   },
 
   // JOIN
@@ -288,6 +294,7 @@ Répondez avec AIDE pour en savoir plus ou AUREVOIR pour vous désinscrire.`,
 Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     dbError: `Oups! Une erreur s’est produite en tentant de vous ajouter au canal. Veuillez essayer de nouveau!`,
     alreadyMember: `Oups! Vous êtes déjà abonné-e à ce canal.`,
+    subscriberLimitReached,
   },
 
   // LEAVE

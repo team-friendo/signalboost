@@ -272,6 +272,7 @@ describe('channel repository', () => {
           'messageCount',
           'recycleRequest',
           'socketId',
+          'subscriberLimit',
         ])
       })
     })
@@ -383,6 +384,30 @@ describe('channel repository', () => {
       expect(map(await channelRepository.getMaintainers(), 'memberPhoneNumber')).to.have.members(
         map(diagnosticsChannel.memberships.slice(0, 2), 'memberPhoneNumber'),
       )
+    })
+  })
+
+  describe('selectors', () => {
+    describe('#canAddSubscribers', () => {
+      beforeEach(async () => {
+        ;[channel] = await createChannelsFromAttributes([
+          deepChannelFactory({ subscriberLimit: 4 }),
+        ])
+        expect(channelRepository.getSubscriberMemberships(channel).length).to.eql(2)
+      })
+
+      it('returns false when num subscribers exceeds subscriber limit', () => {
+        expect(channelRepository.canAddSubscribers(channel, 3)).to.eql(false)
+      })
+
+      it('returns true when num subscribers does not exceed subscriber limit', () => {
+        expect(channelRepository.canAddSubscribers(channel, 2)).to.eql(true)
+        expect(channelRepository.canAddSubscribers(channel, 1)).to.eql(true)
+      })
+
+      it('sets num subscribers to 1 if none provided', () => {
+        expect(channelRepository.canAddSubscribers(channel)).to.eql(true)
+      })
     })
   })
 })
