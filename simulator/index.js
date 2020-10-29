@@ -1,4 +1,5 @@
 const { range } = require('lodash')
+const { Pool } = require('pg')
 
 const app = {
   socketPool: null,
@@ -12,10 +13,19 @@ app.run = async ({ socketPool, signal }) => {
   app.socketPool = await socketService.run().catch(logger.fatalError)
 
   const firstBotNumber = 12223334000
-  const botCount = 10
+  const botCount = 100
   const botPhoneNumbers = range(firstBotNumber, firstBotNumber + botCount).map(pn => "+" + pn)
-  console.log(botPhoneNumbers)
-  await signalService.run(botPhoneNumbers).catch(logger.fatalError)
+
+  const dbPool = new Pool({
+    host: 'db',
+    user: 'signal',
+    database: 'signal',
+    password: 'password',
+    port: 5432,
+  })
+  
+  logger.log(`--- Creating ${botCount} bots...`)
+  await signalService.run(botPhoneNumbers, dbPool).catch(logger.fatalError)
 }
 
 module.exports = app
