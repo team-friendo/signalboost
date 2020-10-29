@@ -7,24 +7,22 @@ cd ../.. # cd to project root
 if [ -z $(docker ps -qf name=signalboost_db) ];then
   echo "--- starting db container..."
   docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
-  run -d db
+    up -d db
 
   sleep 4
 
   echo "--- running psql..."
-  docker exec -it \
-         $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}') \
-         psql -U postgres -d \
-         signalboost_development
+  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+    exec db psql -U postgres -d signalboost_development
+
   echo "--- shutting down db..."
-  docker stop $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}')
+  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+    stop db
 
 else
   echo "--- running psql..."
-  docker exec -it \
-         $(docker ps -qf name=signalboost_db | awk 'NR==1{print $1}') \
-         psql -U postgres -d \
-         signalboost_development
+  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+    exec db psql -U postgres -d signalboost_development
 fi
 
 popd > /dev/null
