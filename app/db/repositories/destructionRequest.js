@@ -3,7 +3,7 @@ const app = require('../../../app')
 const util = require('../../util')
 const { map } = require('lodash')
 const {
-  job: { destructionGracePeriod },
+  job: { channelDestructionGracePeriod },
 } = require('../../config')
 
 // (string) -> Promise<{ destructionRequest: DestructionRequest, wasCreated: boolean }>
@@ -31,7 +31,7 @@ const getMatureDestructionRequests = async () => {
   // Here, we find all the requests issued before the start of the grace period, and return their
   // phone numbers to the caller for destruction. We may safely assume they can be destroyed, becuase
   // if redeemed (in dispatcher.dispatch)
-  const gracePeriodStart = util.now().subtract(parseInt(destructionGracePeriod), 'ms')
+  const gracePeriodStart = util.now().subtract(parseInt(channelDestructionGracePeriod), 'ms')
   const matureRequests = await app.db.destructionRequest.findAll({
     where: { createdAt: { [Op.lte]: gracePeriodStart } },
   })

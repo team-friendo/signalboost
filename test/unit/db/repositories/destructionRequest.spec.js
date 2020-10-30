@@ -12,7 +12,7 @@ import { times, values } from 'lodash'
 import { channelFactory } from '../../../support/factories/channel'
 import { Op } from 'sequelize'
 const {
-  job: { destructionGracePeriod },
+  job: { channelDestructionGracePeriod },
 } = require('../../../../app/config')
 
 describe('destructionRequest repository', () => {
@@ -122,7 +122,7 @@ describe('destructionRequest repository', () => {
 
   describe('#getMatureDestructionRequests', () => {
     const now = moment().clone()
-    const gracePeriodStart = now.clone().subtract(destructionGracePeriod, 'ms')
+    const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
 
     const channelPhoneNumbers = {
       toDestroy: genPhoneNumber(),
