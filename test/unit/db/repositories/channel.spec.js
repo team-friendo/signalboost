@@ -1,18 +1,19 @@
 import { expect } from 'chai'
 import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
-import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
-import channelRepository, {
-  getChannelsSortedBySize,
-  isMaintainer,
-} from '../../../../app/db/repositories/channel'
+import moment from 'moment'
+import sinon from 'sinon'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
+import util from '../../../../app/util'
+import channelRepository from '../../../../app/db/repositories/channel'
 import dbService from '../../../../app/db'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
+import { messageCountFactory } from '../../../support/factories/messageCount'
 import { membershipFactory } from '../../../support/factories/membership'
-
 const {
+  job: { channelTimeToLive },
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 
@@ -319,7 +320,7 @@ describe('channel repository', () => {
     })
 
     it('returns a list of (channelPhoneNumber, channelSize) tuples sorted in descending order of channelSize', async () => {
-      expect(await getChannelsSortedBySize()).to.eql([
+      expect(await channelRepository.getChannelsSortedBySize()).to.eql([
         [channels[1].phoneNumber, 8],
         [channels[2].phoneNumber, 4],
         [channels[0].phoneNumber, 2],
@@ -366,15 +367,15 @@ describe('channel repository', () => {
     })
 
     it('returns true for an admin for the diagnostics channel', async () => {
-      expect(await isMaintainer(adminPhoneNumber)).to.eql(true)
+      expect(await channelRepository.isMaintainer(adminPhoneNumber)).to.eql(true)
     })
 
     it('returns false for a subscriber to the diagnostics channel', async () => {
-      expect(await isMaintainer(subscriberPhoneNumber)).to.eql(false)
+      expect(await channelRepository.isMaintainer(subscriberPhoneNumber)).to.eql(false)
     })
 
     it('returns false for a random number', async () => {
-      expect(await isMaintainer(genPhoneNumber())).to.eql(false)
+      expect(await channelRepository.isMaintainer(genPhoneNumber())).to.eql(false)
     })
   })
 
@@ -383,6 +384,22 @@ describe('channel repository', () => {
       const diagnosticsChannel = await createDiagnosticsChannel()
       expect(map(await channelRepository.getMaintainers(), 'memberPhoneNumber')).to.have.members(
         map(diagnosticsChannel.memberships.slice(0, 2), 'memberPhoneNumber'),
+      )
+    })
+  })
+
+  describe('#getStaleChannels', () => {
+    let staleChannels
+
+    beforeEach(async () => {
+      staleChannels = await createChannelsFromAttributes(times(2, deepChannelFactory))
+      await util.wait(channelTimeToLive + 1)
+      await createChannelsFromAttributes(times(1, deepChannelFactory))
+    })
+
+    it('returns all channels who have not been used in the TTL period (4 weeks)', async () => {
+      expect(map(await channelRepository.getStaleChannels(), 'phoneNumber')).to.have.members(
+        map(staleChannels, 'phoneNumber'),
       )
     })
   })
