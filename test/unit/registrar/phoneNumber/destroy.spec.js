@@ -23,6 +23,7 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
+import { requestToDestroyStaleChannels } from '../../../../app/registrar/phoneNumber/destroy'
 
 describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
@@ -536,6 +537,35 @@ describe('phone number registrar -- destroy module', () => {
           },
         ])
       })
+    })
+  })
+
+  describe('#requestToDestroyStaleChannels', () => {
+    const staleChannels = times(2, deepChannelFactory)
+    beforeEach(() => {
+      sinon.stub(channelRepository, 'getStaleChannels').returns(Promise.resolve(staleChannels))
+      findChannelStub.callsFake(phoneNumber => Promise.resolve(deepChannelFactory({ phoneNumber })))
+      requestToDestroyStub.returns(Promise.resolve({ wasCreated: true }))
+    })
+
+    it('issues destroy request for channels not used during ttl window', async () => {
+      const result = await requestToDestroyStaleChannels()
+
+      expect(flatten(map(requestToDestroyStub.getCalls(), 'args'))).to.have.members([
+        staleChannels[0].phoneNumber,
+        staleChannels[1].phoneNumber,
+      ])
+
+      expect(result).to.have.deep.members([
+        {
+          message: `Issued request to destroy ${staleChannels[0].phoneNumber}.`,
+          status: 'SUCCESS',
+        },
+        {
+          message: `Issued request to destroy ${staleChannels[1].phoneNumber}.`,
+          status: 'SUCCESS',
+        },
+      ])
     })
   })
 

@@ -53,6 +53,12 @@ const requestToDestroy = async phoneNumbers => {
   )
 }
 
+// () => Promise<SignalboostStatus>
+const requestToDestroyStaleChannels = async () => {
+  const staleChannelPhoneNumbers = map(await channelRepository.getStaleChannels(), 'phoneNumber')
+  return requestToDestroy(staleChannelPhoneNumbers)
+}
+
 // () -> Promise<Array<string>>
 const processDestructionRequests = async () => {
   try {
@@ -181,4 +187,10 @@ const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) =
   }
 }
 
-module.exports = { requestToDestroy, destroy, processDestructionRequests, redeem }
+module.exports = {
+  requestToDestroy,
+  destroy,
+  requestToDestroyStaleChannels,
+  processDestructionRequests,
+  redeem,
+}
