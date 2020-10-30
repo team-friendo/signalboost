@@ -30,7 +30,7 @@ const requestToDestroy = async phoneNumbers => {
             message: `${phoneNumber} must be associated with a channel in order to be destroyed.`,
           }
 
-        const { wasCreated } = await destructionRequestRepository.requestToDestroy(phoneNumber)
+        const { wasCreated } = await destructionRequestRepository.findOrCreate(phoneNumber)
         if (!wasCreated)
           return {
             status: statuses.ERROR,

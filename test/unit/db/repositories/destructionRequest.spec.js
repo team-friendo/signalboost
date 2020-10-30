@@ -39,7 +39,7 @@ describe('destructionRequest repository', () => {
         const {
           destructionRequest,
           wasCreated,
-        } = await destructionRequestRepository.requestToDestroy(channelPhoneNumber)
+        } = await destructionRequestRepository.findOrCreate(channelPhoneNumber)
         expect(wasCreated).to.eql(true)
         expect(destructionRequest.channelPhoneNumber).to.eql(channelPhoneNumber)
         expect(await app.db.destructionRequest.count()).to.eql(destructionRequestCount + 1)
@@ -56,7 +56,7 @@ describe('destructionRequest repository', () => {
         const {
           destructionRequest,
           wasCreated,
-        } = await destructionRequestRepository.requestToDestroy(channelPhoneNumber)
+        } = await destructionRequestRepository.findOrCreate(channelPhoneNumber)
         expect(wasCreated).to.eql(false)
         expect(destructionRequest.channelPhoneNumber).to.eql(channelPhoneNumber)
         expect(await app.db.destructionRequest.count()).to.eql(destructionRequestCount)

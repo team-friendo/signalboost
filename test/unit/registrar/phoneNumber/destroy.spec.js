@@ -47,7 +47,7 @@ describe('phone number registrar -- destroy module', () => {
     notifyAdminsStub,
     notifyMaintainersStub,
     notifyMembersStub,
-    requestToDestroyStub
+    createDestructionRequestStub
 
   before(async () => {
     await app.run(testApp)
@@ -63,7 +63,7 @@ describe('phone number registrar -- destroy module', () => {
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     findChannelStub = sinon.stub(channelRepository, 'findDeep')
     destroyChannelStub = sinon.stub(channelRepository, 'destroy')
-    requestToDestroyStub = sinon.stub(destructionRequestRepository, 'requestToDestroy')
+    createDestructionRequestStub = sinon.stub(destructionRequestRepository, 'findOrCreate')
     findPhoneNumberStub = sinon.stub(phoneNumberRepository, 'find')
     destroyPhoneNumberStub = sinon.stub(phoneNumberRepository, 'destroy')
 
@@ -421,12 +421,12 @@ describe('phone number registrar -- destroy module', () => {
 
       describe('when a destruction request has already been issued for the phone number', () => {
         beforeEach(() => {
-          requestToDestroyStub.returns(Promise.resolve({ wasCreated: false }))
+          createDestructionRequestStub.returns(Promise.resolve({ wasCreated: false }))
         })
 
         it('attempts to issue a destruction request', async () => {
           await requestToDestroy(phoneNumbers)
-          expect(requestToDestroyStub.callCount).to.eql(2)
+          expect(createDestructionRequestStub.callCount).to.eql(2)
         })
 
         it('returns an ERROR status and message', async () => {
@@ -445,7 +445,7 @@ describe('phone number registrar -- destroy module', () => {
 
       describe('when no destruction requests have been issued for any phone numbers', () => {
         beforeEach(() => {
-          requestToDestroyStub.returns(Promise.resolve({ wasCreated: true }))
+          createDestructionRequestStub.returns(Promise.resolve({ wasCreated: true }))
         })
 
         it('returns a SUCCESS status and message', async () => {
@@ -509,7 +509,7 @@ describe('phone number registrar -- destroy module', () => {
           .callsFake(createChannelFake)
           .onCall(3)
           .callsFake(createChannelFake)
-        requestToDestroyStub
+        createDestructionRequestStub
           .onCall(0)
           .callsFake(requestNotIssuedFake)
           .onCall(1)
@@ -545,13 +545,13 @@ describe('phone number registrar -- destroy module', () => {
     beforeEach(() => {
       sinon.stub(channelRepository, 'getStaleChannels').returns(Promise.resolve(staleChannels))
       findChannelStub.callsFake(phoneNumber => Promise.resolve(deepChannelFactory({ phoneNumber })))
-      requestToDestroyStub.returns(Promise.resolve({ wasCreated: true }))
+      createDestructionRequestStub.returns(Promise.resolve({ wasCreated: true }))
     })
 
     it('issues destroy request for channels not used during ttl window', async () => {
       const result = await requestToDestroyStaleChannels()
 
-      expect(flatten(map(requestToDestroyStub.getCalls(), 'args'))).to.have.members([
+      expect(flatten(map(createDestructionRequestStub.getCalls(), 'args'))).to.have.members([
         staleChannels[0].phoneNumber,
         staleChannels[1].phoneNumber,
       ])

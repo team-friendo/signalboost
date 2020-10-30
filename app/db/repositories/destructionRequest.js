@@ -7,7 +7,7 @@ const {
 } = require('../../config')
 
 // (string) -> Promise<{ destructionRequest: DestructionRequest, wasCreated: boolean }>
-const requestToDestroy = channelPhoneNumber =>
+const findOrCreate = channelPhoneNumber =>
   app.db.destructionRequest
     .findOrCreate({ where: { channelPhoneNumber } })
     .then(([destructionRequest, wasCreated]) => ({
@@ -38,4 +38,4 @@ const getMatureDestructionRequests = async () => {
   return map(matureRequests, 'channelPhoneNumber')
 }
 
-module.exports = { requestToDestroy, getMatureDestructionRequests, destroy, destroyMany }
+module.exports = { findOrCreate, getMatureDestructionRequests, destroy, destroyMany }
