@@ -44,7 +44,7 @@ const register = async (phoneNumber, captchaToken, dbPool) => {
     ...(captchaToken ? { captcha: captchaToken } : {}),
   })
 
-  await util.wait(10000)
+  await util.wait(1000)
   logger.log(`${phoneNumber}: Verifying...`)
   await verify(phoneNumber, dbPool)
 

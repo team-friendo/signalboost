@@ -45,7 +45,7 @@ docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin
 ### RUN SERVICES
 
 echo "--- running load test..."
-docker-compose -f docker-compose-test-load.yml up -d signal_server redis ngrok_simulator signal_sms_codes signalboost_ngrok app simulator
+docker-compose -f docker-compose-test-load.yml up -d signal_server redis ngrok_simulator signalboost_ngrok app simulator
 
 check-until-ngrok-url-available
 echo "NGROK URL: $host_url"

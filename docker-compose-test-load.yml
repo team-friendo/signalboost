@@ -59,7 +59,6 @@ services:
     container_name: load_test_app
     depends_on:
       - db
-      - signald_app
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env.dev
     environment:
@@ -106,7 +105,6 @@ services:
     container_name: load_test_simulator
     depends_on:
       - db
-      - signald_simulator
     entrypoint: /signalboost/bin/entrypoint/simulator
     env_file: .env.dev
     expose:
@@ -141,15 +139,6 @@ services:
     ports:
       - "6379:6379"
     restart: always
-
-  signal_sms_codes:
-    image: registry.gitlab.com/signald/test-infrastructure/test-helper:master
-    container_name: load_test_signal_sms_codes
-    restart: always
-    environment:
-      DB: "host=db user=signal dbname=signal password=password sslmode=disable"
-    ports:
-      - "127.0.0.1:8082:8082"
 
   # prefer ngrok_signalboost, need to change url to ngrok in app entrypoint
   signalboost_ngrok:
