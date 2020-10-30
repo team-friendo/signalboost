@@ -19,6 +19,7 @@ describe('jobs service', () => {
     deleteInvitesStub,
     deleteSmsSendersStub,
     deleteHotlineMessagesStub,
+    requestDestructionStub,
     processDestructionRequestsStub,
     sendHealthchecksStub
 
@@ -42,6 +43,14 @@ describe('jobs service', () => {
       // repeating jobs
       deleteInvitesStub = sinon.stub(inviteRepository, 'deleteExpired').returns(Promise.resolve(1))
       sendHealthchecksStub = sinon.stub(diagnostics, 'sendHealthchecks').returns(Promise.resolve())
+      requestDestructionStub = sinon
+        .stub(phoneNumberRegistrar, 'requestToDestroyStaleChannels')
+        .returns(
+          Promise.resolve([
+            { status: 'SUCCESS', message: 'yay!' },
+            { status: 'SUCCESS', message: 'yay!' },
+          ]),
+        )
       processDestructionRequestsStub = sinon
         .stub(phoneNumberRegistrar, 'processDestructionRequests')
         .returns(Promise.resolve(['42', '43']))
@@ -79,8 +88,11 @@ describe('jobs service', () => {
       it('launches an invite deletion job', () => {
         expect(deleteInvitesStub.callCount).to.be.at.least(2)
       })
+      it('launches a destruction request issuing job', () => {
+        expect(requestDestructionStub.callCount).to.be.at.least(2)
+      })
       it('lauches a destruction request processing job', () => {
-        expect(processDestructionRequestsStub.callCount).at.least(2)
+        expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
       })
       it('launches a healtcheck job', async () => {
         expect(sendHealthchecksStub.callCount).to.be.at.least(2)
