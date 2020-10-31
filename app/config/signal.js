@@ -52,6 +52,7 @@ const test = {
 
 const development = {
   ...defaults,
+  signaldStartupTime: 1000 * 10, // 10 sec
   healthcheckTimeout: 1000 * 10, // 10 sec
 }
 
