@@ -1,8 +1,6 @@
 import { expect } from 'chai'
 import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import { omit, keys, times, map } from 'lodash'
-import moment from 'moment'
-import sinon from 'sinon'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import util from '../../../../app/util'
@@ -10,7 +8,6 @@ import channelRepository from '../../../../app/db/repositories/channel'
 import dbService from '../../../../app/db'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
-import { messageCountFactory } from '../../../support/factories/messageCount'
 import { membershipFactory } from '../../../support/factories/membership'
 const {
   job: { channelTimeToLive },

@@ -36,10 +36,9 @@ describe('destructionRequest repository', () => {
       beforeEach(async () => (destructionRequestCount = await db.destructionRequest.count()))
 
       it('creates new request and flags that it was created', async () => {
-        const {
-          destructionRequest,
-          wasCreated,
-        } = await destructionRequestRepository.findOrCreate(channelPhoneNumber)
+        const { destructionRequest, wasCreated } = await destructionRequestRepository.findOrCreate(
+          channelPhoneNumber,
+        )
         expect(wasCreated).to.eql(true)
         expect(destructionRequest.channelPhoneNumber).to.eql(channelPhoneNumber)
         expect(await app.db.destructionRequest.count()).to.eql(destructionRequestCount + 1)
@@ -53,10 +52,9 @@ describe('destructionRequest repository', () => {
       })
 
       it('does not create new request but returns existing request', async () => {
-        const {
-          destructionRequest,
-          wasCreated,
-        } = await destructionRequestRepository.findOrCreate(channelPhoneNumber)
+        const { destructionRequest, wasCreated } = await destructionRequestRepository.findOrCreate(
+          channelPhoneNumber,
+        )
         expect(wasCreated).to.eql(false)
         expect(destructionRequest.channelPhoneNumber).to.eql(channelPhoneNumber)
         expect(await app.db.destructionRequest.count()).to.eql(destructionRequestCount)

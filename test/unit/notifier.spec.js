@@ -39,7 +39,9 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[0].memberPhoneNumber,
-            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY],
+            message: messagesIn('DE').notifications[
+              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
+            ],
           }),
           channel.socketId,
         ],
@@ -47,7 +49,9 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[1].memberPhoneNumber,
-            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY],
+            message: messagesIn('FR').notifications[
+              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
+            ],
           }),
           channel.socketId,
         ],
