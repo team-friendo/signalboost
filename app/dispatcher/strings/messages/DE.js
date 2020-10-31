@@ -442,13 +442,13 @@ const notifications = {
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
 
   channelEnqueuedForDestruction:
-    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung deaktiviert. Um zu verhindern, dass es deaktiviert wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
+    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung zerstört. Um zu verhindern, dass es zerstört wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
 
   channelRecycled:
-    'Der Kanal wurde wegen Inaktivität deaktiviert. Gehe auf https://signalboost.info um einen neuen Kanal zu erstellen.',
+    'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
 
   channelRedeemed:
-    'Dieser Kanal sollte wegen mangelnder Nutzung deaktiviert werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr deaktiviert. Yay!',
+    'Dieser Kanal sollte wegen mangelnder Nutzung zerstört werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr zerstört. Yay!',
 
   channelRenamed: (oldName, newName) => `Kanal umbenannt von "${oldName}" zu "${newName}."`,
 

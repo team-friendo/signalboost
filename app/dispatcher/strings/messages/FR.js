@@ -114,13 +114,13 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   destroy: {
     confirm: `Êtes-vous sûr?
 
-Si vous continuez, vous détruirez définitivement cette chaîne et tous les enregistrements qui lui sont associés.
+Si vous continuez, vous détruirez définitivement cette canal et tous les enregistrements qui lui sont associés.
 
 Pour continuer, répondez avec:
 
  CONFIRMER DÉTRUIRE`,
-    success: `La chaîne et tous les enregistrements associés ont été définitivement détruits.`,
-    error: `Oups! Une erreur s'est produite lors de la destruction de la chaîne. Veuillez réessayer!`,
+    success: `La canal et tous les enregistrements associés ont été définitivement détruits.`,
+    error: `Oups! Une erreur s'est produite lors de la destruction de la canal. Veuillez réessayer!`,
     notAdmin,
   },
 
@@ -140,7 +140,7 @@ INFO
 ----------------------------------------------
 
 DIFFUSER bonjour à tous / ! bonjour à tous
--> diffuse "bonjour à tous" à tous les abonnés de cette chaîne
+-> diffuse "bonjour à tous" à tous les abonnés de cette canal
 
 @1312
 -> Envoie une réponse privée à [HOTLINE @1312]
@@ -152,7 +152,7 @@ AJOUTER +33612345678
 -> Ajouter +33612345678 en tant qu'admin du canal
 
 PRIVÉ bonsoir, admins
--> envoie un message privé "bonsoir, admins" à tous les administrateurs de la chaîne
+-> envoie un message privé "bonsoir, admins" à tous les administrateurs de la canal
 
 RENOMMER nouveau nom
 -> Renommer le canal en “nouveau nom”
@@ -167,7 +167,7 @@ HOTLINE ON / OFF
 -> Activer ou désactiver la hotline
 
 SE PORTER GARANT ON / OFF / ADMIN
--> active / désactive l'activation de se porter garant. Lorsque cette option est ON, les personnes doivent être invitées à rejoindre la chaîne. Lorsque ADMIN, seuls les administrateurs peuvent envoyer ces invitations.
+-> active / désactive l'activation de se porter garant. Lorsque cette option est ON, les personnes doivent être invitées à rejoindre la canal. Lorsque ADMIN, seuls les administrateurs peuvent envoyer ces invitations.
 
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
@@ -264,7 +264,7 @@ ${support}`,
     invalidPhoneNumber: input =>
       `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
     success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
-    adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette chaîne.',
+    adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette canal.',
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
 
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
@@ -309,7 +309,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
 
   private: {
     notAdmin,
-    signalError: `Oups! Une erreur s'est produite lors de l'envoi d'un message privé aux administrateurs de cette chaîne. Veuillez essayer de nouveau!`,
+    signalError: `Oups! Une erreur s'est produite lors de l'envoi d'un message privé aux administrateurs de cette canal. Veuillez essayer de nouveau!`,
   },
 
   // REMOVE
@@ -317,7 +317,7 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
   remove: {
     success: num => `${num} a été supprimé-e.`,
     notAdmin,
-    targetNotMember: num => `Oups! ${num} n'est pas membre de cette chaîne`,
+    targetNotMember: num => `Oups! ${num} n'est pas membre de cette canal`,
     dbError: num =>
       `Oups! Une erreur s'est produite lors de la tentative de suppression de ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,
@@ -384,23 +384,23 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
       ({
         ON: `Se porter garant est maintenant ${vouchModeDisplay.ON}.
 
-Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette chaîne.
+Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
 
 Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
         OFF: `Se porter garant est maintenant ${vouchModeDisplay.OFF}.
 
-Cela signifie que n'importe qui peut rejoindre la chaîne en envoyant BONJOUR au numéro de chaîne.`,
+Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
         ADMIN: `Se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
 
-Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette chaîne.
+Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
 
 Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
       }[mode]),
     notAdmin,
     dbError:
-      "Une erreur s'est produite lors de la mise à jour de l'attestation de votre chaîne. Veuillez réessayer.",
+      "Une erreur s'est produite lors de la mise à jour de l'attestation de votre canal. Veuillez réessayer.",
   },
 
   // VOUCH_LEVEL
@@ -409,7 +409,7 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
     success: level =>
       `Le niveau de porter garant est passé à ${level}; Des 
       ${level} ${+level > 1 ? 'invitations' : 'invitation'}
-       sont désormais requises pour nouveaux abonnés rejoindre cette chaîne.`,
+       sont désormais requises pour nouveaux abonnés rejoindre cette canal.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:
@@ -444,16 +444,16 @@ const notifications = {
     'La canal et tous les enregistrements associés ont été définitivement détruits.',
 
   channelEnqueuedForDestruction:
-    "Bonjour! Cette canal est sur le point d'être désactivée faute d'utilisation. Pour éviter qu'il ne soit désactivé, envoyez 'INFO' dans les prochaines 24 heures.Pour plus d'informations, visitez signalboost.info/how-to. ",
+    "Salut! Cette canal est sur le point d'être détruite en raison du manque d'utilisation. Pour éviter qu'il ne soit détruit, envoyez \"INFO\" dans les prochaines 24 heures. Pour plus d'informations, visitez signalboost.info/how-to.",
 
   channelDestructionFailed: phoneNumber =>
     `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,
 
   channelRecycled:
-    "Canal désactivée par manque d'utilisation. Pour créer une nouvelle chaîne, visitez https://signalboost.info",
+    "Canal détruit par manque d'utilisation. Pour créer une nouvelle canal, visitez https://signalboost.info",
 
   channelRedeemed:
-    "Cette canal devait être désactivée en raison d'un manque d'utilisation. Cependant, puisque vous avez utilisé la chaîne récemment, elle ne sera plus désactivée. Yay!",
+    "Cette canal devait être détruite en raison d'un manque d'utilisation. Cependant, puisque vous avez utilisé la canal récemment, elle ne sera plus détruite. Yay!",
 
   channelRenamed: (oldName, newName) => `Le canal a été renommé de "${oldName}" à "${newName}."`,
 
@@ -487,9 +487,9 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
 
   inviteReceived: channelName =>
-    `Bonjour! Vous avez reçu le invitation pour rejoindre la chaîne Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
+    `Bonjour! Vous avez reçu le invitation pour rejoindre la canal Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
-  inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette chaîne.`,
+  inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette canal.`,
 
   promptToUseSignal:
     'Ce numéro accepte uniquement les messages envoyés avec Signal Private Messenger. Veuillez installer Signal depuis https://signal.org et réessayer.',
@@ -526,10 +526,10 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     `La description de ce canal est désormais: "${newDescription}."`,
 
   toRemovedAdmin:
-    "Vous venez d'être supprimé e en tant qu'admin de cette chaîne. Envoyez SALUT pour vous réinscrire.",
+    "Vous venez d'être supprimé e en tant qu'admin de cette canal. Envoyez SALUT pour vous réinscrire.",
 
   toRemovedSubscriber:
-    "Vous venez d'être supprimé de cette chaîne par un administrateur. Envoyez SALUT pour vous réinscrire.",
+    "Vous venez d'être supprimé de cette canal par un administrateur. Envoyez SALUT pour vous réinscrire.",
 
   toggles: commandResponses.toggles,
 
@@ -537,7 +537,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
   vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la chaîne Signalboost de ${channelName}.
+    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la canal Signalboost de ${channelName}.
   ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
   `,
 
@@ -546,7 +546,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   vouchLevelChanged: vouchLevel =>
     `Un-e admin vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
       vouchLevel > 1 ? 'invitations' : 'invitation'
-    } seront désormais nécessaires pour rejoindre cette chaîne.`,
+    } seront désormais nécessaires pour rejoindre cette canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `Vous êtes maintenant un.e admin de ce canal Signalboost [${channelName}]  grâce à ${addingAdmin}. Bienvenue!
