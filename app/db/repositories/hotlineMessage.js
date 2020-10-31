@@ -2,7 +2,7 @@ const moment = require('moment')
 const app = require('../../../app')
 const { Op } = require('sequelize')
 const {
-  job: { hotlineMessageExpiryInMillis },
+  jobs: { hotlineMessageExpiryInMillis },
 } = require('../../config')
 
 // ({Database, string, string}) => Promise<string>

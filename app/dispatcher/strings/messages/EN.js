@@ -424,14 +424,14 @@ const notifications = {
   channelDestructionFailed: phoneNumber =>
     `Failed to destroy channel for phone number: ${phoneNumber}`,
 
-  channelEnqueuedForRecycling:
-    'Hello! This channel is about to be deactivated due to lack of use. To prevent it from being deactivated, send "INFO" within the next 24 hours. For more info, visit signalboost.info/how-to.',
+  channelEnqueuedForDestruction:
+    'Hello! This channel is about to be destroyed due to lack of use. To prevent it from being destroyed, send "INFO" within the next 24 hours. For more info, visit signalboost.info/how-to.',
 
-  channelRecycled:
-    'Channel deactivated due to lack of use. To create a new channel, visit https://signalboost.info',
+  channelDestroyedDueToInactivity:
+    'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelRedeemed:
-    'This channel was scheduled to be deactivated due to lack of use. However, since you used the channel recently, it will no longer be deactivated. Yay!',
+    'This channel was scheduled to be destroyed due to lack of use. However, since you used the channel recently, it will no longer be destroyed. Yay!',
 
   channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
 
@@ -479,7 +479,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
         : `message has exceeded resend threshold and will not be resent`
     }`,
 
-  recycleChannelFailed: phoneNumber => `Failed to recycle channel for phone number: ${phoneNumber}`,
+  destroyChannelFailed: phoneNumber => `Failed to destroy channel for phone number: ${phoneNumber}`,
 
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',

@@ -281,6 +281,7 @@ const maybeDestroy = async (channel, sender) => {
   const result = await phoneNumberService.destroy({
     phoneNumber: channel.phoneNumber,
     sender: sender.phoneNumber,
+    notifyOnFailure: true,
   })
 
   if (get(result, 'status') === statuses.SUCCESS) {

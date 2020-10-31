@@ -120,7 +120,7 @@ const respond = ({ channel, message, sender, command }) => {
     .then(async () => {
       // Don't count INFO commands from sysadmins. Why?
       // Sysadmins ping channels with INFO as an informal health checks very frequently.
-      // Counting these pings would prevent us from detecting stale channels for recycling, which
+      // Counting these pings would prevent us from detecting stale channels for destruction, which
       // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
       const shouldCount = !(
         command === commands.INFO && (await channelRepository.isMaintainer(sender.phoneNumber))

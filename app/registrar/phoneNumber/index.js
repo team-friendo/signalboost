@@ -1,10 +1,15 @@
 const { statuses } = require('../../db/models/phoneNumber')
 const { filters } = require('../../db/repositories/phoneNumber')
 const { errors } = require('./common')
-const { destroy } = require('./destroy')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
-const { requestToRecycle, processRecycleRequests, recycle, redeem } = require('./recycle')
+const {
+  destroy,
+  requestToDestroy,
+  requestToDestroyStaleChannels,
+  processDestructionRequests,
+  redeem,
+} = require('./destroy')
 const { register, registerAllPurchased, registerAllUnregistered } = require('./register')
 const { handleSms } = require('./sms')
 const { purchase, purchaseN } = require('./purchase')
@@ -22,12 +27,12 @@ module.exports = {
   provisionN,
   purchase,
   purchaseN,
-  processRecycleRequests,
-  requestToRecycle,
-  recycle,
+  processDestructionRequests,
   redeem,
   register,
   registerAllPurchased,
   registerAllUnregistered,
+  requestToDestroy,
+  requestToDestroyStaleChannels,
   handleSms,
 }

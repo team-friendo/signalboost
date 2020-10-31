@@ -1,9 +1,11 @@
 const app = require('../../../app')
+const util = require('../../util')
 const { Op } = require('sequelize')
 const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
+  jobs: { channelTimeToLive },
   signal: { diagnosticsPhoneNumber },
 } = require('../../config')
 
@@ -47,7 +49,7 @@ const findAllDeep = () =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
-      { model: app.db.recycleRequest },
+      { model: app.db.destructionRequest },
     ],
   })
 
@@ -59,7 +61,7 @@ const findManyDeep = phoneNumbers =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
-      { model: app.db.recycleRequest },
+      { model: app.db.destructionRequest },
     ],
   })
 
@@ -73,7 +75,7 @@ const findDeep = phoneNumber =>
       { model: app.db.invite },
       { model: app.db.membership },
       { model: app.db.messageCount },
-      { model: app.db.recycleRequest },
+      { model: app.db.destructionRequest },
     ],
   })
 
@@ -110,6 +112,22 @@ const getChannelsSortedBySize = async () =>
       },
     )
     .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
+
+// () => Promise<Array<Channel>>
+const getStaleChannels = async () =>
+  // returns all channels not used during channel time-to-live window (4 weeks)
+  app.db.channel.findAll({
+    include: [
+      {
+        model: app.db.messageCount,
+        where: {
+          updatedAt: {
+            [Op.lte]: util.now().subtract(parseInt(channelTimeToLive), 'ms'),
+          },
+        },
+      },
+    ],
+  })
 
 // (string, number) => Promise<number>
 const updateSocketIds = async (channelPhoneNumbers, socketId) =>
@@ -180,6 +198,7 @@ module.exports = {
   getMembersExcept,
   getMemberPhoneNumbersExcept,
   getSocketId,
+  getStaleChannels,
   getSubscriberMemberships,
   getSubscriberPhoneNumbers,
   isMaintainer,

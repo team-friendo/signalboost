@@ -1,18 +1,16 @@
 import { expect } from 'chai'
 import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
-import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
-import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { omit, keys, times, map } from 'lodash'
-import channelRepository, {
-  getChannelsSortedBySize,
-  isMaintainer,
-} from '../../../../app/db/repositories/channel'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
+import util from '../../../../app/util'
+import channelRepository from '../../../../app/db/repositories/channel'
 import dbService from '../../../../app/db'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
+import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { membershipFactory } from '../../../support/factories/membership'
-
 const {
+  jobs: { channelTimeToLive },
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 
@@ -45,7 +43,7 @@ describe('channel repository', () => {
   })
   afterEach(async () => {
     await Promise.all([
-      db.recycleRequest.destroy({ where: {} }),
+      db.destructionRequest.destroy({ where: {} }),
       db.membership.destroy({ where: {}, force: true }),
       db.messageCount.destroy({ where: {}, force: true }),
       db.invite.destroy({ where: {}, force: true }),
@@ -184,7 +182,7 @@ describe('channel repository', () => {
             { model: db.invite },
             { model: db.membership },
             { model: db.messageCount },
-            { model: db.recycleRequest },
+            { model: db.destructionRequest },
           ],
         })
         result = await channelRepository.findDeep(channel.phoneNumber)
@@ -202,7 +200,7 @@ describe('channel repository', () => {
         expect(omit(result.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
           attrs.messageCount,
         )
-        expect(result.recycleRequest.channelPhoneNumber).to.eql(channel.phoneNumber)
+        expect(result.destructionRequest.channelPhoneNumber).to.eql(channel.phoneNumber)
       })
     })
 
@@ -214,7 +212,7 @@ describe('channel repository', () => {
             { model: db.invite },
             { model: db.membership },
             { model: db.messageCount },
-            { model: db.recycleRequest },
+            { model: db.destructionRequest },
           ],
         })
         result = await channelRepository.findDeep(channel.phoneNumber)
@@ -225,7 +223,7 @@ describe('channel repository', () => {
         expect(result.invites).to.eql([])
         expect(result.memberships).to.eql([])
         expect(result.messageCount).to.be.null
-        expect(result.recycleRequest).to.be.null
+        expect(result.destructionRequest).to.be.null
       })
     })
   })
@@ -242,7 +240,7 @@ describe('channel repository', () => {
               { model: db.invite },
               { model: db.membership },
               { model: db.messageCount },
-              { model: db.recycleRequest },
+              { model: db.destructionRequest },
             ],
           }),
         ),
@@ -270,7 +268,7 @@ describe('channel repository', () => {
           'invites',
           'memberships',
           'messageCount',
-          'recycleRequest',
+          'destructionRequest',
           'socketId',
           'subscriberLimit',
         ])
@@ -319,7 +317,7 @@ describe('channel repository', () => {
     })
 
     it('returns a list of (channelPhoneNumber, channelSize) tuples sorted in descending order of channelSize', async () => {
-      expect(await getChannelsSortedBySize()).to.eql([
+      expect(await channelRepository.getChannelsSortedBySize()).to.eql([
         [channels[1].phoneNumber, 8],
         [channels[2].phoneNumber, 4],
         [channels[0].phoneNumber, 2],
@@ -366,15 +364,15 @@ describe('channel repository', () => {
     })
 
     it('returns true for an admin for the diagnostics channel', async () => {
-      expect(await isMaintainer(adminPhoneNumber)).to.eql(true)
+      expect(await channelRepository.isMaintainer(adminPhoneNumber)).to.eql(true)
     })
 
     it('returns false for a subscriber to the diagnostics channel', async () => {
-      expect(await isMaintainer(subscriberPhoneNumber)).to.eql(false)
+      expect(await channelRepository.isMaintainer(subscriberPhoneNumber)).to.eql(false)
     })
 
     it('returns false for a random number', async () => {
-      expect(await isMaintainer(genPhoneNumber())).to.eql(false)
+      expect(await channelRepository.isMaintainer(genPhoneNumber())).to.eql(false)
     })
   })
 
@@ -383,6 +381,22 @@ describe('channel repository', () => {
       const diagnosticsChannel = await createDiagnosticsChannel()
       expect(map(await channelRepository.getMaintainers(), 'memberPhoneNumber')).to.have.members(
         map(diagnosticsChannel.memberships.slice(0, 2), 'memberPhoneNumber'),
+      )
+    })
+  })
+
+  describe('#getStaleChannels', () => {
+    let staleChannels
+
+    beforeEach(async () => {
+      staleChannels = await createChannelsFromAttributes(times(2, deepChannelFactory))
+      await util.wait(channelTimeToLive + 1)
+      await createChannelsFromAttributes(times(1, deepChannelFactory))
+    })
+
+    it('returns all channels who have not been used in the TTL period (4 weeks)', async () => {
+      expect(map(await channelRepository.getStaleChannels(), 'phoneNumber')).to.have.members(
+        map(staleChannels, 'phoneNumber'),
       )
     })
   })

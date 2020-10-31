@@ -1,23 +1,103 @@
-const app = require('../../index')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const { defaultLanguage } = require('../../config')
-const common = require('./common')
-const notifier = require('../../notifier')
-const { notificationKeys } = notifier
-const signal = require('../../signal')
-const { messagesIn } = require('../../dispatcher/strings/messages')
-const channelRepository = require('../../db/repositories/channel')
-const eventRepository = require('../../db/repositories/event')
-const logger = require('../logger')
 const fs = require('fs-extra')
-
+const { map } = require('lodash')
+const app = require('../../index')
+const common = require('./common')
+const channelRepository = require('../../db/repositories/channel')
+const destructionRequestRepository = require('../../db/repositories/destructionRequest')
+const eventRepository = require('../../db/repositories/event')
+const phoneNumberRepository = require('../../db/repositories/phoneNumber')
+const logger = require('../logger')
+const notifier = require('../../notifier')
+const signal = require('../../signal')
+const { notificationKeys } = notifier
+const { messagesIn } = require('../../dispatcher/strings/messages')
+const { statuses } = require('../../util')
 const { eventTypes } = require('../../db/models/event')
 const {
+  defaultLanguage,
   signal: { keystorePath },
 } = require('../../config')
 
-// ({phoneNumber: string, sender?: string }) -> SignalboostStatus
-const destroy = async ({ phoneNumber, sender }) => {
+// (Array<string>) -> Promise<SignalboostStatus>
+const requestToDestroy = async phoneNumbers => {
+  return await Promise.all(
+    phoneNumbers.map(async phoneNumber => {
+      try {
+        const channel = await channelRepository.findDeep(phoneNumber)
+        if (!channel)
+          return {
+            status: statuses.ERROR,
+            message: `${phoneNumber} must be associated with a channel in order to be destroyed.`,
+          }
+
+        const { wasCreated } = await destructionRequestRepository.findOrCreate(phoneNumber)
+        if (!wasCreated)
+          return {
+            status: statuses.ERROR,
+            message: `${phoneNumber} has already been enqueued for destruction.`,
+          }
+
+        await notifier.notifyAdmins(channel, 'channelEnqueuedForDestruction')
+
+        return {
+          status: statuses.SUCCESS,
+          message: `Issued request to destroy ${phoneNumber}.`,
+        }
+      } catch (e) {
+        return {
+          status: statuses.ERROR,
+          message: `Database error trying to issue destruction request for ${phoneNumber}.`,
+        }
+      }
+    }),
+  )
+}
+
+// () => Promise<SignalboostStatus>
+const requestToDestroyStaleChannels = async () => {
+  const staleChannelPhoneNumbers = map(await channelRepository.getStaleChannels(), 'phoneNumber')
+  return requestToDestroy(staleChannelPhoneNumbers)
+}
+
+// () -> Promise<Array<string>>
+const processDestructionRequests = async () => {
+  try {
+    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionRequests()
+    const destructionResults = await Promise.all(
+      phoneNumbersToDestroy.map(phoneNumber => destroy({ phoneNumber })),
+    )
+    await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
+
+    return Promise.all([
+      phoneNumbersToDestroy.length === 0
+        ? Promise.resolve()
+        : notifier.notifyMaintainers(
+            `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
+              `${map(destructionResults, 'message').join('\n')}`,
+          ),
+    ])
+  } catch (err) {
+    return notifier.notifyMaintainers(`Error processing destruction jobs: ${err}`)
+  }
+}
+
+// (Channel) -> Promise<void>
+const redeem = async channel => {
+  try {
+    await destructionRequestRepository.destroy(channel.phoneNumber)
+    await Promise.all([
+      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
+      notifier.notifyMaintainers(
+        `${channel.phoneNumber} had been scheduled for destruction, but was just redeemed.`,
+      ),
+    ])
+  } catch (err) {
+    return notifier.notifyMaintainers(`Error redeeming ${channel.phoneNumber}: ${err}`)
+  }
+}
+
+// ({ phoneNumber: string, sender: string, notifyOnFailure: boolean }) -> SignalboostStatus
+const destroy = async ({ phoneNumber, sender, notifyOnFailure }) => {
   const tx = await app.db.sequelize.transaction()
 
   try {
@@ -59,10 +139,13 @@ const destroy = async ({ phoneNumber, sender }) => {
     logger.log(`destroyed signald data for ${phoneNumber}.`)
 
     await tx.commit()
-    return { status: 'SUCCESS', msg: 'All records of phone number have been destroyed.' }
+    return {
+      status: 'SUCCESS',
+      message: `Channel ${phoneNumber} destroyed.`,
+    }
   } catch (err) {
     await tx.rollback()
-    return handleDestroyFailure(err, phoneNumber)
+    return handleDestroyFailure(err, phoneNumber, notifyOnFailure)
   }
 }
 
@@ -90,17 +173,24 @@ const releasePhoneNumber = async phoneNumberRecord => {
   }
 }
 
-// (Error, string) -> SignalboostStatus
-const handleDestroyFailure = async (err, phoneNumber) => {
-  logger.log(`Error destroying channel: ${phoneNumber}:`)
+// (Error, string, notifyOnFailure) -> SignalboostStatus
+const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) => {
+  logger.error(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
-  await notifier.notifyMaintainers(
-    messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
-  )
+  if (notifyOnFailure)
+    await notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
+    )
   return {
     status: 'ERROR',
-    message: `Failed to destroy channel for ${phoneNumber}. Error: ${err}`,
+    message: `Channel ${phoneNumber} failed to be destroyed. Error: ${err}`,
   }
 }
 
-module.exports = { destroy }
+module.exports = {
+  requestToDestroy,
+  destroy,
+  requestToDestroyStaleChannels,
+  processDestructionRequests,
+  redeem,
+}

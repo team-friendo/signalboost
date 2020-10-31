@@ -441,14 +441,14 @@ const notifications = {
   channelDestructionFailed: phoneNumber =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
 
-  channelEnqueuedForRecycling:
-    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung deaktiviert. Um zu verhindern, dass es deaktiviert wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
+  channelEnqueuedForDestruction:
+    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung zerstört. Um zu verhindern, dass es zerstört wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
 
-  channelRecycled:
-    'Der Kanal wurde wegen Inaktivität deaktiviert. Gehe auf https://signalboost.info um einen neuen Kanal zu erstellen.',
+  channelDestroyedDueToInactivity:
+    'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
 
   channelRedeemed:
-    'Dieser Kanal sollte wegen mangelnder Nutzung deaktiviert werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr deaktiviert. Yay!',
+    'Dieser Kanal sollte wegen mangelnder Nutzung zerstört werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr zerstört. Yay!',
 
   channelRenamed: (oldName, newName) => `Kanal umbenannt von "${oldName}" zu "${newName}."`,
 
@@ -501,8 +501,8 @@ ${
     : `Nachricht hat das Limit der Sendeversuche erreicht, es folgen keine weiteren Versuche`
 }`,
 
-  recycleChannelFailed: phoneNumber =>
-    `Fehler beim Recyclen des Kanals für die Telefonnummer: ${phoneNumber}`,
+  destroyChannelFailed: phoneNumber =>
+    `Fehler beim Zerstören des Kanals für die Telefonnummer: ${phoneNumber}`,
 
   safetyNumberChanged:
     'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
-  echo "This command destroyed all records associated with a channel. usage:"
+  echo "This command permanently destroys channels and all their associated records. usage:"
   echo ""
-  echo "  boost destroy -p +12223334444"
+  echo "  boost destroy -p +12223334444,+15556667777"
   echo ""
   echo "Valid options are:"
-  echo "  -p : phone number of channel to be destroyed"
+  echo "  -p : phone numbers to be destroyed"
   echo "  -e : path to .env file (in dev, use .env.dev)";
   echo ""
-  echo "Warning: This will permanently delete all data related to this channel!"
+  echo "Warning: This will delete all channel/membership data related to these phone numbers!"
   exit 1
 fi
 
@@ -19,7 +19,7 @@ cd `dirname "$0"` # cd to script path
 while getopts ":p:e:" opt; do
   case "$opt" in
     p)
-      phone_number="$OPTARG"
+      phone_numbers="$OPTARG"
       ;;
     e)
       env_file="$OPTARG"
@@ -31,19 +31,19 @@ done
 source ./_check-env
 check-env ${env_file}
 
-if [[ -z ${phone_number} ]]
+if [[ -z "$phone_numbers" ]]
 then
-  echo "> ERROR: you must provide a phone number after the -p flag to destroy"
+  echo "> ERROR: you must provide at least one phone number after the -p flag to destroy"
   exit 1
-elif [[ ! ${phone_number} =~ ^(\+[0-9]{9,15})$ ]];then
-  echo "> ERROR: -p must be a valid phone number prefixed by a country code"
+elif [[ ! ${phone_numbers} =~ ^(\+[0-9]{9,15}(,?))+$ ]];then
+  echo "> ERROR: -p must be a comma-delimited list of valid phone numbers prefixed by a country code"
   exit 1
 fi
 
 curl -s -X DELETE \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\" }" \
+     -d "{ \"phoneNumbers\": \"$phone_numbers\" }" \
      https://${SIGNALBOOST_HOST_URL}/phoneNumbers | jq
 
 popd > /dev/null # return to starting directory

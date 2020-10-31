@@ -4,7 +4,7 @@ const { Op } = require('sequelize')
 const membershipRepository = require('./membership')
 const {
   defaultLanguage,
-  job: { inviteExpiryInMillis },
+  jobs: { inviteExpiryInMillis },
 } = require('../../config')
 
 // (string, string, string) -> Promise<boolean>

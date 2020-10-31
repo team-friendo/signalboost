@@ -69,14 +69,14 @@ describe('channel model', () => {
       },
     )
 
-  const createChannelWithRecycleRequest = () =>
+  const createChannelWithDestructionRequest = () =>
     db.channel.create(
       {
         ...channelFactory(),
-        recycleRequest: {},
+        destructionRequest: {},
       },
       {
-        include: [{ model: db.recycleRequest }],
+        include: [{ model: db.destructionRequest }],
       },
     )
 
@@ -89,7 +89,7 @@ describe('channel model', () => {
       db.messageCount.destroy({ where: {}, force: true }),
       db.membership.destroy({ where: {}, force: true }),
       db.hotlineMessage.destroy({ where: {}, force: true }),
-      db.recycleRequest.destroy({ where: {}, force: true }),
+      db.destructionRequest.destroy({ where: {}, force: true }),
     ])
     await db.channel.destroy({ where: {}, force: true })
   })
@@ -267,26 +267,26 @@ describe('channel model', () => {
       })
     })
 
-    describe('recycle request', () => {
-      let recycleRequest
+    describe('destruction request', () => {
+      let destructionRequest
       beforeEach(async () => {
-        channel = await createChannelWithRecycleRequest()
-        recycleRequest = await channel.getRecycleRequest()
+        channel = await createChannelWithDestructionRequest()
+        destructionRequest = await channel.getDestructionRequest()
       })
 
-      it('has one recycle request', () => {
-        expect(recycleRequest).to.be.an('object')
+      it('has one destruction request', () => {
+        expect(destructionRequest).to.be.an('object')
       })
 
-      it('deletes the recycle reqeust when it deletes channel', async () => {
-        const recycleRequestCount = await db.recycleRequest.count()
+      it('deletes the destruction request when it deletes channel', async () => {
+        const destructionRequestCount = await db.destructionRequest.count()
         await channel.destroy()
-        expect(await db.recycleRequest.count()).to.eql(recycleRequestCount - 1)
+        expect(await db.destructionRequest.count()).to.eql(destructionRequestCount - 1)
       })
 
-      it('returns null if no recycle requests exist for the account', async () => {
+      it('returns null if no destruction requests exist for the account', async () => {
         channel = await db.channel.create(channelFactory())
-        expect(await channel.getRecycleRequest()).to.be.null
+        expect(await channel.getDestructionRequest()).to.be.null
       })
     })
   })

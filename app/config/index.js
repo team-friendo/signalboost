@@ -5,7 +5,7 @@ const authConfigsByEnv = require('./auth')
 const cryptoConfigsByEnv = require('./crypto')
 const dbConfigsByEnv = require('./db.json')
 const { defaultLanguage } = require('../language')
-const jobConfigsByEnv = require('./job')
+const jobsConfigsByEnv = require('./jobs')
 const signalConfigsByEnv = require('./signal')
 const socketConfigsByEnv = require('./socket')
 const twilioConfigsByEnv = require('./twilio')
@@ -18,7 +18,7 @@ module.exports = {
   crypto: getConfig(cryptoConfigsByEnv),
   db: getConfig(dbConfigsByEnv),
   defaultLanguage,
-  job: getConfig(jobConfigsByEnv),
+  jobs: getConfig(jobsConfigsByEnv),
   projectRoot: process.env.PROJECT_ROOT,
   signal: getConfig(signalConfigsByEnv),
   socket: getConfig(socketConfigsByEnv),
