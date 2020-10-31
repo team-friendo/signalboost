@@ -11,7 +11,7 @@ const {
   jobs: {
     healthcheckInterval,
     inviteDeletionInterval,
-    channelDestructionInterval,
+    // channelDestructionInterval,
     signaldStartupTime,
   },
   signal: { diagnosticsPhoneNumber },
@@ -19,7 +19,7 @@ const {
 
 const cancelations = {
   deleteInvitesJob: null,
-  destructionJob: null,
+  // destructionJob: null,
   healtcheckJob: null,
 }
 
@@ -62,19 +62,19 @@ const run = async () => {
   )
   logger.log('----- Launched invite scrubbing job.')
 
-  logger.log('---- Launching job to issue destruction requests for stale channels...')
-  cancelations.destructionJob = util.repeatUntilCancelled(
-    () => phoneNumberRegistrar.requestToDestroyStaleChannels().catch(logger.error),
-    channelDestructionInterval,
-  )
-  logger.log('---- Launched job to issue destruction requests for stale channels.')
+  // logger.log('---- Launching job to issue destruction requests for stale channels...')
+  // cancelations.destructionJob = util.repeatUntilCancelled(
+  //   () => phoneNumberRegistrar.requestToDestroyStaleChannels().catch(logger.error),
+  //   channelDestructionInterval,
+  // )
+  // logger.log('---- Launched job to issue destruction requests for stale channels.')
 
-  logger.log('---- Launching job to process channel destruction requests...')
-  cancelations.destructionJob = util.repeatUntilCancelled(
-    () => phoneNumberRegistrar.processDestructionRequests().catch(logger.error),
-    channelDestructionInterval,
-  )
-  logger.log('---- Launched job to process channel destruction requests.')
+  // logger.log('---- Launching job to process channel destruction requests...')
+  // cancelations.destructionJob = util.repeatUntilCancelled(
+  //   () => phoneNumberRegistrar.processDestructionRequests().catch(logger.error),
+  //   channelDestructionInterval,
+  // )
+  // logger.log('---- Launched job to process channel destruction requests.')
 
   logger.log('---- Launching healthcheck job...')
   const launchHealthchecks = async () => {

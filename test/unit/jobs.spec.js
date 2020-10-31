@@ -19,8 +19,8 @@ describe('jobs service', () => {
     deleteInvitesStub,
     deleteSmsSendersStub,
     deleteHotlineMessagesStub,
-    requestDestructionStub,
-    processDestructionRequestsStub,
+    // requestDestructionStub,
+    // processDestructionRequestsStub,
     sendHealthchecksStub
 
   describe('running the service', () => {
@@ -43,17 +43,17 @@ describe('jobs service', () => {
       // repeating jobs
       deleteInvitesStub = sinon.stub(inviteRepository, 'deleteExpired').returns(Promise.resolve(1))
       sendHealthchecksStub = sinon.stub(diagnostics, 'sendHealthchecks').returns(Promise.resolve())
-      requestDestructionStub = sinon
-        .stub(phoneNumberRegistrar, 'requestToDestroyStaleChannels')
-        .returns(
-          Promise.resolve([
-            { status: 'SUCCESS', message: 'yay!' },
-            { status: 'SUCCESS', message: 'yay!' },
-          ]),
-        )
-      processDestructionRequestsStub = sinon
-        .stub(phoneNumberRegistrar, 'processDestructionRequests')
-        .returns(Promise.resolve(['42', '43']))
+      // requestDestructionStub = sinon
+      //   .stub(phoneNumberRegistrar, 'requestToDestroyStaleChannels')
+      //   .returns(
+      //     Promise.resolve([
+      //       { status: 'SUCCESS', message: 'yay!' },
+      //       { status: 'SUCCESS', message: 'yay!' },
+      //     ]),
+      //   )
+      // processDestructionRequestsStub = sinon
+      //   .stub(phoneNumberRegistrar, 'processDestructionRequests')
+      //   .returns(Promise.resolve(['42', '43']))
 
       process.env.REREGISTER_ON_STARTUP = '1'
       await jobs.run()
@@ -88,12 +88,12 @@ describe('jobs service', () => {
       it('launches an invite deletion job', () => {
         expect(deleteInvitesStub.callCount).to.be.at.least(2)
       })
-      it('launches a destruction request issuing job', () => {
-        expect(requestDestructionStub.callCount).to.be.at.least(2)
-      })
-      it('lauches a destruction request processing job', () => {
-        expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
-      })
+      // it('launches a destruction request issuing job', () => {
+      //   expect(requestDestructionStub.callCount).to.be.at.least(2)
+      // })
+      // it('lauches a destruction request processing job', () => {
+      //   expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
+      // })
       it('launches a healtcheck job', async () => {
         expect(sendHealthchecksStub.callCount).to.be.at.least(2)
       })
