@@ -632,7 +632,7 @@ describe('phone number registrar -- destroy module', () => {
       it('notifies maintainers of error', async () => {
         await processDestructionRequests()
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          'Error processing destruction job: BOOM!',
+          'Error processing destruction jobs: BOOM!',
         ])
       })
     })

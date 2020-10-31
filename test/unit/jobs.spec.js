@@ -10,7 +10,7 @@ import diagnostics from '../../app/diagnostics'
 import sharding from '../../app/socket/sharding'
 import util from '../../app/util'
 const {
-  job: { testInterval },
+  jobs: { testInterval },
 } = require('../../app/config')
 
 describe('jobs service', () => {

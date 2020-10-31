@@ -9,7 +9,7 @@ import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 const {
-  job: { hotlineMessageExpiryInMillis },
+  jobs: { hotlineMessageExpiryInMillis },
 } = require('../../../../app/config')
 
 describe('hotlineMessage repository', () => {

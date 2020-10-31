@@ -10,7 +10,7 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { membershipFactory } from '../../../support/factories/membership'
 const {
-  job: { channelTimeToLive },
+  jobs: { channelTimeToLive },
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 

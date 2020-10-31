@@ -12,7 +12,7 @@ import { times, values } from 'lodash'
 import { channelFactory } from '../../../support/factories/channel'
 import { Op } from 'sequelize'
 const {
-  job: { channelDestructionGracePeriod },
+  jobs: { channelDestructionGracePeriod },
 } = require('../../../../app/config')
 
 describe('destructionRequest repository', () => {

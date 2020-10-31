@@ -8,7 +8,7 @@ const util = require('./util')
 const sharding = require('./socket/sharding')
 const { values } = require('lodash')
 const {
-  job: {
+  jobs: {
     healthcheckInterval,
     inviteDeletionInterval,
     channelDestructionInterval,

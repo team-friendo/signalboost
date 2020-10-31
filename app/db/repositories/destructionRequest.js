@@ -3,7 +3,7 @@ const app = require('../../../app')
 const util = require('../../util')
 const { map } = require('lodash')
 const {
-  job: { channelDestructionGracePeriod },
+  jobs: { channelDestructionGracePeriod },
 } = require('../../config')
 
 // (string) -> Promise<{ destructionRequest: DestructionRequest, wasCreated: boolean }>

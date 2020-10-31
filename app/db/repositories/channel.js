@@ -5,7 +5,7 @@ const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
-  job: { channelTimeToLive },
+  jobs: { channelTimeToLive },
   signal: { diagnosticsPhoneNumber },
 } = require('../../config')
 

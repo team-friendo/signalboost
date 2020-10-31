@@ -77,7 +77,7 @@ const processDestructionRequests = async () => {
           ),
     ])
   } catch (err) {
-    return notifier.notifyMaintainers(`Error processing destruction job: ${err}`)
+    return notifier.notifyMaintainers(`Error processing destruction jobs: ${err}`)
   }
 }
 
