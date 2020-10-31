@@ -115,8 +115,9 @@ const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
     sideEffects.push(() => updateExpiryTime(sender, channel, newExpiryTime))
 
   // Don't return early here b/c the person "redeemed" channel by sending normal message that should be processed!
-  if (channel && channel.destructionRequest)
+  if (channel && channel.destructionRequest && _isMessage(inboundMsg) && !isEmpty(inboundMsg)) {
     sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
+  }
 
   return sideEffects
 }
