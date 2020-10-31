@@ -83,18 +83,21 @@ const dispatch = async (msg, socketId) => {
       ])
     : []
 
+  // NOTE: THE ORDERING OF THE NEXT 4 HELPERS IS IMPORTANT & FRAGILE!!! :(
+  // DO NOT CHANGE IT UNLESS YOU ARE CONFIDENT IN SEMANTICS AND TEST COVERAGE!
+
   // handle callbacks for messages that have request/response semantics
   callbacks.handle(inboundMsg, socketId)
 
-  // process any side-effects
-  const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
-  await util.sequence(sideEffects)
-
-  // return early if we receive system messages that prompt interventions
+  // if system messages prompt intervention, intervene and return early
   const interventions = await detectInterventions(channel, sender, inboundMsg)
   if (interventions) return interventions()
 
-  // ... or if we recieve a non-relayable message
+  // if system messages prompt any side-effects, perform them (but don't return early!)
+  const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
+  await util.sequence(sideEffects)
+
+  // return early if we recieve a non-relayable message
   if (!_isMessage(inboundMsg) || _isEmpty(inboundMsg)) return Promise.resolve()
 
   // else, follow the happy path!
