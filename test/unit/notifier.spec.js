@@ -32,14 +32,14 @@ describe('notifier module', () => {
 
   describe('#notifyAdmins', () => {
     it('sends a notification to each admin in their language', async () => {
-      await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_RECYCLED)
+      await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY)
       expect(sendMessageStub.callCount).to.eql(2)
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[0].memberPhoneNumber,
-            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_RECYCLED],
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY],
           }),
           channel.socketId,
         ],
@@ -47,7 +47,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[1].memberPhoneNumber,
-            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_RECYCLED],
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY],
           }),
           channel.socketId,
         ],

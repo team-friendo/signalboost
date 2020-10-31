@@ -446,7 +446,7 @@ const notifications = {
   channelDestructionFailed: phoneNumber =>
     `Error al destruir el canal para el número de teléfono:  ${phoneNumber}`,
 
-  channelRecycled:
+  channelDestroyedDueToInactivity:
     'Canal destruido por falta de uso. Para crear un nuevo canal, visite https://signalboost.info',
 
   channelRedeemed:

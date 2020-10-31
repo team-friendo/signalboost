@@ -444,7 +444,7 @@ const notifications = {
   channelEnqueuedForDestruction:
     'Hallo! Dieser Kanal wird wegen mangelnder Nutzung zerstört. Um zu verhindern, dass es zerstört wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
 
-  channelRecycled:
+  channelDestroyedDueToInactivity:
     'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
 
   channelRedeemed:

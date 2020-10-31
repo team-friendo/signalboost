@@ -427,7 +427,7 @@ const notifications = {
   channelEnqueuedForDestruction:
     'Hello! This channel is about to be destroyed due to lack of use. To prevent it from being destroyed, send "INFO" within the next 24 hours. For more info, visit signalboost.info/how-to.',
 
-  channelRecycled:
+  channelDestroyedDueToInactivity:
     'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelRedeemed:
