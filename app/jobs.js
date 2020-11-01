@@ -52,6 +52,10 @@ const run = async () => {
   const messageIdsDeleted = await hotlineMessageRepository.deleteExpired()
   logger.log(`----- Deleted ${messageIdsDeleted} expired hotline records.`)
 
+  logger.log('----- Deleting vestigal keystore entries....')
+  const entriesDeleted = await phoneNumberRegistrar.deleteVestigalKeystoreEntries()
+  logger.log(`----- Deleted ${entriesDeleted} vestigal keystore entries.`)
+
   /******************
    * REPEATING JOBS
    *****************/
