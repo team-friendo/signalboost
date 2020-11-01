@@ -11,7 +11,7 @@ const notifier = require('../../notifier')
 const signal = require('../../signal')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
-const { statuses } = require('../../util')
+const { statuses, sequence } = require('../../util')
 const { eventTypes } = require('../../db/models/event')
 const {
   defaultLanguage,
@@ -63,8 +63,12 @@ const requestToDestroyStaleChannels = async () => {
 const processDestructionRequests = async () => {
   try {
     const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionRequests()
-    const destructionResults = await Promise.all(
-      phoneNumbersToDestroy.map(phoneNumber => destroy({ phoneNumber })),
+    // NOTE (2020-11-01|aguestuser):
+    // - we (somewhat wastefully) process each job in sequence rather than in parallel
+    //   to avoid contention over tx lock created by each destroy call
+    // - in future, we might consider refactoring to hold a single lock for destroy calls in this job?
+    const destructionResults = await sequence(
+      phoneNumbersToDestroy.map(phoneNumber => () => destroy({ phoneNumber })),
     )
     await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
 
