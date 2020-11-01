@@ -4,6 +4,7 @@ const { errors } = require('./common')
 const { list } = require('./present')
 const { provisionN } = require('./provision')
 const {
+  deleteVestigalKeystoreEntries,
   destroy,
   requestToDestroy,
   requestToDestroyStaleChannels,
@@ -22,6 +23,7 @@ module.exports = {
   statuses,
   filters,
   /*functions*/
+  deleteVestigalKeystoreEntries,
   destroy,
   list,
   provisionN,

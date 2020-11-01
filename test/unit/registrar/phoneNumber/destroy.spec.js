@@ -17,6 +17,7 @@ import {
   redeem,
   requestToDestroy,
   processDestructionRequests,
+  deleteVestigalKeystoreEntries,
 } from '../../../../app/registrar/phoneNumber'
 import { eventTypes } from '../../../../app/db/models/event'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
@@ -35,7 +36,7 @@ describe('phone number registrar -- destroy module', () => {
   let findChannelStub,
     findPhoneNumberStub,
     destroyPhoneNumberStub,
-    deleteDirStub,
+    removeDirStub,
     twilioRemoveStub,
     signaldUnsubscribeStub,
     commitStub,
@@ -76,7 +77,7 @@ describe('phone number registrar -- destroy module', () => {
     sinon.stub(commonService, 'getTwilioClient').callsFake(() => ({
       incomingPhoneNumbers: () => ({ remove: twilioRemoveStub }),
     }))
-    deleteDirStub = sinon.stub(fs, 'remove').returns(['/var/lib'])
+    removeDirStub = sinon.stub(fs, 'remove').returns(['/var/lib'])
     signaldUnsubscribeStub = sinon.stub(signal, 'unsubscribe')
     logEventStub = sinon
       .stub(eventRepository, 'log')
@@ -152,7 +153,7 @@ describe('phone number registrar -- destroy module', () => {
           findPhoneNumberStub.returns(Promise.resolve(phoneNumberRecord))
           notifyMembersExceptStub.returns(Promise.resolve())
           notifyMaintainersStub.returns(Promise.resolve())
-          deleteDirStub.returns(Promise.resolve())
+          removeDirStub.returns(Promise.resolve())
           twilioRemoveStub.returns(Promise.resolve())
           destroyPhoneNumberStub.returns(Promise.resolve())
         })
@@ -194,7 +195,7 @@ describe('phone number registrar -- destroy module', () => {
 
         it("deletes the channel's signal keystore", async () => {
           await destroy({ phoneNumber })
-          expect(map(deleteDirStub.getCalls(), 'args')).to.eql([
+          expect(map(removeDirStub.getCalls(), 'args')).to.eql([
             [`/var/lib/signald/data/${phoneNumber}`],
             [`/var/lib/signald/data/${phoneNumber}.d`],
           ])
@@ -237,7 +238,7 @@ describe('phone number registrar -- destroy module', () => {
           destroyChannelStub.returns(Promise.resolve(true))
           destroyPhoneNumberStub.returns(Promise.resolve(true))
           twilioRemoveStub.returns(Promise.resolve())
-          deleteDirStub.returns(Promise.resolve())
+          removeDirStub.returns(Promise.resolve())
           // notifying members fails
           notifyMembersExceptStub.callsFake(() => Promise.reject('Failed to broadcast message'))
           // notifying maintainers of error succeeds
@@ -342,7 +343,7 @@ describe('phone number registrar -- destroy module', () => {
           twilioRemoveStub.returns(Promise.resolve())
           destroyChannelStub.returns(Promise.resolve())
           // destroying keystore fails
-          deleteDirStub.callsFake(() => Promise.reject('File system go BOOM!'))
+          removeDirStub.callsFake(() => Promise.reject('File system go BOOM!'))
         })
 
         it('returns an error status', async () => {
@@ -370,7 +371,7 @@ describe('phone number registrar -- destroy module', () => {
           twilioRemoveStub.returns(Promise.resolve())
           destroyChannelStub.returns(Promise.resolve())
           // destroying keystore succeds
-          deleteDirStub.returns(Promise.resolve())
+          removeDirStub.returns(Promise.resolve())
           signaldUnsubscribeStub.callsFake(() => Promise.reject('BOOM!'))
         })
 
@@ -669,6 +670,41 @@ describe('phone number registrar -- destroy module', () => {
           `${phoneNumber} had been scheduled for destruction, but was just redeemed.`,
         ])
       })
+    })
+  })
+
+  describe('#deleteVestigalKesytoreEntries', () => {
+    beforeEach(() => {
+      // we have 2 registered phone number resources in the db
+      sinon
+        .stub(phoneNumberRepository, 'findAll')
+        .returns(
+          Promise.resolve([
+            phoneNumberFactory({ phoneNumber: '+11111111111' }),
+            phoneNumberFactory({ phoneNumber: '+12222222222' }),
+          ]),
+        )
+      // we have keystore entries for 4 phone numbers
+      sinon
+        .stub(fs, 'readdir')
+        .returns(
+          Promise.resolve([
+            '+11111111111',
+            '+11111111111.d',
+            '+12222222222',
+            '+13333333333',
+            '+13333333333.d',
+            '+14444444444',
+          ]),
+        )
+    })
+    it('deletes all keystore entries for phone numbers no longer in use', async () => {
+      expect(await deleteVestigalKeystoreEntries()).to.eql(3)
+      expect(flatten(map(removeDirStub.getCalls(), 'args'))).to.have.members([
+        '/var/lib/signald/data/+13333333333',
+        '/var/lib/signald/data/+13333333333.d',
+        '/var/lib/signald/data/+14444444444',
+      ])
     })
   })
 })

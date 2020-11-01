@@ -1,5 +1,5 @@
 const fs = require('fs-extra')
-const { map } = require('lodash')
+const { map, flatMap } = require('lodash')
 const app = require('../../index')
 const common = require('./common')
 const channelRepository = require('../../db/repositories/channel')
@@ -149,6 +149,22 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure }) => {
   }
 }
 
+// () => Promise(number)
+const deleteVestigalKeystoreEntries = async () => {
+  // deletes all signald keystore entries for phone numbers no longer in use
+  try {
+    const allEntries = await fs.readdir(keystorePath)
+    const whiteListedEntries = new Set(
+      flatMap(await phoneNumberRepository.findAll(), p => [p.phoneNumber, `${p.phoneNumber}.d`]),
+    )
+    const entriesToDelete = allEntries.filter(fileName => !whiteListedEntries.has(fileName))
+    await Promise.all(entriesToDelete.map(fileName => fs.remove(`${keystorePath}/${fileName}`)))
+    return entriesToDelete.length
+  } catch (e) {
+    logger.error(`Failed to delete all keystore entries: ${e}`)
+  }
+}
+
 // HELPERS
 
 // (string) -> Promise<void>
@@ -188,9 +204,10 @@ const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) =
 }
 
 module.exports = {
-  requestToDestroy,
+  deleteVestigalKeystoreEntries,
   destroy,
-  requestToDestroyStaleChannels,
   processDestructionRequests,
   redeem,
+  requestToDestroy,
+  requestToDestroyStaleChannels,
 }

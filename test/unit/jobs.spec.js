@@ -19,8 +19,9 @@ describe('jobs service', () => {
     deleteInvitesStub,
     deleteSmsSendersStub,
     deleteHotlineMessagesStub,
-    // requestDestructionStub,
-    // processDestructionRequestsStub,
+    deleteVestigalKeystoreEntriesStub,
+    requestDestructionStub,
+    processDestructionRequestsStub,
     sendHealthchecksStub
 
   describe('running the service', () => {
@@ -30,6 +31,9 @@ describe('jobs service', () => {
       assignChannelsToSocketsStub = sinon
         .stub(sharding, 'assignChannelsToSockets')
         .returns(Promise.resolve([1, 2, 3]))
+      deleteVestigalKeystoreEntriesStub = sinon
+        .stub(phoneNumberRegistrar, 'deleteVestigalKeystoreEntries')
+        .returns(Promise.resolve(42))
       registerAllStub = sinon
         .stub(phoneNumberRegistrar, 'registerAllUnregistered')
         .returns(Promise.resolve([]))
@@ -43,17 +47,17 @@ describe('jobs service', () => {
       // repeating jobs
       deleteInvitesStub = sinon.stub(inviteRepository, 'deleteExpired').returns(Promise.resolve(1))
       sendHealthchecksStub = sinon.stub(diagnostics, 'sendHealthchecks').returns(Promise.resolve())
-      // requestDestructionStub = sinon
-      //   .stub(phoneNumberRegistrar, 'requestToDestroyStaleChannels')
-      //   .returns(
-      //     Promise.resolve([
-      //       { status: 'SUCCESS', message: 'yay!' },
-      //       { status: 'SUCCESS', message: 'yay!' },
-      //     ]),
-      //   )
-      // processDestructionRequestsStub = sinon
-      //   .stub(phoneNumberRegistrar, 'processDestructionRequests')
-      //   .returns(Promise.resolve(['42', '43']))
+      requestDestructionStub = sinon
+        .stub(phoneNumberRegistrar, 'requestToDestroyStaleChannels')
+        .returns(
+          Promise.resolve([
+            { status: 'SUCCESS', message: 'yay!' },
+            { status: 'SUCCESS', message: 'yay!' },
+          ]),
+        )
+      processDestructionRequestsStub = sinon
+        .stub(phoneNumberRegistrar, 'processDestructionRequests')
+        .returns(Promise.resolve(['42', '43']))
 
       process.env.REREGISTER_ON_STARTUP = '1'
       await jobs.run()
@@ -68,6 +72,10 @@ describe('jobs service', () => {
     describe('one-off jobs', () => {
       it('assigns channels to socket pools', () => {
         expect(assignChannelsToSocketsStub.callCount).to.be.above(0)
+      })
+
+      it('deletes any vestigal signald keystore entries', () => {
+        expect(deleteVestigalKeystoreEntriesStub.callCount).to.be.above(0)
       })
 
       it('registers any unregistered phone numbers with signal', () => {
@@ -88,12 +96,12 @@ describe('jobs service', () => {
       it('launches an invite deletion job', () => {
         expect(deleteInvitesStub.callCount).to.be.at.least(2)
       })
-      // it('launches a destruction request issuing job', () => {
-      //   expect(requestDestructionStub.callCount).to.be.at.least(2)
-      // })
-      // it('lauches a destruction request processing job', () => {
-      //   expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
-      // })
+      it('launches a destruction request issuing job', () => {
+        expect(requestDestructionStub.callCount).to.be.at.least(2)
+      })
+      it('lauches a destruction request processing job', () => {
+        expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
+      })
       it('launches a healtcheck job', async () => {
         expect(sendHealthchecksStub.callCount).to.be.at.least(2)
       })
