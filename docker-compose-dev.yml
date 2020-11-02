@@ -10,6 +10,10 @@ networks: # see [1]
     external:
       name: localdev
 
+volumes:
+  prometheus_data:
+  grafana_data:
+
 services:
 
   app:
@@ -57,6 +61,38 @@ services:
     env_file: .env.dev
     environment:
       - NGROK_PORT=app:3000
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:v2.18.1
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - default
+    volumes:
+      - ./prometheus/prometheus_dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus_data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus_data'
+      - '--log.level=debug'
+    restart: always
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+      - prometheus
+    ports:
+      - 5000:5000
+    networks:
+      - default
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
+    environment:
+      - GF_SERVER_HTTP_PORT=5000
     restart: always
 
 # -----------------------------
