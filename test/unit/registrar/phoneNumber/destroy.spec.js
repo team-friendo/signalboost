@@ -164,7 +164,7 @@ describe('phone number registrar -- destroy module', () => {
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
               undefined,
-              notificationKeys.CHANNEL_DESTROYED,
+              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
             ])
           })
         })
@@ -175,7 +175,7 @@ describe('phone number registrar -- destroy module', () => {
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
               sender,
-              notificationKeys.CHANNEL_DESTROYED,
+              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
             ])
           })
         })

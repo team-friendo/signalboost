@@ -129,7 +129,7 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure }) => {
 
       logger.log(`sending deletion notice to members of: ${phoneNumber} in background...`)
       notifier
-        .notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED)
+        .notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY)
         .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
         .catch(logger.error)
 
