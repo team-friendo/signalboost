@@ -1,3 +1,4 @@
+const { get } = require('lodash')
 const {
   api: { host, port },
 } = require('./config')
@@ -50,6 +51,16 @@ app.run = async ({ db, socketPools, api, metrics, jobs, signal }) => {
 
   logger.log('> Signalboost running!')
   return app
+}
+
+app.stopSocket = async socketId => {
+  const pool = get(app, `socketPools[${socketId}]`, { stop: () => Promise.resolve() })
+  return pool.stop()
+}
+
+app.restartSocket = async socketId => {
+  const socketService = require('./socket')
+  app.socketPools[socketId] = await socketService.createSocketPool(socketId)
 }
 
 app.stop = async () => {

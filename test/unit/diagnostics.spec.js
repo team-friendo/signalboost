@@ -6,17 +6,17 @@ import channelRepository from '../../app/db/repositories/channel'
 import metrics, { gauges } from '../../app/metrics'
 import signal from '../../app/signal'
 import notifier from '../../app/notifier'
-import { times, zip } from 'lodash'
+import { times, zip, map } from 'lodash'
 import { respondToHealthcheck, sendHealthchecks, failedHealthchecks } from '../../app/diagnostics'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
 import { sdMessageOf } from '../../app/signal/constants'
 const {
   signal: { diagnosticsPhoneNumber },
-  socket: { availableSockets },
 } = require('../../app/config')
 
 describe('diagnostics module', () => {
-  const channels = times(3, channelFactory)
+  const socketId = 4
+  const channels = times(3, () => channelFactory({ socketId }))
   const channelPhoneNumbers = channels.map(ch => ch.phoneNumber)
   const diagnosticsChannel = deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber })
   const stubHealthchecksWith = responseTimes =>
@@ -30,14 +30,18 @@ describe('diagnostics module', () => {
     healthcheckStub,
     abortStub,
     isAliveStub,
-    stopStub,
-    runStub
+    restartSocketStub,
+    stopSocketStub,
+    unsubscribeStub,
+    subscribeStub
 
   beforeEach(() => {
     sinon
       .stub(channelRepository, 'findAll')
       .returns(Promise.resolve([...channels, diagnosticsChannel]))
     sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(diagnosticsChannel))
+    sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(socketId))
+    sinon.stub(channelRepository, 'getChannelsOnSocket').returns(Promise.resolve(channels))
     setGaugeStub = sinon.stub(metrics, 'setGauge').returns(Promise.resolve())
     sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve(42))
     notifyMaintainersStub = sinon
@@ -45,8 +49,12 @@ describe('diagnostics module', () => {
       .returns(Promise.resolve(['1', '2', '3']))
     healthcheckStub = sinon.stub(signal, 'healthcheck')
     abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
-    stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
-    runStub = sinon.stub(app, 'run').returns(Promise.resolve())
+    // stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
+    // runStub = sinon.stub(app, 'run').returns(Promise.resolve())
+    subscribeStub = sinon.stub(signal, 'unsubscribe').returns(Promise.resolve('42'))
+    unsubscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve('42'))
+    stopSocketStub = sinon.stub(app, 'stopSocket').returns(Promise.resolve())
+    restartSocketStub = sinon.stub(app, 'restartSocket').returns(Promise.resolve())
     isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
   })
 
@@ -95,16 +103,17 @@ describe('diagnostics module', () => {
       })
 
       it('does not attempt to restart signalboost or notify maintainers', () => {
-        ;[abortStub, stopStub, runStub, isAliveStub].forEach(stub =>
+        ;[abortStub, isAliveStub, stopSocketStub, restartSocketStub].forEach(stub =>
           expect(stub.callCount).to.eql(0),
         )
       })
     })
 
-    describe('when channel fails to respond to 2 consecutive healthchecks', () => {
-      const responseTimes = [-1, 42, 42]
+    describe('when channels fail to respond to 2 consecutive healthchecks', () => {
+      const responseTimes = [-1, -1, 42]
       beforeEach(async () => {
         failedHealthchecks.add(channels[0].phoneNumber)
+        failedHealthchecks.add(channels[1].phoneNumber)
         stubHealthchecksWith(responseTimes)
       })
 
@@ -117,22 +126,39 @@ describe('diagnostics module', () => {
           expect(notifyMaintainersStub.getCall(0).args).to.eql([
             `Channel ${channelPhoneNumbers[0]} failed to respond to 2 consecutive healthchecks.`,
           ])
-        })
-
-        it('notifies maintainers of restart attempt', () => {
           expect(notifyMaintainersStub.getCall(1).args).to.eql([
-            `Restarting Signalboost due to failed healthchecks...`,
+            `Channel ${channelPhoneNumbers[1]} failed to respond to 2 consecutive healthchecks.`,
           ])
         })
 
-        it('restarts signalboost', () => {
-          ;[abortStub, isAliveStub].forEach(stub => expect(stub.callCount).to.eql(availableSockets))
-          ;[stopStub, runStub].forEach(stub => expect(stub.callCount).to.eql(1))
+        it('notifies maintainers of restart attempt', () => {
+          expect(notifyMaintainersStub.getCall(2).args).to.eql([
+            `Restarting shard ${socketId} due to failed healthchecks on ${
+              channels[0].phoneNumber
+            },${channels[1].phoneNumber}.`,
+          ])
+        })
+
+        it('restarts shard that experienced failure', () => {
+          // assert we restart signald and socket pool for shard in which failure occurred
+          ;[abortStub, isAliveStub, stopSocketStub, restartSocketStub].forEach(stub => {
+            expect(stub.callCount).to.eql(1)
+            expect(stub.getCall(0).args).to.eql([socketId])
+          })
+          // assert we resubscribe to all channels in shard
+          ;[subscribeStub, unsubscribeStub].forEach(stub => {
+            expect(stub.callCount).to.eql(3)
+            expect(map(stub.getCalls(0), 'args')).to.have.deep.members([
+              [channels[0].phoneNumber, socketId],
+              [channels[1].phoneNumber, socketId],
+              [channels[2].phoneNumber, socketId],
+            ])
+          })
         })
 
         it('notifies maintainers when restart succeeds', () => {
-          expect(notifyMaintainersStub.getCall(2).args).to.eql([
-            'Signalboost restarted successfully!',
+          expect(notifyMaintainersStub.getCall(3).args).to.eql([
+            `Shard ${socketId} restarted successfully!`,
           ])
         })
       })
@@ -147,19 +173,22 @@ describe('diagnostics module', () => {
           expect(notifyMaintainersStub.getCall(0).args).to.eql([
             `Channel ${channelPhoneNumbers[0]} failed to respond to 2 consecutive healthchecks.`,
           ])
+          expect(notifyMaintainersStub.getCall(1).args).to.eql([
+            `Channel ${channelPhoneNumbers[1]} failed to respond to 2 consecutive healthchecks.`,
+          ])
         })
 
         it('notifies maintainers of restart attempt', () => {
-          expect(notifyMaintainersStub.getCall(1).args[0]).to.contain('Restarting')
+          expect(notifyMaintainersStub.getCall(2).args[0]).to.contain('Restarting')
         })
 
-        it('attempts to restart signalboost', () => {
-          expect(isAliveStub.callCount).to.eql(availableSockets)
+        it('attempts to restart shard in which failure occured', () => {
+          expect(isAliveStub.callCount).to.eql(1)
         })
 
         it('notifies maintainers of restart failure', () => {
-          expect(notifyMaintainersStub.getCall(2).args).to.eql([
-            'Failed to restart Signalboost: not alive!',
+          expect(notifyMaintainersStub.getCall(3).args).to.eql([
+            'Failed to restart shard: not alive!',
           ])
         })
       })

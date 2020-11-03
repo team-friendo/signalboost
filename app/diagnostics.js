@@ -5,7 +5,7 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { times, filter, isEmpty, partition, zip } = require('lodash')
+const { times, filter, map, partition, zip, groupBy, mapValues, head } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
@@ -36,17 +36,33 @@ const sendHealthchecks = async () => {
     )
     logger.log(`Received responses for ${responseTimes.length} healthchecks.`)
 
-    const fatalHealtcheckFailures = filter(
-      await Promise.all(
-        zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
-          metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
-          if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
-        }),
+    const fatalHealtcheckFailures = map(
+      filter(
+        await Promise.all(
+          zip(channels, responseTimes).map(([{ phoneNumber }, responseTime]) => {
+            metrics.setGauge(metrics.gauges.CHANNEL_HEALTH, responseTime, [phoneNumber])
+            if (responseTime === -1) return _handleFailedHealtcheck(phoneNumber, channels.length)
+          }),
+        ),
+        'isFatal',
       ),
-      'isFatal',
+      'channelPhoneNumber',
     )
 
-    return !isEmpty(fatalHealtcheckFailures) ? _restartAndNotify() : Promise.resolve('')
+    const socketIds = await Promise.all(fatalHealtcheckFailures.map(channelRepository.getSocketId))
+
+    const failedChannelsBySocketId = mapValues(
+      groupBy(zip(fatalHealtcheckFailures, socketIds), ([, socketId]) => socketId),
+      x => map(x, head),
+    )
+
+    return Promise.all(
+      map(failedChannelsBySocketId, (channelPhoneNumbers, socketId) =>
+        _restartAndNotify(parseInt(socketId), channelPhoneNumbers),
+      ),
+    )
+
+    // return Promise.all(fatalHealtcheckFailures.map(_restartAndNotify))
   } catch (e) {
     logger.error(e)
   }
@@ -62,7 +78,7 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
     await notifier.notifyMaintainers(
       `Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`,
     )
-    return { isFatal: true }
+    return { isFatal: true, channelPhoneNumber }
   }
   // Otherwise cache the failure for another round of health checks,
   // and return flag signaling non-fatal failure
@@ -70,33 +86,48 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
   util
     .wait(2 * numHealtchecks * (healthcheckTimeout + healthcheckSpacing))
     .then(() => failedHealthchecks.delete(channelPhoneNumber))
-  return { isFatal: false }
+  return { isFatal: false, channelPhoneNumber }
 }
 
-// () => Promise<string>
-const _restartAndNotify = async () => {
+// (number, Array<string>) => Promise<string>
+const _restartAndNotify = async (socketId, channelPhoneNumbers) => {
   try {
-    logger.log(`--- RESTART INITIATED by system...`)
-    await notifier.notifyMaintainers('Restarting Signalboost due to failed healthchecks...')
-    await restart()
+    logger.log(`--- SYSTEM RESTARTING SHARD ${socketId}...`)
+    await notifier.notifyMaintainers(
+      `Restarting shard ${socketId} due to failed healthchecks on ${channelPhoneNumbers}.`,
+    )
+    await restart(socketId)
     logger.log(`--- RESTART SUCCEEDED.`)
-    return notifier.notifyMaintainers('Signalboost restarted successfully!')
+    return notifier.notifyMaintainers(`Shard ${socketId} restarted successfully!`)
   } catch (err) {
-    return notifier.notifyMaintainers(`Failed to restart Signalboost: ${err.message || err}`)
+    return notifier.notifyMaintainers(`Failed to restart shard: ${err.message || err}`)
   }
 }
 
-// () => Promise<string>
-const restart = async () => {
-  // send all signald instances a poison pill (causing them to shutdown and restart)
-  await Promise.all(times(availableSockets, socketId => signal.abort(socketId)))
-  // restart all signalboost application components (without shutting down signalboost process)
-  await app.stop()
-  await util.wait(restartDelay) // wait for signald to restart (so `subscribe` calls in `app.run()` work)
-  await app.run({})
-  // ensure that all signald instances are responsive before proceeding
+// Array<string> => Promise<Array<string>>
+const restartAll = async () => Promise.all(times(availableSockets, restart))
+
+// string => Promise<string>
+const restart = async socketId => {
+  const channelsOnSocket = await channelRepository.getChannelsOnSocket(socketId)
+
+  /******** STOP *********/
+  // unsubscribe from channels on this socket
+  await Promise.all(channelsOnSocket.map(ch => signal.unsubscribe(ch.phoneNumber, socketId)))
+  // send signald instances listening on this socket a poison pill (docker-compose will restart them)
+  await signal.abort(socketId)
+  // stop talking on this socket
+  await app.stopSocket(socketId)
+
+  /******* START *********/
+  // connect to signald on this socket
+  await app.restartSocket(socketId)
+  // wait for signald to spin up so that subscribing works
   await util.wait(restartDelay)
-  await Promise.all(times(availableSockets, socketId => signal.isAlive(socketId)))
+  // re-subscribe
+  await Promise.all(channelsOnSocket.map(ch => signal.subscribe(ch.phoneNumber, socketId)))
+  // make sure it worked!
+  await signal.isAlive(socketId)
 }
 
 // (Channel, string) => Promise<string>
@@ -112,7 +143,7 @@ const respondToHealthcheck = (channel, healthcheckId) =>
 
 module.exports = {
   respondToHealthcheck,
-  restart,
+  restartAll,
   sendHealthchecks,
   failedHealthchecks,
 }

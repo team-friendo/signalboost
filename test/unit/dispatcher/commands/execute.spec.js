@@ -2051,7 +2051,7 @@ describe('executing commands', () => {
     beforeEach(() => {
       isMaintainerStub = sinon.stub(channelRepository, 'isMaintainer')
       sinon.stub(channelRepository, 'getMaintainers').returns(Promise.resolve(adminMemberships))
-      restartStub = sinon.stub(diagnostics, 'restart').returns(Promise.resolve('v0.0.1'))
+      restartStub = sinon.stub(diagnostics, 'restartAll').returns(Promise.resolve('v0.0.1'))
     })
 
     describe('when sent by non-maintainer', () => {
