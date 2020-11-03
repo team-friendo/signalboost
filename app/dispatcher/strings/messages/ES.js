@@ -152,8 +152,8 @@ INVITAR +1-555-555-5555, +1-444-444-4444
 AGREGAR + 1-555-555-5555
 -> agrega + 1-555-555-5555 como admin de este canal
 
-PRIVADO buenas noches, admins
--> envía un mensaje privado "buenas noches, admins" a todos los administradores del canal
+PRIVADO hola admins / ~ hola admins
+-> envía un mensaje privado "hola admins" a todos los administradores del canal
 
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"

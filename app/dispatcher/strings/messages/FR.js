@@ -151,8 +151,8 @@ INVITE +33612345678, +336187654321
 AJOUTER +33612345678
 -> Ajouter +33612345678 en tant qu'admin du canal
 
-PRIVÉ bonsoir, admins
--> envoie un message privé "bonsoir, admins" à tous les administrateurs de la canal
+PRIVÉ bonjour admins / ~ bonjour admins
+-> envoie un message privé "bonjour admins" à tous les administrateurs de la canal
 
 RENOMMER nouveau nom
 -> Renommer le canal en “nouveau nom”

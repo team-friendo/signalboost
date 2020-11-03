@@ -12,7 +12,7 @@ module.exports = {
   INVITE: ['INVITE'],
   JOIN: ['HELLO', 'JOIN'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
   LEAVE: ['GOODBYE', 'LEAVE', 'STOP', 'UNSUBSCRIBE'],
-  PRIVATE: ['PRIVATE'],
+  PRIVATE: ['PRIVATE', '~'],
   REMOVE: ['REMOVE'],
   RENAME: ['RENAME'],
   REPLY: ['REPLY', '@'],
