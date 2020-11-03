@@ -138,6 +138,8 @@ const getSocketId = async channelPhoneNumber => {
   return channel && channel.socketId
 }
 
+const getChannelsOnSocket = socketId => app.db.channel.findAll({ where: { socketId } })
+
 // () => Promise<Channel>
 const getDiagnosticsChannel = async () => {
   if (!diagnosticsPhoneNumber) return null
@@ -191,6 +193,7 @@ module.exports = {
   getAllAdminsExcept,
   getAdminMemberships,
   getAdminPhoneNumbers,
+  getChannelsOnSocket,
   getDiagnosticsChannel,
   getMaintainers,
   getChannelsSortedBySize,

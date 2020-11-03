@@ -643,7 +643,7 @@ const maybeRestart = async (channel, sender, payload) => {
       return { status: statuses.UNAUTHORIZED, message }
     }
     // do the restarting:
-    await diagnostics.restart()
+    await diagnostics.restartAll()
     logger.log('--- RESTART SUCCEEDED')
 
     return {

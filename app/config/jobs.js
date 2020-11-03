@@ -16,7 +16,7 @@ const development = {
   channelTimeToLive: 1000 * 60 * 60 * 24 * 365 * 2, // 2 yr
   channelDestructionInterval: 1000 * 60 * 60 * 24, // 1 day
   channelDestructionGracePeriod: 1000 * 60 * 60 * 24 * 28, //  4 weeks
-  healthcheckInterval: 1000 * 60 * 5, // 5 min
+  healthcheckInterval: 1000 * 60 * 30, // 30 min
   signaldStartupTime: 1000 * 5, // 5 sec
 }
 
