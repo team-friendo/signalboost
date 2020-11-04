@@ -10,7 +10,7 @@ module.exports = {
   HOTLINE_OFF: ['HOTLINE OFF'],
   INFO: ['INFO'],
   INVITE: ['INVITE'],
-  JOIN: ['HELLO', 'JOIN', 'HI', 'HEY', 'HEYA', 'HEY THERE', 'WHASSUP'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
+  JOIN: ['HELLO', 'JOIN'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
   LEAVE: ['GOODBYE', 'LEAVE', 'STOP', 'UNSUBSCRIBE'],
   PRIVATE: ['PRIVATE'],
   REMOVE: ['REMOVE'],
