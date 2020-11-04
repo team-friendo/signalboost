@@ -430,6 +430,10 @@ describe('dispatcher module', () => {
             await dispatch(JSON.stringify(expiryUpdateWithBody))
           })
 
+          it('does not update expiry timer', () => {
+            expect(updateStub.callCount).to.eql(0)
+          })
+
           it('still relays message', async () => {
             expect(processCommandStub.getCall(0).args[0].sdMessage.messageBody).to.eql('HELLO')
           })

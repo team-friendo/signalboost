@@ -275,6 +275,7 @@ const detectRateLimitedMessage = inboundMsg =>
 // (SdMessage, Channel) -> UpdatableExpiryTime?
 const detectUpdatableExpiryTime = (inboundMsg, channel) =>
   _isMessage(inboundMsg) &&
+  _isEmpty(inboundMsg) &&
   inboundMsg.data.dataMessage.expiresInSeconds !== get(channel, 'messageExpiryTime')
     ? inboundMsg.data.dataMessage.expiresInSeconds
     : null
