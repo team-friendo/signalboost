@@ -179,7 +179,23 @@ describe('parse module', () => {
         const variants = [
           {
             language: languages.EN,
-            messages: ['BROADCAST hello friendos!', ' broadcast hello friendos!'],
+            messages: [
+              'BROADCAST hello friendos!',
+              ' broadcast hello friendos!',
+              '! hello friendos!',
+            ],
+          },
+          {
+            language: languages.ES,
+            messages: ['TRANSMITIR hello friendos!', ' transmitir hello friendos!'],
+          },
+          {
+            language: languages.FR,
+            messages: ['DIFFUSER hello friendos!', ' diffuser hello friendos!'],
+          },
+          {
+            language: languages.DE,
+            messages: ['SENDEN hello friendos!', ' senden hello friendos!'],
           },
         ]
 
@@ -454,6 +470,38 @@ describe('parse module', () => {
           messages.forEach(msg =>
             expect(parseExecutable(msg)).to.eql({
               command: commands.LEAVE,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
+    describe('PRIVATE command', () => {
+      it('parses a LEAVE command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['PRIVATE', 'private', ' private ', '~'],
+          },
+          {
+            language: languages.ES,
+            messages: ['PRIVADA', 'PRIVADO', ' privada ', ' privado '],
+          },
+          {
+            language: languages.FR,
+            messages: ['PRIVÉ', 'PRIVÉE', ' privé ', ' privée '],
+          },
+          {
+            language: languages.DE,
+            messages: ['PRIVAT', ' privat '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.PRIVATE,
               language,
               payload: '',
             }),

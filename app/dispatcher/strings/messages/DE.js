@@ -148,8 +148,8 @@ EINLADEN +491701234567, +491707654321
 HINZUFÜGEN +491701234567
 -> Fügt +491701234567 als Admin des Kanals hinzu
 
-PRIVAT Guten Abend, Admins
--> Dendet eine private Nachricht "Guten Abend, Admins" an alle Admins des Kanals
+PRIVAT Hallo Admins / ~ Hallo admins
+-> Dendet eine private Nachricht "Hallo Admins" an alle Admins des Kanals
 
 UMBENENNEN neuer name
 -> Benennt den Kanal in "neuer name" um

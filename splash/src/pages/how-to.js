@@ -278,6 +278,10 @@ export default () => (
       Sends a private message to admins only (subscribers will not be able to
       see those messages).
     </p>
+    <p>For a shortcut, use the "~" symbol instead:</p>
+    <blockquote className="command blockquote">
+      <p>~ good morning fellow admins!</p>
+    </blockquote>
     <h4 id="languages" className="anchor">
       ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH{' '}
     </h4>
