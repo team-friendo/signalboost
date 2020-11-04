@@ -109,9 +109,8 @@ describe('channel model', () => {
     expect(channel.vouchLevel).to.be.a('number')
     expect(channel.socketId).to.be.a('number')
     expect(channel.nextAdminId).to.be.a('number')
-    expect(channel.nextAdminId).to.be.a('number')
-    expect(channel.createdAt).to.be.a('Date')
     expect(channel.subscriberLimit).to.be.a('number')
+    expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
   })
 
