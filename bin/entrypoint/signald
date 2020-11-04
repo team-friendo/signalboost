@@ -10,8 +10,9 @@ fi
 
 export JAVA_OPTS=""
 
-if [[ "$SIGNALBOOST_ENV" == "production" ]]; then
-  export JAVA_OPTS="-Ddd.profiling.enabled=true -javaagent:/var/lib/dd/dd-java-agent.jar"
+if [[ "$SIGNALBOOST_ENV" == "development" ]]; then
+  # enbale remote debugging for dockerized stuff
+  export JAVA_TOOL_OPTIONS="-agentlib:jdwp=transport=dt_socket,address=0.0.0.0:8016,server=y,suspend=n"
 fi
 
 signald ${v_flag} -d /var/lib/signald

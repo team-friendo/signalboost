@@ -32,7 +32,7 @@ if [[ "$NODE_ENV" = "development" ]];then
   check-until-ngrok-url-available
   export SIGNALBOOST_HOST_URL=${host_url}
   cd /signalboost
-  npx nodemon app/run
+  npx nodemon --inspect=0.0.0.0 app/run
 else
   node /signalboost/app/run
 fi
