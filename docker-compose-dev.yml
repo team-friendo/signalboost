@@ -18,36 +18,58 @@ services:
 
   app:
     env_file: .env.dev
+    ports:
+      - 0.0.0.0:9229:9229
 
   signald_0:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8010:8016
 
   signald_1:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8011:8016
 
   signald_2:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8012:8016
 
   signald_3:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8013:8016
 
   signald_4:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8014:8016
 
   signald_5:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8015:8016
 
   signald_6:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8016:8016
 
   signald_7:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8017:8016
 
   signald_8:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8018:8016
 
   signald_9:
     <<: *signald-overrides
+    ports:
+      - 0.0.0.0:8019:8016
 
   ngrok:
     container_name: signalboost_ngrok
