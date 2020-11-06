@@ -3,39 +3,19 @@ import { expect } from 'chai'
 import { times } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
-import { banFactory } from '../../../support/factories/ban'
 import banRepository from '../../../../app/db/repositories/ban'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 
-describe.only('ban repository', async () => {
-  const memberPhoneNumber = genPhoneNumber()
-  // let channelPhoneNumber = (await db.channel.create(channelFactory())).phoneNumber
-  let db, ban, channelPhoneNumber
+describe('ban repository', async () => {
+  const [memberPhoneNumber, memberPhoneNumber2] = times(2, genPhoneNumber)
+  let db, channelPhoneNumber
 
   before(async () => {
     db = (await app.run({ ...testApp, db: dbService })).db
     channelPhoneNumber = (await db.channel.create(channelFactory())).phoneNumber
-    console.log(db.ban)
   })
-  // beforeEach(async () => {
-  //   await db.channel.create(
-  //     channelFactory({
-  //       phoneNumber: channelPhoneNumber,
-  //       bans: [
-  //         banFactory({
-  //           channelPhoneNumber,
-  //           memberPhoneNumber,
-  //         }),
-  //       ],
-  //     }),
-  //     {
-  //       include: [{ model: db.ban }],
-  //     },
-  //   )
-  //   banCount = await db.ban.count()
-  // })
 
   afterEach(async () => {
     await db.ban.destroy({ where: {}, force: true })
@@ -48,13 +28,30 @@ describe.only('ban repository', async () => {
 
   describe('#isBanned', () => {
     beforeEach(async () => {
-      console.log({ channelPhoneNumber, memberPhoneNumber })
-      ban = await db.ban.create({ channelPhoneNumber, memberPhoneNumber })
-      console.log(await db.ban.count())
+      await db.ban.create({ channelPhoneNumber, memberPhoneNumber })
     })
     describe('for a member who has been banned', () => {
       it('returns true', async () => {
         expect(await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber)).to.eql(true)
+      })
+      it('creates a new record', async () => {
+        expect(await db.ban.count()).to.eql(1)
+      })
+    })
+    describe('for a member who has not been banned', () => {
+      it('returns false', async () => {
+        expect(await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber2)).to.eql(false)
+      })
+    })
+  })
+
+  describe('#banMember', () => {
+    beforeEach(async () => {
+      await banRepository.banMember(channelPhoneNumber, memberPhoneNumber)
+    })
+    describe('for valid phone numbers', async () => {
+      it('creates a new record', async () => {
+        expect(await db.ban.count()).to.eql(1)
       })
     })
   })
