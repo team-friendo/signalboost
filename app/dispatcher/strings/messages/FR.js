@@ -109,6 +109,8 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     dbError: "Oups! Échec de l'émission de l'interdiction. Veuillez réessayer!",
     invalidHotlineMessageId: messageId =>
       `Désolé, l'ID de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
+    toBannedSubscriber:
+      'Un administrateur de cette chaîne vous a banni. Aucune autre interaction ne sera reçue par les administrateurs de la chaîne.',
   },
 
   // BROADCAST

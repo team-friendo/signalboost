@@ -262,17 +262,32 @@ const maybeBanSender = async (channel, sender, hotlineMessage) => {
         status: statuses.ERROR,
         message: cr.alreadyBanned(hotlineMessage.messageId),
       }
-    : banMember(channel.phoneNumber, memberPhoneNumber, hotlineMessage.messageId, cr)
+    : banMember(channel, memberPhoneNumber, hotlineMessage.messageId, cr)
 }
 
-const banMember = async (channelPhoneNumber, memberPhoneNumber, messageId, cr) => {
+const banMember = async (channel, memberPhoneNumber, messageId, cr) => {
   return banRepository
-    .banMember(channelPhoneNumber.phoneNumber, memberPhoneNumber)
+    .banMember(channel.phoneNumber, memberPhoneNumber)
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(messageId),
+      message: '',
+      notifications: banNotificationsOf(channel, memberPhoneNumber, messageId, cr),
     }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+}
+
+const banNotificationsOf = (channel, phoneNumber, messageId, cr) => {
+  const adminMemberships = getAdminMemberships(channel)
+  return [
+    {
+      recipient: phoneNumber,
+      message: cr.toBannedSubscriber,
+    },
+    ...adminMemberships.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: cr.success(messageId),
+    })),
+  ]
 }
 
 // BROADCAST

@@ -107,6 +107,8 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     dbError: '¡Ups! No se pudo emitir la prohibición. ¡Inténtalo de nuevo!',
     invalidHotlineMessageId: messageId =>
       `Lo sentimos, el ID de mensaje de la línea directa @${messageId} caducó o nunca existió.`,
+    toBannedSubscriber:
+      'Un administrador de este canal te ha prohibido. Los administradores del canal no recibirán ninguna interacción adicional.',
   },
 
   // BROADCAST

@@ -494,7 +494,7 @@ describe('executing commands', () => {
     })
   })
 
-  describe('BAN command', () => {
+  describe.only('BAN command', () => {
     const messageId = 1312
     let isBannedStub, findMemberPhoneNumberStub, banMemberStub
     beforeEach(() => {
@@ -569,12 +569,21 @@ describe('executing commands', () => {
             attachments,
           }),
         }
-
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.SUCCESS,
-          message: `The sender of hotline message ${messageId} has been banned.`,
-          notifications: [],
+          message: '',
+          notifications: [
+            {
+              recipient: subscriber.phoneNumber,
+              message:
+                'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
+            },
+            ...adminMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: 'The sender of hotline message 1312 has been banned.',
+            })),
+          ],
           payload: { messageId: 1312, reply: '' },
         })
       })

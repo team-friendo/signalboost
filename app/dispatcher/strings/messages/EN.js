@@ -100,6 +100,8 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     dbError: 'Oops! Failed to issue ban. Please try again!',
     invalidHotlineMessageId: messageId =>
       `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
+    toBannedSubscriber:
+      'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
   },
 
   // BROADCAST
