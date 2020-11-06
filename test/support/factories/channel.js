@@ -5,7 +5,6 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { inviteFactory } from './invite'
 import { genPhoneNumber } from './phoneNumber'
 import { deauthorizationFactory } from './deauthorization'
-import { banFactory } from './ban'
 
 const {
   signal: { defaultMessageExpiryTime },

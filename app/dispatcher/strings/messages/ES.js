@@ -99,9 +99,11 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
 
   // BAN
   ban: {
-    success: messageId => `El remitente del mensaje de la línea directa ${messageId} ha sido bloqueado.`,
+    success: messageId =>
+      `El remitente del mensaje de la línea directa ${messageId} ha sido bloqueado.`,
     notAdmin,
-    alreadyBanned: messageId => `El remitente del mensaje de la línea directa ${messageId} ya está prohibido.`,
+    alreadyBanned: messageId =>
+      `El remitente del mensaje de la línea directa ${messageId} ya está prohibido.`,
     dbError: '¡Ups! No se pudo emitir la prohibición. ¡Inténtalo de nuevo!',
     invalidHotlineMessageId: messageId =>
       `Lo sentimos, el ID de mensaje de la línea directa @${messageId} caducó o nunca existió.`,
