@@ -92,6 +92,16 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     invalidPhoneNumber,
   },
 
+  // BAN
+  ban: {
+    success: messageId => `The sender of hotline message ${messageId} has been banned.`,
+    notAdmin,
+    alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
+    dbError: 'Oops! Failed to issue ban. Please try again!',
+    invalidHotlineMessageId: messageId =>
+      `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
+  },
+
   // BROADCAST
   broadcast: {
     notAdmin,
@@ -244,15 +254,6 @@ CHANNEL INFO
 You are not subscribed to channel ${channel.phoneNumber}. Send HELLO to subscribe.
 
 ${support}`,
-  },
-  // BAN
-  ban: {
-    success: messageId => `The sender of hotline message ${messageId} has been banned.`,
-    notAdmin,
-    alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
-    dbError: 'Oops! Failed to issue ban. Please try again!',
-    invalidHotlineMessageId: messageId =>
-      `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
   // INVITE

@@ -100,6 +100,16 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     invalidPhoneNumber,
   },
 
+  // BAN
+  ban: {
+    success: messageId => `L'expéditeur du message de la hotline ${messageId} a été banni.`,
+    notAdmin,
+    alreadyBanned: messageId => `L'expéditeur du message de la hotline ${messageId} est déjà banni.`,
+    dbError: 'Oups! Échec de l\'émission de l\'interdiction. Veuillez réessayer!',
+    invalidHotlineMessageId: messageId =>
+      `Désolé, l'ID de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
+  },
+
   // BROADCAST
   broadcast: {
     notAdmin,
