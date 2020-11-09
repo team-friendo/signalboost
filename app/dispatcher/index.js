@@ -108,23 +108,6 @@ const dispatch = async (msg, socketId) => {
  * DISPATCH HELPERS
  **********************/
 
-// (Channel, string, SdMessage) => Promise<Array<function>>
-const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
-  let sideEffects = []
-
-  // Don't return early here b/c that would prevent processing of HELLO commands on channels w/ disappearing messages
-  const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
-  if (isNumber(newExpiryTime))
-    sideEffects.push(() => updateExpiryTime(sender, channel, newExpiryTime))
-
-  // Don't return early here b/c the person "redeemed" channel by sending normal message that should be processed!
-  if (channel && channel.destructionRequest && _isMessage(inboundMsg) && !isEmpty(inboundMsg)) {
-    sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
-  }
-
-  return sideEffects
-}
-
 // (Channel | null, Sender | null, SdMessage) -> Promise<function | null>
 const detectInterventions = async (channel, sender, inboundMsg) => {
   const healthcheckId = detectHealthcheck(inboundMsg)
@@ -139,6 +122,22 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
 
   const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
+}
+
+// (Channel, string, SdMessage) => Promise<Array<function>>
+const detectAndPerformSideEffects = async (channel, sender, inboundMsg) => {
+  let sideEffects = []
+
+  // Don't return early here b/c that would prevent processing of HELLO commands on channels w/ disappearing messages
+  const newExpiryTime = detectUpdatableExpiryTime(inboundMsg, channel)
+  if (isNumber(newExpiryTime))
+    sideEffects.push(() => updateExpiryTime(sender, channel, newExpiryTime))
+
+  // Don't return early here b/c the person "redeemed" channel by sending normal message that should be processed!
+  if (detectRedemption(channel, inboundMsg))
+    sideEffects.push(() => phoneNumberRegistrar.redeem(channel))
+
+  return sideEffects
 }
 
 const relay = async (channel, sender, inboundMsg) => {
@@ -279,6 +278,14 @@ const detectUpdatableExpiryTime = (inboundMsg, channel) =>
   inboundMsg.data.dataMessage.expiresInSeconds !== get(channel, 'messageExpiryTime')
     ? inboundMsg.data.dataMessage.expiresInSeconds
     : null
+
+const detectRedemption = (channel, inboundMsg) =>
+  channel &&
+  channel.destructionRequest &&
+  _isMessage(inboundMsg) &&
+  !_isEmpty(inboundMsg) &&
+  !detectHealthcheck(inboundMsg) &&
+  !detectHealthcheckResponse(inboundMsg)
 
 const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!
