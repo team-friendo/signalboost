@@ -10,7 +10,7 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { membershipFactory } from '../../../support/factories/membership'
 const {
-  jobs: { channelTimeToLive },
+  jobs: { channelExpiryInMillis },
   signal: { diagnosticsPhoneNumber },
 } = require('../../../../app/config')
 
@@ -390,7 +390,7 @@ describe('channel repository', () => {
 
     beforeEach(async () => {
       staleChannels = await createChannelsFromAttributes(times(2, deepChannelFactory))
-      await util.wait(channelTimeToLive + 1)
+      await util.wait(channelExpiryInMillis + 1)
       await createChannelsFromAttributes(times(1, deepChannelFactory))
     })
 
