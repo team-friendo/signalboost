@@ -5,7 +5,7 @@ const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
-  jobs: { channelTimeToLive },
+  jobs: { channelExpiryInMillis },
   signal: { diagnosticsPhoneNumber },
 } = require('../../config')
 
@@ -122,7 +122,7 @@ const getStaleChannels = async () =>
         model: app.db.messageCount,
         where: {
           updatedAt: {
-            [Op.lte]: util.now().subtract(parseInt(channelTimeToLive), 'ms'),
+            [Op.lte]: util.now().subtract(parseInt(channelExpiryInMillis), 'ms'),
           },
         },
       },
