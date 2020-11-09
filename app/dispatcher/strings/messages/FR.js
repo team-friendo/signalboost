@@ -33,7 +33,7 @@ Signalboost dispose de canaux avec des admins et des abonné-e-s :
 
 Signalboost protège votre vie privée :
 
--> Les utilisateurices ne peuvent pas voir les numéros de téléphone des autres usagèr-e-s. (Les flics ne peuvent pas non plus!)
+-> Les utilisateurices ne peuvent pas voir les numéros de téléphone des autres usagèr-e-s.
 -> Signalboost ne lit pas et ne conserve aucun de vos messages.
 
 Signalboost répond aux commandes:
@@ -235,7 +235,6 @@ Vous êtes abonné-e à ce canal.
 
 Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
-Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}

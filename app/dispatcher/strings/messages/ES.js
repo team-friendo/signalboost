@@ -33,7 +33,7 @@ Signalboost tiene canales con administradores y suscriptores.
 
 Signalboost intenta a preservar su privacidad:
 
--> Los usuarios de Signalboost no pueden ver los números de otros usuarios. (¡Los policías tampoco no pueden!)
+-> Los usuarios de Signalboost no pueden ver los números de otros usuarios.
 -> Signalboost no lee ni almacena los mensajes de nadie.
 
 Signalboost responde a comandos:
@@ -235,7 +235,6 @@ Usted es suscriptor de este canal.
 
 nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
-suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}

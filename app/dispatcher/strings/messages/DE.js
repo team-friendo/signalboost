@@ -33,7 +33,7 @@ Signalboost hat Kanäle mit Admins und Teilnehmern:
 
 Signalboost beschützt deine Privatsphäre:
 
--> Benutzer können nie die Telefonnummern anderer Nutzer sehen (Cops auch nicht!)
+-> Benutzer können nie die Telefonnummern anderer Nutzer sehen.
 -> Signalboost liest oder speichert nie den Inhalt der Nachrichten.
 
 Signalboost antwortet auf Befehle:
@@ -233,7 +233,6 @@ Du bist als Teilnehmer dieses Kanals angemeldet.
 
 Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
-Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
