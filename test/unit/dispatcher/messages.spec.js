@@ -109,9 +109,11 @@ describe('messages module', () => {
       })
 
       describe('for subscriber', () => {
-        it('shows subscriber count', () => {
-          const msg = cr.info[memberTypes.SUBSCRIBER](channel)
-          expect(msg).to.include('subscribers: 2')
+        const msg = cr.info[memberTypes.SUBSCRIBER](channel)
+        it('does not show subscriber count', () => {
+          expect(msg).not.to.include('subscribers: 2')
+        })
+        it('shows channel description', () => {
           expect(msg).to.include('description: the foobar channel')
         })
       })

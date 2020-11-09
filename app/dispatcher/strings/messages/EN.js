@@ -33,7 +33,7 @@ Signalboost has channels with admins and subscribers:
 
 Signalboost protects your privacy:
 
--> Users cannot see other users' phone numbers. (Cops can't either!)
+-> Users cannot see other users' phone numbers.
 -> Signalboost does not read or store the contents of anyone's messages.
 
 Signalboost responds to commands:
@@ -226,7 +226,6 @@ You are subscribed to this channel.
 
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
-subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
