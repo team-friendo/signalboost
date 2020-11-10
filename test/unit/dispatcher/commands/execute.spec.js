@@ -494,7 +494,7 @@ describe('executing commands', () => {
     })
   })
 
-  describe.only('BAN command', () => {
+  describe('BAN command', () => {
     const messageId = 1312
     let isBannedStub, findMemberPhoneNumberStub, banMemberStub
     beforeEach(() => {
