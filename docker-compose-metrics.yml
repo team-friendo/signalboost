@@ -19,6 +19,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus_data'
+      - '--storage.tsdb.retention.time=30d'
       - '--log.level=debug'
     env_file: .env.metrics
     environment:
