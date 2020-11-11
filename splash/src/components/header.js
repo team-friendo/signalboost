@@ -1,32 +1,39 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Link } from 'gatsby'
-import headerStyles from './header.module.css'
+import './header.css'
+import { slide as Menu } from 'react-burger-menu'
 
 const Header = ({ siteTitle }) => (
   <header>
-    <nav className={`container ${headerStyles.nav}`}>
+    <nav className="nav">
       <Link to="/">
-        <h1 className={headerStyles.title}>{siteTitle}</h1>
+        <h1 className="title">{siteTitle}</h1>
       </Link>
-      <div>
-        <Link
-          to="/how-to"
-          className={headerStyles.nav__link}
-          activeClassName={headerStyles.active}
-        >
-          How-to
-        </Link>
-        <Link
-          to="/donate"
-          className={headerStyles.nav__link}
-          activeClassName={headerStyles.active}
-        >
-          Donate
-        </Link>
+      <div className="nav__desktop">
+        <NavItems />
+      </div>
+      <div className="nav__mobile">
+        <Menu itemListElement="div" pageWrapId={'container'}>
+          <NavItems />
+        </Menu>
       </div>
     </nav>
   </header>
+)
+
+const NavItems = () => (
+  <React.Fragment>
+    <Link to="/how-to" className="nav__link" activeClassName="active">
+      How-to
+    </Link>
+    <Link to="/donate" className="nav__link" activeClassName="active">
+      Donate
+    </Link>
+    <Link to="/privacy" className="nav__link" activeClassName="active">
+      Privacy
+    </Link>
+  </React.Fragment>
 )
 
 Header.propTypes = {

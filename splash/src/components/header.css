@@ -1,0 +1,115 @@
+.nav {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  margin-left: 15px;
+}
+
+.nav__link {
+  font-size: x-large;
+  color: #50fa7b;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.active {
+  background-color: rgba(40, 42, 54, 0.8);
+}
+
+/* React-Burger-Menu styles */
+/* Position and sizing of burger button */
+.bm-burger-button {
+  position: fixed;
+  width: 34px;
+  height: 28px;
+  right: 20px;
+  top: 20px;
+}
+
+/* Color/shape of burger icon bars */
+.bm-burger-bars {
+  background: #50fa7b;
+  border-radius: 5px;
+}
+
+/* Position and sizing of clickable cross button */
+.bm-cross-button {
+  height: 28px;
+  width: 28px;
+  margin: 10px;
+}
+
+/* Color/shape of close button cross */
+.bm-cross {
+  background: #bdc3c7;
+}
+
+/*
+Sidebar wrapper styles
+Note: Beware of modifying this element as it can break the animations - you should not need to touch it in most cases
+*/
+.bm-menu-wrap {
+  position: fixed;
+  height: 100%;
+  top: 0;
+}
+
+/* General sidebar styles */
+.bm-menu {
+  background: #373a47;
+  padding: 2em 1em 0;
+}
+
+/* Morph shape necessary with bubble or elastic */
+.bm-morph-shape {
+  fill: #373a47;
+}
+
+/* Wrapper for item list */
+.bm-item-list {
+  color: #b8b7ad;
+  padding: 0.8em;
+}
+
+/* Styling of overlay */
+.bm-overlay {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.nav__mobile {
+  display: none
+}
+
+@media only screen and (max-width: 600px) {
+  .nav__link {
+    font-size: 1.5em;
+    display: block;
+  }
+  .nav__desktop {
+    display: none;
+  }
+  .nav__mobile {
+    display: inline-block;
+  }
+}
+
+@media only screen and (min-width: 600px) {
+  .nav {
+    margin: 0 auto;
+    max-width: 960px;
+
+  }
+}
+
+
+@media only screen and (max-width: 768px) {
+  .title {
+    font-size: 25px;
+  }
+}
