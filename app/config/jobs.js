@@ -1,6 +1,6 @@
 const defaults = {
   channelDestructionInterval: 1000 * 60 * 60, // 1 hr
-  channelDestructionGracePeriod: 1000 * 60 * 60 * 24, // 1 day
+  channelDestructionGracePeriod: 1000 * 60 * 60 * 24 * 3, // 3 days
   channelExpiryInMillis: 1000 * 60 * 60 * 24 * 7, // 1 week
   healthcheckInterval: 1000 * 60 * 15, // 15 min
   hotlineMessageExpiryInMillis: 1000 * 60 * 60 * 24 * 3, // 3 days
