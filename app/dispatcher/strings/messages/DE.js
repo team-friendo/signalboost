@@ -1,3 +1,4 @@
+const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -50,7 +51,9 @@ const parseErrors = {
     'Did you mean to prefix your message with SENDEN? Send HILFE to see a list of all commands.',
 
   unnecessaryPayload: command =>
-    `Sorry, dieser Befehl wurde nicht erkannt. Wollten Sie ${command} verwenden?
+    `Sorry, dieser Befehl wurde nicht erkannt.
+
+Wollten Sie ${upperCase(command)} oder SENDEN verwenden?
 
 Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
 

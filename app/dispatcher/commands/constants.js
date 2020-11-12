@@ -17,6 +17,7 @@ const toggles = {
 
 const parseErrorTypes = {
   MISSING_COMMAND: 'MISSING_COMMAND',
+  NON_EMPTY_PAYLOAD: 'NON_EMPTY_PAYLOAD',
   INVALID_PAYLOAD: 'INVALID_PAYLOAD',
 }
 

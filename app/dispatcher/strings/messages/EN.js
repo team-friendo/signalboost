@@ -1,3 +1,4 @@
+const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -46,7 +47,9 @@ const validPhoneNumberHint = `Phone numbers must include country codes prefixed 
 
 const parseErrors = {
   unnecessaryPayload: command =>
-    `Sorry, that command was not recognized. Did you mean to use "${command}"? 
+    `Sorry, that command was not recognized.
+    
+Did you mean to use ${upperCase(command)} or BROADCAST?
 
 Send HELP for a list of all valid commands and how to use them.`,
 

@@ -135,6 +135,7 @@ describe('executing commands', () => {
   let logIfFirstMembershipStub, logIfLastMembershipStub
 
   beforeEach(() => {
+    sinon.stub(hotlineMessageRepository, 'getMessageId').returns(Promise.resolve('42'))
     logIfFirstMembershipStub = sinon
       .stub(eventRepository, 'logIfFirstMembership')
       .returns(Promise.resolve(sample([null, eventFactory(eventTypes.MEMBER_CREATED)])))
@@ -310,22 +311,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const _dispatchable = {
-          ...dispatchable,
-          sdMessage: sdMessageOf({ sender: channel, message: `${localizedCmds.ACCEPT} my life` }),
-        }
-        expect(await processCommand(_dispatchable)).to.eql({
-          command: commands.ACCEPT,
-          payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(language).parseErrors.unnecessaryPayload(localizedCmds.ACCEPT),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('ADD command', () => {
@@ -487,26 +472,14 @@ describe('executing commands', () => {
     })
 
     describe('when sender is not an admin', () => {
-      const dispatchable = {
-        channel,
-        sender: subscriber,
-        sdMessage: sdMessageOf({ sender: channel, message: `ADD ${newAdminPhoneNumber}` }),
-      }
-      let result
-      beforeEach(async () => (result = await processCommand(dispatchable)))
-
-      it('does not attempt to add admin', () => {
+      it('does not attempt to add admin', async () => {
+        const dispatchable = {
+          channel,
+          sender: subscriber,
+          sdMessage: sdMessageOf({ sender: channel, message: `ADD ${newAdminPhoneNumber}` }),
+        }
+        await processCommand(dispatchable)
         expect(addAdminStub.callCount).to.eql(0)
-      })
-
-      it('returns an UNAUTHORIZED status/message', () => {
-        expect(result).to.eql({
-          command: commands.ADD,
-          payload: newAdminPhoneNumber,
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).add.notAdmin,
-          notifications: [],
-        })
       })
     })
   })
@@ -544,22 +517,6 @@ describe('executing commands', () => {
               attachments,
             })),
           ],
-        })
-      })
-    })
-
-    describe('when sender is not an admin', () => {
-      const dispatchable = { channel, sender: subscriber, sdMessage }
-
-      it('returns an error and message', async () => {
-        const response = await processCommand(dispatchable)
-
-        expect(response).to.eql({
-          command: commands.BROADCAST,
-          payload: 'hello friendos!',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).broadcast.notAdmin,
-          notifications: [],
         })
       })
     })
@@ -602,22 +559,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const _dispatchable = {
-          ...dispatchable,
-          sdMessage: sdMessageOf({ sender: channel, message: `${localizedCmds.DECLINE} this` }),
-        }
-        expect(await processCommand(_dispatchable)).to.eql({
-          command: commands.DECLINE,
-          payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(language).parseErrors.unnecessaryPayload(localizedCmds.DECLINE),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('DESTROY command', () => {
@@ -636,22 +577,6 @@ describe('executing commands', () => {
           message: commandResponsesFor(admin).destroy.confirm,
           payload: '',
           notifications: [],
-        })
-      })
-    })
-
-    describe('when issuer is a subscriber or rando', () => {
-      ;[subscriber, randomPerson].forEach(sender => {
-        const dispatchable = { ..._dispatchable, sender }
-
-        it('responds with UNAUTHORIZED', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.DESTROY,
-            status: statuses.UNAUTHORIZED,
-            message: commandResponsesFor(sender).destroy.notAdmin,
-            payload: '',
-            notifications: [],
-          })
         })
       })
     })
@@ -711,25 +636,15 @@ describe('executing commands', () => {
     describe('when issuer is a subscriber or rando', () => {
       ;[subscriber, randomPerson].forEach(sender => {
         const dispatchable = { ..._dispatchable, sender }
-        let callCount, res
+        let callCount
 
         beforeEach(async () => {
           callCount = destroyStub.callCount
-          res = await processCommand(dispatchable)
+          await processCommand(dispatchable)
         })
 
         it('does not attempt to destroy the channel', () => {
           expect(destroyStub.callCount).to.eql(callCount)
-        })
-
-        it('returns an UNAUTHORIZED message', () => {
-          expect(res).to.eql({
-            command: commands.DESTROY_CONFIRM,
-            status: statuses.UNAUTHORIZED,
-            payload: '',
-            message: commandResponsesFor(sender).destroy.notAdmin,
-            notifications: [],
-          })
         })
       })
     })
@@ -779,28 +694,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const dispatchable = {
-          channel,
-          sender: randomPerson,
-          sdMessage: sdMessageOf({
-            sender: channel,
-            message: `${localizedCmds.HELP} me find the march`,
-          }),
-        }
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.HELP,
-          payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(randomPerson.language).parseErrors.unnecessaryPayload(
-            localizedCmds.HELP,
-          ),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('INFO command', () => {
@@ -843,28 +736,6 @@ describe('executing commands', () => {
           payload: '',
           status: statuses.SUCCESS,
           message: commandResponsesFor(randomPerson).info[memberTypes.NONE](channel),
-          notifications: [],
-        })
-      })
-    })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const dispatchable = {
-          channel,
-          sender: randomPerson,
-          sdMessage: sdMessageOf({
-            sender: channel,
-            message: `${localizedCmds.INFO} wars did it`,
-          }),
-        }
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.INFO,
-          payload: '',
-          status: statuses.ERROR,
-          // TODO(aguestuser|2020-10-07): we should maybe make an effort to return this in the sender language?
-          //  (currently we infer the langauge from the command, but, uniquely, INFO always defaults to english)
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload(localizedCmds.INFO),
           notifications: [],
         })
       })
@@ -1447,23 +1318,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const dispatchable = {
-          channel,
-          sender: randomPerson,
-          sdMessage: sdMessageOf({ sender: channel, message: 'join us tomorrow!' }),
-        }
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.JOIN,
-          payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('join'),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('LEAVE command', () => {
@@ -1565,27 +1419,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const dispatchable = {
-          channel,
-          sender: randomPerson,
-          sdMessage: sdMessageOf({
-            sender: channel,
-            message: `${localizedCmds.LEAVE} that to us`,
-          }),
-        }
-
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.LEAVE,
-          payload: '',
-          status: statuses.ERROR,
-          message: parseErrorsInCommandLang.unnecessaryPayload(localizedCmds.LEAVE),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('PRIVATE command', () => {
@@ -1593,20 +1426,6 @@ describe('executing commands', () => {
       sender: channel.phoneNumber,
       message: 'PRIVATE hello this is private!',
       attachments,
-    })
-
-    describe('when sender is not an admin', () => {
-      const dispatchable = { channel, sender: subscriber, sdMessage }
-
-      it('returns an error message to sender', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.PRIVATE,
-          payload: 'hello this is private!',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).private.notAdmin,
-          notifications: [],
-        })
-      })
     })
 
     describe('when sender is an admin', () => {
@@ -1801,22 +1620,10 @@ describe('executing commands', () => {
     describe('when sender is not an admin', () => {
       const sdMessage = sdMessageOf({ sender: channel, message: `REMOVE ${removalTargetNumber}` })
       const dispatchable = { channel, sender: randomPerson, sdMessage }
-      let result
-
-      beforeEach(async () => (result = await processCommand(dispatchable)))
+      beforeEach(async () => await processCommand(dispatchable))
 
       it('does not attempt to add admin', () => {
         expect(removeMemberStub.callCount).to.eql(0)
-      })
-
-      it('returns an SUCCESS status / message', () => {
-        expect(result).to.eql({
-          command: commands.REMOVE,
-          payload: removalTargetNumber,
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesInCommandLang.remove.notAdmin,
-          notifications: [],
-        })
       })
     })
   })
@@ -1867,34 +1674,6 @@ describe('executing commands', () => {
             message: commandResponsesFor(admin).rename.dbError(channel.name, 'foo'),
             notifications: [],
           })
-        })
-      })
-    })
-
-    describe('when sender is a subscriber', () => {
-      const dispatchable = { channel, sender: subscriber, sdMessage }
-
-      it('returns UNAUTHORIZED status / message', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RENAME,
-          payload: 'foo',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).rename.notAdmin,
-          notifications: [],
-        })
-      })
-    })
-
-    describe('when sender is a random person', () => {
-      const dispatchable = { channel, sender: randomPerson, sdMessage }
-
-      it('returns UNAUTHORIZED status / message', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.RENAME,
-          payload: 'foo',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesInCommandLang.rename.notAdmin,
-          notifications: [],
         })
       })
     })
@@ -2016,22 +1795,8 @@ describe('executing commands', () => {
               '@ us if you can come tonight',
             ),
             notifications: [],
-            payload: '@ us if you can come tonight',
+            payload: '',
           })
-        })
-      })
-    })
-
-    describe('when sender is not an admin', () => {
-      const _dispatchable = { ...dispatchable, sender: subscriber }
-
-      it('returns UNAUTHORIZED status', async () => {
-        expect(await processCommand(_dispatchable)).to.eql({
-          command: commands.REPLY,
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).hotlineReply.notAdmin,
-          notifications: [],
-          payload: { messageId: 1312, reply: 'foo' },
         })
       })
     })
@@ -2198,23 +1963,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('returns an error and message', async () => {
-        const dispatchable = {
-          channel,
-          sender: randomPerson,
-          sdMessage: sdMessageOf({ sender: channel, message: 'english muffins are ready!' }),
-        }
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.SET_LANGUAGE,
-          payload: '',
-          status: statuses.ERROR,
-          message: messagesIn(defaultLanguage).parseErrors.unnecessaryPayload('english'),
-          notifications: [],
-        })
-      })
-    })
   })
 
   describe('TOGGLE commands', () => {
@@ -2286,38 +2034,6 @@ describe('executing commands', () => {
               message: commandResponsesFor(sender).toggles[name].dbError(isOn),
               notifications: [],
             })
-          })
-        })
-      })
-
-      describe('when sender is a subscriber', () => {
-        const sender = subscriber
-        const sdMessage = sdMessageOf({ sender: channel.phoneNumber, message: commandStr })
-        const dispatchable = { channel, sender, sdMessage }
-
-        it('returns an UNAUTHORIZED status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command,
-            payload: '',
-            status: statuses.UNAUTHORIZED,
-            message: commandResponsesFor(sender).toggles[name].notAdmin,
-            notifications: [],
-          })
-        })
-      })
-
-      describe('when sender is a random person', () => {
-        const sender = randomPerson
-        const sdMessage = sdMessageOf({ sender: channel.phoneNumber, message: commandStr })
-        const dispatchable = { channel, sender, sdMessage }
-
-        it('returns an UNAUTHORIZED status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command,
-            payload: '',
-            status: statuses.UNAUTHORIZED,
-            message: commandResponsesFor(sender).toggles[name].notAdmin,
-            notifications: [],
           })
         })
       })
@@ -2413,36 +2129,6 @@ describe('executing commands', () => {
               message: commandResponsesFor(sender).vouchMode.dbError,
               notifications: [],
             })
-          })
-        })
-      })
-
-      describe('when sender is a subscriber', () => {
-        const sender = subscriber
-        const dispatchable = { channel, sender, sdMessage }
-
-        it('returns an UNAUTHORIZED status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command,
-            payload: '',
-            status: statuses.UNAUTHORIZED,
-            message: commandResponsesFor(sender).vouchMode.notAdmin,
-            notifications: [],
-          })
-        })
-      })
-
-      describe('when sender is a random person', () => {
-        const sender = randomPerson
-        const dispatchable = { channel, sender, sdMessage }
-
-        it('returns an UNAUTHORIZED status', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command,
-            payload: '',
-            status: statuses.UNAUTHORIZED,
-            message: commandResponsesInCommandLang.vouchMode.notAdmin,
-            notifications: [],
           })
         })
       })
@@ -2544,26 +2230,9 @@ describe('executing commands', () => {
             command: commands.VOUCH_LEVEL,
             status: statuses.ERROR,
             message: parseErrorsInCommandLang.invalidVouchLevel(invalidVouchLevel),
-            payload: `${invalidVouchLevel}`,
+            payload: '',
             notifications: [],
           })
-        })
-      })
-    })
-
-    describe('when sender is not an admin', () => {
-      const sender = randomPerson
-
-      const sdMessage = sdMessageOf({ sender: channel, message: `VOUCH LEVEL ${validVouchLevel}` })
-      const dispatchable = { channel, sender, sdMessage }
-
-      it('returns an UNAUTHORIZED status/message', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.VOUCH_LEVEL,
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(sender).vouchLevel.notAdmin,
-          payload: `${validVouchLevel}`,
-          notifications: [],
         })
       })
     })
@@ -2572,7 +2241,7 @@ describe('executing commands', () => {
   describe('DESCRIPTION command', () => {
     const sdMessage = sdMessageOf({
       sender: channel,
-      message: 'DESCRIPTION foo channel description',
+      message: `${localizedCmds.SET_DESCRIPTION} foo channel description`,
     })
     let updateStub
     beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
@@ -2622,29 +2291,162 @@ describe('executing commands', () => {
         })
       })
     })
-    describe('when sender is a subscriber', () => {
-      const dispatchable = { channel, sender: subscriber, sdMessage }
+  })
 
-      it('returns UNAUTHORIZED status / message', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.SET_DESCRIPTION,
-          payload: 'foo channel description',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesFor(subscriber).rename.notAdmin,
-          notifications: [],
+  describe('ambiguous messages containing commands', () => {
+    const subscriberNoPayloadCommands = [
+      commands.ACCEPT,
+      commands.DECLINE,
+      commands.HELP,
+      commands.INFO,
+      commands.JOIN,
+      commands.LEAVE,
+      commands.SET_LANGUAGE,
+    ]
+    const adminNoPayloadCommands = [
+      commands.DESTROY,
+      commands.DESTROY_CONFIRM,
+      commands.HOTLINE_ON,
+      commands.HOTLINE_OFF,
+      commands.VOUCHING_ON,
+      commands.VOUCHING_OFF,
+      commands.VOUCHING_ADMIN,
+    ]
+    const adminPayloadCommands = [
+      commands.ADD,
+      commands.BROADCAST,
+      commands.REMOVE,
+      commands.REPLY,
+      commands.VOUCH_LEVEL,
+    ]
+
+    const expectHotlineMessages = (sender, _channel, _commands) =>
+      Promise.all(
+        _commands.map(async cmd => {
+          const dispatchable = {
+            channel: _channel,
+            sender,
+            sdMessage: sdMessageOf({
+              sender: _channel,
+              message: `${localizedCmds[cmd]} extra words`,
+            }),
+          }
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            status: statuses.SUCCESS,
+            message: notificationsFor(sender).hotlineMessageSent(_channel),
+            payload: '',
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${localizedCmds[cmd]} extra words`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${localizedCmds[cmd]} extra words`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${localizedCmds[cmd]} extra words`,
+                attachments: [],
+              },
+            ],
+          })
+        }),
+      )
+
+    const expectGenericErrors = (sender, _channel, commands) =>
+      Promise.all(
+        commands.map(async cmd => {
+          const dispatchable = {
+            channel: _channel,
+            sender,
+            sdMessage: sdMessageOf({
+              sender: _channel,
+              message: `${localizedCmds[cmd]} extra words`,
+            }),
+          }
+
+          expect(await processCommand(dispatchable)).to.eql({
+            command: 'NONE',
+            message: notificationsFor(sender).hotlineMessagesDisabled(
+              sender.type === memberTypes.SUBSCRIBER,
+            ),
+            notifications: [],
+            payload: '',
+            status: statuses.ERROR,
+          })
+        }),
+      )
+
+    describe('when sender is a subscriber or rando', () => {
+      const sender = sample([subscriber, randomPerson])
+
+      describe('when message is a no-payload command followed by a payload', () => {
+        const noPayloadCommands = [...subscriberNoPayloadCommands, ...adminNoPayloadCommands]
+
+        describe('when hotline messages are ON', () => {
+          it('treats the message like a hotline message', async () => {
+            await expectHotlineMessages(sender, channel, noPayloadCommands)
+          })
+        })
+
+        describe('when hotline messages are OFF', () => {
+          const _channel = { ...channel, hotlineOn: false }
+          it('provides a generic error message', async () => {
+            await expectGenericErrors(sender, _channel, noPayloadCommands)
+          })
+        })
+      })
+
+      describe('when message is command that a subscriber cannot issue (with or without payload)', () => {
+        const adminOnlyCommands = [...adminNoPayloadCommands, ...adminPayloadCommands]
+
+        describe('when hotline messages are ON', () => {
+          it('treats the message like a hotline message', async () => {
+            await expectHotlineMessages(sender, channel, adminOnlyCommands)
+          })
+        })
+        describe('when hotline messages are OFF', () => {
+          it('provides a generic error message', async () => {
+            const _channel = { ...channel, hotlineOn: false }
+            await expectGenericErrors(sender, _channel, adminOnlyCommands)
+          })
         })
       })
     })
-    describe('when sender is a random person', () => {
-      const dispatchable = { channel, sender: randomPerson, sdMessage }
 
-      it('returns UNAUTHORIZED status / message', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.SET_DESCRIPTION,
-          payload: 'foo channel description',
-          status: statuses.UNAUTHORIZED,
-          message: commandResponsesInCommandLang.rename.notAdmin,
-          notifications: [],
+    describe('when sender is an admin', () => {
+      describe('and message is a no-payload command followed by text', () => {
+        it('prompts user to enter correct command, and asks if intent was to broadcast', async () => {
+          await Promise.all(
+            adminNoPayloadCommands.map(async command => {
+              const dispatchable = {
+                channel,
+                sender: admin,
+                sdMessage: sdMessageOf({
+                  sender: channel,
+                  message: `${localizedCmds[command]} extra words`,
+                }),
+              }
+
+              expect(await processCommand(dispatchable)).to.eql({
+                command,
+                payload: '',
+                message: parseErrorsInCommandLang.unnecessaryPayload(localizedCmds[command]),
+                status: statuses.ERROR,
+                notifications: [],
+              })
+            }),
+          )
         })
       })
     })
@@ -2671,12 +2473,6 @@ describe('executing commands', () => {
 
     describe('when a subscriber sends a message not prefixed by a command ', () => {
       describe('when the hotline is enabled', () => {
-        const messageId = '11'
-        let getMessageIdStub
-        beforeEach(() => {
-          getMessageIdStub = sinon.stub(hotlineMessageRepository, 'getMessageId')
-          getMessageIdStub.returns(Promise.resolve(messageId))
-        })
         it('returns a success status, command response, and notifications', async () => {
           const sender = subscriber
           const dispatchable = {
@@ -2694,9 +2490,7 @@ describe('executing commands', () => {
             notifications: [
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: `[${messagesIn(membership.language).prefixes.hotlineMessage(
-                  messageId,
-                )}]\nfoo`,
+                message: `[${messagesIn(membership.language).prefixes.hotlineMessage('42')}]\nfoo`,
                 attachments,
               })),
             ],
@@ -2715,7 +2509,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NONE,
             payload: '',
-            status: statuses.UNAUTHORIZED,
+            status: statuses.ERROR,
             message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(true),
             notifications: [],
           })

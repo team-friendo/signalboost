@@ -1,3 +1,4 @@
+const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../db/repositories/membership')
 const {
   getAdminMemberships,
@@ -49,9 +50,11 @@ const parseErrors = {
     'Vouliez-vous préfixer votre message avec DIFFUSER? Envoyez AIDE pour voir une liste de toutes les commandes.',
 
   unnecessaryPayload: command =>
-    `Désolé, la commande n'a pas été reconnue. Vouliez-vous utiliser ${command}?
-
-Envoyez une aide pour obtenir une liste de toutes les commandes valides et comment les utiliser.`,
+    `Désolé, la commande n'a pas été reconnue.
+ 
+ Vouliez-vous utiliser ${upperCase(command)} ou DIFFUSER?
+    
+ Envoyez une aide pour obtenir une liste de toutes les commandes valides et comment les utiliser.`,
 
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" n’est pas un numéro de téléphone valide. ${validPhoneNumberHint}`,

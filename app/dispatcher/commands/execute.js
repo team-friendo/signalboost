@@ -11,6 +11,7 @@ const phoneNumberService = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
+const { parseErrorTypes } = require('./constants')
 const { get, isEmpty, uniq } = require('lodash')
 const { messagesIn } = require('../strings/messages')
 const { memberTypes } = require('../../db/repositories/membership')
@@ -38,26 +39,25 @@ const {
  * type Toggle = toggles.HOTLINE
  **/
 
+const validSubscriberCommands = new Set([
+  commands.ACCEPT,
+  commands.DECLINE,
+  commands.HELP,
+  commands.INFO,
+  commands.INVITE,
+  commands.JOIN,
+  commands.LEAVE,
+  commands.NONE,
+  commands.SET_LANGUAGE,
+])
+
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
+  const intervention = await interveneIfBadMessage(executable, dispatchable)
+  if (intervention) return intervention
+
   const { command, payload, language } = executable
   const { channel, sender, sdMessage } = dispatchable
-
-  // if payload parse error occured return early and notify sender
-  if (executable.error) {
-    // sorry for this gross special casing! working fast during a mass mobilization! -aguestuser
-    const message =
-      command === commands.REPLY && sender.type !== memberTypes.ADMIN
-        ? messagesIn(sender.language).commandResponses.hotlineReply.notAdmin
-        : executable.error
-    return {
-      command,
-      payload,
-      status: statuses.ERROR,
-      message,
-      notifications: [],
-    }
-  }
 
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
@@ -849,33 +849,66 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 }
 
 // NONE
+// (Channel, Sender, SdMessage) => Promise<CommandResult>
 const handleNoCommand = async (channel, sender, sdMessage) => {
-  // if sender was an admin, give them a helpful error message
-  if (sender.type === ADMIN)
-    return Promise.resolve({
-      message: messagesIn(sender.language).commandResponses.none.error,
-      status: statuses.ERROR,
-      notifications: [],
-    })
+  if (sender.type !== ADMIN) return handleIncoherentSubscriberMessage(channel, sender, sdMessage)
+  return {
+    message: messagesIn(sender.language).commandResponses.none.error,
+    status: statuses.ERROR,
+    notifications: [],
+  }
+}
 
-  // if hotline is on, return a response & notifications
-  // if hotline is off, return a response & UNAUTHORIZED
-  if (channel.hotlineOn) {
+// BAD
+// (Executable, Dispatchable) => Promise<CommandResult | null>
+const interveneIfBadMessage = async (executable, dispatchable) => {
+  const { command, error, type } = executable
+  const { channel, sender, sdMessage } = dispatchable
+  // if a subscriber or rando sent an admin-only command or a no-payload command with a payload,
+  // return early with special-case handling
+  if (
+    sender.type !== memberTypes.ADMIN &&
+    (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
+  )
     return {
-      message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
-      status: statuses.SUCCESS,
-      notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
+      command: commands.NONE,
+      payload: '',
+      ...(await handleIncoherentSubscriberMessage(channel, sender, sdMessage)),
     }
-  } else {
+  // if there was a normal parse error, return early with it
+  if (error)
+    return {
+      command,
+      payload: '',
+      status: statuses.ERROR,
+      message: error,
+      notifications: [],
+    }
+  // if all is good, proceed!
+  return null
+}
+
+// (Channel, Sender, SdMessage) => Promise<CommandResult>
+const handleIncoherentSubscriberMessage = async (channel, sender, sdMessage) => {
+  // if hotline is off, return a generic error
+  if (!channel.hotlineOn) {
     return {
       message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(
         sender.type === SUBSCRIBER,
       ),
-      status: statuses.UNAUTHORIZED,
+      status: statuses.ERROR,
       notifications: [],
     }
   }
+  // if hotline is on, handle as a hotline message
+  return {
+    message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+    status: statuses.SUCCESS,
+    notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
+  }
 }
+
+// HELPERS
 
 const hotlineNotificationsOf = async (channel, sender, { messageBody, attachments }) => {
   const adminMemberships = await channelRepository.getAdminMemberships(channel)

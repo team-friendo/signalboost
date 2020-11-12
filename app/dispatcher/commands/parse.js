@@ -123,7 +123,7 @@ const validateNoPayload = commandMatch => {
     : {
         command,
         error: messagesIn(language).parseErrors.unnecessaryPayload(matches[1]),
-        type: parseErrorTypes.INVALID_PAYLOAD,
+        type: parseErrorTypes.NON_EMPTY_PAYLOAD,
       }
 }
 
