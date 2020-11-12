@@ -21,8 +21,16 @@ describe('destructionRequest model', () => {
   it('has the correct fields', async () => {
     const destructionRequest = await db.destructionRequest.create({ channelPhoneNumber })
     expect(destructionRequest.channelPhoneNumber).to.be.a('string')
+    expect(destructionRequest.lastNotified).to.be.a('Date')
     expect(destructionRequest.createdAt).to.be.a('Date')
     expect(destructionRequest.updatedAt).to.be.a('Date')
+  })
+
+  describe('defaults', () => {
+    it('sets lastNotified to now() by default', async () => {
+      const dr = await db.destructionRequest.create({ channelPhoneNumber, lastNotified: undefined })
+      expect(dr.lastNotified).to.be.a('Date')
+    })
   })
 
   describe('validations', () => {

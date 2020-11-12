@@ -15,6 +15,11 @@ const destructionRequestOf = (sequelize, Sequelize) => {
         key: 'phoneNumber',
       },
     },
+    lastNotified: {
+      type: Sequelize.DATE,
+      allowNull: false,
+      defaultValue: Sequelize.NOW,
+    },
     createdAt: {
       type: Sequelize.DATE,
       allowNull: false,
