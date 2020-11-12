@@ -62,29 +62,29 @@ const execute = async (executable, dispatchable) => {
   // otherwise, dispatch on the command issued, and process it!
   const result = await ({
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
-    [commands.ADD]: () => maybeAddAdmin(channel, sender, payload),
-    [commands.BROADCAST]: () => maybeBroadcastMessage(channel, sender, sdMessage, payload),
+    [commands.ADD]: () => addAdmin(channel, sender, payload),
+    [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
-    [commands.DESTROY]: () => maybeConfirmDestroy(channel, sender),
-    [commands.DESTROY_CONFIRM]: () => maybeDestroy(channel, sender),
+    [commands.DESTROY]: () => confirmDestroy(channel, sender),
+    [commands.DESTROY_CONFIRM]: () => destroy(channel, sender),
     [commands.HELP]: () => showHelp(channel, sender),
-    [commands.HOTLINE_ON]: () => maybeToggleSettingOn(channel, sender, toggles.HOTLINE),
-    [commands.HOTLINE_OFF]: () => maybeToggleSettingOff(channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_ON]: () => toggleSettingOn(channel, sender, toggles.HOTLINE),
+    [commands.HOTLINE_OFF]: () => toggleSettingOff(channel, sender, toggles.HOTLINE),
     [commands.INFO]: () => showInfo(channel, sender),
     [commands.INVITE]: () => maybeInvite(channel, sender, payload, language),
     [commands.JOIN]: () => maybeAddSubscriber(channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
-    [commands.PRIVATE]: () => maybePrivateMessageAdmins(channel, sender, payload, sdMessage),
-    [commands.RENAME]: () => maybeRenameChannel(channel, sender, payload),
+    [commands.PRIVATE]: () => privateMessageAdmins(channel, sender, payload, sdMessage),
+    [commands.RENAME]: () => renameChannel(channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
-    [commands.REPLY]: () => maybeReplyToHotlineMessage(channel, sender, sdMessage, payload),
+    [commands.REPLY]: () => replyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.RESTART]: () => maybeRestart(channel, sender, payload),
-    [commands.VOUCHING_ON]: () => maybeSetVouchMode(channel, sender, vouchModes.ON),
-    [commands.VOUCHING_OFF]: () => maybeSetVouchMode(channel, sender, vouchModes.OFF),
-    [commands.VOUCHING_ADMIN]: () => maybeSetVouchMode(channel, sender, vouchModes.ADMIN),
-    [commands.VOUCH_LEVEL]: () => maybeSetVouchLevel(channel, sender, payload),
+    [commands.VOUCHING_ON]: () => setVouchMode(channel, sender, vouchModes.ON),
+    [commands.VOUCHING_OFF]: () => setVouchMode(channel, sender, vouchModes.OFF),
+    [commands.VOUCHING_ADMIN]: () => setVouchMode(channel, sender, vouchModes.ADMIN),
+    [commands.VOUCH_LEVEL]: () => setVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
-    [commands.SET_DESCRIPTION]: () => maybeSetDescription(channel, sender, payload),
+    [commands.SET_DESCRIPTION]: () => setDescription(channel, sender, payload),
   }[command] || (() => handleNoCommand(channel, sender, sdMessage)))()
 
   result.notifications = result.notifications || []
@@ -136,14 +136,8 @@ const accept = async (channel, sender, language, cr) =>
 
 // ADD
 
-const maybeAddAdmin = async (channel, sender, phoneNumber) => {
+const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.add
-  if (sender.type !== ADMIN)
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-  return addAdmin(channel, sender, phoneNumber, cr)
-}
-
-const addAdmin = async (channel, sender, newAdminPhoneNumber, cr) => {
   try {
     const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
     if (deauth) {
@@ -187,15 +181,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // BROADCAST
-const maybeBroadcastMessage = (channel, sender, sdMessage, payload) => {
-  const cr = messagesIn(sender.language).commandResponses.broadcast
-  if (sender.type !== ADMIN)
-    return Promise.resolve({
-      status: statuses.UNAUTHORIZED,
-      message: cr.notAdmin,
-      notifications: [],
-    })
-
+const broadcastMessage = (channel, sender, sdMessage, payload) => {
   return {
     status: statuses.SUCCESS,
     message: '',
@@ -224,11 +210,8 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 }
 
 // PRIVATE
-const maybePrivateMessageAdmins = async (channel, sender, payload, sdMessage) => {
+const privateMessageAdmins = async (channel, sender, payload, sdMessage) => {
   const cr = messagesIn(sender.language).commandResponses.private
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
   try {
     return {
       status: statuses.SUCCESS,
@@ -262,38 +245,22 @@ const decline = async (channel, sender, language) => {
 
 // DESTROY
 
-const maybeConfirmDestroy = async (channel, sender) => {
+const confirmDestroy = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
-
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
   return { status: statuses.SUCCESS, message: cr.confirm }
 }
 
-const maybeDestroy = async (channel, sender) => {
+const destroy = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
-
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
-
   const result = await phoneNumberService.destroy({
     phoneNumber: channel.phoneNumber,
     sender: sender.phoneNumber,
     notifyOnFailure: true,
   })
-
   if (get(result, 'status') === statuses.SUCCESS) {
-    return {
-      status: statuses.SUCCESS,
-      message: cr.success,
-    }
+    return { status: statuses.SUCCESS, message: cr.success }
   } else {
-    return {
-      status: statuses.ERROR,
-      message: cr.error,
-    }
+    return { status: statuses.ERROR, message: cr.error }
   }
 }
 
@@ -473,11 +440,6 @@ const removeSenderNotificationsOf = (channel, sender) => {
 
 const maybeRemoveMember = async (channel, sender, phoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.remove
-
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
-
   const payloadMemberType = await membershipRepository.resolveMemberType(
     channel.phoneNumber,
     phoneNumber,
@@ -488,10 +450,7 @@ const maybeRemoveMember = async (channel, sender, phoneNumber) => {
 }
 
 const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) => {
-  const notifications =
-    memberType === memberTypes.ADMIN
-      ? removalNotificationsOfAdmin(channel, memberPhoneNumber, sender)
-      : removalNotificationsOfSubscriber(channel, memberPhoneNumber, sender)
+  const notifications = removalNotificationsOf(channel, memberPhoneNumber, sender, memberType)
   return membershipRepository
     .removeMember(channel.phoneNumber, memberPhoneNumber)
     .then(() => eventRepository.logIfLastMembership(memberPhoneNumber))
@@ -503,47 +462,28 @@ const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) 
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError(memberPhoneNumber) }))
 }
 
-const removalNotificationsOfAdmin = (channel, adminPhoneNumber, sender) => {
-  const removedMember = channel.memberships.find(m => m.memberPhoneNumber === adminPhoneNumber)
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, adminPhoneNumber])
-  return [
-    {
-      recipient: adminPhoneNumber,
-      message: `${messagesIn(removedMember.language).notifications.toRemovedAdmin}`,
-    },
-    ...bystanders.map(membership => ({
-      recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications.adminRemoved,
-    })),
-  ]
-}
-
-const removalNotificationsOfSubscriber = (channel, phoneNumber, sender) => {
+const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
   const removedMember = channel.memberships.find(m => m.memberPhoneNumber === phoneNumber)
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, phoneNumber])
+  const responseKey = memberType === memberTypes.ADMIN ? 'toRemovedAdmin' : 'toRemovedSubscriber'
+  const notificationKey = memberType === memberTypes.ADMIN ? 'adminRemoved' : 'subscriberRemoved'
   return [
     {
       recipient: phoneNumber,
-      message: `${messagesIn(removedMember.language).notifications.toRemovedSubscriber}`,
+      message: `${messagesIn(removedMember.language).notifications[responseKey]}`,
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications.subscriberRemoved,
+      message: messagesIn(membership.language).notifications[notificationKey],
     })),
   ]
 }
 
 // RENAME
 
-const maybeRenameChannel = async (channel, sender, newChannelName) => {
+const renameChannel = async (channel, sender, newChannelName) => {
   const cr = messagesIn(sender.language).commandResponses.rename
-  return sender.type === ADMIN
-    ? renameChannel(channel, newChannelName, sender, cr)
-    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-}
-
-const renameChannel = (channel, newChannelName, sender, cr) =>
-  channelRepository
+  return channelRepository
     .update(channel.phoneNumber, { name: newChannelName })
     .then(() => ({
       status: statuses.SUCCESS,
@@ -556,6 +496,7 @@ const renameChannel = (channel, newChannelName, sender, cr) =>
         message: cr.dbError(channel.name, newChannelName),
       }),
     )
+}
 
 const renameNotificationsOf = (channel, newChannelName, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
@@ -570,15 +511,8 @@ const renameNotificationsOf = (channel, newChannelName, sender) => {
 
 // REPLY
 
-const maybeReplyToHotlineMessage = (channel, sender, { attachments }, hotlineReply) => {
+const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
-  return replyToHotlineMessage(channel, sender, attachments, hotlineReply, cr)
-}
-
-const replyToHotlineMessage = async (channel, sender, attachments, hotlineReply, cr) => {
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineReply.messageId,
@@ -706,14 +640,8 @@ const setLanguage = (sender, language) => {
 
 // SET_DESCRIPTION
 
-const maybeSetDescription = async (channel, sender, newDescription) => {
+const setDescription = async (channel, sender, newDescription) => {
   const cr = messagesIn(sender.language).commandResponses.description
-  return sender.type === ADMIN
-    ? setDescription(channel, newDescription, sender, cr)
-    : Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-}
-
-const setDescription = (channel, newDescription, sender, cr) => {
   return channelRepository
     .update(channel.phoneNumber, { description: newDescription })
     .then(() => ({
@@ -735,25 +663,15 @@ const descriptionNotificationsOf = (channel, newDescription, sender) => {
 // TOGGLES FOR SET COMMANDS RESPONSES
 
 // (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOn = (channel, sender, toggle) =>
-  _maybeToggleSetting(channel, sender, toggle, true)
+const toggleSettingOn = (channel, sender, toggle) => _toggleSetting(channel, sender, toggle, true)
 
 // (Database, Channel, Sender, Toggle) -> Promise<CommandResult>
-const maybeToggleSettingOff = (channel, sender, toggle) =>
-  _maybeToggleSetting(channel, sender, toggle, false)
-
-// (Database, Channel, Sender, Toggle, boolean) -> Promise<CommandResult>
-const _maybeToggleSetting = (channel, sender, toggle, isOn) => {
-  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
-  if (sender.type !== ADMIN) {
-    return Promise.resolve({ status: statuses.UNAUTHORIZED, message: cr.notAdmin })
-  }
-  return _toggleSetting(channel, sender, toggle, isOn, cr)
-}
+const toggleSettingOff = (channel, sender, toggle) => _toggleSetting(channel, sender, toggle, false)
 
 // (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
-const _toggleSetting = (channel, sender, toggle, isOn, cr) =>
-  channelRepository
+const _toggleSetting = (channel, sender, toggle, isOn) => {
+  const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
+  return channelRepository
     .update(channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({
       status: statuses.SUCCESS,
@@ -761,6 +679,7 @@ const _toggleSetting = (channel, sender, toggle, isOn, cr) =>
       notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
+}
 
 const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
@@ -771,19 +690,8 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
 }
 
 // VOUCH MODE
-const maybeSetVouchMode = (channel, sender, newVouchMode) => {
+const setVouchMode = async (channel, sender, newVouchMode) => {
   const cr = messagesIn(sender.language).commandResponses.vouchMode
-
-  if (sender.type !== ADMIN)
-    return {
-      status: statuses.UNAUTHORIZED,
-      message: cr.notAdmin,
-    }
-
-  return setVouchMode(channel, sender, newVouchMode, cr)
-}
-
-const setVouchMode = async (channel, sender, newVouchMode, cr) => {
   try {
     await channelRepository.update(channel.phoneNumber, {
       vouchMode: newVouchMode,
@@ -811,18 +719,8 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
 
 // VOUCH LEVEL
 
-const maybeSetVouchLevel = (channel, sender, newVouchLevel) => {
+const setVouchLevel = async (channel, sender, newVouchLevel) => {
   const cr = messagesIn(sender.language).commandResponses.vouchLevel
-  if (sender.type !== ADMIN)
-    return {
-      status: statuses.UNAUTHORIZED,
-      message: cr.notAdmin,
-    }
-
-  return setVouchLevel(channel, newVouchLevel, sender, cr)
-}
-
-const setVouchLevel = async (channel, newVouchLevel, sender, cr) => {
   try {
     await channelRepository.update(channel.phoneNumber, {
       vouchLevel: newVouchLevel,
@@ -851,7 +749,7 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 // NONE
 // (Channel, Sender, SdMessage) => Promise<CommandResult>
 const handleNoCommand = async (channel, sender, sdMessage) => {
-  if (sender.type !== ADMIN) return handleIncoherentSubscriberMessage(channel, sender, sdMessage)
+  if (sender.type !== ADMIN) return handleBadSubscriberMessage(channel, sender, sdMessage)
   return {
     message: messagesIn(sender.language).commandResponses.none.error,
     status: statuses.ERROR,
@@ -864,32 +762,29 @@ const handleNoCommand = async (channel, sender, sdMessage) => {
 const interveneIfBadMessage = async (executable, dispatchable) => {
   const { command, error, type } = executable
   const { channel, sender, sdMessage } = dispatchable
-  // if a subscriber or rando sent an admin-only command or a no-payload command with a payload,
-  // return early with special-case handling
+  const defaultResult = { command, status: statuses.ERROR, payload: '', notifications: [] }
+
+  // return early if...
+  // subscriber or rando sends an admin-only command or a no-payload command with a payload,
   if (
-    sender.type !== memberTypes.ADMIN &&
+    sender.type !== ADMIN &&
     (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
   )
     return {
-      command: commands.NONE,
-      payload: '',
-      ...(await handleIncoherentSubscriberMessage(channel, sender, sdMessage)),
+      ...defaultResult,
+      command: NONE,
+      ...(await handleBadSubscriberMessage(channel, sender, sdMessage)),
     }
-  // if there was a normal parse error, return early with it
-  if (error)
-    return {
-      command,
-      payload: '',
-      status: statuses.ERROR,
-      message: error,
-      notifications: [],
-    }
+
+  // anyone sent a valid command with an invalid payload (reported as a parse error)
+  if (error) return { ...defaultResult, message: error }
+
   // if all is good, proceed!
   return null
 }
 
 // (Channel, Sender, SdMessage) => Promise<CommandResult>
-const handleIncoherentSubscriberMessage = async (channel, sender, sdMessage) => {
+const handleBadSubscriberMessage = async (channel, sender, sdMessage) => {
   // if hotline is off, return a generic error
   if (!channel.hotlineOn) {
     return {
