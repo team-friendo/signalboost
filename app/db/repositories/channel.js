@@ -6,7 +6,7 @@ const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
   jobs: { channelExpiryInMillis },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../config')
 
 const logger = loggerOf('db.repositories.channel')
@@ -116,7 +116,11 @@ const getChannelsSortedBySize = async () =>
 // () => Promise<Array<Channel>>
 const getStaleChannels = async () =>
   // returns all channels not used during channel time-to-live window (4 weeks)
+  // we exempt DIAGNOSTICS and SUPPORT b/c we never want to delete them!
   app.db.channel.findAll({
+    where: {
+      phoneNumber: { [Op.notIn]: [diagnosticsPhoneNumber, supportPhoneNumber] },
+    },
     include: [
       {
         model: app.db.messageCount,
