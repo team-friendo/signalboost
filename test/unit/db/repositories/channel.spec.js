@@ -386,23 +386,24 @@ describe('channel repository', () => {
   })
 
   describe('#getStaleChannels', () => {
-    let staleChannels
+    let allChannels, staleChannels
 
     beforeEach(async () => {
-      staleChannels = [
-        ...(await createChannelsFromAttributes(times(2, deepChannelFactory))),
+      allChannels = await createChannelsFromAttributes([
+        ...times(2, deepChannelFactory),
         deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }),
         deepChannelFactory({ phoneNumber: supportPhoneNumber }),
-      ]
+      ])
+      staleChannels = allChannels.slice(0, 2)
 
       await util.wait(channelExpiryInMillis + 1)
       await createChannelsFromAttributes(times(1, deepChannelFactory))
     })
 
-    it('returns all channels who have not been used in the TTL period (1 week) - except SUPPORT & DIAGNOSTICS', async () => {
-      expect(map(await channelRepository.getStaleChannels(), 'phoneNumber')).to.eql(
-        map(staleChannels, 'phoneNumber').slice(0, 2),
-      )
+    it('returns all channels who have not used in the TTL period (1 week) - except SUPPORT & DIAGNOSTICS', async () => {
+      const fetchedStaleChannels = await channelRepository.getStaleChannels()
+      expect(fetchedStaleChannels.length).to.eql(2)
+      expect(map(fetchedStaleChannels, 'phoneNumber')).to.eql(map(staleChannels, 'phoneNumber'))
     })
   })
 
