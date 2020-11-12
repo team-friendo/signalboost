@@ -311,10 +311,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('treats it like hotline message')
-    })
   })
 
   describe('ADD command', () => {
@@ -485,8 +481,6 @@ describe('executing commands', () => {
         await processCommand(dispatchable)
         expect(addAdminStub.callCount).to.eql(0)
       })
-
-      it('handles as a hotline message')
     })
   })
 
@@ -525,10 +519,6 @@ describe('executing commands', () => {
           ],
         })
       })
-    })
-
-    describe('when sender is not an admin', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -569,10 +559,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline messsage')
-    })
   })
 
   describe('DESTROY command', () => {
@@ -593,10 +579,6 @@ describe('executing commands', () => {
           notifications: [],
         })
       })
-    })
-
-    describe('when issuer is a subscriber or rando', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -664,8 +646,6 @@ describe('executing commands', () => {
         it('does not attempt to destroy the channel', () => {
           expect(destroyStub.callCount).to.eql(callCount)
         })
-
-        it('handles as a hotline message')
       })
     })
   })
@@ -714,10 +694,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline message')
-    })
   })
 
   describe('INFO command', () => {
@@ -763,10 +739,6 @@ describe('executing commands', () => {
           notifications: [],
         })
       })
-    })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -1346,10 +1318,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline message')
-    })
   })
 
   describe('LEAVE command', () => {
@@ -1451,10 +1419,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline message')
-    })
   })
 
   describe('PRIVATE command', () => {
@@ -1462,10 +1426,6 @@ describe('executing commands', () => {
       sender: channel.phoneNumber,
       message: 'PRIVATE hello this is private!',
       attachments,
-    })
-
-    describe('when sender is not an admin', () => {
-      it('handles as a hotline message')
     })
 
     describe('when sender is an admin', () => {
@@ -1665,8 +1625,6 @@ describe('executing commands', () => {
       it('does not attempt to add admin', () => {
         expect(removeMemberStub.callCount).to.eql(0)
       })
-
-      it('handles as a hotline message')
     })
   })
 
@@ -1718,14 +1676,6 @@ describe('executing commands', () => {
           })
         })
       })
-    })
-
-    describe('when sender is a subscriber', () => {
-      it('handles as a hotline message')
-    })
-
-    describe('when sender is a random person', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -1849,10 +1799,6 @@ describe('executing commands', () => {
           })
         })
       })
-    })
-
-    describe('when sender is not an admin', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -2017,10 +1963,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when followed by a payload', () => {
-      it('handles as a hotline message')
-    })
   })
 
   describe('TOGGLE commands', () => {
@@ -2094,14 +2036,6 @@ describe('executing commands', () => {
             })
           })
         })
-      })
-
-      describe('when sender is a subscriber', () => {
-        it('handles as a hotline message')
-      })
-
-      describe('when sender is a random person', () => {
-        it('handles as a hotline message')
       })
     })
 
@@ -2197,14 +2131,6 @@ describe('executing commands', () => {
             })
           })
         })
-      })
-
-      describe('when sender is a subscriber', () => {
-        it('handles as a hotline message')
-      })
-
-      describe('when sender is a random person', () => {
-        it('handles as a hotline message')
       })
     })
 
@@ -2310,10 +2236,6 @@ describe('executing commands', () => {
         })
       })
     })
-
-    describe('when sender is not an admin', () => {
-      it('handles as a hotline message')
-    })
   })
 
   describe('DESCRIPTION command', () => {
@@ -2368,13 +2290,6 @@ describe('executing commands', () => {
           })
         })
       })
-    })
-    describe('when sender is a subscriber', () => {
-      it('handles as a hotline message')
-    })
-
-    describe('when sender is a random person', () => {
-      it('handles as a hotline message')
     })
   })
 
@@ -2506,10 +2421,6 @@ describe('executing commands', () => {
             await expectGenericErrors(sender, _channel, adminOnlyCommands)
           })
         })
-      })
-
-      describe('when message is an invalid INVITE command', () => {
-        it('provides the normal INVITE error message')
       })
     })
 
