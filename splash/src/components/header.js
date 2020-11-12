@@ -1,26 +1,46 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Link } from 'gatsby'
-import './header.css'
 import { slide as Menu } from 'react-burger-menu'
+import './header.css'
 
-const Header = ({ siteTitle }) => (
-  <header>
-    <nav className="nav">
-      <Link to="/">
-        <h1 className="title">{siteTitle}</h1>
-      </Link>
-      <div className="nav__desktop">
-        <NavItems />
-      </div>
-      <div className="nav__mobile">
-        <Menu itemListElement="div" pageWrapId={'container'}>
-          <NavItems />
-        </Menu>
-      </div>
-    </nav>
-  </header>
-)
+class Header extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      menuOpen: true,
+    }
+  }
+
+  handleStateChange(state) {
+    this.setState({ menuOpen: state.isOpen })
+  }
+
+  render() {
+    return (
+      <header>
+        <nav className="nav">
+          <Link to="/">
+            <h1 className="title">{this.props.siteTitle}</h1>
+          </Link>
+          <div className="nav__desktop">
+            <NavItems />
+          </div>
+          <div className="nav__mobile">
+            <Menu
+              itemListElement="div"
+              pageWrapId={'container'}
+              isOpen={this.state.menuOpen}
+              onStateChange={state => this.handleStateChange(state)}
+            >
+              <NavItems />
+            </Menu>
+          </div>
+        </nav>
+      </header>
+    )
+  }
+}
 
 const NavItems = () => (
   <React.Fragment>
