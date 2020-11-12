@@ -47,7 +47,6 @@ const validSubscriberCommands = new Set([
   commands.INVITE,
   commands.JOIN,
   commands.LEAVE,
-  commands.NONE,
   commands.SET_LANGUAGE,
 ])
 
@@ -60,7 +59,7 @@ const execute = async (executable, dispatchable) => {
   const { channel, sender, sdMessage } = dispatchable
 
   // otherwise, dispatch on the command issued, and process it!
-  const result = await ({
+  const result = await {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
@@ -85,10 +84,57 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCH_LEVEL]: () => setVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
     [commands.SET_DESCRIPTION]: () => setDescription(channel, sender, payload),
-  }[command] || (() => handleNoCommand(channel, sender, sdMessage)))()
+  }[command]()
 
   result.notifications = result.notifications || []
   return { command, payload, ...result }
+}
+
+// (Executable, Dispatchable) => Promise<CommandResult | null>
+const interveneIfBadMessage = async (executable, dispatchable) => {
+  const { command, error, type } = executable
+  const { channel, sender, sdMessage } = dispatchable
+  const defaultResult = { command, status: statuses.ERROR, payload: '', notifications: [] }
+
+  // return early if...
+  // admin sent a no-command message
+  if (command === commands.NONE && sender.type === memberTypes.ADMIN)
+    return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
+
+  // subscriber/rando sent a no-command message, an admin-only command, or a no-payload command with a payload
+  if (
+    sender.type !== ADMIN &&
+    (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
+  )
+    return { ...defaultResult, ...(await handleBadSubscriberMessage(channel, sender, sdMessage)) }
+
+  // anyone sent a valid command with an invalid payload (reported as a parse error)
+  if (error) return { ...defaultResult, message: error }
+
+  // if all is good, proceed!
+  return null
+}
+
+// (Channel, Sender, SdMessage) => Promise<CommandResult>
+const handleBadSubscriberMessage = async (channel, sender, sdMessage) => {
+  // if hotline is off, return a generic error
+  if (!channel.hotlineOn) {
+    return {
+      command: commands.NONE,
+      message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(
+        sender.type === SUBSCRIBER,
+      ),
+      status: statuses.ERROR,
+      notifications: [],
+    }
+  }
+  // if hotline is on, handle as a hotline message
+  return {
+    command: commands.NONE,
+    message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+    status: statuses.SUCCESS,
+    notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
+  }
 }
 
 /********************
@@ -744,63 +790,6 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
     recipient: membership.memberPhoneNumber,
     message: messagesIn(membership.language).notifications.vouchLevelChanged(newVouchLevel),
   }))
-}
-
-// NONE
-// (Channel, Sender, SdMessage) => Promise<CommandResult>
-const handleNoCommand = async (channel, sender, sdMessage) => {
-  if (sender.type !== ADMIN) return handleBadSubscriberMessage(channel, sender, sdMessage)
-  return {
-    message: messagesIn(sender.language).commandResponses.none.error,
-    status: statuses.ERROR,
-    notifications: [],
-  }
-}
-
-// BAD
-// (Executable, Dispatchable) => Promise<CommandResult | null>
-const interveneIfBadMessage = async (executable, dispatchable) => {
-  const { command, error, type } = executable
-  const { channel, sender, sdMessage } = dispatchable
-  const defaultResult = { command, status: statuses.ERROR, payload: '', notifications: [] }
-
-  // return early if...
-  // subscriber or rando sends an admin-only command or a no-payload command with a payload,
-  if (
-    sender.type !== ADMIN &&
-    (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
-  )
-    return {
-      ...defaultResult,
-      command: NONE,
-      ...(await handleBadSubscriberMessage(channel, sender, sdMessage)),
-    }
-
-  // anyone sent a valid command with an invalid payload (reported as a parse error)
-  if (error) return { ...defaultResult, message: error }
-
-  // if all is good, proceed!
-  return null
-}
-
-// (Channel, Sender, SdMessage) => Promise<CommandResult>
-const handleBadSubscriberMessage = async (channel, sender, sdMessage) => {
-  // if hotline is off, return a generic error
-  if (!channel.hotlineOn) {
-    return {
-      message: messagesIn(sender.language).notifications.hotlineMessagesDisabled(
-        sender.type === SUBSCRIBER,
-      ),
-      status: statuses.ERROR,
-      notifications: [],
-    }
-  }
-  // if hotline is on, handle as a hotline message
-  return {
-    message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
-    status: statuses.SUCCESS,
-    notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
-  }
 }
 
 // HELPERS
