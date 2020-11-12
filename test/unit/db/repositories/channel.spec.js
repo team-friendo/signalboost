@@ -11,7 +11,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { membershipFactory } from '../../../support/factories/membership'
 const {
   jobs: { channelExpiryInMillis },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
@@ -389,14 +389,19 @@ describe('channel repository', () => {
     let staleChannels
 
     beforeEach(async () => {
-      staleChannels = await createChannelsFromAttributes(times(2, deepChannelFactory))
+      staleChannels = [
+        ...(await createChannelsFromAttributes(times(2, deepChannelFactory))),
+        deepChannelFactory({ phoneNumber: diagnosticsPhoneNumber }),
+        deepChannelFactory({ phoneNumber: supportPhoneNumber }),
+      ]
+
       await util.wait(channelExpiryInMillis + 1)
       await createChannelsFromAttributes(times(1, deepChannelFactory))
     })
 
-    it('returns all channels who have not been used in the TTL period (4 weeks)', async () => {
-      expect(map(await channelRepository.getStaleChannels(), 'phoneNumber')).to.have.members(
-        map(staleChannels, 'phoneNumber'),
+    it('returns all channels who have not been used in the TTL period (1 week) - except SUPPORT & DIAGNOSTICS', async () => {
+      expect(map(await channelRepository.getStaleChannels(), 'phoneNumber')).to.eql(
+        map(staleChannels, 'phoneNumber').slice(0, 2),
       )
     })
   })
