@@ -186,7 +186,7 @@ describe('destructionRequest repository', () => {
     })
   })
 
-  describe('#getMatureDestructionRequests', () => {
+  describe('#getMatureDestructionTargets', () => {
     const now = moment().clone()
     const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
 
@@ -214,7 +214,7 @@ describe('destructionRequest repository', () => {
     })
 
     it('retrieves all mature destruction requests and returns their phone numbers', async () => {
-      const res = await destructionRequestRepository.getMatureDestructionRequests()
+      const res = await destructionRequestRepository.getMatureDestructionTargets()
       expect(res).to.eql([channelPhoneNumbers.toDestroy])
     })
   })

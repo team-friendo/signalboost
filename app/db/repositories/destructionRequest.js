@@ -49,7 +49,7 @@ const getNotifiableDestructionTargets = async () => {
 }
 
 // () => Promise<Array<string>>
-const getMatureDestructionRequests = async () => {
+const getMatureDestructionTargets = async () => {
   // Admins have a 3 day grace period to redeem a channel slated for destruction by using it.
   // Here, we find all the requests issued before the start of the grace period, and return their
   // phone numbers to the caller for destruction. We may safely assume they can be destroyed, because
@@ -67,7 +67,7 @@ const getMatureDestructionRequests = async () => {
 module.exports = {
   findOrCreate,
   getNotifiableDestructionTargets,
-  getMatureDestructionRequests,
+  getMatureDestructionTargets,
   destroy,
   destroyMany,
 }

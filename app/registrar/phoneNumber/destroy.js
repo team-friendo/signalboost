@@ -62,7 +62,7 @@ const requestToDestroyStaleChannels = async () => {
 // () -> Promise<Array<string>>
 const processDestructionRequests = async () => {
   try {
-    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionRequests()
+    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionTargets()
     // NOTE (2020-11-01|aguestuser):
     // - we (somewhat wastefully) process each job in sequence rather than in parallel
     //   to avoid contention over tx lock created by each destroy call

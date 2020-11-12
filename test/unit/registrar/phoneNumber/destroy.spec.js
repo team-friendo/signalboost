@@ -572,7 +572,7 @@ describe('phone number registrar -- destroy module', () => {
 
   describe('#processDestructionRequests', () => {
     const toDestroy = times(3, genPhoneNumber)
-    let getMatureDestructionRequestsStub, destroyDestructionRequestsStub
+    let getMatureDestructionTargetsStub, destroyDestructionRequestsStub
 
     beforeEach(() => {
       // recycle helpers that should always succeed
@@ -589,9 +589,9 @@ describe('phone number registrar -- destroy module', () => {
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
 
       // if this fails, processDestructionRequests will fail
-      getMatureDestructionRequestsStub = sinon.stub(
+      getMatureDestructionTargetsStub = sinon.stub(
         destructionRequestRepository,
-        'getMatureDestructionRequests',
+        'getMatureDestructionTargets',
       )
     })
 
@@ -606,7 +606,7 @@ describe('phone number registrar -- destroy module', () => {
           .onCall(2)
           .callsFake(() => Promise.reject('BOOM!'))
         // overall job succeeds
-        getMatureDestructionRequestsStub.returns(Promise.resolve(toDestroy))
+        getMatureDestructionTargetsStub.returns(Promise.resolve(toDestroy))
         await processDestructionRequests()
       })
 
@@ -629,7 +629,7 @@ describe('phone number registrar -- destroy module', () => {
     })
 
     describe('when job fails', () => {
-      beforeEach(() => getMatureDestructionRequestsStub.callsFake(() => Promise.reject('BOOM!')))
+      beforeEach(() => getMatureDestructionTargetsStub.callsFake(() => Promise.reject('BOOM!')))
       it('notifies maintainers of error', async () => {
         await processDestructionRequests()
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
