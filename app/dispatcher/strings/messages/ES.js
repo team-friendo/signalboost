@@ -49,7 +49,7 @@ const parseErrors = {
     '¿Quería prefijar su mensaje con TRANSMITIR? Envíe AYUDA para ver una lista de todos los comandos..',
 
   unnecessaryPayload: command =>
-    `Lo siento, ese comando no fue reconocido. ¿Querías usar ${command}?
+    `Lo siento, ese comando no fue reconocido. ¿Querías usar ${command} o TRANSMITIR?
 
 Envíe AYUDA para obtener una lista de todos los comandos válidos y cómo usarlos.`,
 

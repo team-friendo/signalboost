@@ -1018,7 +1018,7 @@ describe('parse module', () => {
               command: noPayloadCommands[index],
               payload: '',
               error: messagesIn(language).parseErrors.unnecessaryPayload(msg.slice(0, -4)),
-              type: parseErrorTypes.INVALID_PAYLOAD,
+              type: parseErrorTypes.NON_EMPTY_PAYLOAD,
             })
           }),
         )
