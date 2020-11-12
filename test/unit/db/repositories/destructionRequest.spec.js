@@ -8,7 +8,7 @@ import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 import destructionRequestRepository from '../../../../app/db/repositories/destructionRequest'
 import util from '../../../../app/util'
-import { times, values } from 'lodash'
+import { times, values, map } from 'lodash'
 import { channelFactory } from '../../../support/factories/channel'
 import { Op } from 'sequelize'
 const {
@@ -18,6 +18,25 @@ const {
 describe('destructionRequest repository', () => {
   const channelPhoneNumber = genPhoneNumber()
   let db, destructionRequestCount
+
+  const createDestructionRequestsFromAttrs = async destructionRequests => {
+    await Promise.all(
+      values(destructionRequests).map(({ channelPhoneNumber }) =>
+        app.db.channel.create(channelFactory({ phoneNumber: channelPhoneNumber })),
+      ),
+    )
+    await Promise.all(
+      values(destructionRequests).map(destructionRequest =>
+        app.db.destructionRequest.create(destructionRequest).then(() =>
+          app.db.sequelize.query(`
+          update "destructionRequests"
+            set "createdAt" = '${destructionRequest.createdAt.toISOString()}'
+            where "channelPhoneNumber" = '${destructionRequest.channelPhoneNumber}';
+          `),
+        ),
+      ),
+    )
+  }
 
   before(async () => (db = (await app.run({ ...testApp, db: dbService })).db))
   beforeEach(async () => {
@@ -118,6 +137,55 @@ describe('destructionRequest repository', () => {
     })
   })
 
+  describe('#getNotifiableDestructionTargets', () => {
+    const now = moment().clone()
+    const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
+    const duringGracePeriod = gracePeriodStart.clone().add(1000, 'ms')
+    const notificationThreshold = now.clone().subtract(channelDestructionGracePeriod / 3, 'ms')
+    const beforeNotificationThreshold = notificationThreshold.clone().subtract(1000, 'ms')
+    const afterNotificationThreshold = notificationThreshold.clone().add(1000, 'ms')
+
+    const destructionRequestAttrs = {
+      pendingDontNotify: {
+        channelPhoneNumber: genPhoneNumber(),
+        createdAt: duringGracePeriod,
+        lastNotifiedAt: afterNotificationThreshold,
+      },
+      pendingDoNotify: {
+        channelPhoneNumber: genPhoneNumber(),
+        createdAt: duringGracePeriod,
+        lastNotifiedAt: notificationThreshold,
+      },
+      pendingDoNotifyAlso: {
+        channelPhoneNumber: genPhoneNumber(),
+        createdAt: duringGracePeriod,
+        lastNotifiedAt: beforeNotificationThreshold,
+      },
+      mature: {
+        channelPhoneNumber: genPhoneNumber(),
+        createdAt: gracePeriodStart,
+        lastNotifiedAt: notificationThreshold,
+      },
+    }
+
+    beforeEach(async () => {
+      sinon.stub(util, 'now').returns(now.clone())
+      await createDestructionRequestsFromAttrs(destructionRequestAttrs)
+    })
+
+    it('returns all channels with pending destruction requests not recently notified', async () => {
+      expect(
+        map(
+          await destructionRequestRepository.getNotifiableDestructionTargets(),
+          'channelPhoneNumber',
+        ),
+      ).to.have.members([
+        destructionRequestAttrs.pendingDoNotify.channelPhoneNumber,
+        destructionRequestAttrs.pendingDoNotifyAlso.channelPhoneNumber,
+      ])
+    })
+  })
+
   describe('#getMatureDestructionRequests', () => {
     const now = moment().clone()
     const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
@@ -127,7 +195,7 @@ describe('destructionRequest repository', () => {
       pending: genPhoneNumber(),
     }
 
-    const destructionRequests = {
+    const destructionRequestAttrs = {
       toDestroy: {
         channelPhoneNumber: channelPhoneNumbers.toDestroy,
         // mature (created before start of grace period)
@@ -142,28 +210,11 @@ describe('destructionRequest repository', () => {
 
     beforeEach(async () => {
       sinon.stub(util, 'now').returns(now.clone())
-      await Promise.all(
-        values(destructionRequests).map(({ channelPhoneNumber }) =>
-          app.db.channel.create(channelFactory({ phoneNumber: channelPhoneNumber })),
-        ),
-      )
-      await Promise.all(
-        values(destructionRequests).map(destructionRequest =>
-          app.db.destructionRequest.create(destructionRequest).then(() =>
-            app.db.sequelize.query(`
-          update "destructionRequests"
-            set "createdAt" = '${destructionRequest.createdAt.toISOString()}'
-            where "channelPhoneNumber" = '${destructionRequest.channelPhoneNumber}';
-          `),
-          ),
-        ),
-      )
+      await createDestructionRequestsFromAttrs(destructionRequestAttrs)
     })
 
     it('retrieves all mature destruction requests and returns their phone numbers', async () => {
-      const res = await destructionRequestRepository.getMatureDestructionRequests(
-        values(channelPhoneNumbers),
-      )
+      const res = await destructionRequestRepository.getMatureDestructionRequests()
       expect(res).to.eql([channelPhoneNumbers.toDestroy])
     })
   })
