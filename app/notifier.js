@@ -9,6 +9,7 @@ const {
 } = require('./config')
 
 const notificationKeys = {
+  CHANNEL_DESTRUCTION_SCHEDULED: 'channelDestructionScheduled',
   CHANNEL_DESTROYED: 'channelDestroyed',
   CHANNEL_DESTROYED_DUE_TO_INACTIVITY: 'channelDestroyedDueToInactivity',
   CHANNEL_REDEEMED: 'channelRedeemed',
@@ -17,7 +18,7 @@ const notificationKeys = {
 // (Channel, String, String) -> Promise<Array<string>>
 const notifyMembersExcept = async (channel, sender, notificationKey) => {
   const recipients = channelRepository.getMembersExcept(channel, [sender])
-  return _notifyMany({ channel, notificationKey, recipients })
+  return notifyMany({ channel, notificationKey, recipients })
 }
 
 // (string) -> Promise<Array<string>>
@@ -25,19 +26,19 @@ const notifyMaintainers = async message => {
   if (!diagnosticsPhoneNumber) return Promise.resolve([])
   const channel = await channelRepository.findDeep(diagnosticsPhoneNumber)
   const recipients = getAdminMemberships(channel)
-  return _notifyMany({ channel, recipients, message })
+  return notifyMany({ channel, recipients, message })
 }
 
 // (string, string) -> Promise<Array<string>>
-const notifyAdmins = async (channel, notificationKey) =>
-  _notifyMany({ channel, notificationKey, recipients: getAdminMemberships(channel) })
+const notifyAdmins = async (channel, notificationKey, args) =>
+  notifyMany({ channel, notificationKey, args, recipients: getAdminMemberships(channel) })
 
 // (Channel, string) -> Promise<Array<string>>
-const notifyMembers = async (channel, notificationKey) =>
-  _notifyMany({ channel, notificationKey, recipients: channel.memberships })
+const notifyMembers = async (channel, notificationKey, args) =>
+  notifyMany({ channel, notificationKey, args, recipients: channel.memberships })
 
-// (Channel, string, Array<Member>) => Promise<Array<string>>
-const _notifyMany = ({ channel, recipients, notificationKey, message }) =>
+// (Channel, Array<Member>, string, string, Array<any>) => Promise<Array<string>>
+const notifyMany = ({ channel, recipients, notificationKey, message, args }) =>
   // TODO(aguestuser|2020-09-11):
   //  we sequence these to get around signald concurrency bugs, eventually use Promise.all here
   sequence(
@@ -46,15 +47,22 @@ const _notifyMany = ({ channel, recipients, notificationKey, message }) =>
         sdMessageOf({
           sender: channel.phoneNumber,
           recipient: recipient.memberPhoneNumber,
-          message: message || messagesIn(recipient.language).notifications[notificationKey],
+          message: _messageOf(recipient, message, notificationKey, args), //message || messagesIn(recipient.language).notifications[notificationKey],
         }),
         channel.socketId,
       ),
     ),
   )
 
+const _messageOf = (recipient, message, notificationKey, args) => {
+  if (message) return message
+  const notificationMaker = messagesIn(recipient.language).notifications[notificationKey]
+  return typeof notificationMaker === 'function' ? notificationMaker(...args) : notificationMaker
+}
+
 module.exports = {
   notifyAdmins,
+  notifyMany,
   notifyMembers,
   notifyMaintainers,
   notifyMembersExcept,

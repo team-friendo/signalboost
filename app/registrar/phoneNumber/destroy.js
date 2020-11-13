@@ -1,5 +1,6 @@
+const moment = require('moment')
 const fs = require('fs-extra')
-const { map, flatMap } = require('lodash')
+const { map, flatMap, isEmpty } = require('lodash')
 const app = require('../../index')
 const common = require('./common')
 const channelRepository = require('../../db/repositories/channel')
@@ -9,12 +10,14 @@ const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const logger = require('../logger')
 const notifier = require('../../notifier')
 const signal = require('../../signal')
+const util = require('../../util')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const { statuses, sequence } = require('../../util')
 const { eventTypes } = require('../../db/models/event')
 const {
   defaultLanguage,
+  jobs: { channelDestructionGracePeriod },
   signal: { keystorePath },
 } = require('../../config')
 
@@ -37,7 +40,9 @@ const requestToDestroy = async phoneNumbers => {
             message: `${phoneNumber} has already been enqueued for destruction.`,
           }
 
-        await notifier.notifyAdmins(channel, 'channelEnqueuedForDestruction')
+        await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
+          util.millisAs(channelDestructionGracePeriod, 'hours'),
+        ])
 
         return {
           status: statuses.SUCCESS,
@@ -62,27 +67,51 @@ const requestToDestroyStaleChannels = async () => {
 // () -> Promise<Array<string>>
 const processDestructionRequests = async () => {
   try {
-    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionTargets()
+    const requestsToNotify = await destructionRequestRepository.getNotifiableDestructionTargets()
+    await _warnOfPendingDestruction(requestsToNotify)
+
     // NOTE (2020-11-01|aguestuser):
-    // - we (somewhat wastefully) process each job in sequence rather than in parallel
-    //   to avoid contention over tx lock created by each destroy call
-    // - in future, we might consider refactoring to hold a single lock for destroy calls in this job?
+    // - we call destroy in sequence (not parallel) to avoid contention over tx lock created by each call
+    // - in future, we might consider refactoring to hold a single lock for all destroy calls in this job?
+
+    /*************************************************/
+    // TODO: modify `#getMatureDestructionTargets` to return destruction requests (not phone numbers)
+    /*************************************************/
+
+    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionTargets()
     const destructionResults = await sequence(
       phoneNumbersToDestroy.map(phoneNumber => () => destroy({ phoneNumber })),
     )
     await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
 
-    return Promise.all([
-      phoneNumbersToDestroy.length === 0
-        ? Promise.resolve()
-        : notifier.notifyMaintainers(
-            `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
-              `${map(destructionResults, 'message').join('\n')}`,
-          ),
-    ])
+    if (isEmpty(phoneNumbersToDestroy)) return null
+    return notifier.notifyMaintainers(
+      `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
+        `${map(destructionResults, 'message').join('\n')}`,
+    )
   } catch (err) {
     return notifier.notifyMaintainers(`Error processing destruction jobs: ${err}`)
   }
+}
+
+// Array<DestructionRequest> => Promise<Array<string>>
+const _warnOfPendingDestruction = destructionRequests =>
+  Promise.all(
+    destructionRequests.map(({ createdAt, channel }) =>
+      notifier.notifyAdmins({
+        channel,
+        notificationKey: notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED,
+        args: [_timeToLive(createdAt)],
+      }),
+    ),
+  )
+
+// string => number
+const _timeToLive = destructionRequestedAt => {
+  const requestMaturesAt = moment(destructionRequestedAt)
+    .clone()
+    .add(channelDestructionGracePeriod, 'ms')
+  return Math.round(requestMaturesAt.diff(util.now(), 'hours', true))
 }
 
 // (Channel) -> Promise<void>
