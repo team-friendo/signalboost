@@ -2,6 +2,7 @@ const { Op } = require('sequelize')
 const app = require('../../../app')
 const util = require('../../util')
 const { map } = require('lodash')
+const { memberTypes } = require('./membership')
 const {
   jobs: { channelDestructionGracePeriod },
 } = require('../../config')
@@ -27,7 +28,7 @@ const destroyMany = channelPhoneNumbers =>
     where: { channelPhoneNumber: { [Op.in]: channelPhoneNumbers } },
   })
 
-// () => Promise<Array<Channel>
+// () => Promise<Array<DestructionRequestInstance>>
 const getNotifiableDestructionTargets = async () => {
   // Use this query to fetch channels that are scheduled for destruction,
   // whose requests are still pending, and have not been notified in more than 1/3 of the grace period
@@ -45,6 +46,13 @@ const getNotifiableDestructionTargets = async () => {
       createdAt: { [Op.gt]: gracePeriodStart },
       lastNotifiedAt: { [Op.lte]: notificationThreshold },
     },
+    // we include channels' admin memberships to allow notifying admins w/o extra db queries
+    include: [
+      {
+        model: app.db.channel,
+        include: [{ model: app.db.membership, where: { type: memberTypes.ADMIN } }],
+      },
+    ],
   })
 }
 

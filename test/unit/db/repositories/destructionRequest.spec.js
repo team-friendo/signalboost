@@ -1,4 +1,4 @@
-import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
 import moment from 'moment'
@@ -8,9 +8,15 @@ import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 import destructionRequestRepository from '../../../../app/db/repositories/destructionRequest'
 import util from '../../../../app/util'
-import { times, values, map } from 'lodash'
-import { channelFactory } from '../../../support/factories/channel'
+import { times, values, map, get } from 'lodash'
+import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { Op } from 'sequelize'
+import {
+  adminMembershipFactory,
+  membershipFactory,
+  subscriberMembershipFactory,
+} from '../../../support/factories/membership'
+
 const {
   jobs: { channelDestructionGracePeriod },
 } = require('../../../../app/config')
@@ -21,8 +27,16 @@ describe('destructionRequest repository', () => {
 
   const createDestructionRequestsFromAttrs = async destructionRequests => {
     await Promise.all(
-      values(destructionRequests).map(({ channelPhoneNumber }) =>
-        app.db.channel.create(channelFactory({ phoneNumber: channelPhoneNumber })),
+      values(destructionRequests).map(({ channelPhoneNumber, channel }) =>
+        app.db.channel.create(
+          channelFactory({
+            phoneNumber: channelPhoneNumber,
+            memberships: get(channel, 'memberships', []),
+          }),
+          {
+            include: [{ model: app.db.membership }],
+          },
+        ),
       ),
     )
     await Promise.all(
@@ -155,11 +169,17 @@ describe('destructionRequest repository', () => {
         channelPhoneNumber: genPhoneNumber(),
         createdAt: duringGracePeriod,
         lastNotifiedAt: notificationThreshold,
+        channel: deepChannelFactory({
+          memberships: [...times(2, adminMembershipFactory), subscriberMembershipFactory()],
+        }),
       },
       pendingDoNotifyAlso: {
         channelPhoneNumber: genPhoneNumber(),
         createdAt: duringGracePeriod,
         lastNotifiedAt: beforeNotificationThreshold,
+        channel: deepChannelFactory({
+          memberships: [...times(3, adminMembershipFactory), subscriberMembershipFactory()],
+        }),
       },
       mature: {
         channelPhoneNumber: genPhoneNumber(),
@@ -167,6 +187,7 @@ describe('destructionRequest repository', () => {
         lastNotifiedAt: notificationThreshold,
       },
     }
+    const { pendingDoNotify, pendingDoNotifyAlso } = destructionRequestAttrs
 
     beforeEach(async () => {
       sinon.stub(util, 'now').returns(now.clone())
@@ -174,15 +195,13 @@ describe('destructionRequest repository', () => {
     })
 
     it('returns all channels with pending destruction requests not recently notified', async () => {
-      expect(
-        map(
-          await destructionRequestRepository.getNotifiableDestructionTargets(),
-          'channelPhoneNumber',
-        ),
-      ).to.have.members([
-        destructionRequestAttrs.pendingDoNotify.channelPhoneNumber,
-        destructionRequestAttrs.pendingDoNotifyAlso.channelPhoneNumber,
+      const targets = await destructionRequestRepository.getNotifiableDestructionTargets()
+      expect(map(targets, 'channelPhoneNumber')).to.have.members([
+        pendingDoNotify.channelPhoneNumber,
+        pendingDoNotifyAlso.channelPhoneNumber,
       ])
+      // assert we only included admin memberships in returned requests
+      expect(map(targets, t => t.channel.memberships.length)).to.have.deep.members([2, 3])
     })
   })
 
