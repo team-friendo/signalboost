@@ -67,26 +67,21 @@ const requestToDestroyStaleChannels = async () => {
 // () -> Promise<Array<string>>
 const processDestructionRequests = async () => {
   try {
-    const requestsToNotify = await destructionRequestRepository.getNotifiableDestructionTargets()
-    await _warnOfPendingDestruction(requestsToNotify)
+    const toNotify = await destructionRequestRepository.getNotifiableDestructionRequests()
+    await _warnOfPendingDestruction(toNotify)
 
     // NOTE (2020-11-01|aguestuser):
     // - we call destroy in sequence (not parallel) to avoid contention over tx lock created by each call
     // - in future, we might consider refactoring to hold a single lock for all destroy calls in this job?
-
-    /*************************************************/
-    // TODO: modify `#getMatureDestructionTargets` to return destruction requests (not phone numbers)
-    /*************************************************/
-
-    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionTargets()
+    const toDestroy = await destructionRequestRepository.getMatureDestructionRequests()
     const destructionResults = await sequence(
-      phoneNumbersToDestroy.map(phoneNumber => () => destroy({ phoneNumber })),
+      toDestroy.map(({ channelPhoneNumber }) => () => destroy({ phoneNumber: channelPhoneNumber })),
     )
-    await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
+    await destructionRequestRepository.destroyMany(map(toDestroy, 'channelPhoneNumber'))
 
-    if (isEmpty(phoneNumbersToDestroy)) return null
+    if (isEmpty(toDestroy)) return null
     return notifier.notifyMaintainers(
-      `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
+      `${toDestroy.length} destruction requests processed:\n\n` +
         `${map(destructionResults, 'message').join('\n')}`,
     )
   } catch (err) {

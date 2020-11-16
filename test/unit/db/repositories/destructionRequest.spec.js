@@ -151,7 +151,7 @@ describe('destructionRequest repository', () => {
     })
   })
 
-  describe('#getNotifiableDestructionTargets', () => {
+  describe('#getNotifiableDestructionRequests', () => {
     const now = moment().clone()
     const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
     const duringGracePeriod = gracePeriodStart.clone().add(1000, 'ms')
@@ -195,7 +195,7 @@ describe('destructionRequest repository', () => {
     })
 
     it('returns all channels with pending destruction requests not recently notified', async () => {
-      const targets = await destructionRequestRepository.getNotifiableDestructionTargets()
+      const targets = await destructionRequestRepository.getNotifiableDestructionRequests()
       expect(map(targets, 'channelPhoneNumber')).to.have.members([
         pendingDoNotify.channelPhoneNumber,
         pendingDoNotifyAlso.channelPhoneNumber,
@@ -205,7 +205,7 @@ describe('destructionRequest repository', () => {
     })
   })
 
-  describe('#getMatureDestructionTargets', () => {
+  describe('#getMatureDestructionRequests', () => {
     const now = moment().clone()
     const gracePeriodStart = now.clone().subtract(channelDestructionGracePeriod, 'ms')
 
@@ -233,8 +233,8 @@ describe('destructionRequest repository', () => {
     })
 
     it('retrieves all mature destruction requests and returns their phone numbers', async () => {
-      const res = await destructionRequestRepository.getMatureDestructionTargets()
-      expect(res).to.eql([channelPhoneNumbers.toDestroy])
+      const res = await destructionRequestRepository.getMatureDestructionRequests()
+      expect(map(res, 'channelPhoneNumber')).to.eql([channelPhoneNumbers.toDestroy])
     })
   })
 })

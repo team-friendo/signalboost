@@ -26,7 +26,10 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
 import { requestToDestroyStaleChannels } from '../../../../app/registrar/phoneNumber/destroy'
-import { deepDestructionRequestFactory } from '../../../support/factories/destructionRequest'
+import {
+  deepDestructionRequestFactory,
+  destructionRequestFactory,
+} from '../../../support/factories/destructionRequest'
 
 describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
@@ -580,10 +583,10 @@ describe('phone number registrar -- destroy module', () => {
           .toISOString(),
       }),
     )
-    const toDestroy = times(3, genPhoneNumber)
+    const toDestroy = times(3, destructionRequestFactory)
 
-    let getMatureDestructionTargetsStub,
-      getNotifiableDestructionTargetsStub,
+    let getMatureDestructionRequestsStub,
+      getNotifiableDestructionRequestsStub,
       destroyDestructionRequestsStub
 
     beforeEach(() => {
@@ -599,14 +602,14 @@ describe('phone number registrar -- destroy module', () => {
         .returns(Promise.resolve(toDestroy.length))
       notifyMaintainersStub.returns(Promise.resolve(['42']))
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
-      getNotifiableDestructionTargetsStub = sinon
-        .stub(destructionRequestRepository, 'getNotifiableDestructionTargets')
+      getNotifiableDestructionRequestsStub = sinon
+        .stub(destructionRequestRepository, 'getNotifiableDestructionRequests')
         .returns(Promise.resolve(toNotify))
 
       // if this fails, processDestructionRequest will fail
-      getMatureDestructionTargetsStub = sinon.stub(
+      getMatureDestructionRequestsStub = sinon.stub(
         destructionRequestRepository,
-        'getMatureDestructionTargets',
+        'getMatureDestructionRequests',
       )
     })
 
@@ -621,12 +624,11 @@ describe('phone number registrar -- destroy module', () => {
           .onCall(2)
           .callsFake(() => Promise.reject('BOOM!'))
         // overall job succeeds
-        getNotifiableDestructionTargetsStub.returns(Promise.resolve(toNotify))
-        getMatureDestructionTargetsStub.returns(Promise.resolve(toDestroy))
+        getNotifiableDestructionRequestsStub.returns(Promise.resolve(toNotify))
+        getMatureDestructionRequestsStub.returns(Promise.resolve(toDestroy))
         await processDestructionRequests()
       })
 
-      // TODO
       it('notifies admins of channels whose destruction is pending', () => {
         expect(map(notifyAdminsStub.getCalls(), 'args')).to.have.deep.members([
           [
@@ -653,25 +655,29 @@ describe('phone number registrar -- destroy module', () => {
       })
 
       it('destroys channels with mature destruction requests', () => {
-        expect(flatten(map(destroyChannelStub.getCalls(), x => x.args[0]))).to.eql(toDestroy)
+        expect(flatten(map(destroyChannelStub.getCalls(), x => x.args[0]))).to.eql(
+          map(toDestroy, 'channelPhoneNumber'),
+        )
       })
 
       it('deletes all destruction requests that were just processed', () => {
-        expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([toDestroy])
+        expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([
+          map(toDestroy, 'channelPhoneNumber'),
+        ])
       })
 
       it('notifies maintainers of results', () => {
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
           '3 destruction requests processed:\n\n' +
-            `Channel ${toDestroy[0]} destroyed.\n` +
-            `Channel ${toDestroy[1]} destroyed.\n` +
-            `Channel ${toDestroy[2]} failed to be destroyed. Error: BOOM!`,
+            `Channel ${toDestroy[0].channelPhoneNumber} destroyed.\n` +
+            `Channel ${toDestroy[1].channelPhoneNumber} destroyed.\n` +
+            `Channel ${toDestroy[2].channelPhoneNumber} failed to be destroyed. Error: BOOM!`,
         ])
       })
     })
 
     describe('when job fails', () => {
-      beforeEach(() => getMatureDestructionTargetsStub.callsFake(() => Promise.reject('BOOM!')))
+      beforeEach(() => getMatureDestructionRequestsStub.callsFake(() => Promise.reject('BOOM!')))
       it('notifies maintainers of error', async () => {
         await processDestructionRequests()
         expect(notifyMaintainersStub.getCall(0).args).to.eql([

@@ -28,8 +28,8 @@ const destroyMany = channelPhoneNumbers =>
     where: { channelPhoneNumber: { [Op.in]: channelPhoneNumbers } },
   })
 
-// () => Promise<Array<DestructionRequestInstance>>
-const getNotifiableDestructionTargets = async () => {
+// () => Promise<Array<DestructionRequest>>
+const getNotifiableDestructionRequests = async () => {
   // Use this query to fetch channels that are scheduled for destruction,
   // whose requests are still pending, and have not been notified in more than 1/3 of the grace period
   // (To ensure that admins get 3 notifications before their channel is deleted).
@@ -56,8 +56,8 @@ const getNotifiableDestructionTargets = async () => {
   })
 }
 
-// () => Promise<Array<string>>
-const getMatureDestructionTargets = async () => {
+// () => Promise<Array<DstructionRequest>>
+const getMatureDestructionRequests = async () => {
   // Admins have a 3 day grace period to redeem a channel slated for destruction by using it.
   // Here, we find all the requests issued before the start of the grace period, and return their
   // phone numbers to the caller for destruction. We may safely assume they can be destroyed, because
@@ -66,16 +66,15 @@ const getMatureDestructionTargets = async () => {
     .now()
     .clone()
     .subtract(channelDestructionGracePeriod, 'ms')
-  const matureRequests = await app.db.destructionRequest.findAll({
+  return app.db.destructionRequest.findAll({
     where: { createdAt: { [Op.lte]: gracePeriodStart } },
   })
-  return map(matureRequests, 'channelPhoneNumber')
 }
 
 module.exports = {
   findOrCreate,
-  getNotifiableDestructionTargets,
-  getMatureDestructionTargets,
+  getNotifiableDestructionRequests,
+  getMatureDestructionRequests,
   destroy,
   destroyMany,
 }
