@@ -1,6 +1,6 @@
 const moment = require('moment')
 const fs = require('fs-extra')
-const { map, flatMap, isEmpty } = require('lodash')
+const { map, flatMap, isEmpty, round } = require('lodash')
 const app = require('../../index')
 const common = require('./common')
 const channelRepository = require('../../db/repositories/channel')
@@ -48,10 +48,11 @@ const requestToDestroy = async phoneNumbers => {
           status: statuses.SUCCESS,
           message: `Issued request to destroy ${phoneNumber}.`,
         }
-      } catch (e) {
+      } catch (err) {
+        logger.error(err)
         return {
           status: statuses.ERROR,
-          message: `Database error trying to issue destruction request for ${phoneNumber}.`,
+          message: `Error trying to issue destruction request for ${phoneNumber}: ${err}`,
         }
       }
     }),
@@ -85,28 +86,34 @@ const processDestructionRequests = async () => {
         `${map(destructionResults, 'message').join('\n')}`,
     )
   } catch (err) {
+    logger.error(err)
     return notifier.notifyMaintainers(`Error processing destruction jobs: ${err}`)
   }
 }
 
-// Array<DestructionRequest> => Promise<Array<string>>
-const _warnOfPendingDestruction = destructionRequests =>
-  Promise.all(
+// Array<DestructionRequest> => Promise<number>
+const _warnOfPendingDestruction = async destructionRequests => {
+  const timestamp = util.nowTimestamp()
+  await Promise.all(
     destructionRequests.map(({ createdAt, channel }) =>
-      notifier.notifyAdmins({
-        channel,
-        notificationKey: notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED,
-        args: [_timeToLive(createdAt)],
-      }),
+      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
+        _hoursToLive(createdAt),
+      ]),
     ),
   )
+  return destructionRequestRepository.recordNotifications(
+    timestamp,
+    map(destructionRequests, 'channelPhoneNumber'),
+  )
+}
 
 // string => number
-const _timeToLive = destructionRequestedAt => {
+const _hoursToLive = destructionRequestedAt => {
+  // returns number of hours before a channel will be destroyed (rounded to nearest single decimal place)
   const requestMaturesAt = moment(destructionRequestedAt)
     .clone()
     .add(channelDestructionGracePeriod, 'ms')
-  return Math.round(requestMaturesAt.diff(util.now(), 'hours', true))
+  return round(requestMaturesAt.diff(util.now(), 'hours', true), 1)
 }
 
 // (Channel) -> Promise<void>

@@ -16,6 +16,7 @@ import {
   membershipFactory,
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
+import { destructionRequestFactory } from '../../../support/factories/destructionRequest'
 
 const {
   jobs: { channelDestructionGracePeriod },
@@ -195,13 +196,41 @@ describe('destructionRequest repository', () => {
     })
 
     it('returns all channels with pending destruction requests not recently notified', async () => {
-      const targets = await destructionRequestRepository.getNotifiableDestructionRequests()
-      expect(map(targets, 'channelPhoneNumber')).to.have.members([
+      const requests = await destructionRequestRepository.getNotifiableDestructionRequests()
+      expect(map(requests, 'channelPhoneNumber')).to.have.members([
         pendingDoNotify.channelPhoneNumber,
         pendingDoNotifyAlso.channelPhoneNumber,
       ])
       // assert we only included admin memberships in returned requests
-      expect(map(targets, t => t.channel.memberships.length)).to.have.deep.members([2, 3])
+      expect(map(requests, r => r.channel.memberships.length)).to.have.deep.members([2, 3])
+    })
+  })
+
+  describe('#recordNotifications', () => {
+    const channelPhoneNumbers = times(3, genPhoneNumber)
+    beforeEach(async () => {
+      await Promise.all(
+        channelPhoneNumbers.map(phoneNumber =>
+          app.db.channel.create(channelFactory({ phoneNumber })),
+        ),
+      )
+      await Promise.all(
+        channelPhoneNumbers.map(channelPhoneNumber =>
+          app.db.destructionRequest.create(destructionRequestFactory({ channelPhoneNumber })),
+        ),
+      )
+    })
+    it('updates the lastNotifiedAt field on a batch of destruction requests', async () => {
+      const timestamp = util.nowTimestamp()
+      await destructionRequestRepository.recordNotifications(timestamp, channelPhoneNumbers)
+      const updatedRequests = await app.db.destructionRequest.findAll({
+        where: { channelPhoneNumber: { [Op.in]: channelPhoneNumbers } },
+      })
+      expect(updatedRequests.map(r => r.lastNotifiedAt.toISOString())).to.eql([
+        timestamp,
+        timestamp,
+        timestamp,
+      ])
     })
   })
 

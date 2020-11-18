@@ -487,11 +487,11 @@ describe('phone number registrar -- destroy module', () => {
         expect(result).to.have.deep.members([
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${phoneNumbers[0]}.`,
+            message: `Error trying to issue destruction request for ${phoneNumbers[0]}: DB err`,
           },
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${phoneNumbers[1]}.`,
+            message: `Error trying to issue destruction request for ${phoneNumbers[1]}: DB err`,
           },
         ])
       })
@@ -523,7 +523,7 @@ describe('phone number registrar -- destroy module', () => {
         expect(await requestToDestroy(_phoneNumbers)).to.eql([
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${_phoneNumbers[0]}.`,
+            message: `Error trying to issue destruction request for ${_phoneNumbers[0]}: BOOM!`,
           },
           {
             status: 'ERROR',
@@ -605,6 +605,7 @@ describe('phone number registrar -- destroy module', () => {
       getNotifiableDestructionRequestsStub = sinon
         .stub(destructionRequestRepository, 'getNotifiableDestructionRequests')
         .returns(Promise.resolve(toNotify))
+      sinon.stub(destructionRequestRepository, 'recordNotifications').returns(Promise.resolve(toNotify.length))
 
       // if this fails, processDestructionRequest will fail
       getMatureDestructionRequestsStub = sinon.stub(
@@ -631,26 +632,8 @@ describe('phone number registrar -- destroy module', () => {
 
       it('notifies admins of channels whose destruction is pending', () => {
         expect(map(notifyAdminsStub.getCalls(), 'args')).to.have.deep.members([
-          [
-            {
-              channel: {
-                memberships: toNotify[0].channel.memberships,
-                phoneNumber: toNotify[0].channel.phoneNumber,
-              },
-              notificationKey: notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED,
-              args: [72],
-            },
-          ],
-          [
-            {
-              channel: {
-                memberships: toNotify[1].channel.memberships,
-                phoneNumber: toNotify[1].channel.phoneNumber,
-              },
-              notificationKey: notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED,
-              args: [48],
-            },
-          ],
+          [toNotify[0].channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [72]],
+          [toNotify[1].channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [48]],
         ])
       })
 

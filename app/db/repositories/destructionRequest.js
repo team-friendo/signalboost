@@ -1,7 +1,6 @@
 const { Op } = require('sequelize')
 const app = require('../../../app')
 const util = require('../../util')
-const { map } = require('lodash')
 const { memberTypes } = require('./membership')
 const {
   jobs: { channelDestructionGracePeriod },
@@ -56,6 +55,15 @@ const getNotifiableDestructionRequests = async () => {
   })
 }
 
+// (string, Array<string>) -> Promise<number>
+const recordNotifications = (timestamp, channelPhoneNumbers) =>
+  app.db.destructionRequest.update(
+    {
+      lastNotifiedAt: timestamp,
+    },
+    { where: { channelPhoneNumber: { [Op.in]: channelPhoneNumbers } } },
+  )
+
 // () => Promise<Array<DstructionRequest>>
 const getMatureDestructionRequests = async () => {
   // Admins have a 3 day grace period to redeem a channel slated for destruction by using it.
@@ -72,9 +80,10 @@ const getMatureDestructionRequests = async () => {
 }
 
 module.exports = {
-  findOrCreate,
-  getNotifiableDestructionRequests,
-  getMatureDestructionRequests,
   destroy,
   destroyMany,
+  findOrCreate,
+  getMatureDestructionRequests,
+  getNotifiableDestructionRequests,
+  recordNotifications,
 }
