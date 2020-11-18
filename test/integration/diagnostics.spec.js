@@ -4,19 +4,21 @@ import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
-import { map, times } from 'lodash'
+import signal from '../../app/signal'
 import socket from '../../app/socket/write'
 import util from '../../app/util'
-import signal from '../../app/signal'
+import { map, times } from 'lodash'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
 import { failedHealthchecks, sendHealthchecks } from '../../app/diagnostics'
 import { messageTypes } from '../../app/signal/constants'
+import { destroyAllChannels } from '../support/db'
 
 const {
   signal: { diagnosticsPhoneNumber, healthcheckTimeout },
 } = require('../../app/config')
 
 describe('diagnostics jobs', () => {
+  const socketId = 0
   const uuids = times(9, util.genUuid)
   let channels, diagnosticsChannel, writeStub, readSock
 
@@ -34,18 +36,6 @@ describe('diagnostics jobs', () => {
         include: [{ model: app.db.membership }],
       },
     )
-  }
-
-  const destroyAllChannels = async () => {
-    await app.db.membership.destroy({ where: {}, force: true })
-    await app.db.messageCount.destroy({ where: {}, force: true })
-    await app.db.hotlineMessage.destroy({
-      where: {},
-      force: true,
-      truncate: true,
-      restartIdentity: true,
-    })
-    await app.db.channel.destroy({ where: {}, force: true })
   }
 
   const echoBackToSocket = outSdMessage => {
@@ -73,17 +63,17 @@ describe('diagnostics jobs', () => {
 
   describe('healthcheck', () => {
     beforeEach(async () => {
-      // await destroyAllChannels()
+      // await destroyAllChannels(app.db)
       await createChannels()
-      readSock = await app.socketPools[0].acquire()
+      readSock = await app.socketPools[socketId].acquire()
       const genUuidStub = sinon.stub(util, 'genUuid')
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
     })
     afterEach(async () => {
       try {
         sinon.restore()
-        await destroyAllChannels()
-        await app.socketPools[0].release(readSock)
+        await destroyAllChannels(app.db)
+        await app.socketPools[socketId].release(readSock)
       } catch (ignored) {
         /**/
       }
@@ -159,7 +149,7 @@ describe('diagnostics jobs', () => {
         if (messageCalls.length !== numHealtchecks + numRestartMessages) {
           // TODO(2020-11-01|aguestuser) let's do something much better than this!
           // problem: this test is timing dependent and so often has not gathered the correct number of calls by time we check
-          console.log('FLAKEY TEST: test.integration.dispatcher!')
+          console.log('FLAKEY TEST: test.integration.diagnostics')
         } else {
           expect(messageCalls.length).to.eql(numHealtchecks + numRestartMessages)
           expect(map(messageCalls, 'args')).to.have.deep.members([

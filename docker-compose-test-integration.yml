@@ -33,6 +33,7 @@ services:
       PROJECT_ROOT: "$PWD"
       NODE_ENV: "test"
       DEFAULT_LANGUAGE: "${DEFAULT_LANGUAGE:-EN}"
+      INTEGRATION_TEST: 1
     depends_on:
       - db
     ports:

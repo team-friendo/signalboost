@@ -13,7 +13,6 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import { Op } from 'sequelize'
 import {
   adminMembershipFactory,
-  membershipFactory,
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { destructionRequestFactory } from '../../../support/factories/destructionRequest'

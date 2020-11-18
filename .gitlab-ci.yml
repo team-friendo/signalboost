@@ -30,6 +30,8 @@ test_unit:
     - merge_requests
 
 test_integration:
+  variables:
+    INTEGRATION_TEST: 1
   services:
     - name: postgres:12
       alias: db

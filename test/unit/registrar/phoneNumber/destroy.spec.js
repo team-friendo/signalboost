@@ -605,7 +605,9 @@ describe('phone number registrar -- destroy module', () => {
       getNotifiableDestructionRequestsStub = sinon
         .stub(destructionRequestRepository, 'getNotifiableDestructionRequests')
         .returns(Promise.resolve(toNotify))
-      sinon.stub(destructionRequestRepository, 'recordNotifications').returns(Promise.resolve(toNotify.length))
+      sinon
+        .stub(destructionRequestRepository, 'recordNotifications')
+        .returns(Promise.resolve(toNotify.length))
 
       // if this fails, processDestructionRequest will fail
       getMatureDestructionRequestsStub = sinon.stub(
