@@ -445,8 +445,14 @@ const notifications = {
   channelDestroyed:
     'La canal et tous les enregistrements associés ont été définitivement détruits.',
 
-  channelEnqueuedForDestruction:
-    "Salut! Cette canal est sur le point d'être détruite en raison du manque d'utilisation. Pour éviter qu'il ne soit détruit, envoyez \"INFO\" dans les prochaines 24 heures. Pour plus d'informations, visitez signalboost.info/how-to.",
+  channelDestructionScheduled: hoursToLive =>
+    `Salut! Cette canal sera détruite dans ${hoursToLive} heures en raison d'un manque d'utilisation.
+
+Pour éviter qu'il ne soit détruit, envoyez INFO dans les prochaines ${hoursToLive} heures.
+
+Si vous souhaitez détruire le canal maintenant, répondez avec DÉTRUIRE.
+
+Pour plus d'informations, visitez signalboost.info/how-to.`,
 
   channelDestructionFailed: phoneNumber =>
     `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,

@@ -1,5 +1,6 @@
+const moment = require('moment')
 const fs = require('fs-extra')
-const { map, flatMap } = require('lodash')
+const { map, flatMap, isEmpty, round } = require('lodash')
 const app = require('../../index')
 const common = require('./common')
 const channelRepository = require('../../db/repositories/channel')
@@ -9,12 +10,14 @@ const phoneNumberRepository = require('../../db/repositories/phoneNumber')
 const logger = require('../logger')
 const notifier = require('../../notifier')
 const signal = require('../../signal')
+const util = require('../../util')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const { statuses, sequence } = require('../../util')
 const { eventTypes } = require('../../db/models/event')
 const {
   defaultLanguage,
+  jobs: { channelDestructionGracePeriod },
   signal: { keystorePath },
 } = require('../../config')
 
@@ -37,16 +40,19 @@ const requestToDestroy = async phoneNumbers => {
             message: `${phoneNumber} has already been enqueued for destruction.`,
           }
 
-        await notifier.notifyAdmins(channel, 'channelEnqueuedForDestruction')
+        await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
+          util.millisAs(channelDestructionGracePeriod, 'hours'),
+        ])
 
         return {
           status: statuses.SUCCESS,
           message: `Issued request to destroy ${phoneNumber}.`,
         }
-      } catch (e) {
+      } catch (err) {
+        logger.error(err)
         return {
           status: statuses.ERROR,
-          message: `Database error trying to issue destruction request for ${phoneNumber}.`,
+          message: `Error trying to issue destruction request for ${phoneNumber}: ${err}`,
         }
       }
     }),
@@ -62,27 +68,52 @@ const requestToDestroyStaleChannels = async () => {
 // () -> Promise<Array<string>>
 const processDestructionRequests = async () => {
   try {
-    const phoneNumbersToDestroy = await destructionRequestRepository.getMatureDestructionRequests()
-    // NOTE (2020-11-01|aguestuser):
-    // - we (somewhat wastefully) process each job in sequence rather than in parallel
-    //   to avoid contention over tx lock created by each destroy call
-    // - in future, we might consider refactoring to hold a single lock for destroy calls in this job?
-    const destructionResults = await sequence(
-      phoneNumbersToDestroy.map(phoneNumber => () => destroy({ phoneNumber })),
-    )
-    await destructionRequestRepository.destroyMany(phoneNumbersToDestroy)
+    const toNotify = await destructionRequestRepository.getNotifiableDestructionRequests()
+    await _warnOfPendingDestruction(toNotify)
 
-    return Promise.all([
-      phoneNumbersToDestroy.length === 0
-        ? Promise.resolve()
-        : notifier.notifyMaintainers(
-            `${phoneNumbersToDestroy.length} destruction requests processed:\n\n` +
-              `${map(destructionResults, 'message').join('\n')}`,
-          ),
-    ])
+    // NOTE (2020-11-01|aguestuser):
+    // - we call destroy in sequence (not parallel) to avoid contention over tx lock created by each call
+    // - in future, we might consider refactoring to hold a single lock for all destroy calls in this job?
+    const toDestroy = await destructionRequestRepository.getMatureDestructionRequests()
+    const destructionResults = await sequence(
+      toDestroy.map(({ channelPhoneNumber }) => () => destroy({ phoneNumber: channelPhoneNumber })),
+    )
+    await destructionRequestRepository.destroyMany(map(toDestroy, 'channelPhoneNumber'))
+
+    if (isEmpty(toDestroy)) return null
+    return notifier.notifyMaintainers(
+      `${toDestroy.length} destruction requests processed:\n\n` +
+        `${map(destructionResults, 'message').join('\n')}`,
+    )
   } catch (err) {
+    logger.error(err)
     return notifier.notifyMaintainers(`Error processing destruction jobs: ${err}`)
   }
+}
+
+// Array<DestructionRequest> => Promise<number>
+const _warnOfPendingDestruction = async destructionRequests => {
+  const timestamp = util.nowTimestamp()
+  await Promise.all(
+    destructionRequests.map(({ createdAt, channel }) =>
+      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
+        _hoursToLive(createdAt),
+      ]),
+    ),
+  )
+  return destructionRequestRepository.recordNotifications(
+    timestamp,
+    map(destructionRequests, 'channelPhoneNumber'),
+  )
+}
+
+// string => number
+const _hoursToLive = destructionRequestedAt => {
+  // returns number of hours before a channel will be destroyed (rounded to nearest single decimal place)
+  const requestMaturesAt = moment(destructionRequestedAt)
+    .clone()
+    .add(channelDestructionGracePeriod, 'ms')
+  return round(requestMaturesAt.diff(util.now(), 'hours', true), 1)
 }
 
 // (Channel) -> Promise<void>

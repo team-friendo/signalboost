@@ -3,6 +3,7 @@ const uuidV4 = require('uuid/v4')
 const stringHash = require('string-hash')
 const moment = require('moment')
 const crypto = require('crypto')
+const { round } = require('lodash')
 const {
   crypto: { hashSalt },
 } = require('./config')
@@ -79,6 +80,29 @@ const now = () => moment()
 const nowInMillis = () => moment().valueOf()
 
 const nowTimestamp = () => moment().toISOString()
+
+// number, string -> number
+const millisAs = (millis, unit) => {
+  switch (unit) {
+    case 'weeks':
+    case 'week':
+      return round(millis / 1000 / 60 / 60 / 24 / 7, 1)
+    case 'days':
+    case 'day':
+      return round(millis / 1000 / 60 / 60 / 24, 1)
+    case 'hours':
+    case 'hour':
+      return round(millis / 1000 / 60 / 60, 1)
+    case 'minute':
+    case 'minutes':
+      return round(millis / 1000 / 60, 1)
+    case 'second':
+    case 'seconds':
+      return round(millis / 1000, 1)
+    default:
+      throw new Error(`${unit} is not a valid unit. Try: {weeks,days,hours,minutes,seconds}.`)
+  }
+}
 
 /**************** Logging ****************/
 
@@ -158,6 +182,7 @@ module.exports = {
   hash,
   loggerOf,
   logger,
+  millisAs,
   noop,
   now,
   nowInMillis,

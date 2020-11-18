@@ -423,11 +423,17 @@ const notifications = {
 
   channelDestroyed: 'Channel and all associated records have been permanently destroyed.',
 
+  channelDestructionScheduled: hoursToLive =>
+    `Hello! This channel will be destroyed in ${hoursToLive} hours due to lack of use.
+
+To prevent it from being destroyed, send INFO within the next ${hoursToLive} hours.
+
+If you would like to destroy the channel right now, respond with DESTROY.
+
+For more information, visit signalboost.info/how-to.`,
+
   channelDestructionFailed: phoneNumber =>
     `Failed to destroy channel for phone number: ${phoneNumber}`,
-
-  channelEnqueuedForDestruction:
-    'Hello! This channel is about to be destroyed due to lack of use. To prevent it from being destroyed, send "INFO" within the next 24 hours. For more info, visit signalboost.info/how-to.',
 
   channelDestroyedDueToInactivity:
     'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',

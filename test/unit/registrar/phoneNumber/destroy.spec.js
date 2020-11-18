@@ -12,6 +12,7 @@ import notifier, { notificationKeys } from '../../../../app/notifier'
 import signal from '../../../../app/signal'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
+import util from '../../../../app/util'
 import {
   destroy,
   redeem,
@@ -25,6 +26,10 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
 import { requestToDestroyStaleChannels } from '../../../../app/registrar/phoneNumber/destroy'
+import {
+  deepDestructionRequestFactory,
+  destructionRequestFactory,
+} from '../../../support/factories/destructionRequest'
 
 describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
@@ -464,13 +469,11 @@ describe('phone number registrar -- destroy module', () => {
 
         it('notifies the channel admins that their channel will be destroyed soon', async () => {
           await requestToDestroy(phoneNumbers)
-          notifyAdminsStub
-            .getCalls()
-            .map(call => call.args)
-            .forEach(([channel, notificationKey]) => {
-              expect(phoneNumbers).to.include(channel.phoneNumber)
-              expect(notificationKey).to.eql('channelEnqueuedForDestruction')
-            })
+          map(notifyAdminsStub.getCalls(), 'args').forEach(([channel, notificationKey, args]) => {
+            expect(phoneNumbers).to.include(channel.phoneNumber)
+            expect(notificationKey).to.eql(notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED)
+            expect(args).to.eql([72])
+          })
         })
       })
     })
@@ -484,11 +487,11 @@ describe('phone number registrar -- destroy module', () => {
         expect(result).to.have.deep.members([
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${phoneNumbers[0]}.`,
+            message: `Error trying to issue destruction request for ${phoneNumbers[0]}: DB err`,
           },
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${phoneNumbers[1]}.`,
+            message: `Error trying to issue destruction request for ${phoneNumbers[1]}: DB err`,
           },
         ])
       })
@@ -520,7 +523,7 @@ describe('phone number registrar -- destroy module', () => {
         expect(await requestToDestroy(_phoneNumbers)).to.eql([
           {
             status: 'ERROR',
-            message: `Database error trying to issue destruction request for ${_phoneNumbers[0]}.`,
+            message: `Error trying to issue destruction request for ${_phoneNumbers[0]}: BOOM!`,
           },
           {
             status: 'ERROR',
@@ -571,8 +574,20 @@ describe('phone number registrar -- destroy module', () => {
   })
 
   describe('#processDestructionRequests', () => {
-    const toDestroy = times(3, genPhoneNumber)
-    let getMatureDestructionRequestsStub, destroyDestructionRequestsStub
+    const toNotify = times(2, n =>
+      deepDestructionRequestFactory({
+        createdAt: util
+          .now()
+          .clone()
+          .subtract(n, 'days')
+          .toISOString(),
+      }),
+    )
+    const toDestroy = times(3, destructionRequestFactory)
+
+    let getMatureDestructionRequestsStub,
+      getNotifiableDestructionRequestsStub,
+      destroyDestructionRequestsStub
 
     beforeEach(() => {
       // recycle helpers that should always succeed
@@ -581,14 +596,20 @@ describe('phone number registrar -- destroy module', () => {
       updatePhoneNumberStub.returns(phoneNumberFactory())
       findChannelStub.callsFake(phoneNumber => Promise.resolve(channelFactory({ phoneNumber })))
 
-      // processRecycle helpers that should always succeed
+      // helpers that should always succeed
       destroyDestructionRequestsStub = sinon
         .stub(destructionRequestRepository, 'destroyMany')
         .returns(Promise.resolve(toDestroy.length))
       notifyMaintainersStub.returns(Promise.resolve(['42']))
       notifyAdminsStub.returns(Promise.resolve(['42', '42']))
+      getNotifiableDestructionRequestsStub = sinon
+        .stub(destructionRequestRepository, 'getNotifiableDestructionRequests')
+        .returns(Promise.resolve(toNotify))
+      sinon
+        .stub(destructionRequestRepository, 'recordNotifications')
+        .returns(Promise.resolve(toNotify.length))
 
-      // if this fails, processDestructionRequests will fail
+      // if this fails, processDestructionRequest will fail
       getMatureDestructionRequestsStub = sinon.stub(
         destructionRequestRepository,
         'getMatureDestructionRequests',
@@ -606,24 +627,36 @@ describe('phone number registrar -- destroy module', () => {
           .onCall(2)
           .callsFake(() => Promise.reject('BOOM!'))
         // overall job succeeds
+        getNotifiableDestructionRequestsStub.returns(Promise.resolve(toNotify))
         getMatureDestructionRequestsStub.returns(Promise.resolve(toDestroy))
         await processDestructionRequests()
       })
 
-      it('destroys channels with mature destruction requests', () => {
-        expect(flatten(map(destroyChannelStub.getCalls(), x => x.args[0]))).to.eql(toDestroy)
+      it('notifies admins of channels whose destruction is pending', () => {
+        expect(map(notifyAdminsStub.getCalls(), 'args')).to.have.deep.members([
+          [toNotify[0].channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [72]],
+          [toNotify[1].channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [48]],
+        ])
       })
 
-      it('destroys all destruction requests that were just processed', () => {
-        expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([toDestroy])
+      it('destroys channels with mature destruction requests', () => {
+        expect(flatten(map(destroyChannelStub.getCalls(), x => x.args[0]))).to.eql(
+          map(toDestroy, 'channelPhoneNumber'),
+        )
+      })
+
+      it('deletes all destruction requests that were just processed', () => {
+        expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([
+          map(toDestroy, 'channelPhoneNumber'),
+        ])
       })
 
       it('notifies maintainers of results', () => {
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
           '3 destruction requests processed:\n\n' +
-            `Channel ${toDestroy[0]} destroyed.\n` +
-            `Channel ${toDestroy[1]} destroyed.\n` +
-            `Channel ${toDestroy[2]} failed to be destroyed. Error: BOOM!`,
+            `Channel ${toDestroy[0].channelPhoneNumber} destroyed.\n` +
+            `Channel ${toDestroy[1].channelPhoneNumber} destroyed.\n` +
+            `Channel ${toDestroy[2].channelPhoneNumber} failed to be destroyed. Error: BOOM!`,
         ])
       })
     })

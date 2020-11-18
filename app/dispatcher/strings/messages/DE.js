@@ -440,11 +440,17 @@ const notifications = {
 
   channelDestroyed: 'Der Kanal und alls zugehörigen Daten wurden unwiderruflich zerstört.',
 
+  channelDestructionScheduled: hoursToLive =>
+    `Hallo! Dieser Kanal wird in ${hoursToLive} Stunden aufgrund mangelnder Nutzung zerstört.
+
+Um zu verhindern, dass es zerstört wird, senden Sie INFO innerhalb der nächsten ${hoursToLive} Stunden.
+
+Wenn Sie den Kanal jetzt zerstören möchten, antworten Sie mit VERNICHTEN.
+
+Weitere Informationen finden Sie unter signalboost.info/how-to.`,
+
   channelDestructionFailed: phoneNumber =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
-
-  channelEnqueuedForDestruction:
-    'Hallo! Dieser Kanal wird wegen mangelnder Nutzung zerstört. Um zu verhindern, dass es zerstört wird, senden Sie innerhalb der nächsten 24 Stunden "INFO". Weitere Informationen finden Sie unter signalboost.info/how-to.',
 
   channelDestroyedDueToInactivity:
     'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',

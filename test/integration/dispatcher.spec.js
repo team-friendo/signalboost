@@ -7,7 +7,7 @@ import db from '../../app/db'
 import socket from '../../app/socket/write'
 import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
-import { map, flatten, times } from 'lodash'
+import { times } from 'lodash'
 import { wait } from '../../app/util'
 import {
   adminMembershipFactory,
@@ -17,17 +17,14 @@ import { genPhoneNumber } from '../support/factories/phoneNumber'
 import { messagesIn } from '../../app/dispatcher/strings/messages'
 import { languages } from '../../app/language'
 import { hotlineMessageFactory } from '../support/factories/hotlineMessages'
+import { getSentMessages } from '../support/socket'
+import { destroyAllChannels } from '../support/db'
 
 describe('dispatcher service', () => {
   const socketId = 1
   const socketDelay = 400
   const randoPhoneNumber = genPhoneNumber()
   const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
-  const getSentMessages = () =>
-    flatten(map(writeStub.getCalls(), call => call.args[0])).filter(
-      msg => !(msg.messageBody || '').includes('healthcheck'),
-    )
-
   let channel, admins, subscribers, writeStub, readSock
 
   const createChannelWithMembers = async () => {
@@ -65,17 +62,13 @@ describe('dispatcher service', () => {
     writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
-    await app.db.membership.destroy({ where: {}, force: true })
-    await app.db.messageCount.destroy({ where: {}, force: true })
-    await app.db.hotlineMessage.destroy({
-      where: {},
-      force: true,
-      truncate: true,
-      restartIdentity: true,
-    })
-    await app.db.channel.destroy({ where: {}, force: true })
-    await app.socketPools[socketId].release(readSock)
-    sinon.restore()
+    try {
+      await destroyAllChannels(app.db)
+      await app.socketPools[socketId].release(readSock)
+      sinon.restore()
+    } catch (ignored) {
+      /**/
+    }
   })
   after(async () => await app.stop())
 
@@ -106,7 +99,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the message to all admins and subscribers', () => {
-      expect(getSentMessages()).to.have.deep.members([
+      expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -163,7 +156,7 @@ describe('dispatcher service', () => {
     })
 
     it('responds to the sender and relays the hotline message to all admins', () => {
-      expect(getSentMessages()).to.have.deep.members([
+      expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           messageBody:
             'Your message was forwarded to the admins of [#red-alert].\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
@@ -226,7 +219,7 @@ describe('dispatcher service', () => {
     })
 
     it('sends a welcome message to the sender and sets the expiration timer', () => {
-      expect(getSentMessages()).to.eql([
+      expect(getSentMessages(writeStub)).to.eql([
         {
           messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
           recipientAddress: { number: randoPhoneNumber },
@@ -271,7 +264,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the hotline reply to hotline message sender and all admins', () => {
-      expect(getSentMessages()).to.have.deep.members([
+      expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,
@@ -320,7 +313,7 @@ describe('dispatcher service', () => {
     })
 
     it('relays the private message to all admins', () => {
-      expect(getSentMessages()).to.have.deep.members([
+      expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           type: 'send',
           username: channel.phoneNumber,

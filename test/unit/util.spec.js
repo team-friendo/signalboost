@@ -133,4 +133,28 @@ describe('utility module', () => {
       expect(fn.callCount).to.eql(2)
     })
   })
+
+  describe('#millisAs', () => {
+    it('converts millis into weeks', () => {
+      expect(util.millisAs(1000 * 60 * 60 * 24 * 14, 'weeks')).to.eql(2)
+      expect(util.millisAs(1000 * 60 * 60 * 24 * 3.5, 'week')).to.eql(0.5)
+    })
+
+    it('converts millis into days', () => {
+      expect(util.millisAs(1000 * 60 * 60 * 48, 'days')).to.eql(2)
+      expect(util.millisAs(1000 * 60 * 60 * 12, 'day')).to.eql(0.5)
+    })
+    it('converts millis into hours', () => {
+      expect(util.millisAs(1000 * 60 * 60 * 24, 'hours')).to.eql(24)
+      expect(util.millisAs(1000 * 60 * 30, 'hour')).to.eql(0.5)
+    })
+    it('converts millis into minutes', () => {
+      expect(util.millisAs(1000 * 60 * 2, 'minutes')).to.eql(2)
+      expect(util.millisAs(1000 * 30, 'minute')).to.eql(0.5)
+    })
+    it('converts millis into seconds', () => {
+      expect(util.millisAs(1000 * 2, 'seconds')).to.eql(2)
+      expect(util.millisAs(500, 'second')).to.eql(0.5)
+    })
+  })
 })
