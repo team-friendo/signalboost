@@ -41,12 +41,8 @@ export default () => (
       You will receive a welcome message from your new channel phone number as
       soon as your channel is created.
     </p>
-    <p>
-      You can write our helpline with questions or a request for a more in-depth
-      training, and we'll get back to you asap!
-    </p>
     <h3 className="getting-started-header">
-      4. Send announcements to (up to 500) subscribers
+      4. Send announcements or receive hotline messages
     </h3>
     <p>
       Now, any anyone who sends "HELLO" to your channel number will get
@@ -54,47 +50,9 @@ export default () => (
     </p>
     <p>
       You can publish your channel phone number on Instagram or keep it to a
-      close circle. Note: after your channel hits 500 subscribers, new users
-      will be prevented from subscribing until existing subscribers leave. Your
-      channel will also take longer to send broadcasts the bigger it grows: ~1-2
-      minutes on a channel with 250 subscribers vs. ~5-10 minutes on a channel
-      with 500 subscribers.
-    </p>
-    <p>
-      If you are in an urgent situation and would like to request a larger
-      channel you can do so by sending us a special request via Signal message
-      at 947-BOOSTIT (+1-947-800-5717). However, please note that large channels
-      put stress on our servers and team. We are working hard to make
-      Signalboost support channels over 500 subscribers, but that work requires
-      time and resources. You can help us get there by{' '}
-      <Link to="/donate">donating!</Link>
+      close circle.
     </p>
     <h2>Signalboost Guide</h2>
-    <p>
-      A Signalboost channel is a phone number that keeps track of admins and
-      subscribers. Any time an admin sends a message to the channel, it is
-      interpreted as a command or a broadcast. If admins send a broadcast, all
-      of the subscribers will see it, but Signalboost will route the broadcast
-      so that it appears as if coming from the channel phone number.
-    </p>
-    <p>
-      People have described Signalboost as "BCC, but for messaging," "secure SMS
-      blasts," and "Celly, but over Signal."{' '}
-    </p>
-    <h3>Commands & languages</h3>
-    <p>
-      A command is a word or phrase sent as a Signal message that Signalboost
-      will interpret as an instruction. Some commands can only be used by
-      admins. If you're unsure which command to use, the HELP command is a great
-      place to start.
-    </p>
-    <p>
-      Signalboost currently supports{' '}
-      <span className="purple">English, Spanish, French, and German</span>. To
-      switch to your language of choice, type the name of the language into the
-      channel. For example, if I want to switch my language to Spanish, I would
-      send "ESPAÑOL" to the channel.
-    </p>
     <h3>Disappearing Messages</h3>
     <p>
       By default, messages on Signalboost channels disappear after 1 week.
@@ -103,6 +61,14 @@ export default () => (
       We recommend shortening the duration of disappearing message timer
       (usually to 1 day or 6 hours) if your broadcasts will contain sensitive
       information.
+    </p>
+    <h3>Language support</h3>
+    <p>
+      Signalboost currently supports{' '}
+      <span className="purple">English, Spanish, French, and German</span>. To
+      switch to your language of choice, type the name of the language into the
+      channel. For example, if I want to switch my language to Spanish, I would
+      send "ESPAÑOL" to the channel.
     </p>
     <h2>Commands</h2>
     <h3>How do I get people to join my channel?</h3>

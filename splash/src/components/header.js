@@ -1,32 +1,62 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Link } from 'gatsby'
-import headerStyles from './header.module.css'
+import { slide as Menu } from 'react-burger-menu'
+import './header.css'
 
-const Header = ({ siteTitle }) => (
-  <header>
-    <nav className={`container ${headerStyles.nav}`}>
-      <Link to="/">
-        <h1 className={headerStyles.title}>{siteTitle}</h1>
-      </Link>
-      <div>
-        <Link
-          to="/how-to"
-          className={headerStyles.nav__link}
-          activeClassName={headerStyles.active}
-        >
-          How-to
-        </Link>
-        <Link
-          to="/donate"
-          className={headerStyles.nav__link}
-          activeClassName={headerStyles.active}
-        >
-          Donate
-        </Link>
-      </div>
-    </nav>
-  </header>
+class Header extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      menuOpen: true,
+    }
+  }
+
+  handleStateChange(state) {
+    this.setState({ menuOpen: state.isOpen })
+  }
+
+  render() {
+    return (
+      <header>
+        <nav className="nav">
+          <Link to="/">
+            <h1 className="title">{this.props.siteTitle}</h1>
+          </Link>
+          <div className="nav__desktop">
+            <NavItems />
+          </div>
+          <div className="nav__mobile">
+            <Menu
+              itemListElement="div"
+              pageWrapId={'container'}
+              isOpen={this.state.menuOpen}
+              onStateChange={state => this.handleStateChange(state)}
+            >
+              <NavItems />
+            </Menu>
+          </div>
+        </nav>
+      </header>
+    )
+  }
+}
+
+const NavItems = () => (
+  <React.Fragment>
+    <Link to="/about" className="nav__link" activeClassName="active">
+      About
+    </Link>
+    <Link to="/how-to" className="nav__link" activeClassName="active">
+      How-to
+    </Link>
+    <Link to="/donate" className="nav__link" activeClassName="active">
+      Donate
+    </Link>
+    <Link to="/privacy" className="nav__link" activeClassName="active">
+      Privacy
+    </Link>
+  </React.Fragment>
 )
 
 Header.propTypes = {

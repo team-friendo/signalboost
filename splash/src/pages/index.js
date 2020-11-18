@@ -103,28 +103,6 @@ const IndexPage = () => (
         Try it out &rarr;
       </Link>
     </div>
-    <h2>Questions?</h2>
-    <p>
-      Check out the <Link to="/faq">FAQ</Link> or{' '}
-      <Link to="/how-to">How-To Guide</Link>
-    </p>
-    <p>
-      Write our helpline (on Signal):{' '}
-      <span className="purple">+1-947-800-5717</span> or send us an email at{' '}
-      <a href="mailto:signalboost@protonmail.com">signalboost@protonmail.com</a>{' '}
-      (or, if you prefer old-school:{' '}
-      <a href="mailto:signalboost@riseup.net">signalboost@riseup.net</a> +{' '}
-      <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
-        PGP
-      </a>
-      ).
-    </p>
-    <p>
-      Read our code of conduct{' '}
-      <a href="https://0xacab.org/team-friendo/signalboost/-/wikis/Team-Friendo-Values-and-CoC">
-        here.
-      </a>
-    </p>
   </Layout>
 )
 
