@@ -44,6 +44,9 @@ class Header extends React.Component {
 
 const NavItems = () => (
   <React.Fragment>
+    <Link to="/about" className="nav__link" activeClassName="active">
+      About
+    </Link>
     <Link to="/how-to" className="nav__link" activeClassName="active">
       How-to
     </Link>

@@ -100,5 +100,9 @@ export default () => (
         here.
       </a>
     </p>
+    <p>
+      Read our source code{' '}
+      <a href="https://0xacab.org/team-friendo/signalboost">here.</a>
+    </p>
   </Layout>
 )
