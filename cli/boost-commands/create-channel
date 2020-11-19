@@ -4,7 +4,6 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
   echo "this command creates channels from verified phone numbers. valid options are:"
   echo ""
   echo "-p : phone number of channel to activate";
-  echo "-n : name to give to the channel once it is activated";
   echo "-a : comma-delimited list of admin phone numbers";
   echo "-e : path to .env file (in dev, use .env.dev)";
   echo ""
@@ -18,9 +17,6 @@ while getopts ":p:n:a:e:" opt; do
   case "$opt" in
     p)
       phone_number="$OPTARG"
-      ;;
-    n)
-      name="$OPTARG"
       ;;
     a)
       admins="$OPTARG"
@@ -38,11 +34,6 @@ check-env ${env_file}
 if [[ ! $phone_number =~ ^\+[0-9]{9,15}$ ]];then
   echo "> ERROR: -p must be a valid phone number prefixed by a country code"
   exit 1
-fi
-
-if [[ -z "$name" ]];then
-  echo "> ERROR: -n (channel name) may not be empty"
-  exit 1;
 fi
 
 if [[ -z "$admins" ]]
@@ -68,7 +59,7 @@ echo "--- provisioning new channel [${name}] on phone number ${phone_number} at 
 curl -s -X POST \
      -H "Content-Type: application/json" \
      -H "Token: $SIGNALBOOST_API_TOKEN" \
-     -d "{ \"phoneNumber\": \"$phone_number\", \"name\": \"$name\", \"admins\":$admins }" \
+     -d "{ \"phoneNumber\": \"$phone_number\", \"admins\":$admins }" \
      https://${SIGNALBOOST_HOST_URL}/channels | jq
 
 popd > /dev/null # return to starting directory

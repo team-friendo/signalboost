@@ -31,11 +31,11 @@ export default () => (
     <h3 className="getting-started-header">3. Request your own channel:</h3>
     <p>
       Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
-      that includes channel name and the phone numbers of at least 2 admins. For
-      example:
+      that includes a comma-separated list of the phone numbers of at least 2
+      admins. For example:
     </p>
     <blockquote className="command blockquote-skinny">
-      <p>Test Channel +1-123-555-5555, +1-123-555-5555</p>
+      <p>+1-123-555-5555, +1-123-555-5555</p>
     </blockquote>
     <p>
       You will receive a welcome message from your new channel phone number as

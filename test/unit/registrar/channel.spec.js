@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
+import niceware from 'niceware'
 import channelRepository from '../../../app/db/repositories/channel'
 import eventRepository from '../../../app/db/repositories/event'
 import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
@@ -23,7 +24,7 @@ const {
 
 describe('channel registrar', () => {
   const phoneNumber = genPhoneNumber()
-  const name = '#blackops'
+  const name = 'fight club'
   const channelPhoneNumber = phoneNumber
   const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
     messagesIn(defaultLanguage).systemName,
@@ -76,6 +77,7 @@ describe('channel registrar', () => {
     logStub
 
   beforeEach(() => {
+    sinon.stub(niceware, 'generatePassphrase').returns(name.split(' '))
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
@@ -103,7 +105,7 @@ describe('channel registrar', () => {
 
       describe('in all cases', () => {
         beforeEach(async () => {
-          await create({ phoneNumber, name, admins })
+          await create({ phoneNumber, admins })
         })
 
         it('creates a channel resource', () => {
@@ -209,7 +211,6 @@ describe('channel registrar', () => {
                   error: 'oh noooes!',
                   request: {
                     phoneNumber,
-                    name,
                     admins,
                   },
                 })
@@ -246,11 +247,7 @@ describe('channel registrar', () => {
             expect(result).to.eql({
               status: 'ERROR',
               error: 'oh noes!',
-              request: {
-                phoneNumber,
-                name,
-                admins,
-              },
+              request: { phoneNumber, admins },
             })
           })
         })
@@ -271,11 +268,7 @@ describe('channel registrar', () => {
           expect(result).to.eql({
             status: 'ERROR',
             error: 'db error!',
-            request: {
-              phoneNumber,
-              name,
-              admins,
-            },
+            request: { phoneNumber, admins },
           })
         })
       })
@@ -295,11 +288,7 @@ describe('channel registrar', () => {
           expect(result).to.eql({
             status: 'ERROR',
             error: 'db error!',
-            request: {
-              phoneNumber,
-              name,
-              admins,
-            },
+            request: { phoneNumber, admins },
           })
         })
       })
@@ -328,11 +317,7 @@ describe('channel registrar', () => {
         expect(result).to.eql({
           status: 'ERROR',
           error: 'oh noes!',
-          request: {
-            phoneNumber,
-            name,
-            admins,
-          },
+          request: { phoneNumber, admins },
         })
       })
     })
