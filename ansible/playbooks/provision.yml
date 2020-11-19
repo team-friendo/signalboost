@@ -11,11 +11,8 @@
     pip_install_packages:
       - name: docker
       - name: docker-compose
-
-  # docker dependencies (ansible roles)
-  roles:
-    - geerlingguy.pip
-    - geerlingguy.docker
+    # don't have the docker role install compose, pip did that!
+    docker_install_compose: false
 
   handlers:
     - name: restart fail2ban
@@ -59,8 +56,21 @@
         - lsof
         - rsync
         - python3
+        - python3-pip
         - emacs-nox
     tags: packages
+
+  #################
+  # ENABLE DOCKER #
+  #################
+
+  - name: run pip role
+    import_role:
+      name: geerlingguy.pip
+
+  - name: run docker role
+    import_role:
+      name: geerlingguy.docker
 
   ##########
   # ADMINS #
