@@ -76,9 +76,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${
-      channel.name
-    }] angemeldet. ${channel.description}
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${channel.name}]
 
 Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     alreadyMember: 'Ups! Du bist schon Teilnehmer an diesem Kanal.',
@@ -157,10 +155,6 @@ PRIVAT Hallo Admins / ~ Hallo admins
 UMBENENNEN neuer name
 -> Benennt den Kanal in "neuer name" um
 
-BESCHREIBUNG beschreibung des kanals
--> Fügt eine öffentliche Beschreibung des Kanals hinzu oder erneuert diese
-
-
 ESPAÑOL / FRANÇAIS / ENGLISH
 -> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
 
@@ -224,7 +218,6 @@ Teilnehmer: ${getSubscriberMemberships(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
-${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -239,7 +232,6 @@ Signal-Nummer: ${channel.phoneNumber}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
-${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -252,7 +244,6 @@ Du bist nicht bei diesem Kanal angemeldet. Schicke HALLO um dich beim Kanal als 
 Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
-${channel.description ? `Beschreibung: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -283,9 +274,7 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${
-      channel.name
-    }] Signalboost Kanal angemeldet. ${channel.description}
+    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${channel.name}]
 
 Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzumelden.`,
     inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freunde nach einer Einladung!
@@ -414,14 +403,6 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
       'Es gab einen Fehler beim Versuch das Vertrauens-Level umzustellen. Bitte versuchs nochmal.',
   },
 
-  // SET_DESCRIPTION
-
-  description: {
-    success: newDescription => `Beschreibung des Kanals wurde geändert zu "${newDescription}".`,
-    dbError: `Oups! Es gab einen Fehler beim Versuch die Beschreibung des Kanals zu ändern. Versuchs nochmal!`,
-    notAdmin,
-  },
-
   // NONE
   none: {
     error:
@@ -514,8 +495,6 @@ ${
 
   safetyNumberChanged:
     'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',
-
-  setDescription: newDescription => `Kanal Beschreibung auf "${newDescription}." gesetzt`,
 
   restartRequesterNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',

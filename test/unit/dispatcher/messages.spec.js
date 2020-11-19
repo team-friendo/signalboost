@@ -79,7 +79,6 @@ describe('messages module', () => {
     const cr = messagesEN.commandResponses
     const channel = {
       name: 'foobar',
-      description: 'the foobar channel',
       phoneNumber: '+13333333333',
       vouchMode: 'ON',
       vouchLevel: 1,
@@ -97,7 +96,6 @@ describe('messages module', () => {
         it('shows admin and subscriber counts', () => {
           expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
-          expect(msg).to.include('description: the foobar channel')
         })
 
         describe('when vouch mode is on', () => {
@@ -112,9 +110,6 @@ describe('messages module', () => {
         const msg = cr.info[memberTypes.SUBSCRIBER](channel)
         it('does not show subscriber count', () => {
           expect(msg).not.to.include('subscribers: 2')
-        })
-        it('shows channel description', () => {
-          expect(msg).to.include('description: the foobar channel')
         })
       })
     })

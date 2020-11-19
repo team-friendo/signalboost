@@ -2238,61 +2238,6 @@ describe('executing commands', () => {
     })
   })
 
-  describe('DESCRIPTION command', () => {
-    const sdMessage = sdMessageOf({
-      sender: channel,
-      message: `${localizedCmds.SET_DESCRIPTION} foo channel description`,
-    })
-    let updateStub
-    beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-
-    describe('when sender is an admin', () => {
-      const dispatchable = { channel, sender: admin, sdMessage }
-      let result
-
-      describe('when update of descriptions succeeds', () => {
-        beforeEach(async () => {
-          updateStub.returns(
-            Promise.resolve({ ...channel, description: 'foo channel description' }),
-          )
-          result = await processCommand(dispatchable)
-        })
-
-        it('returns SUCCESS status / message', () => {
-          expect(result).to.eql({
-            command: commands.SET_DESCRIPTION,
-            status: statuses.SUCCESS,
-            payload: 'foo channel description',
-            message: commandResponsesFor(admin).description.success('foo channel description'),
-            notifications: [
-              ...bystanderAdminMemberships.map(membership => ({
-                recipient: membership.memberPhoneNumber,
-                message: notificationsFor(membership).setDescription('foo channel description'),
-              })),
-            ],
-          })
-        })
-      })
-
-      describe('when update of descriptions fails', () => {
-        beforeEach(async () => {
-          updateStub.callsFake(() => Promise.reject('oh noes!'))
-          result = await processCommand(dispatchable)
-        })
-
-        it('returns ERROR status / message', () => {
-          expect(result).to.eql({
-            command: commands.SET_DESCRIPTION,
-            payload: 'foo channel description',
-            status: statuses.ERROR,
-            message: commandResponsesFor(admin).description.dbError,
-            notifications: [],
-          })
-        })
-      })
-    })
-  })
-
   describe('ambiguous messages containing commands', () => {
     const subscriberNoPayloadCommands = [
       commands.ACCEPT,

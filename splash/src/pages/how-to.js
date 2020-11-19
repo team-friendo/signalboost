@@ -152,16 +152,6 @@ export default () => (
         RENAME My Cool Signalboost Channel
       </blockquote>
     </p>
-    <h4 id="description" className="anchor">
-      DESCRIPTION description of channel
-    </h4>
-    <p>Adds or updates public description of channel.</p>
-    <p>
-      <blockquote className="command blockquote">
-        DESCRIPTION This is the _super cool activist_ signalboost channel! We'll
-        use it to make announcements for the upcoming protest.
-      </blockquote>
-    </p>
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>

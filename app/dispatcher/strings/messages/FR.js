@@ -79,7 +79,7 @@ const commandResponses = {
   accept: {
     success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${
       channel.name
-    }] . ${channel.description}
+    }].
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de ce canal',
@@ -160,9 +160,6 @@ PRIVÉ bonjour admins / ~ bonjour admins
 RENOMMER nouveau nom
 -> Renommer le canal en “nouveau nom”
 
-DESCRIPTION description du canal
--> Ajouter ou mettre à jour la description publique du canal
-
 ESPAÑOL / ENGLISH / DEUTSCH
 -> Changer la langue pour l'espagnol, l'anglais ou l'allemand
 
@@ -226,7 +223,6 @@ abonné-e-s: ${getSubscriberMemberships(channel).length}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
-${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -241,7 +237,6 @@ Numéro de téléphone: ${channel.phoneNumber}
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
-${channel.description ? `Description : ${channel.description}` : ''}
 
 ${support}`,
 
@@ -254,7 +249,6 @@ Vous n'êtes pas abonné-e à ce canal. Envoyez SALUT pour vous abonner.
 Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
-${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -286,9 +280,7 @@ ${failedPhoneNumbers.join(',')}`,
 
   join: {
     success: channel =>
-      `Bonjour! Vous êtes maintenant abonné-e au canal Signalboost [${channel.name}]. ${
-        channel.description
-      }
+      `Bonjour! Vous êtes maintenant abonné-e au canal Signalboost [${channel.name}].
 
 Répondez avec AIDE pour en savoir plus ou AUREVOIR pour vous désinscrire.`,
     inviteRequired: `Désolé! Les invitations sont nécessaires pour s'abonner à ce canal. Demandez à un-e ami-e de vous inviter!
@@ -418,14 +410,6 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
       'Une erreur s’est produite lors de la mise à le niveau de porter garant. Veuillez essayer à nouveau!',
   },
 
-  // SET_DESCRIPTION
-
-  description: {
-    success: newDescription => `La description du canal a été remplacée par "${newDescription}".`,
-    dbError: `Oups! Une erreur s'est produite lors du changement de la description du canal. Veuillez essayer à nouveau!`,
-    notAdmin,
-  },
-
   // NONE
   none: {
     error:
@@ -529,9 +513,6 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   safetyNumberChanged:
     'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',
-
-  setDescription: newDescription =>
-    `La description de ce canal est désormais: "${newDescription}."`,
 
   toRemovedAdmin:
     "Vous venez d'être supprimé e en tant qu'admin de cette canal. Envoyez SALUT pour vous réinscrire.",

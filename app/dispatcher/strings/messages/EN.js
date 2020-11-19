@@ -72,9 +72,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
-      channel.description
-    }
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
@@ -151,9 +149,6 @@ PRIVATE hello admins / ! hello admins
 RENAME new name
 -> renames channel to "new name"
 
-DESCRIPTION description of channel
--> adds or updates public description of channel
-
 ESPAÑOL / FRANÇAIS / DEUTSCH
 -> switches language to Spanish, French or German
 
@@ -217,7 +212,6 @@ subscribers: ${getSubscriberMemberships(channel).length}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
-${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -232,7 +226,6 @@ phone number: ${channel.phoneNumber}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}
-${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -245,7 +238,6 @@ You are not subscribed to this channel. Send HELLO to subscribe.
 name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
-${channel.description ? `description: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -274,9 +266,7 @@ ${failedPhoneNumbers.join(',')}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel. ${
-      channel.description
-    }
+    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -397,14 +387,6 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
     dbError: 'There was an error updating the vouching level. Please try again.',
   },
 
-  // SET_DESCRIPTION
-
-  description: {
-    success: newDescription => `Channel description changed to "${newDescription}".`,
-    dbError: `Whoops! There was an error changing the channel description. Try again!`,
-    notAdmin,
-  },
-
   // NONE
   none: {
     error:
@@ -501,8 +483,6 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   safetyNumberChanged:
     'It looks like you safety number just changed. You might need to resend your last message! :)',
-
-  setDescription: newDescription => `Channel description set to "${newDescription}."`,
 
   toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
 

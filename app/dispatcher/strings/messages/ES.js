@@ -75,9 +75,7 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `¡Hola! Ahora usted está suscrito al canal [${
-      channel.name
-    }] de Signalboost. ${channel.description}
+    success: channel => `¡Hola! Ahora usted está suscrito al canal [${channel.name}]
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
@@ -161,9 +159,6 @@ PRIVADO hola admins / ~ hola admins
 RENOMBRAR nuevo nombre
 -> cambia el nombre del canal a "nuevo nombre"
 
-DESCRIPCIÓN descripción del canal
--> agrega o actualiza la descripción pública del canal
-
 ENGLISH / FRANÇAIS / DEUTSCH
 -> cambia idiomas a Inglés, Francés o Alemán
 
@@ -226,7 +221,6 @@ suscriptorxs: ${getSubscriberMemberships(channel).length}
 línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
-${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -241,7 +235,6 @@ número de teléfono: ${channel.phoneNumber}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 atestiguando: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}
-${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
 
@@ -255,7 +248,6 @@ nombre: ${channel.name}
 número de teléfono: ${channel.phoneNumber}
 línea directa: ${channel.hotlineOn ? 'activada' : 'desactivada'}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
-${channel.description ? `descripción: ${channel.description}` : ''}
 
 ${support}`,
   },
@@ -287,9 +279,7 @@ ${failedPhoneNumbers.join(',')}`,
 
   join: {
     success: channel =>
-      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost. ${
-        channel.description
-      }
+      `¡Hola! Ahora usted está suscrito al canal [${channel.name}] de Signalboost.
 
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     inviteRequired: `¡Lo sentimos! Se requieren invitaciones para suscribirse a este canal. ¡Pídele a un amigo que te invite!
@@ -416,14 +406,6 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
       'Se produjo un error al actualizar el nivel de atestiguando. Inténtelo de nuevo, por favor.',
   },
 
-  // SET_DESCRIPTION
-
-  description: {
-    success: newDescription => `La descripción del canal cambió a "${newDescription}".`,
-    dbError: `Whoops! Se produjo un error al cambiar la descripción del canal. ¡Inténtelo de nuevo!`,
-    notAdmin,
-  },
-
   // NONE
   none: {
     error:
@@ -536,8 +518,6 @@ ${
 
   safetyNumberChanged:
     'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
-
-  setDescription: newDescription => `Descripción del canal establecida en "${newDescription}."`,
 
   toRemovedAdmin:
     'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',

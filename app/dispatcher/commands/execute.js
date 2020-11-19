@@ -83,7 +83,6 @@ const execute = async (executable, dispatchable) => {
     [commands.VOUCHING_ADMIN]: () => setVouchMode(channel, sender, vouchModes.ADMIN),
     [commands.VOUCH_LEVEL]: () => setVouchLevel(channel, sender, payload),
     [commands.SET_LANGUAGE]: () => setLanguage(sender, language),
-    [commands.SET_DESCRIPTION]: () => setDescription(channel, sender, payload),
   }[command]()
 
   result.notifications = result.notifications || []
@@ -682,28 +681,6 @@ const setLanguage = (sender, language) => {
     .updateLanguage(sender.phoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
-}
-
-// SET_DESCRIPTION
-
-const setDescription = async (channel, sender, newDescription) => {
-  const cr = messagesIn(sender.language).commandResponses.description
-  return channelRepository
-    .update(channel.phoneNumber, { description: newDescription })
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(newDescription),
-      notifications: descriptionNotificationsOf(channel, newDescription, sender),
-    }))
-    .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
-}
-
-const descriptionNotificationsOf = (channel, newDescription, sender) => {
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
-  return bystanders.map(membership => ({
-    recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.setDescription(newDescription),
-  }))
 }
 
 // TOGGLES FOR SET COMMANDS RESPONSES

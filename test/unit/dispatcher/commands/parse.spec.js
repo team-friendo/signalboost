@@ -602,66 +602,6 @@ describe('parse module', () => {
       })
     })
 
-    describe('DESCRIPTION command', () => {
-      it('parses a DESCRIPTION command regardless of casing, spacing, accents, or language', () => {
-        const variants = [
-          {
-            lang: languages.EN,
-            messages: ['DESCRIPTION', 'description', ' description '],
-          },
-          {
-            lang: languages.ES,
-            messages: ['DESCRIPCIÓN', 'DESCRIPCION', 'descripcion', ' descripcion '],
-          },
-          {
-            lang: languages.FR,
-            messages: ['DESCRIPTION', 'description', ' description '],
-          },
-          {
-            lang: languages.DE,
-            messages: ['BESCHREIBUNG', ' beschreibung '],
-          },
-        ]
-        variants.forEach(({ lang, messages }) =>
-          messages.forEach(msg =>
-            expect(parseExecutable(msg)).to.eql({
-              command: commands.SET_DESCRIPTION,
-              language: lang === languages.FR ? languages.EN : lang,
-              payload: '',
-            }),
-          ),
-        )
-      })
-
-      it('parses the payload from a DESCRIPTION command', () => {
-        const variants = [
-          {
-            lang: languages.EN,
-            message: 'DESCRIPTION foo channel description',
-          },
-          {
-            lang: languages.ES,
-            message: 'DESCRIPCIÓN foo channel description',
-          },
-          {
-            lang: languages.FR,
-            message: 'DESCRIPTION foo channel description',
-          },
-          {
-            lang: languages.DE,
-            message: 'BESCHREIBUNG foo channel description',
-          },
-        ]
-        variants.forEach(({ lang, message }) => {
-          expect(parseExecutable(message)).to.eql({
-            command: commands.SET_DESCRIPTION,
-            language: lang === languages.FR ? languages.EN : lang,
-            payload: 'foo channel description',
-          })
-        })
-      })
-    })
-
     describe('HOTLINE_ON command', () => {
       it('parses a HOTLINE ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [
@@ -1177,14 +1117,6 @@ describe('parse module', () => {
             reply: 'friendos\n to\n the\n\n rescue!!!!!!',
           })
         })
-      })
-    })
-
-    describe('a description payload', () => {
-      it('parses a multi-line description', () => {
-        const message = 'DESCRIPTION foo channel\ndescription'
-
-        expect(parseExecutable(message).payload).to.eql('foo channel\ndescription')
       })
     })
   })
