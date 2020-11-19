@@ -257,7 +257,6 @@ describe('channel repository', () => {
         expect(keys(ch.toJSON())).to.have.members([
           'phoneNumber',
           'name',
-          'description',
           'messageExpiryTime',
           'hotlineOn',
           'vouchMode',

@@ -16,11 +16,6 @@ const channelOf = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      defaultValue: '',
-    },
     messageExpiryTime: {
       type: DataTypes.INTEGER,
       allowNull: false,
