@@ -10,6 +10,8 @@
     pip_install_packages:
       - name: docker
       - name: docker-compose
+    # don't have the docker role install compose, pip did that!
+    docker_install_compose: false
 
   handlers:
     - name: restart fail2ban
@@ -53,7 +55,7 @@
         - lsof
         - rsync
         - python3
-        - python-pip
+        - python3-pip
         - emacs-nox
     tags: packages
 
