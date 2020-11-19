@@ -67,14 +67,21 @@ ansible.install: ## removes boost cli files from your path
 ansible.deploy: # deploy the app to prod
 	./bin/deploy
 
+ansible.deploy.crontab: # deploy changes to the crontab on prod
+	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_src.yml --tags crontab
+
 ansible.deploy.friendo: # deploy the app to prod
 	FRIENDO_DEPLOY=1 ./bin/deploy
 
 ansible.deploy.metrics: # deploy grafana/prometheus to metrics server
 	./bin/deploy-metrics
 
-ansible.deploy.crontab: # deploy changes to the crontab on prod
-	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_src.yml --tags crontab
+ansible.deploy.staging: # deploy staging
+	./bin/blackbox/postdeploy && \
+	cd ansible && FRIENDO_DEPLOY=1 ./bin/deploy ansible-playbook -i inventory -e "sb_host=sb_staging" playbooks/deploy.yml
+
+ansible.harden.staging: # provision staging
+	cd ansible && ansible-playbook -i inventory -e "sb_host=sb_staging" playbooks/harden.yml
 
 ansible.provision: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision.yml
@@ -84,6 +91,10 @@ ansible.provision.backup.src: # deploy the app to prod
 
 ansible.provision.backup.dst: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_dst.yml
+
+ansible.provision.staging: # provision staging
+	./bin/blackbox/postdeploy && \
+    cd ansible && ansible-playbook -i inventory -e "sb_host=sb_staging" playbooks/provision.yml
 
 ansible.harden: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/harden.yml
@@ -217,6 +228,9 @@ splash.prod.down: ## shut down splash prod containers
 
 splash.deploy: ## deploy the splash app
 	./splash/bin/deploy
+
+splash.provision: ## deploy the splash app
+	./splash/bin/provision
 
 splash.update: ## install new node dependencies and rebuild docker container if needed
 	./splash/bin/update
