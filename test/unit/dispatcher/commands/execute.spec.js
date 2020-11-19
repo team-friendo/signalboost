@@ -1628,57 +1628,6 @@ describe('executing commands', () => {
     })
   })
 
-  describe('RENAME command', () => {
-    const sdMessage = sdMessageOf({ sender: channel, message: 'RENAME foo' })
-    let updateStub
-    beforeEach(() => (updateStub = sinon.stub(channelRepository, 'update')))
-
-    describe('when sender is an admin', () => {
-      const sender = admin
-      const dispatchable = { channel, sender, sdMessage }
-      let result
-
-      describe('when renaming succeeds', () => {
-        beforeEach(async () => {
-          updateStub.returns(Promise.resolve({ ...channel, name: 'foo' }))
-          result = await processCommand(dispatchable)
-        })
-
-        it('returns SUCCESS status, message, and notifications', () => {
-          expect(result).to.eql({
-            command: commands.RENAME,
-            payload: 'foo',
-            status: statuses.SUCCESS,
-            message: commandResponsesFor(admin).rename.success(channel.name, 'foo'),
-            notifications: [
-              ...bystanderAdminMemberships.map(membership => ({
-                recipient: membership.memberPhoneNumber,
-                message: notificationsFor(membership).channelRenamed(channel.name, 'foo'),
-              })),
-            ],
-          })
-        })
-      })
-
-      describe('when renaming fails', () => {
-        beforeEach(async () => {
-          updateStub.callsFake(() => Promise.reject('oh noes!'))
-          result = await processCommand(dispatchable)
-        })
-
-        it('returns ERROR status / message', () => {
-          expect(result).to.eql({
-            command: commands.RENAME,
-            payload: 'foo',
-            status: statuses.ERROR,
-            message: commandResponsesFor(admin).rename.dbError(channel.name, 'foo'),
-            notifications: [],
-          })
-        })
-      })
-    })
-  })
-
   describe('REPLY command', () => {
     const messageId = 1312
     const dispatchable = {

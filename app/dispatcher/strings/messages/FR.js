@@ -157,9 +157,6 @@ AJOUTER +33612345678
 PRIVÉ bonjour admins / ~ bonjour admins
 -> envoie un message privé "bonjour admins" à tous les administrateurs de la canal
 
-RENOMMER nouveau nom
--> Renommer le canal en “nouveau nom”
-
 ESPAÑOL / ENGLISH / DEUTSCH
 -> Changer la langue pour l'espagnol, l'anglais ou l'allemand
 
@@ -317,17 +314,6 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
     invalidPhoneNumber,
   },
 
-  // RENAME
-
-  rename: {
-    success: (oldName, newName) => `[${newName}]
-Canal nom changé de "${oldName}" à "${newName}”.`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]
-Oups! Une erreur s’est produite en tentant de renommer le canal de [${oldName}] à [${newName}]. Veuillez essayer de nouveau!`,
-    notAdmin,
-  },
-
   // REPLY
 
   hotlineReply: {
@@ -446,8 +432,6 @@ Pour plus d'informations, visitez signalboost.info/how-to.`,
 
   channelRedeemed:
     "Cette canal devait être détruite en raison d'un manque d'utilisation. Cependant, puisque vous avez utilisé la canal récemment, elle ne sera plus détruite. Yay!",
-
-  channelRenamed: (oldName, newName) => `Le canal a été renommé de "${oldName}" à "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.

@@ -143,15 +143,6 @@ export default () => (
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
     </p>
-    <h4 id="rename" className="anchor">
-      RENAME new name
-    </h4>
-    <p>Renames channel to "new name"</p>
-    <p>
-      <blockquote className="command blockquote">
-        RENAME My Cool Signalboost Channel
-      </blockquote>
-    </p>
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>

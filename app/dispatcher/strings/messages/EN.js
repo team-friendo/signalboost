@@ -146,9 +146,6 @@ ADD +1-555-555-5555
 PRIVATE hello admins / ! hello admins
 -> sends private message "hello admins" to all admins of the channel
 
-RENAME new name
--> renames channel to "new name"
-
 ESPAÑOL / FRANÇAIS / DEUTSCH
 -> switches language to Spanish, French or German
 
@@ -300,17 +297,6 @@ If you already have an invite, try sending ACCEPT`,
     invalidPhoneNumber,
   },
 
-  // RENAME
-  rename: {
-    success: (oldName, newName) =>
-      `[${newName}]
-Channel renamed from "${oldName}" to "${newName}".`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]
-Whoops! There was an error renaming the channel [${oldName}] to [${newName}]. Try again!`,
-    notAdmin,
-  },
-
   // REPLY
 
   hotlineReply: {
@@ -422,8 +408,6 @@ For more information, visit signalboost.info/how-to.`,
 
   channelRedeemed:
     'This channel was scheduled to be destroyed due to lack of use. However, since you used the channel recently, it will no longer be destroyed. Yay!',
-
-  channelRenamed: (oldName, newName) => `Channel renamed from "${oldName}" to "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
   ${adminPhoneNumber} has been removed from this channel because their safety number changed.

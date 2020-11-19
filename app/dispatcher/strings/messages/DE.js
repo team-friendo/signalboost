@@ -152,9 +152,6 @@ HINZUFÜGEN +491701234567
 PRIVAT Hallo Admins / ~ Hallo admins
 -> Dendet eine private Nachricht "Hallo Admins" an alle Admins des Kanals
 
-UMBENENNEN neuer name
--> Benennt den Kanal in "neuer name" um
-
 ESPAÑOL / FRANÇAIS / ENGLISH
 -> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
 
@@ -311,18 +308,6 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     invalidPhoneNumber,
   },
 
-  // RENAME
-
-  rename: {
-    success: (oldName, newName) =>
-      `[${newName}]
-Du hast erfolgreich den Kanal von "${oldName}" zu "${newName}" umbenannt.`,
-    dbError: (oldName, newName) =>
-      `[${oldName}]
-Uups! Es gab einen Fehler beim Umbenennen des Kanals [${oldName}] zu [${newName}]. Versuchs nochmal!`,
-    notAdmin,
-  },
-
   // REPLY
 
   hotlineReply: {
@@ -438,8 +423,6 @@ Weitere Informationen finden Sie unter signalboost.info/how-to.`,
 
   channelRedeemed:
     'Dieser Kanal sollte wegen mangelnder Nutzung zerstört werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr zerstört. Yay!',
-
-  channelRenamed: (oldName, newName) => `Kanal umbenannt von "${oldName}" zu "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.

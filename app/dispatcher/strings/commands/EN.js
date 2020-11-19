@@ -14,7 +14,6 @@ module.exports = {
   LEAVE: ['GOODBYE', 'LEAVE', 'STOP', 'UNSUBSCRIBE'],
   PRIVATE: ['PRIVATE', '~'],
   REMOVE: ['REMOVE'],
-  RENAME: ['RENAME'],
   REPLY: ['REPLY', '@'],
   RESTART: ['BOOST RESTART'],
   SET_LANGUAGE: ['ENGLISH', 'INGLÉS', 'INGLES', 'ANGLAIS', 'ENGLISCH'],

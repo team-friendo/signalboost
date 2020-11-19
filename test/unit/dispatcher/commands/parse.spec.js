@@ -542,66 +542,6 @@ describe('parse module', () => {
       })
     })
 
-    describe('RENAME command', () => {
-      it('parses a RENAME command regardless of casing, spacing, accents, or language', () => {
-        const variants = [
-          {
-            language: languages.EN,
-            messages: ['RENAME', ' rename '],
-          },
-          {
-            language: languages.ES,
-            messages: ['RENOMBRAR', 'renombrar', ' renombrar '],
-          },
-          {
-            language: languages.FR,
-            messages: ['RENOMMER', 'renommer', ' renommer '],
-          },
-          {
-            language: languages.DE,
-            messages: ['UMBENENNEN', ' umbenennen '],
-          },
-        ]
-        variants.forEach(({ language, messages }) =>
-          messages.forEach(msg =>
-            expect(parseExecutable(msg)).to.eql({
-              command: commands.RENAME,
-              language,
-              payload: '',
-            }),
-          ),
-        )
-      })
-
-      it('parses the payload from a RENAME command', () => {
-        const variants = [
-          {
-            language: languages.EN,
-            message: 'RENAME foo',
-          },
-          {
-            language: languages.ES,
-            message: 'RENOMBRAR foo',
-          },
-          {
-            language: languages.FR,
-            message: 'RENOMMER foo',
-          },
-          {
-            language: languages.DE,
-            message: 'UMBENENNEN foo',
-          },
-        ]
-        variants.forEach(({ language, message }) =>
-          expect(parseExecutable(message)).to.eql({
-            command: commands.RENAME,
-            language,
-            payload: 'foo',
-          }),
-        )
-      })
-    })
-
     describe('HOTLINE_ON command', () => {
       it('parses a HOTLINE ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [

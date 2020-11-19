@@ -74,7 +74,6 @@ const execute = async (executable, dispatchable) => {
     [commands.JOIN]: () => maybeAddSubscriber(channel, sender, language),
     [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
     [commands.PRIVATE]: () => privateMessageAdmins(channel, sender, payload, sdMessage),
-    [commands.RENAME]: () => renameChannel(channel, sender, payload),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
     [commands.REPLY]: () => replyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.RESTART]: () => maybeRestart(channel, sender, payload),
@@ -522,36 +521,6 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
       message: messagesIn(membership.language).notifications[notificationKey],
     })),
   ]
-}
-
-// RENAME
-
-const renameChannel = async (channel, sender, newChannelName) => {
-  const cr = messagesIn(sender.language).commandResponses.rename
-  return channelRepository
-    .update(channel.phoneNumber, { name: newChannelName })
-    .then(() => ({
-      status: statuses.SUCCESS,
-      message: cr.success(channel.name, newChannelName),
-      notifications: renameNotificationsOf(channel, newChannelName, sender),
-    }))
-    .catch(err =>
-      logAndReturn(err, {
-        status: statuses.ERROR,
-        message: cr.dbError(channel.name, newChannelName),
-      }),
-    )
-}
-
-const renameNotificationsOf = (channel, newChannelName, sender) => {
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
-  return bystanders.map(membership => ({
-    recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.channelRenamed(
-      channel.name,
-      newChannelName,
-    ),
-  }))
 }
 
 // REPLY

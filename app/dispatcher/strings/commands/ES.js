@@ -14,7 +14,6 @@ module.exports = {
   LEAVE: ['ADIÓS', 'ADIOS'],
   PRIVATE: ['PRIVADA', 'PRIVADO', '~'],
   REMOVE: ['QUITAR'],
-  RENAME: ['RENOMBRAR'],
   REPLY: ['RESPONDER', '@'],
   RESTART: ['BOOST REINICIAR'],
   SET_LANGUAGE: ['ESPAÑOL', 'ESPANOL', 'SPANISH', 'SPANISCH'],

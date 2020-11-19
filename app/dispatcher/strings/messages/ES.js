@@ -156,9 +156,6 @@ AGREGAR + 1-555-555-5555
 PRIVADO hola admins / ~ hola admins
 -> envía un mensaje privado "hola admins" a todos los administradores del canal
 
-RENOMBRAR nuevo nombre
--> cambia el nombre del canal a "nuevo nombre"
-
 ENGLISH / FRANÇAIS / DEUTSCH
 -> cambia idiomas a Inglés, Francés o Alemán
 
@@ -316,16 +313,6 @@ Si ya tiene usted una invitación, intente enviar ACEPTAR`,
       `¡Ay! Error al eliminar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
   },
 
-  // RENAME
-
-  rename: {
-    success: (oldName, newName) => `[${newName}]
-    Canal renombrado de "${oldName}" a "${newName}".`,
-    dbError: (oldName, newName) =>
-      `¡Lo sentimos! Se produjo un error al cambiar el nombre del canal [${oldName}] a [${newName}]. ¡Inténtelo de nuevo!`,
-    notAdmin,
-  },
-
   // REPLY
 
   hotlineReply: {
@@ -441,8 +428,6 @@ Para obtener más información, visite signalboost.info/how-to.`,
 
   channelRedeemed:
     'Este canal estaba programado para ser destruido por falta de uso. Sin embargo, dado que usó el canal recientemente, ya no se destruirá. ¡Hurra!',
-
-  channelRenamed: (oldName, newName) => `Canal renombrado de "${oldName}" a "${newName}."`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
