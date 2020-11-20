@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+pushd `pwd`> /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+
+echo "--- loading secrets..."
+
+cd ..
+../bin/blackbox/postdeploy
+source .env
+
+echo "--- provisioning..."
+
+cd ansible
+
+ansible-playbook -i inventory playbooks/provision.yml
+
+pushd > /dev/null

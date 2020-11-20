@@ -1,6 +1,6 @@
 ---
 - name: Perform Advanced Hardening
-  hosts: signalboost
+  hosts: splash
   become: true
 
   tasks:
