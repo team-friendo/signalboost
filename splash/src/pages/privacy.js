@@ -88,28 +88,6 @@ export default () => (
         banned from a channel for abusive behavior. (Never deleted.){' '}
       </li>
     </ul>
-    <h3>Channel metadata </h3>
-    <p>
-      We store some descriptive information about channels that the channels
-      make publicly visible to their members. In detail, we store:{' '}
-    </p>
-    <ul>
-      <li>
-        {' '}
-        The name and public description of each channel (deleted when channel
-        destroyed)[2]{' '}
-      </li>
-      <li> Subscriber counts per channel (deleted when channel destroyed) </li>
-      <li>
-        The state of various feature toggles (such as whether vouching or
-        hotline messages are enabled, etc.){' '}
-      </li>
-    </ul>
-    <p>
-      [2] We plan to eliminate public names and descriptions of channels in a
-      future release, at which point, none of this data will be stored on our
-      servers.{' '}
-    </p>
     <h3>Data deletion </h3>
     <p>
       We regularly delete[3] as much data as we can as often as possible and
