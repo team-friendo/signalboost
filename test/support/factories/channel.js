@@ -13,7 +13,6 @@ export const channelFactory = attrs => ({
   phoneNumber: genPhoneNumber(),
   name: '#red-alert',
   messageExpiryTime: defaultMessageExpiryTime,
-  description: 'the food channel',
   socketId: random(0, 9),
   ...attrs,
 })
@@ -37,7 +36,6 @@ export const deepChannelFactory = attrs => {
 export const deepChannelAttrs = [
   {
     name: 'foo',
-    description: 'the food channel',
     phoneNumber: '+11111111111',
     memberships: [
       {
@@ -94,7 +92,6 @@ export const deepChannelAttrs = [
   {
     name: 'bar',
     phoneNumber: '+19999999999',
-    description: 'the bar channel',
     memberships: [
       {
         type: memberTypes.ADMIN,

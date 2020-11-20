@@ -103,7 +103,6 @@ describe('channel model', () => {
 
     expect(channel.phoneNumber).to.be.a('string')
     expect(channel.name).to.be.a('string')
-    expect(channel.description).to.be.a('string')
     expect(channel.hotlineOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
     expect(channel.vouchMode).to.be.a('string')
@@ -117,7 +116,6 @@ describe('channel model', () => {
   it('sets correct defaults', async () => {
     channel = await db.channel.create(
       channelFactory({
-        description: undefined,
         hotlineOn: undefined,
         messageExpiryTime: undefined,
         socketId: undefined,
@@ -127,7 +125,6 @@ describe('channel model', () => {
       }),
     )
 
-    expect(channel.description).to.equal('')
     expect(channel.hotlineOn).to.equal(true)
     expect(channel.messageExpiryTime).to.equal(defaultMessageExpiryTime)
     expect(channel.socketId).to.equal(0)

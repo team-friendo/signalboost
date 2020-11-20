@@ -101,9 +101,8 @@ describe('routes', () => {
           .set('Token', authToken)
           .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'admins']))
 
-        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'name', 'admins'])).to.eql({
+        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'admins'])).to.eql({
           phoneNumber,
-          name: 'foo channel',
           admins,
         })
       })

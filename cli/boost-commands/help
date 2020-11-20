@@ -9,8 +9,8 @@ boost cli supports the following commands:
   add-admin -c <channel phone number> -a <admin phone number> -e <path to .env file>
     - adds an admin to a channel on the signalboost instance specified in .env file
 
-  create-channel -p <phone_number> -n <chan_name> -a <admins> -e <path to .env file>
-    - creates a channel with provied phone number, name, and admins on signalboost instance specified in .env file
+  create-channel -p <phone_number> -a <admins> -e <path to .env file>
+    - creates a channel with provied phone number and admins on signalboost instance specified in .env file
 
   create-number -a <area_code> -n <numbers_desired> -e <path to .env file>
     - purchases n new twilio numbers and registers them w/ signal via registrar on instance specified in .env file

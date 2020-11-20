@@ -1,3 +1,4 @@
+const niceware = require('niceware')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRepository = require('../db/repositories/phoneNumber')
@@ -29,10 +30,11 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 }
 
 /* ({ phoneNumber: string, name: string, admins: Array<string> }) => Promise<ChannelStatus> */
-const create = async ({ phoneNumber, name, admins }) => {
+const create = async ({ phoneNumber, admins }) => {
   try {
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
+    const name = niceware.generatePassphrase(4).join(' ')
     const channel = await channelRepository.create(phoneNumber, name, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
@@ -52,7 +54,7 @@ const create = async ({ phoneNumber, name, admins }) => {
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,
-      request: { phoneNumber, name, admins },
+      request: { phoneNumber, admins },
     }
   }
 }

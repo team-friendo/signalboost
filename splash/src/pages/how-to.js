@@ -31,11 +31,11 @@ export default () => (
     <h3 className="getting-started-header">3. Request your own channel:</h3>
     <p>
       Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
-      that includes channel name and the phone numbers of at least 2 admins. For
-      example:
+      that includes a comma-separated list of the phone numbers of at least 2
+      admins. For example:
     </p>
     <blockquote className="command blockquote-skinny">
-      <p>Test Channel +1-123-555-5555, +1-123-555-5555</p>
+      <p>+1-123-555-5555, +1-123-555-5555</p>
     </blockquote>
     <p>
       You will receive a welcome message from your new channel phone number as
@@ -142,25 +142,6 @@ export default () => (
     <p>
       Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
       remove or add any other admins.
-    </p>
-    <h4 id="rename" className="anchor">
-      RENAME new name
-    </h4>
-    <p>Renames channel to "new name"</p>
-    <p>
-      <blockquote className="command blockquote">
-        RENAME My Cool Signalboost Channel
-      </blockquote>
-    </p>
-    <h4 id="description" className="anchor">
-      DESCRIPTION description of channel
-    </h4>
-    <p>Adds or updates public description of channel.</p>
-    <p>
-      <blockquote className="command blockquote">
-        DESCRIPTION This is the _super cool activist_ signalboost channel! We'll
-        use it to make announcements for the upcoming protest.
-      </blockquote>
     </p>
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
