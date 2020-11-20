@@ -3,6 +3,7 @@
 .env.metrics
 .env.pentest
 .env.staging
+ansible/files/.env.staging
 ansible/files/deploy_keys/.ssh/config
 ansible/files/deploy_keys/.ssh/id_sb_deploy
 ansible/files/deploy_keys/.ssh/id_sb_deploy.pub

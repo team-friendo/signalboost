@@ -67,3 +67,4 @@ grafana_data
 /signald/jmx/jmxremote.password
 /nginx/vhost.d/signald.signalboost.info
 /.env.staging
+/ansible/files/.env.staging
