@@ -257,13 +257,8 @@ export default () => (
     </ul>
     <h3>This website</h3>
     <p>
-      In order to maintain the availability of this site, the IP addresses of
-      visitors to this site are visible in logs to which the maintainers have
-      access. These logs are deleted every 2 weeks and only ever inspected in
-      the case of potential denial-of-service attacks. If you would like to not
-      have your IP address in our logs, we recommend you use the{' '}
-      <a href="https://www.torproject.org/download/">Tor Browser</a> when
-      visiting this site. :)
+      This website does not log or store the IP addresses of people who visit
+      it.
     </p>
     <h2>Contacting us</h2>
     <p>
