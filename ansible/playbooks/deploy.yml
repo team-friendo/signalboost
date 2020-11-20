@@ -41,6 +41,14 @@
     tags: clone
     when: secrets_method == "copy"
 
+  - name: Deploy vhost.d files by copying local file
+    copy:
+      src: "files/vhost.d"
+      dest: "{{ homedir }}/nginx/"
+    tags: clone
+    when: secrets_method == "copy"
+
+
   ########
   # STOP #
   ########
