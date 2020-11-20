@@ -53,7 +53,6 @@ services:
       - signald_8
       - signald_9
     entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env.dev
     environment:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
       NODE_ENV: ${NODE_ENV:-development}
