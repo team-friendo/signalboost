@@ -37,6 +37,8 @@ services:
       - vhost.d:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
+    logging:
+      driver: none
     networks:
       - proxy-tier
     restart: always
