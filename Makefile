@@ -78,7 +78,13 @@ ansible.deploy.metrics: # deploy grafana/prometheus to metrics server
 
 ansible.deploy.staging: # deploy staging
 	./bin/blackbox/postdeploy && \
-	cd ansible && FRIENDO_DEPLOY=1 ./bin/deploy ansible-playbook -i inventory -e "sb_host=sb_staging" playbooks/deploy.yml
+	cd ansible && ansible-playbook -i inventory -e "sb_host=sb_staging env_file=files/.env.staging" playbooks/deploy.yml
+
+ansible.deploy.splash: ## deploy the splash app
+	./splash/bin/deploy
+
+ansible.harden.splash: ## harden the server hosting the splash page
+	./splash/bin/harden
 
 ansible.harden.staging: # provision staging
 	cd ansible && ansible-playbook -i inventory -e "sb_host=sb_staging" playbooks/harden.yml
@@ -91,6 +97,9 @@ ansible.provision.backup.src: # deploy the app to prod
 
 ansible.provision.backup.dst: # deploy the app to prod
 	cd ansible && ansible-playbook -i inventory playbooks/provision_backup_dst.yml
+
+ansible.provision.splash: ## provision the splash app
+	./splash/bin/provision
 
 ansible.provision.staging: # provision staging
 	./bin/blackbox/postdeploy && \
@@ -226,11 +235,14 @@ splash.prod.up: ## run (already-built) version of splash site
 splash.prod.down: ## shut down splash prod containers
 	cd splash && docker-compose down
 
-splash.deploy: ## deploy the splash app
-	./splash/bin/deploy
-
 splash.provision: ## deploy the splash app
 	./splash/bin/provision
+
+splash.harden: ## harden the server hosting the splash page
+	./splash/bin/harden
+
+splash.deploy: ## deploy the splash app
+	./splash/bin/deploy
 
 splash.update: ## install new node dependencies and rebuild docker container if needed
 	./splash/bin/update
