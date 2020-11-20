@@ -530,17 +530,35 @@ But initially we recommend running each one, one at a time to monitor the outcom
 ``` shell
 cd ansible
 ansible-playbook -i inventory playbooks/provision.yml
-ansible-playbook -i inventory playbooks/deploy.yml
 ansible-playbook -i inventory playbooks/harden.yml
+ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
 It is not unsual to have to run `provision.yml` multiple times with small errors that are resolves by a re-run.
 
-> GOTCHA WARNING: `harden.yml` has been a source of ongoing problems with deployment, you may find that running it will not work because of package issues. You can absolutely run Signalboost without using it but it's going to make your server more secure.
+**GOTCHA WARNINGS:**
 
-Because the last playbook (`harden.yml`) can take as long as 2 hours to run! But after `deploy.yml` is finished thankfully, you can start using Signalboost before it is complete! Just wait for the `deploy.yml` playbook (which will display the task header `Deploy Signalboost`) to complete and you can proceed to the next steps.
+The second playbook (`harden.yml`) can take up to 30 minutes to run. If you want to get things up and running more quickly, you could always run `deploy` first, then circle back to `harden`!
 
-*Variation to accomodate multiple remote hosts and .env files:*
+On some VPS's `deploy` will fail during the `Installing node dependencies` step with an error mentioning `EAIN_AGAIN`. This is usually a sign that the docker daemon cannot find a nameserver to resolve DNS queries from inside of containers.
+
+This can be fixed by running `cat /etc/resolve.conf` to discover the nameserver, then adding the following configuration file to `/etc/docker/daemon.json`...
+
+```shell
+# here we assume 10.10.10.10 was the ip of the nameserver listed in /etc/resolv.conf
+# and we provide the cloudflare DNS server as a backup
+{
+    "dns": ["10.10.10.10, "1.1.1.1"]
+}
+```
+
+...then restart the docker daemon with:
+
+```shell
+systemctl restart docker
+```
+
+**Variation to accomodate multiple remote hosts and .env files:**
 
 By default the deploy tooling described above assumes you are deploying to one single server, with a `host` listed as `signalboost` in `ansible/inventory` and credentials listed in `.env`. But perhaps you would like to deploy Signalboost to multiple servers, each with different credentials!
 
