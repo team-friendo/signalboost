@@ -1,6 +1,6 @@
 # Overview
 
-Signalboost is a messaging service that allows small groups of admins to send encrypted "broadcast" messages to and receive encrypted "hotline" messages from groups of up to several thousand subscribers over the Signal Private Messenger service.
+Signalboost is a messaging service that allows small groups of admins to send encrypted "broadcast" messages to, and receive encrypted "hotline" messages from, groups of up to several thousand subscribers over the Signal Private Messenger service.
 
 Two of its important design properties are:
 
@@ -9,13 +9,13 @@ Two of its important design properties are:
 
 We currently achieve these objectives by:
 
-1. Routing messages between admins and subscribers through a proxy signal phone number controlled by the Signalboost server(s)
-2. Storing admin and subscriber phone numbers in cleartext membership tables in a postgres database on the Signalboost server(s) (necessary for routing messages and checking admin permissions)
+1. Routing messages between admins and subscribers through a proxy signal phone number controlled by the Signalboost server(s), which we call a "channel"
+2. Storing admin and subscriber phone numbers in cleartext membership tables in a database on the Signalboost server(s) (necessary for routing messages and checking admin permissions)
 3. Storing key material and other metadata (including user phone numbers) contained in the Signal Protocol Store on the Signalboost server(s) (necessary to advance the Signal double-ratchet algorithm between proxy phone numbers and user phone numbers, so that they may exchange messages).
 
 This design leaves valuable metadata about which phone numbers use which Signalboost channels (and, in some cases, when they use the channel) vulnerable to seizure by an adversary who can compromise the Signalboost server either by technical attack, legal compulsion, or social engineering of a project maintainer.
 
-The purpose of this design doc is to design a system for maintaining the above desirable properties of concealing user identities from each other while rendering the system resilient to the above attacks that render it vulnerable to leaking user identities to someone with control of the Signalboost server(s).
+The purpose of this design doc is to design a system for maintaining the above desirable properties of concealing user identities from each other while rendering the system resilient to attacks that would leak user identities to someone with control of the Signalboost server(s).
 
 We first outline the contours of our security objectives, threat model, and design constraints, then proceed to offer several candidate designs to achieve our objectives given our threat model and constraints.
 
