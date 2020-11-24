@@ -53,7 +53,11 @@ TK-TODO
 
 TK-TODO
 
-# Proposed Design(s)
+# Provisional Designs
+
+Below, we offer some provisional design proposals that we do not believe to be comprehensive, but which we hope provide an adequate frame of reference within which to debate alternatives and build out an iterative series of designs that progress toward above-specified objectives with increasing levels of rigor and precision. We offer these designs with the hope that they will more precisely elaborate the contours of the problem space, so that readers and collaborators may improve upon them.
+
+No matter what design we ultiamtely adopt, there must be key material to which we encrypt user data, a place to store that key material that is not accessible to the Signalboost server, and a way of transmitting that material to the Signalboost server so that it may temporarily decrypt user data. In the "Foundation" section below, we offer a sketch of a design to satisfy these baseline requirements. In the "Variations" section we move on to consider various mechanisms for transmitting the key material from client to server and between different clients.
 
 ## Foundation
 
@@ -77,14 +81,44 @@ All messages to and from Signalboost are composed and displayed in the client. W
 
 When a channel with multiple admins is created, or when an existing channel adds a new admin, key material will have to be exchanged between clients in a way that does not require the Signalboost server to already know their identities. There are several variations on how this may happen, which we will address in the "Variations on client-client key transmission" section below.
 
+### Sending broadcast messages
+
+When an admin wishes to send a broadcast message, their client will load their symmetric key material into memory and transmit it to the Signalboost server. The server will decrypt the channel's private key and use it to "unlock" the channel, allowing it to inspect the membership records for the channel to figure out which phone numbers should receive the broadcast. After sending the broadcast, Signalboost "locks" the channel again.
+
 ### Variations on client-server key transmission
+
+#### The problem of Hotline Messages
+
+While the broadcast scenario described above is fairly straightforward, handling hotline messages (messages from subscribers to admins) is more complex. Consider the case in which an unlocked channel receives an incoming hotline message from a subscriber. In order to determine which admins to which it should route the message, Signalboost must consult the membership table to figure out which phone numbers are admins on the channel. However, the membership table containing that information is encrypted to a key that Signalboost does not have, and which only an admin can provide. We are thus deadlocked in a circular dependnecy: to know who the admins are we need to unlock the channel, but to unlock the channel we need to know who the admins are.
+
+The below two variations offer 2 potential ways to design our way out of this deadlock.
 
 #### Variation 1: Automated Client Polling + As-Needed Decryption
 
+Every time an incoming hotline message is received on a Signalboost channel, it is placed in a queue of incoming messages, and identified with the channel phone number to which it belongs.
+
+On an admin-configurable interval (say, for example, every 5 minutes), the admin client will poll the server and inspect the size of the incoming messages queue. If the queue is empty, nothing happens. If the queue has messages in it, Signalboost requests the secret key material from the client and uses it to unlock the channel, discover the channel admins (from the unlocked database), and transmit all enquued messages to the admins (using the unlocked Signal Protocol Store). After draining the queue and transmitting the messages, it re-locks the channel.
+
+For ease of communication, we will refer to this action of as-needed decryption prompted by a non-tempty message-queue as "mailbox checking" to correspond with an intuition that users already have from using email clients. As with email clients, users may use the Signalboost client to either (1) configure the interval at which their mailbox gets checked, or (2) press a "check now" button to force the client to immediately check the mailbox.
+
+Note: while this variation is by far the most usable, the automated/regular cadence of the mailbox check opens some vectors for attack that we perahps don't want to leave undefended. For example: an adversary who had compromised a client and subscribed to a channel could ensure that the mailbox was always full and the client was always polling to check for messages. In this scenario: if the adversary compromised the server at any point in time, they would hve access to the data that we hope to protect.
+
 #### Variation 2: Notify Rotating List of Admins + Manually Prompted Decryption
+
+If we wish to avoid the reliance on polling proposed in Variation 1, then we need some way of contacting an admin to request the key material necessary to "unlock" the channel to relay incoming messages to admins.
+
+Suppose then, that we relax the restriction that all admin phone numbers must be encrypted at all times and instead create an "on-call rotation" in which a single admin phone number is always stored in cleartext. Every time an incoming message is received, this admin receives a message from the client asking them to authorize the channel to be unlocked. Providing such authorization prompts the client to transmit the secret material to the server necessary to unlock the channel and relay the incoming message to the admins. After the message is relayed, the channel is locked again, and the "on-call" status is rotated to the next admin.
+
+Since there is no guarantee that an admin will immediately respond to a request to unlock the channel, we must still enqueue all incoming messages encrypted to the channel's public key, and only decrypt and relay them once an admin has authorized the channel to be unlocked.
+
+Note: while this eliminates the need for automated polling, it leaves at least one admin phone number exposed at all times. Further, while it holds out hopes of transmitting messages more immediately, assuming an attenting "on-call" admin, the possiblity that an admin could be unresponsive could leave the entire channel in a dormant state in which it accumulates enqueued-and-unsent messages. Depending on the amount of time that the channel is allows to remain in this dormant state, it could degrade message transmission responsiveness past a point that is acceptable to most users.
 
 ### Variations on client-client key transmission
 
+#### Variation 1: server-brokered key sharing
 
+TK-TODO
 
-# Potential Design 2: Push Notifications to Rotating List of Notificees
+#### Variation 2: p2p key sharing
+
+TK-TODO
