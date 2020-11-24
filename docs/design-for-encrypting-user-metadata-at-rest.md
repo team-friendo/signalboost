@@ -1,6 +1,6 @@
 # Overview
 
-Signalboost is a messaging service that allows small groups of admins to send encrypted "broadcast" messages to and receive encrypted "hotline" messages from groups of up to several thousand subscribers over the Signal Messaging Service.
+Signalboost is a messaging service that allows small groups of admins to send encrypted "broadcast" messages to and receive encrypted "hotline" messages from groups of up to several thousand subscribers over the Signal Private Messenger service.
 
 Two of its important design properties are:
 
