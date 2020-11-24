@@ -40,7 +40,7 @@ export default () => (
       Signalboost momentarily decrypts the contents of messages from senders
       then re-encrypts them to their intended recipients. This means the
       contents of messages exist unencrypted or "cleartext" for a matter of
-      milliseconds on our servers, and then are permanently destroyed.
+      milliseconds on our servers, and then are deleted.
     </p>
     <h3>Data we do store</h3>
     <p>
@@ -110,19 +110,14 @@ export default () => (
         their channel. As with the automatic deletion script, all data
         associated with the channel is deleted.
       </li>
-      <li>Every hour, we run deletion jobs that destroy:</li>
+      <li>Every hour, we delete:</li>
       <ul>
         <li>All hotline message sender records older than 3 days</li>
         <li>All invite records older than 1 week</li>
         <li>All incoming sms sender records older than 4 weeks</li>
       </ul>
     </ul>
-    <p>
-      [3] Securely deleting data in a manner that prevents it from being
-      retroactively recovered by an adversary with advanced forensic
-      capabilities is difficult. We do not currently delete data in a manner
-      that prevents such recovery, but in future releases we will.
-    </p>
+    <p>[3] For more details on our deletion protocol, please contact us.</p>
     <h2>Third Parties</h2>
     <h3>Data sharing </h3>
     <p>
@@ -252,7 +247,7 @@ export default () => (
       </li>
       <li>
         Never voluntarily surrender any data to law enforcement agencies without
-        insisting on the due process guidelines outlined above.
+        first attempting to take the steps outlined above.
       </li>
     </ul>
     <h3>This website</h3>
