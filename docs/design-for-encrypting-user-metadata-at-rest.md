@@ -21,21 +21,27 @@ We first outline the contours of our security objectives, threat model, and desi
 
 Both designs involve some variation on encrypting user data at rest to the public key of an asymmetric keypair, the private key of which is controlled by users, stored on a client not accessible to the Signalboost server, and transmitted to the server to temporarily decrypt and re-encrypt data on an as-needed basis.
 
-This is intended to be a living document, the revision history of which can be accessed at:
+This is intended to be a living document.
 
-TK-TODO
+Its revision history can be accessed here:
+
+https://0xacab.org/team-friendo/signalboost/-/merge_requests/487/commits
+
+Anyone may offer comment, critique, or suggested revisions here:
+
+https://0xacab.org/team-friendo/signalboost/-/merge_requests/487
 
 # Security Objectives
 
-# Assets
+# Threat Model
 
-# Adversaries
+## Assets
 
-# Attacks
+## Adversaries
+
+## Attacks
 
 # Design Constraints
-
-
 
 # Potential Design 1: Client Polling + On-Demand Decryption
 
