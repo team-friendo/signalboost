@@ -27,6 +27,7 @@ import {
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { messagesIn } from '../../../../app/dispatcher/strings/messages'
+import { addAdminIdToHeader } from '../../../../app/dispatcher/commands/execute'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
@@ -90,10 +91,11 @@ describe('executing commands', () => {
     subscriberLimit: 1000,
     deauthorizations: [deauthorizationFactory()],
     memberships: [
-      ...times(3, () =>
+      ...times(3, idx =>
         adminMembershipFactory({
           channelPhoneNumber: '+13333333333',
           language: sample(values(languages)),
+          adminId: idx + 1,
         }),
       ),
       ...times(2, () =>
@@ -492,10 +494,10 @@ describe('executing commands', () => {
     })
 
     describe('when sender is an admin', () => {
-      const dispatchable = { channel, sender: admin, sdMessage }
+      const sender = admin
+      const dispatchable = { channel, sender, sdMessage }
 
       it('returns a SUCCESS status and notifications', async () => {
-        const adminHeader = language => messagesIn(language).prefixes.broadcastMessage
         const subscriberHeader = channel.name
         const adminMemberships = channel.memberships.slice(0, 3)
         const subscriberMemberships = channel.memberships.slice(3)
@@ -508,7 +510,11 @@ describe('executing commands', () => {
           notifications: [
             ...adminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: `[${adminHeader(membership.language)}]\nhello friendos!`,
+              message: addAdminIdToHeader(
+                sender,
+                messagesIn(membership.language).prefixes.broadcastMessage,
+                'hello friendos!',
+              ),
               attachments,
             })),
             ...subscriberMemberships.map(membership => ({
@@ -1429,9 +1435,9 @@ describe('executing commands', () => {
     })
 
     describe('when sender is an admin', () => {
-      const dispatchable = { channel, sender: admin, sdMessage }
+      const sender = admin
+      const dispatchable = { channel, sender, sdMessage }
       const adminMemberships = channel.memberships.slice(0, 3)
-      const header = language => messagesIn(language).prefixes.privateMessage
 
       it('returns a success status and notifications for each admin', async () => {
         const result = await processCommand(dispatchable)
@@ -1442,7 +1448,11 @@ describe('executing commands', () => {
           notifications: [
             ...adminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: `[${header(membership.language)}]\nhello this is private!`,
+              message: addAdminIdToHeader(
+                sender,
+                messagesIn(membership.language).prefixes.privateMessage,
+                'hello this is private!',
+              ),
               attachments,
             })),
           ],
@@ -1650,7 +1660,8 @@ describe('executing commands', () => {
       describe('when admin specifies a valid hotline id for message sent by subscriber', () => {
         beforeEach(() => {
           findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
-          findMembershipStub.returns(Promise.resolve(subscriber))
+          findMembershipStub.onCall(0).returns(Promise.resolve(subscriber))
+          findMembershipStub.onCall(1).returns(Promise.resolve(admin))
         })
 
         it('returns SUCCESS w/ localized notifications for admins and hotline sender', async () => {
@@ -1669,10 +1680,11 @@ describe('executing commands', () => {
               },
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: `[${prefixesFor(membership).hotlineReplyOf(
-                  messageId,
-                  memberTypes.ADMIN,
-                )}]\nfoo`,
+                message: addAdminIdToHeader(
+                  admin,
+                  `${prefixesFor(membership).hotlineReplyOf(messageId, memberTypes.ADMIN)}`,
+                  'foo',
+                ),
                 attachments,
               })),
             ],
@@ -1684,7 +1696,8 @@ describe('executing commands', () => {
       describe('when admin specifies valid hotline id for message from a non-subscriber', () => {
         beforeEach(() => {
           findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
-          findMembershipStub.returns(null)
+          findMembershipStub.onCall(0).returns(Promise.resolve(null))
+          findMembershipStub.onCall(1).returns(Promise.resolve(admin))
         })
 
         it('returns SUCCESS w/ localized notifications for admins and non-localized notification for hotline sender', async () => {
@@ -1703,10 +1716,11 @@ describe('executing commands', () => {
               },
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: `[${prefixesFor(membership).hotlineReplyOf(
-                  messageId,
-                  memberTypes.ADMIN,
-                )}]\nfoo`,
+                message: addAdminIdToHeader(
+                  admin,
+                  `${prefixesFor(membership).hotlineReplyOf(messageId, memberTypes.ADMIN)}`,
+                  'foo',
+                ),
                 attachments,
               })),
             ],

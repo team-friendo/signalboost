@@ -30,12 +30,13 @@ describe('dispatcher service', () => {
   const createChannelWithMembers = async () => {
     channel = await app.db.channel.create(channelFactory({ socketId }))
     admins = await Promise.all(
-      times(2, () =>
+      times(2, idx =>
         app.db.membership.create(
-          adminMembershipFactory({ channelPhoneNumber: channel.phoneNumber }),
+          adminMembershipFactory({ channelPhoneNumber: channel.phoneNumber, adminId: idx + 1 }),
         ),
       ),
     )
+
     subscribers = await Promise.all(
       times(2, () =>
         app.db.membership.create(
@@ -104,14 +105,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[BROADCAST]\nfoobar`,
+          messageBody: `[BROADCAST] [ADMIN 1]\nfoobar`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[BROADCAST]\nfoobar`,
+          messageBody: `[BROADCAST] [ADMIN 1]\nfoobar`,
           attachments,
         },
         {
@@ -269,14 +270,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[REPLY TO @1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO @1] [ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[REPLY TO @1]\nit has happened before but there is nothing to compare it to now`,
+          messageBody: `[REPLY TO @1] [ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
         },
         {
@@ -318,14 +319,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          messageBody: `[PRIVATE] [ADMIN 1]\nThere was a wall. It did not look important.`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[PRIVATE]\nThere was a wall. It did not look important.`,
+          messageBody: `[PRIVATE] [ADMIN 1]\nThere was a wall. It did not look important.`,
           attachments,
         },
       ])

@@ -518,6 +518,7 @@ const prefixes = {
     memberType === memberTypes.ADMIN ? `HOTLINE AN @${messageId}` : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
   privateMessage: `PRIVAT`,
+  admin: 'ADMIN',
 }
 
 module.exports = {

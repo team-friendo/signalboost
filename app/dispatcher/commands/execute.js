@@ -235,12 +235,17 @@ const broadcastMessage = (channel, sender, sdMessage, payload) => {
 
 const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
   const adminMemberships = getAdminMemberships(channel)
+  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.phoneNumber)
+
   const subscriberMemberships = getSubscriberMemberships(channel)
 
-  const adminMessagePrefix = language => messagesIn(language).prefixes.broadcastMessage
   const adminNotifications = adminMemberships.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: `[${adminMessagePrefix(membership.language)}]\n${messageBody}`,
+    message: addAdminIdToHeader(
+      senderMembership,
+      messagesIn(membership.language).prefixes.broadcastMessage,
+      messageBody,
+    ),
     attachments,
   }))
 
@@ -268,11 +273,15 @@ const privateMessageAdmins = async (channel, sender, payload, sdMessage) => {
 
 const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
   const adminMemberships = getAdminMemberships(channel)
-  const prefix = language => messagesIn(language).prefixes.privateMessage
+  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.phoneNumber)
 
   return adminMemberships.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: `[${prefix(membership.language)}]\n${payload}`,
+    message: addAdminIdToHeader(
+      senderMembership,
+      messagesIn(membership.language).prefixes.privateMessage,
+      payload,
+    ),
     attachments: sdMessage.attachments,
   }))
 }
@@ -527,6 +536,7 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
 
 const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
+
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineReply.messageId,
@@ -536,12 +546,17 @@ const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineRe
       'language',
       defaultLanguage,
     )
+    const senderMembership = await membershipRepository.findMembership(
+      channel.phoneNumber,
+      sender.phoneNumber,
+    )
+
     return {
       status: statuses.SUCCESS,
       message: cr.success(hotlineReply),
       notifications: hotlineReplyNotificationsOf(
         channel,
-        sender,
+        senderMembership,
         hotlineReply,
         memberPhoneNumber,
         language,
@@ -564,6 +579,7 @@ const hotlineReplyNotificationsOf = (
   language,
   attachments,
 ) => [
+  // response to hotline message sender
   {
     recipient: memberPhoneNumber,
     message: messagesIn(language).notifications.hotlineReplyOf(
@@ -572,9 +588,14 @@ const hotlineReplyNotificationsOf = (
     ),
     attachments,
   },
+  // notifications to all admins
   ...getAdminMemberships(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
     recipient: memberPhoneNumber,
-    message: messagesIn(language).notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
+    message: addAdminIdToHeader(
+      sender,
+      messagesIn(language).prefixes.hotlineReplyOf(hotlineReply.messageId, memberTypes.ADMIN),
+      hotlineReply.reply,
+    ),
     attachments,
   })),
 ]
@@ -738,7 +759,9 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
   }))
 }
 
-// HELPERS
+/**********
+ * HELPERS
+ **********/
 
 const hotlineNotificationsOf = async (channel, sender, { messageBody, attachments }) => {
   const adminMemberships = await channelRepository.getAdminMemberships(channel)
@@ -757,13 +780,15 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
   }))
 }
 
-/**********
- * HELPERS
- **********/
+const addAdminIdToHeader = (membership, messageType, messageBody) => {
+  const prefix = messagesIn(membership.language).prefixes
+  return `[${messageType}] [${prefix.admin} ${membership.adminId}]\n${messageBody}`
+}
+
 const logAndReturn = (err, statusTuple) => {
   // TODO(@zig): add prometheus error count here (counter: db_error)
   logger.error(err)
   return statusTuple
 }
 
-module.exports = { execute, toggles }
+module.exports = { addAdminIdToHeader, execute, toggles }
