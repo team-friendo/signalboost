@@ -9,9 +9,9 @@ Two of its important design properties are:
 
 We currently achieve these objectives by:
 
-a. Routing messages between admins and subscribers through a proxy signal phone number controlled by the Signalboost server(s)
-b. Storing admin and subscriber phone numbers in cleartext membership tables in a postgres database on the Signalboost server (necessary for routing messages and checking admin permissions)
-c. Storing key material and other metadata (including user phone numbers) contained in the Signal Protocol Store on Signal Servers (necessary to advance the Signal double-ratchet algorithm between proxy phone numbers and user phone numbers, so that they may exchange messages).
+1. Routing messages between admins and subscribers through a proxy signal phone number controlled by the Signalboost server(s)
+2. Storing admin and subscriber phone numbers in cleartext membership tables in a postgres database on the Signalboost server (necessary for routing messages and checking admin permissions)
+3. Storing key material and other metadata (including user phone numbers) contained in the Signal Protocol Store on Signal Servers (necessary to advance the Signal double-ratchet algorithm between proxy phone numbers and user phone numbers, so that they may exchange messages).
 
 This design leaves valuable metadata about which phone numbers use which Signalboost channels (and, in some cases, when they use the channel) vulnerable to seizure by an adversary who can compromise the Signalboost server either by technical attack, legal compulsion, or social engineering of a project maintainer.
 
