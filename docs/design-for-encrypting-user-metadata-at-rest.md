@@ -19,7 +19,7 @@ The purpose of this design doc is to design a system for maintaining the above d
 
 We first outline the contours of our security objectives, threat model, and design constraints, then proceed to offer several candidate designs to achieve our objectives given our threat model and constraints.
 
-All designs involve some variation on encrypting user data at rest to the public key of an asymmetric keypair, the private key of which is controlled by users, stored on a client not accessible to the Signalboost server, and transmitted to the server to temporarily decrypt and re-encrypt data on an as-needed basis.
+All designs involve some variation on encrypting user data at rest to the public key of an asymmetric keypair, the private key of which is encrypted to another (symmetric) key that is controlled by users, stored on a client not accessible to the Signalboost server, and transmitted by the client to the server to temporarily decrypt and re-encrypt data on an as-needed basis.
 
 We derive the general schema of this approach from [TREES](https://0xacab.org/liberate/trees), the library that riseup.net uses to encrypt email contents at rest.
 
