@@ -17,6 +17,9 @@ test_lint:
     - npx eslint app && npx eslint test
   only:
     - merge_requests
+  except:
+    refs:
+      - 391-design-for-encrypting-user-metadata-at-rest
 
 test_unit:
   services:
