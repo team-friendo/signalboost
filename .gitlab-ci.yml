@@ -18,8 +18,7 @@ test_lint:
   only:
     - merge_requests
   except:
-    refs:
-      - 391-design-for-encrypting-user-metadata-at-rest
+    - 391-design-for-encrypting-user-metadata-at-rest
 
 test_unit:
   services:
@@ -31,6 +30,8 @@ test_unit:
     - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
   only:
     - merge_requests
+  except:
+    - 391-design-for-encrypting-user-metadata-at-rest
 
 test_integration:
   variables:
@@ -44,3 +45,5 @@ test_integration:
     - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
   only:
     - merge_requests
+  except:
+    - 391-design-for-encrypting-user-metadata-at-rest
