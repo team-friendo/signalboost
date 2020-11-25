@@ -84,7 +84,7 @@ When a channel with multiple admins is created, or when an existing channel adds
 ### Sending broadcast messages
 
 When an admin wishes to send a broadcast message, their client will load SK into memory and transmit it to the Signalboost server. The server will use SK to "unlock" the channel as described above (by first decrypting DK and using it to decrypt date encrypted to EK), allowing it to inspect the membership records for the channel to figure out which phone numbers should receive the broadcast. After sending the broadcast, Signalboost "locks" the channel again (by removing SK and decrypted user data from memory).
-
+q
 ### Variations on client-server key transmission
 
 #### The problem of Hotline Messages
@@ -101,7 +101,7 @@ On an admin-configurable interval (say, for example, every 5 minutes), the admin
 
 For ease of communication, we will refer to this action of as-needed decryption prompted by a non-tempty message-queue as "mailbox checking" to correspond with an intuition that users already have from using email clients. As with email clients, users may use the Signalboost client to either (1) configure the interval at which their mailbox gets checked, or (2) press a "check now" button to force the client to immediately check the mailbox.
 
-Note: while this variation is by far the most usable, the automated/regular cadence of the mailbox check opens some vectors for attack that we perahps don't want to leave undefended. For example: an adversary who had compromised a client and subscribed to a channel could ensure that the mailbox was always full and the client was always polling to check for messages. In this scenario: if the adversary compromised the server at any point in time, they would hve access to the data that we hope to protect.
+Note: this design allows an unattended client to decrypt user data without explicit manual consent for an admin. This may be acceptable, but deserves further scrutiny and analysis.
 
 #### Variation 2: Notify Rotating List of Admins + Manually Prompted Decryption
 
