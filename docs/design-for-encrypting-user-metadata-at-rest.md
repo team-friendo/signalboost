@@ -1,5 +1,5 @@
 ```
-CURRENT REVISION AS OF Wed 25 Nov 2020 01:05:28 PM EST
+CURRENT REVISION AS OF Wed 25 Nov 2020 03:19:49 PM EST
 ```
 
 # Overview
@@ -37,25 +37,84 @@ https://0xacab.org/team-friendo/signalboost/-/merge_requests/487
 
 # Security Objectives
 
-TK-TODO
+We wish to:
+
+* Maintain Signalboost's ability to allow users to send encrypted messages to each other over Signal without knowing each other's identities
+* Eliminate Signalboost's ability to leak the identities of users by inadvertently disclosing the contents of its filesystem to an adversary
 
 # Threat Model
 
 ## Assets
 
-TK-TODO
+Broadly speaking, there are 2 classes of assets that we wish to defend in this design: Signal Protocol Store data and Signalboost application user data. Both classes contain personally-identifying information about our users (in the form of their phone numbers), and both contain information that could help an adversary determine which groups of people use the same Signalboost channel to communicate with one another. 
+
+Use of such "social graph" metadata as leverage to disrupt the activities of a targeted group is a well-documented tactic in efforts to counter political free speech. Since protecting the ability of our users to speak and organize freely is one of our core values, protecting this metadata is of utmost importance to us.
+
+### Signal Protocol Store Data
+
+In order to transmit and encrypt messages using the Signal Protocol, Signalboost servers must implement the Signal Protocol Store, which stores which user (admin or subscriber) phone numbers any given proxy phone number has communicated with, and the key material necessary to encrypt and decrypt messages to those users.
+
+All data in the Signalboost Protocol Store uses a user's phone number as an ID. Linked to that ID are various data such as:
+
+* Ephemeral encryption and decryption keys for sessions between a proxy phone number and a user (which are updated as the key materials "ratchets" forward with each message exchange)
+* UUIDs and long-term identity keys ("fingerprints" or "safety numbers") associated with a user's current Signal installation
+* Identity keys for each device the user uses to send Signal messages
+
+Depending on the implementation of the Signal Protocol Store, these records may be stored in a way that tracks when they were last updated, which may, in turn, leak information of when a user last used Signal, and by association, Signalboost.
+
+We currently follow the convention of storing the Signal Protocol Store data as JSON blobs on the filesystem, stored in docker-mounted volumes that may be accesed by anyone with root on the Signalboost server.
+
+### Signalboost User Data
+
+In order to route messages and process user-issued commands, Signalboost stores a number of SQL database records that reference user phone numbers. Most notably:
+* a `memberships` table that joins a user phone number to a channel phone number (and which may be of type `ADMIN` or `SUBSCRIBER`)
+* a `hotlineMessages` table that joins a subscriber phone number to a channel phone number to which that subscriber has recently sent a message (so that admins can reply to that message without learning the subscriber's phone number) which are deleted every 3 days
+* an `invites` table that joins a inviting user's phone number to an invited user's phone number and to the channel to which the invitee is being invited -- erased after the invite is accepted/declined or a week passes (whichever is sooner)
+
+We currently store these records in an unencrypted Postgresql database running inside a docker container that may be accessed by anyone with root on the Signalboost server.
 
 ## Adversaries
 
-TK-TODO
+The primary adversary with which we will concern ourselves is a state-level actor with the following capabilities:
+
+* monitor all network traffic
+* seize the devices of users or Signalboost maintainers
+* issue compulsory legal requests (warrants, subpoenas, court orders, ang gag orders) to Signalboost maintainers
+* issue compulsory legal requests to third-party software vendors that Signalboost uses (eg: Twilio)
+
+We are also concerned with a technically-sophisticated civilian adversary with (politically-motivated) animus against our users who has the following capabilities:
+
+* act as administrator and subscriber to an arbitrary set of Signalboost channels
+* determine the IP address of the Signal server
+* seize the devices of Signalboost maintainers
+* launch phishing attacks on Signalboost maintainers
+
 
 ## Attacks
 
-TK-TODO
+For the purposes of this design, we wish to concern ourselves primarily with attacks that give an adversary access to the data stored on the filesystem of Signalboost servers at rest.
+
+For example, a state actor might legally compel Signalboost maintainers to:
+  * gain access to stored on the filesystem of our servers
+  * modify our code to capture and peramently record data that is currently only ephemerally held in memory
+
+A technically-sophisticated civilian with animus might phish the Signalboost maintainers in order to gain root on the Signalboost servers which they could use to accomplish the same 2 goals.
+
+For the purposes of this design, we wish to only consider defenses against attacks that would reveal the contents of the Signalboost file system at rest, or what Signalboost currently stores in memory. We do not concern ourselves with defending against attacks that seek to modify our code against our will (either via legal compulsion or intrusion), as we do not think there are any viable technical defenses to these attacks.
+
+We also recognize that there are a variety of account-hijack or impersonation attacks to which the system as designed is currently vulnerable. For example: an adversary with legal compulsion capabilities could compel Twilio to grant control of the Twilio phone number used to authenticate a Signalboost proxy phone number, reauthenticate the number with Signal, and thereby wrest control of a Signalboost channel away from its admins against their will and potentially without their knowledge. While this is a concerning attack, since it does not touch on the assets that we are concerned with defending in this design (namely: metadata containing PII and social graph data about our users), we exclude it from consideration in this document.
 
 # Design Constraints
 
-TK-TODO
+* All messages between admins and subscribers must be transmitted using the Signalboost protocol
+* Messages must be routed from an admin phone number to a proxy phone number controlled by a Signalboost server (aka a "Signalboost channel") to subscriber phone numbers
+* All subscribers must receive messages on one of the official Signal clients (Android, IOS, or Desktop) maintained by signal.org
+* Admins may use a Signalboost-provided client (desktop or mobile) which can securely store key information and access the Signalboost server over secure network connection.
+* Key material between
+* A Signalboost server must store the user metadata noted in the "Assets" section above in order to route and encrypt messages
+* User metadata must be stored encrypted at rest in a manner that prevents it from being decrypted by a Signalboost maintainer, or by the Signalboost software without use of key material that is not permanently stored on the Signalboost server
+* User metadata must be decrypted for the shortest amount of time possible necessary to encrypt and route messages to their recipients
+* Decryption using client-provided key material must take place in a manner that creates the least amount of risk of (1) exposing the location or identity of the admin using the client, (2) leaking user data to an attacker who has compromised a client instance
 
 # Provisional Designs
 
