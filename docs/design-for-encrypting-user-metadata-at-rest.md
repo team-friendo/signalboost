@@ -1,5 +1,5 @@
 ```
-CURRENT REVISION AS OF Wed 25 Nov 2020 10:59:21 AM EST
+CURRENT REVISION AS OF Wed 25 Nov 2020 01:05:28 PM EST
 ```
 
 # Overview
@@ -107,15 +107,35 @@ For ease of communication, we will refer to this action of as-needed decryption 
 
 Note: this design allows an unattended client to decrypt user data without explicit manual consent for an admin. This may be acceptable, but deserves further scrutiny and analysis.
 
-#### Variation 2: Notify Rotating List of Admins + Manually Prompted Decryption
+#### Variation 2: Push to Clients Over Persistent Connection
 
-If we wish to avoid the reliance on polling proposed in Variation 1, then we need some way of contacting an admin to request the key material necessary to "unlock" the channel to relay incoming messages to admins.
+Variation 1 has the drawbacks that it (1) does not immediately notify admins of incoming messages and (2) only works if we insist that the client be able to authorized decryption without manual approval from an admin. If we wished to avoid either of those two drawbacks, we could do the following:
+
+When a client wishes to "login" to Signalboost, it estabilishes a persistent duplex connection to the Signalboost server (over a secure Websocket or any other suitable socket protocol). If we wish to obscure the IP address of the admin, we may configure the client to maintain this connection over a Tor circuit. The client authenticates as the admin of a channel by presenting its secret key (SK), which is compared a against a hashed version of SK stored on the server.
+
+The server maintains a lookup table of open socket connections for each channel. When an incoming socket message is received for a given channel, it consults this lookup table and broadcasts an "unlock request" message to all connected clients. If no admins for the channel are currently connected, it enqueues the message and retries it on an interval until a client connects.
+
+##### Variation 2a: manual client-side unlock approval
+
+If we wish to prevent the client from being able to authorize unlocking the channel without explicit approval from an admin, then the "unlock request" from the server will produce a notification in the client application (for example: a popup that says "You have incoming messages. Do you want to unlock the channel to receive them? Yes / No"), which an admin must click on to approve, at which point, the client will transmit SK to the server, which will unlock the channel, and forward all enqueued incoming messages to all admins.
+
+##### Variation 2b: automated client-side unlock approval
+
+If we wish to allow the client to authorize unlocking the channel without user intervention, then anytime an open client app receives an "unlock request" from the Signalboost server, it will respond by transmitting SK to the server, which will use it to unlock the channel and transmit all enqueued messages to all admins.
+
+##### Variation 2c: user-configurable unlock approval
+
+If we wish to allow the user whether to permit the client to approve "unlock requests" unattended, then we could create a configuration toggle in the client that allows the user to specify whether they want the client to operate in "unattended" or "manual approval" mode.
+
+#### Variation 3: Notify Rotating List of Admins + Manually Prompted Decryption
+
+If for whatever reason we wish to avoid the reliance on polling and automated unlocks introduced in Variation 1 or persistence client connections introduced in variation 2, then we need some way of contacting an admin to request the key material necessary to "unlock" the channel to relay incoming messages to admins.
 
 Suppose then, that we relax the restriction that all admin phone numbers must be encrypted at all times and instead create an "on-call rotation" in which a single admin phone number is always stored in cleartext. Every time an incoming message is received, this admin receives a message from the client asking them to authorize the channel to be unlocked. Providing such authorization prompts the client to transmit the secret material to the server necessary to unlock the channel and relay the incoming message to the admins. After the message is relayed, the channel is locked again, and the "on-call" status is rotated to the next admin.
 
 Since there is no guarantee that an admin will immediately respond to a request to unlock the channel, we must still enqueue all incoming messages encrypted to the channel's public key, and only decrypt and relay them once an admin has authorized the channel to be unlocked.
 
-Note: while this eliminates the need for automated polling, it leaves at least one admin phone number exposed at all times. Further, while it holds out hopes of transmitting messages more immediately, assuming an attenting "on-call" admin, the possiblity that an admin could be unresponsive could leave the entire channel in a dormant state in which it accumulates enqueued-and-unsent messages. Depending on the amount of time that the channel is allows to remain in this dormant state, it could degrade message transmission responsiveness past a point that is acceptable to most users.
+NOTE: while this eliminates the need for automated polling, it leaves at least one admin phone number exposed at all times. Further, while it holds out hopes of transmitting messages more immediately, assuming an attenting "on-call" admin, the possiblity that an admin could be unresponsive could leave the entire channel in a dormant state in which it accumulates enqueued-and-unsent messages. Depending on the amount of time that the channel is allows to remain in this dormant state, it could degrade message transmission responsiveness past a point that is acceptable to most users. We do not really think we should use this variation, but are leaving it in so we can consider all trade-offs! :)
 
 ### Variations on client-client key transmission
 
