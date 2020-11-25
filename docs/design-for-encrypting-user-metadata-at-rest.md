@@ -1,5 +1,5 @@
 ```
-CURRENT REVISION AS OF Wed 25 Nov 2020 03:19:49 PM EST
+CURRENT REVISION AS OF Wed 25 Nov 2020 04:55:02 PM EST
 ```
 
 # Overview
@@ -46,7 +46,7 @@ We wish to:
 
 ## Assets
 
-Broadly speaking, there are 2 classes of assets that we wish to defend in this design: Signal Protocol Store data and Signalboost application user data. Both classes contain personally-identifying information about our users (in the form of their phone numbers), and both contain information that could help an adversary determine which groups of people use the same Signalboost channel to communicate with one another. 
+Broadly speaking, there are 2 classes of assets that we wish to defend in this design: Signal Protocol Store data and Signalboost application user data. Both classes contain personally-identifying information about our users (in the form of their phone numbers), and both contain information that could help an adversary determine which groups of people use the same Signalboost channel to communicate with one another.
 
 Use of such "social graph" metadata as leverage to disrupt the activities of a targeted group is a well-documented tactic in efforts to counter political free speech. Since protecting the ability of our users to speak and organize freely is one of our core values, protecting this metadata is of utmost importance to us.
 
@@ -198,10 +198,44 @@ NOTE: while this eliminates the need for automated polling, it leaves at least o
 
 ### Variations on client-client key transmission
 
+Whenever Signalboost admins wish to add a new admin to a channel, remove an admin from a channel, or "change the password" to a channel (due to device compromise or because of removing an admin), we want to provide a way to (1) change SK (if needed), (2) transmit the current version of SK to all admins who don't have it.
+
+In all variations below, users may configure how many admins are required to approve a password change or addition/removal of an admin.
+
 #### Variation 1: server-brokered key sharing
 
-TK-TODO
+For simplicity's sake, we will first consider the case in which a single admin is authorized to update a key or add/remove another admin.
+
+##### For a key change (without voting)
+
+An admin uses the GUI to select "update key." After clicking, a new value of SK (SK1) is generated and sent to the Signalboost server along with the old value of SK (SK0). The server uses SK0 to decrypt DK, then reencrypts DK to SK1. It then hashes and stores SK0, which will no longer be used for decryption purposes, but will be needed to authenticate admins with the old key seeking to rekey. The server will also encrypt SK1 to SK0 and store it on the filesystem, so that it can share the new key with any admins seeking to rekey.
+
+At this point, the server waits for clients to attempt to connect and "unlock" the channel. If we elected to use polling (Variation 1) for client-server key transmission above, this will happen at whatever interval an admin has configured their client to "check the mailbox." If we elected to use a persistent client socket connection (Variation 2), then this will happen whenever an inbound message arrives and the server attempts to ping all connected clients. For our purposes it does not matter how the "unlock" attempt is initiated.
+
+In all cases, when a client attempts to "unlock" a channel, if it has an old key, it will fail to be able to decrypt DK, because it holds an outdated value for SK (SK0 instead of SK1). Whenever a client so attempts and fails, the server will hash the version of SK presented by the client and compare it to the hashes of all known expired versions of SK, which, recall, were created and stored when the rekey event occured.
+
+If it finds a match, the server considers the client a valid admin, and proceeds to use the value of SK0 presented by the client to decrypt the value of SK1 encrypted to SK0 in the rekey event and transmit it back to the client (continuing to retry this transmision until the client acknowledges receipt). Proceeding this way, all clients will eventually
+
+##### For adding and admin (no voting)
+
+An admin uses the GUI to select "add admin." After clicking, the admin is prompted to enter the Signal phone number of the new admin. This number along with SK, are transmitted to the server. The server first (prosaically) "unlocks" the channel so it can record the new admin in the Signalboost memberships table (which will be useful for routing messages once the admin has been authenticated).
+
+Now the server must transmit key material to the new admin, but only after verifying that the admin controls the Signal phone number transmitted by the old admin. To do this, it first generates a secret key to be used analagously to a one-time-passphrase (OTP). The server encrypts the value of SK presented by the old admin to OTP and stores both a hashed version of the OTP and the version of SK encrypted to OTP temporarily on the filesystem. The server then sends the OTP as a Signal message to the admin's phone number from the proxy phone number of the channel to which the new admin is supposed to be granted ownership.
+
+When the admin first installs their client, they will be prompted to enter the phone number of any channels of which they are supposed to be an admin. This informs the client that it should listen for a welcome message containing the OTP. When the admin client receives this welcome message, it parses it for the OTP, then connects to the Signalboost server and presents the OTP to prove it controls the phone number of the admin just added. The server verifies the hash of OTP matches what it has stored, then proceeds to use the OTP to decrypt the value of SK that the old admin left waiting on the server. It transmits SK to the client of the new admin, waits for acknowledgement, and then delets the values of hash(OTP) and Enc(OTP, SK) it had just stored to the filesystem.
+
+##### For removing an admin (no voting)
+
+An admin uses the GUI to select "remove admin." This admin's client generates a new value of SK and used the "password change" flow described to update the shared value of SK. Additionally, it "unlocks" the channel and uses the opportunity to send Signal messages notifying all other admins that the admin has been removed.
+
+##### Voting
+
+Suppose that admins opted to have require approval by more than one admin in order to either change the key for a channel or add/remove another admin. In this case, we will piggy-back on the design for "key change" described above.
+
+However, instead of immediately rotating the key from SK0 to SK1 upon receipt, the server will store the encrypted value of the new SK (as described above) and record a `KEY_ROTATION_REQUESTSED` event in the database. It will then attempt to notify each client of this event (either by pinging connected clients in the persistent-connection model, or waiting for them to "check the mailbox" in the polling version). Whenever an admin connects and is notified of this event, it is asked whether it approves. This "vote" is recorded in a running tally for votes on the event.
+
+Once a user-configured plurality of admins has approved the event, it is "enacted" (via means specified for the no-voting case above) and all admin clients are notified the next time they connect. If a user-configured plurality of admins rejects the event, then all material associated with enacting it is deleted, and all admins are notified of the rejection the next time they attempt to connect.
 
 #### Variation 2: p2p key sharing
 
-TK-TODO
+We probably don't actually want to do this! Leaving it in in case any readers have great ideas they want to share!!!
