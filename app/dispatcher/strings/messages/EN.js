@@ -96,6 +96,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   ban: {
     success: messageId => `The sender of hotline message ${messageId} has been banned.`,
     notAdmin,
+    doesNotExist: 'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
     alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
     dbError: 'Oops! Failed to issue ban. Please try again!',
     invalidHotlineMessageId: messageId =>

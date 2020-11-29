@@ -10,7 +10,7 @@ import dbService from '../../../../app/db'
 
 describe('ban repository', async () => {
   const [memberPhoneNumber, memberPhoneNumber2] = times(2, genPhoneNumber)
-  let db, channelPhoneNumber
+  let db, channelPhoneNumber, banCount
 
   before(async () => {
     db = (await app.run({ ...testApp, db: dbService })).db
@@ -34,9 +34,6 @@ describe('ban repository', async () => {
       it('returns true', async () => {
         expect(await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber)).to.eql(true)
       })
-      it('creates a new record', async () => {
-        expect(await db.ban.count()).to.eql(1)
-      })
     })
     describe('for a member who has not been banned', () => {
       it('returns false', async () => {
@@ -47,11 +44,12 @@ describe('ban repository', async () => {
 
   describe('#banMember', () => {
     beforeEach(async () => {
+      banCount = await db.ban.count()
       await banRepository.banMember(channelPhoneNumber, memberPhoneNumber)
     })
     describe('for valid phone numbers', async () => {
       it('creates a new record', async () => {
-        expect(await db.ban.count()).to.eql(1)
+        expect(await db.ban.count()).to.eql(banCount + 1)
       })
     })
   })

@@ -1,6 +1,6 @@
 const { isPhoneNumber } = require('../validations')
 
-const banSenderOf = (sequelize, DataTypes) => {
+const banOf = (sequelize, DataTypes) => {
   const ban = sequelize.define(
     'ban',
     {
@@ -39,4 +39,4 @@ const banSenderOf = (sequelize, DataTypes) => {
   return ban
 }
 
-module.exports = { banSenderOf }
+module.exports = { banOf }

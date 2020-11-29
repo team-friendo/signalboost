@@ -102,6 +102,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     success: messageId =>
       `El remitente del mensaje de la línea directa ${messageId} ha sido bloqueado.`,
     notAdmin,
+    doesNotExist: 'El remitente de este mensaje de línea directa está inactivo, por lo que ya no almacenamos sus registros de mensajes. Vuelva a intentarlo una vez que vuelva a enviar el mensaje.',
     alreadyBanned: messageId =>
       `El remitente del mensaje de la línea directa ${messageId} ya está prohibido.`,
     dbError: '¡Ups! No se pudo emitir la prohibición. ¡Inténtalo de nuevo!',

@@ -68,7 +68,7 @@ const execute = async (executable, dispatchable) => {
   const result = await {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
-    [commands.BAN]: () => maybeBanSender(channel, sender, payload),
+    [commands.BAN]: () => banMember(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
     [commands.CHANNEL]: () => maybeCreateChannel(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
@@ -245,45 +245,45 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 }
 
 // BAN
-const maybeBanSender = async (channel, sender, hotlineMessage) => {
+const banMember = async (channel, sender, hotlineMessage) => {
   const cr = messagesIn(sender.language).commandResponses.ban
+  try {
+    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
+      hotlineMessage.messageId,
+    )
+    //the below line does not work, WIP
+    if (!memberPhoneNumber) {
+      return { status: statuses.ERROR, message: cr.doesNotExist }
+    }
+    const isBanned = await banRepository.isBanned(memberPhoneNumber)
+    if (isBanned)
+      return { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
 
-  if (sender.type !== ADMIN) {
-    return { status: statuses.UNAUTHORIZED, message: cr.notAdmin }
-  }
-
-  const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
-    hotlineMessage.messageId,
-  )
-
-  const isBanned = await banRepository.isBanned(memberPhoneNumber)
-  return isBanned
-    ? {
-        status: statuses.ERROR,
-        message: cr.alreadyBanned(hotlineMessage.messageId),
-      }
-    : banMember(channel, memberPhoneNumber, hotlineMessage.messageId, cr)
-}
-
-const banMember = async (channel, memberPhoneNumber, messageId, cr) => {
-  return banRepository
-    .banMember(channel.phoneNumber, memberPhoneNumber)
-    .then(() => ({
+    // if memberPhoneNumber exists and has not been banned yet, go ahead and ban
+    return banRepository.banMember(channel.phoneNumber, memberPhoneNumber).then(() => ({
       status: statuses.SUCCESS,
-      message: '',
-      notifications: banNotificationsOf(channel, memberPhoneNumber, messageId, cr),
+      message: cr.success(hotlineMessage.messageId),
+      notifications: banNotificationsOf(
+        channel,
+        sender,
+        memberPhoneNumber,
+        hotlineMessage.messageId,
+        cr,
+      ),
     }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+  } catch (e) {
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
 }
 
-const banNotificationsOf = (channel, phoneNumber, messageId, cr) => {
-  const adminMemberships = getAdminMemberships(channel)
+const banNotificationsOf = (channel, sender, memberPhoneNumber, messageId, cr) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return [
     {
-      recipient: phoneNumber,
+      recipient: memberPhoneNumber,
       message: cr.toBannedSubscriber,
     },
-    ...adminMemberships.map(membership => ({
+    ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message: cr.success(messageId),
     })),

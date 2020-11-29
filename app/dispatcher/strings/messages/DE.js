@@ -103,6 +103,7 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   ban: {
     success: messageId => `Der Absender der Hotline-Nachricht ${messageId} wurde gesperrt.`,
     notAdmin,
+    doesNotExist: 'Der Absender dieser Hotline-Nachricht ist inaktiv, sodass wir ihre Nachrichtendatensätze nicht mehr speichern. Bitte versuchen Sie es erneut, sobald die Nachricht erneut gesendet wird.',
     alreadyBanned: messageId =>
       `Der Absender der Hotline-Nachricht ${messageId} ist bereits gesperrt.`,
     dbError: 'Hoppla! Verbot fehlgeschlagen. Bitte versuche es erneut!',

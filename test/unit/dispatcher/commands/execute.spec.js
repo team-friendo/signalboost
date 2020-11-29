@@ -503,22 +503,26 @@ describe('executing commands', () => {
       banMemberStub = sinon.stub(banRepository, 'banMember')
     })
 
-    describe('non-admin tries to ban', () => {
-      it('returns ERROR unauthorized', async () => {
+    describe.only('when hotline message could not be found', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.reject(new Error('error')))
+      })
+
+      it('returns ERROR doesNotExist', async () => {
         const dispatchable = {
           channel,
-          sender: { ...subscriber, language: languages.EN },
+          sender: { ...admin, language: languages.EN },
           sdMessage: sdMessageOf({
             sender: channel.phoneNumber,
             message: 'BAN @1312',
             attachments,
           }),
         }
+
         expect(await processCommand(dispatchable)).to.eql({
-          command: 'BAN',
-          status: statuses.UNAUTHORIZED,
-          message:
-            'Sorry, only admins are allowed to issue that command. Send HELP for a list of valid commands.',
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message: 'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
           notifications: [],
           payload: { messageId: 1312, reply: '' },
         })
@@ -572,14 +576,14 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.SUCCESS,
-          message: '',
+          message: 'The sender of hotline message 1312 has been banned.',
           notifications: [
             {
               recipient: subscriber.phoneNumber,
               message:
                 'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
             },
-            ...adminMemberships.map(membership => ({
+            ...bystanderAdminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
               message: 'The sender of hotline message 1312 has been banned.',
             })),

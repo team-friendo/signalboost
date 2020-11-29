@@ -104,6 +104,7 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   ban: {
     success: messageId => `L'expéditeur du message de la hotline ${messageId} a été banni.`,
     notAdmin,
+    doesNotExist: "L'expéditeur de ce message de la hotline est inactif, nous ne stockons donc plus leurs enregistrements de messages. Veuillez réessayer une fois qu'ils ont de nouveau message",
     alreadyBanned: messageId =>
       `L'expéditeur du message de la hotline ${messageId} est déjà banni.`,
     dbError: "Oups! Échec de l'émission de l'interdiction. Veuillez réessayer!",

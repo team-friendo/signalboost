@@ -11,7 +11,7 @@ const { messageCountOf } = require('./models/messageCount')
 const { phoneNumberOf } = require('./models/phoneNumber')
 const { smsSenderOf } = require('./models/smsSender')
 const { destructionRequestOf } = require('./models/destructionRequest')
-const { banSenderOf } = require('./models/ban')
+const { banOf } = require('./models/ban')
 
 const { wait } = require('../util')
 const { maxConnectionAttempts, connectionInterval } = config
@@ -33,7 +33,7 @@ const run = async () => {
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
     destructionRequest: destructionRequestOf(sequelize, Sequelize),
     smsSender: smsSenderOf(sequelize, Sequelize),
-    ban: banSenderOf(sequelize, Sequelize),
+    ban: banOf(sequelize, Sequelize),
   }
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))

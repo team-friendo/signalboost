@@ -101,10 +101,6 @@ const dispatch = async (msg, socketId) => {
   const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
   await util.sequence(sideEffects)
 
-  // return early if we recieve a non-relayable message
-  const isBanned = await detectBanned(channel, sender)
-  if (isBanned) return Promise.resolve()
-
   // ... or if we recieve a non-relayable message
   if (!_isMessage(inboundMsg) || _isEmpty(inboundMsg)) return Promise.resolve()
 
@@ -130,6 +126,10 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
 
   const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
+
+  // early return if user is banned
+  const isBanned = await detectBanned(channel, sender)
+  if (isBanned) return () => Promise.resolve()
 }
 
 // (Channel, string, SdMessage) => Promise<Array<function>>
@@ -272,8 +272,8 @@ const detectUpdatableFingerprint = async inSdMessage => {
 }
 
 const detectBanned = async inSdMessage => {
-  const channelPhoneNumber = get(inSdMessage, 'data.local_address.number', '')
-  const memberPhoneNumber = get(inSdMessage, 'data.remote_address.number', '')
+  const channelPhoneNumber = get(inSdMessage, 'data.username', '')
+  const memberPhoneNumber = get(inSdMessage, 'data.source.number', '')
   return await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber)
 }
 
