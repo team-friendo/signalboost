@@ -8,13 +8,8 @@ const util = require('./util')
 const sharding = require('./socket/sharding')
 const { values } = require('lodash')
 const {
-  jobs: {
-    healthcheckInterval,
-    inviteDeletionInterval,
-    channelDestructionInterval,
-    signaldStartupTime,
-  },
-  signal: { diagnosticsPhoneNumber },
+  jobs: { healthcheckInterval, inviteDeletionInterval, channelDestructionInterval },
+  signal: { diagnosticsPhoneNumber, signaldStartupTime },
 } = require('./config')
 
 const cancelations = {

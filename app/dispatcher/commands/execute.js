@@ -582,17 +582,17 @@ const hotlineReplyNotificationsOf = (
 // RESTART
 
 const maybeRestart = async (channel, sender, payload) => {
-  logger.log(`--- RESTART INITIATED by ${util.hash(sender.phoneNumber)}...`)
+  logger.log(`--- FULL MANUAL RESTART INITIATED by ${util.hash(sender.phoneNumber)}...`)
   try {
     // authenticate user and password:
     const { isAuthorized, message } = await _authenticateRestart(channel, sender, payload)
     if (!isAuthorized) {
-      logger.log(`--- RESTART UNAUTHORIZED: ${message}`)
+      logger.log(`--- MANUAL RESTART UNAUTHORIZED: ${message}`)
       return { status: statuses.UNAUTHORIZED, message }
     }
     // do the restarting:
     await diagnostics.restartAll()
-    logger.log('--- RESTART SUCCEEDED')
+    logger.log('--- FULL MANUAL RESTART SUCCEEDED')
 
     return {
       status: statuses.SUCCESS,

@@ -122,17 +122,8 @@ describe('diagnostics module', () => {
           await sendHealthchecks()
         })
 
-        it('notifies maintainers of failed healthcheck', () => {
-          expect(notifyMaintainersStub.getCall(0).args).to.eql([
-            `Channel ${channelPhoneNumbers[0]} failed to respond to 2 consecutive healthchecks.`,
-          ])
-          expect(notifyMaintainersStub.getCall(1).args).to.eql([
-            `Channel ${channelPhoneNumbers[1]} failed to respond to 2 consecutive healthchecks.`,
-          ])
-        })
-
         it('notifies maintainers of restart attempt', () => {
-          expect(notifyMaintainersStub.getCall(2).args).to.eql([
+          expect(notifyMaintainersStub.getCall(0).args).to.eql([
             `Restarting shard ${socketId} due to failed healthchecks on ${
               channels[0].phoneNumber
             },${channels[1].phoneNumber}.`,
@@ -157,7 +148,7 @@ describe('diagnostics module', () => {
         })
 
         it('notifies maintainers when restart succeeds', () => {
-          expect(notifyMaintainersStub.getCall(3).args).to.eql([
+          expect(notifyMaintainersStub.getCall(1).args).to.eql([
             `Shard ${socketId} restarted successfully!`,
           ])
         })
@@ -169,17 +160,8 @@ describe('diagnostics module', () => {
           await sendHealthchecks()
         })
 
-        it('notifies maintainers of failed healthcheck', () => {
-          expect(notifyMaintainersStub.getCall(0).args).to.eql([
-            `Channel ${channelPhoneNumbers[0]} failed to respond to 2 consecutive healthchecks.`,
-          ])
-          expect(notifyMaintainersStub.getCall(1).args).to.eql([
-            `Channel ${channelPhoneNumbers[1]} failed to respond to 2 consecutive healthchecks.`,
-          ])
-        })
-
         it('notifies maintainers of restart attempt', () => {
-          expect(notifyMaintainersStub.getCall(2).args[0]).to.contain('Restarting')
+          expect(notifyMaintainersStub.getCall(0).args[0]).to.contain('Restarting')
         })
 
         it('attempts to restart shard in which failure occured', () => {
@@ -187,7 +169,7 @@ describe('diagnostics module', () => {
         })
 
         it('notifies maintainers of restart failure', () => {
-          expect(notifyMaintainersStub.getCall(3).args).to.eql([
+          expect(notifyMaintainersStub.getCall(1).args).to.eql([
             'Failed to restart shard: not alive!',
           ])
         })

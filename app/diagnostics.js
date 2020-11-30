@@ -5,6 +5,7 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
+const { isEmpty } = require('lodash/lang')
 const { times, filter, map, partition, zip, groupBy, mapValues, head } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
@@ -75,9 +76,6 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
   logger.log(`Healthcheck failure: ${channelPhoneNumber}`)
   if (failedHealthchecks.has(channelPhoneNumber)) {
     logger.log(`Fatal healthcheck failure: ${channelPhoneNumber}`)
-    await notifier.notifyMaintainers(
-      `Channel ${channelPhoneNumber} failed to respond to 2 consecutive healthchecks.`,
-    )
     return { isFatal: true, channelPhoneNumber }
   }
   // Otherwise cache the failure for another round of health checks,
@@ -92,25 +90,27 @@ const _handleFailedHealtcheck = async (channelPhoneNumber, numHealtchecks) => {
 // (number, Array<string>) => Promise<string>
 const _restartAndNotify = async (socketId, channelPhoneNumbers) => {
   try {
-    logger.log(`--- SYSTEM RESTARTING SHARD ${socketId}...`)
+    logger.log(`--- SYSTEM REQUESTING AUTOMATED RESTART OF SHARD ${socketId}...`)
     await notifier.notifyMaintainers(
       `Restarting shard ${socketId} due to failed healthchecks on ${channelPhoneNumbers}.`,
     )
     await restart(socketId)
-    logger.log(`--- RESTART SUCCEEDED.`)
     return notifier.notifyMaintainers(`Shard ${socketId} restarted successfully!`)
   } catch (err) {
-    return notifier.notifyMaintainers(`Failed to restart shard: ${err.message || err}`)
+    const msg = `Failed to restart shard: ${err.message || err}`
+    logger.error(msg)
+    return notifier.notifyMaintainers(msg)
   }
 }
 
 // Array<string> => Promise<Array<string>>
-const restartAll = async () => Promise.all(times(availableSockets, restart))
+const restartAll = () => Promise.all(times(availableSockets, restart))
 
 // string => Promise<string>
 const restart = async socketId => {
+  logger.log(`--- RESTARTING SHARD ${socketId}`)
   const channelsOnSocket = await channelRepository.getChannelsOnSocket(socketId)
-
+  if (isEmpty(channelsOnSocket)) return console.log(`--- DID NOT RESTART EMPTY SHARD ${socketId}`)
   /******** STOP *********/
   // unsubscribe from channels on this socket
   await Promise.all(channelsOnSocket.map(ch => signal.unsubscribe(ch.phoneNumber, socketId)))
@@ -120,14 +120,15 @@ const restart = async socketId => {
   await app.stopSocket(socketId)
 
   /******* START *********/
+  // wait for signald to spin up so that connecting to socket (and subscribing) works
+  await util.wait(restartDelay)
   // connect to signald on this socket
   await app.restartSocket(socketId)
-  // wait for signald to spin up so that subscribing works
-  await util.wait(restartDelay)
   // re-subscribe
   await Promise.all(channelsOnSocket.map(ch => signal.subscribe(ch.phoneNumber, socketId)))
   // make sure it worked!
   await signal.isAlive(socketId)
+  logger.log(`--- SHARD ${socketId} RESTART SUCCEEDED`)
 }
 
 // (Channel, string) => Promise<string>

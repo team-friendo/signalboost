@@ -6,7 +6,6 @@ const defaults = {
   hotlineMessageExpiryInMillis: 1000 * 60 * 60 * 24 * 3, // 3 days
   inviteDeletionInterval: 1000 * 60 * 60, // 1 hour
   inviteExpiryInMillis: 1000 * 60 * 60 * 24 * 7, // 1 week
-  signaldStartupTime: 3000 * 60, // 3 min
 }
 
 const development = {
@@ -15,7 +14,6 @@ const development = {
   channelDestructionGracePeriod: 1000 * 60 * 60 * 24 * 28, //  4 weeks
   channelExpiryInMillis: 1000 * 60 * 60 * 24 * 365 * 2, // 2 yr
   healthcheckInterval: 1000 * 60 * 30, // 30 min
-  signaldStartupTime: 1000 * 5, // 5 sec
 }
 
 const testInterval = 50
@@ -34,7 +32,6 @@ const test = {
   channelExpiryInMillis: testInterval,
   healthcheckInterval: testInterval, // millis
   inviteDeletionInterval: testInterval,
-  signaldStartupTime: 1, //  millis
   inviteExpiryInMillis: 200, // 200 millis
 }
 
