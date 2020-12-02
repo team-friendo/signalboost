@@ -1,3 +1,5 @@
+package info.signalboost.signalc
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.IdentityKey
@@ -60,14 +62,32 @@ object SignalcTrustStore: TrustStore {
 }
 
 val config = SignalServiceConfiguration(
-    arrayOf(SignalServiceUrl(SIGNAL_SERVICE_URL, SignalcTrustStore)),
+    arrayOf(SignalServiceUrl(
+        SIGNAL_SERVICE_URL,
+        SignalcTrustStore
+    )),
     mapOf(
-        0 to arrayOf(SignalCdnUrl(SIGNAL_CDN_URL, SignalcTrustStore)),
-        2 to arrayOf(SignalCdnUrl(SIGNAL_CDN2_URL, SignalcTrustStore))
+        0 to arrayOf(SignalCdnUrl(
+            SIGNAL_CDN_URL,
+            SignalcTrustStore
+        )),
+        2 to arrayOf(SignalCdnUrl(
+            SIGNAL_CDN2_URL,
+            SignalcTrustStore
+        ))
     ).toMutableMap(),
-    arrayOf(SignalContactDiscoveryUrl(SIGNAL_CONTACT_DISCOVERY_URL, SignalcTrustStore)),
-    arrayOf(SignalKeyBackupServiceUrl(SIGNAL_KEY_BACKUP_SERVICE_URL, SignalcTrustStore)),
-    arrayOf(SignalStorageUrl(SIGNAL_STORAGE_URL, SignalcTrustStore)),
+    arrayOf(SignalContactDiscoveryUrl(
+        SIGNAL_CONTACT_DISCOVERY_URL,
+        SignalcTrustStore
+    )),
+    arrayOf(SignalKeyBackupServiceUrl(
+        SIGNAL_KEY_BACKUP_SERVICE_URL,
+        SignalcTrustStore
+    )),
+    arrayOf(SignalStorageUrl(
+        SIGNAL_STORAGE_URL,
+        SignalcTrustStore
+    )),
     mutableListOf(),
     absent(),
     Base64.decode(ZK_GROUP_SERVER_PUBLIC_PARAMS)
@@ -253,10 +273,12 @@ fun main() {
     val oneTimePreKeys = KeyHelper.generatePreKeys(0, 100)
     oneTimePreKeys.forEach { protocolStore.storePreKey(it.id, it) }
     val signedPreKey = KeyHelper.generateSignedPreKey(protocolStore.ourIdentityKeyPair, 42)
-    val zkGroupOperations = groupsV2OperationsOf(config)
+    val zkGroupOperations =
+        groupsV2OperationsOf(config)
 
     // intialize account
-    val account = Account(username = USER_PHONE_NUMBER)
+    val account =
+        Account(username = USER_PHONE_NUMBER)
     val accountManager = SignalServiceAccountManager(
         config,
         account.asCredentialsProvider,
@@ -277,7 +299,11 @@ fun main() {
 
     println("$USER_PHONE_NUMBER registered and verified!")
 
-    val messageSender = messageSenderOf(account, protocolStore, config)
+    val messageSender = messageSenderOf(
+        account,
+        protocolStore,
+        config
+    )
 
     while(true){
         println("\nWhat number would you like to send a message to?")
