@@ -34,7 +34,7 @@ describe('membership repository', () => {
   })
   after(async () => await app.stop())
 
-  describe('#addAdmin', () => {
+  describe('#addAdmins', () => {
     describe('when given the phone number of an existing channel and a new admin', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
@@ -51,9 +51,8 @@ describe('membership repository', () => {
 
       it('gives each admin an id', async () => {
         const adminMemberships = await channel.getMemberships()
-        adminMemberships.forEach((admin, id) => {
-          expect(admin.adminId).to.eql(id + 1)
-        })
+        const adminIds = adminMemberships.map(({ adminId }) => adminId).sort()
+        expect(adminIds).to.eql([1, 2])
       })
 
       it('associates the admins with the channel', async () => {
@@ -109,14 +108,13 @@ describe('membership repository', () => {
       it('makes the subscriber an admin and does not create a new membership', () => {})
     })
 
-    describe('#addAmin', () => {
+    describe('#addAdmin', () => {
       let res1, res2
 
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
         res1 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
         membershipCount = await db.membership.count()
-
         res2 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
       })
 

@@ -13,10 +13,10 @@ const findMembership = (channelPhoneNumber, memberPhoneNumber) =>
 
 const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(adminNumbers.map(num => addAdmin(channelPhoneNumber, num))),
+    Promise.all(adminNumbers.map((num, idx) => addAdmin(channelPhoneNumber, num, idx))),
   )
 
-const addAdmin = async (channelPhoneNumber, memberPhoneNumber) => {
+const addAdmin = async (channelPhoneNumber, memberPhoneNumber, idx = 0) => {
   // - when given the phone number of...
   //   - a new user: make an admin
   //   - an existing admin: return that admin's membership (do not error or alter/create anything)
@@ -30,12 +30,11 @@ const addAdmin = async (channelPhoneNumber, memberPhoneNumber) => {
   //   - because of the way signald handles changed safety numbers, we have NO OTHER WAY of detecting a
   //     changed safety number and retrusting it without first sending a message, so observing
   //     the above invariant is extra important
-
   const channel = await app.db.channel.findOne({ where: { phoneNumber: channelPhoneNumber } })
 
   const membership = (await app.db.membership.findOrCreate({
-    where: { channelPhoneNumber, memberPhoneNumber, adminId: channel.nextAdminId },
-    defaults: { type: memberTypes.ADMIN },
+    where: { channelPhoneNumber, memberPhoneNumber },
+    defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
   }))[0]
 
   await channel.update({ nextAdminId: channel.nextAdminId + 1 })
