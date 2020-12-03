@@ -9,7 +9,7 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
-import org.whispersystems.libsignal.util.KeyHelper
+
 
 class SignalcProtocolStoreTest : FreeSpec({
     val store = SignalcProtocolStore
@@ -17,7 +17,7 @@ class SignalcProtocolStoreTest : FreeSpec({
     "Prekey Store" - {
         val keyId = 42
         val nonExistentId = 1312
-        val prekey = KeyUtil.generatePrekeys(0, 1)[0]
+        val prekey = KeyUtil.genPreKeys(0, 1)[0]
 
         afterTest {
             store.removePreKey(nonExistentId)
@@ -57,7 +57,7 @@ class SignalcProtocolStoreTest : FreeSpec({
     "Signed prekey store" - {
         val keyId = 42
         val nonExistentId = 1312
-        val signedPrekey = KeyUtil.generateSignedPreKey(store.ownIdentityKeypair, keyId)
+        val signedPrekey = KeyUtil.genSignedPreKey(store.ownIdentityKeypair, keyId)
 
         afterTest {
             store.removeSignedPreKey(keyId)
@@ -92,8 +92,8 @@ class SignalcProtocolStoreTest : FreeSpec({
 
     "Identities store" - {
         val address = SignalProtocolAddress("+12223334444", 42)
-        val identityKey = KeyHelper.generateIdentityKeyPair().publicKey
-        val rotatedIdentityKey = KeyHelper.generateIdentityKeyPair().publicKey
+        val identityKey = KeyUtil.genIdentityKeyPair().publicKey
+        val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
 
         fun SignalcProtocolStore.removeIdentity(address: SignalProtocolAddress) {
             this.identities.remove(address)

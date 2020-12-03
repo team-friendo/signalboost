@@ -85,11 +85,11 @@ class Account(
     // generate first set of prekeys, store them locally and publish them to whispersystems
     fun publishFirstPrekeys() {
         // generate prekeys and store them locally
-        val oneTimePreKeys = KeyUtil.generatePrekeys(0, 100).onEach {
+        val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
             this.protocolStore.storePreKey(it.id, it)
         }
         val signedPrekeyId = 42 // TODO: randomize this? store it on the account?
-        val signedPreKey = KeyUtil.generateSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
+        val signedPreKey = KeyUtil.genSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
             this.protocolStore.storeSignedPreKey(it.id, it)
         }
         // publish prekeys to signal server

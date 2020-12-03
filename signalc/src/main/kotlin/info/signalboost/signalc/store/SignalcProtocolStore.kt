@@ -1,11 +1,11 @@
 package info.signalboost.signalc.store
 
+import info.signalboost.signalc.logic.KeyUtil
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
-import org.whispersystems.libsignal.util.KeyHelper
 
 object SignalcProtocolStore: SignalProtocolStore {
 
@@ -33,8 +33,8 @@ object SignalcProtocolStore: SignalProtocolStore {
 
     /********* IDENTITIES *********/
 
-    internal val ownIdentityKeypair: IdentityKeyPair = KeyHelper.generateIdentityKeyPair()
-    internal val ownLocalRegistrationId: Int = KeyHelper.generateRegistrationId(false)
+    internal val ownIdentityKeypair = KeyUtil.genIdentityKeyPair()
+    internal val ownLocalRegistrationId = KeyUtil.genRegistrationId()
 
     override fun getIdentityKeyPair(): IdentityKeyPair = ownIdentityKeypair
     override fun getLocalRegistrationId(): Int = ownLocalRegistrationId
