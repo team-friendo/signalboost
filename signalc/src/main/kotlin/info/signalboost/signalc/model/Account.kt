@@ -3,15 +3,13 @@ package info.signalboost.signalc.model
 import info.signalboost.signalc.Config.SIGNAL_AGENT
 import info.signalboost.signalc.Config.groupsV2Operations
 import info.signalboost.signalc.Config.signalServiceConfig
-import info.signalboost.signalc.SignalcProtocolStore
+import info.signalboost.signalc.store.SignalcProtocolStore
 import info.signalboost.signalc.logic.KeyUtil
 import info.signalboost.signalc.logic.KeyUtil.genPassword
 import info.signalboost.signalc.logic.KeyUtil.genProfileKey
 import info.signalboost.signalc.logic.KeyUtil.genSignalingKey
 import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.state.SignalProtocolStore
-import org.whispersystems.libsignal.util.KeyHelper
-import org.whispersystems.libsignal.util.KeyHelper.generatePreKeys
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
@@ -23,14 +21,20 @@ import java.util.*
 
 // TODO: make UnregisteredAccount / RegisteredAccount ADT variants & eliminate var fields?
 class Account(
-    var uuid: UUID? = null, // assigned after registration
     private val username: String,
-    private val password: String = genPassword(),
-    private val signalingKey: String = genSignalingKey(),
-    private val profileKey: ProfileKey = genProfileKey(),
-    private val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID,
-    private val protocolStore: SignalProtocolStore = SignalcProtocolStore,
+    private val protocolStore: SignalProtocolStore = SignalcProtocolStore
 ) {
+    /****** FIELDS ******/
+
+    private var uuid: UUID? = null // assigned after registration
+
+    private val password: String = genPassword()
+    private val signalingKey: String = genSignalingKey()
+    private val profileKey: ProfileKey = genProfileKey()
+    private val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID
+
+    /****** PROPERTIES ******/
+
     private val unrestrictedAccesKey: ByteArray
         get() = UnidentifiedAccess.deriveAccessKeyFrom(this.profileKey)
 
@@ -51,6 +55,8 @@ class Account(
             groupsV2Operations,
             UptimeSleepTimer()
         )
+
+    /****** METHODS ******/
 
     // register an account with signal server and reqeust an sms token to use to verify it
     fun register() =
@@ -79,11 +85,11 @@ class Account(
     // generate first set of prekeys, store them locally and publish them to whispersystems
     fun publishFirstPrekeys() {
         // generate prekeys and store them locally
-        val oneTimePreKeys = KeyUtil.generatePrekeys(0, 100).also {
-            preKeys -> preKeys.forEach { this.protocolStore.storePreKey(it.id, it) }
+        val oneTimePreKeys = KeyUtil.generatePrekeys(0, 100).onEach {
+            this.protocolStore.storePreKey(it.id, it)
         }
         val signedPrekeyId = 42 // TODO: randomize this? store it on the account?
-        val signedPreKey = KeyUtil.generateSignedPreKey(SignalcProtocolStore.ourIdentityKeyPair, signedPrekeyId).also {
+        val signedPreKey = KeyUtil.generateSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
             this.protocolStore.storeSignedPreKey(it.id, it)
         }
         // publish prekeys to signal server

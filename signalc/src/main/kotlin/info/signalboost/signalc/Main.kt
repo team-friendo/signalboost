@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import info.signalboost.signalc.logic.Messaging
 import info.signalboost.signalc.model.Account
+import info.signalboost.signalc.store.SignalcProtocolStore
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 
