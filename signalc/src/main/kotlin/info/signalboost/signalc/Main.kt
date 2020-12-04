@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import info.signalboost.signalc.logic.Messaging
 import info.signalboost.signalc.model.Account
+import info.signalboost.signalc.model.UnregisteredAccount
 import info.signalboost.signalc.store.SignalcProtocolStore
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
@@ -21,23 +22,22 @@ fun main() {
     Security.addProvider(BouncyCastleProvider())
 
     // intialize account
-    val account = Account(username = USER_PHONE_NUMBER, protocolStore = SignalcProtocolStore)
+    val unregisteredAccount = UnregisteredAccount(username = USER_PHONE_NUMBER, protocolStore = SignalcProtocolStore)
 
     // register account
     println("Asking signal for an sms verification code...")
-    account.register()
+    unregisteredAccount.register()
     println("Please enter the code:")
     val verificationCode = readLine() ?: return
 
     // verify account
-    account.verify(verificationCode).let {
-        ok -> if(!ok) return println("Verification failed! Wrong code?")
-    }
-    account.publishFirstPrekeys()
+    val registeredAccount = unregisteredAccount.verify(verificationCode) ?:
+        return println("Verification failed! Wrong code?")
+    registeredAccount.publishFirstPrekeys()
     println("$USER_PHONE_NUMBER registered and verified!")
 
     // send some messages!
-    val messageSender = Messaging.messageSenderOf(account, SignalcProtocolStore)
+    val messageSender = Messaging.messageSenderOf(registeredAccount, SignalcProtocolStore)
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return

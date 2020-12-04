@@ -3,7 +3,9 @@ package info.signalboost.signalc.model
 import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beOfType
 import io.mockk.*
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
@@ -19,17 +21,17 @@ class AccountTest : FreeSpec({
     val phoneNumber = genPhoneNumber()
     val mockProtocolStore = mockk<SignalProtocolStore>()
 
-    val account: Account = Account(phoneNumber, mockProtocolStore)
-    val mockAccountManager: SignalServiceAccountManager = mockk {
+    val unregisteredAccount = UnregisteredAccount(phoneNumber, mockProtocolStore)
+    val mockAccountManager = mockk<SignalServiceAccountManager> {
         every { requestSmsVerificationCode(any(), any(), any()) } returns Unit
     }
 
-    mockkObject(account)
-    every { account.asAccountManager } returns mockAccountManager
+    mockkObject(unregisteredAccount)
+    every { unregisteredAccount.asAccountManager } returns mockAccountManager
 
     "#register" - {
         "requests an sms code from signal" - {
-            account.register()
+            unregisteredAccount.register()
             verify {
                 mockAccountManager.requestSmsVerificationCode(
                     false,
@@ -55,7 +57,7 @@ class AccountTest : FreeSpec({
             }
 
             "attempts to verify code" - {
-                account.verify(code)
+                unregisteredAccount.verify(code)
                 verify {
                     mockAccountManager.verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -63,8 +65,8 @@ class AccountTest : FreeSpec({
                 }
             }
 
-            "returns true" - {
-                account.verify(code) shouldBe true
+            "returns a registered account" - {
+                unregisteredAccount.verify(code) should beOfType<RegisteredAccount>()
             }
         }
 
@@ -76,7 +78,7 @@ class AccountTest : FreeSpec({
             } throws AuthorizationFailedException("oh noes!")
 
             "attempts to verify code" - {
-                account.verify(code)
+                unregisteredAccount.verify(code)
                 verify {
                     mockAccountManager.verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -84,13 +86,14 @@ class AccountTest : FreeSpec({
                 }
             }
 
-            "returns false" - {
-                account.verify(code) shouldBe false
+            "returns null" - {
+                unregisteredAccount.verify(code) shouldBe null
             }
         }
     }
 
     "#publishFirstPrekeys" - {
+        val uuid = UUID.randomUUID()
         val mockPublicKey = mockk<IdentityKey>()
         val mockPreKeys = List(100) {
             mockk<PreKeyRecord> {
@@ -115,7 +118,10 @@ class AccountTest : FreeSpec({
 
         every { mockAccountManager.setPreKeys(any(), any(), any()) } returns Unit
 
-        account.publishFirstPrekeys()
+        val registeredAccount = RegisteredAccount.fromUnregisteredAccount(unregisteredAccount, uuid)
+        mockkObject(registeredAccount)
+        every { registeredAccount.asAccountManager } returns mockAccountManager
+        registeredAccount.publishFirstPrekeys()
 
         "stores 100 prekeys locally" -{
             verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any())}
