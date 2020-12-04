@@ -782,7 +782,7 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
 const addAdminIdToHeader = (membership, messageType, messageBody) => {
   const prefix = messagesIn(membership.language).prefixes
-  return `[${messageType}] [${prefix.admin} ${membership.adminId}]\n${messageBody}`
+  return `[${messageType} FROM ${prefix.admin} ${membership.adminId}]\n${messageBody}`
 }
 
 const logAndReturn = (err, statusTuple) => {
