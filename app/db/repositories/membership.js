@@ -1,5 +1,6 @@
 const app = require('../../../app')
 const { defaultLanguage } = require('../../config')
+const { sequence } = require('../../util')
 
 const memberTypes = {
   ADMIN: 'ADMIN',
@@ -13,10 +14,10 @@ const findMembership = (channelPhoneNumber, memberPhoneNumber) =>
 
 const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(adminNumbers.map((num, idx) => addAdmin(channelPhoneNumber, num, idx))),
+    sequence(adminNumbers.map(num => () => addAdmin(channelPhoneNumber, num))),
   )
 
-const addAdmin = async (channelPhoneNumber, memberPhoneNumber, idx = 0) => {
+const addAdmin = async (channelPhoneNumber, memberPhoneNumber) => {
   // - when given the phone number of...
   //   - a new user: make an admin
   //   - an existing admin: return that admin's membership (do not error or alter/create anything)
@@ -34,7 +35,7 @@ const addAdmin = async (channelPhoneNumber, memberPhoneNumber, idx = 0) => {
 
   const membership = (await app.db.membership.findOrCreate({
     where: { channelPhoneNumber, memberPhoneNumber },
-    defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
+    defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId },
   }))[0]
 
   await channel.update({ nextAdminId: channel.nextAdminId + 1 })

@@ -51,8 +51,8 @@ describe('membership repository', () => {
 
       it('gives each admin an id', async () => {
         const adminMemberships = await channel.getMemberships()
-        const adminIds = adminMemberships.map(({ adminId }) => adminId).sort()
-        expect(adminIds).to.eql([1, 2])
+        const adminIds = adminMemberships.map(({ adminId }) => adminId)
+        expect(adminIds).to.have.members([1, 2])
       })
 
       it('associates the admins with the channel', async () => {
