@@ -30,7 +30,9 @@ fun main() {
     val verificationCode = readLine() ?: return
 
     // verify account
-    account.verify(SignalcProtocolStore, verificationCode)
+    account.verify(verificationCode).let {
+        ok -> if(!ok) return println("Verification failed! Wrong code?")
+    }
     account.publishFirstPrekeys()
     println("$USER_PHONE_NUMBER registered and verified!")
 

@@ -15,7 +15,9 @@ import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
+import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 
@@ -47,7 +49,7 @@ class Account(
             this.deviceId
         )
 
-    private val asAccountManager: SignalServiceAccountManager
+    internal val asAccountManager: SignalServiceAccountManager
         get() = SignalServiceAccountManager(
             signalServiceConfig,
             this.asCredentialsProvider,
@@ -63,21 +65,23 @@ class Account(
         this.asAccountManager.requestSmsVerificationCode(false, absent(), absent())
 
     // provide a verification code, retrieve and store a UUID
-    fun verify(protocolStore: SignalProtocolStore, code: String): Boolean {
-        // TODO: more granular failure/succes signaling in return value?
-        val verifyResponse = this.asAccountManager.verifyAccountWithCode(
-            code,
-            null,
-            protocolStore.localRegistrationId,
-            true,
-            null,
-            null,
-            this.unrestrictedAccesKey,
-            false,
-            SignalServiceProfile.Capabilities(true, false, false),
-            true
-        )
-        verifyResponse.uuid ?: return false
+    fun verify(code: String): Boolean {
+        val verifyResponse: VerifyAccountResponse = try {
+            this.asAccountManager.verifyAccountWithCode(
+                code,
+                null,
+                protocolStore.localRegistrationId,
+                true,
+                null,
+                null,
+                this.unrestrictedAccesKey,
+                false,
+                SignalServiceProfile.Capabilities(true, false, false),
+                true
+            )
+        } catch(e: AuthorizationFailedException) {
+            return false
+        }
         this.uuid = UUID.fromString(verifyResponse.uuid)
         return true
     }
