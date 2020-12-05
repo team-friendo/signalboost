@@ -22,39 +22,38 @@ import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 import kotlin.random.Random
 
-sealed class Account {
-    // we provide different credentials based on whether we are registered or not
-    abstract val asCredentialsProvider: DynamicCredentialsProvider
-
-    // we use those credentials to make an account manager
-    internal val asAccountManager: SignalServiceAccountManager
-        get() = SignalServiceAccountManager(
+object Account {
+    fun accountManagerOf(credentialsProvider: DynamicCredentialsProvider) =
+        SignalServiceAccountManager(
             signalServiceConfig,
-            this.asCredentialsProvider,
+            credentialsProvider,
             SIGNAL_AGENT,
             groupsV2Operations,
             UptimeSleepTimer()
         )
+
+    fun unrestrictedAccessKeyOf(profileKey: ProfileKey): ByteArray =
+        UnidentifiedAccess.deriveAccessKeyFrom(profileKey)
 }
 
 class UnregisteredAccount(
     internal val username: String,
     internal val protocolStore: SignalProtocolStore = SignalcProtocolStore,
-): Account() {
+){
 
     /** FIELDS **/
 
-    internal val password: String = genPassword(),
-    internal val signalingKey: String = genSignalingKey(),
-    internal val profileKey: ProfileKey = genProfileKey(),
+    internal val password: String = genPassword()
+    internal val signalingKey: String = genSignalingKey()
+    internal val profileKey: ProfileKey = genProfileKey()
     internal val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID
 
     /** PROPERTIES **/
 
     private val unrestrictedAccesKey: ByteArray
-        get() = UnidentifiedAccess.deriveAccessKeyFrom(this.profileKey)
+        get() = Account.unrestrictedAccessKeyOf(this.profileKey)
 
-    override val asCredentialsProvider: DynamicCredentialsProvider
+    private val asCredentialsProvider: DynamicCredentialsProvider
         get() = DynamicCredentialsProvider(
             null,
             this.username,
@@ -62,6 +61,9 @@ class UnregisteredAccount(
             this.signalingKey,
             this.deviceId
         )
+
+    val asAccountManager: SignalServiceAccountManager
+        get() = Account.accountManagerOf(this.asCredentialsProvider)
 
     /** METHODS **/
 
@@ -98,9 +100,9 @@ class RegisteredAccount(
     private val protocolStore: SignalProtocolStore,
     private val password: String,
     private val signalingKey: String,
-    private val profileKey,
+    private val profileKey: ProfileKey,
     private val deviceId: Int,
-): Account() {
+){
 
     companion object {
         fun fromUnregisteredAccount(unregistered: UnregisteredAccount, uuid: UUID) = RegisteredAccount(
@@ -114,7 +116,7 @@ class RegisteredAccount(
         )
     }
 
-    override val asCredentialsProvider: DynamicCredentialsProvider
+    val asCredentialsProvider: DynamicCredentialsProvider
         get() = DynamicCredentialsProvider(
             this.uuid,
             this.username,
@@ -122,6 +124,9 @@ class RegisteredAccount(
             this.signalingKey,
             this.deviceId
         )
+
+    val asAccountManager: SignalServiceAccountManager
+        get() = Account.accountManagerOf(this.asCredentialsProvider)
 
     // generate first set of prekeys, store them locally and publish them to whispersystems
     fun publishFirstPrekeys() {
