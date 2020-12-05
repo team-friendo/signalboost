@@ -12,6 +12,7 @@ import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
+import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
@@ -22,38 +23,81 @@ import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 import kotlin.random.Random
 
-object Account {
-    fun accountManagerOf(credentialsProvider: DynamicCredentialsProvider) =
-        SignalServiceAccountManager(
-            signalServiceConfig,
-            credentialsProvider,
-            SIGNAL_AGENT,
-            groupsV2Operations,
-            UptimeSleepTimer()
-        )
 
-    fun unrestrictedAccessKeyOf(profileKey: ProfileKey): ByteArray =
-        UnidentifiedAccess.deriveAccessKeyFrom(profileKey)
+sealed class Account {
+    abstract val asCredentialsProvider: DynamicCredentialsProvider
+
+    companion object {
+
+        /** SHARED ACCOUNT OPERATIONS ***/
+
+        fun accountManagerOf(account: Account) =
+            SignalServiceAccountManager(
+                signalServiceConfig,
+                account.asCredentialsProvider,
+                SIGNAL_AGENT,
+                groupsV2Operations,
+                UptimeSleepTimer()
+            )
+
+        /** UNREGISTERED ACCOUNT OPERATIONS **/
+
+        // register an account with signal server and reqeust an sms token to use to verify it
+        fun register(account: UnregisteredAccount) =
+            account.asAccountManager.requestSmsVerificationCode(false, absent(), absent())
+
+        // provide a verification code, retrieve and store a UUID
+        fun verify(account: UnregisteredAccount, code: String): RegisteredAccount? {
+            val verifyResponse: VerifyAccountResponse = try {
+                account.asAccountManager.verifyAccountWithCode(
+                    code,
+                    null,
+                    account.protocolStore.localRegistrationId,
+                    true,
+                    null,
+                    null,
+                    UnidentifiedAccess.deriveAccessKeyFrom(account.profileKey),
+                    false,
+                    SignalServiceProfile.Capabilities(true, false, false),
+                    true
+                )
+            } catch(e: AuthorizationFailedException) {
+                return null
+            }
+            val uuid = UUID.fromString(verifyResponse.uuid)
+            return RegisteredAccount.fromUnregisteredAccount(account, uuid)
+        }
+
+        /** REGISTERED ACCOUNT OPERATIONS **/
+
+        fun publishFirstPrekeys(account: RegisteredAccount) {
+            // generate prekeys and store them locally
+            val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE)
+            val signedPreKey = KeyUtil.genSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
+                account.protocolStore.storeSignedPreKey(it.id, it)
+            }
+            val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
+                account.protocolStore.storePreKey(it.id, it)
+            }
+            // publish prekeys to signal server
+            account.asAccountManager.setPreKeys(
+                account.protocolStore.identityKeyPair.publicKey,
+                signedPreKey,
+                oneTimePreKeys
+            )
+        }
+    }
 }
 
-class UnregisteredAccount(
-    internal val username: String,
-    internal val protocolStore: SignalProtocolStore = SignalcProtocolStore,
-){
-
-    /** FIELDS **/
-
-    internal val password: String = genPassword()
-    internal val signalingKey: String = genSignalingKey()
-    internal val profileKey: ProfileKey = genProfileKey()
-    internal val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID
-
-    /** PROPERTIES **/
-
-    private val unrestrictedAccesKey: ByteArray
-        get() = Account.unrestrictedAccessKeyOf(this.profileKey)
-
-    private val asCredentialsProvider: DynamicCredentialsProvider
+data class UnregisteredAccount(
+    val username: String,
+    val protocolStore: SignalProtocolStore = SignalcProtocolStore,
+    val password: String = genPassword(),
+    val signalingKey: String = genSignalingKey(),
+    val profileKey: ProfileKey = genProfileKey(),
+    val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID,
+): Account() {
+    override val asCredentialsProvider: DynamicCredentialsProvider
         get() = DynamicCredentialsProvider(
             null,
             this.username,
@@ -61,49 +105,19 @@ class UnregisteredAccount(
             this.signalingKey,
             this.deviceId
         )
-
     val asAccountManager: SignalServiceAccountManager
-        get() = Account.accountManagerOf(this.asCredentialsProvider)
-
-    /** METHODS **/
-
-    // register an account with signal server and reqeust an sms token to use to verify it
-    fun register() =
-        this.asAccountManager.requestSmsVerificationCode(false, absent(), absent())
-
-    // provide a verification code, retrieve and store a UUID
-    fun verify(code: String): RegisteredAccount? {
-        val verifyResponse: VerifyAccountResponse = try {
-            this.asAccountManager.verifyAccountWithCode(
-                code,
-                null,
-                protocolStore.localRegistrationId,
-                true,
-                null,
-                null,
-                this.unrestrictedAccesKey,
-                false,
-                SignalServiceProfile.Capabilities(true, false, false),
-                true
-            )
-        } catch(e: AuthorizationFailedException) {
-            return null
-        }
-        val uuid = UUID.fromString(verifyResponse.uuid)
-        return RegisteredAccount.fromUnregisteredAccount(this, uuid)
-    }
+        get() = accountManagerOf(this)
 }
 
-class RegisteredAccount(
-    private val uuid: UUID,
-    private val username: String,
-    private val protocolStore: SignalProtocolStore,
-    private val password: String,
-    private val signalingKey: String,
-    private val profileKey: ProfileKey,
-    private val deviceId: Int,
-){
-
+data class RegisteredAccount(
+    val uuid: UUID,
+    val username: String,
+    val protocolStore: SignalProtocolStore,
+    val password: String,
+    val signalingKey: String,
+    val profileKey: ProfileKey,
+    val deviceId: Int,
+): Account(){
     companion object {
         fun fromUnregisteredAccount(unregistered: UnregisteredAccount, uuid: UUID) = RegisteredAccount(
             uuid,
@@ -116,7 +130,7 @@ class RegisteredAccount(
         )
     }
 
-    val asCredentialsProvider: DynamicCredentialsProvider
+    override val asCredentialsProvider: DynamicCredentialsProvider
         get() = DynamicCredentialsProvider(
             this.uuid,
             this.username,
@@ -126,23 +140,20 @@ class RegisteredAccount(
         )
 
     val asAccountManager: SignalServiceAccountManager
-        get() = Account.accountManagerOf(this.asCredentialsProvider)
+        get() = accountManagerOf(this)
 
-    // generate first set of prekeys, store them locally and publish them to whispersystems
-    fun publishFirstPrekeys() {
-        // generate prekeys and store them locally
-        val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE)
-        val signedPreKey = KeyUtil.genSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
-            this.protocolStore.storeSignedPreKey(it.id, it)
-        }
-        val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
-            this.protocolStore.storePreKey(it.id, it)
-        }
-        // publish prekeys to signal server
-        this.asAccountManager.setPreKeys(
-            this.protocolStore.identityKeyPair.publicKey,
-            signedPreKey,
-            oneTimePreKeys
+    val asMessageSender: SignalServiceMessageSender
+        get() = SignalServiceMessageSender(
+            signalServiceConfig,
+            this.asCredentialsProvider,
+            protocolStore,
+            SIGNAL_AGENT,
+            true,
+            false,
+            absent(),
+            absent(),
+            absent(),
+            null,
+            null,
         )
-    }
 }

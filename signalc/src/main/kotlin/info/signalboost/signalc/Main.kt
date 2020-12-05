@@ -26,18 +26,18 @@ fun main() {
 
     // register account
     println("Asking signal for an sms verification code...")
-    unregisteredAccount.register()
+    Account.register(unregisteredAccount)
     println("Please enter the code:")
     val verificationCode = readLine() ?: return
 
     // verify account
-    val registeredAccount = unregisteredAccount.verify(verificationCode) ?:
+    val registeredAccount = Account.verify(unregisteredAccount, verificationCode) ?:
         return println("Verification failed! Wrong code?")
-    registeredAccount.publishFirstPrekeys()
+    Account.publishFirstPrekeys(registeredAccount)
     println("$USER_PHONE_NUMBER registered and verified!")
 
     // send some messages!
-    val messageSender = Messaging.messageSenderOf(registeredAccount, SignalcProtocolStore)
+    val messageSender = registeredAccount.asMessageSender
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return

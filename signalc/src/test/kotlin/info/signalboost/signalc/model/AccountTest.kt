@@ -31,7 +31,7 @@ class AccountTest : FreeSpec({
 
     "#register" - {
         "requests an sms code from signal" - {
-            unregisteredAccount.register()
+            Account.register(unregisteredAccount)
             verify {
                 mockAccountManager.requestSmsVerificationCode(
                     false,
@@ -57,7 +57,7 @@ class AccountTest : FreeSpec({
             }
 
             "attempts to verify code" - {
-                unregisteredAccount.verify(code)
+                Account.verify(unregisteredAccount, code)
                 verify {
                     mockAccountManager.verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -66,7 +66,7 @@ class AccountTest : FreeSpec({
             }
 
             "returns a registered account" - {
-                unregisteredAccount.verify(code) should beOfType<RegisteredAccount>()
+                Account.verify(unregisteredAccount, code) should beOfType<RegisteredAccount>()
             }
         }
 
@@ -78,7 +78,7 @@ class AccountTest : FreeSpec({
             } throws AuthorizationFailedException("oh noes!")
 
             "attempts to verify code" - {
-                unregisteredAccount.verify(code)
+                Account.verify(unregisteredAccount, code)
                 verify {
                     mockAccountManager.verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -87,7 +87,7 @@ class AccountTest : FreeSpec({
             }
 
             "returns null" - {
-                unregisteredAccount.verify(code) shouldBe null
+                Account.verify(unregisteredAccount, code) shouldBe null
             }
         }
     }
@@ -121,7 +121,7 @@ class AccountTest : FreeSpec({
         val registeredAccount = RegisteredAccount.fromUnregisteredAccount(unregisteredAccount, uuid)
         mockkObject(registeredAccount)
         every { registeredAccount.asAccountManager } returns mockAccountManager
-        registeredAccount.publishFirstPrekeys()
+        Account.publishFirstPrekeys(registeredAccount)
 
         "stores 100 prekeys locally" -{
             verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any())}
