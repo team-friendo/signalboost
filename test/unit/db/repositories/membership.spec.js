@@ -1,9 +1,11 @@
 import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
+import sinon from 'sinon'
 import { omit, pick } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
+import channelRepository from '../../../../app/db/repositories/channel'
 import { languages } from '../../../../app/language'
 import {
   adminMembershipFactory,
@@ -101,6 +103,20 @@ describe('membership repository', () => {
 
       it('returns all admins (including already-existing ones)', () => {
         expect(res.length).to.eql(2)
+      })
+    })
+
+    describe("when updating the channel's nextAdminId fails", () => {
+      const updateChannelStub = sinon.stub(channelRepository, 'update')
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
+        updateChannelStub.callsFake(() => Promise.reject('Womp womp'))
+      })
+
+      it('does not create any new admin memberships', async () => {
+        await membershipRepository.addAdmins(channel.phoneNumber, adminPhoneNumbers)
+        expect(adminCount).to.eql(0)
       })
     })
 
