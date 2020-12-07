@@ -503,9 +503,15 @@ describe('executing commands', () => {
       banMemberStub = sinon.stub(banRepository, 'banMember')
     })
 
-    describe.only('when hotline message could not be found', () => {
+    describe('when hotline message could not be found', () => {
       beforeEach(() => {
-        findMemberPhoneNumberStub.returns(Promise.reject(new Error('error')))
+        class HotlineMessageIdMissingError extends Error {
+          constructor(message) {
+            super(message)
+            this.name = 'HotlineMessageIdMissingError'
+          }
+        }
+        findMemberPhoneNumberStub.returns(Promise.reject(new HotlineMessageIdMissingError('error')))
       })
 
       it('returns ERROR doesNotExist', async () => {
@@ -522,7 +528,34 @@ describe('executing commands', () => {
         expect(await processCommand(dispatchable)).to.eql({
           command: commands.BAN,
           status: statuses.ERROR,
-          message: 'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
+          message:
+            'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
+    describe('when there was a generic error', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.reject(new Error('woops database')))
+      })
+
+      it('returns ERROR doesNotExist', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message: 'Oops! Failed to issue ban. Please try again!',
           notifications: [],
           payload: { messageId: 1312, reply: '' },
         })

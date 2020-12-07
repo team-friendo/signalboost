@@ -272,7 +272,11 @@ const banMember = async (channel, sender, hotlineMessage) => {
       ),
     }))
   } catch (e) {
-    return { status: statuses.ERROR, message: cr.dbError }
+    if (e.name === 'HotlineMessageIdMissingError') {
+      return { status: statuses.ERROR, message: cr.doesNotExist }
+    } else {
+      return { status: statuses.ERROR, message: cr.dbError }
+    }
   }
 }
 

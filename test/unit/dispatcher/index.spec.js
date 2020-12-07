@@ -34,6 +34,7 @@ describe('dispatcher module', () => {
   const channel = channels[0]
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
   const subscriberPhoneNumber = channels[0].memberships[2].memberPhoneNumber
+  const bannedPhoneNumber = genPhoneNumber()
   const randoPhoneNumber = genPhoneNumber()
   const admin = {
     memberPhoneNumber: adminPhoneNumber,
@@ -125,7 +126,10 @@ describe('dispatcher module', () => {
       .stub(diagnostics, 'respondToHealthcheck')
       .returns(Promise.resolve('42'))
 
-    isBannedStub = sinon.stub(banRepository, 'isBanned').returns(Promise.resolve(false))
+    isBannedStub = sinon.stub(banRepository, 'isBanned')
+    isBannedStub.callsFake((_, senderPhoneNumber) =>
+      Promise.resolve(senderPhoneNumber === bannedPhoneNumber),
+    )
 
     findMembershipStub = sinon
       .stub(membershipRepository, 'findMembership')
@@ -149,19 +153,13 @@ describe('dispatcher module', () => {
   describe('handling an incoming message', () => {
     describe('deciding whether to dispatch a message', () => {
       describe('when message is from a banned user', () => {
-        beforeEach(() => {
-          isBannedStub.returns(Promise.resolve(true))
-        })
-        afterEach(() => {
-          isBannedStub.restore()
-        })
         it('ignores the message', async () => {
           await dispatch(
             JSON.stringify({
               type: 'message',
               data: {
                 username: channel.phoneNumber,
-                source: genPhoneNumber(),
+                source: bannedPhoneNumber,
                 dataMessage: {
                   timestamp: new Date().toISOString(),
                   body: 'foobar',
