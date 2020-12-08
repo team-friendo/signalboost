@@ -193,23 +193,22 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 #############
 
 test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/unit && ./bin/test/integration
+	npx eslint app && ./bin/test/unit && ./bin/test/integration && cd signalc && ./gradlew test
 
-test.unit: ## run unit tests
+test.sb.unit: ## run unit tests
 	./bin/test/unit
 
-test.integration: ## run integration tests
+test.sb.integration: ## run integration tests
 	./bin/test/integration
 
-test.e2e: ## run e2e tests
-	./bin/test/e2e
-
-test.lint: ## run linter
+test.sb.lint: ## run linter
 	npx eslint app && npx eslint test
 
-test.lint.fix: ## run linter with --fix option to automatically fix what can be
+test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
 	npx eslint --fix app && npx eslint --fix test
 
+test.sc.all:
+	cd signalc && ./gradlew test
 
 
 ##################################
