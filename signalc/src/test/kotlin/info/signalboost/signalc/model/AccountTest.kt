@@ -29,6 +29,10 @@ class AccountTest : FreeSpec({
     mockkObject(unregisteredAccount)
     every { unregisteredAccount.asAccountManager } returns mockAccountManager
 
+    afterTest {
+        unmockkAll()
+    }
+
     "#register" - {
         "requests an sms code from signal" - {
             Account.register(unregisteredAccount)

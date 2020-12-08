@@ -10,15 +10,20 @@ import java.time.Instant
 
 object Messaging {
 
-    private const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
+    const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
 
-    fun sendMessage(messageSender: SignalServiceMessageSender, messageBody: String, recipientPhone: String, expiration: Int = DEFAULT_EXPIRY_TIME): SendMessageResult {
-        val timestamp = Instant.now().toEpochMilli()
+    fun sendMessage(
+        messageSender: SignalServiceMessageSender,
+        messageBody: String,
+        recipientPhone: String,
+        timestamp: Long = TimeUtil.nowInMillis(),
+        expiration: Int = DEFAULT_EXPIRY_TIME,
+    ): SendMessageResult {
         val recipientAddress = SignalServiceAddress(null, recipientPhone)
         val dataMessage =  SignalServiceDataMessage
             .newBuilder()
-            .withTimestamp(timestamp)
             .withBody(messageBody)
+            .withTimestamp(timestamp)
             .withExpiration(expiration)
             .build()
         return messageSender.sendMessage(recipientAddress, absent(), dataMessage)

@@ -5,6 +5,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.mockk.unmockkAll
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
@@ -13,6 +14,10 @@ import org.whispersystems.libsignal.state.SessionRecord
 
 class SignalcProtocolStoreTest : FreeSpec({
     val store = SignalcProtocolStore
+
+    afterTest {
+        unmockkAll()
+    }
 
     "Prekey Store" - {
         val keyId = 42
