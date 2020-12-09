@@ -81,7 +81,7 @@ const processDestructionRequests = async () => {
     await destructionRequestRepository.destroyMany(map(toDestroy, 'channelPhoneNumber'))
 
     if (isEmpty(toDestroy)) return null
-    return notifier.notifyMaintainers(
+    logger.log(
       `${toDestroy.length} destruction requests processed:\n\n` +
         `${map(destructionResults, 'message').join('\n')}`,
     )
@@ -120,12 +120,8 @@ const _hoursToLive = destructionRequestedAt => {
 const redeem = async channel => {
   try {
     await destructionRequestRepository.destroy(channel.phoneNumber)
-    await Promise.all([
-      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED),
-      notifier.notifyMaintainers(
-        `${channel.phoneNumber} had been scheduled for destruction, but was just redeemed.`,
-      ),
-    ])
+    await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_REDEEMED)
+    logger.log(`${channel.phoneNumber} had been scheduled for destruction, but was just redeemed.`)
   } catch (err) {
     return notifier.notifyMaintainers(`Error redeeming ${channel.phoneNumber}: ${err}`)
   }

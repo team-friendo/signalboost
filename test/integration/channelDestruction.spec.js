@@ -20,16 +20,15 @@ describe('channel destruction', () => {
    * edit app.config.jobs.channelDestructionGracePeriod to always be 12 * testInterval
    **************************************************************************************/
   const socketId = 2
-  let channel, diagnosticsChannel, readSock, writeStub, cancel
+  let channel, readSock, writeStub, cancel
 
   before(async () => {
     await app.run({ ...testApp, db, signal })
   })
 
   beforeEach(async () => {
-    await createChannels(app.db, 1).then(([_channels, _diagnosticsChannel]) => {
+    await createChannels(app.db, 1).then(([_channels]) => {
       channel = _channels[0]
-      diagnosticsChannel = _diagnosticsChannel
     })
     readSock = await app.socketPools[socketId].acquire()
     writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
@@ -59,7 +58,7 @@ describe('channel destruction', () => {
 
     it('it sends 3 warning to admins then deletes the channel', function() {
       const messages = getSentMessages(writeStub)
-      if (messages.length !== 13) {
+      if (messages.length !== 11) {
         console.log('FLAKEY TEST: integration.channelDestruction')
       } else {
         expect(messages).to.have.deep.members([
@@ -169,30 +168,6 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
-          },
-
-          /*************** MAINTAINER DELETION NOTICES ***************/
-          {
-            attachments: [],
-            messageBody: `1 destruction requests processed:\n\nChannel ${
-              channel.phoneNumber
-            } destroyed.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[0].memberPhoneNumber,
-            },
-            type: 'send',
-            username: diagnosticsChannel.phoneNumber,
-          },
-          {
-            attachments: [],
-            messageBody: `1 destruction requests processed:\n\nChannel ${
-              channel.phoneNumber
-            } destroyed.`,
-            recipientAddress: {
-              number: diagnosticsChannel.memberships[1].memberPhoneNumber,
-            },
-            type: 'send',
-            username: diagnosticsChannel.phoneNumber,
           },
 
           /*************** UNSUBSCRIBE ***************/

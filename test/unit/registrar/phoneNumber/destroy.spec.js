@@ -650,15 +650,6 @@ describe('phone number registrar -- destroy module', () => {
           map(toDestroy, 'channelPhoneNumber'),
         ])
       })
-
-      it('notifies maintainers of results', () => {
-        expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          '3 destruction requests processed:\n\n' +
-            `Channel ${toDestroy[0].channelPhoneNumber} destroyed.\n` +
-            `Channel ${toDestroy[1].channelPhoneNumber} destroyed.\n` +
-            `Channel ${toDestroy[2].channelPhoneNumber} failed to be destroyed. Error: BOOM!`,
-        ])
-      })
     })
 
     describe('when job fails', () => {
@@ -695,12 +686,6 @@ describe('phone number registrar -- destroy module', () => {
         expect(notifyAdminsStub.getCall(0).args).to.eql([
           channelToRedeem,
           notificationKeys.CHANNEL_REDEEMED,
-        ])
-      })
-
-      it('notifies maintainers of results', () => {
-        expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          `${phoneNumber} had been scheduled for destruction, but was just redeemed.`,
         ])
       })
     })
