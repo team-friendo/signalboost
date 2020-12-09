@@ -13,9 +13,10 @@ const findMembership = (channelPhoneNumber, memberPhoneNumber) =>
   app.db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }) ||
   Promise.reject('no membership found')
 
-const addAdmin = (channelPhoneNumber, memberPhoneNumber) =>
-  addAdmins(channelPhoneNumber, [memberPhoneNumber])[0]
+const addAdmin = async (channelPhoneNumber, memberPhoneNumber) =>
+  (await addAdmins(channelPhoneNumber, [memberPhoneNumber]))[0]
 
+// (string, Array<string>) -> Promise<Array<Membership>>
 const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
   performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', async channel => {
     const tx = await app.db.sequelize.transaction()
@@ -34,17 +35,19 @@ const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
 
 const _findOrCreateAdminMembership = async (channel, memberPhoneNumber, idx, transaction) => {
   // here, we use findOrCreate admin membership("idempotently create" it) because we might be:
-  // 1) re - adding an admin who has been deauthorized or
-  // 2) promoting an existing subscriber to an admin
-  const membership = (await app.db.membership.findOrCreate(
-    {
-      where: { channelPhoneNumber: channel.phoneNumber, memberPhoneNumber },
-      defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
-    },
-    { transaction },
-  ))[0]
-
-  return membership.update({ type: memberTypes.ADMIN }, { transaction })
+  // (1) re - adding an admin who has been deauthorized or...
+  const [membership] = await app.db.membership.findOrCreate({
+    where: { channelPhoneNumber: channel.phoneNumber, memberPhoneNumber },
+    defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
+    transaction,
+  })
+  // ... (2) promoting an existing subscriber to an admin
+  return membership.type === memberTypes.SUBSCRIBER
+    ? membership.update(
+        { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
+        { transaction },
+      )
+    : membership
 }
 
 const addSubscriber = async (channelPhoneNumber, memberPhoneNumber, language = defaultLanguage) =>
@@ -99,6 +102,7 @@ const isSubscriber = (channelPhoneNumber, memberPhoneNumber) =>
 
 // HELPERS
 
+// (string, string, any -> Promise<any>) -> Promise<any>
 const performOpIfChannelExists = async (channelPhoneNumber, opDescription, op) => {
   const ch = await app.db.channel.findOne({
     where: { phoneNumber: channelPhoneNumber },

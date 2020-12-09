@@ -1,7 +1,7 @@
 import { describe, it, before, after, beforeEach, afterEach } from 'mocha'
 import { expect } from 'chai'
 import sinon from 'sinon'
-import { omit, pick } from 'lodash'
+import { pick } from 'lodash'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import membershipRepository from '../../../../app/db/repositories/membership'
@@ -38,8 +38,10 @@ describe('membership repository', () => {
 
   describe('#addAdmins', () => {
     describe('when given the phone number of an existing channel and a new admin', () => {
+      let originalNextAdminId
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
+        originalNextAdminId = channel.nextAdminId
         subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
         admins = await membershipRepository.addAdmins(channel.phoneNumber, adminPhoneNumbers)
@@ -49,6 +51,12 @@ describe('membership repository', () => {
         expect(await db.membership.count({ where: { type: memberTypes.ADMIN } })).to.eql(
           adminCount + 2,
         )
+      })
+
+      it('increments the nextAdminId field on the channels table by 2', async () => {
+        expect(
+          (await db.channel.findOne({ where: { phoneNumber: channel.phoneNumber } })).nextAdminId,
+        ).to.eql(originalNextAdminId + 2)
       })
 
       it('gives each admin an id', async () => {
@@ -106,6 +114,41 @@ describe('membership repository', () => {
       })
     })
 
+    describe('when given the phone number of an existing subscriber', () => {
+      let res1, res2, nextAdminId
+      beforeEach(async () => {
+        channel = await db.channel.create(channelFactory())
+        nextAdminId = channel.nextAdminId
+        res1 = await membershipRepository.addSubscriber(
+          channel.phoneNumber,
+          subscriberPhoneNumbers[0],
+        )
+        membershipCount = await db.membership.count()
+        subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
+        adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
+
+        res2 = (await membershipRepository.addAdmins(channel.phoneNumber, [
+          subscriberPhoneNumbers[0],
+        ]))[0]
+      })
+
+      it('makes the subscriber an admin', () => {
+        expect(res2.type).to.eql(memberTypes.ADMIN)
+      })
+
+      it('assigns the member an admin id', async () => {
+        expect(res2.adminId).to.eql(nextAdminId)
+      })
+
+      it('does not create a new membership', async () => {
+        expect(await db.membership.count()).to.eql(membershipCount)
+      })
+
+      it('returns the modified membership', () => {
+        expect(res2.updatedAt).to.be.above(res1.updatedAt)
+      })
+    })
+
     describe("when updating the channel's nextAdminId fails", () => {
       const updateChannelStub = sinon.stub(channelRepository, 'update')
       beforeEach(async () => {
@@ -120,58 +163,6 @@ describe('membership repository', () => {
       })
     })
 
-    describe('when given the phone number of an existing subscriber', () => {
-      it('makes the subscriber an admin and does not create a new membership', () => {})
-    })
-
-    describe('#addAdmin', () => {
-      let res1, res2
-
-      beforeEach(async () => {
-        channel = await db.channel.create(channelFactory())
-        res1 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
-        membershipCount = await db.membership.count()
-        res2 = await membershipRepository.addAdmin(channel.phoneNumber, adminPhoneNumbers[0])
-      })
-
-      describe('when given the number of an existing admin', () => {
-        it('does not create a new admin', async () => {
-          expect(await db.membership.count()).to.eql(membershipCount)
-        })
-
-        it("returns the existing admin's membership", () => {
-          expect(res1.get()).to.eql(res2.get())
-        })
-      })
-
-      describe('when given the number of an existing subscriber', () => {
-        let res1, res2
-        beforeEach(async () => {
-          channel = await db.channel.create(channelFactory())
-          res1 = await membershipRepository.addSubscriber(
-            channel.phoneNumber,
-            subscriberPhoneNumbers[0],
-          )
-          membershipCount = await db.membership.count()
-          subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
-          adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
-
-          res2 = await membershipRepository.addAdmin(channel.phoneNumber, subscriberPhoneNumbers[0])
-        })
-
-        it('makes the subscriber an admin and returns its membership', async () => {
-          expect(res2.updatedAt).to.be.above(res1.updatedAt)
-          expect(omit(res2.get(), ['updatedAt'])).to.eql(
-            omit({ ...res1.get(), type: memberTypes.ADMIN }, ['updatedAt']),
-          )
-        })
-
-        it('does not create a new membership', async () => {
-          expect(await db.membership.count()).to.eql(membershipCount)
-        })
-      })
-    })
-
     describe('when given an empty array of admin numbers', () => {
       beforeEach(async () => {
         channel = await db.channel.create(channelFactory())
@@ -180,7 +171,7 @@ describe('membership repository', () => {
         await membershipRepository.addAdmins(channel.phoneNumber, [])
       })
 
-      it('creates no new publications', async () => {
+      it('creates no new admins', async () => {
         expect(await db.membership.count({ where: { type: memberTypes.ADMIN } })).to.eql(adminCount)
       })
     })
@@ -191,6 +182,26 @@ describe('membership repository', () => {
           await membershipRepository.addSubscriber(genPhoneNumber(), null).catch(e => e),
         ).to.contain('non-existent channel')
       })
+    })
+  })
+
+  describe('#addAdmin', () => {
+    let membership
+
+    beforeEach(async () => {
+      channel = await db.channel.create(channelFactory())
+      membershipCount = await db.membership.count()
+      membership = (await membershipRepository.addAdmins(channel.phoneNumber, [
+        adminPhoneNumbers[0],
+      ]))[0]
+    })
+
+    it('adds a single admin', async () => {
+      expect(await db.membership.count()).to.eql(membershipCount + 1)
+    })
+
+    it('gives the admin an admin id', () => {
+      expect(membership.adminId).to.be.above(0)
     })
   })
 
