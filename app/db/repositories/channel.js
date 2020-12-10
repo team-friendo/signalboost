@@ -16,19 +16,27 @@ const logger = loggerOf('db.repositories.channel')
  ***********/
 
 const create = async (phoneNumber, name, adminPhoneNumbers) => {
-  const memberships = adminPhoneNumbers.map(pNum => ({
+  const memberships = adminPhoneNumbers.map((pNum, idx) => ({
     type: memberTypes.ADMIN,
     memberPhoneNumber: pNum,
+    adminId: idx + 1,
   }))
+
+  const nextAdminId = memberships.length + 1
   const channel = await findByPhoneNumber(phoneNumber)
   const include = [{ model: app.db.messageCount }, { model: app.db.membership }]
+
   return !channel
-    ? app.db.channel.create({ phoneNumber, name, memberships, messageCount: {} }, { include })
+    ? app.db.channel.create(
+        { phoneNumber, name, memberships, messageCount: {}, nextAdminId },
+        { include },
+      )
     : channel
-        .update({ name, memberships, returning: true }, { include })
+        .update({ name, memberships, returning: true, nextAdminId }, { include })
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 
+// (string, object) -> Promise<Channelinstance|null>
 const update = (phoneNumber, attrs) =>
   app.db.channel
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
@@ -92,10 +100,9 @@ const isMaintainer = async phoneNumber => {
 }
 
 // () => Promsie<Array<string, number>>
-const getChannelsSortedBySize = async () =>
-  app.db.sequelize
-    .query(
-      `
+const getChannelsSortedBySize = async () => {
+  const records = await app.db.sequelize.query(
+    `
       with non_empty as (
        select "channelPhoneNumber", count ("channelPhoneNumber") as kount from memberships
          group by "channelPhoneNumber"
@@ -107,11 +114,12 @@ const getChannelsSortedBySize = async () =>
       select * from non_empty union select * from empty
       order by kount desc;
       `,
-      {
-        type: app.db.sequelize.QueryTypes.SELECT,
-      },
-    )
-    .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
+    {
+      type: app.db.sequelize.QueryTypes.SELECT,
+    },
+  )
+  return records.map(r => [r.channelPhoneNumber, parseInt(r.kount)])
+}
 
 // () => Promise<Array<Channel>>
 const getStaleChannels = async () =>

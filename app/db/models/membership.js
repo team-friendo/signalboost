@@ -31,6 +31,11 @@ const membershipOf = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: defaultLanguage,
       },
+      adminId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {},
   )

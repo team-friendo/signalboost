@@ -47,6 +47,11 @@ const channelOf = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: defaultSubscriberLimit,
     },
+    nextAdminId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
   })
 
   const associationDefaults = {

@@ -9,6 +9,7 @@ import dbService from '../../../../app/db'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { membershipFactory } from '../../../support/factories/membership'
+
 const {
   jobs: { channelExpiryInMillis },
   signal: { diagnosticsPhoneNumber, supportPhoneNumber },
@@ -77,8 +78,18 @@ describe('channel repository', () => {
         ).to.be.an('object')
       })
 
-      it('creates two publication records', async () => {
+      it('creates two membership records', async () => {
         expect(await db.membership.count()).to.eql(membershipCount + 2)
+      })
+
+      it('assigns an adminId to each new admin', async () => {
+        channel.memberships.forEach((membership, idx) => {
+          expect(membership.adminId).to.eql(idx + 1)
+        })
+      })
+
+      it("updates the channel's nextAdminId", async () => {
+        expect(channel.nextAdminId).to.eql((await db.membership.count()) + 1)
       })
 
       it('returns the channel record', () => {
@@ -137,7 +148,7 @@ describe('channel repository', () => {
       expect(newName).to.eql('bar')
     })
 
-    it('returns a channel resources with updated values', () => {
+    it('returns a channel resources with updated values', async () => {
       expect(updatedChannel.name).to.eql('bar')
     })
   })
@@ -261,6 +272,7 @@ describe('channel repository', () => {
           'hotlineOn',
           'vouchMode',
           'vouchLevel',
+          'nextAdminId',
           'createdAt',
           'updatedAt',
           'deauthorizations',

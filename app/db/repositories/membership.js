@@ -1,5 +1,7 @@
 const app = require('../../../app')
 const { defaultLanguage } = require('../../config')
+const { loggerOf } = require('../../util')
+const logger = loggerOf('db.repositories.membership')
 
 const memberTypes = {
   ADMIN: 'ADMIN',
@@ -11,30 +13,41 @@ const findMembership = (channelPhoneNumber, memberPhoneNumber) =>
   app.db.membership.findOne({ where: { channelPhoneNumber, memberPhoneNumber } }) ||
   Promise.reject('no membership found')
 
-const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
-  performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', () =>
-    Promise.all(adminNumbers.map(num => addAdmin(channelPhoneNumber, num))),
-  )
+const addAdmin = async (channelPhoneNumber, memberPhoneNumber) =>
+  (await addAdmins(channelPhoneNumber, [memberPhoneNumber]))[0]
 
-const addAdmin = async (channelPhoneNumber, memberPhoneNumber) => {
-  // - when given the phone number of...
-  //   - a new user: make an admin
-  //   - an existing admin: return that admin's membership (do not error or alter/create anything)
-  //   - an existing subscriber: update membership to admin status & return it (do not error or create anything)
-  // - IMPORTANT CONTEXT:
-  //   - `#addAdmin` MUST be idempotent to ensure the correct re-trusting of admin safety numbers
-  //   - in particular, when someone uses the `ADD` command for a user who is already an admin,
-  //     `#addAdmin must not throw a uniqueness constraint error. It must succeed  so that a welcome
-  //     message is sent, which will fail to send (b/c of changed safety number) and trigger `trustAndResend`
-  //     to be called which will ultimately result in the admin's saftey number being trusted (as desired)
-  //   - because of the way signald handles changed safety numbers, we have NO OTHER WAY of detecting a
-  //     changed safety number and retrusting it without first sending a message, so observing
-  //     the above invariant is extra important
-  const membership = (await app.db.membership.findOrCreate({
-    where: { channelPhoneNumber, memberPhoneNumber },
-    defaults: { type: memberTypes.ADMIN },
-  }))[0]
-  return membership.update({ type: memberTypes.ADMIN })
+// (string, Array<string>) -> Promise<Array<Membership>>
+const addAdmins = (channelPhoneNumber, adminNumbers = []) =>
+  performOpIfChannelExists(channelPhoneNumber, 'subscribe human to', async channel => {
+    const tx = await app.db.sequelize.transaction()
+    try {
+      const newAdmins = await Promise.all(
+        adminNumbers.map((num, idx) => _findOrCreateAdminMembership(channel, num, idx, tx)),
+      )
+      await channel.update({ nextAdminId: channel.nextAdminId + newAdmins.length })
+      await tx.commit()
+      return newAdmins
+    } catch (err) {
+      await tx.rollback()
+      logger.error(err)
+    }
+  })
+
+const _findOrCreateAdminMembership = async (channel, memberPhoneNumber, idx, transaction) => {
+  // here, we use findOrCreate admin membership("idempotently create" it) because we might be:
+  // (1) re - adding an admin who has been deauthorized or...
+  const [membership] = await app.db.membership.findOrCreate({
+    where: { channelPhoneNumber: channel.phoneNumber, memberPhoneNumber },
+    defaults: { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
+    transaction,
+  })
+  // ... (2) promoting an existing subscriber to an admin
+  return membership.type === memberTypes.SUBSCRIBER
+    ? membership.update(
+        { type: memberTypes.ADMIN, adminId: channel.nextAdminId + idx },
+        { transaction },
+      )
+    : membership
 }
 
 const addSubscriber = async (channelPhoneNumber, memberPhoneNumber, language = defaultLanguage) =>
@@ -89,6 +102,7 @@ const isSubscriber = (channelPhoneNumber, memberPhoneNumber) =>
 
 // HELPERS
 
+// (string, string, any -> Promise<any>) -> Promise<any>
 const performOpIfChannelExists = async (channelPhoneNumber, opDescription, op) => {
   const ch = await app.db.channel.findOne({
     where: { phoneNumber: channelPhoneNumber },

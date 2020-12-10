@@ -16,7 +16,7 @@ test_lint:
     - yarn install
     - npx eslint app && npx eslint test
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_BRANCH != "391-design-for-encrypting-user-metadata-at-rest"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test_unit:
   services:
@@ -25,9 +25,10 @@ test_unit:
   script:
     - yarn install
     - npx sequelize db:migrate --env test
-    - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
+    - cd test/unit
+    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_BRANCH != "391-design-for-encrypting-user-metadata-at-rest"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test_integration:
   variables:
@@ -38,6 +39,7 @@ test_integration:
   script:
     - yarn install
     - npx sequelize db:migrate --env test
-    - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
+    - cd test/integration
+    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_BRANCH != "391-design-for-encrypting-user-metadata-at-rest"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

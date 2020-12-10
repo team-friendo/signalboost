@@ -108,8 +108,9 @@ describe('channel model', () => {
     expect(channel.vouchMode).to.be.a('string')
     expect(channel.vouchLevel).to.be.a('number')
     expect(channel.socketId).to.be.a('number')
-    expect(channel.createdAt).to.be.a('Date')
+    expect(channel.nextAdminId).to.be.a('number')
     expect(channel.subscriberLimit).to.be.a('number')
+    expect(channel.createdAt).to.be.a('Date')
     expect(channel.updatedAt).to.be.a('Date')
   })
 
@@ -122,6 +123,7 @@ describe('channel model', () => {
         vouchLevel: undefined,
         vouchMode: undefined,
         subscriberLimit: undefined,
+        nextAdminId: undefined,
       }),
     )
 
@@ -131,6 +133,7 @@ describe('channel model', () => {
     expect(channel.vouchMode).to.equal('OFF')
     expect(channel.vouchLevel).to.equal(1)
     expect(channel.subscriberLimit).to.equal(500)
+    expect(channel.nextAdminId).to.equal(1)
   })
 
   describe('validations', () => {
