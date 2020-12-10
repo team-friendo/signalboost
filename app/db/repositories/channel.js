@@ -99,10 +99,9 @@ const isMaintainer = async phoneNumber => {
 }
 
 // () => Promsie<Array<string, number>>
-const getChannelsSortedBySize = async () =>
-  app.db.sequelize
-    .query(
-      `
+const getChannelsSortedBySize = async () => {
+  const records = await app.db.sequelize.query(
+    `
       with non_empty as (
        select "channelPhoneNumber", count ("channelPhoneNumber") as kount from memberships
          group by "channelPhoneNumber"
@@ -114,11 +113,12 @@ const getChannelsSortedBySize = async () =>
       select * from non_empty union select * from empty
       order by kount desc;
       `,
-      {
-        type: app.db.sequelize.QueryTypes.SELECT,
-      },
-    )
-    .map(({ channelPhoneNumber, kount }) => [channelPhoneNumber, parseInt(kount)])
+    {
+      type: app.db.sequelize.QueryTypes.SELECT,
+    },
+  )
+  return records.map(r => [r.channelPhoneNumber, parseInt(r.kount)])
+}
 
 // () => Promise<Array<Channel>>
 const getStaleChannels = async () =>
