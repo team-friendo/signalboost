@@ -219,7 +219,10 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications.adminAdded,
+      message: messagesIn(membership.language).notifications.adminAdded(
+        sender.adminId,
+        newAdminMembership.adminId,
+      ),
     })),
   ]
 }

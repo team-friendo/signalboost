@@ -396,7 +396,8 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
 }
 
 const notifications = {
-  adminAdded: 'Soeben wurde ein neuer Admin hinzugefügt.',
+  adminAdded: (adderAdminId, addedAdminId) =>
+    `ADMIN ${adderAdminId} hat ADMIN ${addedAdminId} hinzugefügt.`,
 
   adminRemoved: 'Soeben wurde ein Admin entfernt.',
 

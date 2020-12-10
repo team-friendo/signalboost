@@ -381,7 +381,7 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
 }
 
 const notifications = {
-  adminAdded: 'A new admin was just added.',
+  adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} added ADMIN ${addedAdminId}.`,
 
   adminRemoved: 'An admin was just removed.',
 

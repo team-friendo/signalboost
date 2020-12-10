@@ -400,7 +400,8 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
 }
 
 const notifications = {
-  adminAdded: `Un-e nouvel-le admin a été ajouté.`,
+  adminAdded: (adderAdminId, addedAdminId) =>
+    `ADMIN ${adderAdminId} a ajouté ADMIN ${addedAdminId}.`,
 
   adminRemoved: "Un-e admin vient d'être supprimé.",
 

@@ -105,6 +105,7 @@ describe('executing commands', () => {
         }),
       ),
     ],
+    nextAdminId: 4,
     messageCount: { broadcastIn: 42 },
   }
   const adminMemberships = channel.memberships.slice(0, 3)
@@ -365,11 +366,17 @@ describe('executing commands', () => {
                   // notifications for all bystander admins
                   {
                     recipient: channel.memberships[1].memberPhoneNumber,
-                    message: messagesIn(channel.memberships[1].language).notifications.adminAdded,
+                    message: messagesIn(channel.memberships[1].language).notifications.adminAdded(
+                      sender.adminId,
+                      newAdminMembership.adminId,
+                    ),
                   },
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: messagesIn(channel.memberships[2].language).notifications.adminAdded,
+                    message: messagesIn(channel.memberships[2].language).notifications.adminAdded(
+                      sender.adminId,
+                      newAdminMembership.adminId,
+                    ),
                   },
                 ],
               })
