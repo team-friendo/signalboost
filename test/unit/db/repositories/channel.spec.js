@@ -148,7 +148,7 @@ describe('channel repository', () => {
       expect(newName).to.eql('bar')
     })
 
-    it('returns a channel resources with updated values', () => {
+    it('returns a channel resources with updated values', async () => {
       expect(updatedChannel.name).to.eql('bar')
     })
   })
