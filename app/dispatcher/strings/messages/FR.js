@@ -15,7 +15,7 @@ const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné-e à ce canal. Envoyez BONJOUR pour vous abonner."
 const subscriberLimitReached = subscriberLimit =>
   `Désolé, cette canal a atteint sa limite de ${subscriberLimit} abonnés.`
-const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
+const onOrOff = isOn => (isOn ? 'activé' : 'désactivé')
 
 const vouchModeDisplay = {
   ON: 'activée',
@@ -333,7 +333,7 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Hotline ${onOrOff(isOn)}.`,
+      success: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer la hotline à ${onOrOff(

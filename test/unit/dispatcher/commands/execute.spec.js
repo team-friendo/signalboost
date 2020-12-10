@@ -1973,6 +1973,7 @@ describe('executing commands', () => {
         describe('when db update succeeds', () => {
           const notificationMsg = messagesIn(sender.language).notifications.toggles[name].success(
             isOn,
+            sender.adminId,
           )
 
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))

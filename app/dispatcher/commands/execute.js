@@ -704,7 +704,10 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(isOn),
+    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(
+      isOn,
+      sender.adminId,
+    ),
   }))
 }
 

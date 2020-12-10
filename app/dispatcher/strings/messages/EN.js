@@ -319,7 +319,7 @@ Send HELP to list commands you can use.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Hotline turned ${onOrOff(isOn)}.`,
+      success: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,

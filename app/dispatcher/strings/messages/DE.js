@@ -330,7 +330,7 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Hotline Funktion ${onOrOff(isOn)} geschaltet.`,
+      success: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(

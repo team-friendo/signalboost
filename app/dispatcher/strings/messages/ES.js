@@ -333,7 +333,8 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Línea directa ${onOrOff(isOn)}.`,
+      success: (isOn, adminId) =>
+        `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar ${
