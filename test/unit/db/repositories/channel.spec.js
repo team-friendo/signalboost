@@ -135,20 +135,15 @@ describe('channel repository', () => {
   })
 
   describe('#update', () => {
-    let updatedChannel
-    beforeEach(async () => {
-      await db.channel.create({ phoneNumber: channelPhoneNumber, name: 'foo' })
-      updatedChannel = await channelRepository.update(channelPhoneNumber, { name: 'bar' })
-    })
-
     it("updates a channel's name", async () => {
+      await db.channel.create({ phoneNumber: channelPhoneNumber, name: 'foo' })
+      const updatedChannel = await channelRepository.update(channelPhoneNumber, { name: 'bar' })
+
       const newName = await db.channel
         .findOne({ where: { phoneNumber: channelPhoneNumber } })
         .then(ch => ch.name)
-      expect(newName).to.eql('bar')
-    })
 
-    it('returns a channel resources with updated values', async () => {
+      expect(newName).to.eql('bar')
       expect(updatedChannel.name).to.eql('bar')
     })
   })
