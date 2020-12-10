@@ -36,10 +36,11 @@ const create = async (phoneNumber, name, adminPhoneNumbers) => {
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 
-const update = (phoneNumber, attrs) =>
-  app.db.channel
-    .update({ ...attrs }, { where: { phoneNumber }, returning: true })
-    .then(([, [pNumInstance]]) => pNumInstance)
+// (string, object) -> Promise<Channelinstance|null>
+const update = async (phoneNumber, attrs) => {
+  const channel = await app.db.channel.findOne({ where: { phoneNumber } })
+  return channel && channel.update(attrs)
+}
 
 // (string, Transaction | null) => Promise<boolean>
 const destroy = async (phoneNumber, transaction = null) => {
