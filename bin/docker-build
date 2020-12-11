@@ -9,8 +9,10 @@ tag=$2
 
 if [ -z "$image" ];then
   echo "--- ERROR: you must supply an image. valid options:"
-  echo "           docker-build signalboost"
-  echo "           docker-build signald"
+  echo "    signalboost"
+  echo "    signalc"
+  echo "    signald"
+  echo "    splash"
   exit 1
 fi
 
