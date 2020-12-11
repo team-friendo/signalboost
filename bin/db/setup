@@ -6,13 +6,14 @@ cd ../..
 
 sleep 2
 
-if [ "$NODE_ENV" = "development" ]
-then
+if [ "$NODE_ENV" = "development" ];then
   echo "----- creating dev database..."
   npx sequelize db:create --env development
 
+elif [ "$NODE_ENV" = "test" ];then
   echo "----- creating test database..."
   npx sequelize db:create --env test
+
 else
   echo "----- creating prod database..."
   npx sequelize db:create --env production

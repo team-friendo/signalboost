@@ -4,15 +4,20 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- running containers..."
+echo "--- dropping dev db..."
 
 docker-compose -f docker-compose-dev.yml \
+              run --entrypoint /signalboost/bin/db/drop \
+              app
+
+docker-compose -f docker-compose-test.yml \
                run --entrypoint /signalboost/bin/db/drop \
-               app
+               signalboost
 
 echo "--- removing db container..."
 
 docker rm -f signalboost_db
+docker rm -f test_db
 
 echo "--- DONE!"
 

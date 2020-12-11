@@ -5,13 +5,29 @@ cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
 if [ -z $(docker ps -qf name=signalboost_app) ];then
-  echo "--- starting app and undoing migrations..."
-  docker-compose -f docker-compose.yml -f docker-compose-dev.yml run --entrypoint /signalboost/bin/db/migrate-undo app
-  echo "--- shutting down app"
+
+  echo "--- undoing dev migrations..."
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+    run --entrypoint /signalboost/bin/db/migrate-undo app
+  echo "--- spinning down dev containers..."
   docker-compose -f docker-compose.yml -f docker-compose-dev.yml down
+
+  echo "--- undoing test migrations..."
+  docker-compose -f docker-compose-test.yml \
+    run --entrypoint /signalboost/bin/db/migrate-undo signalboost
+  echo "--- spinning down test containers..."
+  docker-compose -f docker-compose-test.yml down
+
 else
-  echo "--- undoing migrations..."
-  docker-compose -f docker-compose.yml -f docker-compose-dev.yml exec app /signalboost/bin/db/migrate-undo
+
+  echo "--- undoing dev migrations..."
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+    exec app /signalboost/bin/db/migrate-undo
+  
+  echo "--- undoing test migrations..."
+  docker-compose -f docker-compose-test.yml \
+    exec signalboost /signalboost/bin/db/migrate-undo
+
 fi
 
 echo "--- DONE!"

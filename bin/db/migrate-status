@@ -9,7 +9,7 @@ sleep 2
 if [ "$NODE_ENV" = "development" ];then
   echo "----- checking development migration statuses..."
   npx sequelize db:migrate:status --env development
-
+elif [ "$NODE_ENV" = "test" ];then
   echo "----- checking test migration statues..."
   npx sequelize db:migrate:status --env test
 else

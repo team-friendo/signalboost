@@ -9,7 +9,7 @@ sleep 2
 if [ "$NODE_ENV" = "development" ];then
   echo "----- running development migrations..."
   npx sequelize db:migrate:undo --env development
-
+elif [ "$NODE_ENV" = "test" ];then
   echo "----- running test migrations..."
   npx sequelize db:migrate:undo --env test
 else

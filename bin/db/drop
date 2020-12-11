@@ -6,11 +6,10 @@ cd ../..
 
 sleep 2
 
-if [ "$NODE_ENV" = "development" ];
-then
+if [ "$NODE_ENV" = "development" ];then
   echo "----- dropping development database..."
   npx sequelize db:drop --env development
-
+elif [ "$NODE_ENV" = "test" ];then
   echo "----- dropping test database..."
   npx sequelize db:drop --env test
 else

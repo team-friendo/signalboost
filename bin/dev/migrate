@@ -5,16 +5,29 @@ cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
 if [ -z $(docker ps -qf name=signalboost_app) ];then
-  echo "--- starting app and running migrations..."
+  echo "--- running dev migrations..."
   docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-  run --entrypoint /signalboost/bin/db/migrate app
-  echo "--- shutting down app"
-  docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-  down
+    run --entrypoint /signalboost/bin/db/migrate app
+
+  echo "--- shutting down dev containers"
+  docker-compose -f docker-compose.yml -f docker-compose-dev.yml down
+
+  echo "--- running test migrations..."
+  docker-compose -f docker-compose-test.yml \
+    run --entrypoint /signalboost/bin/db/migrate signalboost
+
+  echo "--- shutting down test containers"
+  docker-compose -f docker-compose-test.yml down
+
 else
-  echo "--- running migrations..."
+  echo "--- running dev migrations..."
   docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-  exec app /signalboost/bin/db/migrate
+    exec app /signalboost/bin/db/migrate
+
+  echo "--- running test migrations..."
+  docker-compose -f docker-compose-test.yml \
+    exec signalboost /signalboost/bin/db/migrate
+
 fi
 
 echo "--- DONE!"

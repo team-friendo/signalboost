@@ -15,8 +15,11 @@ help:  ## print this message
 _.setup: # build docker container, create dbs, run migrations
 	./bin/dev/setup
 
-_.update: # re-build docker images, install dependencies, run migrations
-	./bin/dev/setup
+_.update: # install node dependencies, run migrations
+	./bin/dev/update
+
+_.upgrade: # upgrade node packages
+	./bin/dev/upgrade
 
 _.unlock: ## unlock signalboost secrets
 	./bin/blackbox/decrypt_all_files
@@ -39,8 +42,14 @@ cli.uninstall: ## removes boost cli files from your path
 # docker-related #
 ##################
 
+docker.build.base: ## build the base docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build base $(TAG)
+
 docker.build.signalboost: ## build the signalboost docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signalboost $(TAG)
+
+docker.build.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalc $(TAG)
 
 docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signald $(TAG)
@@ -48,8 +57,15 @@ docker.build.signald: ## build the signald docker image (accepts optional TAG=#.
 docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build splash $(TAG)
 
+
+docker.push.base: ## push the base docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push base $(TAG)
+
 docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signalboost $(TAG)
+
+docker.push.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signalc $(TAG)
 
 docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signald $(TAG)
@@ -193,13 +209,13 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 #############
 
 test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/unit && ./bin/test/integration && cd signalc && ./gradlew test
+	npx eslint app && ./bin/test/sb-unit && ./bin/test/sb-integration && ./bin/test/sc
 
 test.sb.unit: ## run unit tests
-	./bin/test/unit
+	./bin/test/sb-unit
 
 test.sb.integration: ## run integration tests
-	./bin/test/integration
+	./bin/test/sb-integration
 
 test.sb.lint: ## run linter
 	npx eslint app && npx eslint test
@@ -207,8 +223,8 @@ test.sb.lint: ## run linter
 test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
 	npx eslint --fix app && npx eslint --fix test
 
-test.sc.all:
-	cd signalc && ./gradlew test
+test.sc:
+	./bin/test/sc
 
 
 ##################################
