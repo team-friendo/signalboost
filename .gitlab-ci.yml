@@ -1,5 +1,3 @@
-image: registry.0xacab.org/team-friendo/signalboost/signalboost
-
 variables:
   NODE_ENV: test
   POSTGRES_DB: signalboost_test
@@ -10,36 +8,75 @@ variables:
 cache:
   paths:
     - node_modules/
+    # TODO: how to actually cache these?
+    - signalc/build/kotlin
+    - signalc/build/classes
 
-test_lint:
+x-sb_image: &sb_image
+  image: registry.0xacab.org/team-friendo/signalboost/sibnalboost:latest
+x-sc_image: &sc_image
+  image: registry.0xacab.org/team-friendo/signalboost/sibnalc:latest
+
+
+###############
+# BUILD STAGE #
+###############
+
+build:sb:
+  <<: *sb_image
+  stage: build
   script:
     - yarn install
+    - npx sequelize db:migrate --env test
+
+build:sc:
+  <<: *sc_image
+  stage: build
+  script:
+    - cd /signalboost/signalc
+    - ./gradlew build
+
+##############
+# TEST STAGE #
+##############
+
+test:sb_lint:
+  <<: *sb_image
+  stage: test
+  script:
     - npx eslint app && npx eslint test
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-test_unit:
+test:sb_unit:
+  <<: *sb_image
+  stage: test
   services:
     - name: postgres:12
       alias: db
   script:
-    - yarn install
-    - npx sequelize db:migrate --env test
-    - cd test/unit
-    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
+    - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-test_integration:
+test:sb_integration:
+  <<: *sb_image
+  stage: test
   variables:
     INTEGRATION_TEST: 1
   services:
     - name: postgres:12
       alias: db
   script:
-    - yarn install
-    - npx sequelize db:migrate --env test
-    - cd test/integration
-    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
+    - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+test:sc:
+  <<: *sc_image
+  stage: test
+  script:
+    - cd /signalboost/signalc
+    - ./gradlew test
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
