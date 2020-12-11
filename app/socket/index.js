@@ -55,10 +55,7 @@ const getSocketConnection = async (socketId, attempts = 0) => {
       return wait(connectionInterval).then(() => getSocketConnection(socketId, attempts + 1))
     }
   } else {
-    return connect(
-      socketFilePath,
-      socketId,
-    )
+    return connect(socketFilePath, socketId)
   }
 }
 

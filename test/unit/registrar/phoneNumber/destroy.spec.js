@@ -406,15 +406,11 @@ describe('phone number registrar -- destroy module', () => {
         expect(await requestToDestroy(phoneNumbers)).to.have.deep.members([
           {
             status: 'ERROR',
-            message: `${
-              phoneNumbers[0]
-            } must be associated with a channel in order to be destroyed.`,
+            message: `${phoneNumbers[0]} must be associated with a channel in order to be destroyed.`,
           },
           {
             status: 'ERROR',
-            message: `${
-              phoneNumbers[1]
-            } must be associated with a channel in order to be destroyed.`,
+            message: `${phoneNumbers[1]} must be associated with a channel in order to be destroyed.`,
           },
         ])
       })
@@ -527,9 +523,7 @@ describe('phone number registrar -- destroy module', () => {
           },
           {
             status: 'ERROR',
-            message: `${
-              _phoneNumbers[1]
-            } must be associated with a channel in order to be destroyed.`,
+            message: `${_phoneNumbers[1]} must be associated with a channel in order to be destroyed.`,
           },
           {
             status: 'ERROR',

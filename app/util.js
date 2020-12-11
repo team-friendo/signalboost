@@ -1,5 +1,5 @@
 const { concat, take, drop, isEmpty, get } = require('lodash')
-const uuidV4 = require('uuid/v4')
+const { v4: uuidV4 } = require('uuid')
 const stringHash = require('string-hash')
 const moment = require('moment')
 const crypto = require('crypto')

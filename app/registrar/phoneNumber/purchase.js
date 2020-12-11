@@ -1,7 +1,7 @@
-const uuid = require('uuid/v4')
 const { isEmpty, times, identity } = require('lodash')
 const { errors, statuses, smsUrl, extractStatus, errorStatus } = require('./common')
 const phoneNumberRepository = require('../../db/repositories/phoneNumber')
+const { genUuid } = require('../../util')
 const {
   twilio: { accountSid, authToken },
 } = require('../../config')
@@ -49,7 +49,7 @@ const create = phoneNumber =>
       smsMethod: 'POST',
       smsUrl,
       // Including the current environment in the registered number's friendlyName makes it simpler to clean up unused numbers originally intended for development.
-      friendlyName: `${process.env.NODE_ENV} signal-boost number ${uuid()}`,
+      friendlyName: `${process.env.NODE_ENV} signal-boost number ${genUuid()}`,
     })
     .catch(err => {
       // TODO(@zig): add prometheus error count here (counter: twilio_purchase_error)

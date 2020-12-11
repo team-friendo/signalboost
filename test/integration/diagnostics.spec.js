@@ -155,9 +155,7 @@ describe('diagnostics jobs', () => {
           expect(map(messageCalls, 'args')).to.have.deep.members([
             [
               {
-                messageBody: `Channel ${
-                  channels[0].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[0].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -169,9 +167,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[0].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[0].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -183,9 +179,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[1].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[1].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -197,9 +191,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[1].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[1].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -211,9 +203,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[2].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[2].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -225,9 +215,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[2].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[2].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -239,9 +227,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[3].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[3].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -253,9 +239,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Channel ${
-                  channels[3].phoneNumber
-                } failed to respond to 2 consecutive healthchecks.`,
+                messageBody: `Channel ${channels[3].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -267,9 +251,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[0].socketId
-                } due to failed healthchecks on ${channels[0].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[0].socketId} due to failed healthchecks on ${channels[0].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -281,9 +263,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[1].socketId
-                } due to failed healthchecks on ${channels[1].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[1].socketId} due to failed healthchecks on ${channels[1].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -295,9 +275,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[2].socketId
-                } due to failed healthchecks on ${channels[2].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[2].socketId} due to failed healthchecks on ${channels[2].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -309,9 +287,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[3].socketId
-                } due to failed healthchecks on ${channels[3].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[3].socketId} due to failed healthchecks on ${channels[3].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[0].memberPhoneNumber,
                 },
@@ -323,9 +299,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[0].socketId
-                } due to failed healthchecks on ${channels[0].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[0].socketId} due to failed healthchecks on ${channels[0].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -337,9 +311,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[1].socketId
-                } due to failed healthchecks on ${channels[1].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[1].socketId} due to failed healthchecks on ${channels[1].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -351,9 +323,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[2].socketId
-                } due to failed healthchecks on ${channels[2].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[2].socketId} due to failed healthchecks on ${channels[2].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },
@@ -365,9 +335,7 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                messageBody: `Restarting shard ${
-                  channels[3].socketId
-                } due to failed healthchecks on ${channels[3].phoneNumber}.`,
+                messageBody: `Restarting shard ${channels[3].socketId} due to failed healthchecks on ${channels[3].phoneNumber}.`,
                 recipientAddress: {
                   number: diagnosticsChannel.memberships[1].memberPhoneNumber,
                 },

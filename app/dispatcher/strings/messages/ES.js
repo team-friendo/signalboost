@@ -80,9 +80,7 @@ const commandResponses = {
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowVouchLevel: (channel, required, actual) =>
-      `Lo sentimos, ${
-        channel.name
-      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
     subscriberLimitReached,
   },

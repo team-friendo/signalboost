@@ -366,7 +366,10 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (!isEmpty(errors)) {
     return {
       status: statuses.ERROR,
-      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
+      message: cr.dbErrors(
+        errors.map(e => e.inviteePhoneNumber),
+        inviteResults.length,
+      ),
       notifications,
     }
   }
