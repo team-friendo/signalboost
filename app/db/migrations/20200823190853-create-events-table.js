@@ -38,7 +38,7 @@ module.exports = {
     if (eventCount === 0) {
       console.log('starting backfill...')
 
-      const genUuid = require('uuid/v4')
+      const { v4: genUuid } = require('uuid')
 
       const hash = str =>
         require('crypto')
