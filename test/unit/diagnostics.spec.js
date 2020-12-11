@@ -124,9 +124,7 @@ describe('diagnostics module', () => {
 
         it('notifies maintainers of restart attempt', () => {
           expect(notifyMaintainersStub.getCall(0).args).to.eql([
-            `Restarting shard ${socketId} due to failed healthchecks on ${
-              channels[0].phoneNumber
-            },${channels[1].phoneNumber}.`,
+            `Restarting shard ${socketId} due to failed healthchecks on ${channels[0].phoneNumber},${channels[1].phoneNumber}.`,
           ])
         })
 

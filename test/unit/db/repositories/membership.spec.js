@@ -127,9 +127,9 @@ describe('membership repository', () => {
         subCount = await db.membership.count({ where: { type: memberTypes.SUBSCRIBER } })
         adminCount = await db.membership.count({ where: { type: memberTypes.ADMIN } })
 
-        res2 = (await membershipRepository.addAdmins(channel.phoneNumber, [
-          subscriberPhoneNumbers[0],
-        ]))[0]
+        res2 = (
+          await membershipRepository.addAdmins(channel.phoneNumber, [subscriberPhoneNumbers[0]])
+        )[0]
       })
 
       it('makes the subscriber an admin', () => {
@@ -191,9 +191,9 @@ describe('membership repository', () => {
     beforeEach(async () => {
       channel = await db.channel.create(channelFactory())
       membershipCount = await db.membership.count()
-      membership = (await membershipRepository.addAdmins(channel.phoneNumber, [
-        adminPhoneNumbers[0],
-      ]))[0]
+      membership = (
+        await membershipRepository.addAdmins(channel.phoneNumber, [adminPhoneNumbers[0]])
+      )[0]
     })
 
     it('adds a single admin', async () => {
