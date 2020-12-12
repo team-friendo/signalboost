@@ -1,22 +1,37 @@
+import org.gradle.kotlin.dsl.*
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+repositories {
+    mavenCentral()
+}
+
 plugins {
+    application
     java
     kotlin("jvm") version "1.4.10"
 }
 
 group = "info.signalboost"
 version = "0.0.2"
+val mainClass = "info.signalboost.signalc.MainKt"
+application.mainClassName = mainClass
 
-repositories {
-    mavenCentral()
+tasks.withType<Wrapper> {
+    gradleVersion = "6.7.1"
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.suppressWarnings = true
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = mainClass
+    }
 }
 
 object Versions {
