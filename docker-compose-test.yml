@@ -11,6 +11,7 @@ networks:
 volumes:
   postgres_data:
   logs:
+  gradle_cache:
 
 services:
   db:
@@ -43,3 +44,4 @@ services:
     volumes:
       - ./signalc:/signalc
       - ./bin:/signalc/bin
+      - gradle_cache:/home/gradle/.gradle

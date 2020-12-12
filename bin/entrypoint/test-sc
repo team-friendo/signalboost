@@ -2,4 +2,4 @@
 
 cd /signalc
 
-./gradlew test
+gradle test
