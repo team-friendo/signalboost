@@ -4,44 +4,41 @@ variables:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: ""
   POSTGRES_HOST_AUTH_METHOD: trust
+  SB_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
+  SC_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalc:latest
 
 cache:
   paths:
     - node_modules/
-    # TODO: how to actually cache these?
-    - signalc/build/kotlin
-    - signalc/build/classes
-
-x-sb_image: &sb_image
-  image: registry.0xacab.org/team-friendo/signalboost/sibnalboost:latest
-x-sc_image: &sc_image
-  image: registry.0xacab.org/team-friendo/signalboost/sibnalc:latest
-
+    - /home/gradle/.gradle
 
 ###############
 # BUILD STAGE #
 ###############
 
 build:sb:
-  <<: *sb_image
+  image: $SB_IMAGE
   stage: build
+  services:
+    - name: postgres:12
+      alias: db
   script:
     - yarn install
     - npx sequelize db:migrate --env test
 
 build:sc:
-  <<: *sc_image
+  image: $SC_IMAGE
   stage: build
   script:
-    - cd /signalboost/signalc
-    - ./gradlew build
+    - cd signalc
+    - gradle build
 
 ##############
 # TEST STAGE #
 ##############
 
 test:sb_lint:
-  <<: *sb_image
+  image: $SB_IMAGE
   stage: test
   script:
     - npx eslint app && npx eslint test
@@ -49,7 +46,7 @@ test:sb_lint:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sb_unit:
-  <<: *sb_image
+  image: $SB_IMAGE
   stage: test
   services:
     - name: postgres:12
@@ -60,7 +57,7 @@ test:sb_unit:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sb_integration:
-  <<: *sb_image
+  image: $SB_IMAGE
   stage: test
   variables:
     INTEGRATION_TEST: 1
@@ -73,10 +70,10 @@ test:sb_integration:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sc:
-  <<: *sc_image
+  image: $SC_IMAGE
   stage: test
   script:
-    - cd /signalboost/signalc
-    - ./gradlew test
+    - cd signalc
+    - gradle test
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
