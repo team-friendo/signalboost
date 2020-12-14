@@ -5,6 +5,6 @@ sed -i -e "s|localhost|db|" ./app/config/db.json
 
 echo "--- running signalc tests..."
 
-docker-compose -f docker-compose-test.yml run --entrypoint /signalc/bin/entrypoint/test-sc signalc
+docker-compose -f docker-compose-test.yml run --entrypoint 'gradle test' signalc
 
 docker ps --filter name=test_ -aq | xargs -I container_id docker rm -f container_id
