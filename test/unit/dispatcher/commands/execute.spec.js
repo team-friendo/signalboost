@@ -2082,7 +2082,10 @@ describe('executing commands', () => {
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
                   // message: notificationMsg,
-                  message: notificationsFor(membership).vouchModeChanged(vouchModes[mode]),
+                  message: notificationsFor(membership).vouchModeChanged(
+                    sender.adminId,
+                    vouchModes[mode],
+                  ),
                 })),
               ],
             })

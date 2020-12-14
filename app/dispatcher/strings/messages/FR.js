@@ -356,18 +356,20 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
+    success: (adminId, mode) =>
       ({
-        ON: `Se porter garant est maintenant ${vouchModeDisplay.ON}.
+        ON: `ADMIN ${adminId} a conifguré se porter garant ${vouchModeDisplay.ON}.
 
 Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
 
 Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
-        OFF: `Se porter garant est maintenant ${vouchModeDisplay.OFF}.
+        OFF: `ADMIN ${adminId} a conifguré se porter garant ${vouchModeDisplay.OFF}.
 
 Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
-        ADMIN: `Se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
+        ADMIN: `ADMIN ${adminId} a conifguré se porter garant est maintenant ${
+          vouchModeDisplay.ADMIN
+        }.
 
 Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.

@@ -735,7 +735,10 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.vouchModeChanged(newVouchMode),
+    message: messagesIn(membership.language).notifications.vouchModeChanged(
+      sender.adminId,
+      newVouchMode,
+    ),
   }))
 }
 

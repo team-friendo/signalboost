@@ -357,18 +357,18 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
+    success: (adminId, mode) =>
       ({
-        ON: `Se configuró atestiguando ${vouchModeDisplay.ON}.
+        ON: `ADMIN ${adminId} configuró atestiguando ${vouchModeDisplay.ON}.
 
 Esto significa que se requiere una invitación de un miembro existente para unirse a este canal.
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
 
 Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
-        OFF: `Se configuró atestiguando ${vouchModeDisplay.OFF}.
+        OFF: `ADMIN ${adminId} configuró atestiguando ${vouchModeDisplay.OFF}.
 
 Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
-        ADMIN: `Se configuró atestiguando en ${vouchModeDisplay.ADMIN}.
+        ADMIN: `ADMIN ${adminId} configuró atestiguando en ${vouchModeDisplay.ADMIN}.
 
 Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.

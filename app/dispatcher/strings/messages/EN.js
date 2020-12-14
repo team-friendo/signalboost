@@ -340,18 +340,18 @@ Send HELP to list commands you can use.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
+    success: (adminId, mode) =>
       ({
-        ON: `Vouching is now ${vouchModeDisplay.ON}.
+        ON: `ADMIN ${adminId} set vouching ${vouchModeDisplay.ON}.
 
 This means an invite from an existing member is required to join this channel.
 Anyone can send an invite by sending INVITE +1-555-123-1234.
 
 Admins can adjust the number of invites needed to join by using the VOUCH LEVEL command.`,
-        OFF: `Vouching is now ${vouchModeDisplay.OFF}.
+        OFF: `ADMIN ${adminId} set vouching ${vouchModeDisplay.OFF}.
 
 This means that anyone can join the channel by sending HELLO to the channel number.`,
-        ADMIN: `Vouching is now set to ${vouchModeDisplay.ADMIN}.
+        ADMIN: `ADMIN ${adminId} set vouching to ${vouchModeDisplay.ADMIN}.
 
 This means that an invite from an *admin* is required to join this channel.
 Anyone can send an invite by sending INVITE +1-555-123-1234.
