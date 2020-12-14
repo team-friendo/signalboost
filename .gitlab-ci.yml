@@ -1,97 +1,109 @@
-variables:
-  NODE_ENV: test
-  POSTGRES_DB: signalboost_test
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: ""
-  POSTGRES_HOST_AUTH_METHOD: trust
-  SB_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
-  SC_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalc:latest
-
-before_script:
-  - export GRADLE_USER_HOME=`pwd`/.gradle
-
-cache:
-  paths:
-    - node_modules/
-    - .gradle/wrapper
-    - .gradle/caches
-
-stages:
-  - build
-  - test
-
-################
-# shared logic #
-################
+###########
+# ANCHORS #
+###########
 
 .mr-only:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
+.sb-job:
+  image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
+  extends: .mr-only
+  cache:
+    key: sb_build
+    paths:
+      - node_modules
+      - .yarn
+  before_script:
+    - yarn config set cache-folder .yarn
+  variables:
+    NODE_ENV: test
+    POSTGRES_DB: signalboost_test
+
+.sc-job:
+  image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+  extends: .mr-only
+  cache:
+    key: sc_build
+    paths:
+      - .gradle
+      - signalc/build
+  before_script:
+    - export GRADLE_USER_HOME=`pwd`/.gradle
+
 .uses-postgres:
   services:
     - name: postgres:12
       alias: db
+  variables:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ""
+    POSTGRES_HOST_AUTH_METHOD: trust
 
-###############
-# BUILD STAGE #
-###############
+##########
+# STAGES #
+##########
 
-build:sb:
+stages:
+  - build
+  - test
+
+##############
+# BUILD JOBS #
+##############
+
+sb:install:
   stage: build
-  image: $SB_IMAGE
   extends:
-    - .mr-only
+    - .sb-job
     - .uses-postgres
   script:
-    - yarn install
-    - npx sequelize db:migrate --env test
+     - yarn install
 
-build:sc:
+sc:build:
   stage: build
-  image: $SC_IMAGE
   extends:
-    - .mr-only
+    - .sc-job
   script:
     - cd signalc
-    - gradle build
+    - gradle compileKotlin
+    - gradle compileTestKotlin
 
 ##############
-# TEST STAGE #
+# TEST JOBS #
 ##############
 
-test:sb_lint:
-  image: $SB_IMAGE
+sb:lint:
   stage: test
   extends:
-    - .mr-only
+    - .sb-job
   script:
     - npx eslint app && npx eslint test
 
-test:sb_unit:
+sb:unit:
   stage: test
-  image: $SB_IMAGE
   extends:
-    - .mr-only
+    - .sb-job
     - .uses-postgres
   script:
-    - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
+    - npx sequelize db:migrate --env test
+    - find test/unit -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
 
-test:sb_integration:
+sb:integration:
   stage: test
-  image: $SB_IMAGE
   extends:
-    - .mr-only
+    - .sb-job
     - .uses-postgres
   variables:
     INTEGRATION_TEST: 1
   script:
-    - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
+    - npx sequelize db:migrate --env test
+    - find test/integration -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
 
-test:sc:
+sc:test:
   stage: test
-  image: $SC_IMAGE
-  extends: .mr-only
+  extends:
+    - .sc-job
   script:
     - cd signalc
     - gradle test
