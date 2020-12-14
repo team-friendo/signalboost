@@ -27,7 +27,7 @@ class AccountTest : FreeSpec({
     }
 
     mockkObject(unregisteredAccount)
-    every { unregisteredAccount.asAccountManager } returns mockAccountManager
+    every { unregisteredAccount.manager } returns mockAccountManager
 
     afterTest {
         unmockkAll()
@@ -124,7 +124,7 @@ class AccountTest : FreeSpec({
 
         val registeredAccount = RegisteredAccount.fromUnregisteredAccount(unregisteredAccount, uuid)
         mockkObject(registeredAccount)
-        every { registeredAccount.asAccountManager } returns mockAccountManager
+        every { registeredAccount.manager } returns mockAccountManager
         Account.publishFirstPrekeys(registeredAccount)
 
         "stores 100 prekeys locally" -{

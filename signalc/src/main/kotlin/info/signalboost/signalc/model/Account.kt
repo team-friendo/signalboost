@@ -25,7 +25,8 @@ import kotlin.random.Random
 
 
 sealed class Account {
-    abstract val asCredentialsProvider: DynamicCredentialsProvider
+    abstract val credentialsProvider: DynamicCredentialsProvider
+    abstract val manager: SignalServiceAccountManager
 
     companion object {
 
@@ -34,7 +35,7 @@ sealed class Account {
         fun accountManagerOf(account: Account) =
             SignalServiceAccountManager(
                 signalServiceConfig,
-                account.asCredentialsProvider,
+                account.credentialsProvider,
                 SIGNAL_AGENT,
                 groupsV2Operations,
                 UptimeSleepTimer()
@@ -44,12 +45,12 @@ sealed class Account {
 
         // register an account with signal server and reqeust an sms token to use to verify it
         fun register(account: UnregisteredAccount) =
-            account.asAccountManager.requestSmsVerificationCode(false, absent(), absent())
+            account.manager.requestSmsVerificationCode(false, absent(), absent())
 
         // provide a verification code, retrieve and store a UUID
         fun verify(account: UnregisteredAccount, code: String): RegisteredAccount? {
             val verifyResponse: VerifyAccountResponse = try {
-                account.asAccountManager.verifyAccountWithCode(
+                account.manager.verifyAccountWithCode(
                     code,
                     null,
                     account.protocolStore.localRegistrationId,
@@ -80,7 +81,7 @@ sealed class Account {
                 account.protocolStore.storePreKey(it.id, it)
             }
             // publish prekeys to signal server
-            account.asAccountManager.setPreKeys(
+            account.manager.setPreKeys(
                 account.protocolStore.identityKeyPair.publicKey,
                 signedPreKey,
                 oneTimePreKeys
@@ -97,16 +98,19 @@ data class UnregisteredAccount(
     val profileKey: ProfileKey = genProfileKey(),
     val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID,
 ): Account() {
-    override val asCredentialsProvider: DynamicCredentialsProvider
-        get() = DynamicCredentialsProvider(
+    override val credentialsProvider by lazy {
+        DynamicCredentialsProvider(
             null,
             this.username,
             this.password,
             this.signalingKey,
             this.deviceId
         )
-    val asAccountManager: SignalServiceAccountManager
-        get() = accountManagerOf(this)
+    }
+
+    override val manager by lazy {
+        accountManagerOf(this)
+    }
 }
 
 data class RegisteredAccount(
@@ -119,33 +123,38 @@ data class RegisteredAccount(
     val deviceId: Int,
 ): Account(){
     companion object {
-        fun fromUnregisteredAccount(unregistered: UnregisteredAccount, uuid: UUID) = RegisteredAccount(
-            uuid,
-            unregistered.username,
-            unregistered.protocolStore,
-            unregistered.password,
-            unregistered.signalingKey,
-            unregistered.profileKey,
-            unregistered.deviceId,
-        )
+        fun fromUnregisteredAccount(unregistered: UnregisteredAccount, uuid: UUID) = with(unregistered) {
+            RegisteredAccount(
+                uuid,
+                username,
+                protocolStore,
+                password,
+                signalingKey,
+                profileKey,
+                deviceId,
+            )
+        }
+
     }
 
-    override val asCredentialsProvider: DynamicCredentialsProvider
-        get() = DynamicCredentialsProvider(
+    override val credentialsProvider by lazy {
+        DynamicCredentialsProvider(
             this.uuid,
             this.username,
             this.password,
             this.signalingKey,
             this.deviceId
         )
+    }
 
-    val asAccountManager: SignalServiceAccountManager
-        get() = accountManagerOf(this)
+    override val manager by lazy {
+        accountManagerOf(this)
+    }
 
-    val asMessageSender: SignalServiceMessageSender
-        get() = SignalServiceMessageSender(
+    val messageSender by lazy {
+        SignalServiceMessageSender(
             signalServiceConfig,
-            this.asCredentialsProvider,
+            this.credentialsProvider,
             protocolStore,
             SIGNAL_AGENT,
             true,
@@ -156,4 +165,5 @@ data class RegisteredAccount(
             null,
             null,
         )
+    }
 }

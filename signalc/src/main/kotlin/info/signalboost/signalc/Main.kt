@@ -37,7 +37,7 @@ fun main() {
     println("$USER_PHONE_NUMBER registered and verified!")
 
     // send some messages!
-    val messageSender = registeredAccount.asMessageSender
+    val messageSender = registeredAccount.messageSender
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return
