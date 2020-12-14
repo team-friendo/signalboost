@@ -12,13 +12,26 @@ cache:
     - node_modules/
     - /home/gradle/.gradle
 
+stages:
+  - build
+  - test
+
+################
+# shared logic #
+################
+
+.mr-only:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
 ###############
 # BUILD STAGE #
 ###############
 
 build:sb:
-  image: $SB_IMAGE
   stage: build
+  image: $SB_IMAGE
+  extends: .mr-only
   services:
     - name: postgres:12
       alias: db
@@ -27,8 +40,9 @@ build:sb:
     - npx sequelize db:migrate --env test
 
 build:sc:
-  image: $SC_IMAGE
   stage: build
+  image: $SC_IMAGE
+  extends: .mr-only
   script:
     - cd signalc
     - gradle build
@@ -40,25 +54,24 @@ build:sc:
 test:sb_lint:
   image: $SB_IMAGE
   stage: test
+  extends: .mr-only
   script:
     - npx eslint app && npx eslint test
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sb_unit:
-  image: $SB_IMAGE
   stage: test
+  image: $SB_IMAGE
+  extends: .mr-only
   services:
     - name: postgres:12
       alias: db
   script:
     - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sb_integration:
-  image: $SB_IMAGE
   stage: test
+  image: $SB_IMAGE
+  extends: .mr-only
   variables:
     INTEGRATION_TEST: 1
   services:
@@ -66,14 +79,11 @@ test:sb_integration:
       alias: db
   script:
     - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 test:sc:
-  image: $SC_IMAGE
   stage: test
+  image: $SC_IMAGE
+  extends: .mr-only
   script:
     - cd signalc
     - gradle test
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
