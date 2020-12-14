@@ -500,8 +500,8 @@ ${
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `Ein Admin hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${
       vouchLevel > 1 ? 'Einladungen' : 'Einladung'
     }.`,
 

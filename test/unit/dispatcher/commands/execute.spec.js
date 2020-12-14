@@ -2164,6 +2164,7 @@ describe('executing commands', () => {
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
                   message: messagesIn(membership.language).notifications.vouchLevelChanged(
+                    sender.adminId,
                     validVouchLevel,
                   ),
                 })),

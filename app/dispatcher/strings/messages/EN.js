@@ -482,10 +482,10 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} set the vouching level to ${vouchLevel}. It will now require ${vouchLevel} ${
       vouchLevel > 1 ? 'invites' : 'invite'
-    }.`,
+    } to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!

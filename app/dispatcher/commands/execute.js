@@ -767,7 +767,10 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.vouchLevelChanged(newVouchLevel),
+    message: messagesIn(membership.language).notifications.vouchLevelChanged(
+      sender.adminId,
+      newVouchLevel,
+    ),
   }))
 }
 

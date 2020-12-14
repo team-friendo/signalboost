@@ -513,8 +513,8 @@ ${
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requiere ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} cambió el nivel de atestiguando a ${vouchLevel}. Ahora se requiere ${vouchLevel} ${
       vouchLevel > 1 ? 'invitaciones' : 'invitación'
     } para unirse a este canal.`,
 
