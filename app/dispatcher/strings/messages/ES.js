@@ -402,9 +402,10 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
 const notifications = {
   adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} agregó ADMIN ${addedAdminId}.`,
 
-  adminRemoved: 'Se acaba de eliminar un administrador.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} retiró ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: 'Un suscriptor acaba de ser eliminado.',
+  subscriberRemoved: adminId => `Un suscriptor acaba fue eliminado por ADMIN ${adminId}.`,
 
   adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
 
@@ -503,8 +504,8 @@ ${
   safetyNumberChanged:
     'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
 
-  toRemovedAdmin:
-    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+  toRemovedAdmin: adminId =>
+    `Usted ha sido eliminado como administrador de este canal por ADMIN ${adminId}. Envíe HOLA para subscribirse de nuevo.`,
 
   toRemovedSubscriber:
     'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',

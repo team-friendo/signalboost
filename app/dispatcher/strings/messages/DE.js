@@ -399,9 +399,10 @@ const notifications = {
   adminAdded: (adderAdminId, addedAdminId) =>
     `ADMIN ${adderAdminId} hat ADMIN ${addedAdminId} hinzugefügt.`,
 
-  adminRemoved: 'Soeben wurde ein Admin entfernt.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} entfernte ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: 'Ein Abonnent wurde gerade entfernt.',
+  subscriberRemoved: adminId => `Ein Abonnent wurde gerade entfernt von ihm ${adminId}.`,
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
@@ -490,8 +491,8 @@ ${
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
-  toRemovedAdmin:
-    'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
+  toRemovedAdmin: adminId =>
+    `Soeben wurdest du als Admin von diesem Kanal entfernt von ADMIN ${adminId}. Schicke HALLO um dich wieder anzumelden.`,
 
   toRemovedSubscriber:
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',

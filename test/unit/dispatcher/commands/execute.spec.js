@@ -1495,7 +1495,7 @@ describe('executing commands', () => {
         describe('when removal target is an admin', () => {
           beforeEach(() => resolveMemberTypeStub.returns(Promise.resolve(memberTypes.ADMIN)))
 
-          it("attempts to remove the admin from the chanel's admins", async () => {
+          it("attempts to remove the admin from the channel's admins", async () => {
             await processCommand(dispatchable)
             expect(removeMemberStub.getCall(0).args).to.eql([
               channel.phoneNumber,
@@ -1513,15 +1513,18 @@ describe('executing commands', () => {
                 status: statuses.SUCCESS,
                 message: commandResponsesFor(admin).remove.success(removalTargetNumber),
                 notifications: [
-                  // removed
+                  // removed admin
                   {
                     recipient: removalTargetNumber,
-                    message: notificationsFor(removalTarget).toRemovedAdmin,
+                    message: notificationsFor(removalTarget).toRemovedAdmin(sender.adminId),
                   },
-                  // bystanders
+                  // bystander admins
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: notificationsFor(channel.memberships[2]).adminRemoved,
+                    message: notificationsFor(channel.memberships[2]).adminRemoved(
+                      sender.adminId,
+                      removalTarget.adminId,
+                    ),
                   },
                 ],
               })
@@ -1578,7 +1581,9 @@ describe('executing commands', () => {
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: notificationsFor(channel.memberships[2]).subscriberRemoved,
+                    message: notificationsFor(channel.memberships[2]).subscriberRemoved(
+                      sender.adminId,
+                    ),
                   },
                 ],
               })

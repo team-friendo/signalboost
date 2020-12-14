@@ -405,9 +405,10 @@ const notifications = {
   adminAdded: (adderAdminId, addedAdminId) =>
     `ADMIN ${adderAdminId} a ajouté ADMIN ${addedAdminId}.`,
 
-  adminRemoved: "Un-e admin vient d'être supprimé.",
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} enlevé ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
+  subscriberRemoved: adminId => `Un-e abonné-e vient d'être supprimé par ADMIN ${adminId}.`,
 
   adminLeft: adminId => `ADMIN ${adminId} vient de quitter le canal.`,
 
@@ -497,8 +498,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   safetyNumberChanged:
     'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',
 
-  toRemovedAdmin:
-    "Vous venez d'être supprimé e en tant qu'admin de cette canal. Envoyez SALUT pour vous réinscrire.",
+  toRemovedAdmin: adminId =>
+    `Vous venez d'être supprimé e en tant qu'admin de cette canal par ADMIN ${adminId}. Envoyez SALUT pour vous réinscrire.`,
 
   toRemovedSubscriber:
     "Vous venez d'être supprimé de cette canal par un administrateur. Envoyez SALUT pour vous réinscrire.",

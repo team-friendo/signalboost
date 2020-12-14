@@ -524,16 +524,24 @@ const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) 
 const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
   const removedMember = channel.memberships.find(m => m.memberPhoneNumber === phoneNumber)
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, phoneNumber])
-  const responseKey = memberType === memberTypes.ADMIN ? 'toRemovedAdmin' : 'toRemovedSubscriber'
-  const notificationKey = memberType === memberTypes.ADMIN ? 'adminRemoved' : 'subscriberRemoved'
+
   return [
     {
       recipient: phoneNumber,
-      message: `${messagesIn(removedMember.language).notifications[responseKey]}`,
+      message:
+        memberType === memberTypes.ADMIN
+          ? messagesIn(removedMember.language).notifications.toRemovedAdmin(sender.adminId)
+          : messagesIn(removedMember.language).notifications.toRemovedSubscriber,
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications[notificationKey],
+      message:
+        memberType === memberTypes.ADMIN
+          ? messagesIn(membership.language).notifications.adminRemoved(
+              sender.adminId,
+              removedMember.adminId,
+            )
+          : messagesIn(membership.language).notifications.subscriberRemoved(sender.adminId),
     })),
   ]
 }

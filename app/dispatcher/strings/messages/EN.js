@@ -383,9 +383,10 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
 const notifications = {
   adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} added ADMIN ${addedAdminId}.`,
 
-  adminRemoved: 'An admin was just removed.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} removed ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: 'An subscriber was just removed.',
+  subscriberRemoved: adminId => `A subscriber was just removed by ADMIN ${adminId}.`,
 
   adminLeft: adminId => `ADMIN ${adminId} just left the channel.`,
 
@@ -468,10 +469,11 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   safetyNumberChanged:
     'It looks like you safety number just changed. You might need to resend your last message! :)',
 
-  toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
+  toRemovedAdmin: adminId =>
+    `ADMIN ${adminId} removed you as an admin from this channel. Send HELLO to resubscribe.`,
 
   toRemovedSubscriber:
-    'You were just removed from this channel by an Admin. Send HELLO to resubscribe.',
+    'You were just removed from this channel by an admin. Send HELLO to resubscribe.',
 
   toggles: commandResponses.toggles,
 
