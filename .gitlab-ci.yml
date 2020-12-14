@@ -24,6 +24,11 @@ stages:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
+.uses-postgres:
+  services:
+    - name: postgres:12
+      alias: db
+
 ###############
 # BUILD STAGE #
 ###############
@@ -31,10 +36,9 @@ stages:
 build:sb:
   stage: build
   image: $SB_IMAGE
-  extends: .mr-only
-  services:
-    - name: postgres:12
-      alias: db
+  extends:
+    - .mr-only
+    - .uses-postgres
   script:
     - yarn install
     - npx sequelize db:migrate --env test
@@ -42,7 +46,8 @@ build:sb:
 build:sc:
   stage: build
   image: $SC_IMAGE
-  extends: .mr-only
+  extends:
+    - .mr-only
   script:
     - cd signalc
     - gradle build
@@ -54,29 +59,28 @@ build:sc:
 test:sb_lint:
   image: $SB_IMAGE
   stage: test
-  extends: .mr-only
+  extends:
+    - .mr-only
   script:
     - npx eslint app && npx eslint test
 
 test:sb_unit:
   stage: test
   image: $SB_IMAGE
-  extends: .mr-only
-  services:
-    - name: postgres:12
-      alias: db
+  extends:
+    - .mr-only
+    - .uses-postgres
   script:
     - NODE_ENV=test npx mocha ./test/unit  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
 
 test:sb_integration:
   stage: test
   image: $SB_IMAGE
-  extends: .mr-only
+  extends:
+    - .mr-only
+    - .uses-postgres
   variables:
     INTEGRATION_TEST: 1
-  services:
-    - name: postgres:12
-      alias: db
   script:
     - NODE_ENV=test npx mocha ./test/integration  -name '*.spec.js' --recursive -r babel-register --reporter dot --exit
 
