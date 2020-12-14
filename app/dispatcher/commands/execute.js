@@ -491,7 +491,7 @@ const removeSenderNotificationsOf = (channel, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.adminLeft,
+    message: messagesIn(membership.language).notifications.adminLeft(sender.adminId),
   }))
 }
 

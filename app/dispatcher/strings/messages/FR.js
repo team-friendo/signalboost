@@ -409,7 +409,7 @@ const notifications = {
 
   subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
 
-  adminLeft: 'Un-e admin vient de quitter le canal.',
+  adminLeft: adminId => `ADMIN ${adminId} vient de quitter le canal.`,
 
   channelDestroyed:
     'La canal et tous les enregistrements associés ont été définitivement détruits.',

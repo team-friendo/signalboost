@@ -403,7 +403,7 @@ const notifications = {
 
   subscriberRemoved: 'Ein Abonnent wurde gerade entfernt.',
 
-  adminLeft: 'Ein Admin hat den Kanal verlassen.',
+  adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
   channelDestroyed: 'Der Kanal und alls zugehörigen Daten wurden unwiderruflich zerstört.',
 

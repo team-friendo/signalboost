@@ -406,7 +406,7 @@ const notifications = {
 
   subscriberRemoved: 'Un suscriptor acaba de ser eliminado.',
 
-  adminLeft: 'Un administrador dejó el canal.',
+  adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
 
   channelDestroyed: 'El canal ha sido destruido permanentemente por sus admins.',
 

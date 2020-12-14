@@ -1427,7 +1427,7 @@ describe('executing commands', () => {
           message: commandResponsesFor(admin).leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
             recipient: membership.memberPhoneNumber,
-            message: messagesIn(membership.language).notifications.adminLeft,
+            message: messagesIn(membership.language).notifications.adminLeft(sender.adminId),
           })),
         })
       })

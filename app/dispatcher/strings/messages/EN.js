@@ -387,7 +387,7 @@ const notifications = {
 
   subscriberRemoved: 'An subscriber was just removed.',
 
-  adminLeft: 'An admin just left the channel.',
+  adminLeft: adminId => `ADMIN ${adminId} just left the channel.`,
 
   channelDestroyed: 'Channel and all associated records have been permanently destroyed.',
 
