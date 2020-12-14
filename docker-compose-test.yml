@@ -12,6 +12,7 @@ volumes:
   postgres_data:
   logs:
   gradle_cache:
+  signalc_build_cache:
 
 services:
   db:
@@ -39,9 +40,12 @@ services:
     image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
     container_name: test_signalc
     env_file: .env.test
+    environment:
+      GRADLE_USER_HOME: /home/gradle/.gradle
     depends_on:
       - db
     volumes:
       - ./signalc:/signalc
       - ./bin:/signalc/bin
       - gradle_cache:/home/gradle/.gradle
+      - signalc_build_cache:/signalc/build
