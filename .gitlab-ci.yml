@@ -7,10 +7,14 @@ variables:
   SB_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
   SC_IMAGE: registry.0xacab.org/team-friendo/signalboost/signalc:latest
 
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
 cache:
   paths:
     - node_modules/
-    - /home/gradle/.gradle
+    - .gradle/wrapper
+    - .gradle/caches
 
 stages:
   - build
