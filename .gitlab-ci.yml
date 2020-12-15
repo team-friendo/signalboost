@@ -60,15 +60,6 @@ sb:install:
   script:
      - yarn install
 
-sc:build:
-  stage: build
-  extends:
-    - .sc-job
-  script:
-    - cd signalc
-    - gradle compileKotlin
-    - gradle compileTestKotlin
-
 ##############
 # TEST JOBS #
 ##############
