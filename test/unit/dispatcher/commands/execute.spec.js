@@ -27,7 +27,10 @@ import {
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { messagesIn } from '../../../../app/dispatcher/strings/messages'
-import { addAdminIdToHeader } from '../../../../app/dispatcher/commands/execute'
+import {
+  addAdminIdToHeader,
+  addNotificationHeader,
+} from '../../../../app/dispatcher/commands/execute'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
@@ -366,16 +369,22 @@ describe('executing commands', () => {
                   // notifications for all bystander admins
                   {
                     recipient: channel.memberships[1].memberPhoneNumber,
-                    message: messagesIn(channel.memberships[1].language).notifications.adminAdded(
-                      sender.adminId,
-                      newAdminMembership.adminId,
+                    message: addNotificationHeader(
+                      channel.memberships[1].language,
+                      messagesIn(channel.memberships[1].language).notifications.adminAdded(
+                        sender.adminId,
+                        newAdminMembership.adminId,
+                      ),
                     ),
                   },
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: messagesIn(channel.memberships[2].language).notifications.adminAdded(
-                      sender.adminId,
-                      newAdminMembership.adminId,
+                    message: addNotificationHeader(
+                      channel.memberships[2].language,
+                      messagesIn(channel.memberships[2].language).notifications.adminAdded(
+                        sender.adminId,
+                        newAdminMembership.adminId,
+                      ),
                     ),
                   },
                 ],
@@ -1427,7 +1436,10 @@ describe('executing commands', () => {
           message: commandResponsesFor(admin).leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
             recipient: membership.memberPhoneNumber,
-            message: messagesIn(membership.language).notifications.adminLeft(sender.adminId),
+            message: addNotificationHeader(
+              membership.language,
+              messagesIn(membership.language).notifications.adminLeft(sender.adminId),
+            ),
           })),
         })
       })
@@ -1516,14 +1528,20 @@ describe('executing commands', () => {
                   // removed admin
                   {
                     recipient: removalTargetNumber,
-                    message: notificationsFor(removalTarget).toRemovedAdmin(sender.adminId),
+                    message: addNotificationHeader(
+                      removalTarget.language,
+                      notificationsFor(removalTarget).toRemovedAdmin(sender.adminId),
+                    ),
                   },
                   // bystander admins
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: notificationsFor(channel.memberships[2]).adminRemoved(
-                      sender.adminId,
-                      removalTarget.adminId,
+                    message: addNotificationHeader(
+                      channel.memberships[2].language,
+                      notificationsFor(channel.memberships[2]).adminRemoved(
+                        sender.adminId,
+                        removalTarget.adminId,
+                      ),
                     ),
                   },
                 ],
@@ -1581,8 +1599,9 @@ describe('executing commands', () => {
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: notificationsFor(channel.memberships[2]).subscriberRemoved(
-                      sender.adminId,
+                    message: addNotificationHeader(
+                      channel.memberships[2].language,
+                      notificationsFor(channel.memberships[2]).subscriberRemoved(sender.adminId),
                     ),
                   },
                 ],
@@ -1861,14 +1880,16 @@ describe('executing commands', () => {
             message: messagesIn(admin.language).notifications.restartSuccessResponse,
             notifications: [
               {
-                message: notificationsFor(adminMemberships[1]).restartSuccessNotification(
-                  admin.phoneNumber,
+                message: addNotificationHeader(
+                  adminMemberships[1].language,
+                  notificationsFor(adminMemberships[1]).restartSuccessNotification(admin.adminId),
                 ),
                 recipient: adminMemberships[1].memberPhoneNumber,
               },
               {
-                message: notificationsFor(adminMemberships[2]).restartSuccessNotification(
-                  admin.phoneNumber,
+                message: addNotificationHeader(
+                  adminMemberships[2].language,
+                  notificationsFor(adminMemberships[2]).restartSuccessNotification(admin.adminId),
                 ),
                 recipient: adminMemberships[2].memberPhoneNumber,
               },
@@ -1976,11 +1997,6 @@ describe('executing commands', () => {
         })
 
         describe('when db update succeeds', () => {
-          const notificationMsg = messagesIn(sender.language).notifications.toggles[name].success(
-            isOn,
-            sender.adminId,
-          )
-
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
           it('returns a SUCCESS status, message, and notifications', async () => {
@@ -1992,7 +2008,13 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: notificationMsg,
+                  message: addNotificationHeader(
+                    membership.language,
+                    messagesIn(membership.language).notifications.toggles[name].success(
+                      isOn,
+                      sender.adminId,
+                    ),
+                  ),
                 })),
               ],
             })
@@ -2086,10 +2108,9 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  // message: notificationMsg,
-                  message: notificationsFor(membership).vouchModeChanged(
-                    sender.adminId,
-                    vouchModes[mode],
+                  message: addNotificationHeader(
+                    membership.language,
+                    notificationsFor(membership).vouchModeChanged(sender.adminId, vouchModes[mode]),
                   ),
                 })),
               ],
@@ -2168,9 +2189,12 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: messagesIn(membership.language).notifications.vouchLevelChanged(
-                    sender.adminId,
-                    validVouchLevel,
+                  message: addNotificationHeader(
+                    membership.language,
+                    messagesIn(membership.language).notifications.vouchLevelChanged(
+                      sender.adminId,
+                      validVouchLevel,
+                    ),
                   ),
                 })),
               ],

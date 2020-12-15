@@ -491,7 +491,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     'Vous essayez de redémarrer Signalboost? Vous utilisez le mauvais canal pour cela! Réessayez sur le canal de diagnostic.',
   restartPassNotAuthorized:
     'Vous essayez de redémarrer Signalboost? Vous avez utilisé la mauvaise phrase de passe pour cela!',
-  restartSuccessNotification: adminId => `Signalboost a été redémarré par ${adminId}`,
+  restartSuccessNotification: adminId => `Signalboost a été redémarré par ADMIN ${adminId}.`,
   restartSuccessResponse: 'Signalboost a été redémarré avec succès',
   restartFailure: errorMessage => `Échec du redémarrage de Signalboost: ${errorMessage}`,
 
@@ -530,12 +530,13 @@ Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre gui
 }
 
 const prefixes = {
+  admin: 'ADMIN',
+  broadcastMessage: `DIFFUSER`,
   hotlineMessage: messageId => `HOTLINE DE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN ? `RÉPONSE Á @${messageId}` : `RÉPONSE PRIVÉE DES ADMINS`,
-  broadcastMessage: `DIFFUSER`,
+  notification: `NOTIFICATION`,
   privateMessage: `PRIVÉ`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

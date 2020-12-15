@@ -487,7 +487,8 @@ ${
     'Versuchen Sie, Signalboost neu zu starten? Sie benutzen dafür den falschen Kanal! Versuchen Sie es erneut auf dem Diagnosekanal.',
   restartPassNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie haben dafür die falsche Passphrase verwendet!',
-  restartSuccessNotification: adminId => `Signalboost wurde von ${adminId} neu gestartet`,
+  restartSuccessNotification: adminId => `Signalboost wurde von ADMIN ${adminId} neu gestartet`,
+
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
@@ -515,12 +516,13 @@ ${
 }
 
 const prefixes = {
+  admin: 'ADMIN',
+  broadcastMessage: `ÜBERTRAGUNG`,
   hotlineMessage: messageId => `HOTLINE VON @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN ? `HOTLINE AN @${messageId}` : `PRIVATE ANTWORT VON ADMINS`,
-  broadcastMessage: `ÜBERTRAGUNG`,
+  notification: `BENACHRICHTIGUNG`,
   privateMessage: `PRIVAT`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

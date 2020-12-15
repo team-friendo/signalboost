@@ -497,7 +497,7 @@ ${
     '¿Estás intentando reiniciar Signalboost? ¡Estás usando el canal equivocado para eso! Vuelva a intentarlo en el canal de diagnóstico.',
   restartPassNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡Usaste la contraseña incorrecta para eso!',
-  restartSuccessNotification: adminId => `Signalboost fue reiniciado por ${adminId}`,
+  restartSuccessNotification: adminId => `Signalboost fue reiniciado por ADMIN ${adminId}.`,
   restartSuccessResponse: '¡Signalboost se reinició correctamente!',
   restartFailure: errorMessage => `No se pudo reiniciar Signalboost: ${errorMessage}`,
 
@@ -528,12 +528,13 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
+  admin: 'ADMIN',
+  broadcastMessage: `TRANSMITIR`,
   hotlineMessage: messageId => `LÍNEA DIRECTA DESDE @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN ? `RESPUESTA A @${messageId}` : `RESPUESTA PRIVADA DE ADMINS`,
-  broadcastMessage: `TRANSMITIR`,
+  notification: `NOTIFICACIÓN`,
   privateMessage: `PRIVADO`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

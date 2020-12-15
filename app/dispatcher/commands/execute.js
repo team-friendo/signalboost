@@ -219,9 +219,12 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: messagesIn(membership.language).notifications.adminAdded(
-        sender.adminId,
-        newAdminMembership.adminId,
+      message: addNotificationHeader(
+        membership.language,
+        messagesIn(membership.language).notifications.adminAdded(
+          sender.adminId,
+          newAdminMembership.adminId,
+        ),
       ),
     })),
   ]
@@ -491,7 +494,10 @@ const removeSenderNotificationsOf = (channel, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.adminLeft(sender.adminId),
+    message: addNotificationHeader(
+      membership.language,
+      messagesIn(membership.language).notifications.adminLeft(sender.adminId),
+    ),
   }))
 }
 
@@ -530,18 +536,27 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
       recipient: phoneNumber,
       message:
         memberType === memberTypes.ADMIN
-          ? messagesIn(removedMember.language).notifications.toRemovedAdmin(sender.adminId)
+          ? addNotificationHeader(
+              removedMember.language,
+              messagesIn(removedMember.language).notifications.toRemovedAdmin(sender.adminId),
+            )
           : messagesIn(removedMember.language).notifications.toRemovedSubscriber,
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message:
         memberType === memberTypes.ADMIN
-          ? messagesIn(membership.language).notifications.adminRemoved(
-              sender.adminId,
-              removedMember.adminId,
+          ? addNotificationHeader(
+              membership.language,
+              messagesIn(membership.language).notifications.adminRemoved(
+                sender.adminId,
+                removedMember.adminId,
+              ),
             )
-          : messagesIn(membership.language).notifications.subscriberRemoved(sender.adminId),
+          : addNotificationHeader(
+              membership.language,
+              messagesIn(membership.language).notifications.subscriberRemoved(sender.adminId),
+            ),
     })),
   ]
 }
@@ -670,9 +685,9 @@ const _restartNotificationsOf = async sender => {
   )
   return maintainers.map(maintainer => ({
     recipient: maintainer.memberPhoneNumber,
-    // TODO(aguestuser|2020-10-07): replace `sender.phoneNumber` here with an adminId once those exist! :)
-    message: messagesIn(maintainer.language).notifications.restartSuccessNotification(
-      sender.phoneNumber,
+    message: addNotificationHeader(
+      maintainer.language,
+      messagesIn(maintainer.language).notifications.restartSuccessNotification(sender.adminId),
     ),
   }))
 }
@@ -712,9 +727,12 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(sender.language).notifications.toggles[toggle.name].success(
-      isOn,
-      sender.adminId,
+    message: addNotificationHeader(
+      membership.language,
+      messagesIn(membership.language).notifications.toggles[toggle.name].success(
+        isOn,
+        sender.adminId,
+      ),
     ),
   }))
 }
@@ -743,9 +761,9 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.vouchModeChanged(
-      sender.adminId,
-      newVouchMode,
+    message: addNotificationHeader(
+      membership.language,
+      messagesIn(membership.language).notifications.vouchModeChanged(sender.adminId, newVouchMode),
     ),
   }))
 }
@@ -775,9 +793,12 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: messagesIn(membership.language).notifications.vouchLevelChanged(
-      sender.adminId,
-      newVouchLevel,
+    message: addNotificationHeader(
+      membership.language,
+      messagesIn(membership.language).notifications.vouchLevelChanged(
+        sender.adminId,
+        newVouchLevel,
+      ),
     ),
   }))
 }
@@ -803,6 +824,11 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
   }))
 }
 
+const addNotificationHeader = (language, messageBody) => {
+  const prefix = messagesIn(language).prefixes.notification
+  return `[${prefix}]\n ${messageBody}`
+}
+
 const addAdminIdToHeader = (membership, messageType, messageBody) => {
   const prefix = messagesIn(membership.language).prefixes
   return `[${messageType} FROM ${prefix.admin} ${membership.adminId}]\n${messageBody}`
@@ -814,4 +840,4 @@ const logAndReturn = (err, statusTuple) => {
   return statusTuple
 }
 
-module.exports = { addAdminIdToHeader, execute, toggles }
+module.exports = { addAdminIdToHeader, addNotificationHeader, execute, toggles }

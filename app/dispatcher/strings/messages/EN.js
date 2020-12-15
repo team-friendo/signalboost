@@ -462,7 +462,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     'Trying to restart Signalboost? You are using the wrong channel for that! Try again on the diagnostics channel.',
   restartPassNotAuthorized:
     'Trying to restart Signalboost? You used the wrong passphrase for that!',
-  restartSuccessNotification: adminId => `Signalboost was restarted by ${adminId}`,
+  restartSuccessNotification: adminId => `Signalboost was restarted by ADMIN ${adminId}`,
   restartSuccessResponse: 'Signalboost was restarted successfully!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
@@ -499,12 +499,13 @@ To see a full list of commands, send HELP or check out our how-to guide: https:/
 }
 
 const prefixes = {
+  admin: 'ADMIN',
+  broadcastMessage: `BROADCAST`,
   hotlineMessage: messageId => `HOTLINE FROM @${messageId}`,
   hotlineReplyOf: (messageId, memberType) =>
     memberType === memberTypes.ADMIN ? `REPLY TO @${messageId}` : `PRIVATE REPLY FROM ADMINS`,
-  broadcastMessage: `BROADCAST`,
+  notification: `NOTIFICATION`,
   privateMessage: `PRIVATE`,
-  admin: 'ADMIN',
 }
 
 module.exports = {
