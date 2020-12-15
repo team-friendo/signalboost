@@ -1,5 +1,6 @@
 package info.signalboost.signalc
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations
@@ -8,8 +9,13 @@ import org.whispersystems.signalservice.internal.configuration.*
 import java.io.FileInputStream
 import java.io.InputStream
 import org.whispersystems.util.Base64
+import java.security.Security
 
 object Config {
+    init {
+        // Workaround for missing BKS truststore
+        Security.addProvider(BouncyCastleProvider())
+    }
 
     // TODO(aguestuser|2020-12-01): move some of these to build.gradle and read their values from env vars?
     const val SIGNAL_AGENT = "signalc"
