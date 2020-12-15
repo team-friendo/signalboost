@@ -11,7 +11,6 @@ import java.security.Security
  * DEV-CONFIGURABLE VALUES (CHANGE TO RUN SPIKE CODE ON YOUR LAPTOP)
  *******************************************************************/
 const val USER_PHONE_NUMBER = "+17347962920"
-const val KEYSTORE_PATH = "/home/aguestuser/-/team-friendo/code/signalc/whisper.store" // read from `pwd`?
 
 /*************
  * MAIN LOOP

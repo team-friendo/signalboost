@@ -12,10 +12,9 @@ import org.whispersystems.util.Base64
 object Config {
 
     // TODO(aguestuser|2020-12-01): move some of these to build.gradle and read their values from env vars?
-
     const val SIGNAL_AGENT = "signalc"
 
-
+    private val TRUST_STORE_PATH = System.getProperty("user.dir") + "/whisper.store"
     private const val ZK_GROUP_SERVER_PUBLIC_PARAMS = "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0="
     private const val SIGNAL_SERVICE_URL = "https://textsecure-service.whispersystems.org"
     private const val SIGNAL_CDN_URL = "https://cdn.signal.org"
@@ -25,7 +24,7 @@ object Config {
     private const val SIGNAL_STORAGE_URL = "https://storage.signal.org"
 
     object SignalcTrustStore : TrustStore {
-        override fun getKeyStoreInputStream(): InputStream = FileInputStream(KEYSTORE_PATH)
+        override fun getKeyStoreInputStream(): InputStream = FileInputStream(TRUST_STORE_PATH)
         override fun getKeyStorePassword(): String = "whisper"
     }
 
