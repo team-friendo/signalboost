@@ -1,0 +1,38 @@
+version: '3'
+
+# NOTE: the below directive makes it possible to run tests behind a VPN
+# (feel free to comment it out if it breaks anythuing for you!)
+
+networks:
+  default:
+    external:
+      name: localdev
+
+volumes:
+  postgres_data:
+  logs:
+  gradle_cache:
+  signalc_build_cache:
+
+services:
+  db:
+    image: postgres:12
+    container_name: signalc_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+  signalc:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    container_name: test_signalc
+    env_file: .env.dev
+    environment:
+      GRADLE_USER_HOME: /home/gradle/.gradle
+      TRUST_STORE_PATH: /signalc/whisper.store
+    depends_on:
+      - db
+    volumes:
+      - ./signalc:/signalc
+      - ./bin:/signalc/bin
+      - gradle_cache:/home/gradle/.gradle
+      - signalc_build_cache:/signalc/build

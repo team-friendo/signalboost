@@ -204,6 +204,19 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
 	up -d
 
+###########
+# signalc #
+###########
+
+sc.jar: ## build
+	docker-compose -f docker-compose-sc.yml \
+	run --entrypoint 'gradle shadowJar' signalc && \
+	echo "> jar available in signalc/build/libs"
+
+sc.run: ## run signalc in dev mode
+	docker-compose -f docker-compose-sc.yml \
+	run --entrypoint 'gradle --console=plain run' signalc
+
 #############
 # run tests #
 #############

@@ -1,6 +1,11 @@
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+group = "info.signalboost"
+version = "0.0.3"
+val entrypoint = "info.signalboost.signalc.MainKt"
+
+
 repositories {
     mavenCentral()
 }
@@ -9,30 +14,38 @@ plugins {
     application
     java
     kotlin("jvm") version "1.4.10"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
-group = "info.signalboost"
-version = "0.0.2"
-val mainClass = "info.signalboost.signalc.MainKt"
-application.mainClassName = mainClass
-
-tasks.withType<Wrapper> {
-    gradleVersion = "6.7.1"
+application {
+    mainClass.set(entrypoint)
+    mainClassName = entrypoint
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
 }
 
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = application.mainClass
+    }
+}
+
+tasks.withType<JavaExec>{
+    run {
+        standardInput = System.`in`
+    }
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = mainClass
-    }
+tasks.withType<Wrapper> {
+    gradleVersion = "6.7.1"
 }
+
 
 object Versions {
     val bouncyCastle = "1.66"
