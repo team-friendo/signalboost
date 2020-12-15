@@ -196,7 +196,7 @@ const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
     await eventRepository.logIfFirstMembership(newAdminPhoneNumber)
     return {
       status: statuses.SUCCESS,
-      message: cr.success(newAdminPhoneNumber),
+      message: cr.success(newAdminMembership),
       notifications: addAdminNotificationsOf(channel, newAdminMembership, sender),
     }
   } catch (e) {
@@ -372,10 +372,7 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (!isEmpty(errors)) {
     return {
       status: statuses.ERROR,
-      message: cr.dbErrors(
-        errors.map(e => e.inviteePhoneNumber),
-        inviteResults.length,
-      ),
+      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
       notifications,
     }
   }

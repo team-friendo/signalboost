@@ -77,12 +77,16 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${channel.name}].
+    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${
+      channel.name
+    }].
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de ce canal',
     belowVouchLevel: (channel, required, actual) =>
-      `Désolé, ${channel.name} nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
+      `Désolé, ${
+        channel.name
+      } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
     dbError:
       "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
     subscriberLimitReached,
@@ -91,7 +95,8 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   // ADD
 
   add: {
-    success: num => `${num} a été ajouté e comme admin.`,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
     notAdmin,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,

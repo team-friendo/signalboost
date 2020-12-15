@@ -85,7 +85,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // ADD
 
   add: {
-    success: num => `${num} added as an admin.`,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidPhoneNumber,

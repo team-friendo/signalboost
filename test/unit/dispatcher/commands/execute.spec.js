@@ -132,6 +132,7 @@ describe('executing commands', () => {
     channelPhoneNumber: channel.phoneNumber,
     memberPhoneNumber: newAdminPhoneNumber,
     language: 'FR',
+    adminId: channel.nextAdminId,
   })
   const rawNewAdminPhoneNumber = parenthesize(newAdminPhoneNumber)
   const deauthorizedPhoneNumber = channel.deauthorizations[0].memberPhoneNumber
@@ -355,7 +356,7 @@ describe('executing commands', () => {
                 command: commands.ADD,
                 payload: newAdminPhoneNumber,
                 status: statuses.SUCCESS,
-                message: commandResponsesFor(sender).add.success(newAdminPhoneNumber),
+                message: commandResponsesFor(sender).add.success(newAdminMembership),
                 notifications: [
                   // welcome message to newly added admin
                   {

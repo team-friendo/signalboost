@@ -90,7 +90,8 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // ADD
 
   add: {
-    success: num => `${num} als Admin hinzugefügt.`,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
     notAdmin,
     dbError: num =>
       `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
