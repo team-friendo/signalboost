@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- upgrading sb dependencies..."
+
+docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+               run --entrypoint 'yarn upgrade' \
+               app
+
+echo "--- DONE!"
+
+popd

@@ -4,21 +4,28 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- installing dependencies..."
+echo "--- installing node dependencies..."
 
 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-               run --entrypoint 'yarn install' \
-               app
+   run --entrypoint 'yarn install' \
+   app
 
-echo "--- running migrations..."
+echo "--- running sb dev migrations..."
 
 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-               run --entrypoint /signalboost/bin/db/migrate \
-               app
+   run --entrypoint /signalboost/bin/db/migrate \
+   app
 
-echo "--- removing db container..."
+echo "--- running sb test migrations..."
+
+docker-compose -f docker-compose-test.yml \
+   run --entrypoint /signalboost/bin/db/migrate \
+   signalboost
+
+echo "--- removing containers..."
 
 docker rm -f signalboost_db
+docker rm -f test_db
 
 echo "--- DONE!"
 

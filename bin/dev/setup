@@ -14,18 +14,24 @@ fi
 echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 
-echo "--- installing dependencies..."
+echo "--- installing node dependencies..."
 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-               run --entrypoint 'yarn install' \
-               app
+  run --entrypoint 'yarn install' \
+  app
 
-echo "--- setting up database..."
+echo "--- setting up dev database..."
 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-               run --entrypoint /signalboost/bin/db/setup \
-               app
+   run --entrypoint /signalboost/bin/db/setup \
+   app
 
-echo "--- removing db container..."
+echo "--- setting up test database..."
+docker-compose -f docker-compose-test.yml \
+  run --entrypoint /signalboost/bin/db/setup \
+  signalboost
+
+echo "--- removing db containers..."
 docker rm -f signalboost_db
+docker rm -f test_db
 
 echo "--- DONE!"
 

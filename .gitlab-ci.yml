@@ -1,45 +1,100 @@
-image: registry.0xacab.org/team-friendo/signalboost/signalboost
+###########
+# ANCHORS #
+###########
 
-variables:
-  NODE_ENV: test
-  POSTGRES_DB: signalboost_test
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: ""
-  POSTGRES_HOST_AUTH_METHOD: trust
-
-cache:
-  paths:
-    - node_modules/
-
-test_lint:
-  script:
-    - yarn install
-    - npx eslint app && npx eslint test
+.mr-only:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-test_unit:
+.sb-job:
+  image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
+  extends: .mr-only
+  cache:
+    key: sb_build
+    paths:
+      - node_modules
+      - .yarn
+  before_script:
+    - yarn config set cache-folder .yarn
+  variables:
+    NODE_ENV: test
+    POSTGRES_DB: signalboost_test
+
+.sc-job:
+  image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+  extends: .mr-only
+  cache:
+    key: sc_build
+    paths:
+      - .gradle
+      - signalc/build
+  before_script:
+    - export GRADLE_USER_HOME=`pwd`/.gradle
+
+.uses-postgres:
   services:
     - name: postgres:12
       alias: db
-  script:
-    - yarn install
-    - npx sequelize db:migrate --env test
-    - cd test/unit
-    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  variables:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ""
+    POSTGRES_HOST_AUTH_METHOD: trust
 
-test_integration:
+##########
+# STAGES #
+##########
+
+stages:
+  - build
+  - test
+
+##############
+# BUILD JOBS #
+##############
+
+sb:install:
+  stage: build
+  extends:
+    - .sb-job
+    - .uses-postgres
+  script:
+     - yarn install
+
+##############
+# TEST JOBS #
+##############
+
+sb:lint:
+  stage: test
+  extends:
+    - .sb-job
+  script:
+    - npx eslint app && npx eslint test
+
+sb:unit:
+  stage: test
+  extends:
+    - .sb-job
+    - .uses-postgres
+  script:
+    - npx sequelize db:migrate --env test
+    - find test/unit -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
+
+sb:integration:
+  stage: test
+  extends:
+    - .sb-job
+    - .uses-postgres
   variables:
     INTEGRATION_TEST: 1
-  services:
-    - name: postgres:12
-      alias: db
   script:
-    - yarn install
     - npx sequelize db:migrate --env test
-    - cd test/integration
-    - find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - find test/integration -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
+
+sc:test:
+  stage: test
+  extends:
+    - .sc-job
+  script:
+    - cd signalc
+    - gradle test

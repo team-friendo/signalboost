@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+cd /signalboost/test/unit
+
+find . -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit

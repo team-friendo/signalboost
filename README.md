@@ -675,14 +675,14 @@ If you type `make` and then hit `TAB`, you will get autocomplete suggestions for
 make test.all
 ```
 
-If you want, you can run unit and e2e tests separately:
+If you want, you can run unit and integration tests separately:
 
 ``` shell
-make test.unit
+make test.sb.unit
 ```
 
 ``` shell
-make test.e2e
+make test.sb.integration
 ```
 
 ### Database scripts

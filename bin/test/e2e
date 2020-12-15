@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-echo "----- running e2e tests..."
-docker-compose -f docker-compose-test-e2e.yml run test_runner
-
-echo "----- shutting down / cleaning up..."
-docker-compose -f docker-compose-test-e2e.yml down
-
-docker ps --filter name=signalboost_* -aq | xargs -I container_id docker rm -f container_id
