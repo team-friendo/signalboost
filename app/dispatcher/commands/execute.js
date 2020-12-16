@@ -7,7 +7,7 @@ const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
-const phoneNumberService = require('../../registrar/phoneNumber')
+const phoneNumberRegistrar = require('../../registrar/phoneNumber')
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
@@ -189,6 +189,7 @@ const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
       await signal.trust(phoneNumber, newAdminPhoneNumber, deauth.fingerprint, socketId)
       await deauthorizationRepository.destroy(phoneNumber, newAdminPhoneNumber)
     }
+
     const newAdminMembership = await membershipRepository.addAdmin(
       channel.phoneNumber,
       newAdminPhoneNumber,
@@ -311,7 +312,7 @@ const confirmDestroy = async (channel, sender) => {
 
 const destroy = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
-  const result = await phoneNumberService.destroy({
+  const result = await phoneNumberRegistrar.destroy({
     phoneNumber: channel.phoneNumber,
     sender: sender.phoneNumber,
     notifyOnFailure: true,

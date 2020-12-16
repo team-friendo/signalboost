@@ -390,7 +390,12 @@ const notifications = {
 
   adminLeft: adminId => `ADMIN ${adminId} just left the channel.`,
 
-  channelDestroyed: 'Channel and all associated records have been permanently destroyed.',
+  channelDestroyed: (audience, adminId) =>
+    ({
+      ADMIN: `ADMIN ${adminId} has destroyed this channel. All associated data has been deleted.`,
+      SUBSCRIBER:
+        'Channel and all associated data has been permanently destroyed by the admins of this channel.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Hello! This channel will be destroyed in ${hoursToLive} hours due to lack of use.

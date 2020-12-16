@@ -407,7 +407,12 @@ const notifications = {
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
-  channelDestroyed: 'Der Kanal und alls zugehörigen Daten wurden unwiderruflich zerstört.',
+  channelDestroyed: (adminId, audience) =>
+    ({
+      ADMIN: `ADMIN ${adminId} hat diesen Kanal zerstört. Alle zugehörigen Daten wurden gelöscht.`,
+      SUBSCRIBER:
+        'Der Kanal und alle zugehörigen Daten wurden von den Administratoren dieses Kanals dauerhaft zerstört.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Hallo! Dieser Kanal wird in ${hoursToLive} Stunden aufgrund mangelnder Nutzung zerstört.

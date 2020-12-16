@@ -67,6 +67,7 @@ const dispatch = async (msg, socketId) => {
 
   // parse basic info from message
   const inboundMsg = parseInboundSignaldMessage(msg)
+
   const channelPhoneNumber = get(inboundMsg, 'data.username', 'SYSTEM')
 
   // count what kind of message we are processing

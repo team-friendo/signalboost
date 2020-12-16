@@ -411,7 +411,12 @@ const notifications = {
 
   adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
 
-  channelDestroyed: 'El canal ha sido destruido permanentemente por sus admins.',
+  channelDestroyed: (audience, adminId = '') =>
+    ({
+      ADMIN: `ADMIN ${adminId} ha destruido este canal. Se han eliminado todos los datos asociados.`,
+      SUBSCRIBER:
+        'El canal y todos los datos asociados han sido destruidos permanentemente por los administradores de este canal.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `¡Hola! Este canal se destruirá en ${hoursToLive} horas debido a la falta de uso.

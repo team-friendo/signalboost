@@ -20,6 +20,12 @@ const {
   jobs: { channelDestructionGracePeriod },
   signal: { keystorePath },
 } = require('../../config')
+const { memberTypes } = require('../../db/repositories/membership')
+
+const issuerTypes = {
+  SYSTEM: 'SYSTEM',
+  ADMIN: 'ADMIN',
+}
 
 // (Array<string>) -> Promise<SignalboostStatus>
 const requestToDestroy = async phoneNumbers => {
@@ -127,8 +133,8 @@ const redeem = async channel => {
   }
 }
 
-// ({ phoneNumber: string, sender: string, notifyOnFailure: boolean }) -> SignalboostStatus
-const destroy = async ({ phoneNumber, sender, notifyOnFailure }) => {
+// ({ phoneNumber: string, sender: string, notifyOnFailure: boolean, issuer: 'SYSTEM' | 'ADMIN'}) -> SignalboostStatus
+const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
   const tx = await app.db.sequelize.transaction()
 
   try {
@@ -155,10 +161,13 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure }) => {
       logger.log(`...logged destruction of ${phoneNumber}`)
 
       logger.log(`sending deletion notice to members of: ${phoneNumber} in background...`)
-      notifier
-        .notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY)
-        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
-        .catch(logger.error)
+
+      // it's important to not await channel destruction notifications because we might need to send out several thousand (which will take a long time!)
+      // we don't want to block execution of the deletion job
+
+      notifyMembersOfDeletion(channel, sender, issuer).then(() =>
+        logger.log(`...sent deletion notice to members of: ${phoneNumber}.`),
+      )
 
       logger.log(`unsubscribing from ${phoneNumber}...`)
       await signal.unsubscribe(phoneNumber, channel.socketId)
@@ -197,6 +206,24 @@ const deleteVestigalKeystoreEntries = async () => {
 }
 
 // HELPERS
+
+const notifyMembersOfDeletion = (channel, sender, issuer) => {
+  return issuer === issuerTypes.ADMIN
+    ? Promise.all([
+        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED, [
+          memberTypes.ADMIN,
+          sender.adminId,
+        ]),
+        notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED, [
+          memberTypes.SUBSCRIBER,
+        ]),
+      ]).catch(console.error)
+    : notifier.notifyMembersExcept(
+        channel,
+        sender,
+        notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+      )
+}
 
 // (string) -> Promise<void>
 const deleteSignalKeystore = async phoneNumber => {
@@ -237,6 +264,7 @@ const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) =
 module.exports = {
   deleteVestigalKeystoreEntries,
   destroy,
+  issuerTypes,
   processDestructionRequests,
   redeem,
   requestToDestroy,
