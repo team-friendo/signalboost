@@ -153,11 +153,11 @@ const maybeAccept = async (channel, sender, language) => {
       }
 
     // don't accept invite if sender is already a member
-    if (await membershipRepository.isMember(channel.phoneNumber, sender.phoneNumber))
+    if (await membershipRepository.isMember(channel.phoneNumber, sender.memberPhoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyMember }
 
     // don't accept invite if sender doesn't have sufficient invites
-    const inviteCount = await inviteRepository.count(channel.phoneNumber, sender.phoneNumber)
+    const inviteCount = await inviteRepository.count(channel.phoneNumber, sender.memberPhoneNumber)
     if (channel.vouchMode !== vouchModes.OFF && inviteCount < channel.vouchLevel)
       return {
         status: statuses.ERROR,
@@ -173,8 +173,8 @@ const maybeAccept = async (channel, sender, language) => {
 
 const accept = async (channel, sender, language, cr) =>
   inviteRepository
-    .accept(channel.phoneNumber, sender.phoneNumber, language)
-    .then(() => eventRepository.logIfFirstMembership(sender.phoneNumber))
+    .accept(channel.phoneNumber, sender.memberPhoneNumber, language)
+    .then(() => eventRepository.logIfFirstMembership(sender.memberPhoneNumber))
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 
@@ -208,12 +208,12 @@ const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
 
 const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
   const newAdminPhoneNumber = newAdminMembership.memberPhoneNumber
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return [
     {
       recipient: newAdminPhoneNumber,
       message: `${messagesIn(newAdminMembership.language).notifications.welcome(
-        sender.phoneNumber,
+        sender.memberPhoneNumber,
         channel.phoneNumber,
         channel.name,
       )}`,
@@ -242,7 +242,7 @@ const broadcastMessage = (channel, sender, sdMessage, payload) => {
 
 const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
   const adminMemberships = getAdminMemberships(channel)
-  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.phoneNumber)
+  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.memberPhoneNumber)
 
   const subscriberMemberships = getSubscriberMemberships(channel)
 
@@ -280,7 +280,7 @@ const privateMessageAdmins = async (channel, sender, payload, sdMessage) => {
 
 const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
   const adminMemberships = getAdminMemberships(channel)
-  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.phoneNumber)
+  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.memberPhoneNumber)
 
   return adminMemberships.map(membership => ({
     recipient: membership.memberPhoneNumber,
@@ -298,7 +298,7 @@ const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
 const decline = async (channel, sender, language) => {
   const cr = messagesIn(language).commandResponses.decline
   return inviteRepository
-    .decline(channel.phoneNumber, sender.phoneNumber)
+    .decline(channel.phoneNumber, sender.memberPhoneNumber)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 }
@@ -314,7 +314,7 @@ const destroy = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
   const result = await phoneNumberRegistrar.destroy({
     phoneNumber: channel.phoneNumber,
-    sender: sender.phoneNumber,
+    sender: sender.memberPhoneNumber,
     notifyOnFailure: true,
   })
   if (get(result, 'status') === statuses.SUCCESS) {
@@ -361,7 +361,7 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>
-      invite(channel, sender.phoneNumber, inviteePhoneNumber, language),
+      invite(channel, sender.memberPhoneNumber, inviteePhoneNumber, language),
     ),
   )
 
@@ -460,8 +460,8 @@ const maybeAddSubscriber = async (channel, sender, language) => {
 
 const addSubscriber = (channel, sender, language, cr) =>
   membershipRepository
-    .addSubscriber(channel.phoneNumber, sender.phoneNumber, language)
-    .then(() => eventRepository.logIfFirstMembership(sender.phoneNumber))
+    .addSubscriber(channel.phoneNumber, sender.memberPhoneNumber, language)
+    .then(() => eventRepository.logIfFirstMembership(sender.memberPhoneNumber))
     .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
@@ -477,8 +477,8 @@ const maybeRemoveSender = async (channel, sender) => {
 const removeSender = (channel, sender, cr) => {
   const remove =
     sender.type === ADMIN ? membershipRepository.removeMember : membershipRepository.removeMember
-  return remove(channel.phoneNumber, sender.phoneNumber)
-    .then(() => eventRepository.logIfLastMembership(sender.phoneNumber))
+  return remove(channel.phoneNumber, sender.memberPhoneNumber)
+    .then(() => eventRepository.logIfLastMembership(sender.memberPhoneNumber))
     .then(() => ({
       status: statuses.SUCCESS,
       message: cr.success,
@@ -489,7 +489,7 @@ const removeSender = (channel, sender, cr) => {
 
 const removeSenderNotificationsOf = (channel, sender) => {
   if (sender.type !== ADMIN) return []
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: addNotificationHeader(
@@ -527,7 +527,7 @@ const removeMember = async (channel, memberPhoneNumber, memberType, sender, cr) 
 
 const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
   const removedMember = channel.memberships.find(m => m.memberPhoneNumber === phoneNumber)
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber, phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber, phoneNumber])
 
   return [
     {
@@ -575,7 +575,7 @@ const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineRe
     )
     const senderMembership = await membershipRepository.findMembership(
       channel.phoneNumber,
-      sender.phoneNumber,
+      sender.memberPhoneNumber,
     )
 
     return {
@@ -616,7 +616,7 @@ const hotlineReplyNotificationsOf = (
     attachments,
   },
   // notifications to all admins
-  ...getAdminMemberships(channel, [sender.phoneNumber]).map(({ memberPhoneNumber, language }) => ({
+  ...getAdminMemberships(channel, [sender.memberPhoneNumber]).map(({ memberPhoneNumber, language }) => ({
     recipient: memberPhoneNumber,
     message: addAdminIdToHeader(
       sender,
@@ -630,7 +630,7 @@ const hotlineReplyNotificationsOf = (
 // RESTART
 
 const maybeRestart = async (channel, sender, payload) => {
-  logger.log(`--- FULL MANUAL RESTART INITIATED by ${util.hash(sender.phoneNumber)}...`)
+  logger.log(`--- FULL MANUAL RESTART INITIATED by ${util.hash(sender.memberPhoneNumber)}...`)
   try {
     // authenticate user and password:
     const { isAuthorized, message } = await _authenticateRestart(channel, sender, payload)
@@ -662,7 +662,7 @@ const _authenticateRestart = async (channel, sender, payload) => {
   // before allowing restart to proceed
   const n = messagesIn(sender.language).notifications
   try {
-    if (!(await channelRepository.isMaintainer(sender.phoneNumber)))
+    if (!(await channelRepository.isMaintainer(sender.memberPhoneNumber)))
       return { isAuthorized: false, message: n.restartRequesterNotAuthorized }
     if (channel.phoneNumber !== diagnosticsPhoneNumber)
       return { isAuthorized: false, message: n.restartChannelNotAuthorized }
@@ -679,7 +679,7 @@ const _authenticateRestart = async (channel, sender, payload) => {
 
 const _restartNotificationsOf = async sender => {
   const maintainers = (await channelRepository.getMaintainers()).filter(
-    m => m.memberPhoneNumber !== sender.phoneNumber,
+    m => m.memberPhoneNumber !== sender.memberPhoneNumber,
   )
   return maintainers.map(maintainer => ({
     recipient: maintainer.memberPhoneNumber,
@@ -695,7 +695,7 @@ const _restartNotificationsOf = async sender => {
 const setLanguage = (sender, language) => {
   const cr = messagesIn(language).commandResponses.setLanguage
   return membershipRepository
-    .updateLanguage(sender.phoneNumber, language)
+    .updateLanguage(sender.memberPhoneNumber, language)
     .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError }))
 }
@@ -722,7 +722,7 @@ const _toggleSetting = (channel, sender, toggle, isOn) => {
 }
 
 const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
-  const recipients = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const recipients = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
     message: addNotificationHeader(
@@ -755,7 +755,7 @@ const setVouchMode = async (channel, sender, newVouchMode) => {
 }
 
 const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
@@ -787,7 +787,7 @@ const setVouchLevel = async (channel, sender, newVouchLevel) => {
 }
 
 const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
@@ -810,7 +810,7 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
   const messageId = await hotlineMessageRepository.getMessageId({
     channelPhoneNumber: channel.phoneNumber,
-    memberPhoneNumber: sender.phoneNumber,
+    memberPhoneNumber: sender.memberPhoneNumber,
   })
 
   const prefix = language => `[${messagesIn(language).prefixes.hotlineMessage(messageId)}]\n`

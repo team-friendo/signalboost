@@ -75,14 +75,6 @@ const resolveMemberType = async (channelPhoneNumber, memberPhoneNumber) => {
   return member ? member.type : memberTypes.NONE
 }
 
-const resolveSenderLanguage = async (channelPhoneNumber, memberPhoneNumber, senderType) => {
-  if (senderType === memberTypes.NONE) return defaultLanguage
-  const member = await app.db.membership.findOne({
-    where: { channelPhoneNumber, memberPhoneNumber },
-  })
-  return member ? member.language : defaultLanguage
-}
-
 // (Database, string, string) -> Array<number>
 const updateLanguage = async (memberPhoneNumber, language) =>
   app.db.membership.update({ language }, { where: { memberPhoneNumber } })
@@ -121,7 +113,6 @@ module.exports = {
   isSubscriber,
   removeMember,
   resolveMemberType,
-  resolveSenderLanguage,
   updateLanguage,
   memberTypes,
 }

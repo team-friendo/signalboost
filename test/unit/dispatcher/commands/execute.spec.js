@@ -258,7 +258,7 @@ describe('executing commands', () => {
           it('logs membership creation (if applicable)', async () => {
             await processCommand(_dispatchable)
             expect(logIfFirstMembershipStub.callCount).to.eql(1)
-            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.phoneNumber])
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.memberPhoneNumber])
           })
 
           it('returns SUCCESS status', async () => {
@@ -362,7 +362,7 @@ describe('executing commands', () => {
                   {
                     recipient: newAdminPhoneNumber,
                     message: messagesIn(languages.FR).notifications.welcome(
-                      sender.phoneNumber,
+                      sender.memberPhoneNumber,
                       channel.phoneNumber,
                       channel.name,
                     ),
@@ -1260,7 +1260,7 @@ describe('executing commands', () => {
             await processCommand(dispatchable)
             expect(addSubscriberStub.getCall(0).args).to.eql([
               channel.phoneNumber,
-              randomPerson.phoneNumber,
+              randomPerson.memberPhoneNumber,
               language,
             ])
           })
@@ -1282,7 +1282,7 @@ describe('executing commands', () => {
           it('logs membership creation (if applicable)', async () => {
             await processCommand(dispatchable)
             expect(logIfFirstMembershipStub.callCount).to.eql(1)
-            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.phoneNumber])
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.memberPhoneNumber])
           })
         })
 
@@ -1426,7 +1426,7 @@ describe('executing commands', () => {
       })
 
       it('removes sender as admin of channel', async () => {
-        expect(removeMemberStub.getCall(0).args).to.eql([channel.phoneNumber, sender.phoneNumber])
+        expect(removeMemberStub.getCall(0).args).to.eql([channel.phoneNumber, sender.memberPhoneNumber])
       })
 
       it('returns SUCCESS status, message, and notifications', () => {
@@ -1727,7 +1727,7 @@ describe('executing commands', () => {
 
       describe('when admin specifies valid hotline id for message from a non-subscriber', () => {
         beforeEach(() => {
-          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.phoneNumber))
+          findMemberPhoneNumberStub.returns(Promise.resolve(randomPerson.memberPhoneNumber))
           findMembershipStub.onCall(0).returns(Promise.resolve(null))
           findMembershipStub.onCall(1).returns(Promise.resolve(admin))
         })
@@ -1739,7 +1739,7 @@ describe('executing commands', () => {
             message: `[${prefixesFor(admin).hotlineReplyOf(messageId, memberTypes.ADMIN)}]\nfoo`,
             notifications: [
               {
-                recipient: randomPerson.phoneNumber,
+                recipient: randomPerson.memberPhoneNumber,
                 message: `[${messagesIn(defaultLanguage).prefixes.hotlineReplyOf(
                   messageId,
                   memberTypes.SUBSCRIBER,

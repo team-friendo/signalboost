@@ -15,8 +15,8 @@ const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const { emphasize, redact } = require('../util')
 const metrics = require('../metrics')
-const { isCommand } = require("./strings/commands")
-const { commands } = require("./commands/constants")
+const { isCommand } = require('./strings/commands')
+const { commands } = require('./commands/constants')
 const {
   counters: { SIGNALD_MESSAGES, RELAYABLE_MESSAGES, ERRORS },
   errorTypes,
@@ -179,7 +179,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
       // override a disappearing message time set by a subscriber or rando
       return signal.setExpiration(
         channel.phoneNumber,
-        sender.phoneNumber,
+        sender.memberPhoneNumber,
         channel.messageExpiryTime,
         channel.socketId,
       )
@@ -188,7 +188,7 @@ const updateExpiryTime = async (sender, channel, messageExpiryTime) => {
       await channelRepository.update(channel.phoneNumber, { messageExpiryTime })
       return Promise.all(
         channel.memberships
-          .filter(m => m.memberPhoneNumber !== sender.phoneNumber)
+          .filter(m => m.memberPhoneNumber !== sender.memberPhoneNumber)
           .map(m =>
             signal.setExpiration(
               channel.phoneNumber,
@@ -293,16 +293,18 @@ const detectRedemption = (channel, inboundMsg) =>
   !isCommand(get(inboundMsg, 'data.dataMessage.body'), commands.DESTROY_CONFIRM)
 
 const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
-  // TODO(aguestuser|2019-12-02): do this with one db query!
-  const type = await membershipRepository.resolveMemberType(channelPhoneNumber, senderPhoneNumber)
-  const language = await membershipRepository.resolveSenderLanguage(
+  const membership = await membershipRepository.findMembership(
     channelPhoneNumber,
     senderPhoneNumber,
-    type,
   )
-  return { phoneNumber: senderPhoneNumber, type, language }
+  return (
+    membership || {
+      type: memberTypes.NONE,
+      memberPhoneNumber: senderPhoneNumber,
+      language: defaultLanguage,
+    }
+  )
 }
-
 
 // EXPORTS
 
