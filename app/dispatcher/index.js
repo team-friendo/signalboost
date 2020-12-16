@@ -15,6 +15,8 @@ const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const { emphasize, redact } = require('../util')
 const metrics = require('../metrics')
+const { isCommand } = require("./strings/commands")
+const { commands } = require("./commands/constants")
 const {
   counters: { SIGNALD_MESSAGES, RELAYABLE_MESSAGES, ERRORS },
   errorTypes,
@@ -286,7 +288,9 @@ const detectRedemption = (channel, inboundMsg) =>
   _isMessage(inboundMsg) &&
   !_isEmpty(inboundMsg) &&
   !detectHealthcheck(inboundMsg) &&
-  !detectHealthcheckResponse(inboundMsg)
+  !detectHealthcheckResponse(inboundMsg) &&
+  !isCommand(get(inboundMsg, 'data.dataMessage.body'), commands.DESTROY) &&
+  !isCommand(get(inboundMsg, 'data.dataMessage.body'), commands.DESTROY_CONFIRM)
 
 const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
   // TODO(aguestuser|2019-12-02): do this with one db query!
@@ -298,6 +302,7 @@ const classifyPhoneNumber = async (channelPhoneNumber, senderPhoneNumber) => {
   )
   return { phoneNumber: senderPhoneNumber, type, language }
 }
+
 
 // EXPORTS
 
