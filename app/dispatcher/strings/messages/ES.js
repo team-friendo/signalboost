@@ -80,9 +80,7 @@ const commandResponses = {
 Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
     alreadyMember: 'Lo sentimos, ya eres miembro de este canal.',
     belowVouchLevel: (channel, required, actual) =>
-      `Lo sentimos, ${
-        channel.name
-      } requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
+      `Lo sentimos, ${channel.name} requiere ${required} invitacion(es) para unirse. Tiene usted ${actual}.`,
     dbError: '¡Ay! Se produjo un error al aceptar su invitación. ¡Inténtelo de nuevo!',
     subscriberLimitReached,
   },
@@ -462,8 +460,11 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hola! Usted ha recibido una invitación para unirse al canal Signalboost de [${channelName}]. Por favor, responda con ACEPTAR o RECHAZAR.`,
@@ -535,11 +536,11 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
-  admin: 'ADMIN',
   broadcastMessage: `TRANSMITIR`,
+  fromAdmin: 'DESDE ADMIN',
   hotlineMessage: messageId => `LÍNEA DIRECTA DESDE @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `RESPUESTA A @${messageId}` : `RESPUESTA PRIVADA DE ADMINS`,
+  hotlineReply: `RESPUESTA PRIVADA DE ADMINS`,
+  hotlineReplyTo: messageId => `RESPUESTA A @${messageId}`,
   notification: `NOTIFICACIÓN`,
   privateMessage: `PRIVADO`,
 }

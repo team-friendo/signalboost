@@ -65,7 +65,7 @@ const execute = async (executable, dispatchable) => {
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => confirmDestroy(channel, sender),
-    [commands.DESTROY_CONFIRM]: () => destroy(channel, sender),
+    [commands.DESTROY_CONFIRM]: () => actuallyDestroy(channel, sender),
     [commands.HELP]: () => showHelp(channel, sender),
     [commands.HOTLINE_ON]: () => toggleSettingOn(channel, sender, toggles.HOTLINE),
     [commands.HOTLINE_OFF]: () => toggleSettingOff(channel, sender, toggles.HOTLINE),
@@ -242,17 +242,11 @@ const broadcastMessage = (channel, sender, sdMessage, payload) => {
 
 const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody) => {
   const adminMemberships = getAdminMemberships(channel)
-  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.memberPhoneNumber)
-
   const subscriberMemberships = getSubscriberMemberships(channel)
 
-  const adminNotifications = adminMemberships.map(membership => ({
-    recipient: membership.memberPhoneNumber,
-    message: addAdminIdToHeader(
-      senderMembership,
-      messagesIn(membership.language).prefixes.broadcastMessage,
-      messageBody,
-    ),
+  const adminNotifications = adminMemberships.map(recipientMembership => ({
+    recipient: recipientMembership.memberPhoneNumber,
+    message: addAdminIdToHeader(sender, recipientMembership, 'broadcastMessage', messageBody),
     attachments,
   }))
 
@@ -280,15 +274,10 @@ const privateMessageAdmins = async (channel, sender, payload, sdMessage) => {
 
 const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
   const adminMemberships = getAdminMemberships(channel)
-  const senderMembership = adminMemberships.find(m => m.memberPhoneNumber === sender.memberPhoneNumber)
 
-  return adminMemberships.map(membership => ({
-    recipient: membership.memberPhoneNumber,
-    message: addAdminIdToHeader(
-      senderMembership,
-      messagesIn(membership.language).prefixes.privateMessage,
-      payload,
-    ),
+  return adminMemberships.map(recipientMembership => ({
+    recipient: recipientMembership.memberPhoneNumber,
+    message: addAdminIdToHeader(sender, recipientMembership, 'privateMessage', payload),
     attachments: sdMessage.attachments,
   }))
 }
@@ -310,11 +299,11 @@ const confirmDestroy = async (channel, sender) => {
   return { status: statuses.SUCCESS, message: cr.confirm }
 }
 
-const destroy = async (channel, sender) => {
+const actuallyDestroy = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.destroy
   const result = await phoneNumberRegistrar.destroy({
     phoneNumber: channel.phoneNumber,
-    sender: sender.memberPhoneNumber,
+    sender,
     notifyOnFailure: true,
   })
   if (get(result, 'status') === statuses.SUCCESS) {
@@ -373,7 +362,10 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (!isEmpty(errors)) {
     return {
       status: statuses.ERROR,
-      message: cr.dbErrors(errors.map(e => e.inviteePhoneNumber), inviteResults.length),
+      message: cr.dbErrors(
+        errors.map(e => e.inviteePhoneNumber),
+        inviteResults.length,
+      ),
       notifications,
     }
   }
@@ -561,8 +553,10 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
 
 // REPLY
 
-const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineReply) => {
+// (Channel, Membership, SdMessage, HotlineReply) => Promise<CommandResult>
+const replyToHotlineMessage = async (channel, sender, sdMessage, hotlineReply) => {
   const cr = messagesIn(sender.language).commandResponses.hotlineReply
+  const { attachments } = sdMessage
 
   try {
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
@@ -573,17 +567,13 @@ const replyToHotlineMessage = async (channel, sender, { attachments }, hotlineRe
       'language',
       defaultLanguage,
     )
-    const senderMembership = await membershipRepository.findMembership(
-      channel.phoneNumber,
-      sender.memberPhoneNumber,
-    )
 
     return {
       status: statuses.SUCCESS,
       message: cr.success(hotlineReply),
       notifications: hotlineReplyNotificationsOf(
         channel,
-        senderMembership,
+        sender,
         hotlineReply,
         memberPhoneNumber,
         language,
@@ -616,12 +606,14 @@ const hotlineReplyNotificationsOf = (
     attachments,
   },
   // notifications to all admins
-  ...getAdminMemberships(channel, [sender.memberPhoneNumber]).map(({ memberPhoneNumber, language }) => ({
-    recipient: memberPhoneNumber,
+  ...getAdminMemberships(channel, [sender.memberPhoneNumber]).map(recipientMembership => ({
+    recipient: recipientMembership.memberPhoneNumber,
     message: addAdminIdToHeader(
       sender,
-      messagesIn(language).prefixes.hotlineReplyOf(hotlineReply.messageId, memberTypes.ADMIN),
+      recipientMembership,
+      'hotlineReplyTo',
       hotlineReply.reply,
+      hotlineReply.messageId,
     ),
     attachments,
   })),
@@ -827,9 +819,17 @@ const addNotificationHeader = (language, messageBody) => {
   return `[${prefix}]\n ${messageBody}`
 }
 
-const addAdminIdToHeader = (membership, messageType, messageBody) => {
-  const prefix = messagesIn(membership.language).prefixes
-  return `[${messageType} FROM ${prefix.admin} ${membership.adminId}]\n${messageBody}`
+const addAdminIdToHeader = (
+  senderMembership,
+  recipientMembership,
+  messageType,
+  messageBody,
+  hotlineMessageId,
+) => {
+  const { fromAdmin } = messagesIn(recipientMembership.language).prefixes
+  const messageTypePrefix = messagesIn(recipientMembership.language).prefixes[messageType]
+  const _messageType = hotlineMessageId ? messageTypePrefix(hotlineMessageId) : messageTypePrefix
+  return `[${_messageType} ${fromAdmin} ${senderMembership.adminId}]\n${messageBody}`
 }
 
 const logAndReturn = (err, statusTuple) => {

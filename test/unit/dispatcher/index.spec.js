@@ -219,10 +219,7 @@ describe('dispatcher module', () => {
       })
 
       it('retrieves memberhip for the message sender', () => {
-        expect(findMembershipStub.getCall(0).args).to.eql([
-          channel.phoneNumber,
-          adminPhoneNumber,
-        ])
+        expect(findMembershipStub.getCall(0).args).to.eql([channel.phoneNumber, adminPhoneNumber])
       })
 
       it('processes any commands in the message', () => {

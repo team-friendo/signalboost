@@ -440,8 +440,11 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
       ? 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands.'
       : 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands or HELLO to subscribe.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hello! You have received an invite to join the [${channelName}] Signalboost channel. Please respond with ACCEPT or DECLINE.`,
@@ -504,11 +507,11 @@ To see a full list of commands, send HELP or check out our how-to guide: https:/
 }
 
 const prefixes = {
-  admin: 'ADMIN',
   broadcastMessage: `BROADCAST`,
+  fromAdmin: 'FROM ADMIN',
   hotlineMessage: messageId => `HOTLINE FROM @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `REPLY TO @${messageId}` : `PRIVATE REPLY FROM ADMINS`,
+  hotlineReply: `PRIVATE REPLY FROM ADMINS`,
+  hotlineReplyTo: messageId => `REPLY TO @${messageId}`,
   notification: `NOTIFICATION`,
   privateMessage: `PRIVATE`,
 }

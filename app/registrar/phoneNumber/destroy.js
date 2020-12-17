@@ -133,7 +133,7 @@ const redeem = async channel => {
   }
 }
 
-// ({ phoneNumber: string, sender: string, notifyOnFailure: boolean, issuer: 'SYSTEM' | 'ADMIN'}) -> SignalboostStatus
+// ({ phoneNumber: string, sender: Membership, notifyOnFailure: boolean, issuer: 'SYSTEM' | 'ADMIN'}) -> SignalboostStatus
 const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
   const tx = await app.db.sequelize.transaction()
 
@@ -168,7 +168,7 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
       notifyMembersOfDeletion(channel, sender, issuer)
         .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
         .catch(err =>
-          console.error(`... error sending deletion notices members of ${phoneNumber}: ${err}`),
+          logger.error(`... error sending deletion notices members of ${phoneNumber}: ${err}`),
         )
 
       logger.log(`unsubscribing from ${phoneNumber}...`)
@@ -219,7 +219,7 @@ const notifyMembersOfDeletion = (channel, sender, issuer) =>
         notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED, [
           memberTypes.SUBSCRIBER,
         ]),
-      ]).catch(console.error)
+      ]).catch(logger.error)
     : notifier.notifyMembersExcept(
         channel,
         sender,
@@ -250,7 +250,7 @@ const releasePhoneNumber = async phoneNumberRecord => {
 
 // (Error, string, notifyOnFailure) -> SignalboostStatus
 const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) => {
-  console.error(`Error destroying channel: ${phoneNumber}:`)
+  logger.error(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
   if (notifyOnFailure)
     await notifier.notifyMaintainers(

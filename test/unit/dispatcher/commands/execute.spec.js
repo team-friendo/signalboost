@@ -27,10 +27,7 @@ import {
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { messagesIn } from '../../../../app/dispatcher/strings/messages'
-import {
-  addAdminIdToHeader,
-  addNotificationHeader,
-} from '../../../../app/dispatcher/commands/execute'
+import { addNotificationHeader } from '../../../../app/dispatcher/commands/execute'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
@@ -46,7 +43,7 @@ describe('executing commands', () => {
    * (1) the language a command was issued in
    * (2) the language of the recipient of command responses
    * (3) the language of the recipient of notifications
-   * (4) the language that a notification, parse error, or command response is ulimately issued in
+   * (4) the language that a notification, parse error, or command response is ultimately issued in
    *
    * Where all of the above may differ from one another.
    *
@@ -123,7 +120,7 @@ describe('executing commands', () => {
   }
 
   const randomPerson = {
-    phoneNumber: genPhoneNumber(),
+    memberPhoneNumber: genPhoneNumber(),
     type: memberTypes.NONE,
     language,
   }
@@ -258,7 +255,9 @@ describe('executing commands', () => {
           it('logs membership creation (if applicable)', async () => {
             await processCommand(_dispatchable)
             expect(logIfFirstMembershipStub.callCount).to.eql(1)
-            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.memberPhoneNumber])
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([
+              randomPerson.memberPhoneNumber,
+            ])
           })
 
           it('returns SUCCESS status', async () => {
@@ -525,15 +524,15 @@ describe('executing commands', () => {
           message: '',
           status: statuses.SUCCESS,
           notifications: [
-            ...adminMemberships.map(membership => ({
-              recipient: membership.memberPhoneNumber,
-              message: addAdminIdToHeader(
-                sender,
-                messagesIn(membership.language).prefixes.broadcastMessage,
-                'hello friendos!',
-              ),
-              attachments,
-            })),
+            ...adminMemberships.map(membership => {
+              return {
+                recipient: membership.memberPhoneNumber,
+                message: `[${prefixesFor(membership).broadcastMessage} ${
+                  prefixesFor(membership).fromAdmin
+                } ${sender.adminId}]\nhello friendos!`,
+                attachments,
+              }
+            }),
             ...subscriberMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
               message: `[${subscriberHeader}]\nhello friendos!`,
@@ -1282,7 +1281,9 @@ describe('executing commands', () => {
           it('logs membership creation (if applicable)', async () => {
             await processCommand(dispatchable)
             expect(logIfFirstMembershipStub.callCount).to.eql(1)
-            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([randomPerson.memberPhoneNumber])
+            expect(logIfFirstMembershipStub.getCall(0).args).to.eql([
+              randomPerson.memberPhoneNumber,
+            ])
           })
         })
 
@@ -1426,7 +1427,10 @@ describe('executing commands', () => {
       })
 
       it('removes sender as admin of channel', async () => {
-        expect(removeMemberStub.getCall(0).args).to.eql([channel.phoneNumber, sender.memberPhoneNumber])
+        expect(removeMemberStub.getCall(0).args).to.eql([
+          channel.phoneNumber,
+          sender.memberPhoneNumber,
+        ])
       })
 
       it('returns SUCCESS status, message, and notifications', () => {
@@ -1448,9 +1452,10 @@ describe('executing commands', () => {
   })
 
   describe('PRIVATE command', () => {
+    const messageBody = 'hello this is private!'
     const sdMessage = sdMessageOf({
       sender: channel.phoneNumber,
-      message: 'PRIVATE hello this is private!',
+      message: `${localizedCmds.PRIVATE} ${messageBody}`,
       attachments,
     })
 
@@ -1468,11 +1473,9 @@ describe('executing commands', () => {
           notifications: [
             ...adminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: addAdminIdToHeader(
-                sender,
-                messagesIn(membership.language).prefixes.privateMessage,
-                'hello this is private!',
-              ),
+              message: `[${prefixesFor(membership).privateMessage} ${
+                prefixesFor(membership).fromAdmin
+              } ${sender.adminId}]\n${messageBody}`,
               attachments,
             })),
           ],
@@ -1670,11 +1673,14 @@ describe('executing commands', () => {
     })
   })
 
+  // REPLY
   describe('REPLY command', () => {
+    const sender = admin
     const messageId = 1312
+    const hotlineReply = { messageId, reply: 'foo' }
     const dispatchable = {
       channel,
-      sender: admin,
+      sender,
       sdMessage: sdMessageOf({
         sender: channel.phoneNumber,
         message: `${localizedCmds.REPLY} @${messageId} foo`,
@@ -1700,23 +1706,23 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
-            message: `[${prefixesFor(admin).hotlineReplyOf(messageId, memberTypes.ADMIN)}]\nfoo`,
+            message: commandResponsesFor(admin).hotlineReply.success(hotlineReply),
             notifications: [
+              // response to the incoming hotline message sender
               {
                 recipient: subscriber.phoneNumber,
-                message: `[${prefixesFor(subscriber).hotlineReplyOf(
-                  messageId,
+                message: messagesIn(subscriber.language).notifications.hotlineReplyOf(
+                  hotlineReply,
                   memberTypes.SUBSCRIBER,
-                )}]\nfoo`,
+                ),
                 attachments,
               },
+              // notifications for the admins
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,
-                message: addAdminIdToHeader(
-                  admin,
-                  `${prefixesFor(membership).hotlineReplyOf(messageId, memberTypes.ADMIN)}`,
-                  'foo',
-                ),
+                message: `[${prefixesFor(membership).hotlineReplyTo(messageId)} ${
+                  prefixesFor(membership).fromAdmin
+                } ${sender.adminId}]\nfoo`,
                 attachments,
               })),
             ],
@@ -1736,25 +1742,25 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REPLY,
             status: statuses.SUCCESS,
-            message: `[${prefixesFor(admin).hotlineReplyOf(messageId, memberTypes.ADMIN)}]\nfoo`,
+            message: `[${prefixesFor(admin).hotlineReplyTo(messageId)}]\nfoo`,
             notifications: [
               {
                 recipient: randomPerson.memberPhoneNumber,
-                message: `[${messagesIn(defaultLanguage).prefixes.hotlineReplyOf(
-                  messageId,
-                  memberTypes.SUBSCRIBER,
-                )}]\nfoo`,
-                attachments,
-              },
-              ...adminMemberships.map(membership => ({
-                recipient: membership.memberPhoneNumber,
-                message: addAdminIdToHeader(
-                  admin,
-                  `${prefixesFor(membership).hotlineReplyOf(messageId, memberTypes.ADMIN)}`,
-                  'foo',
+                message: messagesIn(defaultLanguage).notifications.hotlineReplyOf(
+                  hotlineReply,
+                  memberTypes.NONE,
                 ),
                 attachments,
-              })),
+              },
+              ...adminMemberships.map(membership => {
+                return {
+                  recipient: membership.memberPhoneNumber,
+                  message: `[${prefixesFor(membership).hotlineReplyTo(messageId)} ${
+                    prefixesFor(membership).fromAdmin
+                  } ${sender.adminId}]\nfoo`,
+                  attachments,
+                }
+              }),
             ],
             payload: { messageId: 1312, reply: 'foo' },
           })
@@ -1962,6 +1968,7 @@ describe('executing commands', () => {
     })
   })
 
+  // TOGGLE
   describe('TOGGLE commands', () => {
     let updateChannelStub
     beforeEach(() => (updateChannelStub = sinon.stub(channelRepository, 'update')))

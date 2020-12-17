@@ -77,16 +77,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${
-      channel.name
-    }].
+    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${channel.name}].
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de ce canal',
     belowVouchLevel: (channel, required, actual) =>
-      `Désolé, ${
-        channel.name
-      } nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
+      `Désolé, ${channel.name} nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
     dbError:
       "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
     subscriberLimitReached,
@@ -372,9 +368,7 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
         OFF: `ADMIN ${adminId} a conifguré se porter garant ${vouchModeDisplay.OFF}.
 
 Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
-        ADMIN: `ADMIN ${adminId} a conifguré se porter garant est maintenant ${
-          vouchModeDisplay.ADMIN
-        }.
+        ADMIN: `ADMIN ${adminId} a conifguré se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
 
 Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
@@ -468,8 +462,11 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
       ? 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour lister les commandes valides ou SALUT pour vous abonner.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Bonjour! Vous avez reçu le invitation pour rejoindre la canal Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
@@ -539,11 +536,11 @@ Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre gui
 }
 
 const prefixes = {
-  admin: 'ADMIN',
   broadcastMessage: `DIFFUSER`,
+  fromAdmin: 'DE ADMIN',
   hotlineMessage: messageId => `HOTLINE DE @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `RÉPONSE Á @${messageId}` : `RÉPONSE PRIVÉE DES ADMINS`,
+  hotlineReply: `RÉPONSE PRIVÉE DES ADMINS`,
+  hotlineReplyTo: messageId => `RÉPONSE Á @${messageId}`,
   notification: `NOTIFICATION`,
   privateMessage: `PRIVÉ`,
 }

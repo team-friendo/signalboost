@@ -457,8 +457,11 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
       ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
@@ -522,11 +525,11 @@ ${
 }
 
 const prefixes = {
-  admin: 'ADMIN',
   broadcastMessage: `ÜBERTRAGUNG`,
+  fromAdmin: 'VON ADMIN',
   hotlineMessage: messageId => `HOTLINE VON @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `HOTLINE AN @${messageId}` : `PRIVATE ANTWORT VON ADMINS`,
+  hotlineReply: `PRIVATE ANTWORT VON ADMINS`,
+  hotlineReplyTo: messageId => `HOTLINE AN @${messageId}`,
   notification: `BENACHRICHTIGUNG`,
   privateMessage: `PRIVAT`,
 }

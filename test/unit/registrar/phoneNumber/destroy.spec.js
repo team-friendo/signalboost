@@ -12,7 +12,7 @@ import notifier, { notificationKeys } from '../../../../app/notifier'
 import signal from '../../../../app/signal'
 import app from '../../../../app'
 import testApp from '../../../support/testApp'
-import util, { wait } from '../../../../app/util'
+import util from '../../../../app/util'
 import {
   destroy,
   redeem,
@@ -40,7 +40,7 @@ describe('phone number registrar -- destroy module', () => {
   const phoneNumberRecord = phoneNumberFactory({ phoneNumber })
   const phoneNumbers = times(2, genPhoneNumber)
   const channel = deepChannelFactory({ phoneNumber })
-  const sender = channel.memberships[0].memberPhoneNumber
+  const admin = channel.memberships[0].memberPhoneNumber
 
   let findChannelStub,
     findPhoneNumberStub,
@@ -176,7 +176,7 @@ describe('phone number registrar -- destroy module', () => {
             await destroy({ phoneNumber })
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
-              undefined,
+              undefined, // b/c sent by system!
               notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
             ])
           })
@@ -184,12 +184,12 @@ describe('phone number registrar -- destroy module', () => {
 
         describe('destroy command issued by an admin', () => {
           it('notifies all the members of the channel of destruction', async () => {
-            await destroy({ phoneNumber, issuer: issuerTypes.ADMIN })
+            await destroy({ phoneNumber, sender: admin, issuer: issuerTypes.ADMIN })
 
             expect(notifyAdminsStub.getCall(0).args).to.eql([
               channel,
               notificationKeys.CHANNEL_DESTROYED,
-              [memberTypes.ADMIN, 1],
+              [memberTypes.ADMIN, admin.adminId],
             ])
             expect(notifySubscribersStub.getCall(0).args).to.eql([
               channel,
@@ -201,10 +201,10 @@ describe('phone number registrar -- destroy module', () => {
 
         describe('destroy command called from admin of channel', () => {
           it('notifies all members of the channel except for the sender', async () => {
-            await destroy({ phoneNumber, sender })
+            await destroy({ phoneNumber, sender: admin })
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
-              sender,
+              admin,
               notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
             ])
           })
