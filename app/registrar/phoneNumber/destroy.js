@@ -165,9 +165,11 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
       // it's important to not await channel destruction notifications because we might need to send out several thousand (which will take a long time!)
       // we don't want to block execution of the deletion job
 
-      notifyMembersOfDeletion(channel, sender, issuer).then(() =>
-        logger.log(`...sent deletion notice to members of: ${phoneNumber}.`),
-      )
+      notifyMembersOfDeletion(channel, sender, issuer)
+        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
+        .catch(err =>
+          console.error(`... error sending deletion notices members of ${phoneNumber}: ${err}`),
+        )
 
       logger.log(`unsubscribing from ${phoneNumber}...`)
       await signal.unsubscribe(phoneNumber, channel.socketId)
@@ -207,8 +209,8 @@ const deleteVestigalKeystoreEntries = async () => {
 
 // HELPERS
 
-const notifyMembersOfDeletion = (channel, sender, issuer) => {
-  return issuer === issuerTypes.ADMIN
+const notifyMembersOfDeletion = (channel, sender, issuer) =>
+  issuer === issuerTypes.ADMIN
     ? Promise.all([
         notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED, [
           memberTypes.ADMIN,
@@ -223,7 +225,6 @@ const notifyMembersOfDeletion = (channel, sender, issuer) => {
         sender,
         notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
       )
-}
 
 // (string) -> Promise<void>
 const deleteSignalKeystore = async phoneNumber => {
@@ -249,7 +250,7 @@ const releasePhoneNumber = async phoneNumberRecord => {
 
 // (Error, string, notifyOnFailure) -> SignalboostStatus
 const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) => {
-  logger.error(`Error destroying channel: ${phoneNumber}:`)
+  console.error(`Error destroying channel: ${phoneNumber}:`)
   logger.error(err)
   if (notifyOnFailure)
     await notifier.notifyMaintainers(
