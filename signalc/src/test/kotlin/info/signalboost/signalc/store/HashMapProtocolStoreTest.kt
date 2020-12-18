@@ -12,8 +12,8 @@ import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
 
-class SignalcProtocolStoreTest : FreeSpec({
-    val store = SignalcProtocolStore
+class HashMapProtocolStoreTest : FreeSpec({
+    val store = HashMapProtocolStore
 
     afterTest {
         unmockkAll()
@@ -25,7 +25,7 @@ class SignalcProtocolStoreTest : FreeSpec({
         val prekey = KeyUtil.genPreKeys(0, 1)[0]
 
         afterTest {
-            store.removePreKey(nonExistentId)
+            store.removePreKey(keyId)
         }
 
         "checks for prekey existence" - {
@@ -100,7 +100,7 @@ class SignalcProtocolStoreTest : FreeSpec({
         val identityKey = KeyUtil.genIdentityKeyPair().publicKey
         val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
 
-        fun SignalcProtocolStore.removeIdentity(address: SignalProtocolAddress) {
+        fun HashMapProtocolStore.removeIdentity(address: SignalProtocolAddress) {
             this.identities.remove(address)
         }
 

@@ -7,7 +7,7 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
 
-object SignalcProtocolStore: SignalProtocolStore {
+object HashMapProtocolStore: SignalProtocolStore {
 
     // TODO(aguestuser|2020-12-01): delegate to 3 substores for Identity, Prekeys, and Session?
 

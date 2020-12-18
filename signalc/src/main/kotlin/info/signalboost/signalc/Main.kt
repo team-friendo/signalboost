@@ -3,7 +3,7 @@ package info.signalboost.signalc
 import info.signalboost.signalc.logic.Messaging
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.UnregisteredAccount
-import info.signalboost.signalc.store.SignalcProtocolStore
+import info.signalboost.signalc.store.HashMapProtocolStore
 
 
 /********************************************************************
@@ -17,7 +17,7 @@ const val USER_PHONE_NUMBER = "+17347962920"
 
 fun main() {
     // intialize account
-    val unregisteredAccount = UnregisteredAccount(username = USER_PHONE_NUMBER, protocolStore = SignalcProtocolStore)
+    val unregisteredAccount = UnregisteredAccount(username = USER_PHONE_NUMBER, protocolStore = HashMapProtocolStore)
 
     // register account
     println("Asking signal for an sms verification code...")

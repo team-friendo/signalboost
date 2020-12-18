@@ -3,7 +3,7 @@ package info.signalboost.signalc.model
 import info.signalboost.signalc.Config.SIGNAL_AGENT
 import info.signalboost.signalc.Config.groupsV2Operations
 import info.signalboost.signalc.Config.signalServiceConfig
-import info.signalboost.signalc.store.SignalcProtocolStore
+import info.signalboost.signalc.store.HashMapProtocolStore
 import info.signalboost.signalc.logic.KeyUtil
 import info.signalboost.signalc.logic.KeyUtil.genPassword
 import info.signalboost.signalc.logic.KeyUtil.genProfileKey
@@ -74,7 +74,7 @@ sealed class Account {
         fun publishFirstPrekeys(account: RegisteredAccount) {
             // generate prekeys and store them locally
             val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE)
-            val signedPreKey = KeyUtil.genSignedPreKey(SignalcProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
+            val signedPreKey = KeyUtil.genSignedPreKey(HashMapProtocolStore.ownIdentityKeypair, signedPrekeyId).also {
                 account.protocolStore.storeSignedPreKey(it.id, it)
             }
             val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
@@ -92,7 +92,7 @@ sealed class Account {
 
 data class UnregisteredAccount(
     val username: String,
-    val protocolStore: SignalProtocolStore = SignalcProtocolStore,
+    val protocolStore: SignalProtocolStore = HashMapProtocolStore,
     val password: String = genPassword(),
     val signalingKey: String = genSignalingKey(),
     val profileKey: ProfileKey = genProfileKey(),
