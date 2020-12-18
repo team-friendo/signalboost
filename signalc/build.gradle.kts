@@ -8,6 +8,7 @@ val entrypoint = "info.signalboost.signalc.MainKt"
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 plugins {
@@ -48,17 +49,26 @@ tasks.withType<Wrapper> {
 
 
 object Versions {
-    val bouncyCastle = "1.66"
-    val coroutines = "1.3.9"
-    val kotest = "4.3.1"
-    val libsignal = "2.15.3_unofficial_14"
-    val mockk = "1.10.3"
+    const val bouncyCastle = "1.66"
+    const val coroutines = "1.3.9"
+    const val exposed = "0.25.1"
+    const val kotest = "4.3.1"
+    const val h2 = "1.4.199"
+    const val libsignal = "2.15.3_unofficial_14"
+    const val mockk = "1.10.3"
+    const val pgjdbc = "0.8.3"
+    const val slf4j = "1.7.30"
 }
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
     implementation("com.github.turasa:signal-service-java:${Versions.libsignal}")
     implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncyCastle}")
+    implementation("org.jetbrains.exposed:exposed-core:${Versions.exposed}")
+    implementation("org.jetbrains.exposed:exposed-jdbc:${Versions.exposed}")
+    implementation("com.h2database:h2:${Versions.h2}")
+    implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
+    implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
 
     testImplementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")
     testImplementation("io.kotest:kotest-assertions-core:${Versions.kotest}")
