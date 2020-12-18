@@ -41,6 +41,17 @@ cli.uninstall: ## removes boost cli files from your path
 ##################
 # docker-related #
 ##################
+docker.pull: ## pull most recent versions of all the docker images in our dev env!
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull
+
+docker.pull.signalboost: ## pull the most recent version of our signalboost image
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull app
+
+docker.pull.signalc: ## pull the most recent version of our signalc image
+	docker-compose -f docker-compoe.yml -f docker-compose-dev.yml pull signalc
+
+docker.pull.signald: ## pull the most recent version of our signald image
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull signald
 
 docker.build.base: ## build the base docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build base $(TAG)
@@ -56,7 +67,6 @@ docker.build.signald: ## build the signald docker image (accepts optional TAG=#.
 
 docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build splash $(TAG)
-
 
 docker.push.base: ## push the base docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push base $(TAG)
