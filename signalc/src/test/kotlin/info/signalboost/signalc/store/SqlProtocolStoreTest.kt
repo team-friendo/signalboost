@@ -1,20 +1,22 @@
 package info.signalboost.signalc.store
 
-import info.signalboost.signalc.db.PreKeys
-import info.signalboost.signalc.db.Sessions
-import info.signalboost.signalc.db.SignedPreKeys
+import info.signalboost.signalc.db.*
+import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.StdOutSqlLogger
-import org.jetbrains.exposed.sql.addLogger
+import io.kotest.matchers.types.beOfType
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.whispersystems.libsignal.IdentityKey
+import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.state.IdentityKeyStore
+import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
 class SqlProtocolStoreTest: FreeSpec({
@@ -24,10 +26,56 @@ class SqlProtocolStoreTest: FreeSpec({
         driver = "org.h2.Driver",
     )
     transaction(db) {
-        addLogger(StdOutSqlLogger)
-        SchemaUtils.create(PreKeys, SignedPreKeys, Sessions)
+        // uncomment to debug sql with extra logging!
+        // addLogger(StdOutSqlLogger)
+        SchemaUtils.create(Identities, OwnIdentities, PreKeys, SignedPreKeys, Sessions)
     }
-    val store = SqlProtocolStore(db)
+    val store = SqlProtocolStore(db, genPhoneNumber())
+
+    "Identities store" - {
+        val address = SignalProtocolAddress("+12223334444", 42)
+        val identityKey = KeyUtil.genIdentityKeyPair().publicKey
+        val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
+
+        afterTest {
+            store.removeIdentity(address)
+            store.removeOwnIdentity()
+        }
+
+        "creates account's identity keypair on first call, retrieves it on subsequent calls" - {
+            transaction(db) { OwnIdentities.selectAll().count() shouldBe 0 }
+            val keyPair = store.identityKeyPair
+            transaction(db) { OwnIdentities.selectAll().count() shouldBe 1 }
+            store.identityKeyPair.serialize() shouldBe keyPair.serialize()
+        }
+
+        "retrieves account's registration id on first call, retrieves it on subsquent calls" - {
+            transaction(db) { OwnIdentities.selectAll().count() } shouldBe 0
+            val registrationId = store.localRegistrationId
+            transaction(db) { OwnIdentities.selectAll().count() } shouldBe 1
+            store.localRegistrationId shouldBe registrationId
+        }
+
+        "stores and retrieves an identity" - {
+            store.saveIdentity(address, identityKey)
+            store.getIdentity(address) shouldBe identityKey
+        }
+
+        "trusts the first key it sees for an address" - {
+            store.isTrustedIdentity(address, identityKey, Direction.RECEIVING) shouldBe true
+        }
+
+        "trusts a key it has stored for an address" - {
+            store.saveIdentity(address, identityKey)
+            store.isTrustedIdentity(address, identityKey, Direction.RECEIVING) shouldBe true
+        }
+
+        "does not trust a new key for an existing address" - {
+            store.saveIdentity(address, identityKey)
+            store.isTrustedIdentity(address, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
+        }
+    }
+
 
     "Prekey Store" - {
         val keyId = 42
@@ -71,7 +119,7 @@ class SqlProtocolStoreTest: FreeSpec({
     "Signed prekey store" - {
         val keyId = 42
         val nonExistentId = 1312
-        val signedPrekey = KeyUtil.genSignedPreKey(store.ownIdentityKeypair, keyId)
+        val signedPrekey = KeyUtil.genSignedPreKey(store.identityKeyPair, keyId)
 
         afterTest {
             store.removeSignedPreKey(keyId)
@@ -147,6 +195,4 @@ class SqlProtocolStoreTest: FreeSpec({
             store.getSubDeviceSessions(phoneNumber) shouldBe emptyList()
         }
     }
-
-
 })

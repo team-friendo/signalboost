@@ -1,10 +1,7 @@
 package info.signalboost.signalc.store
 
 
-import info.signalboost.signalc.db.PREKEY_BYTE_ARRAY_LENGTH
-import info.signalboost.signalc.db.PreKeys
-import info.signalboost.signalc.db.Sessions
-import info.signalboost.signalc.db.SignedPreKeys
+import info.signalboost.signalc.db.*
 import info.signalboost.signalc.logic.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -14,7 +11,102 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
 
-class SqlProtocolStore(private val db: Database): SignalProtocolStore {
+
+class SqlProtocolStore(
+    private val db: Database,
+    private val accountId: String,
+): SignalProtocolStore {
+
+    /********* IDENTITIES *********/
+
+    override fun getIdentityKeyPair(): IdentityKeyPair =
+        transaction(db) {
+            OwnIdentities.select {
+                OwnIdentities.accountId eq accountId
+            }.singleOrNull() ?: createOwnIdentity(accountId)
+        }.let {
+            IdentityKeyPair(it[OwnIdentities.keyPairBytes])
+        }
+
+    override fun getLocalRegistrationId(): Int =
+        transaction(db) {
+            OwnIdentities.select {
+                OwnIdentities.accountId eq accountId
+            }.singleOrNull() ?: createOwnIdentity(accountId)
+        }[OwnIdentities.registrationId]
+
+    private fun createOwnIdentity(accountId: String): ResultRow =
+        transaction(db) {
+            OwnIdentities.insert {
+                it[OwnIdentities.accountId] = accountId
+                it[keyPairBytes] = KeyUtil.genIdentityKeyPair().serialize()
+                it[registrationId] = KeyUtil.genRegistrationId()
+            }.resultedValues!![0]
+        }
+
+    override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
+        transaction(db) {
+            val isUpdate = Identities.select {
+                Identities.name eq address.name
+                Identities.deviceId eq address.deviceId
+            }.singleOrNull()?.let { true } ?: false
+
+            when {
+                isUpdate -> Identities.update ({
+                    Identities.name eq address.name
+                    Identities.deviceId eq address.deviceId
+                }) {
+                    it[isTrusted] = false
+                    it[identityKeyBytes] = identityKey.serialize()
+                }
+                else -> Identities.insert {
+                    it[name] = address.name
+                    it[deviceId] = address.deviceId
+                    it[identityKeyBytes] = identityKey.serialize()
+                }
+            }
+
+            return@transaction isUpdate
+        }
+
+    override fun isTrustedIdentity(
+        address: SignalProtocolAddress,
+        identityKey: IdentityKey,
+        direction: IdentityKeyStore.Direction
+    ): Boolean = transaction(db) {
+        Identities.select {
+            Identities.name eq address.name
+            Identities.deviceId eq address.deviceId
+        }.singleOrNull()?.let{
+            // don't trust a new key for a person with an old key, or an old key that is not trusted
+            it[Identities.identityKeyBytes] contentEquals  identityKey.serialize() && it[Identities.isTrusted]
+        } ?: true // but do trust a the first key we ever see for a person (TOFU!)
+    }
+
+    override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
+        transaction(db) {
+            Identities.select {
+                Identities.name eq address.name
+                Identities.deviceId eq address.deviceId
+            }.singleOrNull()?.let { IdentityKey(it[Identities.identityKeyBytes], 0) }
+        }
+
+    fun removeIdentity(address: SignalProtocolAddress) {
+        transaction(db) {
+            Identities.deleteWhere {
+                Identities.name eq address.name
+                Identities.deviceId eq address.deviceId
+            }
+        }
+    }
+
+    fun removeOwnIdentity() {
+        transaction(db) {
+            OwnIdentities.deleteWhere {
+                OwnIdentities.accountId eq accountId
+            }
+        }
+    }
 
     /********* PREKEYS *********/
 
@@ -89,37 +181,6 @@ class SqlProtocolStore(private val db: Database): SignalProtocolStore {
                 SignedPreKeys.id eq signedPreKeyId
             }
         }
-    }
-
-
-    /********* IDENTITIES *********/
-
-    // TODO: store these!
-    internal val ownIdentityKeypair = KeyUtil.genIdentityKeyPair()
-    internal val ownLocalRegistrationId = KeyUtil.genRegistrationId()
-
-    override fun getIdentityKeyPair(): IdentityKeyPair {
-        TODO("Not yet implemented")
-    }
-
-    override fun getLocalRegistrationId(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun saveIdentity(address: SignalProtocolAddress?, identityKey: IdentityKey?): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isTrustedIdentity(
-        address: SignalProtocolAddress?,
-        identityKey: IdentityKey?,
-        direction: IdentityKeyStore.Direction?
-    ): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun getIdentity(address: SignalProtocolAddress?): IdentityKey {
-        TODO("Not yet implemented")
     }
 
     /********* SESSIONS *********/
