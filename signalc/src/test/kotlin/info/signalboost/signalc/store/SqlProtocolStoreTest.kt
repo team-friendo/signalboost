@@ -1,17 +1,21 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.db.PreKeys
+import info.signalboost.signalc.db.Sessions
 import info.signalboost.signalc.db.SignedPreKeys
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.InvalidKeyException
+import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.state.SessionRecord
 
 class SqlProtocolStoreTest: FreeSpec({
     // TODO: postgres not h2!!!
@@ -21,7 +25,7 @@ class SqlProtocolStoreTest: FreeSpec({
     )
     transaction(db) {
         addLogger(StdOutSqlLogger)
-        SchemaUtils.create(PreKeys, SignedPreKeys)
+        SchemaUtils.create(PreKeys, SignedPreKeys, Sessions)
     }
     val store = SqlProtocolStore(db)
 
@@ -99,5 +103,50 @@ class SqlProtocolStoreTest: FreeSpec({
             store.containsSignedPreKey(keyId) shouldBe false
         }
     }
+
+    "Session Store" - {
+        // NOTE: An address is a combination of a username (uuid or e164 num) and a device id.
+        // This is how Signal represents the domain concept that a user may have many devices
+
+        val phoneNumber = "+12223334444"
+        val address1 = SignalProtocolAddress(phoneNumber, 1)
+        val address1Session = SessionRecord()
+        val address2 = SignalProtocolAddress(phoneNumber, 2)
+        val address2Session = SessionRecord()
+
+        afterTest {
+            store.deleteAllSessions(phoneNumber)
+        }
+
+        "checks for existence of a session with an address" - {
+            store.containsSession(address1) shouldBe false
+        }
+
+        "stores and retrieves a *copy* of a session with an address" - {
+            store.storeSession(address1, address1Session)
+            val sessionCopy = store.loadSession(address1)
+
+            sessionCopy shouldNotBe  address1Session // it's a different object...
+            sessionCopy.serialize() shouldBe address1Session.serialize() // ...with same underlying values
+        }
+
+        "retrieves device ids for all sessions with a given user" - {
+            store.storeSession(address1, address1Session)
+            store.storeSession(address2, address2Session)
+
+            store.getSubDeviceSessions(phoneNumber) shouldBe listOf(1,2)
+        }
+
+        "deletes sessions across all devices for a given user" - {
+            store.storeSession(address1, address1Session)
+            store.storeSession(address2, address2Session)
+            store.deleteAllSessions(phoneNumber)
+
+            store.containsSession(address1) shouldBe false
+            store.containsSession(address2) shouldBe false
+            store.getSubDeviceSessions(phoneNumber) shouldBe emptyList()
+        }
+    }
+
 
 })
