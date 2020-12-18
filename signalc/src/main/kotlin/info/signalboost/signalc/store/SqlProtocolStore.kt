@@ -1,6 +1,9 @@
 package info.signalboost.signalc.store
 
-import PreKeys
+
+import info.signalboost.signalc.db.PREKEY_BYTE_ARRAY_LENGTH
+import info.signalboost.signalc.db.PreKeys
+import info.signalboost.signalc.db.SignedPreKeys
 import info.signalboost.signalc.logic.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -10,39 +13,32 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
 
-class PostgresProtocolStore(private val db: Database): SignalProtocolStore {
+class SqlProtocolStore(private val db: Database): SignalProtocolStore {
 
     /********* PREKEYS *********/
 
-    override fun loadPreKey(preKeyId: Int): PreKeyRecord {
-        try {
-            val preKeyBytes = transaction(db) {
-                PreKeys.select {
-                    PreKeys.id eq preKeyId
-                }.single()[PreKeys.preKeyBytes]
-            }
-            return PreKeyRecord(preKeyBytes)
-        } catch(e: NoSuchElementException) {
-            throw InvalidKeyException()
-        }
-    }
+    override fun loadPreKey(preKeyId: Int): PreKeyRecord =
+        transaction(db) {
+            PreKeys.select {
+                PreKeys.id eq preKeyId
+            }.singleOrNull()?.get(PreKeys.preKeyBytes)
+        }?.let { PreKeyRecord(it) } ?: throw InvalidKeyException()
+
 
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord?) {
         transaction(db) {
             PreKeys.insert {
                 it[id] = preKeyId
-                it[preKeyBytes] = record?.serialize() ?: ByteArray(0)
+                it[preKeyBytes] = record?.serialize() ?: ByteArray(PREKEY_BYTE_ARRAY_LENGTH)
             }
         }
     }
 
-    override fun containsPreKey(preKeyId: Int): Boolean {
-        return transaction(db) {
-            PreKeys.select {
-                PreKeys.id eq preKeyId
-            }.count() > 0
+    override fun containsPreKey(preKeyId: Int): Boolean =
+        transaction(db) {
+            PreKeys.select { PreKeys.id eq preKeyId }.count() > 0
         }
-    }
+
 
     override fun removePreKey(preKeyId: Int) {
         transaction(db) {
@@ -55,24 +51,41 @@ class PostgresProtocolStore(private val db: Database): SignalProtocolStore {
 
     /********* SIGNED PREKEYS *********/
 
-    override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord {
-        TODO("Not yet implemented")
-    }
+    override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord =
+        transaction(db) {
+            SignedPreKeys.select {
+                SignedPreKeys.id eq signedPreKeyId
+            }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
+        }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
 
-    override fun loadSignedPreKeys(): MutableList<SignedPreKeyRecord> {
-        TODO("Not yet implemented")
-    }
+    override fun loadSignedPreKeys(): MutableList<SignedPreKeyRecord> =
+        transaction(db) {
+            SignedPreKeys.selectAll().map {
+                it[SignedPreKeys.signedPreKeyBytes]
+            }
+        }.mapTo(mutableListOf()) { SignedPreKeyRecord(it) }
+
 
     override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord?) {
-        TODO("Not yet implemented")
+        transaction(db) {
+            SignedPreKeys.insert {
+                it[id] = signedPreKeyId
+                it[signedPreKeyBytes] = record?.serialize() ?: ByteArray(PREKEY_BYTE_ARRAY_LENGTH)
+            }
+        }
     }
 
-    override fun containsSignedPreKey(signedPreKeyId: Int): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun containsSignedPreKey(signedPreKeyId: Int): Boolean =
+        transaction(db) {
+            SignedPreKeys.select { SignedPreKeys.id eq signedPreKeyId }.count() > 0
+        }
 
     override fun removeSignedPreKey(signedPreKeyId: Int) {
-        TODO("Not yet implemented")
+        transaction(db) {
+            SignedPreKeys.deleteWhere {
+                SignedPreKeys.id eq signedPreKeyId
+            }
+        }
     }
 
 

@@ -1,6 +1,7 @@
 package info.signalboost.signalc.store
 
-import PreKeys
+import info.signalboost.signalc.db.PreKeys
+import info.signalboost.signalc.db.SignedPreKeys
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -12,7 +13,7 @@ import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.InvalidKeyException
 
-class PostgresProtocolStoreTest: FreeSpec({
+class SqlProtocolStoreTest: FreeSpec({
     // TODO: postgres not h2!!!
     val db = Database.connect(
         url ="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;",
@@ -20,9 +21,9 @@ class PostgresProtocolStoreTest: FreeSpec({
     )
     transaction(db) {
         addLogger(StdOutSqlLogger)
-        SchemaUtils.create(PreKeys)
+        SchemaUtils.create(PreKeys, SignedPreKeys)
     }
-    val store = PostgresProtocolStore(db)
+    val store = SqlProtocolStore(db)
 
     "Prekey Store" - {
         val keyId = 42
@@ -62,4 +63,41 @@ class PostgresProtocolStoreTest: FreeSpec({
             store.containsPreKey(keyId) shouldBe false
         }
     }
+
+    "Signed prekey store" - {
+        val keyId = 42
+        val nonExistentId = 1312
+        val signedPrekey = KeyUtil.genSignedPreKey(store.ownIdentityKeypair, keyId)
+
+        afterTest {
+            store.removeSignedPreKey(keyId)
+        }
+
+        "checks for existence of a signed prekey" - {
+            store.containsPreKey(nonExistentId) shouldBe false
+        }
+
+        "stores a signed prekey" - {
+            store.storeSignedPreKey(keyId, signedPrekey)
+            store.containsSignedPreKey(keyId) shouldBe true
+        }
+
+        "loads a signed prekey" - {
+            store.storeSignedPreKey(keyId, signedPrekey)
+            store.loadSignedPreKey(keyId).serialize() shouldBe signedPrekey.serialize()
+        }
+
+        "throws when trying to load a non-existent signed prekey" - {
+            shouldThrow<InvalidKeyException> {
+                store.loadSignedPreKey(nonExistentId)
+            }
+        }
+
+        "removes a signed prekey" - {
+            store.storeSignedPreKey(keyId, signedPrekey)
+            store.removeSignedPreKey(keyId)
+            store.containsSignedPreKey(keyId) shouldBe false
+        }
+    }
+
 })
