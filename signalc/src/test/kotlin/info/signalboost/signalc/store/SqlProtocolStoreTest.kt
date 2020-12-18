@@ -20,7 +20,9 @@ import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
 class SqlProtocolStoreTest: FreeSpec({
-    // TODO: postgres not h2!!!
+    // TODO (aguestuser|2020-12-18)
+    //  (1) test that different accounts can have different stores with their own values
+    //  (2) replace h2 w/ postgres
     val db = Database.connect(
         url ="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;",
         driver = "org.h2.Driver",

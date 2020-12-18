@@ -23,7 +23,7 @@ class SqlProtocolStore(
         transaction(db) {
             OwnIdentities.select {
                 OwnIdentities.accountId eq accountId
-            }.singleOrNull() ?: createOwnIdentity(accountId)
+            }.singleOrNull() ?: createOwnIdentity()
         }.let {
             IdentityKeyPair(it[OwnIdentities.keyPairBytes])
         }
@@ -32,13 +32,13 @@ class SqlProtocolStore(
         transaction(db) {
             OwnIdentities.select {
                 OwnIdentities.accountId eq accountId
-            }.singleOrNull() ?: createOwnIdentity(accountId)
+            }.singleOrNull() ?: createOwnIdentity()
         }[OwnIdentities.registrationId]
 
-    private fun createOwnIdentity(accountId: String): ResultRow =
+    private fun createOwnIdentity(): ResultRow =
         transaction(db) {
             OwnIdentities.insert {
-                it[OwnIdentities.accountId] = accountId
+                it[PreKeys.accountId] = this@SqlProtocolStore.accountId
                 it[keyPairBytes] = KeyUtil.genIdentityKeyPair().serialize()
                 it[registrationId] = KeyUtil.genRegistrationId()
             }.resultedValues!![0]
@@ -47,6 +47,7 @@ class SqlProtocolStore(
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
         transaction(db) {
             val isUpdate = Identities.select {
+                Identities.accountId eq accountId
                 Identities.name eq address.name
                 Identities.deviceId eq address.deviceId
             }.singleOrNull()?.let { true } ?: false
@@ -60,6 +61,7 @@ class SqlProtocolStore(
                     it[identityKeyBytes] = identityKey.serialize()
                 }
                 else -> Identities.insert {
+                    it[accountId] = this@SqlProtocolStore.accountId
                     it[name] = address.name
                     it[deviceId] = address.deviceId
                     it[identityKeyBytes] = identityKey.serialize()
@@ -75,6 +77,7 @@ class SqlProtocolStore(
         direction: IdentityKeyStore.Direction
     ): Boolean = transaction(db) {
         Identities.select {
+            Identities.accountId eq accountId
             Identities.name eq address.name
             Identities.deviceId eq address.deviceId
         }.singleOrNull()?.let{
@@ -86,6 +89,7 @@ class SqlProtocolStore(
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
         transaction(db) {
             Identities.select {
+                Identities.accountId eq accountId
                 Identities.name eq address.name
                 Identities.deviceId eq address.deviceId
             }.singleOrNull()?.let { IdentityKey(it[Identities.identityKeyBytes], 0) }
@@ -94,6 +98,7 @@ class SqlProtocolStore(
     fun removeIdentity(address: SignalProtocolAddress) {
         transaction(db) {
             Identities.deleteWhere {
+                Identities.accountId eq accountId
                 Identities.name eq address.name
                 Identities.deviceId eq address.deviceId
             }
@@ -113,7 +118,8 @@ class SqlProtocolStore(
     override fun loadPreKey(preKeyId: Int): PreKeyRecord =
         transaction(db) {
             PreKeys.select {
-                PreKeys.id eq preKeyId
+                PreKeys.accountId eq accountId
+                PreKeys.preKeyId eq preKeyId
             }.singleOrNull()?.let {
                 PreKeyRecord(it[PreKeys.preKeyBytes])
             } ?: throw InvalidKeyException()
@@ -123,7 +129,8 @@ class SqlProtocolStore(
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
         transaction(db) {
             PreKeys.insert {
-                it[id] = preKeyId
+                it[accountId] = this@SqlProtocolStore.accountId
+                it[this.preKeyId] = preKeyId
                 it[preKeyBytes] = record.serialize()
             }
         }
@@ -131,14 +138,18 @@ class SqlProtocolStore(
 
     override fun containsPreKey(preKeyId: Int): Boolean =
         transaction(db) {
-            PreKeys.select { PreKeys.id eq preKeyId }.count() > 0
+            PreKeys.select {
+                PreKeys.accountId eq accountId
+                PreKeys.preKeyId eq preKeyId
+            }.count() > 0
         }
 
 
     override fun removePreKey(preKeyId: Int) {
         transaction(db) {
             PreKeys.deleteWhere {
-                PreKeys.id eq preKeyId
+                PreKeys.accountId eq accountId
+                PreKeys.preKeyId eq preKeyId
             }
         }
     }
@@ -149,7 +160,8 @@ class SqlProtocolStore(
     override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord =
         transaction(db) {
             SignedPreKeys.select {
-                SignedPreKeys.id eq signedPreKeyId
+                SignedPreKeys.accountId eq accountId
+                SignedPreKeys.preKeyId eq signedPreKeyId
             }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
         }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
 
@@ -164,7 +176,8 @@ class SqlProtocolStore(
     override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord) {
         transaction(db) {
             SignedPreKeys.insert {
-                it[id] = signedPreKeyId
+                it[accountId] = this@SqlProtocolStore.accountId
+                it[preKeyId] = signedPreKeyId
                 it[signedPreKeyBytes] = record.serialize()
             }
         }
@@ -172,13 +185,17 @@ class SqlProtocolStore(
 
     override fun containsSignedPreKey(signedPreKeyId: Int): Boolean =
         transaction(db) {
-            SignedPreKeys.select { SignedPreKeys.id eq signedPreKeyId }.count() > 0
+            SignedPreKeys.select {
+                SignedPreKeys.accountId eq accountId
+                SignedPreKeys.preKeyId eq signedPreKeyId
+            }.singleOrNull()?.let { true } ?: false
         }
 
     override fun removeSignedPreKey(signedPreKeyId: Int) {
         transaction(db) {
             SignedPreKeys.deleteWhere {
-                SignedPreKeys.id eq signedPreKeyId
+                SignedPreKeys.accountId eq accountId
+                SignedPreKeys.preKeyId eq signedPreKeyId
             }
         }
     }
@@ -188,6 +205,7 @@ class SqlProtocolStore(
     override fun loadSession(address: SignalProtocolAddress): SessionRecord =
         transaction(db) {
             Sessions.select {
+                Sessions.accountId eq accountId
                 Sessions.name eq address.name
                 Sessions.deviceId eq address.deviceId
             }.singleOrNull()?.let {
@@ -198,6 +216,7 @@ class SqlProtocolStore(
     override fun getSubDeviceSessions(name: String): MutableList<Int> {
         return transaction(db) {
             Sessions.select{
+                Sessions.accountId eq accountId
                 Sessions.name eq name
             }.mapTo(mutableListOf()) { it[Sessions.deviceId] }
         }
@@ -206,6 +225,7 @@ class SqlProtocolStore(
     override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
         transaction(db) {
             Sessions.insert {
+                it[accountId] = this@SqlProtocolStore.accountId
                 it[name] = address.name
                 it[deviceId] = address.deviceId
                 it[sessionBytes] = record.serialize()
@@ -216,6 +236,7 @@ class SqlProtocolStore(
     override fun containsSession(address: SignalProtocolAddress): Boolean =
         transaction(db) {
             Sessions.select {
+                Sessions.accountId eq accountId
                 Sessions.name eq address.name
                 Sessions.deviceId eq address.deviceId
             }.count() > 0
@@ -225,6 +246,7 @@ class SqlProtocolStore(
     override fun deleteSession(address: SignalProtocolAddress) {
         transaction(db) {
             Sessions.deleteWhere {
+                Sessions.accountId eq accountId
                 Sessions.name eq address.name
                 Sessions.deviceId eq address.deviceId
             }
@@ -234,6 +256,7 @@ class SqlProtocolStore(
     override fun deleteAllSessions(name: String) {
         transaction(db) {
             Sessions.deleteWhere {
+                Sessions.accountId eq accountId
                 Sessions.name eq name
             }
         }
