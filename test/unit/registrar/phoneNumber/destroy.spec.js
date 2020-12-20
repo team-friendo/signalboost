@@ -177,7 +177,7 @@ describe('phone number registrar -- destroy module', () => {
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
               undefined, // b/c sent by system!
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+              notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
             ])
           })
         })
@@ -188,12 +188,12 @@ describe('phone number registrar -- destroy module', () => {
 
             expect(notifyAdminsStub.getCall(0).args).to.eql([
               channel,
-              notificationKeys.CHANNEL_DESTROYED,
+              notificationKeys.CHANNEL_DESTROYED_BY_ADMIN,
               [memberTypes.ADMIN, admin.adminId],
             ])
             expect(notifySubscribersStub.getCall(0).args).to.eql([
               channel,
-              notificationKeys.CHANNEL_DESTROYED,
+              notificationKeys.CHANNEL_DESTROYED_BY_ADMIN,
               [memberTypes.SUBSCRIBER],
             ])
           })
@@ -205,7 +205,7 @@ describe('phone number registrar -- destroy module', () => {
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
               admin,
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+              notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
             ])
           })
         })

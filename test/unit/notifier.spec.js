@@ -33,16 +33,14 @@ describe('notifier module', () => {
   describe('#notifyAdmins', () => {
     describe('when given a notification that takes no arguments', () => {
       it('sends a notification to each admin in their language', async () => {
-        await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY)
+        await notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM)
         expect(sendMessageStub.callCount).to.eql(2)
         expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
           [
             sdMessageOf({
               sender: channel.phoneNumber,
               recipient: channel.memberships[0].memberPhoneNumber,
-              message: messagesIn('DE').notifications[
-                notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-              ],
+              message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
             }),
             channel.socketId,
           ],
@@ -50,9 +48,7 @@ describe('notifier module', () => {
             sdMessageOf({
               sender: channel.phoneNumber,
               recipient: channel.memberships[1].memberPhoneNumber,
-              message: messagesIn('FR').notifications[
-                notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-              ],
+              message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
             }),
             channel.socketId,
           ],
@@ -93,16 +89,14 @@ describe('notifier module', () => {
 
   describe('#notifyMembers', () => {
     it('sends a notification to each member in their language', async () => {
-      await notifier.notifyMembers(channel, notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY)
+      await notifier.notifyMembers(channel, notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM)
       expect(sendMessageStub.callCount).to.eql(4)
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[0].memberPhoneNumber,
-            message: messagesIn('DE').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -110,9 +104,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[1].memberPhoneNumber,
-            message: messagesIn('FR').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -120,9 +112,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[2].memberPhoneNumber,
-            message: messagesIn('ES').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -130,9 +120,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[3].memberPhoneNumber,
-            message: messagesIn('DE').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -145,16 +133,14 @@ describe('notifier module', () => {
       await notifier.notifyMembersExcept(
         channel,
         channel.memberships[0],
-        notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+        notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
       )
       expect(map(sendMessageStub.getCalls(), 'args')).to.have.deep.members([
         [
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[1].memberPhoneNumber,
-            message: messagesIn('FR').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('FR').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -162,9 +148,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[2].memberPhoneNumber,
-            message: messagesIn('ES').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('ES').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],
@@ -172,9 +156,7 @@ describe('notifier module', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: channel.memberships[3].memberPhoneNumber,
-            message: messagesIn('DE').notifications[
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY
-            ],
+            message: messagesIn('DE').notifications[notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM],
           }),
           channel.socketId,
         ],

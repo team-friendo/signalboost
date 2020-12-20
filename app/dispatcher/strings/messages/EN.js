@@ -384,13 +384,13 @@ const notifications = {
   adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} added ADMIN ${addedAdminId}.`,
 
   adminRemoved: (removerAdminId, removedAdminId) =>
-    `ADMIN ${removerAdminId} removed ADMIN ${removedAdminId}`,
+    `ADMIN ${removerAdminId} removed ADMIN ${removedAdminId}.`,
 
   subscriberRemoved: adminId => `A subscriber was just removed by ADMIN ${adminId}.`,
 
   adminLeft: adminId => `ADMIN ${adminId} just left the channel.`,
 
-  channelDestroyed: (audience, adminId) =>
+  channelDestroyedByAdmin: (audience, adminId) =>
     ({
       ADMIN: `ADMIN ${adminId} has destroyed this channel. All associated data has been deleted.`,
       SUBSCRIBER:
@@ -409,7 +409,7 @@ For more information, visit signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Failed to destroy channel for phone number: ${phoneNumber}`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelRedeemed:

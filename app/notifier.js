@@ -10,8 +10,8 @@ const {
 
 const notificationKeys = {
   CHANNEL_DESTRUCTION_SCHEDULED: 'channelDestructionScheduled',
-  CHANNEL_DESTROYED: 'channelDestroyed',
-  CHANNEL_DESTROYED_DUE_TO_INACTIVITY: 'channelDestroyedDueToInactivity',
+  CHANNEL_DESTROYED_BY_ADMIN: 'channelDestroyedByAdmin',
+  CHANNEL_DESTROYED_BY_SYSTEM: 'channelDestroyedBySystem',
   CHANNEL_REDEEMED: 'channelRedeemed',
 }
 

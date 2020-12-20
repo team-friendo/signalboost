@@ -407,7 +407,7 @@ const notifications = {
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
-  channelDestroyed: (adminId, audience) =>
+  channelDestroyedByAdmin: (adminId, audience) =>
     ({
       ADMIN: `ADMIN ${adminId} hat diesen Kanal zerstört. Alle zugehörigen Daten wurden gelöscht.`,
       SUBSCRIBER:
@@ -426,7 +426,7 @@ Weitere Informationen finden Sie unter signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
 
   channelRedeemed:

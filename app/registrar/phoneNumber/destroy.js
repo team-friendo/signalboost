@@ -212,19 +212,15 @@ const deleteVestigalKeystoreEntries = async () => {
 const notifyMembersOfDeletion = (channel, sender, issuer) =>
   issuer === issuerTypes.ADMIN
     ? Promise.all([
-        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED, [
+        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
           memberTypes.ADMIN,
           sender.adminId,
         ]),
-        notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED, [
+        notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
           memberTypes.SUBSCRIBER,
         ]),
       ]).catch(logger.error)
-    : notifier.notifyMembersExcept(
-        channel,
-        sender,
-        notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
-      )
+    : notifier.notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM)
 
 // (string) -> Promise<void>
 const deleteSignalKeystore = async phoneNumber => {

@@ -411,7 +411,7 @@ const notifications = {
 
   adminLeft: adminId => `ADMIN ${adminId} vient de quitter le canal.`,
 
-  channelDestroyed: (adminId, audience) =>
+  channelDestroyedByAdmin: (adminId, audience) =>
     ({
       ADMIN: `ADMIN ${adminId} a détruit ce canal. Toutes les données associées ont été supprimées.`,
       SUBSCRIBER:
@@ -430,7 +430,7 @@ Pour plus d'informations, visitez signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     "Canal détruit par manque d'utilisation. Pour créer une nouvelle canal, visitez https://signalboost.info",
 
   channelRedeemed:

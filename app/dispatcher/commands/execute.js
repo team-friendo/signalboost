@@ -816,7 +816,7 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
 const addNotificationHeader = (language, messageBody) => {
   const prefix = messagesIn(language).prefixes.notification
-  return `[${prefix}]\n ${messageBody}`
+  return `[${prefix}]\n${messageBody}`
 }
 
 const addAdminIdToHeader = (
