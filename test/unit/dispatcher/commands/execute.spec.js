@@ -2118,7 +2118,7 @@ describe('executing commands', () => {
                   recipient: membership.memberPhoneNumber,
                   message: addNotificationHeader(
                     membership.language,
-                    notificationsFor(membership).vouchModeChanged(sender.adminId, vouchModes[mode]),
+                    notificationsFor(membership).vouchModeChanged(vouchModes[mode], sender.adminId),
                   ),
                 })),
               ],

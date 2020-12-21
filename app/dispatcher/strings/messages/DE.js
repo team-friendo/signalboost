@@ -354,24 +354,28 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
 
   // VOUCHING
   vouchMode: {
-    success: (adminId, mode) =>
-      ({
-        ON: `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay[mode]}.`
+        : `Gutschein ist jetzt ${vouchModeDisplay[mode]}.`
 
-Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
+      const explanation = {
+        ON: `Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
 Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
 
 Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
-        OFF: `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay.OFF}.
-
-Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
-        ADMIN: `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay.ADMIN}.
-
+        OFF: `Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
+        ADMIN: `
 Dies bedeutet, dass eine Einladung eines *Administrators* erforderlich ist, um diesem Kanal beizutreten.
 Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
 
 Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
-      }[mode]),
+      }[mode]
+
+      return `${vouchingStatus}
+
+${explanation}`
+    },
     notAdmin,
     dbError:
       'Beim Aktualisieren der Gutscheine für Ihren Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',

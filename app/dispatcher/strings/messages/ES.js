@@ -356,24 +356,27 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   // VOUCHING
   vouchMode: {
-    success: (adminId, mode) =>
-      ({
-        ON: `ADMIN ${adminId} configuró atestiguando ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} configuró atestiguando en ${vouchModeDisplay[mode]}.`
+        : `Atestiguando configuró en ${vouchModeDisplay[mode]}.`
 
-Esto significa que se requiere una invitación de un miembro existente para unirse a este canal.
+      const explanation = {
+        ON: `Esto significa que se requiere una invitación de un miembro existente para unirse a este canal. 
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
 
 Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
-        OFF: `ADMIN ${adminId} configuró atestiguando ${vouchModeDisplay.OFF}.
-
-Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
-        ADMIN: `ADMIN ${adminId} configuró atestiguando en ${vouchModeDisplay.ADMIN}.
-
-Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
+        OFF: `Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
+        ADMIN: `Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
 
 Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
-      }[mode]),
+      }[mode]
+
+      return `${vouchingStatus}
+
+${explanation}`
+    },
     notAdmin,
     dbError: 'Se produjo un error al actualizar atestiguando. Inténtelo de nuevo, por favor.',
   },

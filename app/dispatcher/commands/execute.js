@@ -751,7 +751,7 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
     recipient: membership.memberPhoneNumber,
     message: addNotificationHeader(
       membership.language,
-      messagesIn(membership.language).notifications.vouchModeChanged(sender.adminId, newVouchMode),
+      messagesIn(membership.language).notifications.vouchModeChanged(newVouchMode, sender.adminId),
     ),
   }))
 }

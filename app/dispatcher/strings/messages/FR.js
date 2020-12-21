@@ -357,24 +357,27 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   // VOUCHING
   vouchMode: {
-    success: (adminId, mode) =>
-      ({
-        ON: `ADMIN ${adminId} a conifguré se porter garant ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} a configuré se porter garant ${vouchModeDisplay[mode]}.`
+        : `Se porter garant ${vouchModeDisplay[mode]}.`
 
-Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
+      const explanation = {
+        ON: `Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
+Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
+
+Les administrateurs peuvent ajuster le nombre d'invitatnions nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
+        OFF: `Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
+        ADMIN: `Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
 
 Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
-        OFF: `ADMIN ${adminId} a conifguré se porter garant ${vouchModeDisplay.OFF}.
+      }[mode]
 
-Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
-        ADMIN: `ADMIN ${adminId} a conifguré se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
+      return `${vouchingStatus}
 
-Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
-Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
-
-Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
-      }[mode]),
+${explanation}`
+    },
     notAdmin,
     dbError:
       "Une erreur s'est produite lors de la mise à jour de l'attestation de votre canal. Veuillez réessayer.",
