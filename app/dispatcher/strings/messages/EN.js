@@ -319,7 +319,7 @@ Send HELP to list commands you can use.`,
 
   toggles: {
     hotline: {
-      success: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
+      success: isOn => `Hotline turned ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Whoops! There was an error trying to turn the hotline ${onOrOff(isOn)}. Please try again!`,
@@ -483,7 +483,9 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   toRemovedSubscriber:
     'You were just removed from this channel by an admin. Send HELLO to resubscribe.',
 
-  toggles: commandResponses.toggles,
+  toggles: {
+    hotline: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
+  },
 
   vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${

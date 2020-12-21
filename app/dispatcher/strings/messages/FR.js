@@ -334,7 +334,7 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   toggles: {
     hotline: {
-      success: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
+      success: isOn => `La hotline a été ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer la hotline à ${onOrOff(
@@ -510,7 +510,9 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   toRemovedSubscriber:
     "Vous venez d'être supprimé de cette canal par un administrateur. Envoyez SALUT pour vous réinscrire.",
 
-  toggles: commandResponses.toggles,
+  toggles: {
+    hotline: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
+  },
 
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',

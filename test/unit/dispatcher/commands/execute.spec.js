@@ -2004,7 +2004,7 @@ describe('executing commands', () => {
           ])
         })
 
-        describe('when db update succeeds', () => {
+        describe('when db update succeeds', async () => {
           beforeEach(() => updateChannelStub.returns(Promise.resolve()))
 
           it('returns a SUCCESS status, message, and notifications', async () => {
@@ -2018,7 +2018,7 @@ describe('executing commands', () => {
                   recipient: membership.memberPhoneNumber,
                   message: addNotificationHeader(
                     membership.language,
-                    messagesIn(membership.language).notifications.toggles[name].success(
+                    messagesIn(membership.language).notifications.toggles[name](
                       isOn,
                       sender.adminId,
                     ),

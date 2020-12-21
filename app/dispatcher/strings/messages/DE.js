@@ -331,7 +331,7 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
 
   toggles: {
     hotline: {
-      success: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
+      success: isOn => `Hotline  ${onOrOff(isOn)}geschaltet.`,
       notAdmin,
       dbError: isOn =>
         `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(
@@ -507,7 +507,9 @@ ${
   toRemovedSubscriber:
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
-  toggles: commandResponses.toggles,
+  toggles: {
+    hotline: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
+  },
 
   vouchModeChanged: commandResponses.vouchMode.success,
 

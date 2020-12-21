@@ -333,8 +333,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   toggles: {
     hotline: {
-      success: (isOn, adminId) =>
-        `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
+      success: isOn => `Linea directa configuró en ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar ${
@@ -518,7 +517,9 @@ ${
   toRemovedSubscriber:
     'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
-  toggles: commandResponses.toggles,
+  toggles: {
+    hotline: (isOn, adminId) => `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
+  },
 
   vouchModeChanged: commandResponses.vouchMode.success,
 

@@ -703,11 +703,12 @@ const toggleSettingOff = (channel, sender, toggle) => _toggleSetting(channel, se
 // (Database, Channel, Sender, Toggle, boolean, object) -> Promise<CommandResult>
 const _toggleSetting = (channel, sender, toggle, isOn) => {
   const cr = messagesIn(sender.language).commandResponses.toggles[toggle.name]
+
   return channelRepository
     .update(channel.phoneNumber, { [toggle.dbField]: isOn })
     .then(() => ({
       status: statuses.SUCCESS,
-      message: cr.success(isOn, channel.vouchLevel),
+      message: cr.success(isOn),
       notifications: toggleSettingNotificationsOf(channel, sender, toggle, isOn),
     }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.dbError(isOn) }))
@@ -719,10 +720,7 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
     recipient: membership.memberPhoneNumber,
     message: addNotificationHeader(
       membership.language,
-      messagesIn(membership.language).notifications.toggles[toggle.name].success(
-        isOn,
-        sender.adminId,
-      ),
+      messagesIn(membership.language).notifications.toggles[toggle.name](isOn, sender.adminId),
     ),
   }))
 }
