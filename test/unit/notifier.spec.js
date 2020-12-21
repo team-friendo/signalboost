@@ -3,7 +3,7 @@ import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import channelRepository from '../../app/db/repositories/channel'
 import signal from '../../app/signal'
-import { map } from 'lodash'
+import { map, times } from 'lodash'
 import { deepChannelFactory } from '../support/factories/channel'
 import {
   adminMembershipFactory,
@@ -12,6 +12,7 @@ import {
 import notifier, { notificationKeys } from '../../app/notifier'
 import { sdMessageOf } from '../../app/signal/constants'
 import { messagesIn } from '../../app/dispatcher/strings/messages'
+import { languages } from '../../app/language'
 
 describe('notifier module', () => {
   const channel = deepChannelFactory({
@@ -189,8 +190,33 @@ describe('notifier module', () => {
   })
 
   describe('#notifyMany', () => {
-    it('constructs a message from a string')
-    it('constructs a message from a notification key whose value is a function')
-    it('constructs a message from a notification whose value is a string')
+    const recipients = times(2, adminMembershipFactory({ language: languages.EN }))
+    const getSentMessage = () => sendMessageStub.getCall(0).args[0].messageBody
+
+    it('constructs a message from a string', async () => {
+      await notifier.notifyMany({ channel, recipients, message: 'foo' })
+      expect(getSentMessage()).to.eql('foo')
+    })
+
+    it('constructs a message from a notification whose value is a string', async () => {
+      await notifier.notifyMany({
+        channel,
+        recipients,
+        notificationKey: notificationKeys.CHANNEL_REDEEMED,
+      })
+      expect(getSentMessage()).to.contain(
+        'since you used the channel recently, it will no longer be destroyed.',
+      )
+    })
+
+    it('constructs a message from a notification key whose value is a function', async () => {
+      await notifier.notifyMany({
+        channel,
+        recipients,
+        notificationKey: notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED,
+        args: [24],
+      })
+      expect(getSentMessage()).to.contain('This channel will be destroyed in 24 hours')
+    })
   })
 })
