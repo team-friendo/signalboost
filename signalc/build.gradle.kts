@@ -5,6 +5,19 @@ group = "info.signalboost"
 version = "0.0.3"
 val entrypoint = "info.signalboost.signalc.MainKt"
 
+object Versions {
+    const val bouncyCastle = "1.66"
+    const val coroutines = "1.3.9"
+    const val exposed = "0.25.1"
+    const val kotest = "4.3.1"
+    const val kotlin = "1.4.21"
+    const val h2 = "1.4.199"
+    const val libsignal = "2.15.3_unofficial_14"
+    const val mockk = "1.10.3"
+    const val pgjdbc = "0.8.3"
+    const val shadowJar = "5.2.0"
+    const val slf4j = "1.7.30"
+}
 
 repositories {
     mavenCentral()
@@ -14,7 +27,7 @@ repositories {
 plugins {
     application
     java
-    kotlin("jvm") version "1.4.10"
+    kotlin("jvm") version "1.4.21"
     id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
@@ -48,20 +61,9 @@ tasks.withType<Wrapper> {
 }
 
 
-object Versions {
-    const val bouncyCastle = "1.66"
-    const val coroutines = "1.3.9"
-    const val exposed = "0.25.1"
-    const val kotest = "4.3.1"
-    const val h2 = "1.4.199"
-    const val libsignal = "2.15.3_unofficial_14"
-    const val mockk = "1.10.3"
-    const val pgjdbc = "0.8.3"
-    const val slf4j = "1.7.30"
-}
-
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlin}")
     implementation("com.github.turasa:signal-service-java:${Versions.libsignal}")
     implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncyCastle}")
     implementation("org.jetbrains.exposed:exposed-core:${Versions.exposed}")
