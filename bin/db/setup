@@ -7,16 +7,20 @@ cd ../..
 sleep 2
 
 if [ "$NODE_ENV" = "development" ];then
-  echo "----- creating dev database..."
+  echo "----- creating dev databases..."
   npx sequelize db:create --env development
+  psql -U postgres -c "create database signalc_development;"
+
 
 elif [ "$NODE_ENV" = "test" ];then
   echo "----- creating test database..."
   npx sequelize db:create --env test
+  psql -U postgres -c "create database signalc_test;"
 
 else
   echo "----- creating prod database..."
   npx sequelize db:create --env production
+  psql -U postgres -c "create database signalc;"
 fi
 
 echo "----- running migrations"

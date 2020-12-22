@@ -1,6 +1,8 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.db.*
+import info.signalboost.signalc.fixtures.DatabaseConnection
+import info.signalboost.signalc.fixtures.DatabaseConnection.initialize
 import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
@@ -15,23 +17,13 @@ import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
 class SqlProtocolStoreTest: FreeSpec({
-    // TODO (aguestuser|2020-12-18)
-    //  replace h2 w/ postgres
-    val db = Database.connect(
-        url ="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;",
-        driver = "org.h2.Driver",
-    )
-    transaction(db) {
-        // uncomment to debug sql with extra logging!
-        // addLogger(StdOutSqlLogger)
-        SchemaUtils.create(Identities, OwnIdentities, PreKeys, SignedPreKeys, Sessions)
-    }
+    val db = DatabaseConnection.toPostgres().initialize()
+
     val accountId = genPhoneNumber()
     val store = SqlProtocolStore(db, accountId)
     val address = SignalProtocolAddress(accountId, 42)
-    // NOTE: An address is a combination of a username (uuid or e164 num) and a device id.
-    // This is how Signal represents the domain concept that a user may have many devices
-    // and each device has its own session.
+    // NOTE: An address is a combination of a username (uuid or e164-format phone number) and a device id.
+    // This is how Signal represents that a user may have many devices and each device has its own session.
     val recipient = object {
         val phoneNumber = genPhoneNumber()
         val addresses = listOf(
@@ -206,11 +198,13 @@ class SqlProtocolStoreTest: FreeSpec({
         val ids = listOf(0,1)
 
         afterTest {
+            store.removeOwnIdentity()
             store.removeIdentity(address)
             store.removePreKey(ids[0])
             store.removeSignedPreKey(ids[0])
             store.deleteAllSessions(recipient.phoneNumber)
 
+            otherStore.removeOwnIdentity()
             otherStore.removeIdentity(otherAddress)
             otherStore.removePreKey(ids[0])
             otherStore.removeSignedPreKey(ids[0])
