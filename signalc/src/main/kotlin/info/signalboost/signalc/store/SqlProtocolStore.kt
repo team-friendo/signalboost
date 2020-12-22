@@ -4,6 +4,9 @@ package info.signalboost.signalc.store
 import info.signalboost.signalc.db.*
 import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
 import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
+import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
+import info.signalboost.signalc.db.Identities.identityKeyBytes
+import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.logic.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -51,11 +54,7 @@ class SqlProtocolStore(
         transaction(db) {
             val isUpdate = Identities.findByAddress(accountId, address) ?.let { true } ?: false
             when {
-                isUpdate -> Identities.update ({
-                    (Identities.accountId eq accountId)
-                        .and(Identities.name eq address.name)
-                        .and(Identities.deviceId eq address.deviceId)
-                }) {
+                isUpdate -> Identities.updateByAddress(accountId, address) {
                     it[isTrusted] = false
                     it[identityKeyBytes] = identityKey.serialize()
                 }
