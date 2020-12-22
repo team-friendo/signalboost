@@ -5,24 +5,18 @@ import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.types.beOfType
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.whispersystems.libsignal.IdentityKey
-import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
-import org.whispersystems.libsignal.state.IdentityKeyStore
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
 class SqlProtocolStoreTest: FreeSpec({
     // TODO (aguestuser|2020-12-18)
-    //  (1) test that different accounts can have different stores with their own values
-    //  (2) replace h2 w/ postgres
+    //  replace h2 w/ postgres
     val db = Database.connect(
         url ="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;",
         driver = "org.h2.Driver",
@@ -32,10 +26,25 @@ class SqlProtocolStoreTest: FreeSpec({
         // addLogger(StdOutSqlLogger)
         SchemaUtils.create(Identities, OwnIdentities, PreKeys, SignedPreKeys, Sessions)
     }
-    val store = SqlProtocolStore(db, genPhoneNumber())
+    val accountId = genPhoneNumber()
+    val store = SqlProtocolStore(db, accountId)
+    val address = SignalProtocolAddress(accountId, 42)
+    // NOTE: An address is a combination of a username (uuid or e164 num) and a device id.
+    // This is how Signal represents the domain concept that a user may have many devices
+    // and each device has its own session.
+    val recipient = object {
+        val phoneNumber = genPhoneNumber()
+        val addresses = listOf(
+            SignalProtocolAddress(phoneNumber, 0),
+            SignalProtocolAddress(phoneNumber, 1),
+        )
+        val sessions = listOf(
+            SessionRecord(),
+            SessionRecord(),
+        )
+    }
 
     "Identities store" - {
-        val address = SignalProtocolAddress("+12223334444", 42)
         val identityKey = KeyUtil.genIdentityKeyPair().publicKey
         val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
 
@@ -82,7 +91,7 @@ class SqlProtocolStoreTest: FreeSpec({
     "Prekey Store" - {
         val keyId = 42
         val nonExistentId = 1312
-        val prekey = KeyUtil.genPreKeys(0, 1)[0]
+        val (prekey) = KeyUtil.genPreKeys(0, 1)
 
         afterTest {
             store.removePreKey(keyId)
@@ -155,46 +164,99 @@ class SqlProtocolStoreTest: FreeSpec({
     }
 
     "Session Store" - {
-        // NOTE: An address is a combination of a username (uuid or e164 num) and a device id.
-        // This is how Signal represents the domain concept that a user may have many devices
-
-        val phoneNumber = "+12223334444"
-        val address1 = SignalProtocolAddress(phoneNumber, 1)
-        val address1Session = SessionRecord()
-        val address2 = SignalProtocolAddress(phoneNumber, 2)
-        val address2Session = SessionRecord()
-
         afterTest {
-            store.deleteAllSessions(phoneNumber)
+            store.deleteAllSessions(recipient.phoneNumber)
         }
 
         "checks for existence of a session with an address" - {
-            store.containsSession(address1) shouldBe false
+            store.containsSession(recipient.addresses[0]) shouldBe false
         }
 
         "stores and retrieves a *copy* of a session with an address" - {
-            store.storeSession(address1, address1Session)
-            val sessionCopy = store.loadSession(address1)
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+            store.storeSession(recipient.addresses[1], recipient.sessions[1])
+            val sessionCopy = store.loadSession(recipient.addresses[0])
 
-            sessionCopy shouldNotBe  address1Session // it's a different object...
-            sessionCopy.serialize() shouldBe address1Session.serialize() // ...with same underlying values
+            sessionCopy shouldNotBe  recipient.sessions[0] // it's a different object...
+            sessionCopy.serialize() shouldBe recipient.sessions[0].serialize() // ...with same underlying values
         }
 
         "retrieves device ids for all sessions with a given user" - {
-            store.storeSession(address1, address1Session)
-            store.storeSession(address2, address2Session)
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+            store.storeSession(recipient.addresses[1], recipient.sessions[1])
 
-            store.getSubDeviceSessions(phoneNumber) shouldBe listOf(1,2)
+            store.getSubDeviceSessions(recipient.phoneNumber) shouldBe listOf(0,1)
         }
 
         "deletes sessions across all devices for a given user" - {
-            store.storeSession(address1, address1Session)
-            store.storeSession(address2, address2Session)
-            store.deleteAllSessions(phoneNumber)
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+            store.storeSession(recipient.addresses[1], recipient.sessions[1])
+            store.deleteAllSessions(recipient.phoneNumber)
 
-            store.containsSession(address1) shouldBe false
-            store.containsSession(address2) shouldBe false
-            store.getSubDeviceSessions(phoneNumber) shouldBe emptyList()
+            store.containsSession(recipient.addresses[0]) shouldBe false
+            store.containsSession(recipient.addresses[1]) shouldBe false
+            store.getSubDeviceSessions(recipient.phoneNumber) shouldBe emptyList()
+        }
+    }
+
+    "Multiple stores" - {
+        val otherAccountId = genPhoneNumber()
+        val otherAddress = SignalProtocolAddress(otherAccountId, 10)
+        val otherStore = SqlProtocolStore(db, otherAccountId)
+        val ids = listOf(0,1)
+
+        afterTest {
+            store.removeIdentity(address)
+            store.removePreKey(ids[0])
+            store.removeSignedPreKey(ids[0])
+            store.deleteAllSessions(recipient.phoneNumber)
+
+            otherStore.removeIdentity(otherAddress)
+            otherStore.removePreKey(ids[0])
+            otherStore.removeSignedPreKey(ids[0])
+            otherStore.deleteAllSessions(recipient.phoneNumber)
+        }
+
+        "support separate and distinct identities" - {
+            store.identityKeyPair.serialize() shouldNotBe otherStore.identityKeyPair.serialize()
+
+            store.saveIdentity(address, KeyUtil.genIdentityKeyPair().publicKey)
+            otherStore.saveIdentity(otherAddress, KeyUtil.genIdentityKeyPair().publicKey)
+
+            store.getIdentity(address) shouldNotBe otherStore.getIdentity(otherAddress)
+            store.getIdentity(otherAddress) shouldBe null
+            otherStore.getIdentity(address) shouldBe null
+        }
+
+        "support separate and distinct prekeys" - {
+            val prekeys = KeyUtil.genPreKeys(0, 2)
+
+            store.storePreKey(ids[0], prekeys[0])
+            otherStore.storePreKey(ids[1], prekeys[1])
+
+            store.containsPreKey(ids[1]) shouldBe false
+            otherStore.containsPreKey(ids[0]) shouldBe false
+        }
+
+        "support separate and distinct signed prekeys" - {
+            val signedPreKeys = listOf(
+                KeyUtil.genSignedPreKey(store.identityKeyPair, ids[0]),
+                KeyUtil.genSignedPreKey(otherStore.identityKeyPair, ids[1]),
+            )
+
+            store.storeSignedPreKey(ids[0], signedPreKeys[0])
+            otherStore.storeSignedPreKey(ids[1], signedPreKeys[1])
+
+            store.containsPreKey(ids[1]) shouldBe false
+            store.containsPreKey(ids[0]) shouldBe false
+        }
+
+        "support separate and distinct sessions" - {
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+            otherStore.storeSession(recipient.addresses[1], recipient.sessions[1])
+
+            store.containsSession(recipient.addresses[1]) shouldBe false
+            otherStore.containsSession(recipient.addresses[0]) shouldBe false
         }
     }
 })

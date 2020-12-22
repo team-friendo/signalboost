@@ -13,18 +13,18 @@ interface AccountWithAddress: FieldSet {
         fun AccountWithAddress.findByAddress(accountId: String, address: SignalProtocolAddress): ResultRow? {
             val table = this
             return table.select {
-                table.accountId eq accountId
-                table.name eq address.name
-                table.deviceId eq address.deviceId
+                (table.accountId eq accountId)
+                    .and(table.name eq address.name)
+                    .and(table.deviceId eq address.deviceId)
             }.singleOrNull()
         }
 
         fun AccountWithAddress.deleteByAddress(accountId: String, address: SignalProtocolAddress): Int {
             val table = this
             return (table as Table).deleteWhere {
-                table.accountId eq accountId
-                table.name eq address.name
-                table.deviceId eq address.deviceId
+                (table.accountId eq accountId)
+                    .and(table.name eq address.name)
+                    .and(table.deviceId eq address.deviceId)
             }
         }
     }

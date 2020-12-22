@@ -49,13 +49,12 @@ class SqlProtocolStore(
 
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
         transaction(db) {
-            val isUpdate = Identities.findByAddress(accountId, address)
-                ?.let { true } ?: false
-
+            val isUpdate = Identities.findByAddress(accountId, address) ?.let { true } ?: false
             when {
                 isUpdate -> Identities.update ({
-                    Identities.name eq address.name
-                    Identities.deviceId eq address.deviceId
+                    (Identities.accountId eq accountId)
+                        .and(Identities.name eq address.name)
+                        .and(Identities.deviceId eq address.deviceId)
                 }) {
                     it[isTrusted] = false
                     it[identityKeyBytes] = identityKey.serialize()
@@ -107,8 +106,7 @@ class SqlProtocolStore(
     override fun loadPreKey(preKeyId: Int): PreKeyRecord =
         transaction(db) {
             PreKeys.select {
-                PreKeys.accountId eq accountId
-                PreKeys.preKeyId eq preKeyId
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
             }.singleOrNull()?.let {
                 PreKeyRecord(it[PreKeys.preKeyBytes])
             } ?: throw InvalidKeyException()
@@ -128,8 +126,7 @@ class SqlProtocolStore(
     override fun containsPreKey(preKeyId: Int): Boolean =
         transaction(db) {
             PreKeys.select {
-                PreKeys.accountId eq accountId
-                PreKeys.preKeyId eq preKeyId
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
             }.count() > 0
         }
 
@@ -137,8 +134,7 @@ class SqlProtocolStore(
     override fun removePreKey(preKeyId: Int) {
         transaction(db) {
             PreKeys.deleteWhere {
-                PreKeys.accountId eq accountId
-                PreKeys.preKeyId eq preKeyId
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
             }
         }
     }
@@ -149,8 +145,7 @@ class SqlProtocolStore(
     override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord =
         transaction(db) {
             SignedPreKeys.select {
-                SignedPreKeys.accountId eq accountId
-                SignedPreKeys.preKeyId eq signedPreKeyId
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
             }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
         }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
 
@@ -175,16 +170,14 @@ class SqlProtocolStore(
     override fun containsSignedPreKey(signedPreKeyId: Int): Boolean =
         transaction(db) {
             SignedPreKeys.select {
-                SignedPreKeys.accountId eq accountId
-                SignedPreKeys.preKeyId eq signedPreKeyId
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
             }.singleOrNull()?.let { true } ?: false
         }
 
     override fun removeSignedPreKey(signedPreKeyId: Int) {
         transaction(db) {
             SignedPreKeys.deleteWhere {
-                SignedPreKeys.accountId eq accountId
-                SignedPreKeys.preKeyId eq signedPreKeyId
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
             }
         }
     }
@@ -201,8 +194,7 @@ class SqlProtocolStore(
     override fun getSubDeviceSessions(name: String): MutableList<Int> {
         return transaction(db) {
             Sessions.select{
-                Sessions.accountId eq accountId
-                Sessions.name eq name
+                Sessions.accountId eq accountId and (Sessions.name eq name)
             }.mapTo(mutableListOf()) { it[Sessions.deviceId] }
         }
     }
@@ -233,10 +225,8 @@ class SqlProtocolStore(
     override fun deleteAllSessions(name: String) {
         transaction(db) {
             Sessions.deleteWhere {
-                Sessions.accountId eq accountId
-                Sessions.name eq name
+                Sessions.accountId eq accountId and (Sessions.name eq name)
             }
         }
     }
-
 }
