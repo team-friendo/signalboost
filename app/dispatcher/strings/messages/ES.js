@@ -407,7 +407,7 @@ const notifications = {
   adminRemoved: (removerAdminId, removedAdminId) =>
     `ADMIN ${removerAdminId} retiró ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: adminId => `Un suscriptor acaba fue eliminado por ADMIN ${adminId}.`,
+  subscriberRemoved: adminId => `ADMIN ${adminId} eliminó un suscriptor.`,
 
   adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
 
@@ -507,7 +507,7 @@ ${
     '¿Estás intentando reiniciar Signalboost? ¡Estás usando el canal equivocado para eso! Vuelva a intentarlo en el canal de diagnóstico.',
   restartPassNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡Usaste la contraseña incorrecta para eso!',
-  restartSuccessNotification: adminId => `Signalboost fue reiniciado por ADMIN ${adminId}.`,
+  restartSuccessNotification: adminId => `ADMIN ${adminId} reinició Signalboost.`,
   restartSuccessResponse: '¡Signalboost se reinició correctamente!',
   restartFailure: errorMessage => `No se pudo reiniciar Signalboost: ${errorMessage}`,
 

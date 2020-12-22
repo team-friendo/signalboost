@@ -407,7 +407,7 @@ const notifications = {
   adminRemoved: (removerAdminId, removedAdminId) =>
     `ADMIN ${removerAdminId} entfernte ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: adminId => `Ein Abonnent wurde gerade entfernt von ihm ${adminId}.`,
+  subscriberRemoved: adminId => `ADMIN ${adminId} einen Abonnenten entfernt.`,
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
@@ -500,10 +500,9 @@ ${
     'Versuchen Sie, Signalboost neu zu starten? Sie benutzen dafür den falschen Kanal! Versuchen Sie es erneut auf dem Diagnosekanal.',
   restartPassNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie haben dafür die falsche Passphrase verwendet!',
-  restartSuccessNotification: adminId => `Signalboost wurde von ADMIN ${adminId} neu gestartet`,
-
+  restartSuccessNotification: adminId => `ADMIN ${adminId} hat den Signalboost neu gestartet.`,
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
-  restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
+  restartFailure: errorMessage => `Signalboost konnte nicht neu gestartet werden: ${errorMessage}`,
 
   toRemovedAdmin: adminId =>
     `Soeben wurdest du als Admin von diesem Kanal entfernt von ADMIN ${adminId}. Schicke HALLO um dich wieder anzumelden.`,

@@ -389,9 +389,9 @@ const notifications = {
   adminRemoved: (removerAdminId, removedAdminId) =>
     `ADMIN ${removerAdminId} removed ADMIN ${removedAdminId}.`,
 
-  subscriberRemoved: adminId => `A subscriber was just removed by ADMIN ${adminId}.`,
+  subscriberRemoved: adminId => `ADMIN ${adminId} removed a susbcriber.`,
 
-  adminLeft: adminId => `ADMIN ${adminId} just left the channel.`,
+  adminLeft: adminId => `ADMIN ${adminId} left the channel.`,
 
   channelDestroyedByAdmin: (audience, adminId) =>
     ({
@@ -473,8 +473,8 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     'Trying to restart Signalboost? You are using the wrong channel for that! Try again on the diagnostics channel.',
   restartPassNotAuthorized:
     'Trying to restart Signalboost? You used the wrong passphrase for that!',
-  restartSuccessNotification: adminId => `Signalboost was restarted by ADMIN ${adminId}`,
-  restartSuccessResponse: 'Signalboost was restarted successfully!',
+  restartSuccessNotification: adminId => `ADMIN ${adminId} restarted Signalboost.`,
+  restartSuccessResponse: 'Signalboost restarted successfully!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
