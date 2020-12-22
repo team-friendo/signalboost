@@ -513,9 +513,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   toRemovedSubscriber:
     "Vous venez d'être supprimé de cette canal par un administrateur. Envoyez SALUT pour vous réinscrire.",
 
-  toggles: {
-    hotline: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
-  },
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
 
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',

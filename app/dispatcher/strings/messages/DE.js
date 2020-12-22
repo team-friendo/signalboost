@@ -510,9 +510,7 @@ ${
   toRemovedSubscriber:
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
-  toggles: {
-    hotline: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
-  },
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 

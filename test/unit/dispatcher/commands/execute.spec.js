@@ -27,7 +27,6 @@ import {
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { messagesIn } from '../../../../app/dispatcher/strings/messages'
-import { addNotificationHeader } from '../../../../app/dispatcher/commands/execute'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
@@ -369,23 +368,21 @@ describe('executing commands', () => {
                   // notifications for all bystander admins
                   {
                     recipient: channel.memberships[1].memberPhoneNumber,
-                    message: addNotificationHeader(
-                      channel.memberships[1].language,
-                      messagesIn(channel.memberships[1].language).notifications.adminAdded(
-                        sender.adminId,
-                        newAdminMembership.adminId,
-                      ),
-                    ),
+                    message: `[${
+                      prefixesFor(channel.memberships[1]).notification
+                    }]\n${notificationsFor(channel.memberships[1]).adminAdded(
+                      sender.adminId,
+                      newAdminMembership.adminId,
+                    )}`,
                   },
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: addNotificationHeader(
-                      channel.memberships[2].language,
-                      messagesIn(channel.memberships[2].language).notifications.adminAdded(
-                        sender.adminId,
-                        newAdminMembership.adminId,
-                      ),
-                    ),
+                    message: `[${
+                      prefixesFor(channel.memberships[2]).notification
+                    }]\n${notificationsFor(channel.memberships[2]).adminAdded(
+                      sender.adminId,
+                      newAdminMembership.adminId,
+                    )}`,
                   },
                 ],
               })
@@ -1441,10 +1438,9 @@ describe('executing commands', () => {
           message: commandResponsesFor(admin).leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
             recipient: membership.memberPhoneNumber,
-            message: addNotificationHeader(
+            message: `[${prefixesFor(membership).notification}]\n${messagesIn(
               membership.language,
-              messagesIn(membership.language).notifications.adminLeft(sender.adminId),
-            ),
+            ).notifications.adminLeft(sender.adminId)}`,
           })),
         })
       })
@@ -1532,21 +1528,19 @@ describe('executing commands', () => {
                   // removed admin
                   {
                     recipient: removalTargetNumber,
-                    message: addNotificationHeader(
-                      removalTarget.language,
-                      notificationsFor(removalTarget).toRemovedAdmin(sender.adminId),
-                    ),
+                    message: `[${prefixesFor(removalTarget).notification}]\n${notificationsFor(
+                      removalTarget,
+                    ).toRemovedAdmin(sender.adminId)}`,
                   },
                   // bystander admins
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: addNotificationHeader(
-                      channel.memberships[2].language,
-                      notificationsFor(channel.memberships[2]).adminRemoved(
-                        sender.adminId,
-                        removalTarget.adminId,
-                      ),
-                    ),
+                    message: `[${
+                      prefixesFor(channel.memberships[2]).notification
+                    }]\n${notificationsFor(channel.memberships[2]).adminRemoved(
+                      sender.adminId,
+                      removalTarget.adminId,
+                    )}`,
                   },
                 ],
               })
@@ -1603,10 +1597,12 @@ describe('executing commands', () => {
                   // bystanders
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
-                    message: addNotificationHeader(
-                      channel.memberships[2].language,
-                      notificationsFor(channel.memberships[2]).subscriberRemoved(sender.adminId),
-                    ),
+                    message: `[${
+                      prefixesFor(channel.memberships[2]).notification
+                    }]\n${notificationsFor(channel.memberships[2]).subscriberRemoved(
+                      sender.adminId,
+                      removalTarget.adminId,
+                    )}`,
                   },
                 ],
               })
@@ -1887,17 +1883,15 @@ describe('executing commands', () => {
             message: messagesIn(admin.language).notifications.restartSuccessResponse,
             notifications: [
               {
-                message: addNotificationHeader(
-                  adminMemberships[1].language,
-                  notificationsFor(adminMemberships[1]).restartSuccessNotification(admin.adminId),
-                ),
+                message: `[${prefixesFor(adminMemberships[1]).notification}]\n${notificationsFor(
+                  adminMemberships[1],
+                ).restartSuccessNotification(admin.adminId)}`,
                 recipient: adminMemberships[1].memberPhoneNumber,
               },
               {
-                message: addNotificationHeader(
-                  adminMemberships[2].language,
-                  notificationsFor(adminMemberships[2]).restartSuccessNotification(admin.adminId),
-                ),
+                message: `[${prefixesFor(adminMemberships[2]).notification}]\n${notificationsFor(
+                  adminMemberships[2],
+                ).restartSuccessNotification(admin.adminId)}`,
                 recipient: adminMemberships[2].memberPhoneNumber,
               },
             ],
@@ -1988,7 +1982,7 @@ describe('executing commands', () => {
       },
     ]
 
-    scenarios.forEach(({ name, dbField, isOn, command, commandStr }) => {
+    scenarios.forEach(({ name, notificationKey, dbField, isOn, command, commandStr }) => {
       describe('when sender is an admin', () => {
         const sender = admin
 
@@ -2016,13 +2010,9 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: addNotificationHeader(
-                    membership.language,
-                    messagesIn(membership.language).notifications.toggles[name](
-                      isOn,
-                      sender.adminId,
-                    ),
-                  ),
+                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                    membership,
+                  )[notificationKey](isOn, sender.adminId)}`,
                 })),
               ],
             })
@@ -2116,10 +2106,9 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: addNotificationHeader(
-                    membership.language,
-                    notificationsFor(membership).vouchModeChanged(vouchModes[mode], sender.adminId),
-                  ),
+                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                    membership,
+                  ).vouchModeChanged(vouchModes[mode], sender.adminId)}`,
                 })),
               ],
             })
@@ -2197,13 +2186,9 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: addNotificationHeader(
-                    membership.language,
-                    messagesIn(membership.language).notifications.vouchLevelChanged(
-                      sender.adminId,
-                      validVouchLevel,
-                    ),
-                  ),
+                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                    membership,
+                  ).vouchLevelChanged(sender.adminId, validVouchLevel)}`,
                 })),
               ],
             })

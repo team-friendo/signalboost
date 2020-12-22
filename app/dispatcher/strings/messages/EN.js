@@ -486,9 +486,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
   toRemovedSubscriber:
     'You were just removed from this channel by an admin. Send HELLO to resubscribe.',
 
-  toggles: {
-    hotline: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
-  },
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
 
   vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${

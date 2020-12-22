@@ -12,7 +12,7 @@ const vouchModes = {
 }
 
 const toggles = {
-  HOTLINE: { dbField: 'hotlineOn', name: 'hotline' },
+  HOTLINE: { dbField: 'hotlineOn', name: 'hotline', notificationKey: 'hotlineToggled' },
 }
 
 const parseErrorTypes = {

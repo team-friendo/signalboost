@@ -220,13 +220,10 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: addNotificationHeader(
-        membership.language,
-        messagesIn(membership.language).notifications.adminAdded(
-          sender.adminId,
-          newAdminMembership.adminId,
-        ),
-      ),
+      message: appendHeaderToNotification(membership, 'adminAdded', [
+        sender.adminId,
+        newAdminMembership.adminId,
+      ]),
     })),
   ]
 }
@@ -246,7 +243,12 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 
   const adminNotifications = adminMemberships.map(recipientMembership => ({
     recipient: recipientMembership.memberPhoneNumber,
-    message: addAdminIdToHeader(sender, recipientMembership, 'broadcastMessage', messageBody),
+    message: appendHeaderToRelayableMessage(
+      sender,
+      recipientMembership,
+      'broadcastMessage',
+      messageBody,
+    ),
     attachments,
   }))
 
@@ -277,7 +279,7 @@ const privateMessageNotificationsOf = (channel, sender, payload, sdMessage) => {
 
   return adminMemberships.map(recipientMembership => ({
     recipient: recipientMembership.memberPhoneNumber,
-    message: addAdminIdToHeader(sender, recipientMembership, 'privateMessage', payload),
+    message: appendHeaderToRelayableMessage(sender, recipientMembership, 'privateMessage', payload),
     attachments: sdMessage.attachments,
   }))
 }
@@ -484,10 +486,7 @@ const removeSenderNotificationsOf = (channel, sender) => {
   const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: addNotificationHeader(
-      membership.language,
-      messagesIn(membership.language).notifications.adminLeft(sender.adminId),
-    ),
+    message: appendHeaderToNotification(membership, 'adminLeft', [sender.adminId]),
   }))
 }
 
@@ -526,27 +525,18 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
       recipient: phoneNumber,
       message:
         memberType === memberTypes.ADMIN
-          ? addNotificationHeader(
-              removedMember.language,
-              messagesIn(removedMember.language).notifications.toRemovedAdmin(sender.adminId),
-            )
+          ? appendHeaderToNotification(removedMember, 'toRemovedAdmin', [sender.adminId])
           : messagesIn(removedMember.language).notifications.toRemovedSubscriber,
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
       message:
         memberType === memberTypes.ADMIN
-          ? addNotificationHeader(
-              membership.language,
-              messagesIn(membership.language).notifications.adminRemoved(
-                sender.adminId,
-                removedMember.adminId,
-              ),
-            )
-          : addNotificationHeader(
-              membership.language,
-              messagesIn(membership.language).notifications.subscriberRemoved(sender.adminId),
-            ),
+          ? appendHeaderToNotification(membership, 'adminRemoved', [
+              sender.adminId,
+              removedMember.adminId,
+            ])
+          : appendHeaderToNotification(membership, 'subscriberRemoved', [sender.adminId]),
     })),
   ]
 }
@@ -608,7 +598,7 @@ const hotlineReplyNotificationsOf = (
   // notifications to all admins
   ...getAdminMemberships(channel, [sender.memberPhoneNumber]).map(recipientMembership => ({
     recipient: recipientMembership.memberPhoneNumber,
-    message: addAdminIdToHeader(
+    message: appendHeaderToRelayableMessage(
       sender,
       recipientMembership,
       'hotlineReplyTo',
@@ -665,8 +655,6 @@ const _authenticateRestart = async (channel, sender, payload) => {
   } catch (e) {
     return { isAuthorized: false, message: e.message }
   }
-
-  //messagesIn(sender.language).notifications.restartRequesterNotAuthorized,
 }
 
 const _restartNotificationsOf = async sender => {
@@ -675,10 +663,7 @@ const _restartNotificationsOf = async sender => {
   )
   return maintainers.map(maintainer => ({
     recipient: maintainer.memberPhoneNumber,
-    message: addNotificationHeader(
-      maintainer.language,
-      messagesIn(maintainer.language).notifications.restartSuccessNotification(sender.adminId),
-    ),
+    message: appendHeaderToNotification(maintainer, 'restartSuccessNotification', [sender.adminId]),
   }))
 }
 
@@ -718,10 +703,7 @@ const toggleSettingNotificationsOf = (channel, sender, toggle, isOn) => {
   const recipients = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return recipients.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: addNotificationHeader(
-      membership.language,
-      messagesIn(membership.language).notifications.toggles[toggle.name](isOn, sender.adminId),
-    ),
+    message: appendHeaderToNotification(membership, toggle.notificationKey, [isOn, sender.adminId]),
   }))
 }
 
@@ -749,10 +731,10 @@ const vouchModeNotificationsOf = (channel, sender, newVouchMode) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: addNotificationHeader(
-      membership.language,
-      messagesIn(membership.language).notifications.vouchModeChanged(newVouchMode, sender.adminId),
-    ),
+    message: appendHeaderToNotification(membership, 'vouchModeChanged', [
+      newVouchMode,
+      sender.adminId,
+    ]),
   }))
 }
 
@@ -781,13 +763,10 @@ const vouchLevelNotificationsOf = (channel, newVouchLevel, sender) => {
 
   return bystanders.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: addNotificationHeader(
-      membership.language,
-      messagesIn(membership.language).notifications.vouchLevelChanged(
-        sender.adminId,
-        newVouchLevel,
-      ),
-    ),
+    message: appendHeaderToNotification(membership, 'vouchLevelChanged', [
+      sender.adminId,
+      newVouchLevel,
+    ]),
   }))
 }
 
@@ -812,22 +791,29 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
   }))
 }
 
-const addNotificationHeader = (language, messageBody) => {
-  const prefix = messagesIn(language).prefixes.notification
-  return `[${prefix}]\n${messageBody}`
+// (Membership, string, Array<string>) => string
+const appendHeaderToNotification = (recipientMembership, notificationType, args) => {
+  const header = `${messagesIn(recipientMembership.language).prefixes.notification}`
+  const messageBody = messagesIn(recipientMembership.language).notifications[notificationType](
+    ...args,
+  )
+  return `[${header}]\n${messageBody}`
 }
 
-const addAdminIdToHeader = (
+// (Membership, Membership, string, string, number) => string
+const appendHeaderToRelayableMessage = (
   senderMembership,
   recipientMembership,
-  messageType,
+  notificationType,
   messageBody,
   hotlineMessageId,
 ) => {
   const { fromAdmin } = messagesIn(recipientMembership.language).prefixes
-  const messageTypePrefix = messagesIn(recipientMembership.language).prefixes[messageType]
-  const _messageType = hotlineMessageId ? messageTypePrefix(hotlineMessageId) : messageTypePrefix
-  return `[${_messageType} ${fromAdmin} ${senderMembership.adminId}]\n${messageBody}`
+  const notificationTypePrefix = messagesIn(recipientMembership.language).prefixes[notificationType]
+  const _notificationType = hotlineMessageId
+    ? notificationTypePrefix(hotlineMessageId)
+    : notificationTypePrefix
+  return `[${_notificationType} ${fromAdmin} ${senderMembership.adminId}]\n${messageBody}`
 }
 
 const logAndReturn = (err, statusTuple) => {
@@ -836,4 +822,4 @@ const logAndReturn = (err, statusTuple) => {
   return statusTuple
 }
 
-module.exports = { addAdminIdToHeader, addNotificationHeader, execute, toggles }
+module.exports = { appendHeaderToRelayableMessage, appendHeaderToNotification, execute, toggles }

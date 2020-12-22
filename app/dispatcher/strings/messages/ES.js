@@ -520,9 +520,8 @@ ${
   toRemovedSubscriber:
     'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
-  toggles: {
-    hotline: (isOn, adminId) => `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
-  },
+  hotlineToggled: (isOn, adminId) =>
+    `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
