@@ -2,6 +2,8 @@ package info.signalboost.signalc.store
 
 
 import info.signalboost.signalc.db.*
+import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
+import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
 import info.signalboost.signalc.logic.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -10,6 +12,7 @@ import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
+
 
 
 class SqlProtocolStore(
@@ -46,11 +49,8 @@ class SqlProtocolStore(
 
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
         transaction(db) {
-            val isUpdate = Identities.select {
-                Identities.accountId eq accountId
-                Identities.name eq address.name
-                Identities.deviceId eq address.deviceId
-            }.singleOrNull()?.let { true } ?: false
+            val isUpdate = Identities.findByAddress(accountId, address)
+                ?.let { true } ?: false
 
             when {
                 isUpdate -> Identities.update ({
@@ -76,11 +76,7 @@ class SqlProtocolStore(
         identityKey: IdentityKey,
         direction: IdentityKeyStore.Direction
     ): Boolean = transaction(db) {
-        Identities.select {
-            Identities.accountId eq accountId
-            Identities.name eq address.name
-            Identities.deviceId eq address.deviceId
-        }.singleOrNull()?.let{
+        Identities.findByAddress(accountId, address)?.let{
             // don't trust a new key for a person with an old key, or an old key that is not trusted
             it[Identities.identityKeyBytes] contentEquals  identityKey.serialize() && it[Identities.isTrusted]
         } ?: true // but do trust a the first key we ever see for a person (TOFU!)
@@ -88,20 +84,13 @@ class SqlProtocolStore(
 
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
         transaction(db) {
-            Identities.select {
-                Identities.accountId eq accountId
-                Identities.name eq address.name
-                Identities.deviceId eq address.deviceId
-            }.singleOrNull()?.let { IdentityKey(it[Identities.identityKeyBytes], 0) }
+            Identities.findByAddress(accountId, address)?.let{
+                IdentityKey(it[Identities.identityKeyBytes], 0) }
         }
 
     fun removeIdentity(address: SignalProtocolAddress) {
         transaction(db) {
-            Identities.deleteWhere {
-                Identities.accountId eq accountId
-                Identities.name eq address.name
-                Identities.deviceId eq address.deviceId
-            }
+            Identities.deleteByAddress(accountId, address)
         }
     }
 
@@ -204,11 +193,7 @@ class SqlProtocolStore(
 
     override fun loadSession(address: SignalProtocolAddress): SessionRecord =
         transaction(db) {
-            Sessions.select {
-                Sessions.accountId eq accountId
-                Sessions.name eq address.name
-                Sessions.deviceId eq address.deviceId
-            }.singleOrNull()?.let {
+            Sessions.findByAddress(accountId, address)?.let {
                 SessionRecord(it[Sessions.sessionBytes])
             } ?: SessionRecord()
         }
@@ -235,21 +220,13 @@ class SqlProtocolStore(
 
     override fun containsSession(address: SignalProtocolAddress): Boolean =
         transaction(db) {
-            Sessions.select {
-                Sessions.accountId eq accountId
-                Sessions.name eq address.name
-                Sessions.deviceId eq address.deviceId
-            }.count() > 0
+            Sessions.findByAddress(accountId, address)?.let { true } ?: false
         }
 
 
     override fun deleteSession(address: SignalProtocolAddress) {
         transaction(db) {
-            Sessions.deleteWhere {
-                Sessions.accountId eq accountId
-                Sessions.name eq address.name
-                Sessions.deviceId eq address.deviceId
-            }
+            Sessions.deleteByAddress(accountId, address)
         }
     }
 
