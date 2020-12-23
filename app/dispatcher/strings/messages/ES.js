@@ -88,7 +88,7 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // ADD
 
   add: {
-    success: num => `${num} agregó como administrador.`,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} agregó como ADMIN ${newAdmin.adminId}.`,
     notAdmin,
     dbError: num =>
       `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
@@ -333,7 +333,7 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Línea directa ${onOrOff(isOn)}.`,
+      success: isOn => `Linea directa configuró en ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `¡Lo siento! Se produjo un error al intentar ${
@@ -356,24 +356,27 @@ Envíe AYUDA para ver los comandos que comprendo.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
-      ({
-        ON: `Se configuró atestiguando ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} configuró atestiguando en ${vouchModeDisplay[mode]}.`
+        : `Atestiguando configuró en ${vouchModeDisplay[mode]}.`
 
-Esto significa que se requiere una invitación de un miembro existente para unirse a este canal.
+      const explanation = {
+        ON: `Esto significa que se requiere una invitación de un miembro existente para unirse a este canal. 
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
 
 Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
-        OFF: `Se configuró atestiguando ${vouchModeDisplay.OFF}.
-
-Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
-        ADMIN: `Se configuró atestiguando en ${vouchModeDisplay.ADMIN}.
-
-Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
+        OFF: `Esto significa que cualquiera puede unirse al canal enviando HOLA al número del canal.`,
+        ADMIN: `Esto significa que se requiere una invitación de un *admin* para unirse a este canal.
 Cualquiera puede enviar una invitación enviando INVITAR +1-555-123-1234.
 
 Los administradores pueden ajustar la cantidad de invitaciones necesarias para unirse mediante el comando NIVEL DE ATESTIGUAR.`,
-      }[mode]),
+      }[mode]
+
+      return `${vouchingStatus}
+
+${explanation}`
+    },
     notAdmin,
     dbError: 'Se produjo un error al actualizar atestiguando. Inténtelo de nuevo, por favor.',
   },
@@ -399,15 +402,21 @@ Los administradores pueden ajustar la cantidad de invitaciones necesarias para u
 }
 
 const notifications = {
-  adminAdded: 'Se acaba de agregar nuevo administrador.',
+  adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} agregó ADMIN ${addedAdminId}.`,
 
-  adminRemoved: 'Se acaba de eliminar un administrador.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} retiró ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: 'Un suscriptor acaba de ser eliminado.',
+  subscriberRemoved: adminId => `ADMIN ${adminId} eliminó un suscriptor.`,
 
-  adminLeft: 'Un administrador dejó el canal.',
+  adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
 
-  channelDestroyed: 'El canal ha sido destruido permanentemente por sus admins.',
+  channelDestroyedByAdmin: (audience, adminId = '') =>
+    ({
+      ADMIN: `ADMIN ${adminId} ha destruido este canal. Se han eliminado todos los datos asociados.`,
+      SUBSCRIBER:
+        'El canal y todos los datos asociados han sido destruidos permanentemente por los administradores de este canal.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `¡Hola! Este canal se destruirá en ${hoursToLive} horas debido a la falta de uso.
@@ -421,7 +430,7 @@ Para obtener más información, visite signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Error al destruir el canal para el número de teléfono:  ${phoneNumber}`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     'Canal destruido por falta de uso. Para crear un nuevo canal, visite https://signalboost.info',
 
   channelRedeemed:
@@ -453,8 +462,11 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
       ? 'Lo siento, la línea directa no está activada en este canal. Enviar AYUDA para enumerar comandos válidos.'
       : 'Lo siento, la línea directa no está activada en este canal. Envíe AYUDA para enumerar comandos válidos o HOLA para suscribirse.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hola! Usted ha recibido una invitación para unirse al canal Signalboost de [${channelName}]. Por favor, responda con ACEPTAR o RECHAZAR.`,
@@ -495,25 +507,26 @@ ${
     '¿Estás intentando reiniciar Signalboost? ¡Estás usando el canal equivocado para eso! Vuelva a intentarlo en el canal de diagnóstico.',
   restartPassNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡Usaste la contraseña incorrecta para eso!',
-  restartSuccessNotification: adminId => `Signalboost fue reiniciado por ${adminId}`,
+  restartSuccessNotification: adminId => `ADMIN ${adminId} reinició Signalboost.`,
   restartSuccessResponse: '¡Signalboost se reinició correctamente!',
   restartFailure: errorMessage => `No se pudo reiniciar Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
     'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
 
-  toRemovedAdmin:
-    'Usted ha sido eliminado como administrador de este canal. Envíe HOLA para subscribirse de nuevo.',
+  toRemovedAdmin: adminId =>
+    `Usted ha sido eliminado como administrador de este canal por ADMIN ${adminId}. Envíe HOLA para subscribirse de nuevo.`,
 
   toRemovedSubscriber:
     'Acabas de ser eliminado de este canal por un administrador. Envíe HOLA para subscribirse de nuevo.',
 
-  toggles: commandResponses.toggles,
+  hotlineToggled: (isOn, adminId) =>
+    `ADMIN ${adminId} configuró la linea directa en ${onOrOff(isOn)}.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `Un administrador acaba de cambiar el nivel de atestiguando a ${vouchLevel}; ahora se requiere ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} cambió el nivel de atestiguando a ${vouchLevel}. Ahora se requiere ${vouchLevel} ${
       vouchLevel > 1 ? 'invitaciones' : 'invitación'
     } para unirse a este canal.`,
 
@@ -526,12 +539,13 @@ Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía p
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `LÍNEA DIRECTA DESDE @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `RESPUESTA A @${messageId}` : `RESPUESTA PRIVADA DE ADMINS`,
   broadcastMessage: `TRANSMITIR`,
+  fromAdmin: 'DESDE ADMIN',
+  hotlineMessage: messageId => `LÍNEA DIRECTA DESDE @${messageId}`,
+  hotlineReply: `RESPUESTA PRIVADA DE ADMINS`,
+  hotlineReplyTo: messageId => `RESPUESTA A @${messageId}`,
+  notificationHeader: `NOTIFICACIÓN`,
   privateMessage: `PRIVADO`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

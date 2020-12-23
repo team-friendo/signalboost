@@ -34,10 +34,23 @@ describe('dispatcher module', () => {
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
   const subscriberPhoneNumber = channels[0].memberships[2].memberPhoneNumber
   const randoPhoneNumber = genPhoneNumber()
-  const sender = {
-    phoneNumber: adminPhoneNumber,
+  const admin = {
+    memberPhoneNumber: adminPhoneNumber,
+    channelPhoneNumber: channel.phoneNumber,
     language: languages.EN,
     type: memberTypes.ADMIN,
+  }
+  const subscriber = {
+    memberPhoneNumber: subscriberPhoneNumber,
+    channelPhoneNumber: channel.phoneNumber,
+    language: languages.EN,
+    type: memberTypes.SUBSCRIBER,
+  }
+  const rando = {
+    memberPhoneNumber: randoPhoneNumber,
+    channelPhoneNumber: channel.phoneNumber,
+    language: languages.EN,
+    type: memberTypes.NONE,
   }
   const sdInMessage = {
     type: messageTypes.MESSAGE,
@@ -92,7 +105,7 @@ describe('dispatcher module', () => {
   const socketDelay = 5
 
   let findDeepStub,
-    resolveMemberTypeStub,
+    findMembershipStub,
     processCommandStub,
     dispatchStub,
     enqueueResendStub,
@@ -110,11 +123,9 @@ describe('dispatcher module', () => {
       .stub(diagnostics, 'respondToHealthcheck')
       .returns(Promise.resolve('42'))
 
-    resolveMemberTypeStub = sinon
-      .stub(membershipRepository, 'resolveMemberType')
-      .returns(Promise.resolve(memberTypes.ADMIN))
-
-    sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(languages.EN)
+    findMembershipStub = sinon
+      .stub(membershipRepository, 'findMembership')
+      .returns(Promise.resolve(admin))
 
     processCommandStub = sinon
       .stub(executor, 'processCommand')
@@ -207,17 +218,14 @@ describe('dispatcher module', () => {
         expect(findDeepStub.getCall(0).args).to.eql([channel.phoneNumber])
       })
 
-      it('retrieves permissions for the message sender', () => {
-        expect(resolveMemberTypeStub.getCall(0).args).to.eql([
-          channel.phoneNumber,
-          adminPhoneNumber,
-        ])
+      it('retrieves memberhip for the message sender', () => {
+        expect(findMembershipStub.getCall(0).args).to.eql([channel.phoneNumber, adminPhoneNumber])
       })
 
       it('processes any commands in the message', () => {
         expect(processCommandStub.getCall(0).args[0]).to.eql({
           channel,
-          sender,
+          sender: admin,
           sdMessage: sdOutMessage,
         })
       })
@@ -227,7 +235,7 @@ describe('dispatcher module', () => {
           commandResult: { command: 'NOOP', status: 'SUCCESS', message: 'foo' },
           dispatchable: {
             channel,
-            sender,
+            sender: admin,
             sdMessage: sdOutMessage,
           },
         })
@@ -298,9 +306,7 @@ describe('dispatcher module', () => {
 
         let updateFingerprintStub
         beforeEach(async () => {
-          sinon
-            .stub(membershipRepository, 'findMembership')
-            .returns(Promise.resolve(membershipFactory({ language: languages.FR })))
+          findMembershipStub.returns(Promise.resolve(membershipFactory({ language: languages.FR })))
           updateFingerprintStub = sinon
             .stub(safetyNumbers, 'updateFingerprint')
             .returns(Promise.resolve({ status: 'SUCCESS', message: 'yay!' }))
@@ -387,7 +393,7 @@ describe('dispatcher module', () => {
             data: { source: { number: subscriberPhoneNumber } },
           })
           beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.SUBSCRIBER))
+            findMembershipStub.returns(Promise.resolve(subscriber))
             await dispatch(JSON.stringify(subscriberExpiryUpdate))
           })
 
@@ -406,7 +412,7 @@ describe('dispatcher module', () => {
             data: { source: randoPhoneNumber },
           })
           beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
+            findMembershipStub.returns(Promise.resolve(rando))
             await dispatch(JSON.stringify(randoExpiryUpdate))
           })
 
@@ -426,7 +432,7 @@ describe('dispatcher module', () => {
           })
 
           beforeEach(async () => {
-            resolveMemberTypeStub.returns(Promise.resolve(memberTypes.NONE))
+            findMembershipStub.returns(Promise.resolve(rando))
             await dispatch(JSON.stringify(expiryUpdateWithBody))
           })
 

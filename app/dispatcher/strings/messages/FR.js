@@ -15,7 +15,7 @@ const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné-e à ce canal. Envoyez BONJOUR pour vous abonner."
 const subscriberLimitReached = subscriberLimit =>
   `Désolé, cette canal a atteint sa limite de ${subscriberLimit} abonnés.`
-const onOrOff = isOn => (isOn ? 'activée' : 'désactivée')
+const onOrOff = isOn => (isOn ? 'activé' : 'désactivé')
 
 const vouchModeDisplay = {
   ON: 'activée',
@@ -91,7 +91,8 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   // ADD
 
   add: {
-    success: num => `${num} a été ajouté e comme admin.`,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
     notAdmin,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
@@ -333,7 +334,7 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Hotline ${onOrOff(isOn)}.`,
+      success: isOn => `La hotline a été ${onOrOff(isOn)}.`,
       notAdmin,
       dbError: isOn =>
         `Oups! Une erreur s’est produite en tentant de changer la hotline à ${onOrOff(
@@ -356,24 +357,27 @@ Envoyez AIDE pour avoir accès au menu des commandes valides.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
-      ({
-        ON: `Se porter garant est maintenant ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} a configuré se porter garant ${vouchModeDisplay[mode]}.`
+        : `Se porter garant ${vouchModeDisplay[mode]}.`
 
-Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
+      const explanation = {
+        ON: `Cela signifie qu'une invitation d'un membre existant est requise pour rejoindre cette canal.
+Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
+
+Les administrateurs peuvent ajuster le nombre d'invitatnions nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
+        OFF: `Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
+        ADMIN: `Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
 Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
 
 Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
-        OFF: `Se porter garant est maintenant ${vouchModeDisplay.OFF}.
+      }[mode]
 
-Cela signifie que n'importe qui peut rejoindre la canal en envoyant BONJOUR au numéro de canal.`,
-        ADMIN: `Se porter garant est maintenant ${vouchModeDisplay.ADMIN}.
+      return `${vouchingStatus}
 
-Cela signifie qu'une invitation d'un * administrateur * est requise pour rejoindre cette canal.
-Tout le monde peut envoyer une invitation en envoyant INVITER + 1-555-123-1234.
-
-Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se joindre à l'aide de la commande NIVEAU DE PORTER GARANT.`,
-      }[mode]),
+${explanation}`
+    },
     notAdmin,
     dbError:
       "Une erreur s'est produite lors de la mise à jour de l'attestation de votre canal. Veuillez réessayer.",
@@ -400,16 +404,22 @@ Les administrateurs peuvent ajuster le nombre d'invitations nécessaires pour se
 }
 
 const notifications = {
-  adminAdded: `Un-e nouvel-le admin a été ajouté.`,
+  adminAdded: (adderAdminId, addedAdminId) =>
+    `ADMIN ${adderAdminId} a ajouté ADMIN ${addedAdminId}.`,
 
-  adminRemoved: "Un-e admin vient d'être supprimé.",
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} enlevé ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: "Un-e abonné-e vient d'être supprimé.",
+  subscriberRemoved: adminId => `ADMIN ${adminId} a supprimé un abonné.`,
 
-  adminLeft: 'Un-e admin vient de quitter le canal.',
+  adminLeft: adminId => `ADMIN ${adminId} vient de quitter le canal.`,
 
-  channelDestroyed:
-    'La canal et tous les enregistrements associés ont été définitivement détruits.',
+  channelDestroyedByAdmin: (adminId, audience) =>
+    ({
+      ADMIN: `ADMIN ${adminId} a détruit ce canal. Toutes les données associées ont été supprimées.`,
+      SUBSCRIBER:
+        'La chaîne et toutes les données associées ont été définitivement détruites par les administrateurs de cette chaîne.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Salut! Cette canal sera détruite dans ${hoursToLive} heures en raison d'un manque d'utilisation.
@@ -423,7 +433,7 @@ Pour plus d'informations, visitez signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     "Canal détruit par manque d'utilisation. Pour créer une nouvelle canal, visitez https://signalboost.info",
 
   channelRedeemed:
@@ -455,8 +465,11 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
       ? 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour répertorier les commandes valides.'
       : 'Désolé, la hotline n’est pas activé sur ce canal. Envoyez AIDE pour lister les commandes valides ou SALUT pour vous abonner.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Bonjour! Vous avez reçu le invitation pour rejoindre la canal Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
@@ -487,20 +500,20 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     'Vous essayez de redémarrer Signalboost? Vous utilisez le mauvais canal pour cela! Réessayez sur le canal de diagnostic.',
   restartPassNotAuthorized:
     'Vous essayez de redémarrer Signalboost? Vous avez utilisé la mauvaise phrase de passe pour cela!',
-  restartSuccessNotification: adminId => `Signalboost a été redémarré par ${adminId}`,
+  restartSuccessNotification: adminId => `ADMIN ${adminId} redémarré Signalboost.`,
   restartSuccessResponse: 'Signalboost a été redémarré avec succès',
   restartFailure: errorMessage => `Échec du redémarrage de Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
     'Il semble que votre numéro de sécurité vient de changer. Vous devrez peut-être renvoyer votre dernier message! :)',
 
-  toRemovedAdmin:
-    "Vous venez d'être supprimé e en tant qu'admin de cette canal. Envoyez SALUT pour vous réinscrire.",
+  toRemovedAdmin: adminId =>
+    `Vous venez d'être supprimé e en tant qu'admin de cette canal par ADMIN ${adminId}. Envoyez SALUT pour vous réinscrire.`,
 
   toRemovedSubscriber:
     "Vous venez d'être supprimé de cette canal par un administrateur. Envoyez SALUT pour vous réinscrire.",
 
-  toggles: commandResponses.toggles,
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} a ${onOrOff(isOn)} la hotline.`,
 
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
@@ -512,8 +525,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `Un-e admin vient de changer le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} a changé le niveau du garant en ${vouchLevel}; ${vouchLevel} ${
       vouchLevel > 1 ? 'invitations' : 'invitation'
     } seront désormais nécessaires pour rejoindre cette canal.`,
 
@@ -526,12 +539,13 @@ Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre gui
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE DE @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `RÉPONSE Á @${messageId}` : `RÉPONSE PRIVÉE DES ADMINS`,
   broadcastMessage: `DIFFUSER`,
+  fromAdmin: 'DE ADMIN',
+  hotlineMessage: messageId => `HOTLINE DE @${messageId}`,
+  hotlineReply: `RÉPONSE PRIVÉE DES ADMINS`,
+  hotlineReplyTo: messageId => `RÉPONSE Á @${messageId}`,
+  notificationHeader: `NOTIFICATION`,
   privateMessage: `PRIVÉ`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

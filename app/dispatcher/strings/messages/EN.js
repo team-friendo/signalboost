@@ -85,7 +85,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // ADD
 
   add: {
-    success: num => `${num} added as an admin.`,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
     notAdmin,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidPhoneNumber,
@@ -340,24 +340,27 @@ Send HELP to list commands you can use.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
-      ({
-        ON: `Vouching is now ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} set vouching ${vouchModeDisplay[mode]}.`
+        : `Vouching is now ${vouchModeDisplay[mode]}.`
 
-This means an invite from an existing member is required to join this channel.
+      const explanation = {
+        ON: `This means an invite from an existing member is required to join this channel.
 Anyone can send an invite by sending INVITE +1-555-123-1234.
 
 Admins can adjust the number of invites needed to join by using the VOUCH LEVEL command.`,
-        OFF: `Vouching is now ${vouchModeDisplay.OFF}.
-
-This means that anyone can join the channel by sending HELLO to the channel number.`,
-        ADMIN: `Vouching is now set to ${vouchModeDisplay.ADMIN}.
-
-This means that an invite from an *admin* is required to join this channel.
+        OFF: `This means that anyone can join the channel by sending HELLO to the channel number.`,
+        ADMIN: `This means that an invite from an *admin* is required to join this channel.
 Anyone can send an invite by sending INVITE +1-555-123-1234.
 
 Admins can adjust the number of invites needed to join by using the VOUCH LEVEL command.`,
-      }[mode]),
+      }[mode]
+
+      return `${vouchingStatus}
+
+${explanation}`
+    },
     notAdmin,
     dbError: 'There was an error updating vouching for your channel. Please try again.',
   },
@@ -381,15 +384,21 @@ Admins can adjust the number of invites needed to join by using the VOUCH LEVEL 
 }
 
 const notifications = {
-  adminAdded: 'A new admin was just added.',
+  adminAdded: (adderAdminId, addedAdminId) => `ADMIN ${adderAdminId} added ADMIN ${addedAdminId}.`,
 
-  adminRemoved: 'An admin was just removed.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} removed ADMIN ${removedAdminId}.`,
 
-  subscriberRemoved: 'An subscriber was just removed.',
+  subscriberRemoved: adminId => `ADMIN ${adminId} removed a susbcriber.`,
 
-  adminLeft: 'An admin just left the channel.',
+  adminLeft: adminId => `ADMIN ${adminId} left the channel.`,
 
-  channelDestroyed: 'Channel and all associated records have been permanently destroyed.',
+  channelDestroyedByAdmin: (audience, adminId) =>
+    ({
+      ADMIN: `ADMIN ${adminId} has destroyed this channel. All associated data has been deleted.`,
+      SUBSCRIBER:
+        'Channel and all associated data has been permanently destroyed by the admins of this channel.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Hello! This channel will be destroyed in ${hoursToLive} hours due to lack of use.
@@ -403,7 +412,7 @@ For more information, visit signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Failed to destroy channel for phone number: ${phoneNumber}`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelRedeemed:
@@ -434,8 +443,11 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
       ? 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands.'
       : 'Sorry, this channel does not have a hotline enabled. Send HELP to list valid commands or HELLO to subscribe.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hello! You have received an invite to join the [${channelName}] Signalboost channel. Please respond with ACCEPT or DECLINE.`,
@@ -461,19 +473,20 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     'Trying to restart Signalboost? You are using the wrong channel for that! Try again on the diagnostics channel.',
   restartPassNotAuthorized:
     'Trying to restart Signalboost? You used the wrong passphrase for that!',
-  restartSuccessNotification: adminId => `Signalboost was restarted by ${adminId}`,
-  restartSuccessResponse: 'Signalboost was restarted successfully!',
+  restartSuccessNotification: adminId => `ADMIN ${adminId} restarted Signalboost.`,
+  restartSuccessResponse: 'Signalboost restarted successfully!',
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
     'It looks like you safety number just changed. You might need to resend your last message! :)',
 
-  toRemovedAdmin: 'You were just removed as an admin from this channel. Send HELLO to resubscribe.',
+  toRemovedAdmin: adminId =>
+    `ADMIN ${adminId} removed you as an admin from this channel. Send HELLO to resubscribe.`,
 
   toRemovedSubscriber:
-    'You were just removed from this channel by an Admin. Send HELLO to resubscribe.',
+    'You were just removed from this channel by an admin. Send HELLO to resubscribe.',
 
-  toggles: commandResponses.toggles,
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
 
   vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
     `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
@@ -482,10 +495,10 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `An admin just set the vouching level to ${vouchLevel}; joining this channel will now require ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} set the vouching level to ${vouchLevel}. It will now require ${vouchLevel} ${
       vouchLevel > 1 ? 'invites' : 'invite'
-    }.`,
+    } to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber, channelName) =>
     `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!
@@ -497,12 +510,13 @@ To see a full list of commands, send HELP or check out our how-to guide: https:/
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE FROM @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `REPLY TO @${messageId}` : `PRIVATE REPLY FROM ADMINS`,
   broadcastMessage: `BROADCAST`,
+  fromAdmin: 'FROM ADMIN',
+  hotlineMessage: messageId => `HOTLINE FROM @${messageId}`,
+  hotlineReply: `PRIVATE REPLY FROM ADMINS`,
+  hotlineReplyTo: messageId => `REPLY TO @${messageId}`,
+  notificationHeader: `NOTIFICATION`,
   privateMessage: `PRIVATE`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

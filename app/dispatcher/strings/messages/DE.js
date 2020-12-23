@@ -90,7 +90,8 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // ADD
 
   add: {
-    success: num => `${num} als Admin hinzugefügt.`,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
     notAdmin,
     dbError: num =>
       `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
@@ -330,7 +331,7 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
 
   toggles: {
     hotline: {
-      success: isOn => `Hotline Funktion ${onOrOff(isOn)} geschaltet.`,
+      success: isOn => `Hotline  ${onOrOff(isOn)}geschaltet.`,
       notAdmin,
       dbError: isOn =>
         `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(
@@ -353,24 +354,28 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
 
   // VOUCHING
   vouchMode: {
-    success: mode =>
-      ({
-        ON: `Der Gutschein ist jetzt ${vouchModeDisplay.ON}.
+    success: (mode, adminId) => {
+      const vouchingStatus = adminId
+        ? `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay[mode]}.`
+        : `Gutschein ist jetzt ${vouchModeDisplay[mode]}.`
 
-Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
+      const explanation = {
+        ON: `Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
 Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
 
 Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
-        OFF: `Der Gutschein ist jetzt ${vouchModeDisplay.OFF}.
-
-Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
-        ADMIN: `Der Gutschein ist jetzt ${vouchModeDisplay.ADMIN}.
-
+        OFF: `Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
+        ADMIN: `
 Dies bedeutet, dass eine Einladung eines *Administrators* erforderlich ist, um diesem Kanal beizutreten.
 Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
 
 Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
-      }[mode]),
+      }[mode]
+
+      return `${vouchingStatus}
+
+${explanation}`
+    },
     notAdmin,
     dbError:
       'Beim Aktualisieren der Gutscheine für Ihren Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',
@@ -396,15 +401,22 @@ Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen m
 }
 
 const notifications = {
-  adminAdded: 'Soeben wurde ein neuer Admin hinzugefügt.',
+  adminAdded: (adderAdminId, addedAdminId) =>
+    `ADMIN ${adderAdminId} hat ADMIN ${addedAdminId} hinzugefügt.`,
 
-  adminRemoved: 'Soeben wurde ein Admin entfernt.',
+  adminRemoved: (removerAdminId, removedAdminId) =>
+    `ADMIN ${removerAdminId} entfernte ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: 'Ein Abonnent wurde gerade entfernt.',
+  subscriberRemoved: adminId => `ADMIN ${adminId} einen Abonnenten entfernt.`,
 
-  adminLeft: 'Ein Admin hat den Kanal verlassen.',
+  adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
-  channelDestroyed: 'Der Kanal und alls zugehörigen Daten wurden unwiderruflich zerstört.',
+  channelDestroyedByAdmin: (adminId, audience) =>
+    ({
+      ADMIN: `ADMIN ${adminId} hat diesen Kanal zerstört. Alle zugehörigen Daten wurden gelöscht.`,
+      SUBSCRIBER:
+        'Der Kanal und alle zugehörigen Daten wurden von den Administratoren dieses Kanals dauerhaft zerstört.',
+    }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Hallo! Dieser Kanal wird in ${hoursToLive} Stunden aufgrund mangelnder Nutzung zerstört.
@@ -418,7 +430,7 @@ Weitere Informationen finden Sie unter signalboost.info/how-to.`,
   channelDestructionFailed: phoneNumber =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
 
-  channelDestroyedDueToInactivity:
+  channelDestroyedBySystem:
     'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
 
   channelRedeemed:
@@ -449,8 +461,11 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
       ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
       : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
 
-  hotlineReplyOf: ({ messageId, reply }, memberType) =>
-    `[${prefixes.hotlineReplyOf(messageId, memberType)}]\n${reply}`,
+  hotlineReplyOf: ({ messageId, reply }, memberType) => {
+    const prefix =
+      memberType === memberTypes.ADMIN ? prefixes.hotlineReplyTo(messageId) : prefixes.hotlineReply
+    return `[${prefix}]\n${reply}`
+  },
 
   inviteReceived: channelName =>
     `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
@@ -485,22 +500,22 @@ ${
     'Versuchen Sie, Signalboost neu zu starten? Sie benutzen dafür den falschen Kanal! Versuchen Sie es erneut auf dem Diagnosekanal.',
   restartPassNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie haben dafür die falsche Passphrase verwendet!',
-  restartSuccessNotification: adminId => `Signalboost wurde von ${adminId} neu gestartet`,
+  restartSuccessNotification: adminId => `ADMIN ${adminId} hat den Signalboost neu gestartet.`,
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
-  restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
+  restartFailure: errorMessage => `Signalboost konnte nicht neu gestartet werden: ${errorMessage}`,
 
-  toRemovedAdmin:
-    'Soeben wurdest du als Admin von diesem Kanal entfernt. Schicke HALLO um dich wieder anzumelden.',
+  toRemovedAdmin: adminId =>
+    `Soeben wurdest du als Admin von diesem Kanal entfernt von ADMIN ${adminId}. Schicke HALLO um dich wieder anzumelden.`,
 
   toRemovedSubscriber:
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
-  toggles: commandResponses.toggles,
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
-  vouchLevelChanged: vouchLevel =>
-    `Ein Admin hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${
+  vouchLevelChanged: (adminId, vouchLevel) =>
+    `ADMIN ${adminId} hat soeben das Vertrauens-Level auf ${vouchLevel} gestellt; um diesem Kanal beizutreten braucht es jetzt ${vouchLevel} ${
       vouchLevel > 1 ? 'Einladungen' : 'Einladung'
     }.`,
 
@@ -513,12 +528,13 @@ ${
 }
 
 const prefixes = {
-  hotlineMessage: messageId => `HOTLINE VON @${messageId}`,
-  hotlineReplyOf: (messageId, memberType) =>
-    memberType === memberTypes.ADMIN ? `HOTLINE AN @${messageId}` : `PRIVATE ANTWORT VON ADMINS`,
   broadcastMessage: `ÜBERTRAGUNG`,
+  fromAdmin: 'VON ADMIN',
+  hotlineMessage: messageId => `HOTLINE VON @${messageId}`,
+  hotlineReply: `PRIVATE ANTWORT VON ADMINS`,
+  hotlineReplyTo: messageId => `HOTLINE AN @${messageId}`,
+  notificationHeader: `BENACHRICHTIGUNG`,
   privateMessage: `PRIVAT`,
-  admin: 'ADMIN',
 }
 
 module.exports = {

@@ -1,7 +1,7 @@
 const channelRepository = require('./db/repositories/channel')
 const signal = require('./signal')
 const { sequence } = require('./util')
-const { getAdminMemberships } = require('./db/repositories/channel')
+const { getAdminMemberships, getSubscriberMemberships } = require('./db/repositories/channel')
 const { messagesIn } = require('./dispatcher/strings/messages')
 const { sdMessageOf } = require('./signal/constants')
 const {
@@ -10,8 +10,8 @@ const {
 
 const notificationKeys = {
   CHANNEL_DESTRUCTION_SCHEDULED: 'channelDestructionScheduled',
-  CHANNEL_DESTROYED: 'channelDestroyed',
-  CHANNEL_DESTROYED_DUE_TO_INACTIVITY: 'channelDestroyedDueToInactivity',
+  CHANNEL_DESTROYED_BY_ADMIN: 'channelDestroyedByAdmin',
+  CHANNEL_DESTROYED_BY_SYSTEM: 'channelDestroyedBySystem',
   CHANNEL_REDEEMED: 'channelRedeemed',
 }
 
@@ -32,6 +32,10 @@ const notifyMaintainers = async message => {
 // (string, string) -> Promise<Array<string>>
 const notifyAdmins = async (channel, notificationKey, args) =>
   notifyMany({ channel, notificationKey, args, recipients: getAdminMemberships(channel) })
+
+// (string, string) -> Promise<Array<string>>
+const notifySubscribers = async (channel, notificationKey, args) =>
+  notifyMany({ channel, notificationKey, args, recipients: getSubscriberMemberships(channel) })
 
 // (Channel, string) -> Promise<Array<string>>
 const notifyMembers = async (channel, notificationKey, args) =>
@@ -54,7 +58,7 @@ const notifyMany = ({ channel, recipients, notificationKey, message, args }) =>
     ),
   )
 
-const _messageOf = (recipient, message, notificationKey, args) => {
+const _messageOf = (recipient, message, notificationKey, args = []) => {
   if (message) return message
   const notificationMaker = messagesIn(recipient.language).notifications[notificationKey]
   return typeof notificationMaker === 'function' ? notificationMaker(...args) : notificationMaker
@@ -62,6 +66,7 @@ const _messageOf = (recipient, message, notificationKey, args) => {
 
 module.exports = {
   notifyAdmins,
+  notifySubscribers,
   notifyMany,
   notifyMembers,
   notifyMaintainers,

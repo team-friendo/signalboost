@@ -13,7 +13,7 @@ import socket from '../../../app/socket/write'
 import util from '../../../app/util'
 import metrics from '../../../app/metrics'
 import channelRepository from '../../../app/db/repositories/channel'
-import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
+import membershipRepository from '../../../app/db/repositories/membership'
 import messenger from '../../../app/dispatcher/messenger'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { genFingerprint } from '../../support/factories/deauthorization'
@@ -24,6 +24,7 @@ import {
   outboundAttachmentFactory,
 } from '../../support/factories/sdMessage'
 import { channelFactory } from '../../support/factories/channel'
+import { adminMembershipFactory } from '../../support/factories/membership'
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../../../app/config')
@@ -49,8 +50,11 @@ describe('signal module', () => {
     beforeEach(async () => {
       writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
       sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
-      sinon.stub(membershipRepository, 'resolveMemberType').returns(memberTypes.NONE)
-      sinon.stub(membershipRepository, 'resolveSenderLanguage').returns(memberTypes.NONE)
+      sinon
+        .stub(membershipRepository, 'findMembership')
+        .returns(
+          Promise.resolve(adminMembershipFactory({ channelPhoneNumber: channel.phoneNumber })),
+        )
       sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
     })
     afterEach(async () => {

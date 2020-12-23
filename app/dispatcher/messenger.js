@@ -114,7 +114,7 @@ const respond = ({ channel, message, sender, command }) => {
   // because respond doesn't handle attachments, don't want to repeat message here
   return signal
     .sendMessage(
-      sdMessageOf({ sender: channel.phoneNumber, recipient: sender.phoneNumber, message }),
+      sdMessageOf({ sender: channel.phoneNumber, recipient: sender.memberPhoneNumber, message }),
       channel.socketId,
     )
     .then(async () => {
@@ -123,7 +123,8 @@ const respond = ({ channel, message, sender, command }) => {
       // Counting these pings would prevent us from detecting stale channels for destruction, which
       // we currently accomplish by looking for old timestamps in `channel.messageCounts.updatedAt`.
       const shouldCount = !(
-        command === commands.INFO && (await channelRepository.isMaintainer(sender.phoneNumber))
+        command === commands.INFO &&
+        (await channelRepository.isMaintainer(sender.memberPhoneNumber))
       )
       return shouldCount && messageCountRepository.countCommand(channel)
     })
@@ -185,7 +186,7 @@ const setExpiryTimeForNewUsers = async ({ commandResult, dispatchable }) => {
     case commands.ACCEPT:
       return signal.setExpiration(
         channel.phoneNumber,
-        sender.phoneNumber,
+        sender.memberPhoneNumber,
         channel.messageExpiryTime,
         channel.socketId,
       )

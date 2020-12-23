@@ -249,7 +249,7 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sdMessageOf({
               sender: channel.phoneNumber,
-              recipient: sender.phoneNumber,
+              recipient: sender.memberPhoneNumber,
               message: response,
             }),
             channel.socketId,
@@ -285,7 +285,7 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sdMessageOf({
               sender: channel.phoneNumber,
-              recipient: sender.phoneNumber,
+              recipient: sender.memberPhoneNumber,
               message: response,
             }),
             channel.socketId,
@@ -338,7 +338,7 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sdMessageOf({
               sender: channel.phoneNumber,
-              recipient: adminSender.phoneNumber,
+              recipient: adminSender.memberPhoneNumber,
               message: 'yay!',
             }),
             channel.socketId,
@@ -368,7 +368,7 @@ describe('messenger service', () => {
           expect(sendMessageStub.getCall(0).args).to.eql([
             sdMessageOf({
               sender: channel.phoneNumber,
-              recipient: adminSender.phoneNumber,
+              recipient: adminSender.memberPhoneNumber,
               message: errorMessage,
             }),
             channel.socketId,
@@ -486,7 +486,7 @@ describe('messenger service', () => {
             })
             expect(setExpirationStub.getCall(0).args).to.eql([
               channel.phoneNumber,
-              randomSender.phoneNumber,
+              randomSender.memberPhoneNumber,
               channel.messageExpiryTime,
               channel.socketId,
             ])

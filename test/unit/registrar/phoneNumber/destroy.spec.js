@@ -25,18 +25,22 @@ import { channelFactory, deepChannelFactory } from '../../../support/factories/c
 
 import { genPhoneNumber, phoneNumberFactory } from '../../../support/factories/phoneNumber'
 import { eventFactory } from '../../../support/factories/event'
-import { requestToDestroyStaleChannels } from '../../../../app/registrar/phoneNumber/destroy'
+import {
+  requestToDestroyStaleChannels,
+  issuerTypes,
+} from '../../../../app/registrar/phoneNumber/destroy'
 import {
   deepDestructionRequestFactory,
   destructionRequestFactory,
 } from '../../../support/factories/destructionRequest'
+import { memberTypes } from '../../../../app/db/repositories/membership'
 
 describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
   const phoneNumberRecord = phoneNumberFactory({ phoneNumber })
   const phoneNumbers = times(2, genPhoneNumber)
   const channel = deepChannelFactory({ phoneNumber })
-  const sender = channel.memberships[0].memberPhoneNumber
+  const admin = channel.memberships[0].memberPhoneNumber
 
   let findChannelStub,
     findPhoneNumberStub,
@@ -51,6 +55,7 @@ describe('phone number registrar -- destroy module', () => {
     destroyChannelStub,
     logEventStub,
     notifyAdminsStub,
+    notifySubscribersStub,
     notifyMaintainersStub,
     notifyMembersStub,
     createDestructionRequestStub
@@ -74,6 +79,7 @@ describe('phone number registrar -- destroy module', () => {
     destroyPhoneNumberStub = sinon.stub(phoneNumberRepository, 'destroy')
 
     notifyAdminsStub = sinon.stub(notifier, 'notifyAdmins')
+    notifySubscribersStub = sinon.stub(notifier, 'notifySubscribers')
     notifyMembersStub = sinon.stub(notifier, 'notifyMembers')
     notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
     notifyMembersExceptStub = sinon.stub(notifier, 'notifyMembersExcept').returns(Promise.resolve())
@@ -158,29 +164,48 @@ describe('phone number registrar -- destroy module', () => {
           findPhoneNumberStub.returns(Promise.resolve(phoneNumberRecord))
           notifyMembersExceptStub.returns(Promise.resolve())
           notifyMaintainersStub.returns(Promise.resolve())
+          notifyAdminsStub.returns(Promise.resolve())
+          notifySubscribersStub.returns(Promise.resolve())
           removeDirStub.returns(Promise.resolve())
           twilioRemoveStub.returns(Promise.resolve())
           destroyPhoneNumberStub.returns(Promise.resolve())
         })
 
-        describe('destroy command called from maintainer', () => {
+        describe('destroy command called from the system', () => {
           it('notifies all the members of the channel of destruction', async () => {
             await destroy({ phoneNumber })
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
-              undefined,
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+              undefined, // b/c sent by system!
+              notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
+            ])
+          })
+        })
+
+        describe('destroy command issued by an admin', () => {
+          it('notifies all the members of the channel of destruction', async () => {
+            await destroy({ phoneNumber, sender: admin, issuer: issuerTypes.ADMIN })
+
+            expect(notifyAdminsStub.getCall(0).args).to.eql([
+              channel,
+              notificationKeys.CHANNEL_DESTROYED_BY_ADMIN,
+              [memberTypes.ADMIN, admin.adminId],
+            ])
+            expect(notifySubscribersStub.getCall(0).args).to.eql([
+              channel,
+              notificationKeys.CHANNEL_DESTROYED_BY_ADMIN,
+              [memberTypes.SUBSCRIBER],
             ])
           })
         })
 
         describe('destroy command called from admin of channel', () => {
           it('notifies all members of the channel except for the sender', async () => {
-            await destroy({ phoneNumber, sender })
+            await destroy({ phoneNumber, sender: admin })
             expect(notifyMembersExceptStub.getCall(0).args).to.eql([
               channel,
-              sender,
-              notificationKeys.CHANNEL_DESTROYED_DUE_TO_INACTIVITY,
+              admin,
+              notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
             ])
           })
         })
