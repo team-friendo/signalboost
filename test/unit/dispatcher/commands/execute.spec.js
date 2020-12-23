@@ -369,7 +369,7 @@ describe('executing commands', () => {
                   {
                     recipient: channel.memberships[1].memberPhoneNumber,
                     message: `[${
-                      prefixesFor(channel.memberships[1]).notification
+                      prefixesFor(channel.memberships[1]).notificationHeader
                     }]\n${notificationsFor(channel.memberships[1]).adminAdded(
                       sender.adminId,
                       newAdminMembership.adminId,
@@ -378,7 +378,7 @@ describe('executing commands', () => {
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
                     message: `[${
-                      prefixesFor(channel.memberships[2]).notification
+                      prefixesFor(channel.memberships[2]).notificationHeader
                     }]\n${notificationsFor(channel.memberships[2]).adminAdded(
                       sender.adminId,
                       newAdminMembership.adminId,
@@ -1438,7 +1438,7 @@ describe('executing commands', () => {
           message: commandResponsesFor(admin).leave.success,
           notifications: bystanderAdminMemberships.map(membership => ({
             recipient: membership.memberPhoneNumber,
-            message: `[${prefixesFor(membership).notification}]\n${messagesIn(
+            message: `[${prefixesFor(membership).notificationHeader}]\n${messagesIn(
               membership.language,
             ).notifications.adminLeft(sender.adminId)}`,
           })),
@@ -1528,15 +1528,15 @@ describe('executing commands', () => {
                   // removed admin
                   {
                     recipient: removalTargetNumber,
-                    message: `[${prefixesFor(removalTarget).notification}]\n${notificationsFor(
-                      removalTarget,
-                    ).toRemovedAdmin(sender.adminId)}`,
+                    message: `[${
+                      prefixesFor(removalTarget).notificationHeader
+                    }]\n${notificationsFor(removalTarget).toRemovedAdmin(sender.adminId)}`,
                   },
                   // bystander admins
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
                     message: `[${
-                      prefixesFor(channel.memberships[2]).notification
+                      prefixesFor(channel.memberships[2]).notificationHeader
                     }]\n${notificationsFor(channel.memberships[2]).adminRemoved(
                       sender.adminId,
                       removalTarget.adminId,
@@ -1598,7 +1598,7 @@ describe('executing commands', () => {
                   {
                     recipient: channel.memberships[2].memberPhoneNumber,
                     message: `[${
-                      prefixesFor(channel.memberships[2]).notification
+                      prefixesFor(channel.memberships[2]).notificationHeader
                     }]\n${notificationsFor(channel.memberships[2]).subscriberRemoved(
                       sender.adminId,
                       removalTarget.adminId,
@@ -1883,15 +1883,19 @@ describe('executing commands', () => {
             message: messagesIn(admin.language).notifications.restartSuccessResponse,
             notifications: [
               {
-                message: `[${prefixesFor(adminMemberships[1]).notification}]\n${notificationsFor(
-                  adminMemberships[1],
-                ).restartSuccessNotification(admin.adminId)}`,
+                message: `[${
+                  prefixesFor(adminMemberships[1]).notificationHeader
+                }]\n${notificationsFor(adminMemberships[1]).restartSuccessNotification(
+                  admin.adminId,
+                )}`,
                 recipient: adminMemberships[1].memberPhoneNumber,
               },
               {
-                message: `[${prefixesFor(adminMemberships[2]).notification}]\n${notificationsFor(
-                  adminMemberships[2],
-                ).restartSuccessNotification(admin.adminId)}`,
+                message: `[${
+                  prefixesFor(adminMemberships[2]).notificationHeader
+                }]\n${notificationsFor(adminMemberships[2]).restartSuccessNotification(
+                  admin.adminId,
+                )}`,
                 recipient: adminMemberships[2].memberPhoneNumber,
               },
             ],
@@ -2010,7 +2014,7 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                  message: `[${prefixesFor(membership).notificationHeader}]\n${notificationsFor(
                     membership,
                   )[notificationKey](isOn, sender.adminId)}`,
                 })),
@@ -2106,7 +2110,7 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                  message: `[${prefixesFor(membership).notificationHeader}]\n${notificationsFor(
                     membership,
                   ).vouchModeChanged(vouchModes[mode], sender.adminId)}`,
                 })),
@@ -2186,7 +2190,7 @@ describe('executing commands', () => {
               notifications: [
                 ...bystanderAdminMemberships.map(membership => ({
                   recipient: membership.memberPhoneNumber,
-                  message: `[${prefixesFor(membership).notification}]\n${notificationsFor(
+                  message: `[${prefixesFor(membership).notificationHeader}]\n${notificationsFor(
                     membership,
                   ).vouchLevelChanged(sender.adminId, validVouchLevel)}`,
                 })),

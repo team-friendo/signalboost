@@ -515,7 +515,7 @@ const prefixes = {
   hotlineMessage: messageId => `HOTLINE FROM @${messageId}`,
   hotlineReply: `PRIVATE REPLY FROM ADMINS`,
   hotlineReplyTo: messageId => `REPLY TO @${messageId}`,
-  notification: `NOTIFICATION`,
+  notificationHeader: `NOTIFICATION`,
   privateMessage: `PRIVATE`,
 }
 

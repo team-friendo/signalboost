@@ -793,7 +793,7 @@ const hotlineNotificationsOf = async (channel, sender, { messageBody, attachment
 
 // (Membership, string, Array<string>) => string
 const appendHeaderToNotification = (recipientMembership, notificationType, args) => {
-  const header = `${messagesIn(recipientMembership.language).prefixes.notification}`
+  const header = `${messagesIn(recipientMembership.language).prefixes.notificationHeader}`
   const messageBody = messagesIn(recipientMembership.language).notifications[notificationType](
     ...args,
   )
