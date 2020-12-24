@@ -45,35 +45,35 @@ class SqlProtocolStoreTest: FreeSpec({
             store.removeOwnIdentity()
         }
 
-        "creates account's identity keypair on first call, retrieves it on subsequent calls" - {
+        "creates account's identity keypair on first call, retrieves it on subsequent calls" {
             transaction(db) { OwnIdentities.selectAll().count() shouldBe 0 }
             val keyPair = store.identityKeyPair
             transaction(db) { OwnIdentities.selectAll().count() shouldBe 1 }
             store.identityKeyPair.serialize() shouldBe keyPair.serialize()
         }
 
-        "retrieves account's registration id on first call, retrieves it on subsquent calls" - {
+        "retrieves account's registration id on first call, retrieves it on subsquent calls" {
             transaction(db) { OwnIdentities.selectAll().count() } shouldBe 0
             val registrationId = store.localRegistrationId
             transaction(db) { OwnIdentities.selectAll().count() } shouldBe 1
             store.localRegistrationId shouldBe registrationId
         }
 
-        "stores and retrieves an identity" - {
+        "stores and retrieves an identity" {
             store.saveIdentity(address, identityKey)
             store.getIdentity(address) shouldBe identityKey
         }
 
-        "trusts the first key it sees for an address" - {
+        "trusts the first key it sees for an address" {
             store.isTrustedIdentity(address, identityKey, Direction.RECEIVING) shouldBe true
         }
 
-        "trusts a key it has stored for an address" - {
+        "trusts a key it has stored for an address" {
             store.saveIdentity(address, identityKey)
             store.isTrustedIdentity(address, identityKey, Direction.RECEIVING) shouldBe true
         }
 
-        "does not trust a new key for an existing address" - {
+        "does not trust a new key for an existing address" {
             store.saveIdentity(address, identityKey)
             store.isTrustedIdentity(address, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
         }
@@ -89,28 +89,28 @@ class SqlProtocolStoreTest: FreeSpec({
             store.removePreKey(keyId)
         }
 
-        "checks for prekey existence" - {
+        "checks for prekey existence" {
             store.containsPreKey(keyId) shouldBe false
         }
 
-        "stores a prekey" - {
+        "stores a prekey" {
             store.storePreKey(keyId, prekey)
             store.containsPreKey(keyId) shouldBe true
         }
 
-        "loads a prekey" - {
+        "loads a prekey" {
             store.storePreKey(keyId, prekey)
             val loadedKey = store.loadPreKey(keyId)
             loadedKey.serialize() shouldBe prekey.serialize()
         }
 
-        "throws when trying to load a non-existent prekey" - {
+        "throws when trying to load a non-existent prekey" {
             shouldThrow<InvalidKeyException> {
                 store.loadPreKey(nonExistentId)
             }
         }
 
-        "removes a prekey" - {
+        "removes a prekey" {
             store.storePreKey(keyId, prekey)
             store.containsPreKey(keyId) shouldBe true
 
@@ -128,27 +128,27 @@ class SqlProtocolStoreTest: FreeSpec({
             store.removeSignedPreKey(keyId)
         }
 
-        "checks for existence of a signed prekey" - {
+        "checks for existence of a signed prekey" {
             store.containsPreKey(nonExistentId) shouldBe false
         }
 
-        "stores a signed prekey" - {
+        "stores a signed prekey" {
             store.storeSignedPreKey(keyId, signedPrekey)
             store.containsSignedPreKey(keyId) shouldBe true
         }
 
-        "loads a signed prekey" - {
+        "loads a signed prekey" {
             store.storeSignedPreKey(keyId, signedPrekey)
             store.loadSignedPreKey(keyId).serialize() shouldBe signedPrekey.serialize()
         }
 
-        "throws when trying to load a non-existent signed prekey" - {
+        "throws when trying to load a non-existent signed prekey" {
             shouldThrow<InvalidKeyException> {
                 store.loadSignedPreKey(nonExistentId)
             }
         }
 
-        "removes a signed prekey" - {
+        "removes a signed prekey" {
             store.storeSignedPreKey(keyId, signedPrekey)
             store.removeSignedPreKey(keyId)
             store.containsSignedPreKey(keyId) shouldBe false
@@ -160,11 +160,11 @@ class SqlProtocolStoreTest: FreeSpec({
             store.deleteAllSessions(recipient.phoneNumber)
         }
 
-        "checks for existence of a session with an address" - {
+        "checks for existence of a session with an address" {
             store.containsSession(recipient.addresses[0]) shouldBe false
         }
 
-        "stores and retrieves a *copy* of a session with an address" - {
+        "stores and retrieves a *copy* of a session with an address" {
             store.storeSession(recipient.addresses[0], recipient.sessions[0])
             store.storeSession(recipient.addresses[1], recipient.sessions[1])
             val sessionCopy = store.loadSession(recipient.addresses[0])
@@ -173,14 +173,14 @@ class SqlProtocolStoreTest: FreeSpec({
             sessionCopy.serialize() shouldBe recipient.sessions[0].serialize() // ...with same underlying values
         }
 
-        "retrieves device ids for all sessions with a given user" - {
+        "retrieves device ids for all sessions with a given user" {
             store.storeSession(recipient.addresses[0], recipient.sessions[0])
             store.storeSession(recipient.addresses[1], recipient.sessions[1])
 
             store.getSubDeviceSessions(recipient.phoneNumber) shouldBe listOf(0,1)
         }
 
-        "deletes sessions across all devices for a given user" - {
+        "deletes sessions across all devices for a given user" {
             store.storeSession(recipient.addresses[0], recipient.sessions[0])
             store.storeSession(recipient.addresses[1], recipient.sessions[1])
             store.deleteAllSessions(recipient.phoneNumber)
@@ -211,7 +211,7 @@ class SqlProtocolStoreTest: FreeSpec({
             otherStore.deleteAllSessions(recipient.phoneNumber)
         }
 
-        "support separate and distinct identities" - {
+        "support separate and distinct identities" {
             store.identityKeyPair.serialize() shouldNotBe otherStore.identityKeyPair.serialize()
 
             store.saveIdentity(address, KeyUtil.genIdentityKeyPair().publicKey)
@@ -222,7 +222,7 @@ class SqlProtocolStoreTest: FreeSpec({
             otherStore.getIdentity(address) shouldBe null
         }
 
-        "support separate and distinct prekeys" - {
+        "support separate and distinct prekeys" {
             val prekeys = KeyUtil.genPreKeys(0, 2)
 
             store.storePreKey(ids[0], prekeys[0])
@@ -232,7 +232,7 @@ class SqlProtocolStoreTest: FreeSpec({
             otherStore.containsPreKey(ids[0]) shouldBe false
         }
 
-        "support separate and distinct signed prekeys" - {
+        "support separate and distinct signed prekeys" {
             val signedPreKeys = listOf(
                 KeyUtil.genSignedPreKey(store.identityKeyPair, ids[0]),
                 KeyUtil.genSignedPreKey(otherStore.identityKeyPair, ids[1]),
@@ -245,7 +245,7 @@ class SqlProtocolStoreTest: FreeSpec({
             store.containsPreKey(ids[0]) shouldBe false
         }
 
-        "support separate and distinct sessions" - {
+        "support separate and distinct sessions" {
             store.storeSession(recipient.addresses[0], recipient.sessions[0])
             otherStore.storeSession(recipient.addresses[1], recipient.sessions[1])
 

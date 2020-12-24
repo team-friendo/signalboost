@@ -10,6 +10,10 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 class MessagingTest : FreeSpec({
+    afterSpec {
+        unmockkAll()
+    }
+
     val recipientPhone = genPhoneNumber()
 
     fun MockKMatcherScope.dataMessageWith(
@@ -23,9 +27,6 @@ class MessagingTest : FreeSpec({
             expiresInSeconds?.let { _ -> it.expiresInSeconds == expiresInSeconds } ?: true
     }
 
-    afterTest {
-        unmockkAll()
-    }
 
     "#sendMessage" - {
         val mockMessageSender = mockk<SignalServiceMessageSender>() {
@@ -34,7 +35,7 @@ class MessagingTest : FreeSpec({
             }
         }
 
-        "sends a message from a message sender"- {
+        "sends a message from a message sender" {
             val now = TimeUtil.nowInMillis()
             val result = Messaging.sendMessage(
                 messageSender = mockMessageSender,
@@ -57,7 +58,7 @@ class MessagingTest : FreeSpec({
             result.success shouldNotBe null
         }
 
-        "provides a default timestamp if none provided" - {
+        "provides a default timestamp if none provided" {
             mockkObject(TimeUtil)
             every { TimeUtil.nowInMillis() } returns 1000L
 
@@ -71,7 +72,7 @@ class MessagingTest : FreeSpec({
             }
         }
 
-        "provides a default expiry time if none provided" - {
+        "provides a default expiry time if none provided" {
             Messaging.sendMessage(mockMessageSender, "hello!", recipientPhone)
             verify {
                 mockMessageSender.sendMessage(
