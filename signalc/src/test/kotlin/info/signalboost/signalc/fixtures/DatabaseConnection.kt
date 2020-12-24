@@ -23,6 +23,7 @@ object DatabaseConnection {
         transaction(this) {
             if (withLogging) addLogger(StdOutSqlLogger)
             SchemaUtils.create(
+                Accounts,
                 Identities,
                 OwnIdentities,
                 PreKeys,

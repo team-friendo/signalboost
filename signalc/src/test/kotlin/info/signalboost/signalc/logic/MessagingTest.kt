@@ -10,9 +10,6 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 class MessagingTest : FreeSpec({
-    afterSpec {
-        unmockkAll()
-    }
 
     val recipientPhone = genPhoneNumber()
 
@@ -27,6 +24,13 @@ class MessagingTest : FreeSpec({
             expiresInSeconds?.let { _ -> it.expiresInSeconds == expiresInSeconds } ?: true
     }
 
+    afterSpec  {
+        unmockkAll()
+    }
+
+    afterTest {
+        clearAllMocks(answers = false, childMocks = false, objectMocks = false)
+    }
 
     "#sendMessage" - {
         val mockMessageSender = mockk<SignalServiceMessageSender>() {

@@ -1,11 +1,11 @@
 package info.signalboost.signalc
 
-import info.signalboost.signalc.logic.AccountSupervisor
+import info.signalboost.signalc.logic.AccountManager
 import info.signalboost.signalc.logic.Messaging
-import info.signalboost.signalc.logic.UnregisteredAccount
-import info.signalboost.signalc.model.Account
-import info.signalboost.signalc.model.UnregisteredAccount
+import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.HashMapProtocolStore
+import info.signalboost.signalc.store.SqlProtocolStore
+import org.jetbrains.exposed.sql.Database
 
 
 /********************************************************************
@@ -18,25 +18,36 @@ const val USER_PHONE_NUMBER = "+17347962920"
  *************/
 
 fun main() {
-    // intialize account
-    val accountSupervisor = AccountSupervisor(HashMapProtocolStore)
-    val unregisteredAccount = UnregisteredAccount(username = USER_PHONE_NUMBER, protocolStore = HashMapProtocolStore)
+    // TODO: push db and protocol store injection into config layer!
+    // connect to db
+    val db = Database.connect(
+        url = "jdbc:pgsql://localhost:5432/signalc_test",
+        driver = "com.impossibl.postgres.jdbc.PGDriver",
+        user = "postgres"
+    )
 
+    // create account
+    val accountManager = AccountManager(
+        SqlProtocolStore(db, USER_PHONE_NUMBER),
+        AccountStore(db)
+    )
+    val newAccount = accountManager.create(USER_PHONE_NUMBER)
 
     // register account
     println("Asking signal for an sms verification code...")
-    accountSupervisor.register(unregisteredAccount)
-    println("Please enter the code:")
-    val verificationCode = readLine() ?: return
+    val registeredAccount = accountManager.register(newAccount)
 
     // verify account
-    val registeredAccount = accountSupervisor.verify(unregisteredAccount, verificationCode) ?:
-        return println("Verification failed! Wrong code?")
-    accountSupervisor.publishFirstPrekeys(registeredAccount)
+    println("Please enter the code:")
+    val verificationCode = readLine() ?: return
+    val verifiedAccount = accountManager.verify(registeredAccount, verificationCode)
+        ?.let { accountManager.publishFirstPrekeys(it) }
+        ?: return println("Verification failed! Wrong code?")
+
     println("$USER_PHONE_NUMBER registered and verified!")
 
     // send some messages!
-    val messageSender = accountSupervisor.messageSenderOf(registeredAccount)
+    val messageSender = accountManager.messageSenderOf(verifiedAccount)
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return
