@@ -519,12 +519,12 @@ ${
       vouchLevel > 1 ? 'Einladungen' : 'Einladung'
     }.`,
 
-  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
-    `Du wurdest gerade als Admin in diesem Signalboost Kanal [${channelName}] hinzugefügt von ${addingAdmin}. Wilkommen!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.Herzlich willkommen!
 
-    Fügen Sie diese Telefonnummer hinzu, um einen einfachen Zugriff zu erhalten (${channelPhoneNumber}) zu Ihren Kontakten als ${channelName}. Als Teilnehmer kann Mensch sich einfach mit einer Signal Nachricht mit dem Text HALLO an ${channelPhoneNumber}  anmelden. Um sich später wieder abzumelden kan eine Nachricht mit dem Text TSCHÜSS an die gleiche Nummer versandt werden.
+Fügen Sie als Nächstes diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.Leute können diesen Kanal abonnieren, indem sie HALLO an ${channelPhoneNumber} senden.Sie können Sendungen an diese Abonnenten senden, indem Sie BROADCAST [Ihre Nachricht hier] senden.
 
-    Um eine vollständige Liste der Befehle anzuzeigen, senden Sie HILFE oder lesen Sie unsere Anleitung: https://signalboost.info/how-to.`,
+Um eine vollständige Liste der Befehle anzuzeigen, senden Sie HILFE oder lesen Sie unsere Anleitung: https://signalboost.info/how-to.`,
 }
 
 const prefixes = {

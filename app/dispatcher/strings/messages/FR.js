@@ -530,10 +530,10 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
       vouchLevel > 1 ? 'invitations' : 'invitation'
     } seront désormais nécessaires pour rejoindre cette canal.`,
 
-  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
-    `Vous êtes maintenant un.e admin de ce canal Signalboost [${channelName}]  grâce à ${addingAdmin}. Bienvenue!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `Vous venez d'être nommé administrateur de cette chaîne Signalboost par ${addingAdmin}. Bienvenue!
 
-    Pour un accès facile, ajoutez ce numéro de téléphone (${channelPhoneNumber}) à vos contacts sous le nom ${channelName}. On peut aussi s’abonner à ce canal avec la commande ALLÔ au ${channelPhoneNumber}, et se désabonner avec la commande ADIEU.
+Ensuite, ajoutez ce numéro de téléphone (${channelPhoneNumber}) à vos contacts. Les gens peuvent s'abonner à cette chaîne en envoyant HELLO à ${channelPhoneNumber}. Vous pouvez envoyer des diffusions à ces abonnés en envoyant BROADCAST [votre message ici].
 
 Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre guide pratique: https://signalboost.info/how-to.`,
 }

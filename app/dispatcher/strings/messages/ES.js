@@ -530,12 +530,13 @@ ${
       vouchLevel > 1 ? 'invitaciones' : 'invitación'
     } para unirse a este canal.`,
 
-  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
-    `Acabas de convertirte en administrador de este canal Signalboost [${channelName}] por ${addingAdmin}. ¡Bienvenido!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `${addingAdmin} acaba de convertirse en administrador de este canal de Signalboost.¡Bienvenidos!
 
-Para acceder fácilmente, agregue este número de teléfono (${channelPhoneNumber}) a sus contactos como ${channelName}. Las personas pueden suscribirse a este canal enviando HOLA a ${channelPhoneNumber} y cancelar la suscripción enviando ADIÓS.
+Luego, agregue este número de teléfono (${channelPhoneNumber}) a sus contactos.Las personas pueden suscribirse a este canal enviando HOLA a (${channelPhoneNumber}).Puede enviar transmisiones a esos suscriptores enviando BROADCAST [su mensaje aquí].
 
-Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía práctica: https://signalboost.info/how-to.`,
+
+Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía práctica: https: // signalboost.info / how-to.`,
 }
 
 const prefixes = {
