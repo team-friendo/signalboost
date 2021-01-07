@@ -102,7 +102,6 @@ describe('channel model', () => {
     channel = await db.channel.create(channelFactory())
 
     expect(channel.phoneNumber).to.be.a('string')
-    expect(channel.name).to.be.a('string')
     expect(channel.hotlineOn).to.be.a('boolean')
     expect(channel.messageExpiryTime).to.be.a('number')
     expect(channel.vouchMode).to.be.a('string')

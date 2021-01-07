@@ -62,7 +62,7 @@ describe('channel repository', () => {
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         membershipCount = await db.membership.count()
-        channel = await channelRepository.create(channelPhoneNumber, '#blackops', adminPhoneNumbers)
+        channel = await channelRepository.create(channelPhoneNumber, adminPhoneNumbers)
       })
 
       it('creates a new channel', async () => {
@@ -94,7 +94,6 @@ describe('channel repository', () => {
 
       it('returns the channel record', () => {
         expect(channel.phoneNumber).to.eql(channelPhoneNumber)
-        expect(channel.name).to.eql('#blackops')
         expect(channel.hotlineOn).to.eql(true)
         expect(channel.memberships.map(m => m.memberPhoneNumber)).to.eql(adminPhoneNumbers)
         expect(channel.messageCount).to.be.an('object')
@@ -104,15 +103,11 @@ describe('channel repository', () => {
     describe('when given phone number for a already-existing channel', () => {
       let newAdminPhoneNumbers = times(2, genPhoneNumber)
       beforeEach(async () => {
-        await channelRepository.create(channelPhoneNumber, '#foursquare', newAdminPhoneNumbers)
+        await channelRepository.create(channelPhoneNumber, newAdminPhoneNumbers)
         channelCount = await db.channel.count()
         messageCountCount = await db.messageCount.count()
         membershipCount = await db.membership.count()
-        channel = await channelRepository.create(
-          channelPhoneNumber,
-          '#blackops',
-          newAdminPhoneNumbers,
-        )
+        channel = await channelRepository.create(channelPhoneNumber, newAdminPhoneNumbers)
       })
 
       it('does not create a new channel', async () => {
@@ -125,7 +120,6 @@ describe('channel repository', () => {
 
       it('updates the channel record and returns it', async () => {
         expect(channel.phoneNumber).to.eql(channelPhoneNumber)
-        expect(channel.name).to.eql('#blackops')
         expect(channel.hotlineOn).to.eql(true)
         expect((await channel.memberships).map(m => m.memberPhoneNumber)).to.have.members(
           newAdminPhoneNumbers,
@@ -137,19 +131,19 @@ describe('channel repository', () => {
   describe('#update', () => {
     let updatedChannel
     beforeEach(async () => {
-      await db.channel.create({ phoneNumber: channelPhoneNumber, name: 'foo' })
-      updatedChannel = await channelRepository.update(channelPhoneNumber, { name: 'bar' })
+      await db.channel.create({ phoneNumber: channelPhoneNumber })
+      updatedChannel = await channelRepository.update(channelPhoneNumber, { nextAdminId: 5 })
     })
 
-    it("updates a channel's name", async () => {
-      const newName = await db.channel
+    it("updates a channel's nextAdminId", async () => {
+      const newNextAdminId = await db.channel
         .findOne({ where: { phoneNumber: channelPhoneNumber } })
-        .then(ch => ch.name)
-      expect(newName).to.eql('bar')
+        .then(ch => ch.nextAdminId)
+      expect(newNextAdminId).to.eql(5)
     })
 
     it('returns a channel resources with updated values', async () => {
-      expect(updatedChannel.name).to.eql('bar')
+      expect(updatedChannel.nextAdminId).to.eql(5)
     })
   })
 
@@ -201,7 +195,6 @@ describe('channel repository', () => {
 
       it("retrieves all of a channel's fields", () => {
         expect(result.phoneNumber).to.eql(channel.phoneNumber)
-        expect(result.name).to.eql(channel.name)
       })
 
       it("retrieves all of a channel's nested attributes", () => {
@@ -267,7 +260,6 @@ describe('channel repository', () => {
       channels.forEach(ch => {
         expect(keys(ch.toJSON())).to.have.members([
           'phoneNumber',
-          'name',
           'messageExpiryTime',
           'hotlineOn',
           'vouchMode',
