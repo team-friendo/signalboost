@@ -1,11 +1,15 @@
 package info.signalboost.signalc
 
+import info.signalboost.signalc.db.*
+import info.signalboost.signalc.db.DatabaseConnection.initialize
 import info.signalboost.signalc.logic.AccountManager
 import info.signalboost.signalc.logic.Messaging
+import info.signalboost.signalc.model.Account
+import info.signalboost.signalc.model.NewAccount
+import info.signalboost.signalc.model.RegisteredAccount
+import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.AccountStore
-import info.signalboost.signalc.store.HashMapProtocolStore
 import info.signalboost.signalc.store.SqlProtocolStore
-import org.jetbrains.exposed.sql.Database
 
 
 /********************************************************************
@@ -20,31 +24,21 @@ const val USER_PHONE_NUMBER = "+17347962920"
 fun main() {
     // TODO: push db and protocol store injection into config layer!
     // connect to db
-    val db = Database.connect(
-        url = "jdbc:pgsql://localhost:5432/signalc_test",
-        driver = "com.impossibl.postgres.jdbc.PGDriver",
-        user = "postgres"
-    )
+    val db = DatabaseConnection.toDev().initialize()
 
-    // create account
+    // find or create account
     val accountManager = AccountManager(
         SqlProtocolStore(db, USER_PHONE_NUMBER),
         AccountStore(db)
     )
-    val newAccount = accountManager.create(USER_PHONE_NUMBER)
-
-    // register account
-    println("Asking signal for an sms verification code...")
-    val registeredAccount = accountManager.register(newAccount)
-
-    // verify account
-    println("Please enter the code:")
-    val verificationCode = readLine() ?: return
-    val verifiedAccount = accountManager.verify(registeredAccount, verificationCode)
-        ?.let { accountManager.publishFirstPrekeys(it) }
-        ?: return println("Verification failed! Wrong code?")
-
-    println("$USER_PHONE_NUMBER registered and verified!")
+    val verifiedAccount: VerifiedAccount = when(
+        val account: Account = accountManager.findOrCreate(USER_PHONE_NUMBER)
+    ) {
+        is NewAccount -> register(accountManager, account)
+        is RegisteredAccount -> register(accountManager, NewAccount.fromRegistered(account))
+        is VerifiedAccount -> account
+        else -> null
+    } ?: return println("Couldn't find or create account with number $USER_PHONE_NUMBER")
 
     // send some messages!
     val messageSender = accountManager.messageSenderOf(verifiedAccount)
@@ -58,4 +52,24 @@ fun main() {
         Messaging.sendMessage(messageSender, messageBody, recipientPhone)
         println("Sent \"$messageBody\" to $recipientPhone\n")
     }
+}
+
+fun register(accountManager: AccountManager, newAccount: NewAccount): VerifiedAccount? {
+
+    println("Asking Signal to text a verification code to $USER_PHONE_NUMBER...")
+    val registeredAccount = accountManager.register(newAccount)
+
+    println("Please enter the code:")
+    val verificationCode = readLine() ?: return null
+    val verifiedAccount = accountManager.verify(registeredAccount, verificationCode)
+        ?.let {
+            accountManager.publishFirstPrekeys(it)
+        }
+        ?: run {
+            println("Verification failed! Wrong code?")
+            null
+        }
+
+    println("$USER_PHONE_NUMBER registered and verified!")
+    return verifiedAccount
 }

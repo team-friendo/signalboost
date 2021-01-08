@@ -62,6 +62,16 @@ data class NewAccount(
                 ProfileKey(row[Accounts.profileKey]),
                 row[Accounts.deviceId],
             )
+        // sometimes we might need to treat a RegisteredAccount like a NewAccount to re-register it!
+        fun fromRegistered(account: RegisteredAccount): NewAccount = with(account) {
+            NewAccount(
+                username = username,
+                password = password,
+                signalingKey = signalingKey,
+                profileKey = profileKey,
+                deviceId = deviceId,
+            )
+        }
     }
 
     override val credentialsProvider: DynamicCredentialsProvider by lazy {
