@@ -18,6 +18,8 @@ services:
   db:
     image: postgres:12
     container_name: signalc_db
+    ports:
+      - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
