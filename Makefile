@@ -172,6 +172,9 @@ dev.psql: # get a psql shell on dev db
 prod.psql: # get a psql shell on prod db
 	./bin/prod/psql
 
+sc.psql: # get a psql shell on signalc db
+	./bin/sc/psql
+
 ##########################
 # start and stop the app #
 ##########################
