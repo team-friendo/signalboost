@@ -59,7 +59,13 @@ class SqlProtocolStoreTest: FreeSpec({
             store.localRegistrationId shouldBe registrationId
         }
 
-        "stores and retrieves an identity" {
+        "stores and retrieves an identity key" {
+            store.saveIdentity(address, identityKey)
+            store.getIdentity(address) shouldBe identityKey
+        }
+
+        "stores and retrieves the same identity key twice without error" {
+            store.saveIdentity(address, identityKey)
             store.saveIdentity(address, identityKey)
             store.getIdentity(address) shouldBe identityKey
         }
@@ -73,8 +79,22 @@ class SqlProtocolStoreTest: FreeSpec({
             store.isTrustedIdentity(address, identityKey, Direction.RECEIVING) shouldBe true
         }
 
-        "does not trust a new key for an existing address" {
+        "trusts the same identity key for multiple devices" {
+            store.saveIdentity(recipient.addresses[0], identityKey)
+            store.saveIdentity(recipient.addresses[1], identityKey)
+
+            store.isTrustedIdentity(recipient.addresses[0], identityKey, Direction.RECEIVING) shouldBe true
+            store.isTrustedIdentity(recipient.addresses[1], identityKey, Direction.RECEIVING) shouldBe true
+        }
+
+        "does not trust an unknown identity key for an existing address" {
             store.saveIdentity(address, identityKey)
+            store.isTrustedIdentity(address, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
+        }
+
+        "does not trust an updated identity key for an existing address" {
+            store.saveIdentity(address, identityKey)
+            store.saveIdentity(address, rotatedIdentityKey)
             store.isTrustedIdentity(address, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
         }
     }
@@ -94,6 +114,12 @@ class SqlProtocolStoreTest: FreeSpec({
         }
 
         "stores a prekey" {
+            store.storePreKey(keyId, prekey)
+            store.containsPreKey(keyId) shouldBe true
+        }
+
+        "stores the same prekey twice without error" {
+            store.storePreKey(keyId, prekey)
             store.storePreKey(keyId, prekey)
             store.containsPreKey(keyId) shouldBe true
         }
@@ -137,6 +163,12 @@ class SqlProtocolStoreTest: FreeSpec({
             store.containsSignedPreKey(keyId) shouldBe true
         }
 
+        "stores the same signed prekey twice without error" {
+            store.storeSignedPreKey(keyId, signedPrekey)
+            store.storeSignedPreKey(keyId, signedPrekey)
+            store.containsSignedPreKey(keyId) shouldBe true
+        }
+
         "loads a signed prekey" {
             store.storeSignedPreKey(keyId, signedPrekey)
             store.loadSignedPreKey(keyId).serialize() shouldBe signedPrekey.serialize()
@@ -171,6 +203,13 @@ class SqlProtocolStoreTest: FreeSpec({
 
             sessionCopy shouldNotBe  recipient.sessions[0] // it's a different object...
             sessionCopy.serialize() shouldBe recipient.sessions[0].serialize() // ...with same underlying values
+        }
+
+        "stores the same session record twice without error" {
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+            store.storeSession(recipient.addresses[0], recipient.sessions[0])
+
+            store.containsSession(recipient.addresses[0]) shouldBe true
         }
 
         "retrieves device ids for all sessions with a given user" {

@@ -7,6 +7,7 @@ import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
 import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
+import info.signalboost.signalc.db.Sessions.sessionBytes
 import info.signalboost.signalc.logic.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -51,22 +52,29 @@ class SqlProtocolStore(
         }
 
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
+        // Insert or update an idenity key and:
+        // - trust the first identity key seen for a given address
+        // - deny trust for subsequent identity keys for same address
+        // Return whether or not this save was an update to an existing record.
         transaction(db) {
-            val isUpdate = Identities.findByAddress(accountId, address) ?.let { true } ?: false
-            when {
-                isUpdate -> Identities.updateByAddress(accountId, address) {
-                    it[isTrusted] = false
-                    it[identityKeyBytes] = identityKey.serialize()
-                }
-                else -> Identities.insert {
+            Identities.findByAddress(accountId, address)
+                ?.let { existingKey ->
+                    Identities.updateByAddress(accountId, address) {
+                        // store the new existingKey key in all cases
+                        it[identityKeyBytes] = identityKey.serialize()
+                        // only trust it if it matches the existing key
+                        it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
+                    }
+                    true
+                } ?: run {
+                Identities.insert {
                     it[accountId] = this@SqlProtocolStore.accountId
                     it[name] = address.name
                     it[deviceId] = address.deviceId
                     it[identityKeyBytes] = identityKey.serialize()
                 }
+                false
             }
-
-            return@transaction isUpdate
         }
 
     override fun isTrustedIdentity(
@@ -74,10 +82,13 @@ class SqlProtocolStore(
         identityKey: IdentityKey,
         direction: IdentityKeyStore.Direction
     ): Boolean = transaction(db) {
+        // trust a key if...
         Identities.findByAddress(accountId, address)?.let{
-            // don't trust a new key for a person with an old key, or an old key that is not trusted
-            it[Identities.identityKeyBytes] contentEquals  identityKey.serialize() && it[Identities.isTrusted]
-        } ?: true // but do trust a the first key we ever see for a person (TOFU!)
+            // it matches a key we have seen before
+            it[identityKeyBytes] contentEquals  identityKey.serialize() &&
+                // and we have not flagged it as untrusted
+                it[isTrusted]
+        } ?: true // or it is the first key we ever seen for a person (TOFU!)
     }
 
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
@@ -114,10 +125,18 @@ class SqlProtocolStore(
 
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
         transaction(db) {
-            PreKeys.insert {
-                it[accountId] = this@SqlProtocolStore.accountId
-                it[this.preKeyId] = preKeyId
+            PreKeys.update({
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+            }) {
                 it[preKeyBytes] = record.serialize()
+            }.let { numUpdated ->
+                if(numUpdated == 0) {
+                    PreKeys.insert {
+                        it[accountId] = this@SqlProtocolStore.accountId
+                        it[this.preKeyId] = preKeyId
+                        it[preKeyBytes] = record.serialize()
+                    }
+                }
             }
         }
     }
@@ -158,10 +177,20 @@ class SqlProtocolStore(
 
     override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord) {
         transaction(db) {
-            SignedPreKeys.insert {
-                it[accountId] = this@SqlProtocolStore.accountId
-                it[preKeyId] = signedPreKeyId
+            SignedPreKeys.update ({
+                SignedPreKeys.accountId eq accountId and (
+                    SignedPreKeys.preKeyId eq signedPreKeyId
+                )
+            }) {
                 it[signedPreKeyBytes] = record.serialize()
+            }.let{ numUpdated ->
+                if (numUpdated == 0) {
+                    SignedPreKeys.insert {
+                        it[accountId] = this@SqlProtocolStore.accountId
+                        it[preKeyId] = signedPreKeyId
+                        it[signedPreKeyBytes] = record.serialize()
+                    }
+                }
             }
         }
     }
@@ -199,12 +228,19 @@ class SqlProtocolStore(
     }
 
     override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
+        // upsert the session record for a given address
         transaction(db) {
-            Sessions.insert {
-                it[accountId] = this@SqlProtocolStore.accountId
-                it[name] = address.name
-                it[deviceId] = address.deviceId
+            Sessions.updateByAddress(accountId, address) {
                 it[sessionBytes] = record.serialize()
+            }.let { numUpdated ->
+                if(numUpdated == 0) {
+                    Sessions.insert {
+                        it[accountId] = this@SqlProtocolStore.accountId
+                        it[name] = address.name
+                        it[deviceId] = address.deviceId
+                        it[sessionBytes] = record.serialize()
+                    }
+                }
             }
         }
     }
