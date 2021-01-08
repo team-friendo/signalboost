@@ -77,12 +77,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Bonjour! Vous êtes maintenant abonné e au canal Signalboost [${channel.name}].
+    success: `Bonjour! Vous êtes maintenant abonné e au cette canal Signalboost.
 
 Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
     alreadyMember: 'Désolé, vous êtes déjà membre de ce canal',
-    belowVouchLevel: (channel, required, actual) =>
-      `Désolé, ${channel.name} nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
+    belowVouchLevel: (required, actual) =>
+      `Désolé, cette canal nécessite ${required} invitation(s) pour rejoindre. Vous avez ${actual}.`,
     dbError:
       "Oups! Une erreur s'est produite lors de l'acceptation de votre invitation. Veuillez réessayer!",
     subscriberLimitReached,
@@ -209,7 +209,6 @@ INFOS CANAL
 
 Vous êtes admin de ce canal.
 
-nom: ${channel.name}
 
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
@@ -226,7 +225,6 @@ INFOS CANAL
 
 Vous êtes abonné-e à ce canal.
 
-Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 La hotline est ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${vouchModeDisplay[channel.vouchMode]}
@@ -240,7 +238,6 @@ INFOS CANAL
 
 Vous n'êtes pas abonné-e à ce canal. Envoyez SALUT pour vous abonner.
 
-Nom: ${channel.name}
 Numéro de téléphone: ${channel.phoneNumber}
 Il y a ${getSubscriberMemberships(channel).length} abonné-e-s
 
@@ -273,8 +270,7 @@ ${failedPhoneNumbers.join(',')}`,
   // JOIN
 
   join: {
-    success: channel =>
-      `Bonjour! Vous êtes maintenant abonné-e au canal Signalboost [${channel.name}].
+    success: `Bonjour! Vous êtes maintenant abonné-e au cette canal Signalboost.
 
 Répondez avec AIDE pour en savoir plus ou AUREVOIR pour vous désinscrire.`,
     inviteRequired: `Désolé! Les invitations sont nécessaires pour s'abonner à ce canal. Demandez à un-e ami-e de vous inviter!
@@ -455,8 +451,7 @@ Ielles seront incapables d’envoyer ou de lire des messages sur ce canal avant 
   expiryUpdateNotAuthorized:
     "Désolé, seul-e-s les admins peuvent régler l'horloge des messages disparus.",
 
-  hotlineMessageSent: channel =>
-    `Votre message a été transmis de manière anonyme aux admins de [${channel.name}].
+  hotlineMessageSent: `Votre message a été transmis de manière anonyme aux admins de cette canal Signalboost.
 
 Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous abonner.`,
 
@@ -471,8 +466,7 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: channelName =>
-    `Bonjour! Vous avez reçu le invitation pour rejoindre la canal Signalboost de ${channelName}. Veuillez répondre avec ACCEPTER ou REFUSER.`,
+  inviteReceived: `Bonjour! Vous avez reçu le invitation a rejoindre cette canal Signalboost. Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
   inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette canal.`,
 
@@ -518,8 +512,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
   unauthorized:
     'Oups! La hotline est désactivée. Pour le moment, ce canal acceptera uniquement des commandes. Commande AIDE pour voir le menu de commandes valides!',
 
-  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la canal Signalboost de ${channelName}.
+  vouchedInviteReceived: (invitesReceived, invitesNeeded) =>
+    `Bonjour! Vous avez reçu les invitations ${invitesReceived}/${invitesNeeded} nécessaires pour rejoindre la cette canal Signalboost.
   ${invitesReceived === invitesNeeded ? `Veuillez répondre avec ACCEPTER ou REFUSER.` : ''}
   `,
 

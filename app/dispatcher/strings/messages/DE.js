@@ -76,12 +76,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim Signalboost Kanal [${channel.name}]
+    success: `Hallo! Sie haben jetzt diesen Signalboost-Kanal abonniert.
 
 Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     alreadyMember: 'Ups! Du bist schon Teilnehmer an diesem Kanal.',
-    belowVouchLevel: (channel, required, actual) =>
-      `Sorry, für ${channel.name} brauchst du ${required} Einladung(en). Du hast ${actual}.`,
+    belowVouchLevel: (required, actual) =>
+      `Entschuldigung, dieser Kanal erfordert ${required} Einladung(en). Du hast ${actual}.`,
     dbError:
       'Tut uns Leid! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!',
     subscriberLimitReached,
@@ -208,7 +208,6 @@ KANAL INFO:
 
 Du bist ein Admin dieses Kanals.
 
-Name: ${channel.name}
 
 Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
@@ -225,7 +224,6 @@ KANAL INFO:
 
 Du bist als Teilnehmer dieses Kanals angemeldet.
 
-Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
@@ -239,7 +237,6 @@ KANAL INFO:
 
 Du bist nicht bei diesem Kanal angemeldet. Schicke HALLO um dich beim Kanal als Teilnehmer anzumelden.
 
-Name: ${channel.name}
 Signal-Nummer: ${channel.phoneNumber}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
 
@@ -272,7 +269,7 @@ ${support}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! Du bist jetzt als Teilnehmer beim [${channel.name}]
+    success: `Hallo! Sie haben jetzt diesen Signalboost-Kanal abonniert.
 
 Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzumelden.`,
     inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freunde nach einer Einladung!
@@ -451,8 +448,7 @@ Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch
   expiryUpdateNotAuthorized:
     'Sorry, nur Admins können den Timer für verschwindende Nachrichten umstellen.',
 
-  hotlineMessageSent: channel =>
-    `Deine Nachricht wurde an die Admins des [${channel.name}] Kanals weitergeleitet.
+  hotlineMessageSent: `Ihre Nachricht wurde an die Administratoren dieses Kanals weitergeleitet.
 
 Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.`,
 
@@ -467,11 +463,10 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: channelName =>
-    `Hallo! Sie haben eine Einladung zum Beitritt zum [${channelName}] Signalboost Kanal erhalten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
+  inviteReceived: `Hallo! Sie haben eine Einladung erhalten, diesem Signalboost-Kanal beizutreten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
 
-  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, dem [${channelName}] Signalboost Kanal beizutreten. ${
+  vouchedInviteReceived: (invitesReceived, invitesNeeded) =>
+    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, diese Signalboost Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
     }`,
 

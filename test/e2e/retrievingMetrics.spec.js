@@ -55,7 +55,6 @@ describe('retrieving metrics', () => {
     it('formats channel records correctly', () => {
       response.body.channels.forEach(ch => {
         expect(ch.phoneNumber).to.be.a('string')
-        expect(ch.name).to.be.a('string')
         expect(ch.admins).to.be.a('number')
         expect(ch.subscribers).to.be.a('number')
         expect(ch.messageCount.broadcastIn).to.be.a('number')

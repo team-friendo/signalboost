@@ -129,7 +129,7 @@ const handleBadSubscriberMessage = async (channel, sender, sdMessage) => {
   // if hotline is on, handle as a hotline message
   return {
     command: commands.NONE,
-    message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+    message: messagesIn(sender.language).notifications.hotlineMessageSent,
     status: statuses.SUCCESS,
     notifications: await hotlineNotificationsOf(channel, sender, sdMessage),
   }
@@ -161,7 +161,7 @@ const maybeAccept = async (channel, sender, language) => {
     if (channel.vouchMode !== vouchModes.OFF && inviteCount < channel.vouchLevel)
       return {
         status: statuses.ERROR,
-        message: cr.belowVouchLevel(channel, channel.vouchLevel, inviteCount),
+        message: cr.belowVouchLevel(channel.vouchLevel, inviteCount),
       }
 
     // okay, fine: accept the invite! :)
@@ -175,7 +175,7 @@ const accept = async (channel, sender, language, cr) =>
   inviteRepository
     .accept(channel.phoneNumber, sender.memberPhoneNumber, language)
     .then(() => eventRepository.logIfFirstMembership(sender.memberPhoneNumber))
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
 
 // ADD
@@ -215,7 +215,6 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
       message: `${messagesIn(newAdminMembership.language).notifications.welcome(
         sender.memberPhoneNumber,
         channel.phoneNumber,
-        channel.name,
       )}`,
     },
     ...bystanders.map(membership => ({
@@ -254,7 +253,7 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 
   const subscriberNotifications = subscriberMemberships.map(membership => ({
     recipient: membership.memberPhoneNumber,
-    message: `[${channel.name}]\n${messageBody}`,
+    message: messageBody,
     attachments,
   }))
 
@@ -428,8 +427,8 @@ const inviteNotificationOf = (
   const notifications = messagesIn(language).notifications
   const inviteMessage =
     channel.vouchMode !== vouchModes.OFF && channel.vouchLevel > 1
-      ? notifications.vouchedInviteReceived(channel.name, invitesReceived, invitesNeeded)
-      : notifications.inviteReceived(channel.name)
+      ? notifications.vouchedInviteReceived(invitesReceived, invitesNeeded)
+      : notifications.inviteReceived
 
   return {
     recipient: inviteePhoneNumber,
@@ -456,7 +455,7 @@ const addSubscriber = (channel, sender, language, cr) =>
   membershipRepository
     .addSubscriber(channel.phoneNumber, sender.memberPhoneNumber, language)
     .then(() => eventRepository.logIfFirstMembership(sender.memberPhoneNumber))
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success(channel) }))
+    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
     .catch(err => logAndReturn(err, { status: statuses.ERROR, message: cr.error }))
 
 // LEAVE
