@@ -1,4 +1,4 @@
-package info.signalboost.signalc.fixtures
+package info.signalboost.signalc.testSupport.db
 
 import info.signalboost.signalc.db.*
 import org.jetbrains.exposed.sql.Database

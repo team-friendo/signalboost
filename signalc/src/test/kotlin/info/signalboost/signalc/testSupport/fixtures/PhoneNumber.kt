@@ -1,4 +1,4 @@
-package info.signalboost.signalc.fixtures
+package info.signalboost.signalc.testSupport.fixtures
 
 import kotlin.random.Random
 

@@ -1,9 +1,9 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.db.*
-import info.signalboost.signalc.fixtures.DatabaseConnection
-import info.signalboost.signalc.fixtures.DatabaseConnection.initialize
-import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.db.DatabaseConnection
+import info.signalboost.signalc.testSupport.db.DatabaseConnection.initialize
+import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec

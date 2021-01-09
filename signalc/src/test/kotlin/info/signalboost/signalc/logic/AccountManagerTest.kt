@@ -1,14 +1,12 @@
 package info.signalboost.signalc.logic
 
-import info.signalboost.signalc.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.AccountStore
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.beOfType
 import io.mockk.*
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
@@ -21,42 +19,42 @@ import java.util.*
 import kotlin.random.Random
 
 class AccountManagerTest : FreeSpec({
-    val phoneNumber = genPhoneNumber()
-
-    val mockProtocolStore = mockk<SignalProtocolStore>()
-    val mockAccountStore = mockk<AccountStore>()
+    val mockProtocolStore: SignalProtocolStore = mockk()
+    val mockAccountStore: AccountStore = mockk()
     val accountManager = AccountManager(mockProtocolStore, mockAccountStore)
-
-    val uuid = UUID.randomUUID()
-    val mockSignalAccountManager = mockk<SignalServiceAccountManager> {
+    val mockSignalAccountManager: SignalServiceAccountManager = mockk {
         every { requestSmsVerificationCode(any(), any(), any()) } returns Unit
         every { setPreKeys(any(), any(), any()) } returns Unit
     }
 
-    val newAccount = NewAccount(phoneNumber)
-    mockkObject(newAccount)
-    every { newAccount.manager } returns mockSignalAccountManager
+    val phoneNumber = genPhoneNumber()
+    val uuid = UUID.randomUUID()
 
-    val registeredAccount = RegisteredAccount.fromNew(newAccount)
-    mockkObject(registeredAccount)
-    every { registeredAccount.manager } returns mockSignalAccountManager
+    val newAccount = NewAccount(phoneNumber).also {
+        mockkObject(it)
+        every { it.manager } returns mockSignalAccountManager
+    }
 
-    val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid)
-    mockkObject(verifiedAccount)
-    every { verifiedAccount.manager } returns mockSignalAccountManager
+    val registeredAccount = RegisteredAccount.fromNew(newAccount).also {
+        mockkObject(it)
+        every { it.manager } returns mockSignalAccountManager
+    }
 
-    afterSpec  {
-        // TODO(aguestuser|2020-12-23):
-        //  - the expectation of this call is that it will restore all mocked objects
-        //    to their unmocked state after this file completes running
-        //  - however, this does not happen and as a result SqlProtocolStore tests fail if they run
-        //    after this suite b/c the store is still mocked.
-        //  - hmm....
-        unmockkAll()
+    val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid).also {
+        mockkObject(it)
+        every { it.manager } returns mockSignalAccountManager
+    }
+
+    beforeSpec {
+        mockkObject(KeyUtil)
     }
 
     afterTest {
         clearAllMocks(answers = false, childMocks = false, objectMocks = false)
+    }
+
+    afterSpec {
+        unmockkAll()
     }
 
     "#findOrCreate" - {
@@ -105,7 +103,6 @@ class AccountManagerTest : FreeSpec({
         every { mockProtocolStore.localRegistrationId } returns 42
 
         "when given correct code" - {
-
             every {
                 mockSignalAccountManager.verifyAccountWithCode(
                     code, any(), any(), any(), any(), any(), any(), any(), any(), any()
@@ -137,15 +134,11 @@ class AccountManagerTest : FreeSpec({
         }
 
         "when given incorrect code" - {
-            afterTest {
-                clearMocks(mockAccountStore, answers = false)
-            }
             every {
                 mockSignalAccountManager.verifyAccountWithCode(
                     code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                 )
             } throws AuthorizationFailedException("oh noes!")
-
 
             "attempts to verify code" {
                 accountManager.verify(registeredAccount, code)
@@ -168,19 +161,15 @@ class AccountManagerTest : FreeSpec({
     }
 
     "#publishFirstPrekeys" - {
-        val mockPublicKey = mockk<IdentityKey>()
-        val mockPreKeys = List(100) {
-            mockk<PreKeyRecord> {
+        val mockPublicKey: IdentityKey = mockk()
+        val mockPreKeys: List<PreKeyRecord> = List(100) {
+            mockk {
                 every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
             }
         }
-        val mockSignedPreKey = mockk<SignedPreKeyRecord> {
+        val mockSignedPreKey: SignedPreKeyRecord = mockk {
             every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
         }
-
-        mockkObject(KeyUtil)
-        every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
-        every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
 
         mockProtocolStore.let {
             every { it.storePreKey(any(), any()) } returns Unit
@@ -189,6 +178,9 @@ class AccountManagerTest : FreeSpec({
                 every { publicKey } returns mockPublicKey
             }
         }
+
+        every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
+        every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
 
         "stores 100 prekeys locally" {
             accountManager.publishFirstPrekeys(verifiedAccount)
