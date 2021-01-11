@@ -72,12 +72,12 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+    success: `Hi! You are now subscribed to this Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     alreadyMember: 'Sorry, you are already a member of this channel',
-    belowVouchLevel: (channel, required, actual) =>
-      `Sorry, ${channel.name} requires ${required} invite(s) to join. You have ${actual}.`,
+    belowVouchLevel: (required, actual) =>
+      `Sorry, this channel requires ${required} invite(s) to join. You have ${actual}.`,
     dbError: 'Whoops! There was an error accepting your invite. Please try again!',
     subscriberLimitReached,
   },
@@ -201,8 +201,6 @@ CHANNEL INFO
 
 You are an admin of this channel.
 
-name: ${channel.name}
-
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
@@ -218,7 +216,6 @@ CHANNEL INFO
 
 You are subscribed to this channel.
 
-name: ${channel.name}
 phone number: ${channel.phoneNumber}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${vouchModeDisplay[channel.vouchMode]}
@@ -232,7 +229,6 @@ CHANNEL INFO
 
 You are not subscribed to this channel. Send HELLO to subscribe.
 
-name: ${channel.name}
 phone number: ${channel.phoneNumber}
 subscribers: ${getSubscriberMemberships(channel).length}
 
@@ -263,7 +259,7 @@ ${failedPhoneNumbers.join(',')}`,
   // JOIN
 
   join: {
-    success: channel => `Hi! You are now subscribed to the [${channel.name}] Signalboost channel.
+    success: `Hi! You are now subscribed to this Signalboost channel.
 
 Reply with HELP to learn more or GOODBYE to unsubscribe.`,
     inviteRequired: `Sorry! Invites are required to subscribe to this channel. Ask a friend to invite you!
@@ -433,8 +429,7 @@ Until then, they will be unable to send messages to or read messages from this c
 
   expiryUpdateNotAuthorized: 'Sorry, only admins can set the disappearing message timer.',
 
-  hotlineMessageSent: channel =>
-    `Your message was forwarded to the admins of [${channel.name}].
+  hotlineMessageSent: `Your message was forwarded to the admins of this channel.
   
 Send HELP to list valid commands. Send HELLO to subscribe.`,
 
@@ -449,8 +444,7 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: channelName =>
-    `Hello! You have received an invite to join the [${channelName}] Signalboost channel. Please respond with ACCEPT or DECLINE.`,
+  inviteReceived: `Hello! You have received an invite to join this Signalboost channel. Please respond with ACCEPT or DECLINE.`,
 
   inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
 
@@ -488,8 +482,8 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} turned the hotline ${onOrOff(isOn)}.`,
 
-  vouchedInviteReceived: (channelName, invitesReceived, invitesNeeded) =>
-    `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join the [${channelName}] Signalboost channel. ${
+  vouchedInviteReceived: (invitesReceived, invitesNeeded) =>
+    `Hello! You have received ${invitesReceived}/${invitesNeeded} invites to join this Signalboost channel. ${
       invitesReceived === invitesNeeded ? 'Please respond with ACCEPT or DECLINE.' : ''
     }`,
 
@@ -500,11 +494,10 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
       vouchLevel > 1 ? 'invites' : 'invite'
     } to join this channel.`,
 
-  welcome: (addingAdmin, channelPhoneNumber, channelName) =>
-    `You were just made an admin of the Signalboost channel [${channelName}] by ${addingAdmin}. Welcome!
+  welcome: (addingAdmin, channelPhoneNumber) =>
+    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
 
-For easy access, add this phone number (${channelPhoneNumber}) to your contacts as [${channelName}]. People can subscribe to this channel by sending HELLO to ${channelPhoneNumber} and unsubscribe by sending GOODBYE.
-
+Next, add this phone number (${channelPhoneNumber}) to your contacts. People can subscribe here by sending HELLO to ${channelPhoneNumber}. You can send broadcasts to those subscribers by sending BROADCAST [your message here]. 
 
 To see a full list of commands, send HELP or check out our how-to guide: https://signalboost.info/how-to.`,
 }

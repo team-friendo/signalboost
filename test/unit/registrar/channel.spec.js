@@ -2,7 +2,6 @@ import { expect } from 'chai'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import sinon from 'sinon'
 import { times } from 'lodash'
-import niceware from 'niceware'
 import channelRepository from '../../../app/db/repositories/channel'
 import eventRepository from '../../../app/db/repositories/event'
 import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
@@ -24,18 +23,15 @@ const {
 
 describe('channel registrar', () => {
   const phoneNumber = genPhoneNumber()
-  const name = 'fight club'
   const channelPhoneNumber = phoneNumber
   const welcomeNotification = messagesIn(defaultLanguage).notifications.welcome(
     messagesIn(defaultLanguage).systemName,
     channelPhoneNumber,
-    name,
   )
   const admins = times(4, genPhoneNumber)
   const adminPhoneNumber = admins[0]
   const channelInstance = {
     phoneNumber,
-    name,
     memberships: [
       { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[0] },
       { type: memberTypes.ADMIN, channelPhoneNumber: phoneNumber, memberPhoneNumber: admins[1] },
@@ -50,7 +46,6 @@ describe('channel registrar', () => {
   const supportPhoneNumber = genPhoneNumber()
   const supportChannel = {
     phoneNumber: supportPhoneNumber,
-    name: 'TRYSTERO',
     memberships: [
       {
         type: memberTypes.ADMIN,
@@ -77,7 +72,6 @@ describe('channel registrar', () => {
     logStub
 
   beforeEach(() => {
-    sinon.stub(niceware, 'generatePassphrase').returns(name.split(' '))
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
@@ -109,7 +103,7 @@ describe('channel registrar', () => {
         })
 
         it('creates a channel resource', () => {
-          expect(createChannelStub.getCall(0).args).to.eql([phoneNumber, name, admins])
+          expect(createChannelStub.getCall(0).args).to.eql([phoneNumber, admins])
         })
 
         it('subscribes to the new channel', () => {
@@ -128,7 +122,7 @@ describe('channel registrar', () => {
         })
 
         it('sends a welcome message to new admins', async () => {
-          await create({ phoneNumber, name, admins, welcome: sendMessageStub })
+          await create({ phoneNumber, admins, welcome: sendMessageStub })
           admins.forEach((adminPhoneNumber, idx) => {
             expect(sendMessageStub.getCall(idx).args).to.eql([
               sdMessageOf({
@@ -142,7 +136,7 @@ describe('channel registrar', () => {
         })
 
         it('logs the channel creation', async () => {
-          await create({ phoneNumber, name, admins, welcome: sendMessageStub })
+          await create({ phoneNumber, admins, welcome: sendMessageStub })
           expect(logStub.getCall(0).args).to.eql([eventTypes.CHANNEL_CREATED, phoneNumber])
         })
 
@@ -153,7 +147,7 @@ describe('channel registrar', () => {
           })
 
           it('sets the expiry time on the channel', async () => {
-            const channel = await create({ phoneNumber, name, admins })
+            const channel = await create({ phoneNumber, admins })
             admins.forEach((adminPhoneNumber, idx) => {
               expect(setExpirationStub.getCall(idx).args).to.eql([
                 channelPhoneNumber,
@@ -168,7 +162,7 @@ describe('channel registrar', () => {
             beforeEach(() => findDeepStub.returns(Promise.resolve(supportChannel)))
 
             it('invites unsubscribed users to the support channel', async () => {
-              await create({ phoneNumber, name, admins })
+              await create({ phoneNumber, admins })
               ;[admins[2], admins[3]].forEach((adminPhoneNumber, idx) => {
                 expect(issueStub.getCall(idx).args).to.eql([
                   supportPhoneNumber,
@@ -189,10 +183,10 @@ describe('channel registrar', () => {
             describe('when sending invites succeeds', () => {
               beforeEach(() => sendMessageStub.returns(Promise.resolve()))
               it('returns a success message', async function() {
-                expect(await create({ phoneNumber, name, admins })).to.eql({
+                expect(await create({ phoneNumber, admins })).to.eql({
                   status: 'ACTIVE',
                   phoneNumber,
-                  name,
+
                   admins,
                 })
               })
@@ -205,7 +199,7 @@ describe('channel registrar', () => {
               )
 
               it('returns an error message', async () => {
-                const result = await create({ phoneNumber, name, admins })
+                const result = await create({ phoneNumber, admins })
                 expect(result).to.eql({
                   status: 'ERROR',
                   error: 'oh noooes!',
@@ -222,15 +216,15 @@ describe('channel registrar', () => {
             beforeEach(() => findDeepStub.returns(Promise.resolve(null)))
 
             it('does not issue any invites', async () => {
-              await create({ phoneNumber, name, admins })
+              await create({ phoneNumber, admins })
               expect(issueStub.callCount).to.eql(0)
             })
 
             it('returns a success message', async function() {
-              expect(await create({ phoneNumber, name, admins })).to.eql({
+              expect(await create({ phoneNumber, admins })).to.eql({
                 status: 'ACTIVE',
                 phoneNumber,
-                name,
+
                 admins,
               })
             })
@@ -243,7 +237,7 @@ describe('channel registrar', () => {
           })
 
           it('returns an error message', async () => {
-            const result = await create({ phoneNumber, name, admins })
+            const result = await create({ phoneNumber, admins })
             expect(result).to.eql({
               status: 'ERROR',
               error: 'oh noes!',
@@ -257,7 +251,7 @@ describe('channel registrar', () => {
         let result
         beforeEach(async () => {
           createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
-          result = await create({ phoneNumber, name, admins })
+          result = await create({ phoneNumber, admins })
         })
 
         it('does not send welcome messages', () => {
@@ -277,7 +271,7 @@ describe('channel registrar', () => {
         let result
         beforeEach(async () => {
           createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
-          result = await create({ phoneNumber, name, admins })
+          result = await create({ phoneNumber, admins })
         })
 
         it('does not send welcome messages', () => {
@@ -298,7 +292,7 @@ describe('channel registrar', () => {
       let result
       beforeEach(async () => {
         subscribeStub.callsFake(() => Promise.reject(new Error('oh noes!')))
-        result = await create({ phoneNumber, name, admins })
+        result = await create({ phoneNumber, admins })
       })
 
       it('does not create channel record', () => {
@@ -399,7 +393,6 @@ describe('channel registrar', () => {
             count: 2,
             channels: [
               {
-                name: 'foo',
                 phoneNumber: '+11111111111',
                 socketId: 0,
                 hash: 3092098404,
@@ -408,7 +401,6 @@ describe('channel registrar', () => {
                 messageCount: { broadcastIn: 2, commandIn: 5, hotlineIn: 4 },
               },
               {
-                name: 'bar',
                 phoneNumber: '+19999999999',
                 socketId: 1,
                 hash: 3536709732,

@@ -127,10 +127,7 @@ export default () => (
       <span className="command">HELP</span> lists the possible commands you can
       use.
     </p>
-    <h3>
-      How can I see my channel name, description, and how many people are
-      subscribed?
-    </h3>
+    <h3>How can I see how many people are subscribed to my channel?</h3>
     <p>
       <span className="command">INFO</span> shows stats and briefly explains how
       Signalboost works.

@@ -23,7 +23,6 @@ describe('messenger service', () => {
   const adminPhoneNumbers = times(4, genPhoneNumber)
   const messageId = 42
   const channel = {
-    name: 'foobar',
     phoneNumber: channelPhoneNumber,
     messageExpiryTime: 60,
     socketId: 42,
@@ -146,7 +145,7 @@ describe('messenger service', () => {
         })),
         ...subscriberMemberships.map(m => ({
           recipient: m.memberPhoneNumber,
-          message: `[${channel.name}]\n${payload}`,
+          message: payload,
           attachments,
         })),
       ]
@@ -207,7 +206,7 @@ describe('messenger service', () => {
           sdMessageOf({
             sender: channel.phoneNumber,
             recipient: subscriberPhoneNumbers[0],
-            message: `[${channel.name}]\n${payload}`,
+            message: payload,
             attachments,
           }),
           channel.socketId,
@@ -273,7 +272,7 @@ describe('messenger service', () => {
             commandResult: {
               command: commands.NONE,
               status: statuses.SUCCESS,
-              message: messagesIn(sender.language).notifications.hotlineMessageSent(channel),
+              message: messagesIn(sender.language).notifications.hotlineMessageSent,
               notifications,
             },
             dispatchable: { channel: hotlineEnabledChannel, sender, sdMessage },
@@ -281,7 +280,7 @@ describe('messenger service', () => {
         })
 
         it('responds to sender that their message has been sent', () => {
-          const response = messagesIn(sender.language).notifications.hotlineMessageSent(channel)
+          const response = messagesIn(sender.language).notifications.hotlineMessageSent
           expect(sendMessageStub.getCall(0).args).to.eql([
             sdMessageOf({
               sender: channel.phoneNumber,

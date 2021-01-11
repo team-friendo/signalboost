@@ -1,4 +1,3 @@
-const niceware = require('niceware')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRepository = require('../db/repositories/phoneNumber')
@@ -29,13 +28,12 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   return { status: sbStatuses.SUCCESS, message }
 }
 
-/* ({ phoneNumber: string, name: string, admins: Array<string> }) => Promise<ChannelStatus> */
+/* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
 const create = async ({ phoneNumber, admins }) => {
   try {
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
-    const name = niceware.generatePassphrase(4).join(' ')
-    const channel = await channelRepository.create(phoneNumber, name, admins)
+    const channel = await channelRepository.create(phoneNumber, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
 
@@ -48,7 +46,7 @@ const create = async ({ phoneNumber, admins }) => {
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
     if (supportChannel) await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
 
-    return { status: pNumStatuses.ACTIVE, phoneNumber, name, admins }
+    return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
     logger.error(e)
     return {
@@ -108,7 +106,6 @@ const _welcomeNotificationOf = channel =>
   messagesIn(defaultLanguage).notifications.welcome(
     messagesIn(defaultLanguage).systemName,
     channel.phoneNumber,
-    channel.name,
   )
 
 // (Database) -> Promise<Array<Channel>>
@@ -126,7 +123,7 @@ const list = db =>
     .catch(error => ({ status: sbStatuses.ERROR, data: { error } }))
 
 const _formatForList = ch => ({
-  ...pick(ch, ['name', 'phoneNumber']),
+  ...pick(ch, ['phoneNumber']),
   hash: hash(ch.phoneNumber),
   socketId: ch.socketId,
   admins: channelRepository.getAdminMemberships(ch).length,

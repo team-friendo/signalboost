@@ -12,10 +12,6 @@ const channelOf = (sequelize, DataTypes) => {
       unique: true,
       validate: isPhoneNumber,
     },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     messageExpiryTime: {
       type: DataTypes.INTEGER,
       allowNull: false,

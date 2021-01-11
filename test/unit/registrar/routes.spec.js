@@ -36,7 +36,6 @@ describe('routes', () => {
   }))
   const admins = [genPhoneNumber(), genPhoneNumber()]
   const channelCreatedStatus = {
-    name: 'foo channel',
     status: statuses.ACTIVE,
     phoneNumber,
     admins,

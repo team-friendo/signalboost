@@ -82,8 +82,6 @@ describe('executing commands', () => {
   const prefixesFor = member => messagesIn(member.language).prefixes
 
   const channel = {
-    name: 'foobar',
-    description: 'foobar channel description',
     phoneNumber: '+13333333333',
     hotlineOn: true,
     vouchMode: vouchModes.OFF,
@@ -203,11 +201,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.ERROR,
-              message: commandResponsesInCommandLang.accept.belowVouchLevel(
-                channel,
-                channel.vouchLevel,
-                0,
-              ),
+              message: commandResponsesInCommandLang.accept.belowVouchLevel(channel.vouchLevel, 0),
               notifications: [],
             })
           })
@@ -222,7 +216,7 @@ describe('executing commands', () => {
                 command: commands.ACCEPT,
                 payload: '',
                 status: statuses.SUCCESS,
-                message: commandResponsesInCommandLang.accept.success(channel),
+                message: commandResponsesInCommandLang.accept.success,
                 notifications: [],
               })
             })
@@ -264,7 +258,7 @@ describe('executing commands', () => {
               command: commands.ACCEPT,
               payload: '',
               status: statuses.SUCCESS,
-              message: commandResponsesInCommandLang.accept.success(channel),
+              message: commandResponsesInCommandLang.accept.success,
               notifications: [],
             })
           })
@@ -362,7 +356,6 @@ describe('executing commands', () => {
                     message: messagesIn(languages.FR).notifications.welcome(
                       sender.memberPhoneNumber,
                       channel.phoneNumber,
-                      channel.name,
                     ),
                   },
                   // notifications for all bystander admins
@@ -511,7 +504,6 @@ describe('executing commands', () => {
       const dispatchable = { channel, sender, sdMessage }
 
       it('returns a SUCCESS status and notifications', async () => {
-        const subscriberHeader = channel.name
         const adminMemberships = channel.memberships.slice(0, 3)
         const subscriberMemberships = channel.memberships.slice(3)
 
@@ -532,7 +524,7 @@ describe('executing commands', () => {
             }),
             ...subscriberMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: `[${subscriberHeader}]\nhello friendos!`,
+              message: `hello friendos!`,
               attachments,
             })),
           ],
@@ -907,7 +899,7 @@ describe('executing commands', () => {
                     notifications: [
                       {
                         recipient: inviteePhoneNumbers[0],
-                        message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
+                        message: notificationsInCommandLang.inviteReceived,
                       },
                     ],
                   })
@@ -936,11 +928,11 @@ describe('executing commands', () => {
                   notifications: [
                     {
                       recipient: inviteePhoneNumbers[0],
-                      message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
+                      message: notificationsInCommandLang.inviteReceived,
                     },
                     {
                       recipient: inviteePhoneNumbers[1],
-                      message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
+                      message: notificationsInCommandLang.inviteReceived,
                     },
                   ],
                 })
@@ -983,11 +975,11 @@ describe('executing commands', () => {
                 notifications: [
                   {
                     recipient: inviteePhoneNumbers[0],
-                    message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
+                    message: notificationsInCommandLang.inviteReceived,
                   },
                   {
                     recipient: inviteePhoneNumbers[1],
-                    message: notificationsInCommandLang.inviteReceived(vouchingOnChannel.name),
+                    message: notificationsInCommandLang.inviteReceived,
                   },
                 ],
               })
@@ -1022,9 +1014,7 @@ describe('executing commands', () => {
               notifications: [
                 {
                   recipient: inviteePhoneNumbers[0],
-                  message: messagesIn(languages.ES).notifications.inviteReceived(
-                    vouchingOnChannel.name,
-                  ),
+                  message: messagesIn(languages.ES).notifications.inviteReceived,
                 },
               ],
             })
@@ -1054,11 +1044,11 @@ describe('executing commands', () => {
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(language).notifications.inviteReceived(vouchingOnChannel.name),
+                message: messagesIn(language).notifications.inviteReceived,
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(language).notifications.inviteReceived(vouchingOnChannel.name),
+                message: messagesIn(language).notifications.inviteReceived,
               },
             ],
           })
@@ -1096,15 +1086,11 @@ describe('executing commands', () => {
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(language).notifications.inviteReceived(
-                  vouchingAdminChannel.name,
-                ),
+                message: messagesIn(language).notifications.inviteReceived,
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(language).notifications.inviteReceived(
-                  vouchingAdminChannel.name,
-                ),
+                message: messagesIn(language).notifications.inviteReceived,
               },
             ],
           })
@@ -1159,19 +1145,11 @@ describe('executing commands', () => {
             notifications: [
               {
                 recipient: inviteePhoneNumbers[0],
-                message: messagesIn(language).notifications.vouchedInviteReceived(
-                  extraVouchedChannel.name,
-                  1,
-                  2,
-                ),
+                message: messagesIn(language).notifications.vouchedInviteReceived(1, 2),
               },
               {
                 recipient: inviteePhoneNumbers[1],
-                message: messagesIn(language).notifications.vouchedInviteReceived(
-                  extraVouchedChannel.name,
-                  1,
-                  2,
-                ),
+                message: messagesIn(language).notifications.vouchedInviteReceived(1, 2),
               },
             ],
           })
@@ -1193,11 +1171,11 @@ describe('executing commands', () => {
           notifications: [
             {
               recipient: inviteePhoneNumbers[0],
-              message: messagesIn(language).notifications.inviteReceived(channel.name),
+              message: messagesIn(language).notifications.inviteReceived,
             },
             {
               recipient: inviteePhoneNumbers[1],
-              message: messagesIn(language).notifications.inviteReceived(channel.name),
+              message: messagesIn(language).notifications.inviteReceived,
             },
           ],
         })
@@ -1270,7 +1248,7 @@ describe('executing commands', () => {
               command: commands.JOIN,
               payload: '',
               status: statuses.SUCCESS,
-              message: commandResponsesInCommandLang.join.success(channel),
+              message: commandResponsesInCommandLang.join.success,
               notifications: [],
             })
           })
@@ -2280,7 +2258,7 @@ describe('executing commands', () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.NONE,
             status: statuses.SUCCESS,
-            message: notificationsFor(sender).hotlineMessageSent(_channel),
+            message: notificationsFor(sender).hotlineMessageSent,
             payload: '',
             notifications: [
               {
@@ -2432,7 +2410,7 @@ describe('executing commands', () => {
             command: commands.NONE,
             payload: '',
             status: statuses.SUCCESS,
-            message: notificationsFor(sender).hotlineMessageSent(channel),
+            message: notificationsFor(sender).hotlineMessageSent,
             notifications: [
               ...adminMemberships.map(membership => ({
                 recipient: membership.memberPhoneNumber,

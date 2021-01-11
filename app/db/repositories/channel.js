@@ -15,7 +15,7 @@ const logger = loggerOf('db.repositories.channel')
  * QUERIES
  ***********/
 
-const create = async (phoneNumber, name, adminPhoneNumbers) => {
+const create = async (phoneNumber, adminPhoneNumbers) => {
   const memberships = adminPhoneNumbers.map((pNum, idx) => ({
     type: memberTypes.ADMIN,
     memberPhoneNumber: pNum,
@@ -28,11 +28,11 @@ const create = async (phoneNumber, name, adminPhoneNumbers) => {
 
   return !channel
     ? app.db.channel.create(
-        { phoneNumber, name, memberships, messageCount: {}, nextAdminId },
+        { phoneNumber, memberships, messageCount: {}, nextAdminId },
         { include },
       )
     : channel
-        .update({ name, memberships, returning: true, nextAdminId }, { include })
+        .update({ memberships, returning: true, nextAdminId }, { include })
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 

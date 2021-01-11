@@ -119,14 +119,14 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[0].memberPhoneNumber },
-          messageBody: `[${channel.name}]\nfoobar`,
+          messageBody: `foobar`,
           attachments,
         },
         {
           type: 'send',
           username: channel.phoneNumber,
           recipientAddress: { number: subscribers[1].memberPhoneNumber },
-          messageBody: `[${channel.name}]\nfoobar`,
+          messageBody: `foobar`,
           attachments,
         },
       ])
@@ -160,7 +160,7 @@ describe('dispatcher service', () => {
       expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           messageBody:
-            'Your message was forwarded to the admins of [#red-alert].\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
+            'Your message was forwarded to the admins of this channel.\n  \nSend HELP to list valid commands. Send HELLO to subscribe.',
           recipientAddress: {
             number: randoPhoneNumber,
           },
@@ -222,7 +222,7 @@ describe('dispatcher service', () => {
     it('sends a welcome message to the sender and sets the expiration timer', () => {
       expect(getSentMessages(writeStub)).to.eql([
         {
-          messageBody: messagesIn(languages.EN).commandResponses.join.success(channel),
+          messageBody: messagesIn(languages.EN).commandResponses.join.success,
           recipientAddress: { number: randoPhoneNumber },
           type: 'send',
           username: channel.phoneNumber,
