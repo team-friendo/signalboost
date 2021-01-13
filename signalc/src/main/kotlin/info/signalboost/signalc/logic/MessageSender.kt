@@ -7,13 +7,16 @@ import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import java.util.*
 
-class MessageSender(app: Application, account: VerifiedAccount) {
+class MessageSender(private val app: Application) {
     companion object {
         private const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
+        fun String.asAddress() = SignalServiceAddress(null, this)
+        fun UUID.asAddress() = SignalServiceAddress(this, null)
     }
 
-    private val sender  by lazy {
+    private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
         SignalServiceMessageSender(
             app.signal.configs,
             account.credentialsProvider,
@@ -27,21 +30,20 @@ class MessageSender(app: Application, account: VerifiedAccount) {
             null,
             null,
         )
-    }
 
     fun send(
-        messageBody: String,
-        recipientPhone: String,
+        sender: VerifiedAccount,
+        recipient: SignalServiceAddress,
+        body: String,
         timestamp: Long = TimeUtil.nowInMillis(),
         expiration: Int = DEFAULT_EXPIRY_TIME,
     ): SendMessageResult {
-        val recipientAddress = SignalServiceAddress(null, recipientPhone)
         val dataMessage =  SignalServiceDataMessage
             .newBuilder()
-            .withBody(messageBody)
+            .withBody(body)
             .withTimestamp(timestamp)
             .withExpiration(expiration)
             .build()
-        return sender.sendMessage(recipientAddress, absent(), dataMessage)
+        return messageSenderOf(sender).sendMessage(recipient, absent(), dataMessage)
     }
 }

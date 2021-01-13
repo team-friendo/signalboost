@@ -3,6 +3,7 @@ package info.signalboost.signalc
 import info.signalboost.signalc.Config.USER_PHONE_NUMBER
 import info.signalboost.signalc.logic.AccountManager
 import info.signalboost.signalc.logic.MessageSender
+import info.signalboost.signalc.logic.MessageSender.Companion.asAddress
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -16,6 +17,7 @@ import info.signalboost.signalc.model.VerifiedAccount
 fun main() {
     val app = Application(Config.dev)
     val accountManager = AccountManager(app)
+    val messageSender = MessageSender(app)
 
     // find or create account
     val verifiedAccount: VerifiedAccount = when(
@@ -28,16 +30,19 @@ fun main() {
     } ?: return println("Couldn't find or create account with number $USER_PHONE_NUMBER")
 
     // send some messages!
-    val messageSender = MessageSender(app, verifiedAccount)
+
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return
 
         println("What message would you like to send?")
-        val messageBody = readLine() ?: return
-
-        messageSender.send(messageBody, recipientPhone)
-        println("Sent \"$messageBody\" to $recipientPhone\n")
+        val message = readLine() ?: return
+        messageSender.send(
+            sender = verifiedAccount,
+            recipient = recipientPhone.asAddress(),
+            body = message
+        )
+        println("Sent \"$message\" to $recipientPhone\n")
     }
 }
 

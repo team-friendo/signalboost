@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.logic.MessageSender.Companion.asAddress
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.Matchers.signalDataMessage
@@ -15,7 +16,7 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 class MessageSenderTest : FreeSpec({
     val app = Application(Config.test)
     val verifiedAccount = genVerifiedAccount()
-    val messageSender = MessageSender(app, verifiedAccount)
+    val messageSender = MessageSender(app)
 
     beforeSpec {
         mockkObject(TimeUtil)
@@ -44,8 +45,9 @@ class MessageSenderTest : FreeSpec({
         "sends a message from a message sender" {
             val now = TimeUtil.nowInMillis()
             val result = messageSender.send(
-                messageBody = "hello!",
-                recipientPhone = recipientPhone,
+                sender = verifiedAccount,
+                recipient = recipientPhone.asAddress(),
+                body = "hello!",
                 expiration = 5000,
                 timestamp = now,
             )
@@ -65,7 +67,7 @@ class MessageSenderTest : FreeSpec({
 
         "provides a default timestamp if none provided" {
             every { TimeUtil.nowInMillis() } returns 1000L
-            messageSender.send("hello!", recipientPhone)
+            messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
             verify {
                 anyConstructed<SignalServiceMessageSender>().sendMessage(
                     any(),
@@ -76,7 +78,7 @@ class MessageSenderTest : FreeSpec({
         }
 
         "provides a default expiry time if none provided" {
-            messageSender.send("hello!", recipientPhone)
+            messageSender.send(verifiedAccount, recipientPhone.asAddress(),"hello!")
             verify {
                 anyConstructed<SignalServiceMessageSender>().sendMessage(
                     any(),
