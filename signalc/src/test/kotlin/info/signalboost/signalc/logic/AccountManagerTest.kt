@@ -21,7 +21,7 @@ import kotlin.random.Random
 
 class AccountManagerTest : FreeSpec({
     val app = Application(Config.test)
-    val accountManager = AccountManager(app)
+    val accountManager = Registrar(app)
 
     val mockProtocolStore: SignalProtocolStore = mockk()
     val phoneNumber = genPhoneNumber()
