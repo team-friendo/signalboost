@@ -8,6 +8,7 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import kotlin.system.exitProcess
 
 
 /*************
@@ -15,7 +16,15 @@ import info.signalboost.signalc.model.VerifiedAccount
  *************/
 
 fun main() {
-    val app = Application(Config.dev)
+    val config = when(System.getenv("SIGNALC_ENV")) {
+        "development" -> Config.dev
+        "production" -> Config.prod
+        else -> run {
+            println("ERROR: No value set for \$SIGNALC_ENV env var. Aborting")
+            exitProcess(1)
+        }
+    }
+    val app = Application(config)
     val accountManager = AccountManager(app)
     val messageSender = MessageSender(app)
 

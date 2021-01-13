@@ -7,8 +7,10 @@ val entrypoint = "info.signalboost.signalc.MainKt"
 
 object Versions {
     const val bouncyCastle = "1.66"
-    const val coroutines = "1.3.9"
+    const val coroutines = "1.4.2"
     const val exposed = "0.25.1"
+    const val jsonSerialization = "1.0.1"
+    const val kaml = "0.26.0"
     const val kotest = "4.3.1"
     const val kotlin = "1.4.21"
     const val h2 = "1.4.199"
@@ -28,6 +30,7 @@ plugins {
     application
     java
     kotlin("jvm") version "1.4.21"
+    kotlin("plugin.serialization") version "1.4.10"
     id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
@@ -71,6 +74,8 @@ dependencies {
     implementation("com.h2database:h2:${Versions.h2}")
     implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
+    implementation("com.charleskorn.kaml:kaml:${Versions.kaml}")
 
     implementation("io.mockk:mockk:${Versions.mockk}")
     testImplementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")
