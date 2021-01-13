@@ -10,13 +10,19 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 
 class MessageSender(private val app: Application) {
+
     companion object {
         private const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
         fun String.asAddress() = SignalServiceAddress(null, this)
         fun UUID.asAddress() = SignalServiceAddress(this, null)
     }
 
+    private val messageSenders: MutableMap<VerifiedAccount,SignalServiceMessageSender> = mutableMapOf()
+
     private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
+        // return a memoized message sender for this account
+        messageSenders[account] ?:
+        // or create a new one and memoize it
         SignalServiceMessageSender(
             app.signal.configs,
             account.credentialsProvider,
@@ -29,7 +35,7 @@ class MessageSender(private val app: Application) {
             absent(),
             null,
             null,
-        )
+        ).also { messageSenders[account]  = it }
 
     fun send(
         sender: VerifiedAccount,

@@ -22,13 +22,25 @@ class AccountManager(private val app: Application) {
     private val protocolStore = app.store.signalProtocol
     private val signal = app.signal
 
-    private fun accountManagerOf(account: Account) = SignalServiceAccountManager(
-        signal.configs,
-        account.credentialsProvider,
-        signal.agent,
-        signal.groupsV2Operations,
-        UptimeSleepTimer()
-    )
+    private val accountManagers:  MutableMap<Account,SignalServiceAccountManager> = mutableMapOf()
+
+    private fun accountManagerOf(account: Account): SignalServiceAccountManager {
+        // Return a Signal account manager instance for an account.
+        // For verified accounts, return or create memoized references to account managers.
+        val createAccountManager =  {
+            SignalServiceAccountManager(
+                signal.configs,
+                account.credentialsProvider,
+                signal.agent,
+                signal.groupsV2Operations,
+                UptimeSleepTimer()
+            )
+        }
+        return when(account) {
+            is VerifiedAccount -> accountManagers[account] ?: createAccountManager()
+            else -> createAccountManager()
+        }
+    }
 
     fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
