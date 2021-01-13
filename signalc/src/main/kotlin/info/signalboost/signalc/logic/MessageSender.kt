@@ -12,7 +12,7 @@ import java.util.*
 class MessageSender(private val app: Application) {
 
     companion object {
-        private const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
+        const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
         fun String.asAddress() = SignalServiceAddress(null, this)
         fun UUID.asAddress() = SignalServiceAddress(this, null)
     }

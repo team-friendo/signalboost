@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.logic.MessageSender.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.logic.MessageSender.Companion.asAddress
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
@@ -83,7 +84,7 @@ class MessageSenderTest : FreeSpec({
                 anyConstructed<SignalServiceMessageSender>().sendMessage(
                     any(),
                     any(),
-                    signalDataMessage(expiresInSeconds = Messaging.DEFAULT_EXPIRY_TIME)
+                    signalDataMessage(expiresInSeconds = DEFAULT_EXPIRY_TIME)
                 )
             }
         }
