@@ -72,8 +72,8 @@ dependencies {
     implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
 
+    implementation("io.mockk:mockk:${Versions.mockk}")
     testImplementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")
     testImplementation("io.kotest:kotest-assertions-core:${Versions.kotest}")
     testImplementation("io.kotest:kotest-property:${Versions.kotest}")
-    testImplementation("io.mockk:mockk:${Versions.mockk}")
 }

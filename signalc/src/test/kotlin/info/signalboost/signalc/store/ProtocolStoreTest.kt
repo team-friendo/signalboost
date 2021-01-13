@@ -1,8 +1,8 @@
 package info.signalboost.signalc.store
 
+import info.signalboost.signalc.Application
+import info.signalboost.signalc.Config
 import info.signalboost.signalc.db.*
-import info.signalboost.signalc.testSupport.db.DatabaseConnection
-import info.signalboost.signalc.testSupport.db.DatabaseConnection.initialize
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.logic.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
@@ -16,11 +16,12 @@ import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
-class SqlProtocolStoreTest: FreeSpec({
-    val db = DatabaseConnection.toPostgres().initialize()
+class ProtocolStoreTest: FreeSpec({
+    val app = Application(Config.test)
+    val db = app.db
 
     val accountId = genPhoneNumber()
-    val store = SqlProtocolStore(db, accountId)
+    val store = ProtocolStore.AccountProtocolStore(db, accountId)
     val address = SignalProtocolAddress(accountId, 42)
     // NOTE: An address is a combination of a username (uuid or e164-format phone number) and a device id.
     // This is how Signal represents that a user may have many devices and each device has its own session.
@@ -233,7 +234,7 @@ class SqlProtocolStoreTest: FreeSpec({
     "Multiple stores" - {
         val otherAccountId = genPhoneNumber()
         val otherAddress = SignalProtocolAddress(otherAccountId, 10)
-        val otherStore = SqlProtocolStore(db, otherAccountId)
+        val otherStore = ProtocolStore.AccountProtocolStore(db, otherAccountId)
         val ids = listOf(0,1)
 
         afterTest {

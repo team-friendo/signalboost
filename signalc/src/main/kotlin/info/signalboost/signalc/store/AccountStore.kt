@@ -1,5 +1,6 @@
 package info.signalboost.signalc.store
 
+import info.signalboost.signalc.Application
 import info.signalboost.signalc.db.Accounts
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount

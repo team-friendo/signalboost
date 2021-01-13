@@ -1,10 +1,11 @@
 package info.signalboost.signalc.logic
 
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.Application
+import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
@@ -19,34 +20,20 @@ import java.util.*
 import kotlin.random.Random
 
 class AccountManagerTest : FreeSpec({
-    val mockProtocolStore: SignalProtocolStore = mockk()
-    val mockAccountStore: AccountStore = mockk()
-    val accountManager = AccountManager(mockProtocolStore, mockAccountStore)
-    val mockSignalAccountManager: SignalServiceAccountManager = mockk {
-        every { requestSmsVerificationCode(any(), any(), any()) } returns Unit
-        every { setPreKeys(any(), any(), any()) } returns Unit
-    }
+    val app = Application(Config.test)
+    val accountManager = AccountManager(app)
 
+    val mockProtocolStore: SignalProtocolStore = mockk()
     val phoneNumber = genPhoneNumber()
     val uuid = UUID.randomUUID()
-
-    val newAccount = NewAccount(phoneNumber).also {
-        mockkObject(it)
-        every { it.manager } returns mockSignalAccountManager
-    }
-
-    val registeredAccount = RegisteredAccount.fromNew(newAccount).also {
-        mockkObject(it)
-        every { it.manager } returns mockSignalAccountManager
-    }
-
-    val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid).also {
-        mockkObject(it)
-        every { it.manager } returns mockSignalAccountManager
-    }
+    val newAccount = NewAccount(phoneNumber)
+    val registeredAccount = RegisteredAccount.fromNew(newAccount)
+    val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid)
 
     beforeSpec {
         mockkObject(KeyUtil)
+        every { app.store.signalProtocol.of(any()) } returns mockProtocolStore
+        mockkConstructor(SignalServiceAccountManager::class)
     }
 
     afterTest {
@@ -58,35 +45,36 @@ class AccountManagerTest : FreeSpec({
     }
 
     "#findOrCreate" - {
-        every { mockAccountStore.findOrCreate(any()) } answers { newAccount }
+        every { app.store.account.findOrCreate(any()) } answers { newAccount }
 
         "delegates to AccountStore" {
-            accountManager.findOrCreate(phoneNumber)
+            accountManager.load(phoneNumber)
             verify {
-                mockAccountStore.findOrCreate(phoneNumber)
+                app.store.account.findOrCreate(phoneNumber)
             }
         }
     }
 
     "#register" - {
         val saveSlot = slot<RegisteredAccount>()
-        every { mockAccountStore.save(account = capture(saveSlot)) } answers { firstArg() }
+        every { app.store.account.save(account = capture(saveSlot)) } answers { firstArg() }
+        every {
+            anyConstructed<SignalServiceAccountManager>()
+                .requestSmsVerificationCode(any(),any(),any())
+        } returns Unit
 
         "requests an sms code from signal" {
             accountManager.register(newAccount)
             verify {
-                mockSignalAccountManager.requestSmsVerificationCode(
-                    false,
-                    absent(),
-                    absent()
-                )
+                anyConstructed<SignalServiceAccountManager>()
+                    .requestSmsVerificationCode(false, absent(), absent())
             }
         }
 
         "updates the account store" {
             accountManager.register(newAccount)
             verify {
-                mockAccountStore.save(any<RegisteredAccount>())
+                app.store.account.save(any<RegisteredAccount>())
             }
             saveSlot.captured shouldBe registeredAccount
         }
@@ -99,12 +87,12 @@ class AccountManagerTest : FreeSpec({
     "#verify" - {
         val code = "1312"
         val saveSlot = slot<VerifiedAccount>()
-        every { mockAccountStore.save(account = capture(saveSlot)) } answers { firstArg() }
+        every { app.store.account.save(account = capture(saveSlot)) } answers { firstArg() }
         every { mockProtocolStore.localRegistrationId } returns 42
 
         "when given correct code" - {
             every {
-                mockSignalAccountManager.verifyAccountWithCode(
+                anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                     code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                 )
             } returns mockk {
@@ -114,7 +102,7 @@ class AccountManagerTest : FreeSpec({
             "attempts to verify code" {
                 accountManager.verify(registeredAccount, code)
                 verify {
-                    mockSignalAccountManager.verifyAccountWithCode(
+                    anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                     )
                 }
@@ -123,7 +111,7 @@ class AccountManagerTest : FreeSpec({
             "updates the account store" {
                 accountManager.verify(registeredAccount, code)
                 verify {
-                    mockAccountStore.save(ofType(VerifiedAccount::class))
+                    app.store.account.save(ofType(VerifiedAccount::class))
                 }
                 saveSlot.captured shouldBe verifiedAccount
             }
@@ -135,7 +123,7 @@ class AccountManagerTest : FreeSpec({
 
         "when given incorrect code" - {
             every {
-                mockSignalAccountManager.verifyAccountWithCode(
+                anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                     code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                 )
             } throws AuthorizationFailedException("oh noes!")
@@ -143,7 +131,7 @@ class AccountManagerTest : FreeSpec({
             "attempts to verify code" {
                 accountManager.verify(registeredAccount, code)
                 verify {
-                    mockSignalAccountManager.verifyAccountWithCode(
+                    anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                     )
                 }
@@ -151,7 +139,7 @@ class AccountManagerTest : FreeSpec({
 
             "does not update the account store" {
                 accountManager.verify(registeredAccount, code)
-                verify { mockAccountStore wasNot Called }
+                verify { app.store.account wasNot Called }
             }
 
             "returns null" {
@@ -181,21 +169,24 @@ class AccountManagerTest : FreeSpec({
 
         every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
         every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
+        every {
+            anyConstructed<SignalServiceAccountManager>().setPreKeys(any(),any(),any())
+        } returns Unit
 
         "stores 100 prekeys locally" {
-            accountManager.publishFirstPrekeys(verifiedAccount)
+            accountManager.publishPreKeys(verifiedAccount)
             verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any())}
         }
 
         "stores a signed prekey locally" {
-            accountManager.publishFirstPrekeys(verifiedAccount)
+            accountManager.publishPreKeys(verifiedAccount)
             verify(exactly = 1) { mockProtocolStore.storeSignedPreKey(any(), any()) }
         }
 
         "publishes prekeys to signal" {
-            accountManager.publishFirstPrekeys(verifiedAccount)
+            accountManager.publishPreKeys(verifiedAccount)
             verify {
-                mockSignalAccountManager.setPreKeys(
+                anyConstructed<SignalServiceAccountManager>().setPreKeys(
                     mockPublicKey,
                     mockSignedPreKey,
                     mockPreKeys,

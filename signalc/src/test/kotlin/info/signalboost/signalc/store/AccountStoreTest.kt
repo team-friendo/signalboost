@@ -1,8 +1,8 @@
 package info.signalboost.signalc.store
 
+import info.signalboost.signalc.Application
+import info.signalboost.signalc.Config
 import info.signalboost.signalc.db.Accounts
-import info.signalboost.signalc.testSupport.db.DatabaseConnection
-import info.signalboost.signalc.testSupport.db.DatabaseConnection.initialize
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -20,7 +20,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 class AccountStoreTest : FreeSpec({
-    val db = DatabaseConnection.toPostgres().initialize()
+    val db = Application(Config.test).db
     val store = AccountStore(db)
 
     val username = genPhoneNumber()

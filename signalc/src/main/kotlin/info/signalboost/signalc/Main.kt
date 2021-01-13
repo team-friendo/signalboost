@@ -1,38 +1,25 @@
 package info.signalboost.signalc
 
-import info.signalboost.signalc.db.*
-import info.signalboost.signalc.db.DatabaseConnection.initialize
+import info.signalboost.signalc.Config.USER_PHONE_NUMBER
 import info.signalboost.signalc.logic.AccountManager
-import info.signalboost.signalc.logic.Messaging
+import info.signalboost.signalc.logic.MessageSender
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.store.AccountStore
-import info.signalboost.signalc.store.SqlProtocolStore
 
-
-/********************************************************************
- * DEV-CONFIGURABLE VALUES (CHANGE TO RUN SPIKE CODE ON YOUR LAPTOP)
- *******************************************************************/
-const val USER_PHONE_NUMBER = "+17347962920"
 
 /*************
  * MAIN LOOP
  *************/
 
 fun main() {
-    // TODO: push db and protocol store injection into config layer!
-    // connect to db
-    val db = DatabaseConnection.toDev().initialize()
+    val app = Application(Config.dev)
+    val accountManager = AccountManager(app)
 
     // find or create account
-    val accountManager = AccountManager(
-        SqlProtocolStore(db, USER_PHONE_NUMBER),
-        AccountStore(db)
-    )
     val verifiedAccount: VerifiedAccount = when(
-        val account: Account = accountManager.findOrCreate(USER_PHONE_NUMBER)
+        val account: Account = accountManager.load(USER_PHONE_NUMBER)
     ) {
         is NewAccount -> register(accountManager, account)
         is RegisteredAccount -> register(accountManager, NewAccount.fromRegistered(account))
@@ -41,7 +28,7 @@ fun main() {
     } ?: return println("Couldn't find or create account with number $USER_PHONE_NUMBER")
 
     // send some messages!
-    val messageSender = accountManager.messageSenderOf(verifiedAccount)
+    val messageSender = MessageSender(app, verifiedAccount)
     while(true){
         println("\nWhat number would you like to send a message to?")
         val recipientPhone = readLine() ?: return
@@ -49,7 +36,7 @@ fun main() {
         println("What message would you like to send?")
         val messageBody = readLine() ?: return
 
-        Messaging.sendMessage(messageSender, messageBody, recipientPhone)
+        messageSender.send(messageBody, recipientPhone)
         println("Sent \"$messageBody\" to $recipientPhone\n")
     }
 }
@@ -63,7 +50,7 @@ fun register(accountManager: AccountManager, newAccount: NewAccount): VerifiedAc
     val verificationCode = readLine() ?: return null
     val verifiedAccount = accountManager.verify(registeredAccount, verificationCode)
         ?.let {
-            accountManager.publishFirstPrekeys(it)
+            accountManager.publishPreKeys(it)
         }
         ?: run {
             println("Verification failed! Wrong code?")
