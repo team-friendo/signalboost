@@ -16,7 +16,7 @@ import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.util.*
 import kotlin.random.Random
 
-class Registrar(private val app: Application) {
+class AccountManager(private val app: Application) {
 
     private val accountStore = app.store.account
     private val protocolStore = app.store.signalProtocol
