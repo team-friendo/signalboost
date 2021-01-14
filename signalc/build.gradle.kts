@@ -5,22 +5,6 @@ group = "info.signalboost"
 version = "0.0.3"
 val entrypoint = "info.signalboost.signalc.MainKt"
 
-object Versions {
-    const val bouncyCastle = "1.66"
-    const val coroutines = "1.4.2"
-    const val exposed = "0.25.1"
-    const val jsonSerialization = "1.0.1"
-    const val kaml = "0.26.0"
-    const val kotest = "4.3.1"
-    const val kotlin = "1.4.21"
-    const val h2 = "1.4.199"
-    const val libsignal = "2.15.3_unofficial_14"
-    const val mockk = "1.10.3"
-    const val pgjdbc = "0.8.3"
-    const val shadowJar = "5.2.0"
-    const val slf4j = "1.7.30"
-}
-
 repositories {
     mavenCentral()
     jcenter()
@@ -63,6 +47,21 @@ tasks.withType<Wrapper> {
     gradleVersion = "6.7.1"
 }
 
+object Versions {
+    const val bouncyCastle = "1.66"
+    const val coroutines = "1.4.2"
+    const val exposed = "0.25.1"
+    const val jsonSerialization = "1.0.1"
+    const val kaml = "0.26.0"
+    const val kotest = "4.3.1"
+    const val kotlin = "1.4.21"
+    const val h2 = "1.4.199"
+    const val libsignal = "2.15.3_unofficial_14"
+    const val mockk = "1.10.3"
+    const val pgjdbc = "0.8.3"
+    const val shadowJar = "5.2.0"
+    const val slf4j = "1.7.30"
+}
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
@@ -75,7 +74,6 @@ dependencies {
     implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
-    implementation("com.charleskorn.kaml:kaml:${Versions.kaml}")
 
     implementation("io.mockk:mockk:${Versions.mockk}")
     testImplementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")

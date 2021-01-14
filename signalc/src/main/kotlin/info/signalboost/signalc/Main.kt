@@ -16,14 +16,7 @@ import kotlin.system.exitProcess
  *************/
 
 fun main() {
-    val config = when(System.getenv("SIGNALC_ENV")) {
-        "development" -> Config.dev
-        "production" -> Config.prod
-        else -> run {
-            println("ERROR: No value set for \$SIGNALC_ENV env var. Aborting")
-            exitProcess(1)
-        }
-    }
+    val config = Config.fromEnv()
     val app = Application(config)
     val accountManager = AccountManager(app)
     val messageSender = MessageSender(app)

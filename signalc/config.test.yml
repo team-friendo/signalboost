@@ -1,2 +1,0 @@
-db:
-  url: "jdbc:pgsql://localhost:5432/signalc_test"
