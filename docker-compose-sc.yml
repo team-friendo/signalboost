@@ -31,6 +31,7 @@ services:
     environment:
       GRADLE_USER_HOME: /home/gradle/.gradle
       TRUST_STORE_PATH: /signalc/whisper.store
+      DB_HOST: db
     depends_on:
       - db
     volumes:

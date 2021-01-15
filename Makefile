@@ -172,9 +172,6 @@ dev.psql: # get a psql shell on dev db
 prod.psql: # get a psql shell on prod db
 	./bin/prod/psql
 
-sc.psql: # get a psql shell on signalc db
-	./bin/sc/psql
-
 ##########################
 # start and stop the app #
 ##########################
@@ -229,6 +226,39 @@ sc.jar: ## build
 sc.run: ## run signalc in dev mode
 	docker-compose -f docker-compose-sc.yml \
 	run --entrypoint 'gradle --console=plain run' signalc
+
+sc.down:
+	docker-compose -f docker-compose-sc.yml down
+
+sc.db.migrate: ## run migrations
+	echo "----- running development migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc && \
+	echo "----- running test migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
+
+sc.db.rollback: ## run migrations
+	echo "----- rolling back 1 development migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=1' signalc && \
+	echo "----- rolling back 1 test migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=1' signalc
+
+sc.db.rollback_n: ## run migrations
+	echo "----- rolling back $(N) development migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc && \
+	echo "----- rolling back $(N) test migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc
+ 
+sc.db.psql: # get a psql shell on signalc db
+	./bin/sc/psql
+
+
+
 
 #############
 # run tests #
