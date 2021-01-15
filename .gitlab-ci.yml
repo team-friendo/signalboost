@@ -16,6 +16,7 @@
       - .yarn
   before_script:
     - yarn config set cache-folder .yarn
+    - yarn install
   variables:
     NODE_ENV: test
     POSTGRES_DB: signalboost_test
@@ -30,12 +31,16 @@
       - signalc/build
   before_script:
     - export GRADLE_USER_HOME=`pwd`/.gradle
+  variables:
+    SIGNALC_ENV: test # TODO: let's change this to `ci` soon?
+    POSTGRES_DB: signalc_test
 
 .uses-postgres:
   services:
     - name: postgres:12
       alias: db
   variables:
+    DB_HOST: db
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: ""
     POSTGRES_HOST_AUTH_METHOD: trust
@@ -45,24 +50,12 @@
 ##########
 
 stages:
-  - build
   - test
+  # - deploy (coming soon!)
 
-##############
-# BUILD JOBS #
-##############
-
-sb:install:
-  stage: build
-  extends:
-    - .sb-job
-    - .uses-postgres
-  script:
-     - yarn install
-
-##############
-# TEST JOBS #
-##############
+########
+# JOBS #
+########
 
 sb:lint:
   stage: test
@@ -91,10 +84,13 @@ sb:integration:
     - npx sequelize db:migrate --env test
     - find test/integration -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
 
+
 sc:test:
   stage: test
   extends:
     - .sc-job
+    - .uses-postgres
   script:
     - cd signalc
+    - gradle update
     - gradle test
