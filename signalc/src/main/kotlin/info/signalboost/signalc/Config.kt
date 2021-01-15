@@ -2,6 +2,14 @@ package info.signalboost.signalc
 
 object Config {
     const val USER_PHONE_NUMBER = "+17347962920"
+    private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
+
+    init {
+        println("-------------------------------------------------------")
+        println("----- \$DB_HOST: ${System.getenv("DB_HOST")}")
+        println("----- dbHost: $dbHost")
+        println("-------------------------------------------------------")
+    }
 
     // SCHEMA
 
@@ -31,9 +39,9 @@ object Config {
         val storageUrl: String,
     )
 
-    enum class StoreType(value: String) {
-        SQL("SQL"),
-        MOCK("MOCK"),
+    enum class StoreType {
+        SQL,
+        MOCK,
     }
 
     data class Store(
@@ -59,7 +67,7 @@ object Config {
     private val default  = Config.App(
         db = Config.Database(
             driver = "com.impossibl.postgres.jdbc.PGDriver",
-            url = "jdbc:pgsql://localhost:5432/signalc",
+            url = "jdbc:pgsql://$dbHost/signalc",
             user= "postgres"
         ),
         signal= Config.Signal(
@@ -84,12 +92,12 @@ object Config {
     val prod = default
     val dev = default.copy(
         db = default.db.copy(
-            url = "jdbc:pgsql://localhost:5432/signalc_development",
+            url = "jdbc:pgsql://$dbHost/signalc_development",
         ),
     )
     val test = default.copy(
         db = default.db.copy(
-            url = "jdbc:pgsql://localhost:5432/signalc_test",
+            url = "jdbc:pgsql://$dbHost/signalc_test",
         ),
         store = default.store.copy(
             account = Config.StoreType.MOCK,
