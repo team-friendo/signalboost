@@ -128,7 +128,7 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
 
   // early return if user is banned
-  const isBanned = await detectBanned(channel, sender)
+  const isBanned = await detectBanned(inboundMsg)
   if (isBanned) return () => Promise.resolve()
 }
 
@@ -271,9 +271,9 @@ const detectUpdatableFingerprint = async inSdMessage => {
   }
 }
 
-const detectBanned = async inSdMessage => {
-  const channelPhoneNumber = get(inSdMessage, 'data.username', '')
-  const memberPhoneNumber = get(inSdMessage, 'data.source.number', '')
+const detectBanned = async inboundMsg => {
+  const channelPhoneNumber = get(inboundMsg, 'data.username', '')
+  const memberPhoneNumber = get(inboundMsg, 'data.source.number', '')
   return await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber)
 }
 

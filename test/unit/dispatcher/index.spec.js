@@ -126,10 +126,9 @@ describe('dispatcher module', () => {
       .stub(diagnostics, 'respondToHealthcheck')
       .returns(Promise.resolve('42'))
 
-    isBannedStub = sinon.stub(banRepository, 'isBanned')
-    isBannedStub.callsFake((_, senderPhoneNumber) =>
-      Promise.resolve(senderPhoneNumber === bannedPhoneNumber),
-    )
+    isBannedStub = sinon
+      .stub(banRepository, 'isBanned')
+      .callsFake((_, senderPhoneNumber) => senderPhoneNumber === bannedPhoneNumber)
 
     findMembershipStub = sinon
       .stub(membershipRepository, 'findMembership')
@@ -159,7 +158,9 @@ describe('dispatcher module', () => {
               type: 'message',
               data: {
                 username: channel.phoneNumber,
-                source: bannedPhoneNumber,
+                source: {
+                  number: bannedPhoneNumber,
+                },
                 dataMessage: {
                   timestamp: new Date().toISOString(),
                   body: 'foobar',
@@ -169,6 +170,7 @@ describe('dispatcher module', () => {
               },
             }),
           )
+          expect(isBannedStub.callCount).to.eql(1)
           expect(processCommandStub.callCount).to.eql(0)
           expect(dispatchStub.callCount).to.eql(0)
         })
