@@ -225,10 +225,16 @@ sc.jar: ## build
 
 sc.run: ## run signalc in dev mode
 	docker-compose -f docker-compose-sc.yml \
-	run --entrypoint 'gradle --console=plain run' signalc
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain run' signalc
 
 sc.down:
 	docker-compose -f docker-compose-sc.yml down
+
+sc.db.up: ## run the signalc db in isolation (useful for tests)
+	docker-compose -f docker-compose-sc.yml up -d db
+
+sc.db.down: ## stop the signalc db in isolation (useful for tests)
+	docker-compose -f docker-compose-sc.yml down db
 
 sc.db.migrate: ## run migrations
 	echo "----- running development migrations" && \
@@ -257,29 +263,7 @@ sc.db.rollback_n: ## run migrations
 sc.db.psql: # get a psql shell on signalc db
 	./bin/sc/psql
 
-
-
-
-#############
-# run tests #
-#############
-
-test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/sb-unit && ./bin/test/sb-integration && ./bin/test/sc
-
-test.sb.unit: ## run unit tests
-	./bin/test/sb-unit
-
-test.sb.integration: ## run integration tests
-	./bin/test/sb-integration
-
-test.sb.lint: ## run linter
-	npx eslint app && npx eslint test
-
-test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
-	npx eslint --fix app && npx eslint --fix test
-
-test.sc:
+sc.test: # run signalc tests
 	./bin/test/sc
 
 
@@ -317,3 +301,25 @@ splash.deploy: ## deploy the splash app
 
 splash.update: ## install new node dependencies and rebuild docker container if needed
 	./splash/bin/update
+
+#############
+# run tests #
+#############
+
+test.all: ## run all unit and e2e tests
+	npx eslint app && ./bin/test/sb-unit && ./bin/test/sb-integration && ./bin/test/sc
+
+test.sb.unit: ## run unit tests
+	./bin/test/sb-unit
+
+test.sb.integration: ## run integration tests
+	./bin/test/sb-integration
+
+test.sb.lint: ## run linter
+	npx eslint app && npx eslint test
+
+test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
+	npx eslint --fix app && npx eslint --fix test
+
+test.sc:
+	./bin/test/sc
