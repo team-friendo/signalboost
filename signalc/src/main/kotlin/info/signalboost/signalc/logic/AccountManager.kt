@@ -47,7 +47,7 @@ class AccountManager(private val app: Application) {
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     fun register(account: NewAccount): RegisteredAccount {
         accountManagerOf(account).requestSmsVerificationCode(false, absent(), absent())
-        return accountStore.save(RegisteredAccount.fromNew(account))
+        return RegisteredAccount.fromNew(account).also { accountStore.save(it) }
     }
 
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
@@ -72,7 +72,7 @@ class AccountManager(private val app: Application) {
         // TODO(aguestuser|2020-12-23):
         //  - as a privacy matter, we might eventually want to throw away phone numbers once we have a UUID
         //  - if so, consider udpating `accountId` in protocol store to this uuid at this point?
-        return accountStore.save(VerifiedAccount.fromRegistered(account, uuid))
+        return VerifiedAccount.fromRegistered(account, uuid).also{ accountStore.save(it) }
     }
 
     // generate prekeys, store them locally and publish them to signal

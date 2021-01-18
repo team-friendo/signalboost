@@ -57,7 +57,7 @@ class AccountManagerTest : FreeSpec({
 
     "#register" - {
         val saveSlot = slot<RegisteredAccount>()
-        every { app.store.account.save(account = capture(saveSlot)) } answers { firstArg() }
+        every { app.store.account.save(account = capture(saveSlot)) } returns Unit
         every {
             anyConstructed<SignalServiceAccountManager>()
                 .requestSmsVerificationCode(any(),any(),any())
@@ -87,7 +87,7 @@ class AccountManagerTest : FreeSpec({
     "#verify" - {
         val code = "1312"
         val saveSlot = slot<VerifiedAccount>()
-        every { app.store.account.save(account = capture(saveSlot)) } answers { firstArg() }
+        every { app.store.account.save(account = capture(saveSlot)) } returns Unit
         every { mockProtocolStore.localRegistrationId } returns 42
 
         "when given correct code" - {

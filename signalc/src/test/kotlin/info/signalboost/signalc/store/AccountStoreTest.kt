@@ -14,7 +14,6 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.deleteAll
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
@@ -39,22 +38,22 @@ class AccountStoreTest : FreeSpec({
         }
     }
 
-    "#create" - {
+    "#insert" - {
         "given username for a non-existent account" - {
             "adds an account to the store" {
                 val accountsCount = countAccounts()
-                store.create(newAccount)
+                store.insert(newAccount)
                 countAccounts() shouldBe accountsCount + 1
             }
         }
 
         "given an existing account" - {
             "throws a SQL error and does not add a new account" {
-                store.create(newAccount)
+                store.insert(newAccount)
                 val accountsCount = countAccounts()
 
                 shouldThrow<ExposedSQLException>() {
-                    store.create(newAccount)
+                    store.insert(newAccount)
                 }
                 countAccounts() shouldBe accountsCount
             }
@@ -94,33 +93,22 @@ class AccountStoreTest : FreeSpec({
 
     "#save" - {
         "given a registered account" - {
-            store.create(newAccount)
+            store.insert(newAccount)
 
             "updates the status of the account in the store" {
+                store.findByUsername(username) shouldBe newAccount
                 store.save(registeredAccount)
-                transaction(db) {
-                    Accounts.select { Accounts.username eq username }.single()
-                }[Accounts.status] shouldBe AccountStore.Status.REGISTERED.asString
-            }
-
-            "returns the account" {
-                store.save(registeredAccount) shouldBe registeredAccount
+                store.findByUsername(username) shouldBe registeredAccount
             }
         }
 
         "given a verified account" - {
-            store.create(newAccount)
-
+            store.insert(newAccount)
 
             "updates the status of the account in the store" {
+                store.findByUsername(username) shouldBe newAccount
                 store.save(verifiedAccount)
-                transaction(db) {
-                    Accounts.select { Accounts.username eq username }.single()
-                }[Accounts.status] shouldBe AccountStore.Status.VERIFIED.asString
-            }
-
-            "returns the account" {
-                store.save(verifiedAccount) shouldBe verifiedAccount
+                store.findByUsername(username) shouldBe verifiedAccount
             }
         }
     }
@@ -128,14 +116,14 @@ class AccountStoreTest : FreeSpec({
     "#findByUserName" - {
 
         "given the username of a new account" - {
-            store.create(newAccount)
+            store.insert(newAccount)
             "returns a new account" {
                 store.findByUsername(username) shouldBe newAccount
             }
         }
 
         "given the username of a registered account" - {
-            store.create(newAccount)
+            store.insert(newAccount)
             store.save(registeredAccount)
 
             "returns a registered account" {
@@ -144,7 +132,7 @@ class AccountStoreTest : FreeSpec({
         }
 
         "given the username of a verified account" - {
-            store.create(newAccount)
+            store.insert(newAccount)
             store.save(registeredAccount)
             store.save(verifiedAccount)
 
@@ -162,7 +150,7 @@ class AccountStoreTest : FreeSpec({
 
     "#findByUuid" - {
         "given the uuid of a verified account" - {
-            store.create(newAccount)
+            store.insert(newAccount)
             store.save(registeredAccount)
             store.save(verifiedAccount)
 
