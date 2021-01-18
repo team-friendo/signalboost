@@ -1,22 +1,18 @@
-package info.signalboost.signalc.store
+package info.signalboost.signalc.testSupport.store
 
-import info.signalboost.signalc.Application
-import info.signalboost.signalc.Config
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import io.kotest.assertions.throwables.shouldThrow
+import info.signalboost.signalc.testSupport.store.InMemoryAccountStore
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import java.util.*
 
-class AccountStoreTest : FreeSpec({
-    val db = Application(Config.test).db
-    val store = AccountStore(db)
+class InMemoryAccountStoreTest : FreeSpec({
+    val store = InMemoryAccountStore()
 
     val username = genPhoneNumber()
     val newAccount = NewAccount(username)
@@ -28,28 +24,6 @@ class AccountStoreTest : FreeSpec({
 
     afterTest {
         store.clear()
-    }
-
-    "#insert" - {
-        "given username for a non-existent account" - {
-            "adds an account to the store" {
-                val accountsCount = store.count()
-                store.save(newAccount)
-                store.count() shouldBe accountsCount + 1
-            }
-        }
-
-        "given an existing account" - {
-            "throws a SQL error and does not add a new account" {
-                store.save(newAccount)
-                val accountsCount = store.count()
-
-                shouldThrow<ExposedSQLException>() {
-                    store.save(newAccount)
-                }
-                store.count() shouldBe accountsCount
-            }
-        }
     }
 
 

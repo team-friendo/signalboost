@@ -18,9 +18,9 @@ class AccountStore(private val db: Database) {
     }
 
     fun findOrCreate(username: String): Account =
-        findByUsername(username) ?: NewAccount(username).also { insert(it) }
+        findByUsername(username) ?: NewAccount(username).also { save(it) }
 
-    internal fun insert(account: NewAccount): Unit = transaction(db) {
+    internal fun save(account: NewAccount): Unit = transaction(db) {
         // Throws if we try to create an already-existing account.
         // For this reason, we mark it `internal` and only call from `findOrCreate`
         // where we have a strong guarantee of not calling for an already-existing account.
@@ -75,4 +75,8 @@ class AccountStore(private val db: Database) {
             VerifiedAccount.fromDb(it) 
         }
     }
+
+    // testing helpers
+    internal fun count(): Long = transaction(db) { Accounts.selectAll().count() }
+    internal fun clear(): Int = transaction(db) { Accounts.deleteAll() }
 }
