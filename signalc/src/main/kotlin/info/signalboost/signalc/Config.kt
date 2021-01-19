@@ -1,57 +1,101 @@
 package info.signalboost.signalc
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.whispersystems.libsignal.util.guava.Optional.absent
-import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations
-import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations
-import org.whispersystems.signalservice.api.push.TrustStore
-import org.whispersystems.signalservice.internal.configuration.*
-import java.io.FileInputStream
-import java.io.InputStream
-import org.whispersystems.util.Base64
-import java.security.Security
-
 object Config {
-    init {
-        // Workaround for missing BKS truststore
-        Security.addProvider(BouncyCastleProvider())
-    }
+    const val USER_PHONE_NUMBER = "+17347962920"
 
-    // TODO(aguestuser|2020-12-01): move some of these to build.gradle and read their values from env vars?
-    const val SIGNAL_AGENT = "signalc"
+    // SCHEMA
 
-    private val TRUST_STORE_PATH = System.getProperty("user.dir") + "/whisper.store"
-    private const val ZK_GROUP_SERVER_PUBLIC_PARAMS = "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0="
-    private const val SIGNAL_SERVICE_URL = "https://textsecure-service.whispersystems.org"
-    private const val SIGNAL_CDN_URL = "https://cdn.signal.org"
-    private const val SIGNAL_CDN2_URL = "https://cdn2.signal.org"
-    private const val SIGNAL_CONTACT_DISCOVERY_URL = "https://cms.souqcdn.com"
-    private const val SIGNAL_KEY_BACKUP_SERVICE_URL = "https://api.backup.signal.org"
-    private const val SIGNAL_STORAGE_URL = "https://storage.signal.org"
-
-    object SignalcTrustStore : TrustStore {
-        override fun getKeyStoreInputStream(): InputStream = FileInputStream(TRUST_STORE_PATH)
-        override fun getKeyStorePassword(): String = "whisper"
-    }
-
-    val signalServiceConfig = SignalServiceConfiguration(
-        arrayOf(SignalServiceUrl(SIGNAL_SERVICE_URL, SignalcTrustStore)),
-        mapOf(
-            0 to arrayOf(SignalCdnUrl(SIGNAL_CDN_URL, SignalcTrustStore)),
-            2 to arrayOf(SignalCdnUrl(SIGNAL_CDN2_URL, SignalcTrustStore))
-        ).toMutableMap(),
-        arrayOf(SignalContactDiscoveryUrl(SIGNAL_CONTACT_DISCOVERY_URL, SignalcTrustStore)),
-        arrayOf(SignalKeyBackupServiceUrl(SIGNAL_KEY_BACKUP_SERVICE_URL, SignalcTrustStore)),
-        arrayOf(SignalStorageUrl(SIGNAL_STORAGE_URL, SignalcTrustStore)),
-        mutableListOf(),
-        absent(),
-        Base64.decode(ZK_GROUP_SERVER_PUBLIC_PARAMS)
+    data class App(
+        val db: Database,
+        val signal: Signal,
+        val store: Store,
     )
 
-    val groupsV2Operations: GroupsV2Operations?
-      get() = try {
-          GroupsV2Operations(ClientZkOperations.create(signalServiceConfig))
-      } catch (ignored: Throwable) {
-          null
-      }
+    data class Database(
+        val driver: String,
+        val url: String,
+        val user: String,
+    )
+
+    data class Signal(
+        val addSecurityProvider: Boolean,
+        val agent: String,
+        val trustStorePath: String,
+        val trustStorePassword: String,
+        val zkGroupServerPublicParams: String,
+        val serviceUrl: String,
+        val cdnUrl: String,
+        val cdn2Url: String,
+        val contactDiscoveryUrl: String,
+        val keyBackupServiceUrl: String,
+        val storageUrl: String,
+    )
+
+    enum class StoreType {
+        SQL,
+        MOCK,
+    }
+
+    data class Store(
+        val account: StoreType,
+        val signalProtocol: StoreType,
+    )
+
+    // FACTORIES
+
+    enum class Env(val value: String) {
+        Dev("development"),
+        Prod("production"),
+        Test("test"),
+    }
+
+    fun fromEnv(env: String? = System.getenv("SIGNALC_ENV")): App = when(env) {
+        Env.Dev.value -> dev
+        Env.Prod.value -> prod
+        Env.Test.value -> test
+        else -> throw(Error("ERROR: missing or illegal value for \$SIGNALC_ENV: $env"))
+    }
+
+    private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
+
+    private val default  = Config.App(
+        db = Config.Database(
+            driver = "com.impossibl.postgres.jdbc.PGDriver",
+            url = "jdbc:pgsql://$dbHost/signalc",
+            user= "postgres"
+        ),
+        signal= Config.Signal(
+            addSecurityProvider = true,
+            agent = "signalc",
+            trustStorePath = System.getenv("WHISPER_STORE_PATH") ?: "/signalc/whisper.store",
+            trustStorePassword = System.getenv("WHISPER_STORE_PASSWORD") ?: "whisper",
+            zkGroupServerPublicParams = "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0=",
+            serviceUrl = "https://textsecure-service.whispersystems.org",
+            cdnUrl = "https://cdn.signal.org",
+            cdn2Url = "https://cdn2.signal.org",
+            contactDiscoveryUrl = "https://cms.souqcdn.com",
+            keyBackupServiceUrl = "https://api.backup.signal.org",
+            storageUrl = "https://storage.signal.org",
+        ),
+        store= Config.Store(
+            account = Config.StoreType.SQL,
+            signalProtocol = Config.StoreType.SQL,
+        ),
+    )
+
+    val prod = default
+    val dev = default.copy(
+        db = default.db.copy(
+            url = "jdbc:pgsql://$dbHost/signalc_development",
+        ),
+    )
+    val test = default.copy(
+        db = default.db.copy(
+            url = "jdbc:pgsql://$dbHost/signalc_test",
+        ),
+        store = default.store.copy(
+            account = Config.StoreType.MOCK,
+            signalProtocol = Config.StoreType.MOCK
+        ),
+    )
 }

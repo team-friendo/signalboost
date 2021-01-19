@@ -35,14 +35,18 @@ ENV GRADLE_USER_HOME /home/gradle/.gradle
 # ------------------------------------------------------
 # --- Configure Environment
 
+# set locale
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
 
+# copy signal's custom truststore from build context into working directory root
 WORKDIR /signalc
+COPY signalc/whisper.store /signalc/whisper.store
+ENV WHISPER_STORE_PASSWORD "whisper"
 
 # ---------------
 # --- version
 
-LABEL version="1.0.0"
+LABEL version="1.0.1"

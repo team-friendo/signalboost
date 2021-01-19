@@ -35,6 +35,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - 5432:5432
     restart: always
 
   app:
@@ -55,6 +57,7 @@ services:
     entrypoint: /signalboost/bin/entrypoint/app
     environment:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+      DB_HOST: db
       NODE_ENV: ${NODE_ENV:-development}
       PROJECT_ROOT: ${PWD}
       SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}

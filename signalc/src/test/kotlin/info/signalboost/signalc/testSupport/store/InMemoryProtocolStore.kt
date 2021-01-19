@@ -1,4 +1,4 @@
-package info.signalboost.signalc.store
+package info.signalboost.signalc.testSupport.store
 
 import info.signalboost.signalc.logic.KeyUtil
 import org.whispersystems.libsignal.IdentityKey
@@ -7,9 +7,37 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
 
-object SignalcProtocolStore: SignalProtocolStore {
+object InMemoryProtocolStore: SignalProtocolStore {
 
-    // TODO(aguestuser|2020-12-01): delegate to 3 substores for Identity, Prekeys, and Session?
+    /********* IDENTITIES *********/
+
+    internal val ownIdentityKeypair = KeyUtil.genIdentityKeyPair()
+    internal val ownLocalRegistrationId = KeyUtil.genRegistrationId()
+
+    override fun getIdentityKeyPair(): IdentityKeyPair = ownIdentityKeypair
+    override fun getLocalRegistrationId(): Int = ownLocalRegistrationId
+
+    val identities: MutableMap<SignalProtocolAddress, IdentityKey> = mutableMapOf()
+
+    override fun getIdentity(address: SignalProtocolAddress): IdentityKey? = identities[address]
+
+    override fun isTrustedIdentity(
+        address: SignalProtocolAddress,
+        identityKey: IdentityKey,
+        direction: IdentityKeyStore.Direction
+    ): Boolean =
+        // trust a key on first use, otherwise only trust it if we've seen it before
+        identities[address]?.let { it == identityKey } ?: true
+
+    override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean {
+        val replacesPreviousIdentity = identities.contains(address)
+        identities[address] = identityKey
+        return replacesPreviousIdentity
+    }
+
+    fun removeIdentity(address: SignalProtocolAddress) {
+        identities.remove(address)
+    }
 
     /********* PREKEYS *********/
 
@@ -31,31 +59,6 @@ object SignalcProtocolStore: SignalProtocolStore {
     override fun removeSignedPreKey(id: Int) { signedPreKeys.remove(id) }
     override fun storeSignedPreKey(id: Int, prekey: SignedPreKeyRecord) { signedPreKeys[id] = prekey }
 
-    /********* IDENTITIES *********/
-
-    internal val ownIdentityKeypair = KeyUtil.genIdentityKeyPair()
-    internal val ownLocalRegistrationId = KeyUtil.genRegistrationId()
-
-    override fun getIdentityKeyPair(): IdentityKeyPair = ownIdentityKeypair
-    override fun getLocalRegistrationId(): Int = ownLocalRegistrationId
-
-    val identities: MutableMap<SignalProtocolAddress, IdentityKey> = mutableMapOf()
-
-    override fun getIdentity(address: SignalProtocolAddress) = identities[address]
-
-    override fun isTrustedIdentity(
-        address: SignalProtocolAddress,
-        identityKey: IdentityKey,
-        direction: IdentityKeyStore.Direction
-    ): Boolean =
-        // trust a key on first use, otherwise only trust it if we've seen it before
-        identities[address]?.let { it == identityKey } ?: true
-
-    override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean {
-        val replacesPreviousIdentity = identities.contains(address)
-        identities[address] = identityKey
-        return replacesPreviousIdentity
-    }
 
     /********* SESSIONS *********/
 

@@ -225,28 +225,45 @@ sc.jar: ## build
 
 sc.run: ## run signalc in dev mode
 	docker-compose -f docker-compose-sc.yml \
-	run --entrypoint 'gradle --console=plain run' signalc
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain run' signalc
 
-#############
-# run tests #
-#############
+sc.down:
+	docker-compose -f docker-compose-sc.yml down
 
-test.all: ## run all unit and e2e tests
-	npx eslint app && ./bin/test/sb-unit && ./bin/test/sb-integration && ./bin/test/sc
+sc.db.up: ## run the signalc db in isolation (useful for tests)
+	docker-compose -f docker-compose-sc.yml up -d db
 
-test.sb.unit: ## run unit tests
-	./bin/test/sb-unit
+sc.db.down: ## stop the signalc db in isolation (useful for tests)
+	docker-compose -f docker-compose-sc.yml down db
 
-test.sb.integration: ## run integration tests
-	./bin/test/sb-integration
+sc.db.migrate: ## run migrations
+	echo "----- running development migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc && \
+	echo "----- running test migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
 
-test.sb.lint: ## run linter
-	npx eslint app && npx eslint test
+sc.db.rollback: ## run migrations
+	echo "----- rolling back 1 development migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=1' signalc && \
+	echo "----- rolling back 1 test migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=1' signalc
 
-test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
-	npx eslint --fix app && npx eslint --fix test
+sc.db.rollback_n: ## run migrations
+	echo "----- rolling back $(N) development migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc && \
+	echo "----- rolling back $(N) test migrations" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc
+ 
+sc.db.psql: # get a psql shell on signalc db
+	./bin/sc/psql
 
-test.sc:
+sc.test: # run signalc tests
 	./bin/test/sc
 
 
@@ -284,3 +301,25 @@ splash.deploy: ## deploy the splash app
 
 splash.update: ## install new node dependencies and rebuild docker container if needed
 	./splash/bin/update
+
+#############
+# run tests #
+#############
+
+test.all: ## run all unit and e2e tests
+	npx eslint app && ./bin/test/sb-unit && ./bin/test/sb-integration && ./bin/test/sc
+
+test.sb.unit: ## run unit tests
+	./bin/test/sb-unit
+
+test.sb.integration: ## run integration tests
+	./bin/test/sb-integration
+
+test.sb.lint: ## run linter
+	npx eslint app && npx eslint test
+
+test.sb.lint.fix: ## run linter with --fix option to automatically fix what can be
+	npx eslint --fix app && npx eslint --fix test
+
+test.sc:
+	./bin/test/sc

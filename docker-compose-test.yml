@@ -26,6 +26,8 @@ services:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: test_signalboost
     env_file: .env.test
+    environment:
+      DB_HOST: db
     depends_on:
       - db
     volumes:
@@ -41,6 +43,7 @@ services:
     container_name: test_signalc
     env_file: .env.test
     environment:
+      DB_HOST: db
       GRADLE_USER_HOME: /home/gradle/.gradle
     depends_on:
       - db
