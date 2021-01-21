@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -65,7 +66,9 @@ class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
             },
             signalProtocol = when(config.store.signalProtocol) {
                 Config.StoreType.SQL -> ProtocolStore(db)
-                Config.StoreType.MOCK -> mockk()
+                Config.StoreType.MOCK -> mockk() {
+                    every { of(any()) } returns mockk()
+                }
             }
         )
     }

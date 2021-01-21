@@ -139,4 +139,8 @@ data class VerifiedAccount(
             this.deviceId
         )
     }
+
+    val address by lazy {
+        SignalServiceAddress(uuid, username)
+    }
 }
