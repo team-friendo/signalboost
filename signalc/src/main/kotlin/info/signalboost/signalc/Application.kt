@@ -3,6 +3,7 @@ package info.signalboost.signalc
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
 import org.whispersystems.libsignal.util.guava.Optional
@@ -14,8 +15,14 @@ import org.whispersystems.util.Base64
 import java.io.FileInputStream
 import java.io.InputStream
 import java.security.Security
+import java.io.IOException
 
-class Application(val config: Config.App) {
+import org.signal.libsignal.metadata.certificate.CertificateValidator
+import org.whispersystems.libsignal.ecc.Curve
+import java.security.InvalidKeyException
+
+
+class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
 
     companion object {
 
@@ -26,6 +33,8 @@ class Application(val config: Config.App) {
 
         data class Signal(
             val agent: String,
+            val certificateValidator: CertificateValidator,
+            val clientZkOperations: ClientZkOperations?,
             val configs: SignalServiceConfiguration,
             val groupsV2Operations: GroupsV2Operations?,
             val trustStore: TrustStore,
@@ -68,6 +77,8 @@ class Application(val config: Config.App) {
     val signal by lazy {
         Signal(
             agent = config.signal.agent,
+            certificateValidator = certificateValidator,
+            clientZkOperations = clientZkOperations,
             configs = signalConfigs,
             groupsV2Operations = groupsV2Operations,
             trustStore = trustStore,
@@ -97,12 +108,21 @@ class Application(val config: Config.App) {
         )
     }
 
-
-    private val groupsV2Operations: GroupsV2Operations? by lazy {
+    private val clientZkOperations: ClientZkOperations? by lazy {
         try {
-            GroupsV2Operations(ClientZkOperations.create(signalConfigs))
-        } catch (ignored: Throwable) {
+            ClientZkOperations.create(signalConfigs)
+        } catch(ignored: Throwable) {
             null
         }
     }
+
+    private val groupsV2Operations: GroupsV2Operations? by lazy {
+        clientZkOperations?.let { GroupsV2Operations(it) }
+    }
+
+    private val certificateValidator: CertificateValidator by lazy {
+        // TODO: what to do if this throws invalid key exception or io exception?
+        CertificateValidator(Curve.decodePoint(Base64.decode(config.signal.unidentifiedSenderTrustRoot), 0))
+    }
+
 }

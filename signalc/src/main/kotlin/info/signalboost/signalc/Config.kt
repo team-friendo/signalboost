@@ -20,15 +20,16 @@ object Config {
     data class Signal(
         val addSecurityProvider: Boolean,
         val agent: String,
-        val trustStorePath: String,
-        val trustStorePassword: String,
-        val zkGroupServerPublicParams: String,
-        val serviceUrl: String,
         val cdnUrl: String,
         val cdn2Url: String,
         val contactDiscoveryUrl: String,
         val keyBackupServiceUrl: String,
+        val serviceUrl: String,
         val storageUrl: String,
+        val trustStorePassword: String,
+        val trustStorePath: String,
+        val unidentifiedSenderTrustRoot: String,
+        val zkGroupServerPublicParams: String,
     )
 
     enum class StoreType {
@@ -58,28 +59,29 @@ object Config {
 
     private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
 
-    private val default  = Config.App(
-        db = Config.Database(
+    private val default  = App(
+        db = Database(
             driver = "com.impossibl.postgres.jdbc.PGDriver",
             url = "jdbc:pgsql://$dbHost/signalc",
             user= "postgres"
         ),
-        signal= Config.Signal(
+        signal= Signal(
             addSecurityProvider = true,
             agent = "signalc",
-            trustStorePath = System.getenv("WHISPER_STORE_PATH") ?: "/signalc/whisper.store",
-            trustStorePassword = System.getenv("WHISPER_STORE_PASSWORD") ?: "whisper",
-            zkGroupServerPublicParams = "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0=",
-            serviceUrl = "https://textsecure-service.whispersystems.org",
             cdnUrl = "https://cdn.signal.org",
             cdn2Url = "https://cdn2.signal.org",
             contactDiscoveryUrl = "https://cms.souqcdn.com",
             keyBackupServiceUrl = "https://api.backup.signal.org",
+            serviceUrl = "https://textsecure-service.whispersystems.org",
             storageUrl = "https://storage.signal.org",
+            trustStorePassword = System.getenv("WHISPER_STORE_PASSWORD") ?: "whisper",
+            trustStorePath = System.getenv("WHISPER_STORE_PATH") ?: "/signalc/whisper.store",
+            unidentifiedSenderTrustRoot = "BXu6QIKVz5MA8gstzfOgRQGqyLqOwNKHL6INkv3IHWMF",
+            zkGroupServerPublicParams = "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0=",
         ),
-        store= Config.Store(
-            account = Config.StoreType.SQL,
-            signalProtocol = Config.StoreType.SQL,
+        store= Store(
+            account = StoreType.SQL,
+            signalProtocol = StoreType.SQL,
         ),
     )
 

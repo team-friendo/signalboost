@@ -10,82 +10,88 @@ import info.signalboost.signalc.testSupport.matchers.Matchers.signalDataMessage
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
+@ExperimentalCoroutinesApi
 class MessageSenderTest : FreeSpec({
-    val app = Application(Config.test)
-    val verifiedAccount = genVerifiedAccount()
-    val messageSender = MessageSender(app)
+    runBlockingTest {
 
-    beforeSpec {
-        mockkObject(TimeUtil)
-        mockkConstructor(SignalServiceMessageSender::class)
-    }
+        val app = Application(Config.test, this)
+        val verifiedAccount = genVerifiedAccount()
+        val messageSender = MessageSender(app)
 
-    afterTest {
-        clearAllMocks(answers = false, childMocks = false, objectMocks = false)
-    }
-
-    afterSpec  {
-        unmockkAll()
-    }
-
-    "#send" - {
-        val recipientPhone = genPhoneNumber()
-        every {
-            anyConstructed<SignalServiceMessageSender>().sendMessage(any(),any(),any())
-        } returns mockk {
-            every { success } returns mockk()
+        beforeSpec {
+            mockkObject(TimeUtil)
+            mockkConstructor(SignalServiceMessageSender::class)
         }
-        every {
-            app.store.signalProtocol.of(any())
-        } returns mockk()
 
-        "sends a message from a message sender" {
-            val now = TimeUtil.nowInMillis()
-            val result = messageSender.send(
-                sender = verifiedAccount,
-                recipient = recipientPhone.asAddress(),
-                body = "hello!",
-                expiration = 5000,
-                timestamp = now,
-            )
-            verify {
-                anyConstructed<SignalServiceMessageSender>().sendMessage(
-                    SignalServiceAddress(null, recipientPhone),
-                    absent(),
-                    signalDataMessage(
-                        body = "hello!",
-                        timestamp = now,
-                        expiresInSeconds = 5000,
+        afterTest {
+            clearAllMocks(answers = false, childMocks = false, objectMocks = false)
+        }
+
+        afterSpec {
+            unmockkAll()
+        }
+
+        "#send" - {
+            val recipientPhone = genPhoneNumber()
+            every {
+                anyConstructed<SignalServiceMessageSender>().sendMessage(any(), any(), any())
+            } returns mockk {
+                every { success } returns mockk()
+            }
+            every {
+                app.store.signalProtocol.of(any())
+            } returns mockk()
+
+            "sends a message from a message sender" {
+                val now = TimeUtil.nowInMillis()
+                val result = messageSender.send(
+                    sender = verifiedAccount,
+                    recipient = recipientPhone.asAddress(),
+                    body = "hello!",
+                    expiration = 5000,
+                    timestamp = now,
+                )
+                verify {
+                    anyConstructed<SignalServiceMessageSender>().sendMessage(
+                        SignalServiceAddress(null, recipientPhone),
+                        absent(),
+                        signalDataMessage(
+                            body = "hello!",
+                            timestamp = now,
+                            expiresInSeconds = 5000,
+                        )
                     )
-                )
+                }
+                result.success shouldNotBe null
             }
-            result.success shouldNotBe null
-        }
 
-        "provides a default timestamp if none provided" {
-            every { TimeUtil.nowInMillis() } returns 1000L
-            messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
-            verify {
-                anyConstructed<SignalServiceMessageSender>().sendMessage(
-                    any(),
-                    any(),
-                    signalDataMessage(timestamp = 1000L)
-                )
+            "provides a default timestamp if none provided" {
+                every { TimeUtil.nowInMillis() } returns 1000L
+                messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
+                verify {
+                    anyConstructed<SignalServiceMessageSender>().sendMessage(
+                        any(),
+                        any(),
+                        signalDataMessage(timestamp = 1000L)
+                    )
+                }
             }
-        }
 
-        "provides a default expiry time if none provided" {
-            messageSender.send(verifiedAccount, recipientPhone.asAddress(),"hello!")
-            verify {
-                anyConstructed<SignalServiceMessageSender>().sendMessage(
-                    any(),
-                    any(),
-                    signalDataMessage(expiresInSeconds = DEFAULT_EXPIRY_TIME)
-                )
+            "provides a default expiry time if none provided" {
+                messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
+                verify {
+                    anyConstructed<SignalServiceMessageSender>().sendMessage(
+                        any(),
+                        any(),
+                        signalDataMessage(expiresInSeconds = DEFAULT_EXPIRY_TIME)
+                    )
+                }
             }
         }
     }
