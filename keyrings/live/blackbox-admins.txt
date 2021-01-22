@@ -1,6 +1,2 @@
-0C8F192B # deploy
 1FADCB4B # mari
-5D4E7E48 # zig
-8DEA5441 # margot
 97B47404 # aguestuser
-BAAA70F1 # fdbk
