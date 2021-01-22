@@ -69,41 +69,6 @@ services:
       VIRTUAL_HOST: ${SIGNALD_HOST_URL_4}
       VIRTUAL_PORT: 5004
 
-  signald_5:
-    <<: *signald-overrides
-    environment:
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_5}
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
-      VIRTUAL_PORT: 5005
-
-  signald_6:
-    <<: *signald-overrides
-    environment:
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_6}
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL_6}
-      VIRTUAL_PORT: 5006
-
-  signald_7:
-    <<: *signald-overrides
-    environment:
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_7}
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL_7}
-      VIRTUAL_PORT: 5007
-
-  signald_8:
-    <<: *signald-overrides
-    environment:
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_8}
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL_8}
-      VIRTUAL_PORT: 5008
-
-  signald_9:
-    <<: *signald-overrides
-    environment:
-      LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_9}
-      VIRTUAL_HOST: ${SIGNALD_HOST_URL_9}
-      VIRTUAL_PORT: 5009
-
   proxy:
     image: jwilder/nginx-proxy:alpine
     container_name: signalboost_proxy
