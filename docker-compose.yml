@@ -49,11 +49,6 @@ services:
       - signald_2
       - signald_3
       - signald_4
-      - signald_5
-      - signald_6
-      - signald_7
-      - signald_8
-      - signald_9
     entrypoint: /signalboost/bin/entrypoint/app
     environment:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
@@ -80,11 +75,6 @@ services:
       - signald_sock_2:/var/run/signald-sockets/2
       - signald_sock_3:/var/run/signald-sockets/3
       - signald_sock_4:/var/run/signald-sockets/4
-      - signald_sock_5:/var/run/signald-sockets/5
-      - signald_sock_6:/var/run/signald-sockets/6
-      - signald_sock_7:/var/run/signald-sockets/7
-      - signald_sock_8:/var/run/signald-sockets/8
-      - signald_sock_9:/var/run/signald-sockets/9
     restart: always
 
   signald_0:
