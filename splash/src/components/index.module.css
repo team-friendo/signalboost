@@ -38,9 +38,3 @@
 .getting__started__link:hover {
   border-color: white;
 }
-.downtime_notification {
-  background-color: rgb(80, 250, 123, 0.8);
-  padding: 15px;
-  border-radius: 15px;
-  margin-bottom: 15px;
-}
