@@ -10,11 +10,6 @@ import spyIcon from '../images/cute_spy.svg'
 const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: communicate with mass audiences securely and directly via message broadcasts and hotlines" />
-    <div className={indexStyles.downtime_notification}>
-      Signalboost is currently experiencing downtime. We're sorry about the
-      disruption - please bear with us as we try to get everything up and
-      running again!{' '}
-    </div>
     <div className={indexStyles.personas}>
       <img
         className={indexStyles.icon__left}
