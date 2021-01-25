@@ -105,6 +105,7 @@ const validatePayload = commandMatch => {
     case commands.REMOVE:
       return validatePhoneNumber(commandMatch)
     case commands.INVITE:
+    case commands.CHANNEL:
       return validatePhoneNumberList(commandMatch)
     case commands.VOUCH_LEVEL:
       return validateVouchLevel(commandMatch)

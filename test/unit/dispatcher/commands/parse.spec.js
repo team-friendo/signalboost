@@ -215,6 +215,51 @@ describe('parse module', () => {
       })
     })
 
+    describe('CHANNEL command', () => {
+      it('parses an CHANNEL command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: [
+              `CHANNEL ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` channel ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
+          },
+          {
+            language: languages.ES,
+            messages: [
+              `CANAL ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` canal ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
+          },
+          {
+            language: languages.FR,
+            messages: [
+              `CHAINE ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              `CHAÎNE ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` chaine ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
+          },
+          {
+            language: languages.DE,
+            messages: [
+              `KANAL ${e164PhoneNumber}, ${e164PhoneNumber2}`,
+              ` kanal ${e164PhoneNumber}, ${e164PhoneNumber2} `,
+            ],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.CHANNEL,
+              language,
+              payload: [e164PhoneNumber, e164PhoneNumber2],
+            }),
+          ),
+        )
+      })
+    })
+
     describe('DECLINE command', () => {
       it('parses an DECLINE command regardless of casing, spacing, accents, or language', () => {
         const variants = [
@@ -994,6 +1039,10 @@ describe('parse module', () => {
         { language: languages.ES, message: `invitar ${phoneNumbers}` },
         { language: languages.FR, message: `inviter ${phoneNumbers}` },
         { language: languages.DE, message: `einladen ${phoneNumbers}` },
+        { language: languages.EN, message: `channel ${phoneNumbers}` },
+        { language: languages.ES, message: `canal ${phoneNumbers}` },
+        { language: languages.FR, message: `chaine ${phoneNumbers}` },
+        { language: languages.DE, message: `kanal ${phoneNumbers}` },
       ]
 
       describe('with a single valid phone number', () => {
