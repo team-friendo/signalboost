@@ -317,6 +317,21 @@ Si ya tiene usted una invitación, intente enviar ACEPTAR`,
       `Lo sentimos, el identificador de mensaje de línea directa @${messageId} ha caducado o nunca ha existido.`,
   },
 
+  // REQUEST
+  request: {
+    success: `¡Hola! ¿Quiere crear un canal Signalboost?
+
+Signalboost es una tecnología que le permite enviar transmisiones y recibir mensajes de línea directa sin revelar su número de teléfono a los destinatarios.
+
+Sin embargo, su número de teléfono podría quedar expuesto en caso de una consulta legal:
+https://signalboost.info/privacy
+
+Ahora, si desea crear un canal, envíe CHANNEL seguido de una lista separada por comas de los números de teléfono de administrador para ese canal, por ejemplo:
+
+CANAL + 1555123412, +1555123419`,
+    closed: `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento. Vuelva a verificar más tarde.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {

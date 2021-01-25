@@ -300,6 +300,22 @@ If you already have an invite, try sending ACCEPT`,
       `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
+  // REQUEST
+
+  request: {
+    success: `Hi there! Want to create a Signalboost channel? 
+
+Signalboost is a technology that allows you to send broadcasts and receive hotline messages without revealing your phone number to recipients.
+
+However, your phone number could be exposed in the event of a legal inquiry:
+https://signalboost.info/privacy 
+
+Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of the admin phone numbers for that channel, for example:
+
+CHANNEL+ 1555123412, +1555123419`,
+    closed: `Sorry, Signalboost is not accepting new channel requests at the moment! Please check again later.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {

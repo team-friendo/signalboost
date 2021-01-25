@@ -317,6 +317,21 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
       `Désolé, l'identifiant de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
   },
 
+  // REQUEST
+  request: {
+    success: `Salut! Voulez-vous créer un canal Signalboost?
+
+Signalboost est une technologie qui vous permet d'envoyer des émissions et de recevoir des messages d'assistance téléphonique sans révéler votre numéro de téléphone aux destinataires.
+
+Cependant, votre numéro de téléphone pourrait être exposé en cas d'enquête judiciaire:
+https://signalboost.info/privacy
+
+Maintenant, si vous souhaitez créer un canal, envoyez CHANNEL suivi d'une liste séparée par des virgules des numéros de téléphone administrateur pour ce canal, par exemple:
+
+CANAL + 1555123412, +1555123419`,
+    closed: `Désolé, Signalboost n'accepte pas de nouvelles demandes de chaînes pour le moment! Veuillez vérifier à nouveau plus tard.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {

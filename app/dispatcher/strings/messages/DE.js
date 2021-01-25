@@ -316,6 +316,22 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
       `Entschuldigung, die Hotline-Nachrichtenkennung @${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
+  // REQUEST
+
+  request: {
+    success: `Hallo! Möchten Sie einen Signalboost-Kanal erstellen?
+
+Signalboost ist eine Technologie, mit der Sie Sendungen senden und Hotline-Nachrichten empfangen können, ohne Ihre Telefonnummer den Empfängern preiszugeben.
+
+Ihre Telefonnummer kann jedoch im Falle einer rechtlichen Anfrage offengelegt werden:
+https://signalboost.info/privacy
+
+Wenn Sie nun einen Kanal erstellen möchten, senden Sie CHANNEL, gefolgt von einer durch Kommas getrennten Liste der Admin-Telefonnummern für diesen Kanal, zum Beispiel:
+
+CHANNEL + 1555123412, +1555123419`,
+    closed: `Entschuldigung, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
