@@ -29,6 +29,7 @@ describe('parse module', () => {
           'the INVITE',
           'the HELLO',
           'the GOODBYE',
+          'the REQUEST',
           'the HOTLINE ON',
           'the HOTLINE OFF',
           'the VOUCH LEVEL',
@@ -50,6 +51,7 @@ describe('parse module', () => {
           'la RENOMBRAR',
           'la LÍNEA DIRECTA',
           'la LÍNEA DIRECTA',
+          'la SOLICITAR',
           'la NIVEL DE ATESTIGUAR',
           'la ATESTIGUANDO ACTIVADA',
           'la ATESTIGUANDO DESACTIVADA',
@@ -68,6 +70,7 @@ describe('parse module', () => {
           'le RENOMMER',
           'le HOTLINE ACTIVÉE',
           'le HOTLINE DÉSACTIVÉE',
+          'le DEMANDER',
           'le NIVEAU DE PORTER GARANT',
           'le SE PORTER GARANT ACTIVÉES',
           'le SE PORTER GARANT DÉSACTIVÉES',
@@ -87,6 +90,7 @@ describe('parse module', () => {
           'foo ENTFERNEN',
           'foo UMBENENNEN',
           'foo BESCHREIBUNG',
+          'foo ANFORDERN',
           'foo VERTRAUENS-LEVEL',
           'foo VERTRAUEN AN',
           'foo VERTRAUEN EIN',
@@ -542,6 +546,38 @@ describe('parse module', () => {
       })
     })
 
+    describe('REQUEST command', () => {
+      it('parses an REQUEST command regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['REQUEST', 'request', ' request '],
+          },
+          {
+            language: languages.ES,
+            messages: ['SOLICITAR', 'solicitar', ' solicitar '],
+          },
+          {
+            language: languages.FR,
+            messages: ['DEMANDER', 'demander', ' demander '],
+          },
+          {
+            language: languages.DE,
+            messages: ['ANFORDERN', 'anfordern ', ' anfordern '],
+          },
+        ]
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.REQUEST,
+              language,
+              payload: '',
+            }),
+          ),
+        )
+      })
+    })
+
     describe('HOTLINE_ON command', () => {
       it('parses a HOTLINE ON command regardless of casing, spacing, accents, or language', () => {
         const variants = [
@@ -835,6 +871,7 @@ describe('parse module', () => {
           commands.SET_LANGUAGE,
           commands.HOTLINE_ON,
           commands.VOUCHING_ON,
+          commands.REQUEST,
         ]
 
         const variants = [
@@ -849,6 +886,7 @@ describe('parse module', () => {
               'english foo',
               'hotline on foo',
               'vouching on foo',
+              'request foo',
             ],
           },
           {
@@ -862,6 +900,7 @@ describe('parse module', () => {
               'espanol foo',
               'línea directa activada foo',
               'atestiguando activada foo',
+              'solicitar foo',
             ],
           },
           {
@@ -875,6 +914,7 @@ describe('parse module', () => {
               'francais foo',
               'hotline activee foo',
               'se porter garant activee foo',
+              'demander foo',
             ],
           },
           {
@@ -888,6 +928,7 @@ describe('parse module', () => {
               'deutsch foo',
               'hotline an foo',
               'vertrauen an foo',
+              'anfordern foo',
             ],
           },
         ]

@@ -95,6 +95,7 @@ const validatePayload = commandMatch => {
     case commands.INFO:
     case commands.JOIN:
     case commands.LEAVE:
+    case commands.REQUEST:
     case commands.SET_LANGUAGE:
     case commands.VOUCHING_ON:
     case commands.VOUCHING_OFF:

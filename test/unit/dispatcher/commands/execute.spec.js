@@ -32,7 +32,7 @@ import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
 const {
   auth: { maintainerPassphrase },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../../../app/config')
 
 describe('executing commands', () => {
@@ -1643,6 +1643,134 @@ describe('executing commands', () => {
 
       it('does not attempt to add admin', () => {
         expect(removeMemberStub.callCount).to.eql(0)
+      })
+    })
+  })
+
+  describe('REQUEST command', () => {
+    describe('when sent on the support channel', () => {
+      const dispatchable = {
+        channel: { ...channel, phoneNumber: supportPhoneNumber },
+        sender: randomPerson,
+        sdMessage: sdMessageOf({
+          sender: channel.phoneNumber,
+          message: `${localizedCmds.REQUEST}`,
+        }),
+      }
+
+      describe('when new channels are allowed', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.REQUEST,
+          payload: '',
+          status: statuses.SUCCESS,
+          message: commandResponsesFor(randomPerson).request.success,
+          notifications: [],
+        })
+      })
+
+      describe('when new channels are not allowed', async () => {
+        // note - this is a temporary fix for dealing with env vars! -@mari
+        beforeEach(() => (process.env.NEW_CHANNELS_ALLOWED = false))
+        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = true))
+
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.REQUEST,
+          payload: '',
+          status: statuses.SUCCESS,
+          message: commandResponsesFor(randomPerson).request.closed,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when not sent on the support channel', () => {
+      const message = `${localizedCmds.REQUEST}`
+      const sdMessage = sdMessageOf({ sender: channel, message })
+
+      describe('when sender is an admin', () => {
+        const dispatchable = { channel, sender: admin, sdMessage }
+
+        it('returns an ERROR status and unnecessary payload message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REQUEST,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(admin).none.error,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const dispatchable = { channel, sender: subscriber, sdMessage }
+
+        it('returns a success status and hotline notifications', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(subscriber).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const dispatchable = { channel, sender: randomPerson, sdMessage }
+
+        it('sends a subscriber help message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(randomPerson).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
       })
     })
   })

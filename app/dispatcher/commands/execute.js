@@ -24,7 +24,7 @@ const {
 const {
   defaultLanguage,
   auth: { maintainerPassphrase },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber, newChannelsAllowed },
 } = require('../../config')
 
 /**
@@ -47,6 +47,7 @@ const validSubscriberCommands = new Set([
   commands.INVITE,
   commands.JOIN,
   commands.LEAVE,
+  commands.REQUEST,
   commands.SET_LANGUAGE,
 ])
 
@@ -75,6 +76,7 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
     [commands.PRIVATE]: () => privateMessageAdmins(channel, sender, payload, sdMessage),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
+    [commands.REQUEST]: () => showRequest(channel, sender),
     [commands.REPLY]: () => replyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.RESTART]: () => maybeRestart(channel, sender, payload),
     [commands.VOUCHING_ON]: () => setVouchMode(channel, sender, vouchModes.ON),
@@ -98,6 +100,16 @@ const interveneIfBadMessage = async (executable, dispatchable) => {
   // admin sent a no-command message
   if (command === commands.NONE && sender.type === memberTypes.ADMIN)
     return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
+
+  // ripe for refactor?
+  if (command === commands.REQUEST && channel.phoneNumber !== supportPhoneNumber) {
+    if (sender.type === ADMIN)
+      return {
+        ...defaultResult,
+        message: messagesIn(sender.language).commandResponses.none.error,
+      }
+    return { ...defaultResult, ...(await handleBadSubscriberMessage(channel, sender, sdMessage)) }
+  }
 
   // subscriber/rando sent a no-command message, an admin-only command, or a no-payload command with a payload
   if (
@@ -538,6 +550,20 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
           : appendHeaderToNotification(membership, 'subscriberRemoved', [sender.adminId]),
     })),
   ]
+}
+
+// REQUEST
+const showRequest = (channel, sender) => {
+  if (newChannelsAllowed)
+    return {
+      status: statuses.SUCCESS,
+      message: messagesIn(sender.language).commandResponses.request.success,
+    }
+
+  return {
+    status: statuses.ERROR,
+    message: messagesIn(sender.language).commandResponses.request.closed,
+  }
 }
 
 // REPLY
