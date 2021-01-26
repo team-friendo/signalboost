@@ -49,11 +49,11 @@ class AccountManagerTest : FreeSpec({
         }
 
         "#findOrCreate" - {
-            every { app.store.account.findOrCreate(any()) } answers { newAccount }
+            coEvery { app.store.account.findOrCreate(any()) } answers { newAccount }
 
             "delegates to AccountStore" {
                 accountManager.load(phoneNumber)
-                verify {
+                coVerify {
                     app.store.account.findOrCreate(phoneNumber)
                 }
             }
@@ -61,7 +61,7 @@ class AccountManagerTest : FreeSpec({
 
         "#register" - {
             val saveSlot = slot<RegisteredAccount>()
-            every { app.store.account.save(account = capture(saveSlot)) } returns Unit
+            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
             every {
                 anyConstructed<SignalServiceAccountManager>()
                     .requestSmsVerificationCode(any(), any(), any())
@@ -77,7 +77,7 @@ class AccountManagerTest : FreeSpec({
 
             "updates the account store" {
                 accountManager.register(newAccount)
-                verify {
+                coVerify {
                     app.store.account.save(any<RegisteredAccount>())
                 }
                 saveSlot.captured shouldBe registeredAccount
@@ -91,7 +91,7 @@ class AccountManagerTest : FreeSpec({
         "#verify" - {
             val code = "1312"
             val saveSlot = slot<VerifiedAccount>()
-            every { app.store.account.save(account = capture(saveSlot)) } returns Unit
+            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
             every { mockProtocolStore.localRegistrationId } returns 42
 
             "when given correct code" - {
@@ -114,7 +114,7 @@ class AccountManagerTest : FreeSpec({
 
                 "updates the account store" {
                     accountManager.verify(registeredAccount, code)
-                    verify {
+                    coVerify {
                         app.store.account.save(ofType(VerifiedAccount::class))
                     }
                     saveSlot.captured shouldBe verifiedAccount

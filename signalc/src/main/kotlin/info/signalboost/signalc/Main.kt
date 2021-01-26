@@ -67,7 +67,7 @@ fun main() = runBlocking {
 }
 
 @ExperimentalCoroutinesApi
-fun register(accountManager: AccountManager, newAccount: NewAccount): VerifiedAccount? {
+suspend fun register(accountManager: AccountManager, newAccount: NewAccount): VerifiedAccount? {
 
     println("Asking Signal to text a verification code to $USER_PHONE_NUMBER...")
     val registeredAccount = accountManager.register(newAccount)

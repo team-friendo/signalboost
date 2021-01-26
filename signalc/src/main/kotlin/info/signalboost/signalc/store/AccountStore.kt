@@ -5,7 +5,9 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
@@ -17,45 +19,48 @@ class AccountStore(private val db: Database) {
         VERIFIED("VERIFIED"),
     }
 
-    fun findOrCreate(username: String): Account =
+    suspend fun findOrCreate(username: String): Account =
         findByUsername(username) ?: NewAccount(username).also { save(it) }
 
-    internal fun save(account: NewAccount): Unit = transaction(db) {
-        // Throws if we try to create an already-existing account.
-        // For this reason, we mark it `internal` and only call from `findOrCreate`
-        // where we have a strong guarantee of not calling for an already-existing account.
-        Accounts.insert {
-            it[status] = Status.NEW.asString
-            it[username] = account.username
-            it[password] = account.password
-            it[signalingKey] = account.signalingKey
-            it[profileKey] = account.profileKey.serialize()
-            it[deviceId] = account.deviceId
+    internal suspend fun save(account: NewAccount): Unit =
+        newSuspendedTransaction(Dispatchers.IO, db){
+            // Throws if we try to create an already-existing account.
+            // For this reason, we mark it `internal` and only call from `findOrCreate`
+            // where we have a strong guarantee of not calling for an already-existing account.
+            Accounts.insert {
+                it[status] = Status.NEW.asString
+                it[username] = account.username
+                it[password] = account.password
+                it[signalingKey] = account.signalingKey
+                it[profileKey] = account.profileKey.serialize()
+                it[deviceId] = account.deviceId
+            }
         }
-    }
 
 
-    fun save(account: RegisteredAccount): Unit = transaction(db) {
-        Accounts.update({
-            Accounts.username eq account.username
-        }) {
-            it[status] = Status.REGISTERED.asString
+    suspend fun save(account: RegisteredAccount): Unit =
+        newSuspendedTransaction(Dispatchers.IO, db) {
+            Accounts.update({
+                Accounts.username eq account.username
+            }) {
+                it[status] = Status.REGISTERED.asString
+            }
         }
-    }
 
 
-    fun save(account: VerifiedAccount): Unit = transaction(db) {
-        Accounts.update({
-            Accounts.username eq account.username
-        }) {
-            it[uuid] = account.uuid
-            it[status] = Status.VERIFIED.asString
+    suspend fun save(account: VerifiedAccount): Unit =
+        newSuspendedTransaction(Dispatchers.IO, db) {
+            Accounts.update({
+                Accounts.username eq account.username
+            }) {
+                it[uuid] = account.uuid
+                it[status] = Status.VERIFIED.asString
+            }
         }
-    }
 
 
-    fun findByUsername(username: String): Account? =
-        transaction(db) {
+    suspend fun findByUsername(username: String): Account? =
+        newSuspendedTransaction(Dispatchers.IO, db) {
             Accounts.select {
                 Accounts.username eq username
             }.singleOrNull()?.let {
@@ -68,15 +73,18 @@ class AccountStore(private val db: Database) {
             }
         }
 
-    fun findByUuid(uuid: UUID): VerifiedAccount? = transaction(db) {
-        Accounts.select {
-            Accounts.uuid eq uuid
-        }.singleOrNull()?.let {
-            VerifiedAccount.fromDb(it) 
+    suspend fun findByUuid(uuid: UUID): VerifiedAccount? =
+        newSuspendedTransaction(Dispatchers.IO, db) {
+            Accounts.select {
+                Accounts.uuid eq uuid
+            }.singleOrNull()?.let {
+                VerifiedAccount.fromDb(it)
+            }
         }
-    }
 
     // testing helpers
-    internal fun count(): Long = transaction(db) { Accounts.selectAll().count() }
-    internal fun clear(): Int = transaction(db) { Accounts.deleteAll() }
+    internal suspend fun count(): Long =
+        newSuspendedTransaction(Dispatchers.IO, db) { Accounts.selectAll().count() }
+    internal suspend fun clear(): Int =
+        newSuspendedTransaction(Dispatchers.IO, db) { Accounts.deleteAll() }
 }

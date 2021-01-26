@@ -44,9 +44,6 @@ class SignalMessageSenderTest : FreeSpec({
             } returns mockk {
                 every { success } returns mockk()
             }
-            every {
-                app.store.signalProtocol.of(any())
-            } returns mockk()
 
             "sends a message from a message sender" {
                 val now = TimeUtil.nowInMillis()

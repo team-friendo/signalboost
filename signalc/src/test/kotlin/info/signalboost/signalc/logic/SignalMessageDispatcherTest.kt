@@ -21,7 +21,7 @@ import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelo
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.UNKNOWN_VALUE
 
 @ExperimentalCoroutinesApi
-class SignalDispatcherTest : FreeSpec({
+class SignalMessageDispatcherTest : FreeSpec({
 
     runBlockingTest {
 
@@ -55,7 +55,7 @@ class SignalDispatcherTest : FreeSpec({
             val sender = genSignalServiceAddress()
             val recipient = genVerifiedAccount()
 
-            "when handling cyphertext message" - {
+            "when account receives a cyphertext message" - {
                 val mockCyphertextEnvelope = mockk<SignalServiceEnvelope> {
                     every { type } returns CIPHERTEXT_VALUE
                     every { sourceAddress } returns sender
@@ -72,13 +72,12 @@ class SignalDispatcherTest : FreeSpec({
                     }
 
                     "emits cleartext on channel" {
-                        launch {
-                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
-                            incomingMessages.send(mockCyphertextEnvelope)
+                        val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
+                        incomingMessages.send(mockCyphertextEnvelope)
 
-                            outgoingMessages.receive() shouldBe
-                                Cleartext(sender, recipient.address, cleartext)
-                        }
+                        outgoingMessages.receive() shouldBe
+                            Cleartext(sender, recipient.address, cleartext)
+
                     }
                 }
 
@@ -90,13 +89,11 @@ class SignalDispatcherTest : FreeSpec({
                     }
 
                     "emits empty message on channel" {
-                        launch {
-                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
-                            incomingMessages.send(mockCyphertextEnvelope)
+                        val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
+                        incomingMessages.send(mockCyphertextEnvelope)
 
-                            outgoingMessages.receive() shouldBe
-                                EmptyMessage(sender, recipient.address)
-                        }
+                        outgoingMessages.receive() shouldBe
+                            EmptyMessage(sender, recipient.address)
                     }
                 }
 
@@ -111,13 +108,11 @@ class SignalDispatcherTest : FreeSpec({
                     } throws error
 
                     "emits wrapped error on channel" {
-                        launch {
-                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
-                            incomingMessages.send(mockCyphertextEnvelope)
+                        val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
+                        incomingMessages.send(mockCyphertextEnvelope)
 
-                            outgoingMessages.receive() shouldBe
-                                DecryptionError(sender, recipient.address, error)
-                        }
+                        outgoingMessages.receive() shouldBe
+                            DecryptionError(sender, recipient.address, error)
                     }
                 }
             }
@@ -129,13 +124,11 @@ class SignalDispatcherTest : FreeSpec({
                 }
 
                 "drops the message" {
-                    launch {
-                        val outGoingMessages = signalMessageDispatcher.subscribe(recipient)
-                        incomingMessages.send(mockUnkownEnvelope)
+                    val outGoingMessages = signalMessageDispatcher.subscribe(recipient)
+                    incomingMessages.send(mockUnkownEnvelope)
 
-                        outGoingMessages.receive() shouldBe
-                            DroppedMessage(sender, recipient.address, mockUnkownEnvelope)
-                    }
+                    outGoingMessages.receive() shouldBe
+                        DroppedMessage(sender, recipient.address, mockUnkownEnvelope)
                 }
             }
         }

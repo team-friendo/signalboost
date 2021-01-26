@@ -42,10 +42,8 @@ class SignalMessageReceiverTest : FreeSpec({
             }  returns  mockMessagePipe
 
             "subscribes to messages for an account" {
-                launch {
-                    val incomingMessages = messageReceiver.receiveMessages(genVerifiedAccount())
-                    incomingMessages.receive() shouldBe mockEnvelope
-                }
+                val incomingMessages = messageReceiver.receiveMessages(genVerifiedAccount())
+                incomingMessages.receive() shouldBe mockEnvelope
             }
         }
     }
