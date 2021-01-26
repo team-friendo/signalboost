@@ -533,6 +533,148 @@ describe('executing commands', () => {
     })
   })
 
+  // CHANNEL
+  describe('CHANNEL command', () => {
+    describe('when sent on the support channel', () => {
+      const newAdminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+      const message = `${localizedCmds.CHANNEL} ${newAdminPhoneNumbers.join(',')}`
+      const supportChannel = { ...channel, phoneNumber: supportPhoneNumber }
+      const dispatchable = {
+        channel: supportChannel,
+        sender: randomPerson,
+        sdMessage: sdMessageOf({
+          sender: supportChannel,
+          message,
+        }),
+      }
+
+      describe('when the system is accepting new channel requests', () => {
+        describe('when sent a valid channel request', () => {
+          it("returns a success status and message containing the new channel's phone number", async () => {
+            // TODO: replace with stubbed channel phone number
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.CHANNEL,
+              payload: '',
+              status: statuses.SUCCESS,
+              message: commandResponsesFor(randomPerson).channel.success('+15554445555'),
+              notifications: [],
+            })
+          })
+        })
+      })
+
+      describe('when the system is not accepting new channel requests', () => {
+        let originalVal
+        beforeEach(() => {
+          originalVal = process.env.NEW_CHANNELS_ALLOWED
+          process.env.NEW_CHANNELS_ALLOWED = false
+        })
+        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
+
+        it('returns an error status and message telling them to try again later', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.CHANNEL,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(randomPerson).channel.requestsClosed,
+            notifications: [],
+          })
+        })
+      })
+    })
+
+    describe('when not sent on the support channel', () => {
+      const message = `${localizedCmds.CHANNEL} for the secure comms!`
+      const sdMessage = sdMessageOf({ sender: channel, message })
+
+      describe('when sender is an admin', () => {
+        const dispatchable = { channel, sender: admin, sdMessage }
+
+        it('returns an ERROR status and unnecessary payload message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.CHANNEL,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(admin).none.error,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const dispatchable = { channel, sender: subscriber, sdMessage }
+
+        it('returns a success status and hotline notifications', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(subscriber).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const dispatchable = { channel, sender: randomPerson, sdMessage }
+
+        it('sends a subscriber help message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(randomPerson).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
+      })
+    })
+  })
+
   describe('DECLINE command', () => {
     const dispatchable = {
       channel,
@@ -1647,38 +1789,47 @@ describe('executing commands', () => {
     })
   })
 
+  // REQUEST
   describe('REQUEST command', () => {
     describe('when sent on the support channel', () => {
+      const supportChannel = { ...channel, phoneNumber: supportPhoneNumber }
       const dispatchable = {
-        channel: { ...channel, phoneNumber: supportPhoneNumber },
+        channel: supportChannel,
         sender: randomPerson,
         sdMessage: sdMessageOf({
-          sender: channel.phoneNumber,
+          sender: supportChannel,
           message: `${localizedCmds.REQUEST}`,
         }),
       }
 
-      describe('when new channels are allowed', async () => {
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.REQUEST,
-          payload: '',
-          status: statuses.SUCCESS,
-          message: commandResponsesFor(randomPerson).request.success,
-          notifications: [],
+      describe('when the system is accepting new channel requests', () => {
+        it("returns a success status and message containing the new channel's phone number", async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REQUEST,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: commandResponsesFor(randomPerson).request.success,
+            notifications: [],
+          })
         })
       })
 
-      describe('when new channels are not allowed', async () => {
-        // note - this is a temporary fix for dealing with env vars! -@mari
-        beforeEach(() => (process.env.NEW_CHANNELS_ALLOWED = false))
-        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = true))
+      describe('when new channels are not allowed', () => {
+        let originalVal
+        beforeEach(() => {
+          originalVal = process.env.NEW_CHANNELS_ALLOWED
+          process.env.NEW_CHANNELS_ALLOWED = false
+        })
+        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
 
-        expect(await processCommand(dispatchable)).to.eql({
-          command: commands.REQUEST,
-          payload: '',
-          status: statuses.SUCCESS,
-          message: commandResponsesFor(randomPerson).request.closed,
-          notifications: [],
+        it('returns an error status and message telling them to try again later', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REQUEST,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(randomPerson).request.closed,
+            notifications: [],
+          })
         })
       })
     })

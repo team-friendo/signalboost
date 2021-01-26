@@ -42,6 +42,7 @@ const {
 const validSubscriberCommands = new Set([
   commands.ACCEPT,
   commands.DECLINE,
+  commands.CHANNEL,
   commands.HELP,
   commands.INFO,
   commands.INVITE,
@@ -50,6 +51,8 @@ const validSubscriberCommands = new Set([
   commands.REQUEST,
   commands.SET_LANGUAGE,
 ])
+
+const validSupportChannelCommands = new Set([commands.REQUEST, commands.CHANNEL])
 
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
@@ -64,6 +67,7 @@ const execute = async (executable, dispatchable) => {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
+    [commands.CHANNEL]: () => maybeCreateChannel(channel, sender, sdMessage, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => confirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => actuallyDestroy(channel, sender),
@@ -102,7 +106,7 @@ const interveneIfBadMessage = async (executable, dispatchable) => {
     return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
 
   // ripe for refactor?
-  if (command === commands.REQUEST && channel.phoneNumber !== supportPhoneNumber) {
+  if (validSupportChannelCommands.has(command) && channel.phoneNumber !== supportPhoneNumber) {
     if (sender.type === ADMIN)
       return {
         ...defaultResult,
@@ -270,6 +274,31 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
   }))
 
   return [...adminNotifications, ...subscriberNotifications]
+}
+
+// CHANNEL
+const maybeCreateChannel = (channel, sender) => {
+  const cr = messagesIn(sender.language).commandResponses.channel
+
+  try {
+    if (newChannelsAllowed) {
+      // TODO: replace with stubbed channel phone number
+      const newChannel = { phoneNumber: '+15554445555' }
+      return {
+        status: statuses.SUCCESS,
+        payload: '',
+        message: cr.success(newChannel.phoneNumber),
+      }
+    }
+
+    return {
+      status: statuses.ERROR,
+      payload: '',
+      message: cr.requestsClosed,
+    }
+  } catch (e) {
+    logAndReturn(e, { status: statuses.ERROR, message: cr.error })
+  }
 }
 
 // PRIVATE

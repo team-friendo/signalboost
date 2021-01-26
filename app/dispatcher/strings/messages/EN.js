@@ -15,6 +15,7 @@ const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const subscriberLimitReached = subscriberLimit =>
   `Sorry, this channel has reached its limit of ${subscriberLimit} subscribers.`
+const requestsClosed = `Sorry, Signalboost is not accepting new channel requests at the moment! Please check again later.`
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const vouchModeDisplay = {
@@ -94,6 +95,17 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `Your Signalboost channel has been created! In a moment, you should receive a welcome message from your channel phone number:
+${phoneNumber}.
+
+If you have questions or are having issues accessing your channel, you can message Signalboost support here.
+`,
+    requestsClosed: requestsClosed,
+    error: `Sorry, there was an error processing your channel request! Please try again later. If your problem persists, you can message Signalboost support here.`,
   },
 
   // DECLINE
@@ -313,7 +325,7 @@ https://signalboost.info/privacy
 Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of the admin phone numbers for that channel, for example:
 
 CHANNEL+ 1555123412, +1555123419`,
-    closed: `Sorry, Signalboost is not accepting new channel requests at the moment! Please check again later.`,
+    closed: requestsClosed,
   },
 
   // SET_LANGUAGE

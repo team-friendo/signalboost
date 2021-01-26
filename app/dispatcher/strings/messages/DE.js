@@ -15,6 +15,7 @@ const notSubscriber =
   'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
 const subscriberLimitReached = subscriberLimit =>
   `Entschuldigung, dieser Kanal hat sein Limit von ${subscriberLimit} Abonnenten erreicht.`
+const requestsClosed = `Sorry, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
 
 const vouchModeDisplay = {
@@ -101,6 +102,17 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `Ihr Signalboost-Kanal wurde erstellt! In Kürze sollten Sie eine Begrüßungsnachricht von Ihrer Kanal-Telefonnummer erhalten:
+${phoneNumber}.
+
+Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können Sie hier den Signalboost-Support benachrichtigen.
+`,
+    requestsClosed: requestsClosed,
+    error: `Entschuldigung, es ist ein Fehler bei der Verarbeitung Ihrer Kanalanfrage aufgetreten! Bitte versuchen Sie es später noch einmal. Wenn Ihr Problem weiterhin besteht, können Sie hier den Signalboost-Support benachrichtigen.`,
   },
 
   // DECLINE
