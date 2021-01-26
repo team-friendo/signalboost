@@ -5,7 +5,7 @@ const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
 const { eventTypes } = require('../db/models/event')
-const { pick, times } = require('lodash')
+const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../config')
 const { provisionN } = require('./phoneNumber')
@@ -13,14 +13,7 @@ const { statuses: pNumStatuses } = require('../db/models/phoneNumber')
 const { statuses: sbStatuses, loggerOf, wait, hash } = require('../util')
 const logger = loggerOf()
 const {
-  signal: {
-    welcomeDelay,
-    defaultMessageExpiryTime,
-    setExpiryInterval,
-    supportPhoneNumber,
-    phoneNumberReserveSize,
-    registrationBatchSize,
-  },
+  signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval, supportPhoneNumber },
 } = require('../config')
 const { sdMessageOf } = require('../signal/constants')
 
@@ -45,6 +38,9 @@ const create = async ({ phoneNumber, admins }) => {
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
 
+    // replace the phone number we just used with another one
+    replaceUsedPhoneNumber()
+
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
     await wait(welcomeDelay)
@@ -53,9 +49,6 @@ const create = async ({ phoneNumber, admins }) => {
     // invite admins to subscribe to support channel if one exists
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
     if (supportChannel) await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
-
-    // refill our VERIFIED phoneNumber reservoir
-    refillAvailablePhoneNumbers()
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
@@ -119,16 +112,10 @@ const _welcomeNotificationOf = channel =>
     channel.phoneNumber,
   )
 
-const refillAvailablePhoneNumbers = async () => {
+const replaceUsedPhoneNumber = async () => {
   try {
-    const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
-
-    if (verifiedPhoneNumbers.length < phoneNumberReserveSize) {
-      times(
-        phoneNumberReserveSize / registrationBatchSize,
-        provisionN({ n: registrationBatchSize }),
-      )
-    }
+    const newNum = await provisionN({ n: 1 })
+    return newNum
   } catch (e) {
     logger.error(e)
     return {
@@ -165,6 +152,6 @@ module.exports = {
   create,
   addAdmin,
   list,
-  refillAvailablePhoneNumbers,
+  replaceUsedPhoneNumber,
   _welcomeNotificationOf,
 }

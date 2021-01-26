@@ -16,15 +16,15 @@ import {
   create,
   addAdmin,
   list,
-  refillAvailablePhoneNumbers,
+  replaceUsedPhoneNumber,
   _welcomeNotificationOf,
 } from '../../../app/registrar/channel'
-import { provisionN } from '../../../app/registrar/'
+import phoneNumberService from '../../../app/registrar/phoneNumber/'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
 const {
-  signal: { defaultMessageExpiryTime, phoneNumberReserveSize },
+  signal: { defaultMessageExpiryTime },
   defaultLanguage,
 } = require('../../../app/config')
 
@@ -71,7 +71,7 @@ describe('channel registrar', () => {
     createChannelStub,
     subscribeStub,
     updatePhoneNumberStub,
-    listPhoneNumberStub,
+    provisionNStub,
     sendMessageStub,
     findAllDeepStub,
     findDeepStub,
@@ -84,7 +84,7 @@ describe('channel registrar', () => {
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
-    listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
+    provisionNStub = sinon.stub(phoneNumberService, 'provisionN')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
     findDeepStub = sinon.stub(channelRepository, 'findDeep')
@@ -106,7 +106,9 @@ describe('channel registrar', () => {
     describe('when subscribing to signal messages succeeds', () => {
       beforeEach(() => subscribeStub.returns(Promise.resolve()))
 
-      describe('in all cases', () => {
+      describe('when not given a phoneNumber resource', () => {})
+
+      describe('when given a phoneNumber resource', () => {
         beforeEach(async () => {
           await create({ phoneNumber, admins })
         })
@@ -385,33 +387,33 @@ describe('channel registrar', () => {
     })
   })
 
-  describe('#refillAvailablePhoneNumbers', () => {
-    const verifiedPhoneNumberAttrs = [
-      times(6, () => ({ phoneNumber: genPhoneNumber(), status: 'VERIFIED' })),
-    ]
+  describe('#replaceUsedPhoneNumber', () => {
+    describe('when provisioning a new phone number succeeds', () => {
+      beforeEach(() =>
+        provisionNStub.returns(
+          Promise.resolve({
+            status: statuses.VERIFIED,
+            phoneNumber: genPhoneNumber(),
+          }),
+        ),
+      )
 
-    describe('when db fetch succeeds', () => {
-      describe('when the number of available phone numbers is fewer than the reserve size', () => {
-        beforeEach(() => {
-          listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumberAttrs))
-        })
-
-        it('provisions the correct amount of new phone numbers', () => {})
-      })
-
-      describe('when the number of available phone numbers exceeds or is equal to the reserve size', () => {
-        beforeEach(() => {
-          listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumberAttrs))
-        })
-        it('does not provision any additional phone numbers', () => {})
+      it('returns a new phone number and success status', async () => {
+        expect(
+          expect(await replaceUsedPhoneNumber()).to.eql({
+            status: statuses.ERROR,
+            error: 'womp',
+          }),
+        )
       })
     })
 
-    describe('when db fetch fails', () => {
-      beforeEach(() => listPhoneNumberStub.callsFake(() => Promise.reject(new Error('womp'))))
+    describe('when provisioning a phone number fails', () => {
+      beforeEach(() => provisionNStub.callsFake(() => Promise.reject(new Error('womp'))))
 
+      it('notifies the sysadmins')
       it('returns an error', async () => {
-        expect(await refillAvailablePhoneNumbers()).to.eql({
+        expect(await replaceUsedPhoneNumber()).to.eql({
           status: statuses.ERROR,
           error: 'womp',
         })
