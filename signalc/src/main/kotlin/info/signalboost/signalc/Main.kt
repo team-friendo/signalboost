@@ -79,10 +79,10 @@ suspend fun register(accountManager: AccountManager, newAccount: NewAccount): Ve
             accountManager.publishPreKeys(it)
         }
         ?: run {
-            println("Verification failed! Wrong code?")
+            println("Verification failed! Wrong code?\n")
             null
         }
 
-    println("$USER_PHONE_NUMBER registered and verified!")
+    println("$USER_PHONE_NUMBER registered and verified!\n")
     return verifiedAccount
 }
