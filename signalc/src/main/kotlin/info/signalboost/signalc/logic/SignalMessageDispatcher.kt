@@ -2,20 +2,21 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.model.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
-import java.net.ProtocolException
 
 @ExperimentalCoroutinesApi
-class SignalDispatcher(
+class SignalMessageDispatcher(
     private val app: Application,
-    private val messageReceiver: MessageReceiver = MessageReceiver(app)
+    private val signalMessageReceiver: SignalMessageReceiver = SignalMessageReceiver(app)
 ) {
 
     private val protocolStore = app.store.signalProtocol
@@ -31,7 +32,7 @@ class SignalDispatcher(
 
     suspend fun subscribe(account: VerifiedAccount): ReceiveChannel<Message> {
         // TODO: what if someone subscribes the same account twice?
-        val inChannel = messageReceiver.receiveMessages(account)
+        val inChannel = signalMessageReceiver.receiveMessages(account)
         val outChannel = Channel<Message>()
 
         coroutineScope.launch {

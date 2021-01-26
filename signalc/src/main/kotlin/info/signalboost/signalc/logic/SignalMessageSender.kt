@@ -9,7 +9,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 
-class MessageSender(private val app: Application) {
+class SignalMessageSender(private val app: Application) {
 
     companion object {
         const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day

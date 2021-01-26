@@ -8,7 +8,6 @@ import info.signalboost.signalc.testSupport.fixtures.Address.genSignalServiceAdd
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
-import io.mockk.MockKAnnotations.init
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -30,17 +29,17 @@ class SignalDispatcherTest : FreeSpec({
             mockkConstructor(SignalServiceCipher::class)
         }
 
-        lateinit var signalDispatcher: SignalDispatcher
+        lateinit var signalMessageDispatcher: SignalMessageDispatcher
         lateinit var incomingMessages: Channel<SignalServiceEnvelope>
 
         beforeTest {
             val app = Application(Config.test, this)
 
             incomingMessages = Channel<SignalServiceEnvelope>()
-            val mockMessageReceiver = mockk<MessageReceiver>() {
+            val mockMessageReceiver = mockk<SignalMessageReceiver>() {
                 coEvery { receiveMessages(any()) } returns incomingMessages
             }
-            signalDispatcher = SignalDispatcher(app, mockMessageReceiver)
+            signalMessageDispatcher = SignalMessageDispatcher(app, mockMessageReceiver)
         }
 
         afterTest {
@@ -74,7 +73,7 @@ class SignalDispatcherTest : FreeSpec({
 
                     "emits cleartext on channel" {
                         launch {
-                            val outgoingMessages = signalDispatcher.subscribe(recipient)
+                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
                             incomingMessages.send(mockCyphertextEnvelope)
 
                             outgoingMessages.receive() shouldBe
@@ -92,7 +91,7 @@ class SignalDispatcherTest : FreeSpec({
 
                     "emits empty message on channel" {
                         launch {
-                            val outgoingMessages = signalDispatcher.subscribe(recipient)
+                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
                             incomingMessages.send(mockCyphertextEnvelope)
 
                             outgoingMessages.receive() shouldBe
@@ -113,7 +112,7 @@ class SignalDispatcherTest : FreeSpec({
 
                     "emits wrapped error on channel" {
                         launch {
-                            val outgoingMessages = signalDispatcher.subscribe(recipient)
+                            val outgoingMessages = signalMessageDispatcher.subscribe(recipient)
                             incomingMessages.send(mockCyphertextEnvelope)
 
                             outgoingMessages.receive() shouldBe
@@ -131,7 +130,7 @@ class SignalDispatcherTest : FreeSpec({
 
                 "drops the message" {
                     launch {
-                        val outGoingMessages = signalDispatcher.subscribe(recipient)
+                        val outGoingMessages = signalMessageDispatcher.subscribe(recipient)
                         incomingMessages.send(mockUnkownEnvelope)
 
                         outGoingMessages.receive() shouldBe

@@ -13,10 +13,10 @@ import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
 @ExperimentalCoroutinesApi
-class MessageReceiverTest : FreeSpec({
+class SignalMessageReceiverTest : FreeSpec({
     runBlockingTest {
         val app = Application(Config.test, this)
-        val messageReceiver = MessageReceiver(app)
+        val messageReceiver = SignalMessageReceiver(app)
 
         beforeSpec {
             mockkConstructor(SignalServiceMessageReceiver::class)

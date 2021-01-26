@@ -2,9 +2,9 @@ package info.signalboost.signalc
 
 import info.signalboost.signalc.Config.USER_PHONE_NUMBER
 import info.signalboost.signalc.logic.AccountManager
-import info.signalboost.signalc.logic.MessageSender
-import info.signalboost.signalc.logic.MessageSender.Companion.asAddress
-import info.signalboost.signalc.logic.SignalDispatcher
+import info.signalboost.signalc.logic.SignalMessageSender
+import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
+import info.signalboost.signalc.logic.SignalMessageDispatcher
 import info.signalboost.signalc.model.*
 import kotlinx.coroutines.*
 
@@ -17,8 +17,8 @@ import kotlinx.coroutines.*
 fun main() = runBlocking {
     val app = Application(Config.fromEnv(), this)
     val accountManager = AccountManager(app)
-    val messageSender = MessageSender(app)
-    val signalDispatcher = SignalDispatcher(app)
+    val messageSender = SignalMessageSender(app)
+    val dispatcher = SignalMessageDispatcher(app)
 
     // find or create account
     val verifiedAccount: VerifiedAccount = when(
@@ -34,7 +34,7 @@ fun main() = runBlocking {
     // subscribe to messages on this number...
     val listenForIncoming: Job = launch {
         println("Subscribing to messages for ${verifiedAccount.username}...")
-        val incomingMessages = signalDispatcher.subscribe(verifiedAccount)
+        val incomingMessages = dispatcher.subscribe(verifiedAccount)
         println("...subscribed to messages for ${verifiedAccount.username}.")
 
         while(!incomingMessages.isClosedForReceive) {

@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 
 @ExperimentalCoroutinesApi
-class MessageReceiver(app: Application) {
+class SignalMessageReceiver(app: Application) {
     companion object {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }

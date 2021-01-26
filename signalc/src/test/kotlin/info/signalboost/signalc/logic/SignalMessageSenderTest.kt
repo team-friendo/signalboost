@@ -2,8 +2,8 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.MessageSender.Companion.DEFAULT_EXPIRY_TIME
-import info.signalboost.signalc.logic.MessageSender.Companion.asAddress
+import info.signalboost.signalc.logic.SignalMessageSender.Companion.DEFAULT_EXPIRY_TIME
+import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.Matchers.signalDataMessage
@@ -17,12 +17,12 @@ import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 @ExperimentalCoroutinesApi
-class MessageSenderTest : FreeSpec({
+class SignalMessageSenderTest : FreeSpec({
     runBlockingTest {
 
         val app = Application(Config.test, this)
         val verifiedAccount = genVerifiedAccount()
-        val messageSender = MessageSender(app)
+        val messageSender = SignalMessageSender(app)
 
         beforeSpec {
             mockkObject(TimeUtil)
