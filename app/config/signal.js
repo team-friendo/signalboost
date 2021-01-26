@@ -15,6 +15,7 @@ const defaults = {
   maxVouchLevel: 10,
   minResendInterval: 60 * 1000, // 1 min
   newChannelsAllowed: process.env.NEW_CHANNELS_ALLOWED || 'true',
+  phoneNumberReserveSize: 8, // in multiples of registrationBatchSize
   registrationBatchSize: 4,
   restartDelay: 1000 * 15, // 15 sec
   setExpiryInterval: 2000, // 2 sec

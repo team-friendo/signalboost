@@ -12,12 +12,19 @@ import { sdMessageOf } from '../../../app/signal/constants'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../support/factories/channel'
 import { statuses } from '../../../app/util'
-import { create, addAdmin, list, _welcomeNotificationOf } from '../../../app/registrar/channel'
+import {
+  create,
+  addAdmin,
+  list,
+  refillAvailablePhoneNumbers,
+  _welcomeNotificationOf,
+} from '../../../app/registrar/channel'
+import { provisionN } from '../../../../app/registrar/phoneNumber'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
 const {
-  signal: { defaultMessageExpiryTime },
+  signal: { defaultMessageExpiryTime, phoneNumberReserveSize },
   defaultLanguage,
 } = require('../../../app/config')
 
@@ -64,6 +71,7 @@ describe('channel registrar', () => {
     createChannelStub,
     subscribeStub,
     updatePhoneNumberStub,
+    listPhoneNumberStub,
     sendMessageStub,
     findAllDeepStub,
     findDeepStub,
@@ -76,6 +84,7 @@ describe('channel registrar', () => {
     createChannelStub = sinon.stub(channelRepository, 'create')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
+    listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
     findDeepStub = sinon.stub(channelRepository, 'findDeep')
@@ -372,6 +381,40 @@ describe('channel registrar', () => {
           adminPhoneNumber,
         }).catch(e => e)
         expect(err).to.eql(errorStatus)
+      })
+    })
+  })
+
+  describe('#refillAvailablePhoneNumbers', () => {
+    const verifiedPhoneNumberAttrs = [
+      times(6, () => ({ phoneNumber: genPhoneNumber(), status: 'VERIFIED' })),
+    ]
+
+    describe('when db fetch succeeds', () => {
+      describe('when the number of available phone numbers is fewer than the reserve size', () => {
+        beforeEach(() => {
+          listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumberAttrs))
+        })
+
+        it('provisions the correct amount of new phone numbers', () => {})
+      })
+
+      describe('when the number of available phone numbers exceeds or is equal to the reserve size', () => {
+        beforeEach(() => {
+          listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumberAttrs))
+        })
+        it('does not provision any additional phone numbers', () => {})
+      })
+    })
+
+    describe('when db fetch fails', () => {
+      beforeEach(() => listPhoneNumberStub.callsFake(() => Promise.reject(new Error('womp'))))
+
+      it('returns an error', async () => {
+        expect(await refillAvailablePhoneNumbers()).to.eql({
+          status: statuses.ERROR,
+          error: 'womp',
+        })
       })
     })
   })

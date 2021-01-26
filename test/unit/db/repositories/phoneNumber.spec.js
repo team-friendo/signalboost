@@ -9,7 +9,7 @@ import dbService from '../../../../app/db'
 
 describe('phone number repository', () => {
   const {
-    filters: { ACTIVE, INACTIVE },
+    filters: { ACTIVE, INACTIVE, VERIFIED },
   } = phoneNumberRepository
   let db
 
@@ -78,6 +78,15 @@ describe('phone number repository', () => {
         const pNumList = await phoneNumberRepository.list(INACTIVE)
         expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
           phoneNumberAttrs.slice(0, -1).reverse(),
+        )
+      })
+    })
+
+    describe('when given  a VERIFIED filter', () => {
+      it('retrieves a list of PURCHASED, REGISTERD, and VERIFIED phone numbers', async () => {
+        const pNumList = await phoneNumberRepository.list(VERIFIED)
+        expect(pNumList.map(pNum => pick(pNum, ['phoneNumber', 'status']))).to.eql(
+          phoneNumberAttrs.slice(2, 3),
         )
       })
     })
