@@ -567,7 +567,7 @@ describe('executing commands', () => {
         let originalVal
         beforeEach(() => {
           originalVal = process.env.NEW_CHANNELS_ALLOWED
-          process.env.NEW_CHANNELS_ALLOWED = false
+          process.env.NEW_CHANNELS_ALLOWED = '0'
         })
         afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
 
@@ -1818,7 +1818,7 @@ describe('executing commands', () => {
         let originalVal
         beforeEach(() => {
           originalVal = process.env.NEW_CHANNELS_ALLOWED
-          process.env.NEW_CHANNELS_ALLOWED = false
+          process.env.NEW_CHANNELS_ALLOWED = '0'
         })
         afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
 

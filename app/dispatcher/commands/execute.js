@@ -24,7 +24,7 @@ const {
 const {
   defaultLanguage,
   auth: { maintainerPassphrase },
-  signal: { diagnosticsPhoneNumber, supportPhoneNumber, newChannelsAllowed },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../config')
 
 /**
@@ -279,9 +279,8 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 // CHANNEL
 const maybeCreateChannel = (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.channel
-
   try {
-    if (newChannelsAllowed) {
+    if (process.env.NEW_CHANNELS_ALLOWED === '1') {
       // TODO: replace with stubbed channel phone number
       const newChannel = { phoneNumber: '+15554445555' }
       return {
@@ -583,7 +582,7 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
 
 // REQUEST
 const showRequest = (channel, sender) => {
-  if (newChannelsAllowed)
+  if (process.env.NEW_CHANNELS_ALLOWED === '1')
     return {
       status: statuses.SUCCESS,
       message: messagesIn(sender.language).commandResponses.request.success,

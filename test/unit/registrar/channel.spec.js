@@ -19,7 +19,7 @@ import {
   refillAvailablePhoneNumbers,
   _welcomeNotificationOf,
 } from '../../../app/registrar/channel'
-import { provisionN } from '../../../../app/registrar/phoneNumber'
+import { provisionN } from '../../../app/registrar/'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
