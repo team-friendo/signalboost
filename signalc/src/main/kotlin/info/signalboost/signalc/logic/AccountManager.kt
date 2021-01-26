@@ -6,6 +6,8 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
@@ -42,29 +44,33 @@ class AccountManager(private val app: Application) {
         }
     }
 
-    fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
+    suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
-    fun register(account: NewAccount): RegisteredAccount {
-        accountManagerOf(account).requestSmsVerificationCode(false, absent(), absent())
+    suspend fun register(account: NewAccount): RegisteredAccount {
+        withContext(Dispatchers.IO) {
+            accountManagerOf(account).requestSmsVerificationCode(false, absent(), absent())
+        }
         return RegisteredAccount.fromNew(account).also { accountStore.save(it) }
     }
 
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
-    fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
+    suspend fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
         val verifyResponse: VerifyAccountResponse = try {
-            accountManagerOf(account).verifyAccountWithCode(
-                code,
-                null,
-                protocolStore.of(account).localRegistrationId,
-                true,
-                null,
-                null,
-                UnidentifiedAccess.deriveAccessKeyFrom(account.profileKey),
-                false,
-                SignalServiceProfile.Capabilities(true, false, false),
-                true
-            )
+            withContext(Dispatchers.IO) {
+                accountManagerOf(account).verifyAccountWithCode(
+                    code,
+                    null,
+                    protocolStore.of(account).localRegistrationId,
+                    true,
+                    null,
+                    null,
+                    UnidentifiedAccess.deriveAccessKeyFrom(account.profileKey),
+                    false,
+                    SignalServiceProfile.Capabilities(true, false, false),
+                    true
+                )
+            }
         } catch(e: AuthorizationFailedException) {
             return null
         }
@@ -76,27 +82,30 @@ class AccountManager(private val app: Application) {
     }
 
     // generate prekeys, store them locally and publish them to signal
-    fun publishPreKeys(account: VerifiedAccount): VerifiedAccount {
+    suspend fun publishPreKeys(account: VerifiedAccount): VerifiedAccount {
         val accountProtocolStore = protocolStore.of(account)
-        // generate prekeys and store them locally
-        // TODO: consider getting and incrementing an int counter from the account store here
-        val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE)
-        val signedPreKey = KeyUtil.genSignedPreKey(
-            accountProtocolStore.identityKeyPair,
-            signedPrekeyId
-        ).also {
-            accountProtocolStore.storeSignedPreKey(it.id, it)
+        return withContext(Dispatchers.Default) {
+            // generate prekeys and store them locally
+            val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE) // TODO: use an incrementing int here?
+            val signedPreKey = KeyUtil.genSignedPreKey(
+                accountProtocolStore.identityKeyPair,
+                signedPrekeyId
+            ).also {
+                accountProtocolStore.storeSignedPreKey(it.id, it)
+            }
+            val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
+                accountProtocolStore.storePreKey(it.id, it)
+            }
+            withContext(Dispatchers.IO) {
+                // publish prekeys to signal server
+                accountManagerOf(account).setPreKeys(
+                    accountProtocolStore.identityKeyPair.publicKey,
+                    signedPreKey,
+                    oneTimePreKeys
+                )
+                account
+            }
         }
-        val oneTimePreKeys = KeyUtil.genPreKeys(0, 100).onEach {
-            accountProtocolStore.storePreKey(it.id, it)
-        }
-        // publish prekeys to signal server
-        accountManagerOf(account).setPreKeys(
-            accountProtocolStore.identityKeyPair.publicKey,
-            signedPreKey,
-            oneTimePreKeys
-        )
-        return account
     }
 }
 

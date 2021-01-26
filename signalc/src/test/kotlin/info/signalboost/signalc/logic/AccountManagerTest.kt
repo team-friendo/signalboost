@@ -9,6 +9,8 @@ import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignalProtocolStore
@@ -19,178 +21,181 @@ import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedE
 import java.util.*
 import kotlin.random.Random
 
+@ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({
-    val app = Application(Config.test)
-    val accountManager = AccountManager(app)
+    runBlockingTest {
+        val app = Application(Config.test, this)
+        val accountManager = AccountManager(app)
 
-    val mockProtocolStore: SignalProtocolStore = mockk()
-    val phoneNumber = genPhoneNumber()
-    val uuid = UUID.randomUUID()
-    val newAccount = NewAccount(phoneNumber)
-    val registeredAccount = RegisteredAccount.fromNew(newAccount)
-    val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid)
+        val mockProtocolStore: SignalProtocolStore = mockk()
+        val phoneNumber = genPhoneNumber()
+        val uuid = UUID.randomUUID()
+        val newAccount = NewAccount(phoneNumber)
+        val registeredAccount = RegisteredAccount.fromNew(newAccount)
+        val verifiedAccount = VerifiedAccount.fromRegistered(registeredAccount, uuid)
 
-    beforeSpec {
-        mockkObject(KeyUtil)
-        every { app.store.signalProtocol.of(any()) } returns mockProtocolStore
-        mockkConstructor(SignalServiceAccountManager::class)
-    }
-
-    afterTest {
-        clearAllMocks(answers = false, childMocks = false, objectMocks = false)
-    }
-
-    afterSpec {
-        unmockkAll()
-    }
-
-    "#findOrCreate" - {
-        every { app.store.account.findOrCreate(any()) } answers { newAccount }
-
-        "delegates to AccountStore" {
-            accountManager.load(phoneNumber)
-            verify {
-                app.store.account.findOrCreate(phoneNumber)
-            }
+        beforeSpec {
+            mockkObject(KeyUtil)
+            every { app.store.signalProtocol.of(any()) } returns mockProtocolStore
+            mockkConstructor(SignalServiceAccountManager::class)
         }
-    }
 
-    "#register" - {
-        val saveSlot = slot<RegisteredAccount>()
-        every { app.store.account.save(account = capture(saveSlot)) } returns Unit
-        every {
-            anyConstructed<SignalServiceAccountManager>()
-                .requestSmsVerificationCode(any(),any(),any())
-        } returns Unit
+        afterTest {
+            clearAllMocks(answers = false, childMocks = false, objectMocks = false)
+        }
 
-        "requests an sms code from signal" {
-            accountManager.register(newAccount)
-            verify {
-                anyConstructed<SignalServiceAccountManager>()
-                    .requestSmsVerificationCode(false, absent(), absent())
+        afterSpec {
+            unmockkAll()
+        }
+
+        "#findOrCreate" - {
+            coEvery { app.store.account.findOrCreate(any()) } answers { newAccount }
+
+            "delegates to AccountStore" {
+                accountManager.load(phoneNumber)
+                coVerify {
+                    app.store.account.findOrCreate(phoneNumber)
+                }
             }
         }
 
-        "updates the account store" {
-            accountManager.register(newAccount)
-            verify {
-                app.store.account.save(any<RegisteredAccount>())
-            }
-            saveSlot.captured shouldBe registeredAccount
-        }
-
-        "returns a registered account" {
-            accountManager.register(newAccount) shouldBe registeredAccount
-        }
-    }
-
-    "#verify" - {
-        val code = "1312"
-        val saveSlot = slot<VerifiedAccount>()
-        every { app.store.account.save(account = capture(saveSlot)) } returns Unit
-        every { mockProtocolStore.localRegistrationId } returns 42
-
-        "when given correct code" - {
+        "#register" - {
+            val saveSlot = slot<RegisteredAccount>()
+            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
             every {
-                anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
-                    code, any(), any(), any(), any(), any(), any(), any(), any(), any()
-                )
-            } returns mockk {
-                every { getUuid() } returns uuid.toString()
-            }
+                anyConstructed<SignalServiceAccountManager>()
+                    .requestSmsVerificationCode(any(), any(), any())
+            } returns Unit
 
-            "attempts to verify code" {
-                accountManager.verify(registeredAccount, code)
+            "requests an sms code from signal" {
+                accountManager.register(newAccount)
                 verify {
-                    anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
-                        code, any(), any(), any(), any(), any(), any(), any(), any(), any()
-                    )
+                    anyConstructed<SignalServiceAccountManager>()
+                        .requestSmsVerificationCode(false, absent(), absent())
                 }
             }
 
             "updates the account store" {
-                accountManager.verify(registeredAccount, code)
-                verify {
-                    app.store.account.save(ofType(VerifiedAccount::class))
+                accountManager.register(newAccount)
+                coVerify {
+                    app.store.account.save(any<RegisteredAccount>())
                 }
-                saveSlot.captured shouldBe verifiedAccount
+                saveSlot.captured shouldBe registeredAccount
             }
 
-            "returns a verified account" {
-                accountManager.verify(registeredAccount, code) shouldBe verifiedAccount
+            "returns a registered account" {
+                accountManager.register(newAccount) shouldBe registeredAccount
             }
         }
 
-        "when given incorrect code" - {
-            every {
-                anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
-                    code, any(), any(), any(), any(), any(), any(), any(), any(), any()
-                )
-            } throws AuthorizationFailedException("oh noes!")
+        "#verify" - {
+            val code = "1312"
+            val saveSlot = slot<VerifiedAccount>()
+            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
+            every { mockProtocolStore.localRegistrationId } returns 42
 
-            "attempts to verify code" {
-                accountManager.verify(registeredAccount, code)
-                verify {
+            "when given correct code" - {
+                every {
                     anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                     )
+                } returns mockk {
+                    every { getUuid() } returns uuid.toString()
+                }
+
+                "attempts to verify code" {
+                    accountManager.verify(registeredAccount, code)
+                    verify {
+                        anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
+                            code, any(), any(), any(), any(), any(), any(), any(), any(), any()
+                        )
+                    }
+                }
+
+                "updates the account store" {
+                    accountManager.verify(registeredAccount, code)
+                    coVerify {
+                        app.store.account.save(ofType(VerifiedAccount::class))
+                    }
+                    saveSlot.captured shouldBe verifiedAccount
+                }
+
+                "returns a verified account" {
+                    accountManager.verify(registeredAccount, code) shouldBe verifiedAccount
                 }
             }
 
-            "does not update the account store" {
-                accountManager.verify(registeredAccount, code)
-                verify { app.store.account wasNot Called }
-            }
+            "when given incorrect code" - {
+                every {
+                    anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
+                        code, any(), any(), any(), any(), any(), any(), any(), any(), any()
+                    )
+                } throws AuthorizationFailedException("oh noes!")
 
-            "returns null" {
-                accountManager.verify(registeredAccount, code) shouldBe null
+                "attempts to verify code" {
+                    accountManager.verify(registeredAccount, code)
+                    verify {
+                        anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
+                            code, any(), any(), any(), any(), any(), any(), any(), any(), any()
+                        )
+                    }
+                }
+
+                "does not update the account store" {
+                    accountManager.verify(registeredAccount, code)
+                    verify { app.store.account wasNot Called }
+                }
+
+                "returns null" {
+                    accountManager.verify(registeredAccount, code) shouldBe null
+                }
             }
         }
-    }
 
-    "#publishFirstPrekeys" - {
-        val mockPublicKey: IdentityKey = mockk()
-        val mockPreKeys: List<PreKeyRecord> = List(100) {
-            mockk {
+        "#publishFirstPrekeys" - {
+            val mockPublicKey: IdentityKey = mockk()
+            val mockPreKeys: List<PreKeyRecord> = List(100) {
+                mockk {
+                    every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
+                }
+            }
+            val mockSignedPreKey: SignedPreKeyRecord = mockk {
                 every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
             }
-        }
-        val mockSignedPreKey: SignedPreKeyRecord = mockk {
-            every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
-        }
 
-        mockProtocolStore.let {
-            every { it.storePreKey(any(), any()) } returns Unit
-            every { it.storeSignedPreKey(any(), any()) } returns Unit
-            every { it.identityKeyPair } returns mockk {
-                every { publicKey } returns mockPublicKey
+            mockProtocolStore.let {
+                every { it.storePreKey(any(), any()) } returns Unit
+                every { it.storeSignedPreKey(any(), any()) } returns Unit
+                every { it.identityKeyPair } returns mockk {
+                    every { publicKey } returns mockPublicKey
+                }
             }
-        }
 
-        every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
-        every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
-        every {
-            anyConstructed<SignalServiceAccountManager>().setPreKeys(any(),any(),any())
-        } returns Unit
+            every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
+            every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
+            every {
+                anyConstructed<SignalServiceAccountManager>().setPreKeys(any(), any(), any())
+            } returns Unit
 
-        "stores 100 prekeys locally" {
-            accountManager.publishPreKeys(verifiedAccount)
-            verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any())}
-        }
+            "stores 100 prekeys locally" {
+                accountManager.publishPreKeys(verifiedAccount)
+                verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any()) }
+            }
 
-        "stores a signed prekey locally" {
-            accountManager.publishPreKeys(verifiedAccount)
-            verify(exactly = 1) { mockProtocolStore.storeSignedPreKey(any(), any()) }
-        }
+            "stores a signed prekey locally" {
+                accountManager.publishPreKeys(verifiedAccount)
+                verify(exactly = 1) { mockProtocolStore.storeSignedPreKey(any(), any()) }
+            }
 
-        "publishes prekeys to signal" {
-            accountManager.publishPreKeys(verifiedAccount)
-            verify {
-                anyConstructed<SignalServiceAccountManager>().setPreKeys(
-                    mockPublicKey,
-                    mockSignedPreKey,
-                    mockPreKeys,
-                )
+            "publishes prekeys to signal" {
+                accountManager.publishPreKeys(verifiedAccount)
+                verify {
+                    anyConstructed<SignalServiceAccountManager>().setPreKeys(
+                        mockPublicKey,
+                        mockSignedPreKey,
+                        mockPreKeys,
+                    )
+                }
             }
         }
     }

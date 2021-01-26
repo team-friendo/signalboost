@@ -10,6 +10,7 @@ import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.Sessions.sessionBytes
 import info.signalboost.signalc.logic.KeyUtil
 import info.signalboost.signalc.model.Account
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
