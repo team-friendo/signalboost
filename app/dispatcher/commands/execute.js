@@ -8,6 +8,7 @@ const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
+const channelRegistrar = require('../../registrar/channel')
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
@@ -277,12 +278,11 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 }
 
 // CHANNEL
-const maybeCreateChannel = (channel, sender) => {
+const maybeCreateChannel = async (channel, sender) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
     if (process.env.NEW_CHANNELS_ALLOWED === '1') {
-      // TODO: replace with stubbed channel phone number
-      const newChannel = { phoneNumber: '+15554445555' }
+      const newChannel = await channelRegistrar.create()
       return {
         status: statuses.SUCCESS,
         payload: '',
@@ -296,7 +296,8 @@ const maybeCreateChannel = (channel, sender) => {
       message: cr.requestsClosed,
     }
   } catch (e) {
-    logAndReturn(e, { status: statuses.ERROR, message: cr.error })
+    logger.error(e)
+    return { status: statuses.ERROR, payload: '', message: cr.error }
   }
 }
 
