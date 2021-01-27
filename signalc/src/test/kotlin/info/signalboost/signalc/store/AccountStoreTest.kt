@@ -6,22 +6,26 @@ import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import java.util.*
 
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AccountStoreTest : FreeSpec({
     runBlockingTest {
-
-        val db = Application(Config.test, this).db
-        val store = AccountStore(db)
+        val testScope = CoroutineUtil.genTestScope()
+        val app = Application(Config.test).run(this)
+        val store = app.accountStore
 
         val username = genPhoneNumber()
         val newAccount = NewAccount(username)
@@ -33,6 +37,10 @@ class AccountStoreTest : FreeSpec({
 
         afterTest {
             store.clear()
+        }
+
+        afterSpec {
+            testScope.teardown()
         }
 
         "#insert" - {

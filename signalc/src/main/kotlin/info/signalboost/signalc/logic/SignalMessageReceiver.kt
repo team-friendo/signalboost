@@ -1,35 +1,45 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.model.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
+import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
+import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
+import java.lang.Exception
 import java.util.concurrent.TimeUnit
 
 
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SignalMessageReceiver(app: Application) {
+class SignalMessageReceiver(private val app: Application) {
     companion object {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
-
-    private val signal = app.signal
-    private val coroutineScope = app.coroutineScope
+    // FACTORIES
 
     private fun messagePipeOf(account: VerifiedAccount) = SignalServiceMessageReceiver(
-        signal.configs,
+        app.signal.configs,
         account.credentialsProvider,
-        signal.agent,
+        app.signal.agent,
         null, // TODO: see [1] below
         UptimeSleepTimer(),
-        signal.clientZkOperations?.profileOperations,
+        app.signal.clientZkOperations?.profileOperations,
     ).createMessagePipe()
 
-    suspend fun receiveMessages(account: VerifiedAccount): ReceiveChannel<SignalServiceEnvelope> {
+    // TODO: memoize this?
+    private fun cipherOf(account: VerifiedAccount) = SignalServiceCipher(
+        account.address,
+        app.protocolStore.of(account),
+        app.signal.certificateValidator
+    )
+
+    // MESSAGE LISTENING
+
+    suspend fun subscribe(account: VerifiedAccount): Job {
         // TODO(aguestuser|2021-01-21):
         //  make this resilient to duplicate subscriptions by:
         //  - keeping hashmap of messagePipes
@@ -43,17 +53,51 @@ class SignalMessageReceiver(app: Application) {
         //  - random runtime error
         //  - cleanup message pipe on unsubscribe (by calling messagePipe.shutdown())
         val messagePipe = messagePipeOf(account)
-        val channel = Channel<SignalServiceEnvelope>()
-        coroutineScope.launch {
-            while(!channel.isClosedForSend){
+        return app.coroutineScope.launch {
+            while (this.isActive) {
                 withContext(Dispatchers.IO) {
-                    val msg = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    channel.send(msg)
+                    val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                    dispatch(account, envelope)
                 }
             }
         }
-        return channel
     }
+
+    // MESSAGE HANDLING
+
+    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
+        when(envelope.type) {
+            CIPHERTEXT_VALUE -> handleCyphertext(envelope, account)
+            // TODO: handle other message types:
+            //  - UNKNOWN, KEY_EXCHANGE, PREKEY_BUNDLE, UNIDENTIFIED_SENDER, RECEIPT
+            else -> drop(envelope, account)
+        }
+    }
+
+    private suspend fun handleCyphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
+        // Attempt to decrypt envelope in a new coroutine within CPU-intensive thread-pool
+        // (don't suspend execution in the current coroutine or consume IO threadpool),
+        // then relay result to socket message sender for handling.
+        val (sender, recipient) = (envelope.asSender() to account.asRecipient())
+        app.coroutineScope.launch(Dispatchers.Default) {
+            try {
+                val cleartext = cipherOf(account).decrypt(envelope).dataMessage.orNull()?.body?.orNull()
+                cleartext
+                    ?.let { app.socketMessageSender.send(Cleartext(sender, recipient, it)) }
+                    ?: app.socketMessageSender.send(Empty(sender, recipient))
+            } catch(e: Throwable) {
+                app.socketMessageSender.send(DecryptionError(sender, recipient, e))
+            }
+        }
+    }
+
+    private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
+        app.socketMessageSender.send(Dropped(envelope.asSender(), account.asRecipient(), envelope))
+    }
+
+    private fun SignalServiceEnvelope.asSender(): SignalServiceAddress = sourceAddress
+    private fun VerifiedAccount.asRecipient(): SignalServiceAddress = address
+
 }
 
 /*[1]**********

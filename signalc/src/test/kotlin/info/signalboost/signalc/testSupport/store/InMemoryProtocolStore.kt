@@ -1,6 +1,6 @@
 package info.signalboost.signalc.testSupport.store
 
-import info.signalboost.signalc.logic.KeyUtil
+import info.signalboost.signalc.util.KeyUtil
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException

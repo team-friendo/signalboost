@@ -1,96 +1,83 @@
 package info.signalboost.signalc
 
+import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.util.UnixServerSocket
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
+import org.newsclub.net.unix.AFUNIXServerSocket
+import org.newsclub.net.unix.AFUNIXSocketAddress
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations
 import org.whispersystems.signalservice.api.push.TrustStore
 import org.whispersystems.signalservice.internal.configuration.*
 import org.whispersystems.util.Base64
-import java.io.FileInputStream
-import java.io.InputStream
 import java.security.Security
-import java.io.IOException
 
 import org.signal.libsignal.metadata.certificate.CertificateValidator
 import org.whispersystems.libsignal.ecc.Curve
-import java.security.InvalidKeyException
+import org.whispersystems.signalservice.api.messages.SendMessageResult
+import java.io.*
+import kotlin.reflect.KClass
+import kotlin.reflect.full.primaryConstructor
+import kotlin.system.exitProcess
 
 
-class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
-
-    companion object {
-
-        data class Store(
-            val account: AccountStore,
-            val signalProtocol: ProtocolStore,
-        )
-
-        data class Signal(
-            val agent: String,
-            val certificateValidator: CertificateValidator,
-            val clientZkOperations: ClientZkOperations?,
-            val configs: SignalServiceConfiguration,
-            val groupsV2Operations: GroupsV2Operations?,
-            val trustStore: TrustStore,
-        )
-
-        data class Socket(
-            val path: String,
-        )
-    }
-
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
+class Application(val config: Config.App) {
     init {
-        if (config.signal.addSecurityProvider) Security.addProvider(BouncyCastleProvider())
+        if (config.signal.addSecurityProvider) {
+            Security.addProvider(BouncyCastleProvider())
+        }
     }
 
-    /**********
-     * STORE
-     **********/
+    /**************
+     * COMPONENTS
+     *************/
 
-    val db: Database by lazy {
-        Database.connect(
-            driver = config.db.driver,
-            url = config.db.url,
-            user = config.db.user,
-        )
-    }
+    lateinit var accountManager: AccountManager
+    lateinit var signalMessageSender: SignalMessageSender
+    lateinit var signalMessageReceiver: SignalMessageReceiver
+    lateinit var socketMessageReceiver: SocketMessageReceiver
+    lateinit var socketMessageSender: SocketMessageSender
+    lateinit var socketServer: SocketServer
 
-    val store by lazy {
-        Store(
-            account = when(config.store.account) {
-                Config.StoreType.SQL -> AccountStore(db)
-                Config.StoreType.MOCK -> mockk()
-            },
-            signalProtocol = when(config.store.signalProtocol) {
-                Config.StoreType.SQL -> ProtocolStore(db)
-                Config.StoreType.MOCK -> mockk() {
-                    every { of(any()) } returns mockk()
-                }
-            }
-        )
-    }
+    /*************
+     * RESOURCES
+     ************/
 
-    /**********
-     * SIGNAL
-     **********/
+    // COROUTINES //
 
-    val signal by lazy {
-        Signal(
-            agent = config.signal.agent,
-            certificateValidator = certificateValidator,
-            clientZkOperations = clientZkOperations,
-            configs = signalConfigs,
-            groupsV2Operations = groupsV2Operations,
-            trustStore = trustStore,
-        )
-    }
+    lateinit var coroutineScope: CoroutineScope
+
+    // SIGNAL //
+
+    data class Signal(
+        val agent: String,
+        val certificateValidator: CertificateValidator,
+        val clientZkOperations: ClientZkOperations?,
+        val configs: SignalServiceConfiguration,
+        val groupsV2Operations: GroupsV2Operations?,
+        val trustStore: TrustStore,
+    )
+
+    lateinit var signal: Signal
+
+    private fun initializeSignal(): Signal = Signal(
+        agent = config.signal.agent,
+        certificateValidator = certificateValidator,
+        clientZkOperations = clientZkOperations,
+        configs = signalConfigs,
+        groupsV2Operations = groupsV2Operations,
+        trustStore = trustStore,
+    )
 
     private val trustStore by lazy {
         object : TrustStore {
@@ -132,14 +119,109 @@ class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
         CertificateValidator(Curve.decodePoint(Base64.decode(config.signal.unidentifiedSenderTrustRoot), 0))
     }
 
-    /*********
-     * SOCKET
-     *********/
+    // SOCKET //
 
-    val socket by lazy {
-        Socket(
-            path = config.socket.path
+    lateinit var socket: UnixServerSocket
+
+    private fun initializeSocket(): UnixServerSocket =
+        if(config.mocked.contains(UnixServerSocket::class)) mockk()
+        else AFUNIXServerSocket.newInstance().apply {
+            bind(AFUNIXSocketAddress(File(config.socket.path)))
+        }
+
+    // STORE //
+
+    lateinit var accountStore: AccountStore
+    lateinit var protocolStore: ProtocolStore
+
+    private val db by lazy {
+        Database.connect(
+            driver = config.db.driver,
+            url = config.db.url,
+            user = config.db.user,
         )
     }
 
+    /**************
+     * LIFECYCLE
+     *************/
+
+    // Generic Component intializers
+    interface ReturningRunnable<T> {
+        suspend fun run(): T
+    }
+
+    private inline fun <reified T: Any>initializeStore(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(db))
+
+
+    private inline fun <reified T: Any>initializeColdComponent(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+
+
+    private inline fun <reified U: Any, reified T: ReturningRunnable<U>>initializeHotComponent(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = { coEvery { run() } returns mockk() }
+    ): T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+
+
+    @ExperimentalCoroutinesApi
+    suspend fun run(scope: CoroutineScope): Application {
+
+        // concurrency context
+        coroutineScope = scope
+
+        // storage resources
+        accountStore = initializeStore(AccountStore::class)
+        protocolStore = initializeStore(ProtocolStore::class){
+            every { of(any()) } returns mockk()
+        }
+
+        // network resources
+        socket = initializeSocket()
+        signal = initializeSignal()
+
+        // "cold" components
+        accountManager = initializeColdComponent(AccountManager::class)
+        signalMessageReceiver = initializeColdComponent(SignalMessageReceiver::class)
+        signalMessageSender = initializeColdComponent(SignalMessageSender::class){
+            coEvery { send(any(),any(),any(),any(),any()) } returns mockk() {
+                every { success } returns  mockk()
+            }
+        }
+        socketMessageReceiver = initializeColdComponent(SocketMessageReceiver::class)
+        socketMessageSender = initializeColdComponent(SocketMessageSender::class){
+            coEvery { send(any()) } returns mockk()
+        }
+
+        // "hot" components
+        socketServer = initializeHotComponent(SocketServer::class) {
+            coEvery { run() } returns mockk()
+            coEvery { stop() } returns Unit
+            coEvery { disconnect(any()) } returns Unit
+        }.run()
+        println("running!\nlistening for connections at ${config.socket.path}...")
+
+        return this
+    }
+
+
+    suspend fun stop(withPanic: Boolean = false): Application {
+        socketServer.stop()
+        // TODO: close db connection?
+        if(withPanic) exitProcess(1)
+        return this
+    }
 }
+
+

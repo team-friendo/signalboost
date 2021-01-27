@@ -2,7 +2,10 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.withContext
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
@@ -12,6 +15,8 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
 class SignalMessageSender(private val app: Application) {
 
     companion object {
@@ -30,7 +35,7 @@ class SignalMessageSender(private val app: Application) {
         SignalServiceMessageSender(
             app.signal.configs,
             account.credentialsProvider,
-            app.store.signalProtocol.of(account),
+            app.protocolStore.of(account),
             app.signal.agent,
             true,
             false,
@@ -48,12 +53,14 @@ class SignalMessageSender(private val app: Application) {
         timestamp: Long = TimeUtil.nowInMillis(),
         expiration: Int = DEFAULT_EXPIRY_TIME,
     ): SendMessageResult {
+        println("sending $body")
         val dataMessage =  SignalServiceDataMessage
             .newBuilder()
             .withBody(body)
             .withTimestamp(timestamp)
             .withExpiration(expiration)
             .build()
+        // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
         return withContext(Dispatchers.IO) {
             messageSenderOf(sender).sendMessage(recipient, absent(), dataMessage)
         }

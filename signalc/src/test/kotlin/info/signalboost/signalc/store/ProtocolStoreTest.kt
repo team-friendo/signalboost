@@ -2,31 +2,32 @@ package info.signalboost.signalc.store
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.db.OwnIdentities
-import info.signalboost.signalc.logic.KeyUtil
+import info.signalboost.signalc.model.NewAccount
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
 
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
-
-        val app = Application(Config.test, this)
-        val db = app.db
-
+        val testScope = genTestScope()
         val accountId = genPhoneNumber()
-        val store = ProtocolStore.AccountProtocolStore(db, accountId)
+        val app = Application(Config.test).run(testScope)
+        val store = app.protocolStore.of(NewAccount(accountId))
+
         val address = SignalProtocolAddress(accountId, 42)
         // NOTE: An address is a combination of a username (uuid or e164-format phone number) and a device id.
         // This is how Signal represents that a user may have many devices and each device has its own session.
@@ -42,6 +43,10 @@ class ProtocolStoreTest: FreeSpec({
             )
         }
 
+        afterSpec {
+            testScope.teardown()
+        }
+
         "Identities store" - {
             val identityKey = KeyUtil.genIdentityKeyPair().publicKey
             val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
@@ -52,16 +57,16 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "creates account's identity keypair on first call, retrieves it on subsequent calls" {
-                transaction(db) { OwnIdentities.selectAll().count() shouldBe 0 }
+                app.protocolStore.countOwnIdentities() shouldBe 0
                 val keyPair = store.identityKeyPair
-                transaction(db) { OwnIdentities.selectAll().count() shouldBe 1 }
+                app.protocolStore.countOwnIdentities() shouldBe 1
                 store.identityKeyPair.serialize() shouldBe keyPair.serialize()
             }
 
             "retrieves account's registration id on first call, retrieves it on subsquent calls" {
-                transaction(db) { OwnIdentities.selectAll().count() } shouldBe 0
+                app.protocolStore.countOwnIdentities() shouldBe 0
                 val registrationId = store.localRegistrationId
-                transaction(db) { OwnIdentities.selectAll().count() } shouldBe 1
+                app.protocolStore.countOwnIdentities() shouldBe 1
                 store.localRegistrationId shouldBe registrationId
             }
 
@@ -239,7 +244,7 @@ class ProtocolStoreTest: FreeSpec({
         "Multiple stores" - {
             val otherAccountId = genPhoneNumber()
             val otherAddress = SignalProtocolAddress(otherAccountId, 10)
-            val otherStore = ProtocolStore.AccountProtocolStore(db, otherAccountId)
+            val otherStore = app.protocolStore.of(NewAccount(otherAccountId))
             val ids = listOf(0, 1)
 
             afterTest {

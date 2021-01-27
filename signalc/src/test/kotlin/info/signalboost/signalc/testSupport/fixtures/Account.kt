@@ -10,11 +10,15 @@ object Account {
     fun genNewAccount(phoneNumber: String = genPhoneNumber()) =
         NewAccount(phoneNumber)
 
-    fun genRegisteredAccount(newAccount: NewAccount = genNewAccount()) =
+    fun genRegisteredAccount(
+        phoneNumber: String = genPhoneNumber(),
+        newAccount: NewAccount = genNewAccount(phoneNumber),
+    ) =
         RegisteredAccount.fromNew(newAccount)
 
     fun genVerifiedAccount(
-        registeredAccount: RegisteredAccount = genRegisteredAccount(),
+        phoneNumber: String = genPhoneNumber(),
+        registeredAccount: RegisteredAccount = genRegisteredAccount(phoneNumber),
         uuid: UUID = UUID.randomUUID()
     ) =
         VerifiedAccount.fromRegistered(registeredAccount, uuid)

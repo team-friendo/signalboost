@@ -6,7 +6,10 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.withContext
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
@@ -18,10 +21,12 @@ import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.util.*
 import kotlin.random.Random
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
 class AccountManager(private val app: Application) {
 
-    private val accountStore = app.store.account
-    private val protocolStore = app.store.signalProtocol
+    private val accountStore = app.accountStore
+    private val protocolStore = app.protocolStore
     private val signal = app.signal
 
     private val accountManagers:  MutableMap<Account,SignalServiceAccountManager> = mutableMapOf()
@@ -45,6 +50,13 @@ class AccountManager(private val app: Application) {
     }
 
     suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
+
+    suspend fun loadVerified (accountId: String): VerifiedAccount? =
+        when(val acc = accountStore.findOrCreate(accountId)) {
+            is VerifiedAccount -> acc
+            else -> null
+        }
+
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount): RegisteredAccount {
