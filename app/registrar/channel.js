@@ -40,7 +40,7 @@ const create = async ({ phoneNumber, admins }) => {
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
 
     // replace the phone number we just used with another one
-    replaceUsedPhoneNumber()
+    replaceActivatedPhoneNumber()
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
@@ -120,10 +120,15 @@ const _welcomeNotificationOf = channel =>
     channel.phoneNumber,
   )
 
-const replaceUsedPhoneNumber = async () => {
+const replaceActivatedPhoneNumber = async () => {
   try {
     const newNum = await provisionN({ n: 1 })
-    return newNum
+    return {
+      status: sbStatuses.SUCCESS,
+      data: {
+        newNum,
+      },
+    }
   } catch (e) {
     logger.error(e)
     await notifier.notifyMaintainers(
@@ -163,6 +168,6 @@ module.exports = {
   create,
   addAdmin,
   list,
-  replaceUsedPhoneNumber,
+  replaceActivatedPhoneNumber,
   _welcomeNotificationOf,
 }

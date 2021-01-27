@@ -17,7 +17,7 @@ import {
   create,
   addAdmin,
   list,
-  replaceUsedPhoneNumber,
+  replaceActivatedPhoneNumber,
   _welcomeNotificationOf,
 } from '../../../app/registrar/channel'
 import phoneNumberService from '../../../app/registrar/phoneNumber/'
@@ -403,32 +403,46 @@ describe('channel registrar', () => {
     })
   })
 
-  describe('#replaceUsedPhoneNumber', () => {
+  describe('#replaceActivatedPhoneNumber', () => {
     describe('when provisioning a new phone number succeeds', () => {
+      const phoneNumber = genPhoneNumber()
       beforeEach(() =>
         provisionNStub.returns(
           Promise.resolve({
+            phoneNumber,
             status: statuses.VERIFIED,
-            phoneNumber: genPhoneNumber(),
           }),
         ),
       )
 
       it('returns a new phone number and success status', async () => {
         expect(
-          expect(await replaceUsedPhoneNumber()).to.eql({
-            status: statuses.ERROR,
-            error: 'womp',
+          expect(await replaceActivatedPhoneNumber()).to.eql({
+            status: statuses.SUCCESS,
+            data: {
+              phoneNumber,
+              status: statuses.VERIFIED,
+            },
           }),
         )
       })
     })
 
     describe('when provisioning a phone number fails', () => {
-      beforeEach(() => provisionNStub.callsFake(() => Promise.reject(new Error('womp'))))
+      beforeEach(() => {
+        notifyMaintainersStub.returns(Promise.resolve('no numbas!'))
+        provisionNStub.callsFake(() => Promise.reject(new Error('womp')))
+      })
+
+      it('notifies the sysadmins', async () => {
+        await replaceActivatedPhoneNumber()
+        expect(notifyMaintainersStub.getCall(0).args).to.eql([
+          messagesIn(defaultLanguage).notifications.phoneNumberProvisioningErr('no numbas!'),
+        ])
+      })
 
       it('returns an error', async () => {
-        expect(await replaceUsedPhoneNumber()).to.eql({
+        expect(await replaceActivatedPhoneNumber()).to.eql({
           status: statuses.ERROR,
           error: 'womp',
         })
