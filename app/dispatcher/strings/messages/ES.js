@@ -528,6 +528,11 @@ ${
   destroyChannelFailed: phoneNumber =>
     `No se pudo destruir el canal para el número de teléfono ${phoneNumber}`,
 
+  newChannelCreated: numChannels =>
+    `Se acaba de crear un nuevo canal. Ahora hay ${numChannels} canales activos.`,
+
+  phoneNumberProvisioningErr: err => `Error al aprovisionar un nuevo número de teléfono: ${err}.`,
+
   restartRequesterNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡No estás autorizado para hacer eso!',
   restartChannelNotAuthorized:

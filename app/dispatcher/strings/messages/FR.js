@@ -522,6 +522,12 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
   destroyChannelFailed: phoneNumber =>
     `Échec de la destruction du canal pour le numéro de téléphone: ${phoneNumber}`,
 
+  newChannelCreated: numChannels =>
+    `Une nouvelle chaîne vient d'être créée. Il y a maintenant ${numChannels} canaux actifs.`,
+
+  phoneNumberProvisioningErr: err =>
+    `Erreur lors de l'approvisionnement d'un nouveau numéro de téléphone: ${err}.`,
+
   restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",
   restartChannelNotAuthorized:
