@@ -65,6 +65,7 @@ object Versions {
     const val pgjdbc = "0.8.3"
     const val shadowJar = "5.2.0"
     const val slf4j = "1.7.30"
+    const val junixSocket = "2.3.2"
 }
 
 dependencies {
@@ -78,6 +79,7 @@ dependencies {
     implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
+    implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
 
     // migrations
     implementation("org.liquibase:liquibase-core:${Versions.liquibase}")

@@ -45,11 +45,10 @@ class SignalMessageReceiver(app: Application) {
         val messagePipe = messagePipeOf(account)
         val channel = Channel<SignalServiceEnvelope>()
         coroutineScope.launch {
-            withContext(Dispatchers.IO) {
-                while(!channel.isClosedForSend){
-                    channel.send(
-                        messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    )
+            while(!channel.isClosedForSend){
+                withContext(Dispatchers.IO) {
+                    val msg = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                    channel.send(msg)
                 }
             }
         }

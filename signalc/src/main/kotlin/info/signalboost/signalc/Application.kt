@@ -40,6 +40,10 @@ class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
             val groupsV2Operations: GroupsV2Operations?,
             val trustStore: TrustStore,
         )
+
+        data class Socket(
+            val path: String,
+        )
     }
 
     init {
@@ -126,6 +130,16 @@ class Application(val config: Config.App, val coroutineScope: CoroutineScope) {
     private val certificateValidator: CertificateValidator by lazy {
         // TODO: what to do if this throws invalid key exception or io exception?
         CertificateValidator(Curve.decodePoint(Base64.decode(config.signal.unidentifiedSenderTrustRoot), 0))
+    }
+
+    /*********
+     * SOCKET
+     *********/
+
+    val socket by lazy {
+        Socket(
+            path = config.socket.path
+        )
     }
 
 }
