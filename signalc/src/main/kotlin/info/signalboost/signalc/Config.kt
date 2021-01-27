@@ -1,7 +1,33 @@
 package info.signalboost.signalc
 
+import info.signalboost.signalc.logic.*
+import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.util.UnixServerSocket
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlin.reflect.KClass
+
+
+@ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
 object Config {
     const val USER_PHONE_NUMBER = "+17347962920"
+
+    private val components = listOf(
+        // resources
+        AccountStore::class,
+        ProtocolStore::class,
+        UnixServerSocket::class,
+        // components
+        AccountManager::class,
+        // note: we exclude Signal::class b/c currently we never need to mock it
+        SignalMessageReceiver::class,
+        SignalMessageSender::class,
+        SocketMessageReceiver::class,
+        SocketMessageSender::class,
+        SocketServer::class,
+    )
 
     // SCHEMA
 
@@ -9,7 +35,7 @@ object Config {
         val db: Database,
         val signal: Signal,
         val socket: Socket,
-        val store: Store,
+        val mocked: Set<KClass<out Any>>,
     )
 
     data class Database(
@@ -37,16 +63,6 @@ object Config {
         val path: String,
     )
 
-    enum class StoreType {
-        SQL,
-        MOCK,
-    }
-
-    data class Store(
-        val account: StoreType,
-        val signalProtocol: StoreType,
-    )
-
     // FACTORIES
 
     enum class Env(val value: String) {
@@ -58,7 +74,7 @@ object Config {
     fun fromEnv(env: String? = System.getenv("SIGNALC_ENV")): App = when(env) {
         Env.Dev.value -> dev
         Env.Prod.value -> prod
-        Env.Test.value -> test
+        Env.Test.value -> mockStore
         else -> throw(Error("ERROR: missing or illegal value for \$SIGNALC_ENV: $env"))
     }
 
@@ -87,25 +103,36 @@ object Config {
         socket = Socket(
           path = "/signalc/message.sock"
         ),
-        store= Store(
-            account = StoreType.SQL,
-            signalProtocol = StoreType.SQL,
-        ),
+        mocked = emptySet(),
     )
 
     val prod = default
+
     val dev = default.copy(
         db = default.db.copy(
             url = "jdbc:pgsql://$dbHost/signalc_development",
         ),
     )
+
     val test = default.copy(
         db = default.db.copy(
             url = "jdbc:pgsql://$dbHost/signalc_test",
         ),
-        store = default.store.copy(
-            account = Config.StoreType.MOCK,
-            signalProtocol = Config.StoreType.MOCK
-        ),
     )
+
+    fun withMocked(mockTargets: List<KClass<out Any>>) = test.copy(
+        mocked = mockTargets.toSet()
+    )
+
+    fun withMocked(vararg mockTargets: KClass<out Any>) = withMocked(mockTargets.toList())
+
+    val mockAll = withMocked(components)
+
+    val mockStore = withMocked(
+        AccountStore::class,
+        ProtocolStore::class
+    )
+
+    fun mockAllExcept(component: KClass<out Any>): App =
+        withMocked(components.filter { it != component })
 }

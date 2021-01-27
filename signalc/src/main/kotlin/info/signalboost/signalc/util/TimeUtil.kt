@@ -1,4 +1,4 @@
-package info.signalboost.signalc.logic
+package info.signalboost.signalc.util
 
 import java.time.Instant
 

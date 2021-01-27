@@ -8,9 +8,8 @@ import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.Sessions.sessionBytes
-import info.signalboost.signalc.logic.KeyUtil
+import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.model.Account
-import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
@@ -20,7 +19,10 @@ import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
 
 class ProtocolStore(private val db: Database) {
-    fun of(account: Account): SignalProtocolStore = AccountProtocolStore(db, account.username)
+    fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
+
+    fun countOwnIdentities(): Long =
+        transaction(db) { OwnIdentities.selectAll().count() }
 
     class AccountProtocolStore(
         private val db: Database,

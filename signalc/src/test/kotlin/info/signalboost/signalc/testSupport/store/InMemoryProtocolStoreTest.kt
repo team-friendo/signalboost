@@ -1,6 +1,6 @@
 package info.signalboost.signalc.testSupport.store
 
-import info.signalboost.signalc.logic.KeyUtil
+import info.signalboost.signalc.util.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe

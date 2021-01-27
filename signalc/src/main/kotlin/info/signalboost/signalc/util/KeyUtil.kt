@@ -1,4 +1,4 @@
-package info.signalboost.signalc.logic
+package info.signalboost.signalc.util
 
 import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.IdentityKeyPair

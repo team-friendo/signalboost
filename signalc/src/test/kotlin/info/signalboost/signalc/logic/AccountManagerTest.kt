@@ -5,15 +5,19 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
-import org.whispersystems.libsignal.state.SignalProtocolStore
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
@@ -21,13 +25,16 @@ import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedE
 import java.util.*
 import kotlin.random.Random
 
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({
     runBlockingTest {
-        val app = Application(Config.test, this)
-        val accountManager = AccountManager(app)
+        val testScope = genTestScope()
+        val config = Config.mockAllExcept(AccountManager::class)
+        val app = Application(config).run(testScope)
+        val accountManager = app.accountManager
 
-        val mockProtocolStore: SignalProtocolStore = mockk()
+        val mockProtocolStore: ProtocolStore.AccountProtocolStore = mockk()
         val phoneNumber = genPhoneNumber()
         val uuid = UUID.randomUUID()
         val newAccount = NewAccount(phoneNumber)
@@ -36,7 +43,7 @@ class AccountManagerTest : FreeSpec({
 
         beforeSpec {
             mockkObject(KeyUtil)
-            every { app.store.signalProtocol.of(any()) } returns mockProtocolStore
+            every { app.protocolStore.of(any()) } returns mockProtocolStore
             mockkConstructor(SignalServiceAccountManager::class)
         }
 
@@ -46,22 +53,23 @@ class AccountManagerTest : FreeSpec({
 
         afterSpec {
             unmockkAll()
+            testScope.teardown()
         }
 
         "#findOrCreate" - {
-            coEvery { app.store.account.findOrCreate(any()) } answers { newAccount }
+            coEvery { app.accountStore.findOrCreate(any()) } answers { newAccount }
 
             "delegates to AccountStore" {
                 accountManager.load(phoneNumber)
                 coVerify {
-                    app.store.account.findOrCreate(phoneNumber)
+                    app.accountStore.findOrCreate(phoneNumber)
                 }
             }
         }
 
         "#register" - {
             val saveSlot = slot<RegisteredAccount>()
-            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
+            coEvery { app.accountStore.save(account = capture(saveSlot)) } returns Unit
             every {
                 anyConstructed<SignalServiceAccountManager>()
                     .requestSmsVerificationCode(any(), any(), any())
@@ -78,7 +86,7 @@ class AccountManagerTest : FreeSpec({
             "updates the account store" {
                 accountManager.register(newAccount)
                 coVerify {
-                    app.store.account.save(any<RegisteredAccount>())
+                    app.accountStore.save(any<RegisteredAccount>())
                 }
                 saveSlot.captured shouldBe registeredAccount
             }
@@ -91,7 +99,7 @@ class AccountManagerTest : FreeSpec({
         "#verify" - {
             val code = "1312"
             val saveSlot = slot<VerifiedAccount>()
-            coEvery { app.store.account.save(account = capture(saveSlot)) } returns Unit
+            coEvery { app.accountStore.save(account = capture(saveSlot)) } returns Unit
             every { mockProtocolStore.localRegistrationId } returns 42
 
             "when given correct code" - {
@@ -115,7 +123,7 @@ class AccountManagerTest : FreeSpec({
                 "updates the account store" {
                     accountManager.verify(registeredAccount, code)
                     coVerify {
-                        app.store.account.save(ofType(VerifiedAccount::class))
+                        app.accountStore.save(ofType(VerifiedAccount::class))
                     }
                     saveSlot.captured shouldBe verifiedAccount
                 }
@@ -143,7 +151,7 @@ class AccountManagerTest : FreeSpec({
 
                 "does not update the account store" {
                     accountManager.verify(registeredAccount, code)
-                    verify { app.store.account wasNot Called }
+                    verify { app.accountStore wasNot Called }
                 }
 
                 "returns null" {
