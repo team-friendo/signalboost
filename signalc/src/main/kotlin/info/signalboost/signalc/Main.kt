@@ -1,12 +1,16 @@
 package info.signalboost.signalc
 
-import info.signalboost.signalc.Config.USER_PHONE_NUMBER
-import info.signalboost.signalc.logic.AccountManager
-import info.signalboost.signalc.logic.SignalMessageSender
-import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
-import info.signalboost.signalc.logic.SignalMessageDispatcher
-import info.signalboost.signalc.model.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import org.newsclub.net.unix.AFUNIXServerSocket
+import org.newsclub.net.unix.AFUNIXSocketAddress
+import java.io.BufferedReader
+import java.io.File
+import java.io.InputStreamReader
+import java.io.PrintWriter
+import java.net.Socket
+import kotlin.system.exitProcess
 
 
 /*************
@@ -16,73 +20,98 @@ import kotlinx.coroutines.*
 @ExperimentalCoroutinesApi
 fun main() = runBlocking {
     val app = Application(Config.fromEnv(), this)
-    val accountManager = AccountManager(app)
-    val messageSender = SignalMessageSender(app)
-    val dispatcher = SignalMessageDispatcher(app)
 
-    // find or create account
-    val verifiedAccount: VerifiedAccount = when(
-        val account: Account = accountManager.load(USER_PHONE_NUMBER)
-    ) {
-        is NewAccount -> register(accountManager, account)
-        is RegisteredAccount -> register(accountManager, NewAccount.fromRegistered(account))
-        is VerifiedAccount -> account
-        else -> null
-    } ?: return@runBlocking println("Couldn't find or create account with number $USER_PHONE_NUMBER")
-
-
-    // subscribe to messages on this number...
-    val listenForIncoming: Job = launch {
-        println("Subscribing to messages for ${verifiedAccount.username}...")
-        val incomingMessages = dispatcher.subscribe(verifiedAccount)
-        println("...subscribed to messages for ${verifiedAccount.username}.")
-
-        while(!incomingMessages.isClosedForReceive) {
-            when(val msg = incomingMessages.receive()) {
-                is Cleartext -> println("\nMessage from [${msg.sender.number.orNull()}]:\n${msg.body}\n")
-            }
-        }
+    // TODO: "turn server on" in App.run()?
+    val server =  AFUNIXServerSocket.newInstance().apply {
+        bind(AFUNIXSocketAddress(File(app.socket.path)))
     }
 
     // send messages...
-    val listenForOutgoing: Job = launch {
-        while (true) {
+    val listenForSocketMessages: Job = launch {
+        server.use {
             withContext(Dispatchers.IO) {
-                println("\nWhat number would you like to send a message to?")
-                val recipientPhone = readLine() ?: return@withContext
-
-                println("What message would you like to send?")
-                val message = readLine() ?: return@withContext
-                messageSender.send(
-                    sender = verifiedAccount,
-                    recipient = recipientPhone.asAddress(),
-                    body = message
-                )
-                println("Sent \"$message\" to $recipientPhone\n")
+                while (true) {
+                    val sock = it.accept() as Socket
+                    println("got connection!")
+                    launch {
+                        SocketMessageDispatcher(app, sock).subscribe()
+                    }
+                }
             }
         }
     }
 
-    listOf(listenForIncoming, listenForOutgoing).joinAll()
+    println("running...")
+    listenForSocketMessages.join()
 }
 
 @ExperimentalCoroutinesApi
-suspend fun register(accountManager: AccountManager, newAccount: NewAccount): VerifiedAccount? {
+class SocketMessageDispatcher(
+    val app: Application,
+    // TODO: hmmm....
+    val socket: Socket,
+    val socketReceiver: SocketMessageReceiver = SocketMessageReceiver(app),
+    val socketSender: SocketMessageSender = SocketMessageSender(app, socket),
+) {
+    suspend fun subscribe(): ReceiveChannel<String> {
+        val incoming = socketReceiver.listen(socket)
+        val outgoing = Channel<String>()
 
-    println("Asking Signal to text a verification code to $USER_PHONE_NUMBER...")
-    val registeredAccount = accountManager.register(newAccount)
-
-    println("Please enter the code:")
-    val verificationCode = readLine() ?: return null
-    val verifiedAccount = accountManager.verify(registeredAccount, verificationCode)
-        ?.let {
-            accountManager.publishPreKeys(it)
+        while(!incoming.isClosedForReceive && !outgoing.isClosedForSend) {
+            val msg = incoming.receive()
+            dispatch(msg, socket, socketSender)
         }
-        ?: run {
-            println("Verification failed! Wrong code?\n")
-            null
+
+        return outgoing
+    }
+
+    private suspend fun dispatch(msg: String, socket: Socket, sender: SocketMessageSender) {
+        when (msg) {
+            "abort" -> {
+                println("received 'abort'. exiting.")
+                sender.send("bye!")
+                exitProcess(0)
+            }
+            else -> sender.send(msg)
+        }
+    }
+}
+
+class SocketMessageReceiver(app: Application) {
+    val coroutineScope = app.coroutineScope
+
+    suspend fun listen(socket: Socket): ReceiveChannel<String> {
+        val out = Channel<String>()
+
+        coroutineScope.launch(Dispatchers.IO) {
+            // TODO: is this a good way to handle this resource?
+            BufferedReader(InputStreamReader(socket.getInputStream())).use {
+                while(true) {
+                    withContext(Dispatchers.IO) {
+                        val msg = it.readLine() ?: "abort"
+                        out.send(msg)
+                    }
+                }
+            }
         }
 
-    println("$USER_PHONE_NUMBER registered and verified!\n")
-    return verifiedAccount
+        return out
+    }
+}
+
+class SocketMessageSender(app: Application, socket: Socket) {
+    // TODO: hmm...
+    //   - right now, we error if we don't recycle this writer across writes
+    //   - but it forces us to pass an instance of `socket` to the constructor
+    //   - aaand it prevents us from cleanly cleaning up resources with `.use`
+    //   - can we do better?
+    private val writer by lazy {
+        PrintWriter(socket.getOutputStream(), true)
+    }
+
+    suspend fun send(msg: String) {
+        withContext(Dispatchers.IO) {
+            writer.println(msg)
+        }
+    }
 }
