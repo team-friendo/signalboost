@@ -1,6 +1,8 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
 const channelRepository = require('../../db/repositories/channel')
+const phoneNumberRepository = require('../../db/repositories/phoneNumber')
+const { statuses: pNumStatuses } = require('../../db/models/phoneNumber')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
 const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
@@ -68,7 +70,7 @@ const execute = async (executable, dispatchable) => {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
-    [commands.CHANNEL]: () => maybeCreateChannel(channel, sender, sdMessage, payload),
+    [commands.CHANNEL]: () => maybeCreateChannel(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => confirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => actuallyDestroy(channel, sender),
@@ -278,11 +280,18 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 }
 
 // CHANNEL
-const maybeCreateChannel = async (channel, sender) => {
+const maybeCreateChannel = async (sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
     if (process.env.NEW_CHANNELS_ALLOWED === '1') {
-      const newChannel = await channelRegistrar.create()
+      // get the verified phone numbers that are ready to be used by channels
+      const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
+
+      const newChannel = await channelRegistrar.create({
+        phoneNumber: verifiedPhoneNumbers[0].phoneNumber,
+        admins: payload,
+      })
+
       return {
         status: statuses.SUCCESS,
         payload: '',

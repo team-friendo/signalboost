@@ -11,6 +11,7 @@ import diagnostics from '../../../../app/diagnostics'
 import channelRepository, {
   getSubscriberMemberships,
 } from '../../../../app/db/repositories/channel'
+import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
@@ -554,21 +555,41 @@ describe('executing commands', () => {
         beforeEach(() => (process.env.NEW_CHANNELS_ALLOWED = '1'))
         afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = newChannelsAllowedVal))
         describe('when sent a valid channel request', () => {
+          let listPhoneNumberStub
           let createChannelStub
-          beforeEach(() => (createChannelStub = sinon.stub(channelRegistrar, 'create')))
+          beforeEach(() => {
+            listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
+            createChannelStub = sinon.stub(channelRegistrar, 'create')
+          })
 
           describe('when creating a new channel succeeds', () => {
             const phoneNumber = genPhoneNumber()
-            beforeEach(() =>
-              createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber })),
-            )
+            const verifiedPhoneNumbers = [
+              { phoneNumber, status: 'VERIFIED' },
+              { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
+            ]
+
+            beforeEach(() => {
+              listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumbers))
+              createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber }))
+            })
+
+            it('passes in the new channel phone number and admin phone numbers to the channel creation request', async () => {
+              await processCommand(dispatchable)
+
+              expect(createChannelStub.getCall(0).args).to.eql([
+                { phoneNumber, admins: newAdminPhoneNumbers },
+              ])
+            })
 
             it("returns a success status and message containing the new channel's phone number", async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.CHANNEL,
                 payload: '',
                 status: statuses.SUCCESS,
-                message: commandResponsesFor(randomPerson).channel.success(phoneNumber),
+                message: commandResponsesFor(randomPerson).channel.success(
+                  verifiedPhoneNumbers[0].phoneNumber,
+                ),
                 notifications: [],
               })
             })
