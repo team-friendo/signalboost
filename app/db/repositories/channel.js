@@ -36,6 +36,8 @@ const create = async (phoneNumber, adminPhoneNumbers) => {
         .then(c => ({ ...c.dataValues, memberships, messageCount: channel.messageCount }))
 }
 
+const count = () => app.db.channel.count()
+
 // (string, object) -> Promise<Channelinstance|null>
 const update = (phoneNumber, attrs) =>
   app.db.channel
@@ -195,6 +197,7 @@ const canAddSubscribers = (channel, numSubscribers = 1) =>
 
 module.exports = {
   canAddSubscribers,
+  count,
   create,
   destroy,
   findAll,

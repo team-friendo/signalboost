@@ -4,6 +4,7 @@ const phoneNumberRepository = require('../db/repositories/phoneNumber')
 const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
+const notifier = require('../notifier')
 const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
@@ -46,9 +47,16 @@ const create = async ({ phoneNumber, admins }) => {
     await wait(welcomeDelay)
     await _sendWelcomeMessages(channel, adminPhoneNumbers)
 
-    // invite admins to subscribe to support channel if one exists
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
-    if (supportChannel) await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
+    if (supportChannel) {
+      // notify maintainers that a new channel has been created
+      const numChannels = await channelRepository.count()
+      await notifier.notifyMaintainers(
+        messagesIn(defaultLanguage).notifications.newChannelCreated(numChannels),
+      )
+      // invite admins to subscribe to support channel if one exists
+      await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
+    }
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
@@ -118,6 +126,9 @@ const replaceUsedPhoneNumber = async () => {
     return newNum
   } catch (e) {
     logger.error(e)
+    await notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.phoneNumberProvisioningErr(e),
+    )
     return {
       status: sbStatuses.ERROR,
       error: e.message || e,

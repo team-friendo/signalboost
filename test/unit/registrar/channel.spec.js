@@ -8,6 +8,7 @@ import membershipRepository, { memberTypes } from '../../../app/db/repositories/
 import phoneNumberRepository from '../../../app/db/repositories/phoneNumber'
 import inviteRepository from '../../../app/db/repositories/invite'
 import signal from '../../../app/signal'
+import notifier from '../../../app/notifier'
 import { sdMessageOf } from '../../../app/signal/constants'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../support/factories/channel'
@@ -69,6 +70,7 @@ describe('channel registrar', () => {
 
   let addAdminStub,
     createChannelStub,
+    countChannelsStub,
     subscribeStub,
     updatePhoneNumberStub,
     provisionNStub,
@@ -76,12 +78,14 @@ describe('channel registrar', () => {
     findAllDeepStub,
     findDeepStub,
     issueStub,
+    notifyMaintainersStub,
     setExpirationStub,
     logStub
 
   beforeEach(() => {
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
     createChannelStub = sinon.stub(channelRepository, 'create')
+    countChannelsStub = sinon.stub(channelRepository, 'count')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     provisionNStub = sinon.stub(phoneNumberService, 'provisionN')
@@ -90,6 +94,7 @@ describe('channel registrar', () => {
     findDeepStub = sinon.stub(channelRepository, 'findDeep')
     issueStub = sinon.stub(inviteRepository, 'issue')
     sinon.stub(channelRepository, 'findByPhoneNumber').returns(Promise.resolve(channelInstance))
+    notifyMaintainersStub = sinon.stub(notifier, 'notifyMaintainers')
     setExpirationStub = sinon.stub(signal, 'setExpiration').returns(Promise.resolve())
     logStub = sinon
       .stub(eventRepository, 'log')
@@ -170,7 +175,18 @@ describe('channel registrar', () => {
           })
 
           describe('when there is a support channel', () => {
-            beforeEach(() => findDeepStub.returns(Promise.resolve(supportChannel)))
+            beforeEach(() => {
+              findDeepStub.returns(Promise.resolve(supportChannel))
+              countChannelsStub.returns(Promise.resolve(10))
+              notifyMaintainersStub.returns(Promise.resolve())
+            })
+
+            it('alerts maintainers that a new channel has been created', async () => {
+              await create({ phoneNumber, admins })
+              expect(notifyMaintainersStub.getCall(0).args).to.eql([
+                'A new channel was just created. There are now 10 active channels.',
+              ])
+            })
 
             it('invites unsubscribed users to the support channel', async () => {
               await create({ phoneNumber, admins })
@@ -411,7 +427,6 @@ describe('channel registrar', () => {
     describe('when provisioning a phone number fails', () => {
       beforeEach(() => provisionNStub.callsFake(() => Promise.reject(new Error('womp'))))
 
-      it('notifies the sysadmins')
       it('returns an error', async () => {
         expect(await replaceUsedPhoneNumber()).to.eql({
           status: statuses.ERROR,
