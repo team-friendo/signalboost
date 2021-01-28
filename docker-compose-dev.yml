@@ -21,6 +21,10 @@ services:
     ports:
       - 0.0.0.0:9229:9229
 
+  db:
+    ports:
+      - 0.0.0.0:5432:5432
+
   signald_0:
     <<: *signald-overrides
     ports:
