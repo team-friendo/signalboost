@@ -2,16 +2,16 @@
   - name: Deploy Prometheus/Grafana
     become: true
     hosts: "{{ sb_host | default('sb_metrics') }}"
-  
+
     environment:
       NODE_ENV: production
-  
+
     vars:
       homedir: /srv/signalboost
       host_url: "{{ lookup('env', 'SIGNALBOOST_HOST_URL') }}"
       api_token: "{{ lookup('env', 'SIGNALBOOST_API_TOKEN') }}"
-      secrets_method: blackbox
-  
+      secrets_method: copy
+
     tasks:
 
     ############
@@ -29,11 +29,11 @@
       args:
         chdir: /keys
       tags: add_keys
-  
+
     #########
     # CLONE #
     #########
-  
+
     - name: Pull signalboost repository from 0xacab
       git:
         repo: https://0xacab.org/team-friendo/signalboost
@@ -41,18 +41,32 @@
         force: true
         version: "{{ branch | default('main') }}"
       tags: clone
-  
+
     - name: Deploy environment file using blackbox
       command: ./bin/blackbox/postdeploy
       args:
         chdir: "{{ homedir }}"
       tags: clone
       when: secrets_method == "blackbox"
-  
+
     - name: Deploy environment file by copying local file
       copy:
         src: "{{ env_file }}"
         dest: "{{ homedir }}/.env.metrics"
+      tags: clone
+      when: secrets_method == "copy"
+
+    - name: Deploy vhost.d files by copying local file
+      copy:
+        src: "files/vhost.d"
+        dest: "{{ homedir }}/nginx/"
+      tags: clone
+      when: secrets_method == "copy"
+
+    - name: Deploy prometheus config by copying local file
+      copy:
+        src: "files/prometheus/prometheus_prod.yml"
+        dest: "{{ homedir }}/prometheus"
       tags: clone
       when: secrets_method == "copy"
 
@@ -65,7 +79,7 @@
       args:
         chdir: "{{ homedir }}"
       tags: stop
-  
+
     ###########
     # PREPARE #
     ###########
@@ -77,17 +91,16 @@
       args:
         chdir: "{{ homedir }}"
       tags: prepare
-  
+
     #########
     # START #
     #########
-  
+
     - name: Start app
       command: "docker-compose --env-file .env.metrics -f docker-compose-metrics.yml up -d"
       args:
         chdir: "{{ homedir }}"
       register: docker_up_result
-  
+
     # - debug:
     #     var: docker_up_result
-  
