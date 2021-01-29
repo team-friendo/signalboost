@@ -114,14 +114,14 @@
       - config
       - id_sb_deploy
       - id_sb_deploy.pub
-    tags: deploy_user_2
+    tags: deploy_user
 
   - name: Set authorized key for deploy user
     authorized_key:
       user: sb_deploy
       state: present
       key: "{{ sb_deploy_ssh_key }}"
-    tags: deploy_user
+    tags: deploy_user, deploy_user_key
 
   - name: Create backup dir
     file:
