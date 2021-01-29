@@ -22,8 +22,6 @@ volumes:
   signald_sock_5:
   signald_sock_6:
   signald_sock_7:
-  signald_sock_8:
-  signald_sock_9:
 
 
 services:
@@ -47,6 +45,9 @@ services:
       - signald_2
       - signald_3
       - signald_4
+      - signald_5
+      - signald_6
+      - signald_7
     entrypoint: /signalboost/bin/entrypoint/app
     environment:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
@@ -73,6 +74,10 @@ services:
       - signald_sock_2:/var/run/signald-sockets/2
       - signald_sock_3:/var/run/signald-sockets/3
       - signald_sock_4:/var/run/signald-sockets/4
+      - signald_sock_5:/var/run/signald-sockets/5
+      - signald_sock_6:/var/run/signald-sockets/6
+      - signald_sock_7:/var/run/signald-sockets/7
+
     restart: always
 
   signald_0:
@@ -146,6 +151,48 @@ services:
       - 5004
     volumes:
       - signald_sock_4:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+
+  signald_5:
+    <<: *signald-base
+    container_name: signalboost_signald_5
+    environment:
+      METRICS_PORT: 5005
+    expose:
+      - 5005
+    volumes:
+      - signald_sock_5:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+
+  signald_6:
+    <<: *signald-base
+    container_name: signalboost_signald_6
+    environment:
+      METRICS_PORT: 5006
+    expose:
+      - 5006
+    volumes:
+      - signald_sock_6:/var/run/signald/
+      - signal_data:/var/lib/signald/data
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - ./backups:/backups
+
+  signald_7:
+    <<: *signald-base
+    container_name: signalboost_signald_7
+    environment:
+      METRICS_PORT: 5007
+    expose:
+      - 5007
+    volumes:
+      - signald_sock_7:/var/run/signald/
       - signal_data:/var/lib/signald/data
       - ./bin:/signalboost/bin
       - ./signald/jmx:/var/lib/jmx
