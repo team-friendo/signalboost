@@ -20,6 +20,7 @@ networks:
 volumes:
   certs:
   html:
+  acme_config:
 
 services:
 
@@ -70,7 +71,7 @@ services:
       VIRTUAL_PORT: 5004
 
   proxy:
-    image: jwilder/nginx-proxy:alpine
+    image: jwilder/nginx-proxy:0.8.0
     container_name: signalboost_proxy
     ports:
       - 80:80
@@ -88,7 +89,7 @@ services:
     restart: always
 
   letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
+    image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
     container_name: signalboost_letsencrypt
     restart: always
     volumes:
@@ -96,6 +97,7 @@ services:
       - html:/usr/share/nginx/html
       - ./nginx/vhost.d:/etc/nginx/vhost.d
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme_config:/etc/acme.sh
     networks:
       - proxy-tier
     logging: *loki-logging
