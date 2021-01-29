@@ -132,18 +132,6 @@
       mode: 700
     tags: deploy_user
 
-  - name: Load GPG Deploy Key
-    copy:
-      src: files/deploy_keys/signalboost_gpg_privkey.asc
-      dest: /keys/
-    tags: deploy_user
-
-  - name: Import GPG deploy key to keystore
-    command: gpg --import signalboost_gpg_privkey.asc
-    args:
-      chdir: /keys
-    tags: deploy_user
-
 
   ###################
   # BASIC HARDENING #
