@@ -7,6 +7,7 @@ volumes:
   certs:
   html:
   vhost.d:
+  acme_config:
 
 services:
 
@@ -44,7 +45,7 @@ services:
     restart: always
 
   letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion
+    image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
     container_name: letsencrypt
     restart: always
     volumes:
@@ -52,6 +53,7 @@ services:
       - vhost.d:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme_config:/etc/acme.sh
     networks:
       - proxy-tier
     depends_on:
