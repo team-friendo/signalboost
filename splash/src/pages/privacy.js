@@ -73,7 +73,7 @@ export default () => (
         {' '}
         Lists of which phone numbers have sent an incoming "hotline message" to
         which channels (used to route anonymous replies to hotline messages,
-        deleted 3 days after last hotline message from a given number is sent){' '}
+        deleted 1 week after last hotline message from a given number is sent){' '}
       </li>
       <li>
         {' '}
