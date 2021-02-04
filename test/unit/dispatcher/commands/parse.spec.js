@@ -1214,13 +1214,5 @@ describe('parse module', () => {
         })
       })
     })
-
-    describe('a description payload', () => {
-      it('parses a multi-line description', () => {
-        const message = 'DESCRIPTION foo channel\ndescription'
-
-        expect(parseExecutable(message).payload).to.eql('foo channel\ndescription')
-      })
-    })
   })
 })
