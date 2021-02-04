@@ -332,4 +332,55 @@ describe('dispatcher service', () => {
       ])
     })
   })
+
+  describe('dispatching a BAN command', () => {
+    beforeEach(async () => {
+      await createChannelWithMembers()
+      await enableHotlineMessages()
+      await createHotlineMessage({ id: 1, memberPhoneNumber: randoPhoneNumber })
+      readSock.emit(
+        'data',
+        JSON.stringify({
+          type: 'message',
+          data: {
+            username: channel.phoneNumber,
+            source: { number: admins[0].memberPhoneNumber },
+            dataMessage: {
+              timestamp: new Date().toISOString(),
+              body: 'BAN @1',
+              expiresInSeconds: channel.messageExpiryTime,
+              attachments,
+            },
+          },
+        }),
+      )
+      await wait(2 * socketDelay)
+    })
+
+    it('relays the hotline reply to hotline message sender and all admins', () => {
+      expect(getSentMessages(writeStub)).to.have.deep.members([
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[0].memberPhoneNumber },
+          messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: admins[1].memberPhoneNumber },
+          messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
+        },
+        {
+          type: 'send',
+          username: channel.phoneNumber,
+          recipientAddress: { number: randoPhoneNumber },
+          messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
+          attachments,
+        },
+      ])
+    })
+  })
 })
