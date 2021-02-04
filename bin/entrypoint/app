@@ -22,7 +22,7 @@ check-until-ngrok-url-available(){
         cut -c 2- | rev | cut -c 2- | rev)
   fi
 
-  if [[ -z ${host_url} ]];then
+  if [[ -z ${host_url} ]] || [[ ${host_url} == "ul" ]];then
     sleep 1
     check-until-ngrok-url-available
   fi
