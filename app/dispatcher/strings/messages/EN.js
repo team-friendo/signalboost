@@ -227,10 +227,7 @@ ${support}`,
 CHANNEL INFO
 ---------------------------
 
-You are not subscribed to this channel. Send HELLO to subscribe.
-
-phone number: ${channel.phoneNumber}
-subscribers: ${getSubscriberMemberships(channel).length}
+You are not subscribed to channel ${channel.phoneNumber}. Send HELLO to subscribe.
 
 ${support}`,
   },
