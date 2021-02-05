@@ -284,13 +284,7 @@ const maybeCreateChannel = async (sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
     if (process.env.NEW_CHANNELS_ALLOWED === '1') {
-      // get the verified phone numbers that are ready to be used by channels
-      const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
-
-      const newChannel = await channelRegistrar.create({
-        phoneNumber: verifiedPhoneNumbers[0].phoneNumber,
-        admins: payload,
-      })
+      const newChannel = await channelRegistrar.create({ admins: payload })
 
       return {
         status: statuses.SUCCESS,

@@ -31,13 +31,21 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 }
 
 /* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
-const create = async ({ phoneNumber, admins }) => {
+const create = async ({ admins }) => {
   try {
+    // grab one from the pool of verified #s
+    const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
+
+    const phoneNumber = verifiedPhoneNumbers[0].phoneNumber
+
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
     const channel = await channelRepository.create(phoneNumber, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
+
+    // check if the number of verified phone numbers is dangerously low
+    // checkPhoneNumberThreshold()
 
     // replace the phone number we just used with another one
     replaceActivatedPhoneNumber()
@@ -64,7 +72,7 @@ const create = async ({ phoneNumber, admins }) => {
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,
-      request: { phoneNumber, admins },
+      request: { admins },
     }
   }
 }

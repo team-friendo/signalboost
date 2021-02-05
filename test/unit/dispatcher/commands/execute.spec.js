@@ -555,31 +555,22 @@ describe('executing commands', () => {
         beforeEach(() => (process.env.NEW_CHANNELS_ALLOWED = '1'))
         afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = newChannelsAllowedVal))
         describe('when sent a valid channel request', () => {
-          let listPhoneNumberStub
           let createChannelStub
           beforeEach(() => {
-            listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
             createChannelStub = sinon.stub(channelRegistrar, 'create')
           })
 
           describe('when creating a new channel succeeds', () => {
             const phoneNumber = genPhoneNumber()
-            const verifiedPhoneNumbers = [
-              { phoneNumber, status: 'VERIFIED' },
-              { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
-            ]
 
             beforeEach(() => {
-              listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumbers))
               createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber }))
             })
 
-            it('passes in the new channel phone number and admin phone numbers to the channel creation request', async () => {
+            it('passes in the admin phone numbers to the channel creation request', async () => {
               await processCommand(dispatchable)
 
-              expect(createChannelStub.getCall(0).args).to.eql([
-                { phoneNumber, admins: newAdminPhoneNumbers },
-              ])
+              expect(createChannelStub.getCall(0).args).to.eql([{ admins: newAdminPhoneNumbers }])
             })
 
             it("returns a success status and message containing the new channel's phone number", async () => {
@@ -587,9 +578,7 @@ describe('executing commands', () => {
                 command: commands.CHANNEL,
                 payload: '',
                 status: statuses.SUCCESS,
-                message: commandResponsesFor(randomPerson).channel.success(
-                  verifiedPhoneNumbers[0].phoneNumber,
-                ),
+                message: commandResponsesFor(randomPerson).channel.success(phoneNumber),
                 notifications: [],
               })
             })

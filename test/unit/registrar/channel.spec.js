@@ -71,6 +71,7 @@ describe('channel registrar', () => {
   let addAdminStub,
     createChannelStub,
     countChannelsStub,
+    listPhoneNumberStub,
     subscribeStub,
     updatePhoneNumberStub,
     provisionNStub,
@@ -86,6 +87,7 @@ describe('channel registrar', () => {
     addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
     createChannelStub = sinon.stub(channelRepository, 'create')
     countChannelsStub = sinon.stub(channelRepository, 'count')
+    listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
     provisionNStub = sinon.stub(phoneNumberService, 'provisionN')
@@ -104,18 +106,23 @@ describe('channel registrar', () => {
   afterEach(() => sinon.restore())
 
   describe('#create', () => {
+    const verifiedPhoneNumbers = [
+      { phoneNumber, status: 'VERIFIED' },
+      { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
+    ]
     beforeEach(() => {
       updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
+      listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumbers))
     })
 
     describe('when subscribing to signal messages succeeds', () => {
-      beforeEach(() => subscribeStub.returns(Promise.resolve()))
+      beforeEach(() => {
+        subscribeStub.returns(Promise.resolve())
+      })
 
-      describe('when not given a phoneNumber resource', () => {})
-
-      describe('when given a phoneNumber resource', () => {
+      describe('in all cases', () => {
         beforeEach(async () => {
-          await create({ phoneNumber, admins })
+          await create({ admins })
         })
 
         it('creates a channel resource', () => {
@@ -130,6 +137,8 @@ describe('channel registrar', () => {
           expect(updatePhoneNumberStub.getCall(0).args).to.eql([phoneNumber, { status: 'ACTIVE' }])
         })
       })
+
+      describe('when the number of verified phone numbers falls below the desired threshold', () => {})
 
       describe('when both db writes succeed', () => {
         beforeEach(() => {
@@ -231,7 +240,6 @@ describe('channel registrar', () => {
                   status: 'ERROR',
                   error: 'oh noooes!',
                   request: {
-                    phoneNumber,
                     admins,
                   },
                 })
@@ -268,7 +276,7 @@ describe('channel registrar', () => {
             expect(result).to.eql({
               status: 'ERROR',
               error: 'oh noes!',
-              request: { phoneNumber, admins },
+              request: { admins },
             })
           })
         })
@@ -289,7 +297,7 @@ describe('channel registrar', () => {
           expect(result).to.eql({
             status: 'ERROR',
             error: 'db error!',
-            request: { phoneNumber, admins },
+            request: { admins },
           })
         })
       })
@@ -309,7 +317,7 @@ describe('channel registrar', () => {
           expect(result).to.eql({
             status: 'ERROR',
             error: 'db error!',
-            request: { phoneNumber, admins },
+            request: { admins },
           })
         })
       })
@@ -338,7 +346,7 @@ describe('channel registrar', () => {
         expect(result).to.eql({
           status: 'ERROR',
           error: 'oh noes!',
-          request: { phoneNumber, admins },
+          request: { admins },
         })
       })
     })
