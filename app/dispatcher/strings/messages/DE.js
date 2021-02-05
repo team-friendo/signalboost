@@ -527,7 +527,8 @@ ${
   newChannelCreated: numChannels =>
     `Ein neuer Kanal wurde gerade erstellt. Es gibt jetzt ${numChannels} aktive Kanäle.`,
 
-  phoneNumberProvisioningErr: err => `Fehler beim Bereitstellen einer neuen Telefonnummer: ${err}.`,
+  phoneNumberReserveWarning: reserveSize =>
+    `Es gibt jetzt ${reserveSize} verifizierte Telefonnummern. Bitte stellen Sie mehr bereit, bevor sie ausgehen! `,
 
   restartRequesterNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',

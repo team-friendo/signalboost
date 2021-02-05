@@ -9,12 +9,17 @@ const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
 const { defaultLanguage } = require('../config')
-const { provisionN } = require('./phoneNumber')
 const { statuses: pNumStatuses } = require('../db/models/phoneNumber')
 const { statuses: sbStatuses, loggerOf, wait, hash } = require('../util')
 const logger = loggerOf()
 const {
-  signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval, supportPhoneNumber },
+  signal: {
+    welcomeDelay,
+    defaultMessageExpiryTime,
+    setExpiryInterval,
+    supportPhoneNumber,
+    phoneNumberReserveSize,
+  },
 } = require('../config')
 const { sdMessageOf } = require('../signal/constants')
 
@@ -33,9 +38,11 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 /* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
 const create = async ({ admins }) => {
   try {
+    // check if the number of verified phone numbers is dangerously low
+    checkPhoneNumberReserve(verifiedPhoneNumbers)
+
     // grab one from the pool of verified #s
     const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
-
     const phoneNumber = verifiedPhoneNumbers[0].phoneNumber
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
@@ -43,12 +50,6 @@ const create = async ({ admins }) => {
     const channel = await channelRepository.create(phoneNumber, admins)
     await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
-
-    // check if the number of verified phone numbers is dangerously low
-    // checkPhoneNumberThreshold()
-
-    // replace the phone number we just used with another one
-    replaceActivatedPhoneNumber()
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
@@ -128,24 +129,12 @@ const _welcomeNotificationOf = channel =>
     channel.phoneNumber,
   )
 
-const replaceActivatedPhoneNumber = async () => {
-  try {
-    const newNum = await provisionN({ n: 1 })
-    return {
-      status: sbStatuses.SUCCESS,
-      data: {
-        newNum,
-      },
-    }
-  } catch (e) {
-    logger.error(e)
+const checkPhoneNumberReserve = async verifiedPhoneNumbers => {
+  const numVerified = verifiedPhoneNumbers.length
+  if (numVerified < phoneNumberReserveSize) {
     await notifier.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.phoneNumberProvisioningErr(e),
+      messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(numVerified),
     )
-    return {
-      status: sbStatuses.ERROR,
-      error: e.message || e,
-    }
   }
 }
 
@@ -176,6 +165,6 @@ module.exports = {
   create,
   addAdmin,
   list,
-  replaceActivatedPhoneNumber,
+  checkPhoneNumberReserve,
   _welcomeNotificationOf,
 }

@@ -17,10 +17,9 @@ import {
   create,
   addAdmin,
   list,
-  replaceActivatedPhoneNumber,
+  checkPhoneNumberReserve,
   _welcomeNotificationOf,
 } from '../../../app/registrar/channel'
-import phoneNumberService from '../../../app/registrar/phoneNumber/'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
@@ -74,7 +73,6 @@ describe('channel registrar', () => {
     listPhoneNumberStub,
     subscribeStub,
     updatePhoneNumberStub,
-    provisionNStub,
     sendMessageStub,
     findAllDeepStub,
     findDeepStub,
@@ -90,7 +88,6 @@ describe('channel registrar', () => {
     listPhoneNumberStub = sinon.stub(phoneNumberRepository, 'list')
     subscribeStub = sinon.stub(signal, 'subscribe')
     updatePhoneNumberStub = sinon.stub(phoneNumberRepository, 'update')
-    provisionNStub = sinon.stub(phoneNumberService, 'provisionN')
     sendMessageStub = sinon.stub(signal, 'sendMessage')
     findAllDeepStub = sinon.stub(channelRepository, 'findAllDeep')
     findDeepStub = sinon.stub(channelRepository, 'findDeep')
@@ -108,6 +105,7 @@ describe('channel registrar', () => {
   describe('#create', () => {
     const verifiedPhoneNumbers = [
       { phoneNumber, status: 'VERIFIED' },
+      { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
       { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
     ]
     beforeEach(() => {
@@ -137,8 +135,6 @@ describe('channel registrar', () => {
           expect(updatePhoneNumberStub.getCall(0).args).to.eql([phoneNumber, { status: 'ACTIVE' }])
         })
       })
-
-      describe('when the number of verified phone numbers falls below the desired threshold', () => {})
 
       describe('when both db writes succeed', () => {
         beforeEach(() => {
@@ -411,49 +407,14 @@ describe('channel registrar', () => {
     })
   })
 
-  describe('#replaceActivatedPhoneNumber', () => {
-    describe('when provisioning a new phone number succeeds', () => {
-      const phoneNumber = genPhoneNumber()
-      beforeEach(() =>
-        provisionNStub.returns(
-          Promise.resolve({
-            phoneNumber,
-            status: statuses.VERIFIED,
-          }),
-        ),
-      )
-
-      it('returns a new phone number and success status', async () => {
-        expect(
-          expect(await replaceActivatedPhoneNumber()).to.eql({
-            status: statuses.SUCCESS,
-            data: {
-              phoneNumber,
-              status: statuses.VERIFIED,
-            },
-          }),
-        )
-      })
-    })
-
-    describe('when provisioning a phone number fails', () => {
-      beforeEach(() => {
-        notifyMaintainersStub.returns(Promise.resolve('no numbas!'))
-        provisionNStub.callsFake(() => Promise.reject(new Error('womp')))
-      })
-
-      it('notifies the sysadmins', async () => {
-        await replaceActivatedPhoneNumber()
+  describe('#checkPhoneNumberthreshold', () => {
+    describe('when the number of verified phone numbers falls below the threshold', () => {
+      it('alerts the sysadmins that new phone numbers need to be provisioned', async () => {
+        // threshold for test env is 2, so we pass in 1
+        await checkPhoneNumberReserve([{ phoneNumber, status: 'VERIFIED' }])
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          messagesIn(defaultLanguage).notifications.phoneNumberProvisioningErr('no numbas!'),
+          messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(1),
         ])
-      })
-
-      it('returns an error', async () => {
-        expect(await replaceActivatedPhoneNumber()).to.eql({
-          status: statuses.ERROR,
-          error: 'womp',
-        })
       })
     })
   })

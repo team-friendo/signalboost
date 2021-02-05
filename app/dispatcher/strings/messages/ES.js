@@ -531,7 +531,8 @@ ${
   newChannelCreated: numChannels =>
     `Se acaba de crear un nuevo canal. Ahora hay ${numChannels} canales activos.`,
 
-  phoneNumberProvisioningErr: err => `Error al aprovisionar un nuevo número de teléfono: ${err}.`,
+  phoneNumberReserveWarning: reserveSize =>
+    `Il y a maintenant des numéros de téléphone vérifiés ${reserveSize}. Veuillez en fournir plus avant qu'ils ne soient épuisés! `,
 
   restartRequesterNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡No estás autorizado para hacer eso!',

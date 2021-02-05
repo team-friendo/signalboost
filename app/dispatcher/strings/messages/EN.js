@@ -496,7 +496,8 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
   newChannelCreated: numChannels =>
     `A new channel was just created. There are now ${numChannels} active channels.`,
 
-  phoneNumberProvisioningErr: err => `Error provisioning a new phone number: ${err}.`,
+  phoneNumberReserveWarning: reserveSize =>
+    `There are now ${reserveSize} verified phone numbers. Please provision more before they run out!`,
 
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',
