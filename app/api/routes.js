@@ -23,7 +23,7 @@ const routesOf = async router => {
 
   router.post('/channels', async ctx => {
     const { phoneNumber, admins } = ctx.request.body
-    const result = await channelRegistrar.create({ phoneNumber, admins })
+    const result = await channelRegistrar.create({ specifiedPhoneNumber: phoneNumber, admins })
     merge(ctx, { status: httpStatusOf(get(result, 'status')), body: result })
   })
 

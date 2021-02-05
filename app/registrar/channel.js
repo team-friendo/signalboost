@@ -36,14 +36,14 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 }
 
 /* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
-const create = async ({ admins }) => {
+const create = async ({ admins, specifiedPhoneNumber }) => {
   try {
-    // check if the number of verified phone numbers is dangerously low
-    checkPhoneNumberReserve(verifiedPhoneNumbers)
-
     // grab one from the pool of verified #s
     const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
-    const phoneNumber = verifiedPhoneNumbers[0].phoneNumber
+    const phoneNumber = specifiedPhoneNumber || verifiedPhoneNumbers[0].phoneNumber
+
+    // check if the number of verified phone numbers is dangerously low
+    checkPhoneNumberReserve(verifiedPhoneNumbers)
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)

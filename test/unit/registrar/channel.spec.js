@@ -118,7 +118,18 @@ describe('channel registrar', () => {
         subscribeStub.returns(Promise.resolve())
       })
 
-      describe('in all cases', () => {
+      describe('when an admin passes in a phoneNumber', () => {
+        const adminSpecifiedPhoneNumber = genPhoneNumber()
+        beforeEach(async () => {
+          await create({ admins, specifiedPhoneNumber: adminSpecifiedPhoneNumber })
+        })
+
+        it('creates a channel resource', () => {
+          expect(createChannelStub.getCall(0).args).to.eql([adminSpecifiedPhoneNumber, admins])
+        })
+      })
+
+      describe('when a phone number is not specified', () => {
         beforeEach(async () => {
           await create({ admins })
         })
