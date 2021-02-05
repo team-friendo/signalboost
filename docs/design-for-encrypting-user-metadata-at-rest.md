@@ -1,5 +1,5 @@
 ```
-CURRENT REVISION AS OF Wed 25 Nov 2020 04:55:02 PM EST
+CURRENT REVISION AS OF Fri 05 Feb 2021 01:03:56 PM EST
 ```
 
 # Overview
@@ -40,15 +40,19 @@ https://0xacab.org/team-friendo/signalboost/-/merge_requests/487
 We wish to:
 
 * Maintain Signalboost's ability to allow users to send encrypted messages to each other over Signal without knowing each other's identities
-* Eliminate Signalboost's ability to leak the identities of users by inadvertently disclosing the contents of its filesystem to an adversary
+* Eliminate Signalboost's ability to leak the identities of users by disclosing the contents of its filesystem to an adversary
 
 # Threat Model
 
 ## Assets
 
-Broadly speaking, there are 2 classes of assets that we wish to defend in this design: Signal Protocol Store data and Signalboost application user data. Both classes contain personally-identifying information about our users (in the form of their phone numbers), and both contain information that could help an adversary determine which groups of people use the same Signalboost channel to communicate with one another.
+Broadly speaking, there are 2 classes of assets that we wish to defend in this design: Signal Protocol Store data and Signalboost application user data. Both classes contain personally-identifying information about our users (specifically: their phone numbers*), and both contain information that could help an adversary determine which groups of people use the same Signalboost channel to communicate with one another.
 
 Use of such "social graph" metadata as leverage to disrupt the activities of a targeted group is a well-documented tactic in efforts to counter political free speech. Since protecting the ability of our users to speak and organize freely is one of our core values, protecting this metadata is of utmost importance to us.
+
+* NOTE: while engineering work is currently being done to allow Signalboost to identify users by a Signal-provided UUIDs (unique user identifiers), this task could take several months to complete, and, having completed it, we would still consider Signal UUIDs to be "personally identifying." Because Signal UUIDs are less widely tied to a users' identity in the real world than phone numbers, their leakage would be slightly less damaging. However, to the extent that UUIDs still uniquely identify a user's activity on our service and Signal more broadly, they could be used by an adversary with advanced capabilities (or access to user's unlocked phones) to correlate data to a user in the real world.
+
+As such, we wish to design a system that would be capable of defending disclosure of user ID's on the assumption that these ID's are phone numbers, with the understanding that were they not phone numbers, they would still be valuable assets worth defending.
 
 ### Signal Protocol Store Data
 
@@ -56,13 +60,14 @@ In order to transmit and encrypt messages using the Signal Protocol, Signalboost
 
 All data in the Signalboost Protocol Store uses a user's phone number as an ID. Linked to that ID are various data such as:
 
+* UUIDs (discussed above: these are currently redundant with phone numbers, but exist as a precursor to Signal migrating away from using phone numbers as unique IDs)
 * Ephemeral encryption and decryption keys for sessions between a proxy phone number and a user (which are updated as the key materials "ratchets" forward with each message exchange)
-* UUIDs and long-term identity keys ("fingerprints" or "safety numbers") associated with a user's current Signal installation
-* Identity keys for each device the user uses to send Signal messages
+* Long-term identity keys ("fingerprints" or "safety numbers") associated with a user's current Signal installation
+* Identity keys for each device the user uses to send Signal messages, and for the devices of users with wi
 
 Depending on the implementation of the Signal Protocol Store, these records may be stored in a way that tracks when they were last updated, which may, in turn, leak information of when a user last used Signal, and by association, Signalboost.
 
-We currently follow the convention of storing the Signal Protocol Store data as JSON blobs on the filesystem, stored in docker-mounted volumes that may be accesed by anyone with root on the Signalboost server.
+Signalboost currently stores the Signal Protocol Store data as JSON blobs on the filesystem, stored in docker-mounted volumes that may be accesed by anyone with root on the Signalboost server. Soon, we will store them in postgres databases that will be similarly accesible to anyone with root on the server.
 
 ### Signalboost User Data
 
@@ -78,11 +83,11 @@ We currently store these records in an unencrypted Postgresql database running i
 The primary adversary with which we will concern ourselves is a state-level actor with the following capabilities:
 
 * monitor all network traffic
-* seize the devices of users or Signalboost maintainers
+* seize the devices of users or Signalboost maintainers with little to no notice
 * issue compulsory legal requests (warrants, subpoenas, court orders, ang gag orders) to Signalboost maintainers
 * issue compulsory legal requests to third-party software vendors that Signalboost uses (eg: Twilio)
 
-We are also concerned with a technically-sophisticated civilian adversary with (politically-motivated) animus against our users who has the following capabilities:
+We are also concerned with a technically-sophisticated civilian adversary with politically-motivated animus against our users who has the following capabilities:
 
 * act as administrator and subscriber to an arbitrary set of Signalboost channels
 * determine the IP address of the Signal server
@@ -95,19 +100,22 @@ We are also concerned with a technically-sophisticated civilian adversary with (
 For the purposes of this design, we wish to concern ourselves primarily with attacks that give an adversary access to the data stored on the filesystem of Signalboost servers at rest.
 
 For example, a state actor might legally compel Signalboost maintainers to:
-  * gain access to stored on the filesystem of our servers
-  * modify our code to capture and peramently record data that is currently only ephemerally held in memory
+
+* gain access to the filesystem of our servers
+* modify our code to capture and peramently record data that is currently held ephemerally in memory
 
 A technically-sophisticated civilian with animus might phish the Signalboost maintainers in order to gain root on the Signalboost servers which they could use to accomplish the same 2 goals.
 
-For the purposes of this design, we wish to only consider defenses against attacks that would reveal the contents of the Signalboost file system at rest, or what Signalboost currently stores in memory. We do not concern ourselves with defending against attacks that seek to modify our code against our will (either via legal compulsion or intrusion), as we do not think there are any viable technical defenses to these attacks.
+For the purposes of this design, we wish to only consider defenses against attacks that would reveal the contents of the Signalboost file system at rest, or what Signalboost currently stores in memory. We do not concern ourselves with defending against attacks that seek to modify our code against our will (either via legal compulsion or intrusion), as we are skeptical that technical defenses to such attack are possible, and, in the case of the civilian-with-animus attacker, our best defenses are to prevent the breach of our servers through defense-in-depth devops -- which falls outside the scope of this design.
 
-We also recognize that there are a variety of account-hijack or impersonation attacks to which the system as designed is currently vulnerable. For example: an adversary with legal compulsion capabilities could compel Twilio to grant control of the Twilio phone number used to authenticate a Signalboost proxy phone number, reauthenticate the number with Signal, and thereby wrest control of a Signalboost channel away from its admins against their will and potentially without their knowledge. While this is a concerning attack, since it does not touch on the assets that we are concerned with defending in this design (namely: metadata containing PII and social graph data about our users), we exclude it from consideration in this document.
+We also recognize that there are a variety of account-hijack or impersonation attacks to which the system as designed is currently vulnerable. For example: an adversary with legal compulsion capabilities could compel Twilio to grant control of the Twilio phone number used to authenticate a Signalboost proxy phone number, reauthenticate the number with Signal, and thereby wrest control of a Signalboost channel away from its admins against their will and potentially without their knowledge. Or, in a more straightforward variation on this attack: an adversary could gain control of an administrator's phone and/or Signal account, and use its admin status to remove other admins, add themselves, and thereby gain control of the channel without knowledge of any channel users.
+
+While undetected hijack attacks are doubtless concerning, since they does not touch on the assets that we are concerned with defending in this design (namely: metadata containing PII and social graph data about our users), we exclude them from consideration in this document.
 
 # Design Constraints
 
 * All messages between admins and subscribers must be transmitted using the Signalboost protocol
-* Messages must be routed from an admin phone number to a proxy phone number controlled by a Signalboost server (aka a "Signalboost channel") to subscriber phone numbers
+* Messages must be routed from an admin Signal account to subscriber Signal accounts via a proxy Signal account controlled by a Signalboost server (aka a "Signalboost channel")
 * All subscribers must receive messages on one of the official Signal clients (Android, IOS, or Desktop) maintained by signal.org
 * Admins may use a Signalboost-provided client (desktop or mobile) which can securely store key information and access the Signalboost server over secure network connection.
 * Key material between
