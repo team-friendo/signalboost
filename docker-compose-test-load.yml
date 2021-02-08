@@ -24,6 +24,7 @@ volumes:
   # postgres_data:
   signal_sock:
   signal_data:
+  simulator_sock:
 
 services:
   db:
@@ -32,7 +33,7 @@ services:
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - 5432:5432
+      - 0.0.0.0:5432:5432
     restart: unless-stopped
 
   signald_app:
@@ -46,13 +47,47 @@ services:
     expose:
       - 1312
     ports:
-      - 9010:9010
+      - 0.0.0.0:9010:9010
+      - 0.0.0.0:8017:8016
     volumes:
       - ./bin:/signalboost/bin
       - ./signald/jmx:/var/lib/jmx
       - signal_data:/var/lib/signald/data
       - signal_sock:/var/run/signald/
     restart: unless-stopped
+
+  signald_simulator:
+    image: team-friendo/signalboost/signald:load
+    container_name: load_test_signald_simulator
+    env_file: .env.dev
+    environment:
+      SIGNALD_VERBOSE_LOG: 0
+    networks:
+      - default
+    expose:
+      - 1313
+    ports:
+      - 0.0.0.0:9011:9011
+      - 0.0.0.0:8016:8016
+    volumes:
+      - ./bin:/signalboost/bin
+      - signal_data:/var/lib/signald/data
+      - simulator_sock:/var/run/signald/
+    restart: unless-stopped
+
+  sigarillo:
+    image: registry.0xacab.org/team-friendo/signalboost/sigarillo:latest
+    container_name: load_test_sigarillo
+    ports:
+      - 0.0.0.0:3000:3000
+    volumes:
+      - ./sigarillo/libsignal-overrides/production.json:/opt/sigarillo/node_modules/@throneless/libsignal-service/config/production.json
+      - ./sigarillo/libsignal-overrides/WebAPI.js:/opt/sigarillo/node_modules/@throneless/libsignal-service/src/WebAPI.js
+    environment:
+      - SECRETS=change_me
+      - NODE_ENV=production
+      - DB_CLIENT=pg
+      - DB_CONNECTION=postgres://sigarillo:sigarillo@db:5432/sigarillo
 
   app:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
@@ -82,24 +117,6 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
 
-  signald_simulator:
-    image: team-friendo/signalboost/signald:load
-    container_name: load_test_signald_simulator
-    env_file: .env.dev
-    environment:
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
-    networks:
-      - default
-    expose:
-      - 1313
-    ports:
-      - 9011:9011
-    volumes:
-      - ./bin:/signalboost/bin
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-    restart: unless-stopped
-
   simulator:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: load_test_simulator
@@ -119,7 +136,7 @@ services:
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
+      - simulator_sock:/var/run/signald/
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
 
@@ -130,14 +147,15 @@ services:
       - db
       - redis
     ports:
-      - "127.0.0.1:8080:8080"
-      - "127.0.0.1:8081:8081"
+      - 0.0.0.0:8015:8015
+      - 0.0.0.0:8080:8080
+      - 0.0.0.0:8081:8081
 
   redis:
     image: redis
     container_name: load_test_signal_redis
     ports:
-      - "6379:6379"
+      - 0.0.0.0:6379:6379
     restart: always
 
   # prefer ngrok_signalboost, need to change url to ngrok in app entrypoint
@@ -168,3 +186,10 @@ services:
     environment:
       - NGROK_PORT=signal_server:8080
     restart: unless-stopped
+
+  localtunnel:
+    image: efrecon/localtunnel
+    links:
+      - signal_server
+    command:
+      --local-host signal_server --port 8080 --subdomain sb-load
