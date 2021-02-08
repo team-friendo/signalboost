@@ -12,7 +12,7 @@ app.run = async ({ socketPool, signal }) => {
 
   app.socketPool = await socketService.run().catch(logger.fatalError)
 
-  const firstBotNumber = 12223334000
+  const firstBotNumber = 12223334001
   const botCount = 100
   const botPhoneNumbers = range(firstBotNumber, firstBotNumber + botCount).map(pn => "+" + pn)
 

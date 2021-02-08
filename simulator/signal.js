@@ -18,11 +18,12 @@ const run = async (botPhoneNumbers, dbPool) => {
   logger.log(`--- Creating bot phoneNumbers...`)
   try {
     for (pn of botPhoneNumbers) {
-      await register(pn, null, dbPool)
-      await util.wait(1000)
+      // await register(pn, null, dbPool)
+      await util.wait(500)
+      await subscribe(pn)
     }
     logger.log(`--- Created bot phoneNumbers!!`)
-    await Promise.all(botPhoneNumbers.map(subscribe))
+    // await Promise.all(botPhoneNumbers.map(subscribe))
     logger.log(`--- Subscribed bot phoneNumbers!`)
     return
   } catch (e) {
@@ -44,7 +45,7 @@ const register = async (phoneNumber, captchaToken, dbPool) => {
     ...(captchaToken ? { captcha: captchaToken } : {}),
   })
 
-  await util.wait(1000)
+  await util.wait(10000)
   logger.log(`${phoneNumber}: Verifying...`)
   await verify(phoneNumber, dbPool)
 
@@ -72,11 +73,21 @@ const verify = async (phoneNumber, dbPool) => {
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 }
 
-const fetchVerificationCode = async (phoneNumber, dbPool) => {  
+const fetchVerificationCode = async (phoneNumber, dbPool, retries = 3) => {  
   const query = "SELECT verification_code FROM pending_accounts WHERE number = $1;"
   
   try {
     const { rows } = await dbPool.query(query, [phoneNumber])
+
+    if (isEmpty(rows)) {
+      if (retries > 0) {
+        logger.log(`${phoneNumber}: Retrying fetch verification code. Retries left: ${retries}`)
+        return fetchVerificationCode(phoneNumber, dbPool, retries - 1)
+      } else {
+        throw new Error('Failed to fetch verification code')
+      }
+    }
+    
     const verification_code = rows[0]["verification_code"]
     return verification_code
   } catch (e) {
