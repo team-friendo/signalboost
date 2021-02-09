@@ -16,4 +16,3 @@ fun main() {
         Application(Config.fromEnv()).run(this)
     }
 }
-
