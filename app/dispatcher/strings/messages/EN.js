@@ -204,6 +204,7 @@ You are an admin of this channel.
 phone number: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 subscribers: ${getSubscriberMemberships(channel).length}
+subscriber limit: ${channel.subscriberLimit}
 hotline: ${onOrOff(channel.hotlineOn)}
 vouching: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `vouch level: ${channel.vouchLevel}` : ''}

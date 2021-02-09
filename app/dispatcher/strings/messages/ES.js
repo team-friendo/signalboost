@@ -212,6 +212,7 @@ Usted es admin de este canal.
 número de teléfono: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 suscriptorxs: ${getSubscriberMemberships(channel).length}
+límite de suscriptorxs: ${channel.subscriberLimit}
 línea directa: ${onOrOff(channel.hotlineOn)}
 atestiguando: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `nivel de atestiguar: ${channel.vouchLevel}` : ''}

@@ -212,6 +212,7 @@ Du bist ein Admin dieses Kanals.
 Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
 Teilnehmer: ${getSubscriberMemberships(channel).length}
+Teilnehmerlimit: ${channel.subscriberLimit}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
