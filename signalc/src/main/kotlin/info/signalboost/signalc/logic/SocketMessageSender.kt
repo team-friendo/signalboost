@@ -9,8 +9,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.PrintWriter
 import java.net.Socket
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketMessageSender(private val app: Application) {

@@ -24,7 +24,9 @@ import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import java.util.*
 import kotlin.random.Random
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({

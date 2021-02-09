@@ -19,7 +19,9 @@ import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalMessageSenderTest : FreeSpec({

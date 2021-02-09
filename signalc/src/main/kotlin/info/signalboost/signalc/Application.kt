@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
 import org.newsclub.net.unix.AFUNIXServerSocket
@@ -27,8 +28,10 @@ import java.io.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class Application(val config: Config.App) {
@@ -193,21 +196,30 @@ class Application(val config: Config.App) {
 
         // "cold" components
         accountManager = initializeColdComponent(AccountManager::class)
-        signalMessageReceiver = initializeColdComponent(SignalMessageReceiver::class)
+        signalMessageReceiver = initializeColdComponent(SignalMessageReceiver::class){
+            coEvery { subscribe(any()) } returns mockk()
+        }
         signalMessageSender = initializeColdComponent(SignalMessageSender::class){
             coEvery { send(any(),any(),any(),any(),any()) } returns mockk() {
                 every { success } returns  mockk()
             }
         }
-        socketMessageReceiver = initializeColdComponent(SocketMessageReceiver::class)
+        socketMessageReceiver = initializeColdComponent(SocketMessageReceiver::class) {
+            coEvery { connect(any()) } returns mockk()
+            coEvery { disconnect(any()) } returns mockk()
+            coEvery { stop() } returns mockk()
+        }
         socketMessageSender = initializeColdComponent(SocketMessageSender::class){
+            coEvery { connect(any()) } returns mockk()
+            coEvery { disconnect(any()) } returns mockk()
+            coEvery { stop() } returns mockk()
             coEvery { send(any()) } returns mockk()
         }
 
         // "hot" components
         socketServer = initializeHotComponent(SocketServer::class) {
             coEvery { run() } returns mockk()
-            coEvery { stop() } returns Unit
+            coEvery { stop() } returns mockk()
             coEvery { disconnect(any()) } returns Unit
         }.run()
         println("running!\nlistening for connections at ${config.socket.path}...")
@@ -218,6 +230,10 @@ class Application(val config: Config.App) {
 
     suspend fun stop(withPanic: Boolean = false): Application {
         socketServer.stop()
+        coroutineScope.async(IO) {
+            socket.close()
+        }.await()
+
         // TODO: close db connection?
         if(withPanic) exitProcess(1)
         return this

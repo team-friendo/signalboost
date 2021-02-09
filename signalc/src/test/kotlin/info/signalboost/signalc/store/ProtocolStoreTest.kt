@@ -18,7 +18,9 @@ import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore.Direction
 import org.whispersystems.libsignal.state.SessionRecord
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class ProtocolStoreTest: FreeSpec({
