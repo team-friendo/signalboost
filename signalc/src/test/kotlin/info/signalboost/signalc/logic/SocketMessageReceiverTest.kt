@@ -6,22 +6,27 @@ import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.Account.genNewAccount
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.commandExecutionError
+import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.TimeUtil
+import info.signalboost.signalc.util.UnixServerSocket
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
-import java.io.BufferedReader
+import org.newsclub.net.unix.AFUNIXSocket
+import org.newsclub.net.unix.AFUNIXSocketAddress
+import java.io.File
 import java.io.IOException
+import java.io.PrintWriter
 import java.net.Socket
 import java.time.Instant
-import kotlin.time.*
+import kotlin.time.ExperimentalTime
+import kotlin.time.milliseconds
+import kotlin.time.times
 
 
 @ExperimentalTime
@@ -30,20 +35,21 @@ import kotlin.time.*
 class SocketMessageReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
-        val config = Config.mockAllExcept(SocketMessageReceiver::class)
+        val config = Config.mockAllExcept(
+            UnixServerSocket::class,
+            SocketMessageReceiver::class,
+            SocketServer::class,
+        )
         val app = Application(config).run(testScope)
-        val messageReceiver = app.signalMessageReceiver
 
         // TODO: use genPhoneNumber() here once we have un-hardcoded sender
         val senderPhoneNumber = Config.USER_PHONE_NUMBER
-        val newAccount = genNewAccount()
         val senderAccount = genVerifiedAccount(senderPhoneNumber)
         val recipientAccount = genVerifiedAccount()
         val now = Instant.now().toEpochMilli()
-        val loopDelay = 20.milliseconds
+        val sendDelay = 10.milliseconds
 
         beforeSpec {
-            mockkObject(SocketMessageReceiver.Reader)
             mockkObject(TimeUtil).also {
                 every { TimeUtil.nowInMillis() } returns now
             }
@@ -54,75 +60,122 @@ class SocketMessageReceiverTest : FreeSpec({
         }
 
         afterSpec {
+            app.stop()
             unmockkAll()
             testScope.teardown()
         }
 
-        fun socketEmits(messages: List<String?>): Pair<Socket,BufferedReader> {
-            val mockkSocket = mockk<Socket>()
-            val mockkReader = mockk<BufferedReader> {
-                every { readLine() } returnsMany messages
-                every { close() } returns Unit
+        suspend fun connectToSocket(): Pair<Socket,PrintWriter> = async(Dispatchers.IO) {
+            val socket = AFUNIXSocket.newInstance().also {
+                it.connect(AFUNIXSocketAddress(File(config.socket.path)))
             }
+            val writer = PrintWriter(socket.getOutputStream(), true)
+            Pair(socket,writer)
+        }.await()
 
-            every {
-                SocketMessageReceiver.Reader.of(any())
-            } returns mockkReader
-
-            return(mockkSocket to mockkReader)
+        suspend fun socketEmits(vararg messages: String?): Triple<Socket,Job, SocketHashCode> {
+            val (socket,writer) = connectToSocket()
+            val socketHash = socket.hashCode()
+            val listenJob = app.socketMessageReceiver.connect(socket)
+            messages.forEach{ writer.println(it) }
+            delay(sendDelay)
+            return Triple(socket, listenJob, socketHash)
         }
 
-        suspend fun receiveMessageOn(socket: Socket): Unit =
-            app.socketMessageReceiver.connect(socket).let {
-                delay(loopDelay)
-                it.cancel()
+        fun verifyClosed(socket: Socket) {
+            app.socketMessageReceiver.readers[socket.hashCode()] shouldBe null
+            app.socketServer.socketConnections[socket.hashCode()] shouldBe null
+            coVerify {
+                app.socketMessageSender.disconnect(socket.hashCode())
             }
-
+        }
 
         "#connect" - {
-            // TODO: flakey tests!
-            // (pass in isolation but not together! boo!!!)
-            val (socket, reader) = socketEmits(listOf(""))
-
             "opens a reader on a socket and stores a reference to it" {
-                receiveMessageOn(socket)
-                app.socketMessageReceiver.readers[socket.hashCode()] shouldBe reader
-                verify { reader.readLine() }
+                val (socket) = connectToSocket()
+                app.socketMessageReceiver.connect(socket)
+                delay(1.milliseconds)
+
+                app.socketMessageReceiver.readers[socket.hashCode()] shouldNotBe null
+                app.socketMessageReceiver.disconnect(socket.hashCode())
             }
 
             "when client terminates socket connection" - {
-                // note: connection closure is signaled by `readLine()` returning `null`
-                "closes server side of socket connection" {}
+                "closes server side of socket connection" {
+                    val (socket) = connectToSocket()
+                    val listenJob = app.socketMessageReceiver.connect(socket)
+                    val writer = PrintWriter(socket.getOutputStream(), true)
+                    writer.close()
+                    delay(sendDelay)
+
+                    listenJob.invokeOnCompletion {
+                        socket.isClosed shouldBe true
+                        verifyClosed(socket)
+                    }
+                }
+            }
+
+
+            "when socket emits CLOSE command" - {
+                "closes socket connection to client" {
+                    val (socket,listenJob) = socketEmits(",close,")
+                    delay(sendDelay)
+
+                    listenJob.invokeOnCompletion {
+                        verifyClosed(socket)
+                    }
+                }
             }
 
             "when socket emits ABORT command" - {
-                "notifies all sockets of shutdown" {}
-                "shuts down the app" {}
-            }
+                suspend fun setup(): Application {
+                    val _config = config.copy(
+                        socket = config.socket.copy(
+                            path = "/signalc/foobar.sock"
+                        )
+                    )
+                    val _app = Application(_config).run(testScope)
+                    val socket = AFUNIXSocket.newInstance().also {
+                        it.connect(AFUNIXSocketAddress(File(_config.socket.path)))
+                    }
+                    val writer = PrintWriter(socket.getOutputStream(), true)
+                    _app.socketMessageReceiver.connect(socket)
+                    writer.println(",abort,")
+                    delay(5 * sendDelay)
+                    return _app
+                }
 
-            "when socket emits CLOSE command" - {
-                "closes socket connection to client" {}
+                "shuts down the app" {
+                    val _app = setup()
+                    _app.socketServer.listenJob.isCancelled shouldBe true
+                    _app.socketServer.socketConnections.isEmpty() shouldBe true
+                    _app.socketMessageReceiver.readers.isEmpty() shouldBe true
+                    _app.socket.isClosed shouldBe true
+                    coVerify {
+                        _app.socketMessageSender.send(any<Shutdown>())
+                        _app.socketMessageSender.stop()
+                    }
+                }
             }
 
             "when socket emits SEND command" - {
-                val msg = "hi there"
-                val (socket)  = socketEmits(listOf("${recipientAccount.username},send,$msg"))
+                val messageBody = "hi there"
+                val sendCommand = "${recipientAccount.username},send,$messageBody"
 
                 "and account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns senderAccount
 
                     "sends signal message" {
-                        receiveMessageOn(socket)
+                        socketEmits(sendCommand)
                         coVerify {
                             app.signalMessageSender.send(
                                 senderAccount,
                                 recipientAccount.username.asAddress(),
-                                msg,
+                                messageBody,
                                 any(),
                                 any(),
                             )
                         }
-
                     }
 
                     "when sending signal message succeeds" - {
@@ -133,8 +186,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         }
 
                         "sends success message to socket" {
-                            receiveMessageOn(socket)
-
+                            socketEmits(sendCommand)
                             coVerify {
                                 app.socketMessageSender.send(SendSuccess)
                             }
@@ -148,7 +200,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         } throws error
 
                         "sends error message to socket" {
-                            receiveMessageOn(socket)
+                            socketEmits(sendCommand)
                             coVerify {
                                 // TODO(aguestuser|2021-02-04): we dont' actually want this.
                                 //  we want halting errors to be treated like SendResult statuses below!
@@ -167,7 +219,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         }
 
                         "sends error message to socket" {
-                            receiveMessageOn(socket)
+                            socketEmits(sendCommand)
                             coVerify {
                                 app.socketMessageSender.send(SendFailure)
                             }
@@ -179,7 +231,7 @@ class SocketMessageReceiverTest : FreeSpec({
                     coEvery { app.accountManager.loadVerified(any()) } returns null
 
                     "sends error message to socket" {
-                        app.socketMessageReceiver.connect(socket).cancel()
+                        socketEmits(sendCommand)
                         coVerify {
                             app.socketMessageSender.send(
                                 commandExecutionError(
@@ -192,55 +244,70 @@ class SocketMessageReceiverTest : FreeSpec({
                 }
             }
 
-            "when socket emits SUBSCRIBE command" {
-                val (socket)  = socketEmits(listOf("${recipientAccount.username},subscribe,"))
+            "when socket emits SUBSCRIBE command" - {
+                val subscribeCommand = "${recipientAccount.username},subscribe,"
 
                 "and account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
 
-                    "subscribes to messages for account" {
-                        receiveMessageOn(socket)
-                        coVerify {
-                            app.signalMessageReceiver.subscribe(recipientAccount)
-                        }
-                    }
-
                     "when subscription succeeds" - {
                         coEvery {
                             app.signalMessageReceiver.subscribe(recipientAccount)
-                        } returns mockk()
+                        } returns Job()
 
                         "sends success to socket" {
-                            receiveMessageOn(socket)
+                            socketEmits(subscribeCommand)
                             coVerify {
-                                app.socketMessageSender.send(SubscribeSuccess)
+                                app.socketMessageSender.send(SubscriptionSucceeded)
                             }
                         }
                     }
 
-                    "when subscription fails (eg: due to failed WS connection)" - {
-                        val error = IOException("whoops!")
+                    "when message pipe from signal cannot be initiated" - {
+                        val error = SignalcError.MessagePipeNotCreated(IOException("whoops!"))
+                        val subscribeJob = Job()
                         coEvery {
                             app.signalMessageReceiver.subscribe(recipientAccount)
-                        } throws error
+                        } returns subscribeJob
 
                         "sends error to socket" {
-                            receiveMessageOn(socket)
+                            socketEmits(subscribeCommand)
+                            subscribeJob.cancel(error.message!!, error)
                             coVerify {
-                                app.socketMessageSender.send(SubscribeFailure(error))
+                                app.socketMessageSender.send(SubscriptionFailed(error))
                             }
                         }
-                        // TODO: testing this is hard!
-                        "resubscribes" {}
                     }
 
+                    "when connection to signal is broken" - {
+                        val error = IOException("whoops!")
+                        val disruptedJob = Job()
+                        coEvery {
+                            app.signalMessageReceiver.subscribe(recipientAccount)
+                        } returnsMany listOf(disruptedJob, Job())
+
+                        "sends error to socket and resubscribes" {
+                            socketEmits(subscribeCommand)
+                            disruptedJob.cancel(error.message!!, error)
+                            delay(sendDelay)
+
+                            coVerify {
+                                app.socketMessageSender.send(SubscriptionDisrupted(error))
+
+                            }
+
+                            coVerify(atLeast = 2) {
+                                app.signalMessageReceiver.subscribe(recipientAccount)
+                            }
+                        }
+                    }
                 }
 
                 "and account is not verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns null
 
                     "sends error to socket" {
-                        receiveMessageOn(socket)
+                        socketEmits(subscribeCommand)
                         coVerify {
                             app.socketMessageSender.send(
                                 commandExecutionError(
@@ -254,8 +321,17 @@ class SocketMessageReceiverTest : FreeSpec({
         }
 
         "#disconnect" - {
-            "closes connection on socket" - {}
-            "removes sockets from internal state" - {}
+
+            "closes socket connection" {
+                val (socket) = connectToSocket()
+                val listenJob = app.socketMessageReceiver.connect(socket)
+                app.socketMessageReceiver.disconnect(socket.hashCode())
+                delay(sendDelay)
+
+                listenJob.invokeOnCompletion {
+                    verifyClosed(socket)
+                }
+            }
         }
     }
 })

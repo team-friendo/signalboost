@@ -9,15 +9,17 @@ import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
-import java.lang.Exception
 import java.util.concurrent.TimeUnit
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalMessageReceiver(private val app: Application) {
     companion object {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
+
     }
     // FACTORIES
 
@@ -52,8 +54,13 @@ class SignalMessageReceiver(private val app: Application) {
         //  - closed channel
         //  - random runtime error
         //  - cleanup message pipe on unsubscribe (by calling messagePipe.shutdown())
-        val messagePipe = messagePipeOf(account)
+        // TODO: custom error for messagePipeCreation
         return app.coroutineScope.launch {
+            val messagePipe = try {
+                messagePipeOf(account)
+            } catch(e: Throwable) {
+                throw SignalcError.MessagePipeNotCreated(e)
+            }
             while (this.isActive) {
                 withContext(Dispatchers.IO) {
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)

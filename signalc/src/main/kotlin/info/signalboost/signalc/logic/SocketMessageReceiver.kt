@@ -6,11 +6,12 @@ import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStreamReader
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.Error
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
@@ -33,28 +34,34 @@ class SocketMessageReceiver(private val app: Application) {
      ************/
 
     suspend fun connect(socket: Socket): Job =
-        app.coroutineScope.launch(Dispatchers.IO) {
+        app.coroutineScope.launch(IO) {
             Reader.of(socket).use { reader ->
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
-                    app.coroutineScope.launch(Dispatchers.IO) {
-                        val socketMessage = reader.readLine() ?: ",close,"
-                        println("got message on socket $socketHash: $socketMessage")
+                    val socketMessage = reader.readLine() ?: run {
+                        disconnect(socketHash)
+                        return@launch
+                    }
+                    println("got message on socket $socketHash: $socketMessage")
+                    app.coroutineScope.launch(IO) {
                         dispatch(socketMessage, socketHash)
                     }
                 }
             }
         }
 
-
-    suspend fun disconnect(socketHash: SocketHashCode) {
-        readers[socketHash]?.let {
-            withContext(Dispatchers.IO) {
-                it.close()
+    suspend fun disconnect(socketHash: SocketHashCode, listenJob: Job? = null) {
+        val reader = readers[socketHash] ?: return // must have already been disconnected!
+        readers.remove(socketHash) // will terminate loop and complete Job launched by `connect`
+        app.coroutineScope.launch(IO) {
+            try {
+                reader.close()
+            } catch(e: Throwable) {
+                println("Error closing reader on socket $socketHash: $e")
             }
-            readers.remove(socketHash)
             println("Closed reader from socket $socketHash")
         }
+        app.socketServer.disconnect(socketHash)
     }
 
     suspend fun stop() = readers.keys.forEach { disconnect(it) }
@@ -76,10 +83,7 @@ class SocketMessageReceiver(private val app: Application) {
                     app.socketMessageSender.send(Shutdown(socketHash))
                     app.stop()
                 }
-                "close" -> {
-                    // disconnect(socketHash)
-                    app.socketServer.disconnect(socketHash)
-                }
+                "close" -> disconnect(socketHash)
                 // TODO: un-hardcode sender
                 "send" -> send(Config.USER_PHONE_NUMBER, username, message) // NOTE: this signals errors in return value and Throwable
                 "subscribe" -> subscribe(username)
@@ -119,23 +123,34 @@ class SocketMessageReceiver(private val app: Application) {
     private suspend fun subscribe(username: String, retryDelay: Duration = 1.milliseconds) {
         println("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
-            ?: return app.socketMessageSender.send(
-                CommandExecutionError("subscribe", Error("Can't subscribe to messages for $username: not registered."))
-            ).let {} // return unit
-        try {
-            app.signalMessageReceiver.subscribe(account).join()
-            println("...subscribed to messages for ${account.username}.")
-            app.socketMessageSender.send(SubscribeSuccess)
-        } catch(e: Throwable) {
-            // TODO: Think about this more carefully... We could error either if:
-            // - createMessagePipe() fails (likely an IO error)
-            // - `read` fails on some iteration through listen loop (likely IO)
-            // - handling of some message fails (which we should catch but might not?)
-            println("...error subscribing to messages for ${account.username}.")
-            app.socketMessageSender.send(SubscribeFailure(e))
-            delay(retryDelay)
-            subscribe(username, retryDelay * 2)
+            ?: return run {
+                app.socketMessageSender.send(
+                    CommandExecutionError("subscribe", Error("Can't subscribe to messages for $username: not registered."))
+                )
+                Unit
+            }
+
+        val subscribeJob = app.signalMessageReceiver.subscribe(account)
+        app.socketMessageSender.send(SubscriptionSucceeded)
+        println("...subscribed to messages for ${account.username}.")
+
+        subscribeJob.invokeOnCompletion {
+            // TODO: Think about this more carefully...
+            val error = it?.cause ?: return@invokeOnCompletion
+            app.coroutineScope.launch(IO) {
+                when(error) {
+                    is SignalcError.MessagePipeNotCreated -> {
+                        println("...error subscribing to messages for ${account.username}: ${error}.")
+                        app.socketMessageSender.send(SubscriptionFailed(error))
+                    }
+                    else -> {
+                        println("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
+                        app.socketMessageSender.send(SubscriptionDisrupted(error))
+                        delay(retryDelay)
+                        subscribe(username, retryDelay * 2)
+                    }
+                }
+            }
         }
     }
-
 }

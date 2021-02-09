@@ -18,7 +18,9 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import java.util.*
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AccountStoreTest : FreeSpec({

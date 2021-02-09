@@ -1,6 +1,7 @@
 package info.signalboost.signalc.testSupport.matchers
 
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.util.SocketHashCode
 import io.mockk.MockKMatcherScope
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
@@ -53,5 +54,11 @@ object SocketOutMessageMatchers {
     ): Empty = match {
         it.sender == sender &&
             it.recipient == recipient
+    }
+
+    fun MockKMatcherScope.shutdown(
+        socketHash: SocketHashCode,
+    ): Shutdown = match {
+        it.socketHash == socketHash
     }
 }

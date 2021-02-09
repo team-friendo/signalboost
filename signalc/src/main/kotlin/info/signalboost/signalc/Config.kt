@@ -7,8 +7,10 @@ import info.signalboost.signalc.util.UnixServerSocket
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.reflect.KClass
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 object Config {
@@ -133,6 +135,12 @@ object Config {
         ProtocolStore::class
     )
 
-    fun mockAllExcept(component: KClass<out Any>): App =
-        withMocked(components.filter { it != component })
+    fun mockAllExcept(unmocked: KClass<out Any>): App =
+        withMocked(components.filter { it != unmocked })
+
+    fun mockAllExcept(vararg unmocked: KClass<out Any>): App {
+        val _unmocked: Set<KClass<out Any>> = unmocked.toSet()
+        return withMocked(components.filter { !_unmocked.contains(it) })
+    }
+
 }

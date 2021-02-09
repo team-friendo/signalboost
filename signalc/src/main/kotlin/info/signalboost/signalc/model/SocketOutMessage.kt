@@ -43,8 +43,11 @@ data class Empty(
 object SendSuccess: SocketOutMessage()
 object SendFailure: SocketOutMessage()
 
-object SubscribeSuccess: SocketOutMessage()
-data class SubscribeFailure(
+object SubscriptionSucceeded: SocketOutMessage()
+data class SubscriptionFailed(
+    val error: Throwable,
+): SocketOutMessage()
+data class SubscriptionDisrupted(
     val error: Throwable,
 ): SocketOutMessage()
 

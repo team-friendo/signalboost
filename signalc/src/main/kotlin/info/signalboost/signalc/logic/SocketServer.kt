@@ -3,28 +3,35 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketServer(val app: Application): Application.ReturningRunnable<SocketServer> {
 
-    private val socketConnections = ConcurrentHashMap<SocketHashCode,Socket>()
+    internal lateinit var listenJob: Job
+    internal val socketConnections = ConcurrentHashMap<SocketHashCode,Socket>()
 
     override suspend fun run(): SocketServer {
-        app.coroutineScope.launch {
+        listenJob = app.coroutineScope.launch(IO) {
             app.socket.use {
-                while (true) {
-                    withContext(Dispatchers.IO) {
-                        val sock = it.accept() as Socket
-                        val socketHash = sock.hashCode()
-                        println("got connection on socket ${socketHash}!")
-                        socketConnections[socketHash] = sock
-                        launch {
-                            app.socketMessageReceiver.connect(sock)
-                            app.socketMessageSender.connect(sock)
-                        }
+                while (!it.isClosed && this.isActive) {
+                    val sock = try {
+                        it.accept() as Socket
+                    } catch (e: Throwable) {
+                        println("Socket server closed.")
+                        return@launch
+                    }
+                    val socketHash = sock.hashCode()
+                    println("Got connection on socket ${socketHash}!")
+                    socketConnections[socketHash] = sock
+                    launch {
+                        app.socketMessageReceiver.connect(sock)
+                        app.socketMessageSender.connect(sock)
                     }
                 }
             }
@@ -36,20 +43,19 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         app.socketMessageSender.disconnect(socketHash)
         app.socketMessageReceiver.disconnect(socketHash)
         close(socketHash)
-        println("closed connection on socket $socketHash")
+        println("Server closed connection on socket $socketHash")
     }
 
-    suspend fun stop() = withContext(Dispatchers.IO) {
+    suspend fun stop(): Unit = app.coroutineScope.async(IO) {
+        listenJob.cancel()
         app.socketMessageReceiver.stop()
         app.socketMessageSender.stop()
-        socketConnections.keys.forEach { close(it) }
-        app.socket.close()
-    }
+        socketConnections.keys.map { close(it) }
+        Unit
+    }.await()
 
-    private suspend fun close(socketHash: SocketHashCode) {
-        withContext(Dispatchers.IO) {
-            socketConnections[socketHash]?.close()
-        }
+    private suspend fun close(socketHash: SocketHashCode) = app.coroutineScope.async(IO) {
+        socketConnections[socketHash]?.close()
         socketConnections.remove(socketHash)
-    }
+    }.await()
 }
