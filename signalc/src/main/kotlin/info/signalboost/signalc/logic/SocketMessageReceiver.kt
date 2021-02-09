@@ -24,8 +24,8 @@ class SocketMessageReceiver(private val app: Application) {
 
     // NOTE: this singleton is mainly here as a testing seam, but could be
     // repurposed as a site to easily swap our reader implementation
-    object Reader {
-        fun of(socket: Socket) =
+    object ReaderFactory {
+        fun readerOn(socket: Socket) =
             BufferedReader(InputStreamReader(socket.getInputStream()))
     }
 
@@ -35,7 +35,7 @@ class SocketMessageReceiver(private val app: Application) {
 
     suspend fun connect(socket: Socket): Job =
         app.coroutineScope.launch(IO) {
-            Reader.of(socket).use { reader ->
+            ReaderFactory.readerOn(socket).use { reader ->
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
                     val socketMessage = reader.readLine() ?: run {
@@ -98,7 +98,7 @@ class SocketMessageReceiver(private val app: Application) {
     }
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
-    private suspend fun send(sender: String, recipient: String, msg: String): Job {
+    private suspend fun send(sender: String, recipient: String, msg: String): Unit {
         val account: VerifiedAccount = app.accountManager.loadVerified(sender)
             ?: return app.socketMessageSender.send(
                 CommandExecutionError("send", Error("Can't send to $sender: not registered."))
