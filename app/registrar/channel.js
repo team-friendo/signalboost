@@ -43,7 +43,7 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
     const phoneNumber = specifiedPhoneNumber || verifiedPhoneNumbers[0].phoneNumber
 
     // check if the number of verified phone numbers is dangerously low
-    checkPhoneNumberReserve(verifiedPhoneNumbers)
+    await checkPhoneNumberReserve(verifiedPhoneNumbers)
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
