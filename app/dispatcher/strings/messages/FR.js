@@ -213,6 +213,7 @@ Vous êtes admin de ce canal.
 numéro de téléphone: ${channel.phoneNumber}
 admins: ${getAdminMemberships(channel).length}
 abonné-e-s: ${getSubscriberMemberships(channel).length}
+limite d'abonné-e-s:${channel.subscriberLimit}
 hotline: ${channel.hotlineOn ? 'activée' : 'désactivée'}
 se porter garant: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `niveau de porter garant: ${channel.vouchLevel}` : ''}
