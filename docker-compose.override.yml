@@ -34,6 +34,8 @@ services:
     logging: *loki-logging
     networks:
       - proxy-tier
+  db:
+    logging: *loki-logging
 
   signald_0:
     <<: *signald-overrides
