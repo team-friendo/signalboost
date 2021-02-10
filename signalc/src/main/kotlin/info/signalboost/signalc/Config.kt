@@ -120,6 +120,9 @@ object Config {
         db = default.db.copy(
             url = "jdbc:pgsql://$dbHost/signalc_test",
         ),
+        socket = default.socket.copy(
+            path = "/signalc/test.sock"
+        ),
     )
 
     fun withMocked(mockTargets: List<KClass<out Any>>) = test.copy(

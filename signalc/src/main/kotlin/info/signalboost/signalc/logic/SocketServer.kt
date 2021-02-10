@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.util.SocketHashCode
+import info.signalboost.signalc.util.UnixServerSocket
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import java.net.Socket
@@ -24,7 +25,8 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                         it.accept() as Socket
                     } catch (e: Throwable) {
                         println("Socket server closed.")
-                        return@launch
+                        stop()
+                        continue
                     }
                     val socketHash = sock.hashCode()
                     println("Got connection on socket ${socketHash}!")
@@ -50,8 +52,10 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         listenJob.cancel()
         app.socketMessageReceiver.stop()
         app.socketMessageSender.stop()
-        socketConnections.keys.forEach { close(it) }
+        closeEach()
     }.await()
+
+    internal suspend fun closeEach() = socketConnections.keys.forEach { close(it) }
 
     private suspend fun close(socketHash: SocketHashCode) = app.coroutineScope.async(IO) {
         socketConnections[socketHash]?.close()
