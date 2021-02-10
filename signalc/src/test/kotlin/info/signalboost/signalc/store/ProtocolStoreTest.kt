@@ -27,7 +27,8 @@ class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
         val accountId = genPhoneNumber()
-        val app = Application(Config.test).run(testScope)
+        val config = Config.mockAllExcept(ProtocolStore::class)
+        val app = Application(config).run(testScope)
         val store = app.protocolStore.of(NewAccount(accountId))
 
         val address = SignalProtocolAddress(accountId, 42)
@@ -46,6 +47,7 @@ class ProtocolStoreTest: FreeSpec({
         }
 
         afterSpec {
+            app.stop()
             testScope.teardown()
         }
 

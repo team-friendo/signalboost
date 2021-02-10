@@ -4,6 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.util.UnixServerSocket
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
@@ -19,7 +20,7 @@ import kotlin.time.ExperimentalTime
 class SocketServerTest : FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
-        val config = Config.mockAllExcept(SocketServer::class)
+        val config = Config.mockAllExcept(SocketServer::class, UnixServerSocket::class)
         val app = Application(config).run(testScope)
         val socketServer = app.socketServer
 
@@ -28,6 +29,7 @@ class SocketServerTest : FreeSpec({
         }
 
         afterSpec {
+            app.stop()
             unmockkAll()
             testScope.teardown()
         }
