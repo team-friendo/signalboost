@@ -127,7 +127,10 @@ class Application(val config: Config.App) {
     lateinit var socket: UnixServerSocket
 
     private fun initializeSocket(): UnixServerSocket =
-        if(config.mocked.contains(UnixServerSocket::class)) mockk()
+        if(config.mocked.contains(UnixServerSocket::class)) mockk() {
+            every { isClosed } returns false
+            every { close() } returns Unit
+        }
         else AFUNIXServerSocket.newInstance().apply {
             bind(AFUNIXSocketAddress(File(config.socket.path)))
         }
@@ -218,9 +221,10 @@ class Application(val config: Config.App) {
 
         // "hot" components
         socketServer = initializeHotComponent(SocketServer::class) {
-            coEvery { run() } returns mockk()
-            coEvery { stop() } returns Unit
-            coEvery { disconnect(any()) } returns Unit
+            coEvery { run() } returns mockk() {
+                coEvery { stop() } returns Unit
+                coEvery { disconnect(any()) } returns Unit
+            }
         }.run()
         println("running!\nlistening for connections at ${config.socket.path}...")
 
@@ -230,10 +234,7 @@ class Application(val config: Config.App) {
 
     suspend fun stop(withPanic: Boolean = false): Application {
         socketServer.stop()
-        coroutineScope.async(IO) {
-            socket.close()
-        }.await()
-
+        coroutineScope.async(IO) { socket.close() }.await()
         // TODO: close db connection?
         if(withPanic) exitProcess(1)
         return this

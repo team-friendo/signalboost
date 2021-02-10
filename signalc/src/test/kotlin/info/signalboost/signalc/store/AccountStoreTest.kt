@@ -26,7 +26,8 @@ import kotlin.time.ExperimentalTime
 class AccountStoreTest : FreeSpec({
     runBlockingTest {
         val testScope = CoroutineUtil.genTestScope()
-        val app = Application(Config.test).run(this)
+        val config = Config.mockAllExcept(AccountStore::class)
+        val app = Application(config).run(this)
         val store = app.accountStore
 
         val username = genPhoneNumber()
@@ -42,6 +43,7 @@ class AccountStoreTest : FreeSpec({
         }
 
         afterSpec {
+            app.stop()
             testScope.teardown()
         }
 

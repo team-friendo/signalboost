@@ -50,8 +50,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         listenJob.cancel()
         app.socketMessageReceiver.stop()
         app.socketMessageSender.stop()
-        socketConnections.keys.map { close(it) }
-        Unit
+        socketConnections.keys.forEach { close(it) }
     }.await()
 
     private suspend fun close(socketHash: SocketHashCode) = app.coroutineScope.async(IO) {
