@@ -91,7 +91,7 @@ class SignalMessageReceiver(private val app: Application) {
                 val cleartext = cipherOf(account).decrypt(envelope).dataMessage.orNull()?.body?.orNull()
                 cleartext
                     ?.let { app.socketMessageSender.send(Cleartext(sender, recipient, it)) }
-                    ?: app.socketMessageSender.send(Empty(sender, recipient))
+                    ?: app.socketMessageSender.send(Empty)
             } catch(e: Throwable) {
                 app.socketMessageSender.send(DecryptionError(sender, recipient, e))
             }

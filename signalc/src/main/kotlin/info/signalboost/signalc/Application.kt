@@ -219,7 +219,7 @@ class Application(val config: Config.App) {
         // "hot" components
         socketServer = initializeHotComponent(SocketServer::class) {
             coEvery { run() } returns mockk()
-            coEvery { stop() } returns mockk()
+            coEvery { stop() } returns Unit
             coEvery { disconnect(any()) } returns Unit
         }.run()
         println("running!\nlistening for connections at ${config.socket.path}...")

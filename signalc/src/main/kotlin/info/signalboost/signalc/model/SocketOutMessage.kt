@@ -34,10 +34,7 @@ data class Dropped(
     val envelope: SignalServiceEnvelope,
 ): SocketOutMessage()
 
-data class Empty(
-    val sender: SignalServiceAddress,
-    val recipient: SignalServiceAddress,
-): SocketOutMessage()
+object Empty : SocketOutMessage()
 
 // TODO: flesh these out!
 object SendSuccess: SocketOutMessage()

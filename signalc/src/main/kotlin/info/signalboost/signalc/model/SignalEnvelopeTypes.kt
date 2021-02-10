@@ -15,7 +15,7 @@ enum class EnvelopeType {
             3 -> KEY_EXCHANGE
             4 -> PREKEY_BUNDLE
             5 -> RECEIPT_VALUE
-            else -> UNIDENTIFIED
+            else -> UNIDENTIFIED //6
         }
     }
 
