@@ -36,7 +36,6 @@ class SocketMessageReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
         val config = Config.mockAllExcept(
-            UnixServerSocket::class,
             SocketMessageReceiver::class,
             SocketServer::class,
         )
@@ -84,7 +83,7 @@ class SocketMessageReceiverTest : FreeSpec({
 
         fun verifyClosed(socket: Socket) {
             app.socketMessageReceiver.readers[socket.hashCode()] shouldBe null
-            app.socketServer.socketConnections[socket.hashCode()] shouldBe null
+            app.socketServer.connections[socket.hashCode()] shouldBe null
             coVerify {
                 app.socketMessageSender.disconnect(socket.hashCode())
             }
@@ -148,9 +147,9 @@ class SocketMessageReceiverTest : FreeSpec({
                 "shuts down the app" {
                     val _app = setup()
                     _app.socketServer.listenJob.isCancelled shouldBe true
-                    _app.socketServer.socketConnections.isEmpty() shouldBe true
+                    _app.socketServer.socket.isClosed shouldBe true
+                    _app.socketServer.connections.isEmpty() shouldBe true
                     _app.socketMessageReceiver.readers.isEmpty() shouldBe true
-                    _app.socket.isClosed shouldBe true
                     coVerify {
                         _app.socketMessageSender.send(any<Shutdown>())
                         _app.socketMessageSender.stop()

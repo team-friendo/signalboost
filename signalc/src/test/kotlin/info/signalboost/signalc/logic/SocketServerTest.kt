@@ -5,15 +5,14 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.util.UnixServerSocket
+import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.date.after
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.test.runBlockingTest
-import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
@@ -27,13 +26,14 @@ import kotlin.time.milliseconds
 class SocketServerTest : FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
-        val config = Config.mockAllExcept(SocketServer::class, UnixServerSocket::class)
+        val config = Config.mockAllExcept(SocketServer::class)
         val app = Application(config).run(testScope)
 
         val connectionDelay = 1.milliseconds
+        val closingDelay = 5.milliseconds
 
         afterTest {
-            app.socketServer.closeEach()
+            app.socketServer.closeAllConnections()
             clearAllMocks(answers = false, childMocks = false, objectMocks = false)
         }
 
@@ -50,7 +50,7 @@ class SocketServerTest : FreeSpec({
             } as Socket
         }.await()
 
-        fun getFirstConnection() = app.socketServer.socketConnections.values.first()
+        fun getFirstConnection() = app.socketServer.connections.values.first()
 
         "#run" - {
             lateinit var clientSock: Socket
@@ -61,12 +61,12 @@ class SocketServerTest : FreeSpec({
             }
 
             "accepts a socket connection and stores a reference to it" {
-                app.socketServer.socketConnections.values.size shouldBe 1
+                app.socketServer.connections.values.size shouldBe 1
             }
 
             "accepts several concurrent connections" {
                 clientConnectsToSocket()
-                app.socketServer.socketConnections.values.size shouldBe 2
+                app.socketServer.connections.values.size shouldBe 2
             }
 
             "attaches a message receiver to a new connection" {
@@ -82,11 +82,52 @@ class SocketServerTest : FreeSpec({
 
             "when client closes socket connection" - {
                 clientSock.close()
-                delay(10.milliseconds)
+                delay(closingDelay)
+
                 "server continues listening for connections" {
                     app.socketServer.listenJob.isCancelled shouldBe false
                 }
             }
+
+            "when server closes socket connection" - {
+                beforeTest {
+                    app.socketServer.socket.close()
+                    delay(closingDelay)
+                }
+                afterTest {
+                    app.socketServer.run()
+                }
+
+                "stops listening for connections" {
+                    app.socketServer.listenJob.isActive shouldBe false
+                }
+
+                "refuses new connections" {
+                    shouldThrow<Throwable> {
+                        clientConnectsToSocket()
+                    }
+                }
+            }
+
+            "when server closes socket connection then restarts" - {
+                beforeTest {
+                    app.socketServer.socket.close()
+                    delay(closingDelay)
+                    app.socketServer.run()
+                }
+
+                "listens for connections" {
+                    app.socketServer.listenJob.isActive shouldBe true
+                }
+
+                "accepts new connections" {
+                    shouldNotThrow<Throwable> {
+                        clientConnectsToSocket()
+                    }
+                }
+
+            }
+
         }
 
         "#disconnect" - {
@@ -115,54 +156,45 @@ class SocketServerTest : FreeSpec({
 
             "forgets about the socket connection" {
                 app.socketServer.disconnect(socketHash)
-                app.socketServer.socketConnections[socketHash] shouldBe null
+                app.socketServer.connections[socketHash] shouldBe null
             }
         }
 
         "#stop" - {
-
             clientConnectsToSocket()
-            val connections = app.socketServer.socketConnections.values
+            val connections = app.socketServer.connections.values
+
+            beforeTest {
+                app.socketServer.stop()
+            }
+
+            afterTest {
+                app.socketServer.run()
+            }
 
             "disconnects receivers from all socket connections" {
-                app.socketServer.stop()
                 coVerify {
                     app.socketMessageReceiver.stop()
                 }
 
             }
             "disconnects senders from all socket connections" {
-                app.socketServer.stop()
                 coVerify {
                     app.socketMessageSender.stop()
                 }
             }
 
             "closes all socket connections" {
-                app.socketServer.stop()
                 connections.forEach {
                     it.isClosed shouldBe true
                 }
             }
 
             "forgets about all socket connections" {
-                app.socketServer.stop()
-                app.socketServer.socketConnections shouldBe emptyMap()
+                app.socketServer.connections shouldBe emptyMap()
             }
 
             "cancels socket listening job" {
-                app.socketServer.stop()
-                app.socketServer.listenJob.isCancelled shouldBe true
-            }
-        }
-
-        "when server socket is closed" - {
-            // NOTE: it is hard to restore testable state after this test so keep it last in the file!
-            clientConnectsToSocket()
-            app.socket.close()
-            delay(10.milliseconds)
-
-            "stops listening for connections" {
                 app.socketServer.listenJob.isCancelled shouldBe true
             }
         }

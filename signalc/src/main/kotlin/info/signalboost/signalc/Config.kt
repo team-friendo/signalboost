@@ -16,11 +16,11 @@ import kotlin.time.ExperimentalTime
 object Config {
     const val USER_PHONE_NUMBER = "+17347962920"
 
-    private val components = listOf(
+    private val appComponents = listOf(
         // resources
         AccountStore::class,
         ProtocolStore::class,
-        UnixServerSocket::class,
+        //UnixServerSocket::class,
         // components
         AccountManager::class,
         // note: we exclude Signal::class b/c currently we never need to mock it
@@ -131,7 +131,7 @@ object Config {
 
     fun withMocked(vararg mockTargets: KClass<out Any>) = withMocked(mockTargets.toList())
 
-    val mockAll = withMocked(components)
+    val mockAll = withMocked(appComponents)
 
     val mockStore = withMocked(
         AccountStore::class,
@@ -139,11 +139,11 @@ object Config {
     )
 
     fun mockAllExcept(unmocked: KClass<out Any>): App =
-        withMocked(components.filter { it != unmocked })
+        withMocked(appComponents.filter { it != unmocked })
 
     fun mockAllExcept(vararg unmocked: KClass<out Any>): App {
         val _unmocked: Set<KClass<out Any>> = unmocked.toSet()
-        return withMocked(components.filter { !_unmocked.contains(it) })
+        return withMocked(appComponents.filter { !_unmocked.contains(it) })
     }
 
 }
