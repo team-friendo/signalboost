@@ -23,7 +23,6 @@ import java.security.Security
 
 import org.signal.libsignal.metadata.certificate.CertificateValidator
 import org.whispersystems.libsignal.ecc.Curve
-import org.whispersystems.signalservice.api.messages.SendMessageResult
 import java.io.*
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
