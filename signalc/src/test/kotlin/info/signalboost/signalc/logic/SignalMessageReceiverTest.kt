@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.model.Empty
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
@@ -9,7 +10,6 @@ import info.signalboost.signalc.testSupport.fixtures.Address.genSignalServiceAdd
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.cleartext
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.dropped
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.empty
 import io.kotest.core.spec.style.FreeSpec
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -139,12 +139,7 @@ class SignalMessageReceiverTest : FreeSpec({
                             it.cancel()
                         }
                         coVerify {
-                            app.socketMessageSender.send(
-                                empty(
-                                    senderAddress,
-                                    recipientAccount.address
-                                )
-                            )
+                            app.socketMessageSender.send(Empty)
                         }
                     }
                 }

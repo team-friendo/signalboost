@@ -48,14 +48,6 @@ object SocketOutMessageMatchers {
             it.envelope == envelope
     }
 
-    fun MockKMatcherScope.empty(
-        sender: SignalServiceAddress,
-        recipient: SignalServiceAddress,
-    ): Empty = match {
-        it.sender == sender &&
-            it.recipient == recipient
-    }
-
     fun MockKMatcherScope.shutdown(
         socketHash: SocketHashCode,
     ): Shutdown = match {
