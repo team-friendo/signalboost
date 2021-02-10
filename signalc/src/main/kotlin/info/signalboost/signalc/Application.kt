@@ -3,27 +3,22 @@ package info.signalboost.signalc
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
-import info.signalboost.signalc.util.UnixServerSocket
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
-import org.newsclub.net.unix.AFUNIXServerSocket
-import org.newsclub.net.unix.AFUNIXSocketAddress
+import org.signal.libsignal.metadata.certificate.CertificateValidator
+import org.whispersystems.libsignal.ecc.Curve
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations
 import org.whispersystems.signalservice.api.push.TrustStore
 import org.whispersystems.signalservice.internal.configuration.*
 import org.whispersystems.util.Base64
-import java.security.Security
-
-import org.signal.libsignal.metadata.certificate.CertificateValidator
-import org.whispersystems.libsignal.ecc.Curve
 import java.io.*
+import java.security.Security
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
@@ -121,18 +116,6 @@ class Application(val config: Config.App) {
         CertificateValidator(Curve.decodePoint(Base64.decode(config.signal.unidentifiedSenderTrustRoot), 0))
     }
 
-    // SOCKET //
-
-    lateinit var socket: UnixServerSocket
-
-    private fun initializeSocket(): UnixServerSocket =
-        if(config.mocked.contains(UnixServerSocket::class)) mockk() {
-            every { isClosed } returns false
-            every { close() } returns Unit
-        }
-        else AFUNIXServerSocket.newInstance().apply {
-            bind(AFUNIXSocketAddress(File(config.socket.path)))
-        }
 
     // STORE //
 
@@ -193,7 +176,6 @@ class Application(val config: Config.App) {
         }
 
         // network resources
-        socket = initializeSocket()
         signal = initializeSignal()
 
         // "cold" components
@@ -233,7 +215,6 @@ class Application(val config: Config.App) {
 
     suspend fun stop(withPanic: Boolean = false): Application {
         socketServer.stop()
-        coroutineScope.async(IO) { socket.close() }.await()
         // TODO: close db connection?
         if(withPanic) exitProcess(1)
         return this

@@ -34,7 +34,6 @@ class ApplicationTest : FreeSpec({
                 app.coroutineScope
                 app.accountStore
                 app.protocolStore
-                app.socket.isClosed shouldBe false
                 app.signal
             }
 
@@ -47,6 +46,7 @@ class ApplicationTest : FreeSpec({
 
             "initializes and runs all 'hot' application components" {
                 app.socketServer.listenJob.isActive shouldBe true
+                app.socketServer.socket.isClosed shouldBe false
             }
         }
 
@@ -55,10 +55,7 @@ class ApplicationTest : FreeSpec({
 
             "closes down all 'hot' app components" {
                 app.socketServer.listenJob.isActive shouldBe false
-            }
-
-            "cleans up all app resources" {
-                app.socket.isClosed shouldBe true
+                app.socketServer.socket.isClosed shouldBe true
             }
 
             "returns a reference to the application for restarting" {
