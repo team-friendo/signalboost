@@ -445,8 +445,11 @@ describe('channel registrar', () => {
   describe('#checkPhoneNumberthreshold', () => {
     describe('when the number of verified phone numbers falls below the threshold', () => {
       it('alerts the sysadmins that new phone numbers need to be provisioned', async () => {
-        // threshold for test env is 2, so we pass in 1
-        await checkPhoneNumberReserve([{ phoneNumber, status: 'VERIFIED' }])
+        // threshold for test env is 2
+        await checkPhoneNumberReserve([
+          { phoneNumber, status: 'VERIFIED' },
+          { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
+        ])
         expect(notifyMaintainersStub.getCall(0).args).to.eql([
           messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(1),
         ])

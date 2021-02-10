@@ -1854,8 +1854,13 @@ describe('executing commands', () => {
           message: `${localizedCmds.REQUEST}`,
         }),
       }
+      let originalVal = process.env.NEW_CHANNELS_ALLOWED
 
       describe('when the system is accepting new channel requests', () => {
+        beforeEach(() => {
+          process.env.NEW_CHANNELS_ALLOWED = '1'
+        })
+        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
         it("returns a success status and message containing the new channel's phone number", async () => {
           expect(await processCommand(dispatchable)).to.eql({
             command: commands.REQUEST,
@@ -1868,9 +1873,7 @@ describe('executing commands', () => {
       })
 
       describe('when new channels are not allowed', () => {
-        let originalVal
         beforeEach(() => {
-          originalVal = process.env.NEW_CHANNELS_ALLOWED
           process.env.NEW_CHANNELS_ALLOWED = '0'
         })
         afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
