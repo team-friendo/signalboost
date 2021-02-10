@@ -340,7 +340,7 @@ https://signalboost.info/privacy
 
 Ahora, si desea crear un canal, envíe CHANNEL seguido de una lista separada por comas de los números de teléfono de administrador para ese canal, por ejemplo:
 
-CANAL + 1555123412, +1555123419`,
+CANAL +1555123412, +1555123419`,
     closed: `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento. Vuelva a verificar más tarde.`,
   },
 

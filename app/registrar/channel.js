@@ -40,10 +40,15 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
   try {
     // grab one from the pool of verified #s
     const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
-    const phoneNumber = specifiedPhoneNumber || verifiedPhoneNumbers[0].phoneNumber
 
-    // check if the number of verified phone numbers is dangerously low
-    await checkPhoneNumberReserve(verifiedPhoneNumbers)
+    // if there aren't any verified phone numbers, don't continue!
+    if (verifiedPhoneNumbers.length === 0)
+      return {
+        status: pNumStatuses.ERROR,
+        request: { admins },
+      }
+
+    const phoneNumber = specifiedPhoneNumber || verifiedPhoneNumbers[0].phoneNumber
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
@@ -66,6 +71,9 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
       // invite admins to subscribe to support channel if one exists
       await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
     }
+
+    // check if the number of verified phone numbers is dangerously low
+    await checkPhoneNumberReserve(verifiedPhoneNumbers)
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
@@ -130,7 +138,7 @@ const _welcomeNotificationOf = channel =>
   )
 
 const checkPhoneNumberReserve = async verifiedPhoneNumbers => {
-  const numVerified = verifiedPhoneNumbers.length
+  const numVerified = verifiedPhoneNumbers.length - 1
   if (numVerified < phoneNumberReserveSize) {
     await notifier.notifyMaintainers(
       messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(numVerified),

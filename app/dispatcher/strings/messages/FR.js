@@ -340,7 +340,7 @@ https://signalboost.info/privacy
 
 Maintenant, si vous souhaitez créer un canal, envoyez CHANNEL suivi d'une liste séparée par des virgules des numéros de téléphone administrateur pour ce canal, par exemple:
 
-CANAL + 1555123412, +1555123419`,
+CANAL +1555123412, +1555123419`,
     closed: requestsClosed,
   },
 

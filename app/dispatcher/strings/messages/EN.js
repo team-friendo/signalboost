@@ -324,7 +324,7 @@ https://signalboost.info/privacy
 
 Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of the admin phone numbers for that channel, for example:
 
-CHANNEL+ 1555123412, +1555123419`,
+CHANNEL +1555123412, +1555123419`,
     closed: requestsClosed,
   },
 
@@ -497,7 +497,7 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
     `A new channel was just created. There are now ${numChannels} active channels.`,
 
   phoneNumberReserveWarning: reserveSize =>
-    `There are now ${reserveSize} verified phone numbers. Please provision more before they run out!`,
+    `There are now ${reserveSize} remaining verified phone numbers. Please provision more before they run out!`,
 
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',

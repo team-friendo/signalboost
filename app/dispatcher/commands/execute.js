@@ -1,8 +1,6 @@
 const { commands, toggles, vouchModes } = require('./constants')
 const { statuses } = require('../../util')
 const channelRepository = require('../../db/repositories/channel')
-const phoneNumberRepository = require('../../db/repositories/phoneNumber')
-const { statuses: pNumStatuses } = require('../../db/models/phoneNumber')
 const deauthorizationRepository = require('../../db/repositories/deauthorization')
 const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
@@ -285,12 +283,12 @@ const maybeCreateChannel = async (sender, payload) => {
   try {
     if (process.env.NEW_CHANNELS_ALLOWED === '1') {
       const newChannel = await channelRegistrar.create({ admins: payload })
-
-      return {
-        status: statuses.SUCCESS,
-        payload: '',
-        message: cr.success(newChannel.phoneNumber),
-      }
+      if (newChannel.phoneNumber)
+        return {
+          status: statuses.SUCCESS,
+          payload: '',
+          message: cr.success(newChannel.phoneNumber),
+        }
     }
 
     return {

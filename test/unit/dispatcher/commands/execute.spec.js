@@ -585,14 +585,33 @@ describe('executing commands', () => {
           })
 
           describe('when creating the channel fails', () => {
-            beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
-            it('returns an error status and message', async () => {
-              expect(await processCommand(dispatchable)).to.eql({
-                command: commands.CHANNEL,
-                payload: '',
-                status: statuses.ERROR,
-                message: commandResponsesFor(randomPerson).channel.error,
-                notifications: [],
+            describe('when creating the channel throws an error', () => {
+              beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
+              it('returns an error status and message', async () => {
+                expect(await processCommand(dispatchable)).to.eql({
+                  command: commands.CHANNEL,
+                  payload: '',
+                  status: statuses.ERROR,
+                  message: commandResponsesFor(randomPerson).channel.error,
+                  notifications: [],
+                })
+              })
+            })
+
+            describe('when creating the channel returns an error status', () => {
+              beforeEach(() =>
+                createChannelStub.returns(
+                  Promise.resolve({ status: statuses.ERROR, admins: newAdminPhoneNumbers }),
+                ),
+              )
+              it('returns an error status and notification for the channel requester to try again later', async () => {
+                expect(await processCommand(dispatchable)).to.eql({
+                  command: commands.CHANNEL,
+                  status: statuses.ERROR,
+                  payload: '',
+                  message: commandResponsesFor(randomPerson).channel.requestsClosed,
+                  notifications: [],
+                })
               })
             })
           })
