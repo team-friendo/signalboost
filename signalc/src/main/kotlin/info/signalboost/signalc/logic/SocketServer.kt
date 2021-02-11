@@ -23,13 +23,15 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
 
     override suspend fun run(): SocketServer {
 
-        // This blocks! (We only do it once in boot sequence so that should be okay!)
-        socket = AFUNIXServerSocket.newInstance().apply {
-            bind(AFUNIXSocketAddress(File(app.config.socket.path)))
-        }
+        socket = app.coroutineScope.async {
+            AFUNIXServerSocket.newInstance().apply {
+                bind(AFUNIXSocketAddress(File(app.config.socket.path)))
+            }
+        }.await()
 
         listenJob = app.coroutineScope.launch(IO) {
             while (this.isActive && !socket.isClosed) {
+                println("Socker server listening...")
                 val connection = try {
                     socket.accept() as Socket
                 } catch (e: Throwable) {
@@ -37,10 +39,12 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                     return@launch stop()
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
-                println("Got connection on socket ${socketHash}!")
-                launch {
+                println("Got connection on socket ${socketHash}")
+                launch(IO) {
                     app.socketMessageReceiver.connect(connection)
+                    println("Connected reader to socket $socketHash")
                     app.socketMessageSender.connect(connection)
+                    println("Connected writer to socket $socketHash")
                 }
             }
         }
