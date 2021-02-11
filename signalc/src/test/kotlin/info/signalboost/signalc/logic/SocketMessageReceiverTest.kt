@@ -8,15 +8,17 @@ import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScop
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.commandExecutionError
-import info.signalboost.signalc.util.SocketHashCode
-import info.signalboost.signalc.util.TimeUtil
-import info.signalboost.signalc.util.UnixServerSocket
+import info.signalboost.signalc.util.*
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.test.runBlockingTest
+import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
@@ -35,10 +37,7 @@ import kotlin.time.times
 class SocketMessageReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = genTestScope()
-        val config = Config.mockAllExcept(
-            SocketMessageReceiver::class,
-            SocketServer::class,
-        )
+        val config = Config.mockAllExcept(SocketMessageReceiver::class)
         val app = Application(config).run(testScope)
 
         // TODO: use genPhoneNumber() here once we have un-hardcoded sender
@@ -47,6 +46,24 @@ class SocketMessageReceiverTest : FreeSpec({
         val recipientAccount = genVerifiedAccount()
         val now = Instant.now().toEpochMilli()
         val sendDelay = 10.milliseconds
+
+        suspend fun startTestSocketServer(): ReceiveChannel<Socket> = testScope.async {
+            val out = Channel<Socket>()
+            AFUNIXServerSocket.newInstance().let {
+                it.bind(AFUNIXSocketAddress(File(app.config.socket.path)))
+                testScope.launch(IO) {
+                    while (!out.isClosedForReceive && this.isActive) {
+                        val sock = it.accept() as Socket
+                        println("Got connection on ${sock.hashCode()}")
+                        out.send(sock)
+                    }
+                }
+            }
+            out
+        }.await()
+
+        val serverSocketChannel: ReceiveChannel<Socket> = startTestSocketServer()
+
 
         beforeSpec {
             mockkObject(TimeUtil).also {
@@ -60,38 +77,40 @@ class SocketMessageReceiverTest : FreeSpec({
 
         afterSpec {
             app.stop()
+            serverSocketChannel.cancel()
             unmockkAll()
             testScope.teardown()
         }
 
-        suspend fun connectToSocket(): Pair<Socket,PrintWriter> = async(Dispatchers.IO) {
-            val socket = AFUNIXSocket.newInstance().also {
+        suspend fun clientConnectsToSocket(): Pair<ServerSocket,PrintWriter> = testScope.async(Dispatchers.IO) {
+            val clientSock = AFUNIXSocket.newInstance().also {
                 it.connect(AFUNIXSocketAddress(File(config.socket.path)))
             }
-            val writer = PrintWriter(socket.getOutputStream(), true)
-            Pair(socket,writer)
+            Pair(
+                serverSocketChannel.receive(),
+                PrintWriter(clientSock.getOutputStream(), true)
+            )
         }.await()
 
-        suspend fun socketEmits(vararg messages: String?): Triple<Socket,Job, SocketHashCode> {
-            val (socket,writer) = connectToSocket()
-            val socketHash = socket.hashCode()
-            val listenJob = app.socketMessageReceiver.connect(socket)
+        suspend fun socketEmits(vararg messages: String?): Pair<ServerSocket, Job> {
+            val (sSock,writer) = clientConnectsToSocket()
+            val listenJob = app.socketMessageReceiver.connect(sSock)
             messages.forEach{ writer.println(it) }
-            delay(sendDelay)
-            return Triple(socket, listenJob, socketHash)
+            delay(messages.size * sendDelay)
+            return Pair(sSock, listenJob)
         }
+
 
         fun verifyClosed(socket: Socket) {
             app.socketMessageReceiver.readers[socket.hashCode()] shouldBe null
-            app.socketServer.connections[socket.hashCode()] shouldBe null
             coVerify {
-                app.socketMessageSender.disconnect(socket.hashCode())
+                app.socketServer.disconnect(socket.hashCode())
             }
         }
 
         "#connect" - {
             "opens a reader on a socket and stores a reference to it" {
-                val (socket) = connectToSocket()
+                val (socket) = clientConnectsToSocket()
                 app.socketMessageReceiver.connect(socket)
                 delay(1.milliseconds)
 
@@ -101,7 +120,7 @@ class SocketMessageReceiverTest : FreeSpec({
 
             "when client terminates socket connection" - {
                 "closes server side of socket connection" {
-                    val (socket) = connectToSocket()
+                    val (socket) = clientConnectsToSocket()
                     val listenJob = app.socketMessageReceiver.connect(socket)
                     val writer = PrintWriter(socket.getOutputStream(), true)
                     writer.close()
@@ -127,32 +146,11 @@ class SocketMessageReceiverTest : FreeSpec({
             }
 
             "when socket emits ABORT command" - {
-                suspend fun setup(): Application {
-                    val _config = config.copy(
-                        socket = config.socket.copy(
-                            path = "/signalc/foobar.sock"
-                        )
-                    )
-                    val _app = Application(_config).run(testScope)
-                    val socket = AFUNIXSocket.newInstance().also {
-                        it.connect(AFUNIXSocketAddress(File(_config.socket.path)))
-                    }
-                    val writer = PrintWriter(socket.getOutputStream(), true)
-                    _app.socketMessageReceiver.connect(socket)
-                    writer.println(",abort,")
-                    delay(5 * sendDelay)
-                    return _app
-                }
-
                 "shuts down the app" {
-                    val _app = setup()
-                    _app.socketServer.listenJob.isCancelled shouldBe true
-                    _app.socketServer.socket.isClosed shouldBe true
-                    _app.socketServer.connections.isEmpty() shouldBe true
-                    _app.socketMessageReceiver.readers.isEmpty() shouldBe true
+                    socketEmits(",abort,")
                     coVerify {
-                        _app.socketMessageSender.send(any<Shutdown>())
-                        _app.socketMessageSender.stop()
+                        app.socketMessageSender.send(any<Shutdown>())
+                        app.socketServer.stop()
                     }
                 }
             }
@@ -322,7 +320,7 @@ class SocketMessageReceiverTest : FreeSpec({
         "#disconnect" - {
 
             "closes socket connection" {
-                val (socket) = connectToSocket()
+                val (socket) = clientConnectsToSocket()
                 val listenJob = app.socketMessageReceiver.connect(socket)
                 app.socketMessageReceiver.disconnect(socket.hashCode())
                 delay(sendDelay)
