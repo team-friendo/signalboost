@@ -555,11 +555,17 @@ ${
     }.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.Herzlich willkommen!
+    `Willkommen! Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.
 
-Fügen Sie als Nächstes diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.Leute können diesen Kanal abonnieren, indem sie HALLO an ${channelPhoneNumber} senden.Sie können Sendungen an diese Abonnenten senden, indem Sie BROADCAST [Ihre Nachricht hier] senden.
+1. Fügen Sie diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.
+2. Senden Sie HELP, um zu sehen, welche Befehle Sie verwenden können.
+3. Senden Sie INFO, um zu sehen, wie viele Administratoren und Abonnenten sich auf diesem Kanal befinden.
+4. Überprüfen Sie die folgenden Ressourcen:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-Um eine vollständige Liste der Befehle anzuzeigen, senden Sie HILFE oder lesen Sie unsere Anleitung: https://signalboost.info/how-to.`,
+psDer Betrieb jedes Kanals kostet uns ~ 3 US-Dollar pro Monat. Da wir diese Software für die Befreiung und nicht für den Profit entwickeln, sind wir auf die materielle Unterstützung unserer Community angewiesen, um das Projekt am Laufen zu halten. Wenn Sie es sich leisten können, erwägen Sie bitte eine Spende hier: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

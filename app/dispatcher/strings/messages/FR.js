@@ -564,11 +564,17 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
     } seront désormais nécessaires pour rejoindre cette canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `Vous venez d'être nommé administrateur de cette chaîne Signalboost par ${addingAdmin}. Bienvenue!
+    `Bienvenue! Vous venez d'être nommé administrateur de cette chaîne Signalboost par ${addingAdmin}.
 
-Ensuite, ajoutez ce numéro de téléphone (${channelPhoneNumber}) à vos contacts. Les gens peuvent s'abonner à cette chaîne en envoyant HELLO à ${channelPhoneNumber}. Vous pouvez envoyer des diffusions à ces abonnés en envoyant BROADCAST [votre message ici].
+1. Ajoutez ce numéro de téléphone(${channelPhoneNumber}) à vos contacts.
+2. Envoyez une aide pour voir quelles commandes vous pouvez utiliser.
+3. Envoyez INFO pour voir combien d'administrateurs et d'abonnés sont sur ce canal.
+4. Consultez les ressources suivantes:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre guide pratique: https://signalboost.info/how-to.`,
+psIl nous en coûte ~3$/mois pour faire fonctionner chaque canal.Depuis que nous fabriquons ce logiciel pour la libération, sans but lucratif, nous comptons sur le soutien matériel de notre communauté pour maintenir le projet à flot.Si vous pouvez vous le permettre, veuillez envisager de faire un don ici: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

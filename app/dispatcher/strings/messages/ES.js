@@ -563,12 +563,17 @@ ${
     } para unirse a este canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `${addingAdmin} acaba de convertirse en administrador de este canal de Signalboost.¡Bienvenidos!
+    `¡Bienvenidos! ${addingAdmin} acaba de convertirse en administrador de este canal de Signalboost.
 
-Luego, agregue este número de teléfono (${channelPhoneNumber}) a sus contactos.Las personas pueden suscribirse a este canal enviando HOLA a (${channelPhoneNumber}).Puede enviar transmisiones a esos suscriptores enviando BROADCAST [su mensaje aquí].
+1. Agregue este número de teléfono (${channelPhoneNumber}) a sus contactos.
+2. Envíe AYUDA para ver qué comandos puede usar.
+3. Envíe INFO para ver cuántos administradores y suscriptores hay en este canal.
+4. Consulte los siguientes recursos:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-
-Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía práctica: https: // signalboost.info / how-to.`,
+psNos cuesta ~$3/mes ejecutar cada canal.Dado que creamos este software para la liberación, no para el lucro, confiamos en el apoyo material de nuestra comunidad para mantener el proyecto a flote.Si puede permitírselo, considere hacer una donación aquí: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

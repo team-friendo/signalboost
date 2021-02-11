@@ -532,11 +532,17 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
     } to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+    `Welcome! You were just made an admin of this Signalboost channel by ${addingAdmin}. 
 
-Next, add this phone number (${channelPhoneNumber}) to your contacts. People can subscribe here by sending HELLO to ${channelPhoneNumber}. You can send broadcasts to those subscribers by sending BROADCAST [your message here]. 
+1. Add this phone number(${channelPhoneNumber}) to your contacts. 
+2. Send HELP to see what commands you can use.
+3. Send INFO to see how many admins and subscribers are on this channel.
+4. Check out the following resources:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-To see a full list of commands, send HELP or check out our how-to guide: https://signalboost.info/how-to.`,
+p.s.It costs us ~$3/month to run each channel.Since we make this software for liberation, not profit, we rely on the material support of our community to keep the project afloat.If you can afford to, please consider making a donation here: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {
