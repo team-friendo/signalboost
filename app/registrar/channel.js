@@ -39,16 +39,17 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 const create = async ({ admins, specifiedPhoneNumber }) => {
   try {
     // grab one from the pool of verified #s
-    const verifiedPhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
+    const availablePhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
 
     // if there aren't any verified phone numbers, don't continue!
-    if (verifiedPhoneNumbers.length === 0)
+    if (availablePhoneNumbers.length === 0)
       return {
         status: pNumStatuses.ERROR,
+        error: 'No available phone numbers!',
         request: { admins },
       }
 
-    const phoneNumber = specifiedPhoneNumber || verifiedPhoneNumbers[0].phoneNumber
+    const phoneNumber = specifiedPhoneNumber || availablePhoneNumbers[0].phoneNumber
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
     await signal.subscribe(phoneNumber, 0)
@@ -73,7 +74,7 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
     }
 
     // check if the number of verified phone numbers is dangerously low
-    await checkPhoneNumberReserve(verifiedPhoneNumbers)
+    await checkPhoneNumberReserve(availablePhoneNumbers)
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {

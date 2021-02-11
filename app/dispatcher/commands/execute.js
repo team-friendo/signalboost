@@ -281,20 +281,18 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 const maybeCreateChannel = async (sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
-    if (process.env.NEW_CHANNELS_ALLOWED === '1') {
-      const newChannel = await channelRegistrar.create({ admins: payload })
-      if (newChannel.phoneNumber)
-        return {
-          status: statuses.SUCCESS,
-          payload: '',
-          message: cr.success(newChannel.phoneNumber),
-        }
+    const newChannel = await channelRegistrar.create({ admins: payload })
+    if (newChannel.status === statuses.ERROR) {
+      return {
+        status: statuses.ERROR,
+        payload: '',
+        message: cr.requestsClosed,
+      }
     }
-
     return {
-      status: statuses.ERROR,
+      status: statuses.SUCCESS,
       payload: '',
-      message: cr.requestsClosed,
+      message: cr.success(newChannel.phoneNumber),
     }
   } catch (e) {
     logger.error(e)
@@ -583,18 +581,10 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
 }
 
 // REQUEST
-const showRequest = (channel, sender) => {
-  if (process.env.NEW_CHANNELS_ALLOWED === '1')
-    return {
-      status: statuses.SUCCESS,
-      message: messagesIn(sender.language).commandResponses.request.success,
-    }
-
-  return {
-    status: statuses.ERROR,
-    message: messagesIn(sender.language).commandResponses.request.closed,
-  }
-}
+const showRequest = (channel, sender) => ({
+  status: statuses.SUCCESS,
+  message: messagesIn(sender.language).commandResponses.request.success,
+})
 
 // REPLY
 

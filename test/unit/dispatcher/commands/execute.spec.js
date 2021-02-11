@@ -550,87 +550,69 @@ describe('executing commands', () => {
         }),
       }
 
-      let newChannelsAllowedVal = process.env.NEW_CHANNELS_ALLOWED
-      describe('when the system is accepting new channel requests', () => {
-        beforeEach(() => (process.env.NEW_CHANNELS_ALLOWED = '1'))
-        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = newChannelsAllowedVal))
-        describe('when sent a valid channel request', () => {
-          let createChannelStub
+      describe('when sent a valid channel request', () => {
+        let createChannelStub
+        beforeEach(() => {
+          createChannelStub = sinon.stub(channelRegistrar, 'create')
+        })
+
+        describe('when creating a new channel succeeds', () => {
+          const phoneNumber = genPhoneNumber()
+
           beforeEach(() => {
-            createChannelStub = sinon.stub(channelRegistrar, 'create')
+            createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber }))
           })
 
-          describe('when creating a new channel succeeds', () => {
-            const phoneNumber = genPhoneNumber()
+          it('passes in the admin phone numbers to the channel creation request', async () => {
+            await processCommand(dispatchable)
 
-            beforeEach(() => {
-              createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber }))
+            expect(createChannelStub.getCall(0).args).to.eql([{ admins: newAdminPhoneNumbers }])
+          })
+
+          it("returns a success status and message containing the new channel's phone number", async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.CHANNEL,
+              payload: '',
+              status: statuses.SUCCESS,
+              message: commandResponsesFor(randomPerson).channel.success(phoneNumber),
+              notifications: [],
             })
+          })
+        })
 
-            it('passes in the admin phone numbers to the channel creation request', async () => {
-              await processCommand(dispatchable)
-
-              expect(createChannelStub.getCall(0).args).to.eql([{ admins: newAdminPhoneNumbers }])
-            })
-
-            it("returns a success status and message containing the new channel's phone number", async () => {
+        describe('when creating the channel fails', () => {
+          describe('when creating the channel throws an error', () => {
+            beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
+            it('returns an error status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.CHANNEL,
                 payload: '',
-                status: statuses.SUCCESS,
-                message: commandResponsesFor(randomPerson).channel.success(phoneNumber),
+                status: statuses.ERROR,
+                message: commandResponsesFor(randomPerson).channel.error,
                 notifications: [],
               })
             })
           })
 
-          describe('when creating the channel fails', () => {
-            describe('when creating the channel throws an error', () => {
-              beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
-              it('returns an error status and message', async () => {
-                expect(await processCommand(dispatchable)).to.eql({
-                  command: commands.CHANNEL,
-                  payload: '',
+          describe('when creating the channel returns an error status', () => {
+            beforeEach(() =>
+              createChannelStub.returns(
+                Promise.resolve({
                   status: statuses.ERROR,
-                  message: commandResponsesFor(randomPerson).channel.error,
-                  notifications: [],
-                })
+                  error: 'No available phone numbers!',
+                  request: { newAdminPhoneNumbers },
+                }),
+              ),
+            )
+            it('returns an error status and notification for the channel requester to try again later', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.CHANNEL,
+                status: statuses.ERROR,
+                payload: '',
+                message: commandResponsesFor(randomPerson).channel.requestsClosed,
+                notifications: [],
               })
             })
-
-            describe('when creating the channel returns an error status', () => {
-              beforeEach(() =>
-                createChannelStub.returns(
-                  Promise.resolve({ status: statuses.ERROR, admins: newAdminPhoneNumbers }),
-                ),
-              )
-              it('returns an error status and notification for the channel requester to try again later', async () => {
-                expect(await processCommand(dispatchable)).to.eql({
-                  command: commands.CHANNEL,
-                  status: statuses.ERROR,
-                  payload: '',
-                  message: commandResponsesFor(randomPerson).channel.requestsClosed,
-                  notifications: [],
-                })
-              })
-            })
-          })
-        })
-      })
-
-      describe('when the system is not accepting new channel requests', () => {
-        beforeEach(() => {
-          process.env.NEW_CHANNELS_ALLOWED = '0'
-        })
-        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = newChannelsAllowedVal))
-
-        it('returns an error status and message telling them to try again later', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.CHANNEL,
-            payload: '',
-            status: statuses.ERROR,
-            message: commandResponsesFor(randomPerson).channel.requestsClosed,
-            notifications: [],
           })
         })
       })
@@ -1854,38 +1836,13 @@ describe('executing commands', () => {
           message: `${localizedCmds.REQUEST}`,
         }),
       }
-      let originalVal = process.env.NEW_CHANNELS_ALLOWED
-
-      describe('when the system is accepting new channel requests', () => {
-        beforeEach(() => {
-          process.env.NEW_CHANNELS_ALLOWED = '1'
-        })
-        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
-        it("returns a success status and message containing the new channel's phone number", async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.REQUEST,
-            payload: '',
-            status: statuses.SUCCESS,
-            message: commandResponsesFor(randomPerson).request.success,
-            notifications: [],
-          })
-        })
-      })
-
-      describe('when new channels are not allowed', () => {
-        beforeEach(() => {
-          process.env.NEW_CHANNELS_ALLOWED = '0'
-        })
-        afterEach(() => (process.env.NEW_CHANNELS_ALLOWED = originalVal))
-
-        it('returns an error status and message telling them to try again later', async () => {
-          expect(await processCommand(dispatchable)).to.eql({
-            command: commands.REQUEST,
-            payload: '',
-            status: statuses.ERROR,
-            message: commandResponsesFor(randomPerson).request.closed,
-            notifications: [],
-          })
+      it("returns a success status and message containing the new channel's phone number", async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.REQUEST,
+          payload: '',
+          status: statuses.SUCCESS,
+          message: commandResponsesFor(randomPerson).request.success,
+          notifications: [],
         })
       })
     })
