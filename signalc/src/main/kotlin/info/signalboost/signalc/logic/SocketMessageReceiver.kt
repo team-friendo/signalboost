@@ -99,11 +99,11 @@ class SocketMessageReceiver(private val app: Application) {
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(sender: String, recipient: String, msg: String): Unit {
-        val account: VerifiedAccount = app.accountManager.loadVerified(sender)
+        val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sender)
             ?: return app.socketMessageSender.send(
                 CommandExecutionError("send", Error("Can't send to $sender: not registered."))
             )
-        val sendResult = app.signalMessageSender.send(account, recipient.asAddress(), msg)
+        val sendResult = app.signalMessageSender.send(senderAccount, recipient.asAddress(), msg)
         // TODO: handle following cases:
         // - sendResult.success (yay!)
         // - sendResult.identityFailure (b/c safety number change)
