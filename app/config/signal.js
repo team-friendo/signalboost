@@ -14,7 +14,6 @@ const defaults = {
   maxResendInterval: 64 * 60 * 1000, // 64 min (6 tries)
   maxVouchLevel: 10,
   minResendInterval: 60 * 1000, // 1 min
-  phoneNumberReserveSize: 8,
   registrationBatchSize: 4,
   restartDelay: 1000 * 15, // 15 sec
   setExpiryInterval: 2000, // 2 sec
@@ -41,7 +40,6 @@ const test = {
   maxResendInterval: 256, // ~ 2.5 sec,
   maxVouchLevel: 10,
   minResendInterval: 2, // millis
-  phoneNumberReserveSize: 2,
   restartDelay: 1, // millis
   setExpiryInterval: 1, // millis
   signaldSendTimeout: 40, // millis

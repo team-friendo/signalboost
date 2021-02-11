@@ -106,7 +106,7 @@ const interveneIfBadMessage = async (executable, dispatchable) => {
   if (command === commands.NONE && sender.type === memberTypes.ADMIN)
     return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
 
-  // ripe for refactor?
+  // someone sent a support channel command on a non-support phone number
   if (validSupportChannelCommands.has(command) && channel.phoneNumber !== supportPhoneNumber) {
     if (sender.type === ADMIN)
       return {

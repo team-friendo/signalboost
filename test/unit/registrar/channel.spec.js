@@ -13,13 +13,7 @@ import { sdMessageOf } from '../../../app/signal/constants'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 import { deepChannelAttrs } from '../../support/factories/channel'
 import { statuses } from '../../../app/util'
-import {
-  create,
-  addAdmin,
-  list,
-  checkPhoneNumberReserve,
-  _welcomeNotificationOf,
-} from '../../../app/registrar/channel'
+import { create, addAdmin, list, _welcomeNotificationOf } from '../../../app/registrar/channel'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
 import { eventTypes } from '../../../app/db/models/event'
 import { eventFactory } from '../../support/factories/event'
@@ -103,16 +97,24 @@ describe('channel registrar', () => {
   afterEach(() => sinon.restore())
 
   describe('#create', () => {
-    describe("when there aren't any remaining verified phone numbers", () => {
-      const verifiedPhoneNumbers = []
+    describe("when there aren't any available phone numbers for channel creation", () => {
+      const availablePhoneNumbers = []
       beforeEach(() => {
         updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
-        listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumbers))
+        listPhoneNumberStub.returns(Promise.resolve(availablePhoneNumbers))
+        countChannelsStub.returns(Promise.resolve(10))
       })
 
       describe('when trying to create a new channel', () => {
         let res
         beforeEach(async () => (res = await create({ admins })))
+
+        it('notifies maintainers of a failed channel creation', () => {
+          expect(notifyMaintainersStub.getCall(0).args).to.eql([
+            messagesIn(defaultLanguage).notifications.channelCreationAttempt(false, 0, 10),
+          ])
+        })
+
         it('returns an error status', () => {
           expect(res).to.eql({
             status: statuses.ERROR,
@@ -124,14 +126,14 @@ describe('channel registrar', () => {
     })
 
     describe('when the system has verified phone numbers available', () => {
-      const verifiedPhoneNumbers = [
+      const availablePhoneNumbers = [
         { phoneNumber, status: 'VERIFIED' },
         { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
         { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
       ]
       beforeEach(() => {
         updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
-        listPhoneNumberStub.returns(Promise.resolve(verifiedPhoneNumbers))
+        listPhoneNumberStub.returns(Promise.resolve(availablePhoneNumbers))
       })
 
       describe('when subscribing to signal messages succeeds', () => {
@@ -224,7 +226,7 @@ describe('channel registrar', () => {
               it('alerts maintainers that a new channel has been created', async () => {
                 await create({ phoneNumber, admins })
                 expect(notifyMaintainersStub.getCall(0).args).to.eql([
-                  'A new channel was just created. There are now 10 active channels.',
+                  messagesIn(defaultLanguage).notifications.channelCreationAttempt(true, 2, 10),
                 ])
               })
 
@@ -439,21 +441,6 @@ describe('channel registrar', () => {
           adminPhoneNumber,
         }).catch(e => e)
         expect(err).to.eql(errorStatus)
-      })
-    })
-  })
-
-  describe('#checkPhoneNumberthreshold', () => {
-    describe('when the number of verified phone numbers falls below the threshold', () => {
-      it('alerts the sysadmins that new phone numbers need to be provisioned', async () => {
-        // threshold for test env is 2
-        await checkPhoneNumberReserve([
-          { phoneNumber, status: 'VERIFIED' },
-          { phoneNumber: genPhoneNumber(), status: 'VERIFIED' },
-        ])
-        expect(notifyMaintainersStub.getCall(0).args).to.eql([
-          messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(1),
-        ])
       })
     })
   })

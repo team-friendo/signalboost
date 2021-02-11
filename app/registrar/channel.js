@@ -13,13 +13,7 @@ const { statuses: pNumStatuses } = require('../db/models/phoneNumber')
 const { statuses: sbStatuses, loggerOf, wait, hash } = require('../util')
 const logger = loggerOf()
 const {
-  signal: {
-    welcomeDelay,
-    defaultMessageExpiryTime,
-    setExpiryInterval,
-    supportPhoneNumber,
-    phoneNumberReserveSize,
-  },
+  signal: { welcomeDelay, defaultMessageExpiryTime, setExpiryInterval, supportPhoneNumber },
 } = require('../config')
 const { sdMessageOf } = require('../signal/constants')
 
@@ -38,16 +32,21 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
 /* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
 const create = async ({ admins, specifiedPhoneNumber }) => {
   try {
-    // grab one from the pool of verified #s
+    // grab verified numbers that can be used for channels
     const availablePhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
+    const numChannels = await channelRepository.count()
 
-    // if there aren't any verified phone numbers, don't continue!
-    if (availablePhoneNumbers.length === 0)
+    // if there aren't any verified phone numbers, notify maintainers of a failed channel creation attempt and return early
+    if (availablePhoneNumbers.length === 0) {
+      await notifier.notifyMaintainers(
+        messagesIn(defaultLanguage).notifications.channelCreationAttempt(false, 0, numChannels),
+      )
       return {
         status: pNumStatuses.ERROR,
         error: 'No available phone numbers!',
         request: { admins },
       }
+    }
 
     const phoneNumber = specifiedPhoneNumber || availablePhoneNumbers[0].phoneNumber
 
@@ -62,19 +61,20 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
     await wait(welcomeDelay)
     await _sendWelcomeMessages(channel, adminPhoneNumbers)
 
+    // invite admins to subscribe to support channel if one exists
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
     if (supportChannel) {
-      // notify maintainers that a new channel has been created
-      const numChannels = await channelRepository.count()
-      await notifier.notifyMaintainers(
-        messagesIn(defaultLanguage).notifications.newChannelCreated(numChannels),
-      )
-      // invite admins to subscribe to support channel if one exists
       await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
     }
 
-    // check if the number of verified phone numbers is dangerously low
-    await checkPhoneNumberReserve(availablePhoneNumbers)
+    // notify maintainers that a new channel has been created
+    await notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.channelCreationAttempt(
+        true,
+        availablePhoneNumbers.length - 1,
+        numChannels,
+      ),
+    )
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
@@ -138,15 +138,6 @@ const _welcomeNotificationOf = channel =>
     channel.phoneNumber,
   )
 
-const checkPhoneNumberReserve = async verifiedPhoneNumbers => {
-  const numVerified = verifiedPhoneNumbers.length - 1
-  if (numVerified < phoneNumberReserveSize) {
-    await notifier.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.phoneNumberReserveWarning(numVerified),
-    )
-  }
-}
-
 // (Database) -> Promise<Array<Channel>>
 const list = db =>
   channelRepository
@@ -174,6 +165,5 @@ module.exports = {
   create,
   addAdmin,
   list,
-  checkPhoneNumberReserve,
   _welcomeNotificationOf,
 }

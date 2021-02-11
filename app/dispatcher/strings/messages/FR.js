@@ -522,11 +522,10 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
   destroyChannelFailed: phoneNumber =>
     `Échec de la destruction du canal pour le numéro de téléphone: ${phoneNumber}`,
 
-  newChannelCreated: numChannels =>
-    `Une nouvelle chaîne vient d'être créée. Il y a maintenant ${numChannels} canaux actifs.`,
-
-  phoneNumberReserveWarning: reserveSize =>
-    `Il y a maintenant des numéros de téléphone vérifiés ${reserveSize}. Veuillez en fournir plus avant qu'ils ne soient épuisés! `,
+  channelCreationAttempt: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Nouvelle chaîne créée.` : `La création du canal a échoué.`}
+- ${numChannels} canaux actifs
+- ${numAvailablePhoneNumbers} numéros de téléphone disponibles`,
 
   restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",

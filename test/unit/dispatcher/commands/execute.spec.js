@@ -11,7 +11,6 @@ import diagnostics from '../../../../app/diagnostics'
 import channelRepository, {
   getSubscriberMemberships,
 } from '../../../../app/db/repositories/channel'
-import phoneNumberRepository from '../../../../app/db/repositories/phoneNumber'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
