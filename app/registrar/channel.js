@@ -38,13 +38,13 @@ const create = async ({ phoneNumber, admins }) => {
     await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
 
     // send new admins welcome messages
-    const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
+    const adminMemberships = channelRepository.getAdminMemberships(channel)
     await wait(welcomeDelay)
-    await _sendWelcomeMessages(channel, adminPhoneNumbers)
+    await _sendWelcomeMessages(channel, adminMemberships)
 
     // invite admins to subscribe to support channel if one exists
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
-    if (supportChannel) await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
+    if (supportChannel) await _inviteToSupportChannel(supportChannel, adminMemberships)
 
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
@@ -57,44 +57,44 @@ const create = async ({ phoneNumber, admins }) => {
   }
 }
 
-/* (Channel, Array<string>) -> Promise<Array<void>> */
+/* (Channel, Array<Membership>) -> Promise<Array<void>> */
 const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
   Promise.all(
-    adminPhoneNumbers.map(async adminPhoneNumber => {
+    adminPhoneNumbers.map(async ({ memberPhoneNumber, language }) => {
       await signal.sendMessage(
         sdMessageOf({
           sender: channel.phoneNumber,
-          recipient: adminPhoneNumber,
-          message: _welcomeNotificationOf(channel),
+          recipient: memberPhoneNumber,
+          message: _welcomeNotificationOf(channel, language),
         }),
         channel.socketId,
       )
       await wait(setExpiryInterval)
       await signal.setExpiration(
         channel.phoneNumber,
-        adminPhoneNumber,
+        memberPhoneNumber,
         defaultMessageExpiryTime,
         channel.socketId,
       )
     }),
   )
 
-/* (Channel, Array<string>) => Promise<Array<void>> */
-const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
+/* (Channel, Array<Membership>) => Promise<Array<void>> */
+const _inviteToSupportChannel = async (supportChannel, adminMemberships) => {
   const memberPhoneNumbers = new Set(channelRepository.getMemberPhoneNumbers(supportChannel))
   return Promise.all(
-    adminPhoneNumbers.map(async adminPhoneNumber => {
-      if (memberPhoneNumbers.has(adminPhoneNumber)) return
+    adminMemberships.map(async ({ memberPhoneNumber, language }) => {
+      if (memberPhoneNumbers.has(memberPhoneNumber)) return
       await inviteRepository.issue(
         supportChannel.phoneNumber,
         supportChannel.phoneNumber,
-        adminPhoneNumber,
+        memberPhoneNumber,
       )
       await signal.sendMessage(
         sdMessageOf({
           sender: supportChannel.phoneNumber,
-          recipient: adminPhoneNumber,
-          message: messagesIn(defaultLanguage).notifications.invitedToSupportChannel,
+          recipient: memberPhoneNumber,
+          message: messagesIn(language).notifications.invitedToSupportChannel,
         }),
         supportChannel.socketId,
       )
@@ -102,11 +102,8 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
   )
 }
 
-const _welcomeNotificationOf = channel =>
-  messagesIn(defaultLanguage).notifications.welcome(
-    messagesIn(defaultLanguage).systemName,
-    channel.phoneNumber,
-  )
+const _welcomeNotificationOf = (channel, language = defaultLanguage) =>
+  messagesIn(language).notifications.welcome(messagesIn(language).systemName, channel.phoneNumber)
 
 // (Database) -> Promise<Array<Channel>>
 const list = db =>
