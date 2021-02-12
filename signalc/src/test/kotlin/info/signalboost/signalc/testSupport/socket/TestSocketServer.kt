@@ -17,6 +17,8 @@ object TestSocketServer {
         socketPath: String,
         scope: CoroutineScope
     ): ReceiveChannel<Socket> = scope.async {
+        // starts a socket server at a path and returns a channel that emits
+        // new connections to the server
         val out = Channel<Socket>()
         AFUNIXServerSocket.newInstance().let {
             it.bind(AFUNIXSocketAddress(File(socketPath)))

@@ -39,7 +39,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                     return@launch stop()
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
-                println("Got connection on socket ${socketHash}")
+                println("Got connection on socket $socketHash")
                 launch(IO) {
                     app.socketMessageReceiver.connect(connection)
                     println("Connected reader to socket $socketHash")
