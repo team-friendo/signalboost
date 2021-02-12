@@ -3,9 +3,6 @@ package info.signalboost.signalc.testSupport.socket
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import okhttp3.internal.closeQuietly
 import org.newsclub.net.unix.AFUNIXSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
@@ -15,6 +12,7 @@ import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -25,7 +23,6 @@ class TestSocketClient private constructor(
     private val writer: PrintWriter,
     private val reader: BufferedReader,
     private val out: Channel<String>,
-    private val listenJob: Job,
     private val scope: CoroutineScope,
     private val numReceived: AtomicInteger,
     ) {
@@ -36,7 +33,6 @@ class TestSocketClient private constructor(
         suspend fun connect(path: String, scope: CoroutineScope): TestSocketClient = scope.async {
             val out = Channel<String>(READ_BUFFER_SIZE)
             val numReceived = AtomicInteger()
-            lateinit var listenJob: Job
 
             val socket =AFUNIXSocket.newInstance().also {
                 it.connect(AFUNIXSocketAddress(File(path)))
@@ -44,7 +40,7 @@ class TestSocketClient private constructor(
             val writer = PrintWriter(socket.getOutputStream(), true)
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
 
-            listenJob = scope.launch(IO) {
+            scope.launch(IO) {
                 while(this.isActive && !out.isClosedForReceive && !socket.isClosed) {
                     val msg = reader.readLine() ?: return@launch
                     println("Test client ${socket.hashCode()} got msg: $msg")
@@ -53,14 +49,15 @@ class TestSocketClient private constructor(
                 }
             }
 
-            TestSocketClient(socket, writer, reader, out, listenJob, scope, numReceived)
+            TestSocketClient(socket, writer, reader, out, scope, numReceived)
         }.await()
     }
 
 
 
-    suspend fun send(msg: String) = scope.async {
+    suspend fun send(msg: String, wait: Duration = 0.milliseconds) = scope.async(IO) {
         writer.println(msg)
+        delay(wait)
     }.await()
 
     private suspend fun receive(): String = out.receive()
@@ -69,7 +66,11 @@ class TestSocketClient private constructor(
 
     suspend fun close() = scope.async {
         out.cancel()
-        listenJob.cancel()
+        socket.closeQuietly()
+        writer.closeQuietly()
     }.await()
+
+    val isClosed: Boolean
+        get() = out.isClosedForReceive || socket.isClosed
 
 }
