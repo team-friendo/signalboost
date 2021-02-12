@@ -11,6 +11,7 @@ const logger = require('../logger')
 const notifier = require('../../notifier')
 const signal = require('../../signal')
 const util = require('../../util')
+const { getAdminMemberships } = require('../../db/repositories/channel')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
 const { statuses, sequence } = require('../../util')
@@ -102,9 +103,11 @@ const _warnOfPendingDestruction = async destructionRequests => {
   const timestamp = util.nowTimestamp()
   await Promise.all(
     destructionRequests.map(({ createdAt, channel }) =>
-      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
-        _hoursToLive(createdAt),
-      ]),
+      isEmpty(channel) || isEmpty(getAdminMemberships(channel))
+        ? Promise.resolve() // TODO(aguestuser|12 Feb 2021): i owe a test for this bugfix!
+        : notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED, [
+            _hoursToLive(createdAt),
+          ]),
     ),
   )
   return destructionRequestRepository.recordNotifications(
