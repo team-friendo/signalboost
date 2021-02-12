@@ -110,6 +110,24 @@ class SocketServerBigTest : FreeSpec({
                 val receivedMessages = (client1.drain() + client2.drain()).toSet()
                 receivedMessages shouldBe setOf(SendSuccess.toString(), SendFailure.toString())
             }
+
+            "does a round trip thingy!" {
+                // "relay" test above plus:
+
+//                coEvery {
+//                    app.signalMessageSender.send(any(),any(),any(),any(),any())
+//                } returns mockk(){
+//                    every { success } returns mockk()
+//                }
+//
+//                "sends success message to socket" {
+//                    client.send(sendCommand)
+//                    coVerify {
+//                        app.socketMessageSender.send(SendSuccess)
+//                    }
+//                }
+                // client should get success message back on wire
+            }
         }
 
         "#disconnect" - {
