@@ -30,7 +30,7 @@ class TestSocketClient private constructor(
     companion object {
         const val READ_BUFFER_SIZE = 10
 
-        suspend fun connect(path: String, scope: CoroutineScope): TestSocketClient = scope.async {
+        suspend fun connect(path: String, scope: CoroutineScope): TestSocketClient = scope.async(IO) {
             val out = Channel<String>(READ_BUFFER_SIZE)
             val numReceived = AtomicInteger()
 
