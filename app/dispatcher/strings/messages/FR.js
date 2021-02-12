@@ -469,6 +469,12 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
 
   inviteReceived: `Bonjour! Vous avez reçu le invitation a rejoindre cette canal Signalboost. Veuillez répondre avec ACCEPTER ou REFUSER.`,
 
+  invitedToSupportChannel: `Bonjour! Il s'agit du canal de support Signalboost.
+  
+Les responsables de Signalboost l'utilisent pour envoyer des annonces occasionnelles sur les nouvelles fonctionnalités et répondre à toutes vos questions.
+
+Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abonner.`,
+
   inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette canal.`,
 
   promptToUseSignal:

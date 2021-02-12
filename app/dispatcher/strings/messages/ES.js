@@ -466,6 +466,12 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
 
   inviteReceived: `Hola! Usted ha recibido una invitación para unirse este canal de Signalboost. Por favor, responda con ACEPTAR o RECHAZAR.`,
 
+  invitedToSupportChannel: `¡Hola! Este es el canal de soporte de Signalboost.
+  
+Los mantenedores de Signalboost lo utilizan para enviar anuncios ocasionales sobre nuevas funciones y responder cualquier pregunta que pueda tener.
+
+Responda ACEPTAR para suscribirse o RECHAZAR para no suscribirse.`,
+
   vouchedInviteReceived: (
     invitesReceived,
     invitesNeeded,

@@ -466,6 +466,12 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
 
   inviteReceived: `Hallo! Sie haben eine Einladung erhalten, diesem Signalboost-Kanal beizutreten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
 
+  invitedToSupportChannel: `Hallo! Dies ist der Signalboost-Unterstützungskanal.
+  
+Signalboost-Betreuer senden damit gelegentlich Ankündigungen zu neuen Funktionen und beantworten eventuelle Fragen.
+
+Bitte antworten Sie mit ACCEPT, um sich anzumelden, oder DECLINE, um sich nicht anzumelden.`,
+
   vouchedInviteReceived: (invitesReceived, invitesNeeded) =>
     `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, diese Signalboost Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
