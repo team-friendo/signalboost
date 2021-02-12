@@ -173,7 +173,7 @@ describe('channel registrar', () => {
                   sdMessageOf({
                     sender: supportChannel.phoneNumber,
                     recipient: adminPhoneNumber,
-                    message: _welcomeNotificationOf(supportChannel),
+                    message: messagesIn(defaultLanguage).notifications.invitedToSupportChannel,
                   }),
                   supportChannel.socketId,
                 ])

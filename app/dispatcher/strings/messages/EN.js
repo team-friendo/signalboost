@@ -444,6 +444,12 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
 
   inviteReceived: `Hello! You have received an invite to join this Signalboost channel. Please respond with ACCEPT or DECLINE.`,
 
+  invitedToSupportChannel: `Hello! This is the Signalboost support channel.
+  
+Signalboost maintainers use it to send out occasional announcements about new features and answer any questions you might have.
+
+Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
+
   inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
 
   promptToUseSignal:
