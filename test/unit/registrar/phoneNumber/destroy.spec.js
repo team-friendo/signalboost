@@ -490,6 +490,7 @@ describe('phone number registrar -- destroy module', () => {
 
         it('notifies the channel admins that their channel will be destroyed soon', async () => {
           await requestToDestroy(phoneNumbers)
+          // TODO(aguestuser|12 Feb 2021): test the corner case in which a channel's admins have left!
           map(notifyAdminsStub.getCalls(), 'args').forEach(([channel, notificationKey, args]) => {
             expect(phoneNumbers).to.include(channel.phoneNumber)
             expect(notificationKey).to.eql(notificationKeys.CHANNEL_DESTRUCTION_SCHEDULED)
