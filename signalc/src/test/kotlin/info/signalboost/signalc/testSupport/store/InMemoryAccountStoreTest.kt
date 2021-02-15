@@ -1,6 +1,6 @@
 package info.signalboost.signalc.testSupport.store
 
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount

@@ -7,7 +7,7 @@ import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.core.spec.style.FreeSpec

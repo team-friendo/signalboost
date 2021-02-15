@@ -9,13 +9,16 @@ import info.signalboost.signalc.model.SendSuccess
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
 import kotlin.time.ExperimentalTime
 
