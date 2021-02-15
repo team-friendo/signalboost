@@ -4,17 +4,15 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 
 @Serializable
-data class SocketAddress(
-    val number: String?,
-    val uuid: String?,
-)
-
-@Serializable
 sealed class SocketInMessage {
 
     companion object {
         fun fromJson(jsonString: String): SocketInMessage =
-            Json.decodeFromString(jsonString)
+            try {
+                Json.decodeFromString(jsonString)
+            } catch(e: Throwable) {
+                ParseError(e, jsonString)
+            }
     }
 
     fun toJson(): String = Json.encodeToString(this)
@@ -26,6 +24,11 @@ sealed class SocketInMessage {
     @Serializable
     @SerialName("close")
     object Close: SocketInMessage()
+
+    data class ParseError(
+        val cause: Throwable,
+        val input: String,
+    ): SocketInMessage()
 
     @Serializable
     @SerialName("send") // will be serialized as `type` field in JSON representation
