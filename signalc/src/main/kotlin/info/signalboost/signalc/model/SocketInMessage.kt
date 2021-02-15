@@ -20,6 +20,14 @@ sealed class SocketInMessage {
     fun toJson(): String = Json.encodeToString(this)
 
     @Serializable
+    @SerialName("abort")
+    object Abort: SocketInMessage()
+
+    @Serializable
+    @SerialName("close")
+    object Close: SocketInMessage()
+
+    @Serializable
     @SerialName("send") // will be serialized as `type` field in JSON representation
     data class Send(
         val username: String,
@@ -28,9 +36,7 @@ sealed class SocketInMessage {
         val attachments: List<SocketInAttachment>,
         // we could optionally support a QuoteObject here, but we don't. see:
         // https://docs.signald.org/structures/v1/JsonQuote.html
-    ): SocketInMessage() {
-
-    }
+    ): SocketInMessage()
 
     @Serializable
     @SerialName("subscribe") // will be serialized as `type` field in JSON representation

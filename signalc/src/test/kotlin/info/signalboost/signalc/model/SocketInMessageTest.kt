@@ -41,11 +41,11 @@ class SocketInMessageTest : FreeSpec({
         """.flatten()
 
 
-            "decodes from JSON string" {
+            "decodes from JSON" {
                 SocketInMessage.fromJson(json) shouldBe model
             }
 
-            "encodes to JSON string" {
+            "encodes to JSON" {
                 model.toJson() shouldBe json
             }
 
@@ -59,6 +59,7 @@ class SocketInMessageTest : FreeSpec({
                         json.replace(""""${recipientAddress.uuid}"""", "null")
             }
         }
+
         "SUBSCRIBE command" - {
 
             val model = SocketInMessage.Subscribe(senderNumber)
@@ -76,6 +77,34 @@ class SocketInMessageTest : FreeSpec({
 
             "encodes to JSON" {
                 SocketInMessage.fromJson(json) shouldBe model
+            }
+        }
+
+        "special commands" - {
+            "CLOSE" - {
+                val model = SocketInMessage.Close
+                val json = """{"type":"close"}"""
+
+                "decodes from JSON" {
+                    SocketInMessage.fromJson(json) shouldBe model
+                }
+
+                "encodes to JSON" {
+                    model.toJson() shouldBe json
+                }
+            }
+
+            "ABORT" - {
+                val model = SocketInMessage.Abort
+                val json = """{"type":"abort"}"""
+
+                "decodes from JSON" {
+                    SocketInMessage.fromJson(json) shouldBe model
+                }
+
+                "encodes to JSON" {
+                    model.toJson() shouldBe json
+                }
             }
 
         }
