@@ -6,6 +6,8 @@ import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genPhrase
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.beInstanceOf
+import kotlinx.serialization.SerializationException
 
 class SocketInMessageTest : FreeSpec({
     val senderNumber = genPhoneNumber()
@@ -79,6 +81,38 @@ class SocketInMessageTest : FreeSpec({
                 SocketInMessage.fromJson(json) shouldBe model
             }
         }
+
+
+        "invalid input" - {
+
+            "bad JSON" - {
+                val json = """{"type":"foo"}"""
+                val err = SocketInMessage.fromJson(json) as SocketInMessage.ParseError
+
+                "returns parse error"  {
+                    err.cause should beInstanceOf<SerializationException>()
+                    err.cause.message shouldBe """
+                  Polymorphic serializer was not found for class discriminator 'foo'
+                  JSON input: {"type":"foo"}
+                """.trimIndent()
+                    err.input shouldBe json
+                }
+            }
+
+            "not JSON" - {
+                val str = "foo"
+                val err = SocketInMessage.fromJson(str) as SocketInMessage.ParseError
+
+                "returns parse error" {
+                    err.cause should beInstanceOf<SerializationException>()
+                    err.cause.message shouldBe """
+                  Expected class kotlinx.serialization.json.JsonObject as the serialized body of info.signalboost.signalc.model.SocketInMessage, but had class kotlinx.serialization.json.JsonLiteral
+                """.trimIndent()
+                    err.input shouldBe str
+                }
+            }
+        }
+
 
         "special commands" - {
             "CLOSE" - {
