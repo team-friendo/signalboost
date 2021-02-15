@@ -3,6 +3,7 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
+import info.signalboost.signalc.model.CommandInvalid
 import info.signalboost.signalc.model.SendFailure
 import info.signalboost.signalc.model.SendSuccess
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
@@ -11,16 +12,12 @@ import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.date.after
-import io.kotest.matchers.date.before
 import io.kotest.matchers.shouldBe
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.unmockkAll
+import io.mockk.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runBlockingTest
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
 
 @InternalCoroutinesApi
 @ExperimentalTime
@@ -43,7 +40,6 @@ class SocketServerBigTest : FreeSpec({
         val recipientAccount = genVerifiedAccount(recipientPhone)
 
         val socketPath = app.config.socket.path
-        val sendDelay = 2.milliseconds
 
         beforeSpec {
             coEvery {
@@ -65,68 +61,72 @@ class SocketServerBigTest : FreeSpec({
 
 
         "#run" - {
+            val receivedMessages = Channel<String>()
 
-            val client1 = TestSocketClient.connect(socketPath, testScope)
-            val client2 = TestSocketClient.connect(socketPath, testScope)
+            val client1 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
+            val client2 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
+
+            suspend fun receiveN(n: Int) = List(n) {
+                receivedMessages.receive()
+            }.toSet()
+
 
             "accepts connections" {
                 app.socketServer.connections.keys.size shouldBe 2
-            }
-
-            "allows receiver to read and relay messages from connections" {
-                testScope.launch {
-                    client1.send("$recipientPhone,send,hello")
-                }
-                testScope.launch {
-                    client2.send("$recipientPhone,send,world")
-                }
-
-                coVerify {
-                    app.signalMessageSender.send(
-                        senderAccount,
-                        recipientPhone.asAddress(),
-                        "hello",
-                        any(),
-                        any(),
-                    )
-                    app.signalMessageSender.send(
-                        senderAccount,
-                        recipientPhone.asAddress(),
-                        "world",
-                        any(),
-                        any(),
-                    )
-                }
+                app.socketMessageReceiver.readers.size shouldBe 2
+                app.socketMessageSender.writerPool.writers.size shouldBe 2
             }
 
             "enables sender to write to connections concurrently" {
-                testScope.launch {
+                launch {
                     app.socketMessageSender.send(SendSuccess)
                 }
-                testScope.launch {
+                launch {
                     app.socketMessageSender.send(SendFailure)
                 }
-                delay(sendDelay * 2)
-                val receivedMessages = (client1.drain() + client2.drain()).toSet()
-                receivedMessages shouldBe setOf(SendSuccess.toString(), SendFailure.toString())
+                receiveN(2) shouldBe setOf(SendSuccess.toString(), SendFailure.toString())
             }
 
-            "does a round trip thingy!" {
-                // "relay" test above plus:
+            "handles roundtrip from socket receiver to socket writer" {
+                launch {
+                    client1.send("foo")
+                }
+                launch {
+                    client2.send("bar")
+                }
 
-//                coEvery {
-//                    app.signalMessageSender.send(any(),any(),any(),any(),any())
-//                } returns mockk(){
-//                    every { success } returns mockk()
-//                }
-//
-//                "sends success message to socket" {
-//                    client.send(sendCommand)
-//                    coVerify {
-//                        app.socketMessageSender.send(SendSuccess)
-//                    }
-//                }
-                // client should get success message back on wire
+                receiveN(2) shouldBe setOf(
+                    CommandInvalid("foo", "foo").toString(),
+                    CommandInvalid("bar", "bar").toString()
+                )
+            }
+
+
+            "handles roundtrip from socket receiver to signal sender to socket writer" - {
+                fun sendCommandOf(msg: String): String = "$recipientPhone,send,$msg"
+
+                coEvery {
+                    app.signalMessageSender.send(any(),any(),any(),any(),any())
+                } returns mockk(){
+                    every { success } returns mockk()
+                }
+
+                launch {
+                    client1.send(sendCommandOf("hello"))
+                }
+                launch {
+                    client2.send(sendCommandOf("world"))
+                }
+
+                receiveN(2) shouldBe setOf(
+                    SendSuccess.toString(),
+                    SendSuccess.toString(),
+                )
+
+                coVerify {
+                    app.signalMessageSender.send(senderAccount, recipientPhone.asAddress(), "hello", any(), any())
+                    app.signalMessageSender.send(senderAccount, recipientPhone.asAddress(), "world", any(), any())
+                }
             }
         }
 
