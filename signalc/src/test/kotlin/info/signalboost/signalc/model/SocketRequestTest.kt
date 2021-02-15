@@ -30,6 +30,12 @@ class SocketRequestTest : FreeSpec({
                 attachments = emptyList(),
             )
 
+            val modelWithNullUuid = model.copy(
+                recipientAddress = recipientAddress.copy(
+                    uuid = null
+                )
+            )
+
             val json = """
             |{
                |"type":"send",
@@ -40,12 +46,42 @@ class SocketRequestTest : FreeSpec({
                |},
                |"messageBody":"$body",
                |"attachments":[]
-            |}
-        """.flatten()
+            |}""".flatten()
+
+            val jsonWithNoUuid = """
+            |{
+               |"type":"send",
+               |"username":"$senderNumber",
+               |"recipientAddress":{
+                  |"number":"${recipientAddress.number}"
+               |},
+               |"messageBody":"$body",
+               |"attachments":[]
+            |}""".flatten()
+
+            val jsonWithNullUuid = """
+            |{
+               |"type":"send",
+               |"username":"$senderNumber",
+               |"recipientAddress":{
+                  |"number":"${recipientAddress.number}",
+                  |"uuid":null
+               |},
+               |"messageBody":"$body",
+               |"attachments":[]
+            |}""".flatten()
 
 
             "decodes from JSON" {
                 SocketRequest.fromJson(json) shouldBe model
+            }
+
+            "decodes from JSON with missing uuid field" {
+                SocketRequest.fromJson(jsonWithNoUuid) shouldBe modelWithNullUuid
+            }
+
+            "decodes from JSON with null uuid field" {
+                SocketRequest.fromJson(jsonWithNullUuid) shouldBe modelWithNullUuid
             }
 
             "encodes to JSON" {
@@ -53,13 +89,7 @@ class SocketRequestTest : FreeSpec({
             }
 
             "encodes to JSON with null uuid field" {
-                val model2 = model.copy(
-                    recipientAddress = recipientAddress.copy(
-                        uuid = null
-                    )
-                )
-                model2.toJson() shouldBe
-                        json.replace(""""${recipientAddress.uuid}"""", "null")
+                modelWithNullUuid.toJson() shouldBe jsonWithNoUuid
             }
         }
 
