@@ -8,7 +8,7 @@ import java.util.*
 @Serializable
 data class SocketAddress(
     val number: String?,
-    val uuid: String?,
+    val uuid: String? = null,
 ) {
    companion object {
        fun SignalServiceAddress.asSocketAddress(): SocketAddress = SocketAddress(
