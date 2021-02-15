@@ -2,25 +2,24 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
-import info.signalboost.signalc.model.CommandInvalid
 import info.signalboost.signalc.model.SendFailure
 import info.signalboost.signalc.model.SendSuccess
+import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.mockk.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
 import kotlin.time.ExperimentalTime
+import kotlin.time.milliseconds
 
 @InternalCoroutinesApi
 @ExperimentalTime
@@ -36,8 +35,7 @@ class SocketServerBigTest : FreeSpec({
         )
         val app = Application(config).run(testScope)
 
-        // TODO: unhardcode this!
-        val senderPhone = Config.USER_PHONE_NUMBER
+        val senderPhone = genPhoneNumber()
         val senderAccount = genVerifiedAccount(senderPhone)
         val recipientPhone = genPhoneNumber()
         val recipientAccount = genVerifiedAccount(recipientPhone)
@@ -98,15 +96,18 @@ class SocketServerBigTest : FreeSpec({
                     client2.send("bar")
                 }
 
-                receiveN(2) shouldBe setOf(
-                    CommandInvalid("foo", "foo").toString(),
-                    CommandInvalid("bar", "bar").toString()
-                )
+                receiveN(2).forEach {
+                    it shouldContain "JsonDecodingException"
+                }
             }
 
 
             "handles roundtrip from socket receiver to signal sender to socket writer" - {
-                fun sendCommandOf(msg: String): String = "$recipientPhone,send,$msg"
+                fun sendRequestOf(msg: String): String = genSendRequest(
+                    senderAccount.username,
+                    recipientAccount.address.asSocketAddress(),
+                    msg
+                ).toJson()
 
                 coEvery {
                     app.signalMessageSender.send(any(),any(),any(),any(),any())
@@ -115,10 +116,10 @@ class SocketServerBigTest : FreeSpec({
                 }
 
                 launch {
-                    client1.send(sendCommandOf("hello"))
+                    client1.send(sendRequestOf("hello"))
                 }
                 launch {
-                    client2.send(sendCommandOf("world"))
+                    client2.send(sendRequestOf("world"))
                 }
 
                 receiveN(2) shouldBe setOf(
@@ -127,8 +128,8 @@ class SocketServerBigTest : FreeSpec({
                 )
 
                 coVerify {
-                    app.signalMessageSender.send(senderAccount, recipientPhone.asAddress(), "hello", any(), any())
-                    app.signalMessageSender.send(senderAccount, recipientPhone.asAddress(), "world", any(), any())
+                    app.signalMessageSender.send(senderAccount, recipientAccount.address, "hello", any(), any())
+                    app.signalMessageSender.send(senderAccount, recipientAccount.address, "world", any(), any())
                 }
             }
         }
@@ -138,6 +139,7 @@ class SocketServerBigTest : FreeSpec({
             app.socketServer.closeAllConnections()
             TestSocketClient.connect(socketPath, testScope)
             TestSocketClient.connect(socketPath, testScope)
+            delay(10.milliseconds)
             val (connection1, connection2) = app.socketServer.connections.values.take(2)
 
             testScope.launch {

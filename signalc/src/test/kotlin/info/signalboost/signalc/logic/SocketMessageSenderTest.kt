@@ -11,7 +11,6 @@ import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genDropped
 import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genShutdown
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.doubles.shouldBeLessThan
-import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.*
@@ -19,11 +18,9 @@ import kotlinx.coroutines.test.runBlockingTest
 import java.io.PrintWriter
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.system.measureTimeMillis
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 import kotlin.time.milliseconds
-import kotlin.time.nanoseconds
 
 @ExperimentalTime
 @ObsoleteCoroutinesApi
@@ -177,7 +174,7 @@ class SocketMessageSenderTest : FreeSpec({
                         app.socketMessageSender.send(msg)
                         delay(sendDelay)
                         verify {
-                            mockWriter.println("Error dispatching command: ${msg.error}")
+                            mockWriter.println("Error dispatching command: ${msg.cause}")
                         }
                     }
                 }

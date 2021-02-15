@@ -2,14 +2,16 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.commandExecutionError
+import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
+import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.commandExecutionException
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
-import info.signalboost.signalc.testSupport.socket.TestSocketServer.clientConnectsTo
 import info.signalboost.signalc.testSupport.socket.TestSocketServer.startTestSocketServer
 import info.signalboost.signalc.util.*
 import io.kotest.core.spec.style.FreeSpec
@@ -20,13 +22,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.test.runBlockingTest
 import java.io.IOException
-import java.io.PrintWriter
 import java.net.Socket
 import java.time.Instant
 import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
-import kotlin.time.times
 
 
 @ExperimentalTime
@@ -38,8 +38,7 @@ class SocketMessageReceiverTest : FreeSpec({
         val config = Config.mockAllExcept(SocketMessageReceiver::class)
         val app = Application(config).run(testScope)
 
-        // TODO: use genPhoneNumber() here once we have un-hardcoded sender
-        val senderPhoneNumber = Config.USER_PHONE_NUMBER
+        val senderPhoneNumber = genPhoneNumber()
         val senderAccount = genVerifiedAccount(senderPhoneNumber)
         val recipientAccount = genVerifiedAccount()
 
@@ -101,19 +100,25 @@ class SocketMessageReceiverTest : FreeSpec({
                 client.close()
             }
 
-            "when client sends SEND command" - {
+            "SEND request" - {
                 val messageBody = "hi there"
-                val sendCommand = "${recipientAccount.username},send,$messageBody"
+                val sendRequest = genSendRequest(
+                    senderNumber = senderAccount.username,
+                    recipientAddress = recipientAccount.address.asSocketAddress(),
+                    messageBody = messageBody,
+                )
+                val sendRequestJson = sendRequest.toJson()
+                val parseDelay = 20.milliseconds
 
                 "and account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns senderAccount
 
                     "sends signal message" {
-                        client.send(sendCommand)
+                        client.send(sendRequest.toJson(), wait=parseDelay)
                         coVerify {
                             app.signalMessageSender.send(
                                 senderAccount,
-                                recipientAccount.username.asAddress(),
+                                recipientAccount.address,
                                 messageBody,
                                 any(),
                                 any(),
@@ -129,7 +134,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         }
 
                         "sends success message to socket" {
-                            client.send(sendCommand, wait = 5.milliseconds)
+                            client.send(sendRequestJson, wait = parseDelay)
                             coVerify {
                                 app.socketMessageSender.send(SendSuccess)
                             }
@@ -143,12 +148,12 @@ class SocketMessageReceiverTest : FreeSpec({
                         } throws error
 
                         "sends error message to socket" {
-                            client.send(sendCommand, wait = 5.milliseconds)
+                            client.send(sendRequestJson, wait = parseDelay)
                             coVerify {
                                 // TODO(aguestuser|2021-02-04): we dont' actually want this.
                                 //  we want halting errors to be treated like SendResult statuses below!
                                 app.socketMessageSender.send(
-                                    CommandExecutionError("send", error)
+                                    commandExecutionException(error, sendRequest)
                                 )
                             }
                         }
@@ -162,7 +167,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         }
 
                         "sends error message to socket" {
-                            client.send(sendCommand, wait = 5.milliseconds)
+                            client.send(sendRequestJson, wait = 5.milliseconds)
                             coVerify {
                                 app.socketMessageSender.send(SendFailure)
                             }
@@ -174,12 +179,12 @@ class SocketMessageReceiverTest : FreeSpec({
                     coEvery { app.accountManager.loadVerified(any()) } returns null
 
                     "sends error message to socket" {
-                        client.send(sendCommand)
+                        client.send(sendRequestJson)
                         coVerify {
                             app.socketMessageSender.send(
-                                commandExecutionError(
-                                    "send",
-                                    Error("Can't send to $senderPhoneNumber: not registered.")
+                                commandExecutionException(
+                                    Error("Can't send to $senderPhoneNumber: not registered."),
+                                    sendRequest
                                 )
                             )
                         }
@@ -187,8 +192,9 @@ class SocketMessageReceiverTest : FreeSpec({
                 }
             }
 
-            "when client sends SUBSCRIBE command" - {
-                val subscribeCommand = "${recipientAccount.username},subscribe,"
+            "SUBSCRIBE request" - {
+                val subscribeRequest = genSubscribeRequest(recipientAccount.username)
+                val subscribeRequestJson = subscribeRequest.toJson()
 
                 "and account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
@@ -199,7 +205,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         } returns Job()
 
                         "sends success to socket" {
-                            client.send(subscribeCommand)
+                            client.send(subscribeRequestJson)
                             coVerify {
                                 app.socketMessageSender.send(SubscriptionSucceeded)
                             }
@@ -214,7 +220,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         } returns subscribeJob
 
                         "sends error to socket" {
-                            client.send(subscribeCommand)
+                            client.send(subscribeRequestJson)
                             subscribeJob.cancel(error.message!!, error)
                             coVerify {
                                 app.socketMessageSender.send(SubscriptionFailed(error))
@@ -230,7 +236,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         } returnsMany listOf(disruptedJob, Job())
 
                         "sends error to socket and resubscribes" {
-                            client.send(subscribeCommand)
+                            client.send(subscribeRequestJson)
                             disruptedJob.cancel(error.message!!, error)
 
                             coVerify {
@@ -249,12 +255,13 @@ class SocketMessageReceiverTest : FreeSpec({
                     coEvery { app.accountManager.loadVerified(any()) } returns null
 
                     "sends error to socket" {
-                        client.send(subscribeCommand)
+                        client.send(subscribeRequestJson)
                         coVerify {
                             app.socketMessageSender.send(
-                                commandExecutionError(
-                                    "subscribe",
-                                    Error("Can't subscribe to messages for ${recipientAccount.username}: not registered."))
+                                commandExecutionException(
+                                    Error("Can't subscribe to messages for ${recipientAccount.username}: not registered."),
+                                    subscribeRequest
+                                )
                             )
                         }
                     }
@@ -285,9 +292,11 @@ class SocketMessageReceiverTest : FreeSpec({
                 }
             }
 
-            "when client sends CLOSE command" - {
+            "CLOSE request" - {
                 "closes socket connection to client" {
-                    client.send(",close,")
+                    val closeRequest = SocketRequest.Close
+
+                    client.send(closeRequest.toJson())
                     delay(closeDelay)
 
                     listenJob.invokeOnCompletion {
@@ -296,9 +305,9 @@ class SocketMessageReceiverTest : FreeSpec({
                 }
             }
 
-            "when client sends ABORT command" - {
+            "ABORT request" - {
                 "shuts down the app" {
-                    client.send(",abort,")
+                    client.send(SocketRequest.Abort.toJson())
                     coVerify {
                         app.socketMessageSender.send(any<Shutdown>())
                         app.socketServer.stop()

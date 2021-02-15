@@ -6,7 +6,7 @@ import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.util.KeyUtil
-import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe

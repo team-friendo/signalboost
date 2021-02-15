@@ -3,10 +3,10 @@ package info.signalboost.signalc.testSupport.fixtures
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import java.util.*
 
-object Account {
+object AccountGen {
     fun genNewAccount(phoneNumber: String = genPhoneNumber()) =
         NewAccount(phoneNumber)
 

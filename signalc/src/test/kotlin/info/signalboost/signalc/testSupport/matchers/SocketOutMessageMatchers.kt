@@ -18,13 +18,13 @@ object SocketOutMessageMatchers {
             it.body == body
     }
 
-    fun MockKMatcherScope.commandExecutionError(
-        command: String,
+    fun MockKMatcherScope.commandExecutionException(
         error: Throwable,
-    ): CommandExecutionError = match {
+        command: SocketRequest,
+    ): CommandExecutionException = match {
         it.command == command &&
-            it.error.javaClass == error.javaClass &&
-            it.error.message == error.message
+            it.cause.javaClass == error.javaClass &&
+            it.cause.message == error.message
     }
 
 

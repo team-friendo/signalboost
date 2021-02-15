@@ -78,8 +78,8 @@ class LegacySocketMessageSender(private val app: Application) {
                         writer.println("Dropped: EMPTY")
                     is Shutdown ->
                         writer.println("Shuting down. Bye!")
-                    is CommandExecutionError ->
-                        writer.println("Error dispatching command: ${msg.error}")
+                    is CommandExecutionException ->
+                        writer.println("Error dispatching command: ${msg.cause}")
                     else -> writer.println(msg)
                 }
 
