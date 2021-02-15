@@ -1,23 +1,21 @@
 package info.signalboost.signalc.testSupport.fixtures
 
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.testSupport.fixtures.Address.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
 import io.mockk.every
 import io.mockk.mockk
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
 object SocketOutMessage {
 
-    fun genPhrase() = listOf(
-        "a screaming comes across the sky",
-        "call me ishmael"
-    ).random()
-
     fun genCommand() = listOf(
-        "abort",
-        "close",
-        "send",
-        "subscribe",
+       SocketRequest.Abort,
+       SocketRequest.Close,
+       genSendRequest(),
+       genSubscribeRequest(),
     ).random()
 
     fun genCleartext() = Cleartext(
@@ -26,9 +24,9 @@ object SocketOutMessage {
         genPhrase()
     )
 
-    fun genCommandExecutionError() = CommandExecutionError(
+    fun genCommandExecutionError() = CommandExecutionException(
+        Error(genPhrase()),
         genCommand(),
-        Error(genPhrase())
     )
 
     fun genDecryptionError() = DecryptionError(

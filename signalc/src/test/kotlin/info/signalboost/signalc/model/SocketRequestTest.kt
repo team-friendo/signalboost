@@ -1,15 +1,16 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.testSupport.fixtures.Address.genPhoneNumber
-import info.signalboost.signalc.testSupport.fixtures.Address.genUuidStr
-import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genPhrase
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.beInstanceOf
 import kotlinx.serialization.SerializationException
 
-class SocketInMessageTest : FreeSpec({
+class SocketRequestTest : FreeSpec({
     val senderNumber = genPhoneNumber()
     fun String.flatten() = this.trimMargin().replace("\n", "")
 
@@ -22,7 +23,7 @@ class SocketInMessageTest : FreeSpec({
             )
             val body = genPhrase()
 
-            val model = SocketInMessage.Send(
+            val model = SocketRequest.Send(
                 username =  senderNumber,
                 recipientAddress = recipientAddress,
                 messageBody = body,
@@ -44,7 +45,7 @@ class SocketInMessageTest : FreeSpec({
 
 
             "decodes from JSON" {
-                SocketInMessage.fromJson(json) shouldBe model
+                SocketRequest.fromJson(json) shouldBe model
             }
 
             "encodes to JSON" {
@@ -64,7 +65,7 @@ class SocketInMessageTest : FreeSpec({
 
         "SUBSCRIBE command" - {
 
-            val model = SocketInMessage.Subscribe(senderNumber)
+            val model = SocketRequest.Subscribe(senderNumber)
 
             val json = """
                 |{
@@ -78,7 +79,7 @@ class SocketInMessageTest : FreeSpec({
             }
 
             "encodes to JSON" {
-                SocketInMessage.fromJson(json) shouldBe model
+                SocketRequest.fromJson(json) shouldBe model
             }
         }
 
@@ -87,27 +88,22 @@ class SocketInMessageTest : FreeSpec({
 
             "bad JSON" - {
                 val json = """{"type":"foo"}"""
-                val err = SocketInMessage.fromJson(json) as SocketInMessage.ParseError
+                val err = SocketRequest.fromJson(json) as SocketRequest.ParseError
 
                 "returns parse error"  {
                     err.cause should beInstanceOf<SerializationException>()
-                    err.cause.message shouldBe """
-                  Polymorphic serializer was not found for class discriminator 'foo'
-                  JSON input: {"type":"foo"}
-                """.trimIndent()
+                    err.cause.message shouldContain "Polymorphic serializer was not found for class discriminator 'foo'"
                     err.input shouldBe json
                 }
             }
 
             "not JSON" - {
                 val str = "foo"
-                val err = SocketInMessage.fromJson(str) as SocketInMessage.ParseError
+                val err = SocketRequest.fromJson(str) as SocketRequest.ParseError
 
                 "returns parse error" {
                     err.cause should beInstanceOf<SerializationException>()
-                    err.cause.message shouldBe """
-                  Expected class kotlinx.serialization.json.JsonObject as the serialized body of info.signalboost.signalc.model.SocketInMessage, but had class kotlinx.serialization.json.JsonLiteral
-                """.trimIndent()
+                    err.cause.message shouldContain "Expected class kotlinx.serialization.json.JsonObject as the serialized body"
                     err.input shouldBe str
                 }
             }
@@ -116,11 +112,11 @@ class SocketInMessageTest : FreeSpec({
 
         "special commands" - {
             "CLOSE" - {
-                val model = SocketInMessage.Close
+                val model = SocketRequest.Close
                 val json = """{"type":"close"}"""
 
                 "decodes from JSON" {
-                    SocketInMessage.fromJson(json) shouldBe model
+                    SocketRequest.fromJson(json) shouldBe model
                 }
 
                 "encodes to JSON" {
@@ -129,11 +125,11 @@ class SocketInMessageTest : FreeSpec({
             }
 
             "ABORT" - {
-                val model = SocketInMessage.Abort
+                val model = SocketRequest.Abort
                 val json = """{"type":"abort"}"""
 
                 "decodes from JSON" {
-                    SocketInMessage.fromJson(json) shouldBe model
+                    SocketRequest.fromJson(json) shouldBe model
                 }
 
                 "encodes to JSON" {

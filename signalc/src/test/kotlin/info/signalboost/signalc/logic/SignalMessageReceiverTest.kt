@@ -5,8 +5,8 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.Empty
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.Address.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.cleartext
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.dropped

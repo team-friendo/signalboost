@@ -4,10 +4,10 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 
 @Serializable
-sealed class SocketInMessage {
+sealed class SocketRequest {
 
     companion object {
-        fun fromJson(jsonString: String): SocketInMessage =
+        fun fromJson(jsonString: String): SocketRequest =
             try {
                 Json.decodeFromString(jsonString)
             } catch(e: Throwable) {
@@ -19,16 +19,16 @@ sealed class SocketInMessage {
 
     @Serializable
     @SerialName("abort")
-    object Abort: SocketInMessage()
+    object Abort: SocketRequest()
 
     @Serializable
     @SerialName("close")
-    object Close: SocketInMessage()
+    object Close: SocketRequest()
 
     data class ParseError(
         val cause: Throwable,
         val input: String,
-    ): SocketInMessage()
+    ): SocketRequest()
 
     @Serializable
     @SerialName("send") // will be serialized as `type` field in JSON representation
@@ -36,21 +36,20 @@ sealed class SocketInMessage {
         val username: String,
         val recipientAddress: SocketAddress,
         val messageBody: String,
-        val attachments: List<SocketInAttachment>,
+        val attachments: List<SocketRequestAttachment>,
         // we could optionally support a QuoteObject here, but we don't. see:
         // https://docs.signald.org/structures/v1/JsonQuote.html
-    ): SocketInMessage()
+    ): SocketRequest()
 
     @Serializable
     @SerialName("subscribe") // will be serialized as `type` field in JSON representation
     data class Subscribe(
         val username: String,
-    ): SocketInMessage()
-
+    ): SocketRequest()
 }
 
 @Serializable
-data class SocketInAttachment(
+data class SocketRequestAttachment(
    val filename: String, // (The filename of the attachment) == `storedFilename`
    val caption: String?,
    val width: Int,

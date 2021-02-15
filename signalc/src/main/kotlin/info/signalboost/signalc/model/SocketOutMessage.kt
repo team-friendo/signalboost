@@ -12,14 +12,14 @@ data class Cleartext(
     val body: String,
 ): SocketOutMessage()
 
-data class CommandExecutionError(
-    val command: String,
-    val error: Throwable
+data class CommandExecutionException(
+    val cause: Throwable,
+    val command: SocketRequest,
 ): SocketOutMessage()
 
-data class CommandInvalid(
-    val command: String,
-    val message: String,
+data class CommandInvalidException(
+    val cause: Throwable,
+    val commandStr: String,
 ): SocketOutMessage()
 
 data class DecryptionError(
@@ -51,3 +51,4 @@ data class SubscriptionDisrupted(
 data class Shutdown(
     val socketHash: SocketHashCode,
 ) : SocketOutMessage()
+

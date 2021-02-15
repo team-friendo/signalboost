@@ -172,8 +172,8 @@ class SocketMessageSender(private val app: Application) {
                 writer.println("Dropped: EMPTY")
             is Shutdown ->
                 writer.println("Shutting down. Bye!")
-            is CommandExecutionError ->
-                writer.println("Error dispatching command: ${socketMsg.error}")
+            is CommandExecutionException ->
+                writer.println("Error dispatching command: ${socketMsg.cause}")
             else -> writer.println(socketMsg.toString())
         }
     }
