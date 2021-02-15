@@ -259,9 +259,12 @@ sc.db.rollback_n: ## run migrations
 	echo "----- rolling back $(N) test migrations" && \
 	docker-compose -f docker-compose-sc.yml \
 	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc
- 
+
 sc.db.psql: # get a psql shell on signalc db
 	./bin/sc/psql
+
+sc.sockclient: # get a socket client to signalc
+	nc -U /signalc/message.sock
 
 sc.test: # run signalc tests
 	./bin/test/sc
