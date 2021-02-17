@@ -30,28 +30,12 @@ export default () => (
     </p>
     <h3 className="getting-started-header">3. Request your own channel:</h3>
     <p>
-      Send a Signal message to <span className="purple">+1-947-800-5717</span>{' '}
-      that includes a comma-separated list of the phone numbers of at least 2
-      admins. For example:
+      Send a Signal message saying "REQUEST" to{' '}
+      <span className="purple">+1-947-800-5717</span>{' '}
     </p>
     <blockquote className="command blockquote-skinny">
-      <p>+1-123-555-5555, +1-123-555-5555</p>
+      <p>REQUEST</p>
     </blockquote>
-    <p>
-      You will receive a welcome message from your new channel phone number as
-      soon as your channel is created.
-    </p>
-    <h3 className="getting-started-header">
-      4. Send announcements or receive hotline messages
-    </h3>
-    <p>
-      Now, any anyone who sends "HELLO" to your channel number will get
-      announcements you send out!
-    </p>
-    <p>
-      You can publish your channel phone number on Instagram or keep it to a
-      close circle.
-    </p>
     <h2>Signalboost Guide</h2>
     <h3>Disappearing Messages</h3>
     <p>
