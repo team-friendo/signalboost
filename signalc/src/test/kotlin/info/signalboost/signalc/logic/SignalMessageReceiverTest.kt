@@ -2,14 +2,15 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.Empty
+import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
+import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.cleartext
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.decryptionError
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.dropped
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.cleartext
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decryptionError
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
 import io.kotest.core.spec.style.FreeSpec
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -87,8 +88,8 @@ class SignalMessageReceiverTest : FreeSpec({
                     coVerify {
                         app.socketMessageSender.send(
                             dropped(
-                                senderAddress,
-                                recipientAccount.address,
+                                senderAddress.asSocketAddress(),
+                                recipientAccount.asSocketAddress(),
                                 envelope
                             )
                         )
@@ -117,8 +118,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 cleartext(
-                                    senderAddress,
-                                    recipientAccount.address,
+                                    senderAddress.asSocketAddress(),
+                                    recipientAccount.asSocketAddress(),
                                     secretMessage
                                 )
                             )
@@ -139,7 +140,7 @@ class SignalMessageReceiverTest : FreeSpec({
                             it.cancel()
                         }
                         coVerify {
-                            app.socketMessageSender.send(Empty)
+                            app.socketMessageSender.send(SocketResponse.Empty)
                         }
                     }
                 }
@@ -163,8 +164,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 decryptionError(
-                                    senderAddress,
-                                    recipientAccount.address,
+                                    senderAddress.asSocketAddress(),
+                                    recipientAccount.asSocketAddress(),
                                     error
                                 )
                             )

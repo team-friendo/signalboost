@@ -5,10 +5,10 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genCleartext
-import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genCommandExecutionError
-import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genDropped
-import info.signalboost.signalc.testSupport.fixtures.SocketOutMessage.genShutdown
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleartext
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingException
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDropped
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genShutdown
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.shouldBe
@@ -127,7 +127,7 @@ class SocketMessageSenderTest : FreeSpec({
                     "writes serialized message to socket" {
                         app.socketMessageSender.send(msg)
                         verify {
-                            mockWriter.println("\nMessage from [${msg.sender.number.get()}]:\n${msg.body}\n")
+                            mockWriter.println("\nMessage from [${msg.sender.number}]:\n${msg.body}\n")
                         }
                     }
                 }
@@ -147,7 +147,7 @@ class SocketMessageSenderTest : FreeSpec({
 
                 "with an empty message" - {
                     "writes serialized message to socket" {
-                        app.socketMessageSender.send(Empty)
+                        app.socketMessageSender.send(SocketResponse.Empty)
                         delay(sendDelay)
                         verify {
                             mockWriter.println("Dropped: EMPTY")
@@ -168,13 +168,13 @@ class SocketMessageSenderTest : FreeSpec({
                 }
 
                 "with a command execution error" - {
-                    val msg = genCommandExecutionError()
+                    val msg = genRequestHandlingException()
 
                     "writes serialized message to socket" {
                         app.socketMessageSender.send(msg)
                         delay(sendDelay)
                         verify {
-                            mockWriter.println("Error dispatching command: ${msg.cause}")
+                            mockWriter.println("Error dispatching command: ${msg.error}")
                         }
                     }
                 }
@@ -182,10 +182,10 @@ class SocketMessageSenderTest : FreeSpec({
                 "with a miscelaneous message" - {
 
                     "writes it to socket" {
-                        app.socketMessageSender.send(SendSuccess)
+                        app.socketMessageSender.send(SocketResponse.SendSuccess)
                         delay(sendDelay)
                         verify {
-                            mockWriter.println(SendSuccess.toString())
+                            mockWriter.println(SocketResponse.SendSuccess.toString())
                         }
                     }
                 }
@@ -199,7 +199,7 @@ class SocketMessageSenderTest : FreeSpec({
                 "distributes messages across socket writers" {
                     repeat(100) {
                         testScope.launch {
-                            app.socketMessageSender.send(Empty)
+                            app.socketMessageSender.send(SocketResponse.Empty)
                         }
                     }
                     verify(atLeast = 20) {
@@ -214,7 +214,7 @@ class SocketMessageSenderTest : FreeSpec({
                     fun observeNWrites(n: Int) = async {
                         writes.set(0)
                         repeat(n) {
-                            app.socketMessageSender.send(Empty)
+                            app.socketMessageSender.send(SocketResponse.Empty)
                         }
                         while(writes.get() < n) {
                             yield()

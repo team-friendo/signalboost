@@ -32,7 +32,7 @@ class SocketMessageSender(private val app: Application) {
 
     suspend fun connect(socket: Socket): Boolean = writerPool.add(socket)
     suspend fun disconnect(socketHash: SocketHashCode): Boolean = writerPool.remove(socketHash)
-    suspend fun send(socketMsg: SocketOutMessage): Unit = writerPool.send(socketMsg)
+    suspend fun send(socketMsg: SocketResponse): Unit = writerPool.send(socketMsg)
     suspend fun stop(): Int = writerPool.clear()
 
     /***************
@@ -45,7 +45,7 @@ class SocketMessageSender(private val app: Application) {
         sealed class Message {
             data class Add(val socket: Socket, val result: CompletableDeferred<Boolean>): Message()
             data class Remove(val socketHash: SocketHashCode, val result: CompletableDeferred<Boolean>): Message()
-            data class Send(val socketMsg: SocketOutMessage, val result: CompletableDeferred<Unit>): Message()
+            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>): Message()
             data class Clear(val result: CompletableDeferred<Int>): Message()
         }
 
@@ -64,7 +64,7 @@ class SocketMessageSender(private val app: Application) {
             it.await()
         }
 
-        suspend fun send(socketMsg: SocketOutMessage): Unit = CompletableDeferred<Unit>().let {
+        suspend fun send(socketMsg: SocketResponse): Unit = CompletableDeferred<Unit>().let {
             input.send(Message.Send(socketMsg, it))
             it.await()
         }
@@ -131,11 +131,11 @@ class SocketMessageSender(private val app: Application) {
 
     class WriterResource(coroutineScope: CoroutineScope, internal val writer: PrintWriter) {
         sealed class Message {
-            data class Send(val socketMsg: SocketOutMessage, val result: CompletableDeferred<Unit>) : Message()
+            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>) : Message()
             data class Close(val result: CompletableDeferred<Unit>) : Message()
         }
 
-        suspend fun send(socketMsg: SocketOutMessage): Unit = CompletableDeferred<Unit>().let {
+        suspend fun send(socketMsg: SocketResponse): Unit = CompletableDeferred<Unit>().let {
             input.send(Message.Send(socketMsg, it))
             it.await()
         }
@@ -163,18 +163,21 @@ class SocketMessageSender(private val app: Application) {
             }
         }
 
-        private fun dispatch(socketMsg: SocketOutMessage): Unit = when (socketMsg) {
-            is Cleartext ->
-                writer.println("\nMessage from [${socketMsg.sender.number.orNull()}]:\n${socketMsg.body}\n")
-            is Dropped ->
+        private fun dispatch(socketMsg: SocketResponse): Unit = when (socketMsg) {
+            is SocketResponse.Cleartext ->
+                writer.println("\nMessage from [${socketMsg.sender.number}]:\n${socketMsg.body}\n")
+            is SocketResponse.Dropped ->
                 writer.println("Dropped: ${EnvelopeType.fromInt(socketMsg.envelope.type)}")
-            is Empty ->
+            is SocketResponse.Empty ->
                 writer.println("Dropped: EMPTY")
-            is Shutdown ->
+            is SocketResponse.Shutdown ->
                 writer.println("Shutting down. Bye!")
-            is CommandExecutionException ->
-                writer.println("Error dispatching command: ${socketMsg.cause}")
+            is SocketResponse.RequestHandlingException ->
+                writer.println("Error dispatching command: ${socketMsg.error}")
             else -> writer.println(socketMsg.toString())
+            // TODO: we want this:
+            //  is SocketResponse.Dropped, SocketResponse.Empty -> {}
+            //  else -> writer.println(socketMsg.toJson())
         }
     }
 }

@@ -2,7 +2,6 @@ package info.signalboost.signalc.testSupport.fixtures
 
 import info.signalboost.signalc.model.SocketAddress
 import info.signalboost.signalc.model.SocketRequest
-import info.signalboost.signalc.model.SocketRequestAttachment
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSocketAddress
 import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
@@ -27,14 +26,14 @@ object SocketRequestGen {
         username
     )
 
-    private fun genAttachments(): List<SocketRequestAttachment> = listOf(
-        SocketRequestAttachment(
+    private fun genAttachments(): List<SocketRequest.Attachment> = listOf(
+        SocketRequest.Attachment(
             filename = "/foo/bar.jpg",
             caption = "baz is really bamming!",
             width = 42,
             height = 42,
         ),
-        SocketRequestAttachment(
+        SocketRequest.Attachment(
             filename = "/bar/foo.jpg",
             caption = "bam is really bazzing!",
             width = 24,

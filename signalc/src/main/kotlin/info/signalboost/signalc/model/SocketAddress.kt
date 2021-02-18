@@ -2,6 +2,7 @@ package info.signalboost.signalc.model
 
 import kotlinx.serialization.Serializable
 import org.whispersystems.libsignal.util.guava.Optional
+import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 
@@ -15,6 +16,9 @@ data class SocketAddress(
            this.number.orNull(),
            this.uuid.orNull().toString(),
        )
+
+       fun SignalServiceEnvelope.asSocketAddress() = sourceAddress.asSocketAddress()
+       fun VerifiedAccount.asSocketAddress() = address.asSocketAddress()
    }
 
    fun asSignalAddress(): SignalServiceAddress = SignalServiceAddress(

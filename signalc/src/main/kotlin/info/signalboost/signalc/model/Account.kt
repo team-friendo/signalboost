@@ -10,6 +10,7 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 
+//TODO: make all DAT variants inner classes of `Account` (and change their names to be shorter)
 
 sealed class Account {
     abstract val username: String
