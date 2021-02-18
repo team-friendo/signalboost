@@ -565,7 +565,7 @@ describe('executing commands', () => {
           it('passes in the admin phone numbers to the channel creation request', async () => {
             await processCommand(dispatchable)
 
-            expect(createChannelStub.getCall(0).args).to.eql([{ admins: newAdminPhoneNumbers }])
+            expect(createChannelStub.getCall(0).args).to.eql([newAdminPhoneNumbers])
           })
 
           it("returns a success status and message containing the new channel's phone number", async () => {

@@ -281,7 +281,7 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 const maybeCreateChannel = async (sender, payload) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
-    const newChannel = await channelRegistrar.create({ admins: payload })
+    const newChannel = await channelRegistrar.create(payload)
     if (newChannel.status === statuses.ERROR) {
       return {
         status: statuses.ERROR,

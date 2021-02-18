@@ -107,7 +107,7 @@ describe('channel registrar', () => {
 
       describe('when trying to create a new channel', () => {
         let res
-        beforeEach(async () => (res = await create({ admins })))
+        beforeEach(async () => (res = await create(admins)))
 
         it('notifies maintainers of a failed channel creation', () => {
           expect(notifyMaintainersStub.getCall(0).args).to.eql([
@@ -142,19 +142,22 @@ describe('channel registrar', () => {
         })
 
         describe('when an admin passes in a phoneNumber', () => {
-          const adminSpecifiedPhoneNumber = genPhoneNumber()
+          const maintainerSpecifiedPhoneNumber = genPhoneNumber()
           beforeEach(async () => {
-            await create({ admins, specifiedPhoneNumber: adminSpecifiedPhoneNumber })
+            await create(admins, maintainerSpecifiedPhoneNumber)
           })
 
           it('creates a channel resource', () => {
-            expect(createChannelStub.getCall(0).args).to.eql([adminSpecifiedPhoneNumber, admins])
+            expect(createChannelStub.getCall(0).args).to.eql([
+              maintainerSpecifiedPhoneNumber,
+              admins,
+            ])
           })
         })
 
         describe('when a phone number is not specified', () => {
           beforeEach(async () => {
-            await create({ admins })
+            await create(admins)
           })
 
           it('creates a channel resource', () => {
@@ -180,7 +183,7 @@ describe('channel registrar', () => {
           })
 
           it('sends a welcome message to new admins', async () => {
-            await create({ phoneNumber, admins, welcome: sendMessageStub })
+            await create(admins)
             admins.forEach((adminPhoneNumber, idx) => {
               expect(sendMessageStub.getCall(idx).args).to.eql([
                 sdMessageOf({
@@ -194,7 +197,7 @@ describe('channel registrar', () => {
           })
 
           it('logs the channel creation', async () => {
-            await create({ phoneNumber, admins, welcome: sendMessageStub })
+            await create(admins)
             expect(logStub.getCall(0).args).to.eql([eventTypes.CHANNEL_CREATED, phoneNumber])
           })
 
@@ -205,7 +208,7 @@ describe('channel registrar', () => {
             })
 
             it('sets the expiry time on the channel', async () => {
-              const channel = await create({ phoneNumber, admins })
+              const channel = await create(admins)
               admins.forEach((adminPhoneNumber, idx) => {
                 expect(setExpirationStub.getCall(idx).args).to.eql([
                   channelPhoneNumber,
@@ -224,14 +227,14 @@ describe('channel registrar', () => {
               })
 
               it('alerts maintainers that a new channel has been created', async () => {
-                await create({ phoneNumber, admins })
+                await create(admins)
                 expect(notifyMaintainersStub.getCall(0).args).to.eql([
                   messagesIn(defaultLanguage).notifications.channelCreationResult(true, 2, 10),
                 ])
               })
 
               it('invites unsubscribed users to the support channel', async () => {
-                await create({ phoneNumber, admins })
+                await create(admins)
                 ;[admins[2], admins[3]].forEach((adminPhoneNumber, idx) => {
                   expect(issueStub.getCall(idx).args).to.eql([
                     supportPhoneNumber,
@@ -252,7 +255,7 @@ describe('channel registrar', () => {
               describe('when sending invites succeeds', () => {
                 beforeEach(() => sendMessageStub.returns(Promise.resolve()))
                 it('returns a success message', async function() {
-                  expect(await create({ phoneNumber, admins })).to.eql({
+                  expect(await create(admins)).to.eql({
                     status: 'ACTIVE',
                     phoneNumber,
 
@@ -268,7 +271,7 @@ describe('channel registrar', () => {
                 )
 
                 it('returns an error message', async () => {
-                  const result = await create({ phoneNumber, admins })
+                  const result = await create(admins)
                   expect(result).to.eql({
                     status: 'ERROR',
                     error: 'oh noooes!',
@@ -284,12 +287,12 @@ describe('channel registrar', () => {
               beforeEach(() => findDeepStub.returns(Promise.resolve(null)))
 
               it('does not issue any invites', async () => {
-                await create({ phoneNumber, admins })
+                await create(admins)
                 expect(issueStub.callCount).to.eql(0)
               })
 
               it('returns a success message', async function() {
-                expect(await create({ phoneNumber, admins })).to.eql({
+                expect(await create(admins)).to.eql({
                   status: 'ACTIVE',
                   phoneNumber,
                   admins,
@@ -304,7 +307,7 @@ describe('channel registrar', () => {
             })
 
             it('returns an error message', async () => {
-              const result = await create({ phoneNumber, admins })
+              const result = await create(admins)
               expect(result).to.eql({
                 status: 'ERROR',
                 error: 'oh noes!',
@@ -319,7 +322,7 @@ describe('channel registrar', () => {
           const dbError = new Error('db error!')
           beforeEach(async () => {
             createChannelStub.callsFake(() => Promise.reject(dbError))
-            result = await create({ phoneNumber, admins })
+            result = await create(admins)
           })
 
           it('does not send welcome messages', () => {
@@ -345,7 +348,7 @@ describe('channel registrar', () => {
           let result
           beforeEach(async () => {
             createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
-            result = await create({ phoneNumber, admins })
+            result = await create(admins)
           })
 
           it('does not send welcome messages', () => {
@@ -366,7 +369,7 @@ describe('channel registrar', () => {
         let result
         beforeEach(async () => {
           subscribeStub.callsFake(() => Promise.reject(new Error('oh noes!')))
-          result = await create({ phoneNumber, admins })
+          result = await create(admins)
         })
 
         it('does not create channel record', () => {

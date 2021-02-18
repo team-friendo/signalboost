@@ -29,8 +29,8 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   return { status: sbStatuses.SUCCESS, message }
 }
 
-/* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
-const create = async ({ admins, specifiedPhoneNumber }) => {
+/* (Array<sting>, string | null) -> Promise<ChannelStatus> */
+const create = async (admins, phoneNumber) => {
   try {
     // grab verified numbers that can be used for channels
     const availablePhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
@@ -48,13 +48,14 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
       }
     }
 
-    const phoneNumber = specifiedPhoneNumber || availablePhoneNumbers[0].phoneNumber
+    // if a phone number hasn't been specified, grab one of the available ones
+    const channelPhoneNumber = phoneNumber || availablePhoneNumbers[0].phoneNumber
 
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
-    await signal.subscribe(phoneNumber, 0)
-    const channel = await channelRepository.create(phoneNumber, admins)
-    await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
-    await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
+    await signal.subscribe(channelPhoneNumber, 0)
+    const channel = await channelRepository.create(channelPhoneNumber, admins)
+    await phoneNumberRepository.update(channelPhoneNumber, { status: pNumStatuses.ACTIVE })
+    await eventRepository.log(eventTypes.CHANNEL_CREATED, channelPhoneNumber)
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
@@ -76,7 +77,7 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
       ),
     )
 
-    return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
+    return { status: pNumStatuses.ACTIVE, phoneNumber: channelPhoneNumber, admins }
   } catch (e) {
     logger.error(e)
     await notifier.notifyMaintainers(
