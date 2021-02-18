@@ -39,7 +39,7 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
     // if there aren't any verified phone numbers, notify maintainers of a failed channel creation attempt and return early
     if (availablePhoneNumbers.length === 0) {
       await notifier.notifyMaintainers(
-        messagesIn(defaultLanguage).notifications.channelCreationAttempt(false, 0, numChannels),
+        messagesIn(defaultLanguage).notifications.channelCreationResult(false, 0, numChannels),
       )
       return {
         status: pNumStatuses.ERROR,
@@ -69,7 +69,7 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
 
     // notify maintainers that a new channel has been created
     await notifier.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.channelCreationAttempt(
+      messagesIn(defaultLanguage).notifications.channelCreationResult(
         true,
         availablePhoneNumbers.length - 1,
         numChannels,
@@ -79,6 +79,9 @@ const create = async ({ admins, specifiedPhoneNumber }) => {
     return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
   } catch (e) {
     logger.error(e)
+    await notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.channelCreationError(e),
+    )
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,

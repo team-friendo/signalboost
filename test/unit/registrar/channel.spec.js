@@ -111,7 +111,7 @@ describe('channel registrar', () => {
 
         it('notifies maintainers of a failed channel creation', () => {
           expect(notifyMaintainersStub.getCall(0).args).to.eql([
-            messagesIn(defaultLanguage).notifications.channelCreationAttempt(false, 0, 10),
+            messagesIn(defaultLanguage).notifications.channelCreationResult(false, 0, 10),
           ])
         })
 
@@ -226,7 +226,7 @@ describe('channel registrar', () => {
               it('alerts maintainers that a new channel has been created', async () => {
                 await create({ phoneNumber, admins })
                 expect(notifyMaintainersStub.getCall(0).args).to.eql([
-                  messagesIn(defaultLanguage).notifications.channelCreationAttempt(true, 2, 10),
+                  messagesIn(defaultLanguage).notifications.channelCreationResult(true, 2, 10),
                 ])
               })
 
@@ -292,7 +292,6 @@ describe('channel registrar', () => {
                 expect(await create({ phoneNumber, admins })).to.eql({
                   status: 'ACTIVE',
                   phoneNumber,
-
                   admins,
                 })
               })
@@ -317,13 +316,20 @@ describe('channel registrar', () => {
 
         describe('when creating channel fails', () => {
           let result
+          const dbError = new Error('db error!')
           beforeEach(async () => {
-            createChannelStub.callsFake(() => Promise.reject(new Error('db error!')))
+            createChannelStub.callsFake(() => Promise.reject(dbError))
             result = await create({ phoneNumber, admins })
           })
 
           it('does not send welcome messages', () => {
             expect(sendMessageStub.callCount).to.eql(0)
+          })
+
+          it('notifies maintainers of the failure', () => {
+            expect(notifyMaintainersStub.getCall(0).args).to.eql([
+              messagesIn(defaultLanguage).notifications.channelCreationError(dbError),
+            ])
           })
 
           it('returns an error message', () => {

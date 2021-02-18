@@ -524,10 +524,12 @@ ${
   safetyNumberChanged:
     'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',
 
-  channelCreationAttempt: (success, numAvailablePhoneNumbers, numChannels) =>
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
     `${success ? `Neuer Kanal erstellt.` : `Die Kanalerstellung ist fehlgeschlagen.`}
 - ${numChannels} aktive Kanäle
 - ${numAvailablePhoneNumbers} verfügbare Telefonnummern`,
+
+  channelCreationError: err => `Fehler beim Erstellen des Kanals: ${err}`,
 
   restartRequesterNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',

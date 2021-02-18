@@ -493,10 +493,12 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
 
   destroyChannelFailed: phoneNumber => `Failed to destroy channel for phone number: ${phoneNumber}`,
 
-  channelCreationAttempt: (success, numAvailablePhoneNumbers, numChannels) =>
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
     `${success ? `New channel created.` : `Channel creation failed.`}
 - ${numAvailablePhoneNumbers} available phone numbers
 - ${numChannels} active channels`,
+
+  channelCreationError: err => `Error creating channel: ${err}`,
 
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',
