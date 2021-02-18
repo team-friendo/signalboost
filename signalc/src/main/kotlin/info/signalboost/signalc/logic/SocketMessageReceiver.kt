@@ -75,19 +75,21 @@ class SocketMessageReceiver(private val app: Application) {
             when (inMsg) {
                 is SocketRequest.Abort -> {
                     println("Received `abort`. exiting.")
-                    app.socketMessageSender.send(Shutdown(socketHash))
+                    app.socketMessageSender.send(SocketResponse.Shutdown(socketHash))
                     app.stop()
                 }
                 is SocketRequest.Close -> disconnect(socketHash)
                 is SocketRequest.Send -> send(inMsg)  // NOTE: this signals errors in return value and Throwable
                 is SocketRequest.Subscribe -> subscribe(inMsg)
                 is SocketRequest.ParseError ->
-                    app.socketMessageSender.send(CommandInvalidException(inMsg.cause, inMsg.input))
+                    app.socketMessageSender.send(SocketResponse.RequestInvalidException(inMsg.cause, inMsg.input))
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
             println("ERROR executing command $inMsg from socket $socketHash: $e")
-            app.socketMessageSender.send(CommandExecutionException(e, inMsg))
+            app.socketMessageSender.send(
+                SocketResponse.RequestHandlingException(e, inMsg)
+            )
         }
     }
 
@@ -97,7 +99,7 @@ class SocketMessageReceiver(private val app: Application) {
         val (_, recipientAddress, messageBody) = sendRequest
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
             ?: return app.socketMessageSender.send(
-                CommandExecutionException(
+                SocketResponse.RequestHandlingException(
                     Error("Can't send to ${sendRequest.username}: not registered."),
                     sendRequest
                 )
@@ -114,11 +116,11 @@ class SocketMessageReceiver(private val app: Application) {
         // - sendResult.isNetworkFailure (likely retry?)
         return if (sendResult.success != null) {
             println("Sent message to ${recipientAddress.number}")
-            app.socketMessageSender.send(SendSuccess)
+            app.socketMessageSender.send(SocketResponse.SendSuccess)
         }
         else {
             println("Failed to send $messageBody to $recipientAddress.number.")
-            app.socketMessageSender.send(SendFailure)
+            app.socketMessageSender.send(SocketResponse.SendException)
         }
     }
 
@@ -129,7 +131,7 @@ class SocketMessageReceiver(private val app: Application) {
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
             ?: return run {
                 app.socketMessageSender.send(
-                    CommandExecutionException(
+                    SocketResponse.RequestHandlingException(
                         Error("Can't subscribe to messages for $username: not registered."),
                         subscribeRequest,
                     )
@@ -137,7 +139,7 @@ class SocketMessageReceiver(private val app: Application) {
             }
 
         val subscribeJob = app.signalMessageReceiver.subscribe(account)
-        app.socketMessageSender.send(SubscriptionSucceeded)
+        app.socketMessageSender.send(SocketResponse.SubscriptionSucceeded)
         println("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
@@ -147,11 +149,11 @@ class SocketMessageReceiver(private val app: Application) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
                         println("...error subscribing to messages for ${account.username}: ${error}.")
-                        app.socketMessageSender.send(SubscriptionFailed(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionFailed(error))
                     }
                     else -> {
                         println("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
-                        app.socketMessageSender.send(SubscriptionDisrupted(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(error))
                         delay(retryDelay)
                         subscribe(subscribeRequest, retryDelay * 2)
                     }

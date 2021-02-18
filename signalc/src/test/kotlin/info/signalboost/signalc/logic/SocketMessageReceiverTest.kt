@@ -10,7 +10,7 @@ import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccou
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
-import info.signalboost.signalc.testSupport.matchers.SocketOutMessageMatchers.commandExecutionException
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.commandExecutionException
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer.startTestSocketServer
 import info.signalboost.signalc.util.*
@@ -136,7 +136,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         "sends success message to socket" {
                             client.send(sendRequestJson, wait = parseDelay)
                             coVerify {
-                                app.socketMessageSender.send(SendSuccess)
+                                app.socketMessageSender.send(SocketResponse.SendSuccess)
                             }
                         }
                     }
@@ -169,7 +169,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         "sends error message to socket" {
                             client.send(sendRequestJson, wait = 5.milliseconds)
                             coVerify {
-                                app.socketMessageSender.send(SendFailure)
+                                app.socketMessageSender.send(SocketResponse.SendException)
                             }
                         }
                     }
@@ -207,7 +207,7 @@ class SocketMessageReceiverTest : FreeSpec({
                         "sends success to socket" {
                             client.send(subscribeRequestJson)
                             coVerify {
-                                app.socketMessageSender.send(SubscriptionSucceeded)
+                                app.socketMessageSender.send(SocketResponse.SubscriptionSucceeded)
                             }
                         }
                     }
@@ -223,7 +223,7 @@ class SocketMessageReceiverTest : FreeSpec({
                             client.send(subscribeRequestJson)
                             subscribeJob.cancel(error.message!!, error)
                             coVerify {
-                                app.socketMessageSender.send(SubscriptionFailed(error))
+                                app.socketMessageSender.send(SocketResponse.SubscriptionFailed(error))
                             }
                         }
                     }
@@ -240,7 +240,7 @@ class SocketMessageReceiverTest : FreeSpec({
                             disruptedJob.cancel(error.message!!, error)
 
                             coVerify {
-                                app.socketMessageSender.send(SubscriptionDisrupted(error))
+                                app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(error))
 
                             }
 
@@ -309,7 +309,7 @@ class SocketMessageReceiverTest : FreeSpec({
                 "shuts down the app" {
                     client.send(SocketRequest.Abort.toJson())
                     coVerify {
-                        app.socketMessageSender.send(any<Shutdown>())
+                        app.socketMessageSender.send(any<SocketResponse.Shutdown>())
                         app.socketServer.stop()
                     }
                 }

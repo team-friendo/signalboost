@@ -2,9 +2,8 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SendFailure
-import info.signalboost.signalc.model.SendSuccess
 import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
+import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
@@ -80,12 +79,15 @@ class SocketServerBigTest : FreeSpec({
 
             "enables sender to write to connections concurrently" {
                 launch {
-                    app.socketMessageSender.send(SendSuccess)
+                    app.socketMessageSender.send(SocketResponse.SendSuccess)
                 }
                 launch {
-                    app.socketMessageSender.send(SendFailure)
+                    app.socketMessageSender.send(SocketResponse.SendException)
                 }
-                receiveN(2) shouldBe setOf(SendSuccess.toString(), SendFailure.toString())
+                receiveN(2) shouldBe setOf(
+                    SocketResponse.SendSuccess.toString(),
+                    SocketResponse.SendException.toString()
+                )
             }
 
             "handles roundtrip from socket receiver to socket writer" {
@@ -123,8 +125,8 @@ class SocketServerBigTest : FreeSpec({
                 }
 
                 receiveN(2) shouldBe setOf(
-                    SendSuccess.toString(),
-                    SendSuccess.toString(),
+                    SocketResponse.SendSuccess.toString(),
+                    SocketResponse.SendSuccess.toString(),
                 )
 
                 coVerify {
