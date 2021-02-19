@@ -80,9 +80,10 @@ const create = async (admins, phoneNumber) => {
     return { status: pNumStatuses.ACTIVE, phoneNumber: channelPhoneNumber, admins }
   } catch (e) {
     logger.error(e)
-    await notifier.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.channelCreationError(e),
-    )
+    await notifier
+      .notifyMaintainers(messagesIn(defaultLanguage).notifications.channelCreationError(e))
+      .catch()
+
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,

@@ -335,10 +335,10 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
 
 Signalboost ist eine Technologie, mit der Sie Sendungen senden und Hotline-Nachrichten empfangen können, ohne Ihre Telefonnummer den Empfängern preiszugeben.
 
-Ihre Telefonnummer kann jedoch im Falle einer rechtlichen Anfrage offengelegt werden:
+Wenn Sie dieses Tool verwenden, vertrauen Sie darauf, dass wir die Telefonnummern aller Benutzer Ihres Kanals gut verwalten:
 https://signalboost.info/privacy
 
-Wenn Sie nun einen Kanal erstellen möchten, senden Sie CHANNEL, gefolgt von einer durch Kommas getrennten Liste der Admin-Telefonnummern für diesen Kanal, zum Beispiel:
+Wenn Sie jetzt einen Kanal erstellen möchten, senden Sie CHANNEL, gefolgt von einer durch Kommas getrennten Liste von Admin-Telefonnummern mit Ländercodes, zum Beispiel:
 
 CHANNEL +1555123412, +1555123419`,
     closed: `Entschuldigung, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`,

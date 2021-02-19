@@ -100,6 +100,7 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // CHANNEL
   channel: {
     success: phoneNumber => `Your Signalboost channel has been created! In a moment, you should receive a welcome message from your channel phone number:
+
 ${phoneNumber}.
 
 If you have questions or are having issues accessing your channel, you can message Signalboost support here.
@@ -319,10 +320,10 @@ If you already have an invite, try sending ACCEPT`,
 
 Signalboost is a technology that allows you to send broadcasts and receive hotline messages without revealing your phone number to recipients.
 
-However, your phone number could be exposed in the event of a legal inquiry:
+Using this tool means you trust us to be good stewards of the phone numbers of everyone who uses your channel:
 https://signalboost.info/privacy 
 
-Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of the admin phone numbers for that channel, for example:
+Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of admin phone numbers (including country code), for example:
 
 CHANNEL +1555123412, +1555123419`,
     closed: requestsClosed,
@@ -536,7 +537,7 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
   welcome: (addingAdmin, channelPhoneNumber) =>
     `Welcome! You were just made an admin of this Signalboost channel by ${addingAdmin}. 
 
-1. Add this phone number(${channelPhoneNumber}) to your contacts. 
+1. Add this phone number (${channelPhoneNumber}) to your contacts. 
 2. Send HELP to see what commands you can use.
 3. Send INFO to see how many admins and subscribers are on this channel.
 4. Check out the following resources:
@@ -544,7 +545,7 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
 - https://www.instagram.com/_signalboost/
 - https://signalboost.info/privacy/
 
-p.s.It costs us ~$3/month to run each channel.Since we make this software for liberation, not profit, we rely on the material support of our community to keep the project afloat.If you can afford to, please consider making a donation here: https://signalboost.info/donate 💸`,
+p.s. It costs us ~$3/month to run each channel. Since we make this software for liberation, not profit, we rely on the material support of our community to keep the project afloat. If you can afford to, please consider making a donation here: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

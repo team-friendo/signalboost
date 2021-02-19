@@ -335,10 +335,10 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
 
 Signalboost est une technologie qui vous permet d'envoyer des émissions et de recevoir des messages d'assistance téléphonique sans révéler votre numéro de téléphone aux destinataires.
 
-Cependant, votre numéro de téléphone pourrait être exposé en cas d'enquête judiciaire:
+L'utilisation de cet outil signifie que vous nous faites confiance pour être de bons gestionnaires des numéros de téléphone de tous ceux qui utilisent votre chaîne:
 https://signalboost.info/privacy
 
-Maintenant, si vous souhaitez créer un canal, envoyez CHANNEL suivi d'une liste séparée par des virgules des numéros de téléphone administrateur pour ce canal, par exemple:
+Maintenant, si vous souhaitez créer une chaîne, envoyez CHANNEL suivi d'une liste de numéros de téléphone administrateur séparés par des virgules (y compris le code du pays), par exemple:
 
 CANAL +1555123412, +1555123419`,
     closed: requestsClosed,
