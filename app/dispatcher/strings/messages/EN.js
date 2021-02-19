@@ -143,7 +143,7 @@ INVITE +1-555-555-5555, +1-444-444-4444
 ADD +1-555-555-5555
 -> adds +1-555-555-5555 as an admin of the channel
 
-PRIVATE hello admins / ! hello admins
+PRIVATE hello admins / ~ hello admins
 -> sends private message "hello admins" to all admins of the channel
 
 ESPAÑOL / FRANÇAIS / DEUTSCH
