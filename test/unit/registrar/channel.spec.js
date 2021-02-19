@@ -134,6 +134,7 @@ describe('channel registrar', () => {
       beforeEach(() => {
         updatePhoneNumberStub.returns(Promise.resolve({ phoneNumber, status: 'ACTIVE' }))
         listPhoneNumberStub.returns(Promise.resolve(availablePhoneNumbers))
+        notifyMaintainersStub.returns(Promise.resolve())
       })
 
       describe('when subscribing to signal messages succeeds', () => {
@@ -223,7 +224,6 @@ describe('channel registrar', () => {
               beforeEach(() => {
                 findDeepStub.returns(Promise.resolve(supportChannel))
                 countChannelsStub.returns(Promise.resolve(10))
-                notifyMaintainersStub.returns(Promise.resolve())
               })
 
               it('alerts maintainers that a new channel has been created', async () => {

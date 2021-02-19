@@ -100,7 +100,7 @@ describe('routes', () => {
           .set('Token', authToken)
           .send(pick(channelCreatedStatus, ['admins', 'phoneNumber']))
 
-        expect(createStub.getCall(0).args[0]).to.eql(admins)
+        expect(createStub.getCall(0).args).to.have.deep.members([admins, phoneNumber])
       })
     })
 
