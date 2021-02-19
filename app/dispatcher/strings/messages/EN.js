@@ -15,6 +15,7 @@ const notSubscriber =
   'Your command could not be processed because you are not subscribed to this channel. Send HELLO to subscribe.'
 const subscriberLimitReached = subscriberLimit =>
   `Sorry, this channel has reached its limit of ${subscriberLimit} subscribers.`
+const requestsClosed = `Sorry, Signalboost is not accepting new channel requests at the moment! Please check again later.`
 const onOrOff = isOn => (isOn ? 'on' : 'off')
 
 const vouchModeDisplay = {
@@ -94,6 +95,18 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `Your Signalboost channel has been created! In a moment, you should receive a welcome message from your channel phone number:
+
+${phoneNumber}.
+
+If you have questions or are having issues accessing your channel, you can message Signalboost support here.
+`,
+    requestsClosed: requestsClosed,
+    error: `Sorry, there was an error processing your channel request! Please try again later. If your problem persists, you can message Signalboost support here.`,
   },
 
   // DECLINE
@@ -300,6 +313,22 @@ If you already have an invite, try sending ACCEPT`,
       `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
+  // REQUEST
+
+  request: {
+    success: `Hi there! Want to create a Signalboost channel? 
+
+Signalboost is a technology that allows you to send broadcasts and receive hotline messages without revealing your phone number to recipients.
+
+Using this tool means you trust us to be good stewards of the phone numbers of everyone who uses your channel:
+https://signalboost.info/privacy 
+
+Now, if you'd like to create a channel, send CHANNEL followed by a comma-separated list of admin phone numbers (including country code), for example:
+
+CHANNEL +1555123412, +1555123419`,
+    closed: requestsClosed,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -465,6 +494,13 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
 
   destroyChannelFailed: phoneNumber => `Failed to destroy channel for phone number: ${phoneNumber}`,
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `New channel created.` : `Channel creation failed.`}
+- ${numAvailablePhoneNumbers} available phone numbers
+- ${numChannels} active channels`,
+
+  channelCreationError: err => `Error creating channel: ${err}`,
+
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',
   restartChannelNotAuthorized:
@@ -499,11 +535,17 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
     } to join this channel.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `You were just made an admin of this Signalboost channel by ${addingAdmin}. Welcome!
+    `Welcome! You were just made an admin of this Signalboost channel by ${addingAdmin}. 
 
-Next, add this phone number (${channelPhoneNumber}) to your contacts. People can subscribe here by sending HELLO to ${channelPhoneNumber}. You can send broadcasts to those subscribers by sending BROADCAST [your message here]. 
+1. Add this phone number (${channelPhoneNumber}) to your contacts. 
+2. Send HELP to see what commands you can use.
+3. Send INFO to see how many admins and subscribers are on this channel.
+4. Check out the following resources:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-To see a full list of commands, send HELP or check out our how-to guide: https://signalboost.info/how-to.`,
+p.s. It costs us ~$3/month to run each channel. Since we make this software for liberation, not profit, we rely on the material support of our community to keep the project afloat. If you can afford to, please consider making a donation here: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

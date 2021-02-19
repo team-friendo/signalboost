@@ -8,6 +8,7 @@ const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
+const channelRegistrar = require('../../registrar/channel')
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
@@ -24,7 +25,7 @@ const {
 const {
   defaultLanguage,
   auth: { maintainerPassphrase },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../config')
 
 /**
@@ -42,13 +43,17 @@ const {
 const validSubscriberCommands = new Set([
   commands.ACCEPT,
   commands.DECLINE,
+  commands.CHANNEL,
   commands.HELP,
   commands.INFO,
   commands.INVITE,
   commands.JOIN,
   commands.LEAVE,
+  commands.REQUEST,
   commands.SET_LANGUAGE,
 ])
+
+const supportOnlyCommands = new Set([commands.REQUEST, commands.CHANNEL])
 
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
@@ -63,6 +68,7 @@ const execute = async (executable, dispatchable) => {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
+    [commands.CHANNEL]: () => maybeCreateChannel(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
     [commands.DESTROY]: () => confirmDestroy(channel, sender),
     [commands.DESTROY_CONFIRM]: () => actuallyDestroy(channel, sender),
@@ -75,6 +81,7 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
     [commands.PRIVATE]: () => privateMessageAdmins(channel, sender, payload, sdMessage),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
+    [commands.REQUEST]: () => promptChannel(channel, sender),
     [commands.REPLY]: () => replyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.RESTART]: () => maybeRestart(channel, sender, payload),
     [commands.VOUCHING_ON]: () => setVouchMode(channel, sender, vouchModes.ON),
@@ -93,20 +100,28 @@ const interveneIfBadMessage = async (executable, dispatchable) => {
   const { command, error, type } = executable
   const { channel, sender, sdMessage } = dispatchable
   const defaultResult = { command, status: statuses.ERROR, payload: '', notifications: [] }
+  const supportCommandOnWrongChannel =
+    supportOnlyCommands.has(command) && channel.phoneNumber !== supportPhoneNumber
 
   // return early if...
-  // admin sent a no-command message
-  if (command === commands.NONE && sender.type === memberTypes.ADMIN)
+  // (1) admin sent a no-command message or support-channel-only-message to a non-support channel
+  if (
+    sender.type === memberTypes.ADMIN &&
+    (command === commands.NONE || supportCommandOnWrongChannel)
+  )
     return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
 
-  // subscriber/rando sent a no-command message, an admin-only command, or a no-payload command with a payload
+  // (2) subscriber/rando sent a no-command message, an admin-only command, a no-payload command with a payload,
+  // or a support-only command to a non-support channel
   if (
     sender.type !== ADMIN &&
-    (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
+    (type === parseErrorTypes.NON_EMPTY_PAYLOAD ||
+      !validSubscriberCommands.has(command) ||
+      supportCommandOnWrongChannel)
   )
     return { ...defaultResult, ...(await handleBadSubscriberMessage(channel, sender, sdMessage)) }
 
-  // anyone sent a valid command with an invalid payload (reported as a parse error)
+  // (3) anyone sent a valid command with an invalid payload (reported as a parse error)
   if (error) return { ...defaultResult, message: error }
 
   // if all is good, proceed!
@@ -258,6 +273,29 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
   }))
 
   return [...adminNotifications, ...subscriberNotifications]
+}
+
+// CHANNEL
+const maybeCreateChannel = async (sender, payload) => {
+  const cr = messagesIn(sender.language).commandResponses.channel
+  try {
+    const newChannel = await channelRegistrar.create(payload)
+    if (newChannel.status === statuses.ERROR) {
+      return {
+        status: statuses.ERROR,
+        payload: '',
+        message: cr.requestsClosed,
+      }
+    }
+    return {
+      status: statuses.SUCCESS,
+      payload: '',
+      message: cr.success(newChannel.phoneNumber),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, payload: '', message: cr.error }
+  }
 }
 
 // PRIVATE
@@ -539,6 +577,12 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
     })),
   ]
 }
+
+// REQUEST
+const promptChannel = (channel, sender) => ({
+  status: statuses.SUCCESS,
+  message: messagesIn(sender.language).commandResponses.request.success,
+})
 
 // REPLY
 

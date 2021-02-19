@@ -15,6 +15,7 @@ const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const subscriberLimitReached = subscriberLimit =>
   `Lo sentimos, este canal ha alcanzado su límite de ${subscriberLimit} suscriptores.`
+const requestsClosed = `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento.Vuelva a verificar más tarde.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
 const vouchModeDisplay = {
@@ -99,6 +100,17 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `¡Se ha creado su canal Signalboost! En un momento, debería recibir un mensaje de bienvenida del número de teléfono de su canal:
+${phoneNumber}.
+
+Si tiene preguntas o tiene problemas para acceder a su canal, puede enviar un mensaje al soporte de Signalboost aquí.
+`,
+    requestsClosed: requestsClosed,
+    error: `Lo sentimos, hubo un error al procesar tu solicitud de canal. Por favor, inténtelo de nuevo más tarde. Si su problema persiste, puede enviar un mensaje al soporte de Signalboost aquí.`,
   },
 
   // DECLINE
@@ -317,6 +329,21 @@ Si ya tiene usted una invitación, intente enviar ACEPTAR`,
       `Lo sentimos, el identificador de mensaje de línea directa @${messageId} ha caducado o nunca ha existido.`,
   },
 
+  // REQUEST
+  request: {
+    success: `¡Hola! ¿Quiere crear un canal Signalboost?
+
+Signalboost es una tecnología que le permite enviar transmisiones y recibir mensajes de línea directa sin revelar su número de teléfono a los destinatarios.
+
+Usando este tecnología significa que confía en nosotros para que seamos buenos administradores de los números de teléfono de todos los que usan su canal:
+https://signalboost.info/privacy
+
+Ahora, si desea crear un canal, envíe CHANNEL seguido de una lista separada por comas de números de teléfono de administrador con códigos de país, por ejemplo:
+
+CANAL +1555123412, +1555123419`,
+    closed: `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento. Vuelva a verificar más tarde.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -501,6 +528,13 @@ ${
   destroyChannelFailed: phoneNumber =>
     `No se pudo destruir el canal para el número de teléfono ${phoneNumber}`,
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Nuevo canal creó.` : `Creación de canal falló.`}
+- ${numChannels} canales activos
+- ${numAvailablePhoneNumbers} numeros de teléfono activos`,
+
+  channelCreationError: err => `Error construyendo canal: ${err}`,
+
   restartRequesterNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡No estás autorizado para hacer eso!',
   restartChannelNotAuthorized:
@@ -531,12 +565,17 @@ ${
     } para unirse a este canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `${addingAdmin} acaba de convertirse en administrador de este canal de Signalboost.¡Bienvenidos!
+    `¡Bienvenidos! ${addingAdmin} acaba de convertirse en administrador de este canal de Signalboost.
 
-Luego, agregue este número de teléfono (${channelPhoneNumber}) a sus contactos.Las personas pueden suscribirse a este canal enviando HOLA a (${channelPhoneNumber}).Puede enviar transmisiones a esos suscriptores enviando BROADCAST [su mensaje aquí].
+1. Agregue este número de teléfono (${channelPhoneNumber}) a sus contactos.
+2. Envíe AYUDA para ver qué comandos puede usar.
+3. Envíe INFO para ver cuántos administradores y suscriptores hay en este canal.
+4. Consulte los siguientes recursos:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-
-Para ver una lista completa de comandos, envíe AYUDA o consulte nuestra guía práctica: https: // signalboost.info / how-to.`,
+psNos cuesta ~$3/mes ejecutar cada canal.Dado que creamos este software para la liberación, no para el lucro, confiamos en el apoyo material de nuestra comunidad para mantener el proyecto a flote.Si puede permitírselo, considere hacer una donación aquí: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

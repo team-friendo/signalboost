@@ -4,6 +4,7 @@ const phoneNumberRepository = require('../db/repositories/phoneNumber')
 const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
+const notifier = require('../notifier')
 const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
@@ -28,14 +29,33 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   return { status: sbStatuses.SUCCESS, message }
 }
 
-/* ({ phoneNumber: string, admins: Array<string> }) => Promise<ChannelStatus> */
-const create = async ({ phoneNumber, admins }) => {
+/* (Array<sting>, string | null) -> Promise<ChannelStatus> */
+const create = async (admins, phoneNumber) => {
   try {
+    // grab verified numbers that can be used for channels
+    const availablePhoneNumbers = await phoneNumberRepository.list(pNumStatuses.VERIFIED)
+    const numChannels = await channelRepository.count()
+
+    // if there aren't any verified phone numbers, notify maintainers of a failed channel creation attempt and return early
+    if (availablePhoneNumbers.length === 0) {
+      await notifier.notifyMaintainers(
+        messagesIn(defaultLanguage).notifications.channelCreationResult(false, 0, numChannels),
+      )
+      return {
+        status: pNumStatuses.ERROR,
+        error: 'No available phone numbers!',
+        request: { admins },
+      }
+    }
+
+    // if a phone number hasn't been specified, grab one of the available ones
+    const channelPhoneNumber = phoneNumber || availablePhoneNumbers[0].phoneNumber
+
     // create the channel, (assigning it to socket pool 0, since `socketId`'s default value is 0)
-    await signal.subscribe(phoneNumber, 0)
-    const channel = await channelRepository.create(phoneNumber, admins)
-    await phoneNumberRepository.update(phoneNumber, { status: pNumStatuses.ACTIVE })
-    await eventRepository.log(eventTypes.CHANNEL_CREATED, phoneNumber)
+    await signal.subscribe(channelPhoneNumber, 0)
+    const channel = await channelRepository.create(channelPhoneNumber, admins)
+    await phoneNumberRepository.update(channelPhoneNumber, { status: pNumStatuses.ACTIVE })
+    await eventRepository.log(eventTypes.CHANNEL_CREATED, channelPhoneNumber)
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)
@@ -44,15 +64,30 @@ const create = async ({ phoneNumber, admins }) => {
 
     // invite admins to subscribe to support channel if one exists
     const supportChannel = await channelRepository.findDeep(supportPhoneNumber)
-    if (supportChannel) await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
+    if (supportChannel) {
+      await _inviteToSupportChannel(supportChannel, adminPhoneNumbers)
+    }
 
-    return { status: pNumStatuses.ACTIVE, phoneNumber, admins }
+    // notify maintainers that a new channel has been created
+    await notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.channelCreationResult(
+        true,
+        availablePhoneNumbers.length - 1,
+        numChannels,
+      ),
+    )
+
+    return { status: pNumStatuses.ACTIVE, phoneNumber: channelPhoneNumber, admins }
   } catch (e) {
     logger.error(e)
+    await notifier
+      .notifyMaintainers(messagesIn(defaultLanguage).notifications.channelCreationError(e))
+      .catch()
+
     return {
       status: pNumStatuses.ERROR,
       error: e.message || e,
-      request: { phoneNumber, admins },
+      request: { admins },
     }
   }
 }

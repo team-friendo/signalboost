@@ -15,6 +15,7 @@ const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné-e à ce canal. Envoyez BONJOUR pour vous abonner."
 const subscriberLimitReached = subscriberLimit =>
   `Désolé, cette canal a atteint sa limite de ${subscriberLimit} abonnés.`
+const requestsClosed = `Désolé, Signalboost n'accepte pas de nouvelles demandes de chaînes pour le moment! Veuillez vérifier à nouveau plus tard.`
 const onOrOff = isOn => (isOn ? 'activé' : 'désactivé')
 
 const vouchModeDisplay = {
@@ -102,6 +103,17 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `Votre chaîne Signalboost a été créée! Dans un instant, vous devriez recevoir un message de bienvenue de votre numéro de téléphone de chaîne:
+${phoneNumber}.
+
+Si vous avez des questions ou rencontrez des problèmes pour accéder à votre chaîne, vous pouvez envoyer un message à l'assistance Signalboost ici.
+`,
+    requestsClosed: requestsClosed,
+    error: `Désolé, une erreur s'est produite lors du traitement de votre demande de chaîne! Veuillez réessayer plus tard. Si votre problème persiste, vous pouvez envoyer un message à l'assistance Signalboost ici.`,
   },
 
   // DECLINE
@@ -317,6 +329,21 @@ Si vous avez déjà une invitation, essayez d'envoyer ACCEPTER`,
       `Désolé, l'identifiant de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
   },
 
+  // REQUEST
+  request: {
+    success: `Salut! Voulez-vous créer un canal Signalboost?
+
+Signalboost est une technologie qui vous permet d'envoyer des émissions et de recevoir des messages d'assistance téléphonique sans révéler votre numéro de téléphone aux destinataires.
+
+L'utilisation de cet outil signifie que vous nous faites confiance pour être de bons gestionnaires des numéros de téléphone de tous ceux qui utilisent votre chaîne:
+https://signalboost.info/privacy
+
+Maintenant, si vous souhaitez créer une chaîne, envoyez CHANNEL suivi d'une liste de numéros de téléphone administrateur séparés par des virgules (y compris le code du pays), par exemple:
+
+CANAL +1555123412, +1555123419`,
+    closed: requestsClosed,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -495,6 +522,13 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
   destroyChannelFailed: phoneNumber =>
     `Échec de la destruction du canal pour le numéro de téléphone: ${phoneNumber}`,
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Nouvelle chaîne créée.` : `La création du canal a échoué.`}
+- ${numChannels} canaux actifs
+- ${numAvailablePhoneNumbers} numéros de téléphone disponibles`,
+
+  channelCreationError: err => `Erreur lors de la création de la chaîne: ${err}`,
+
   restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",
   restartChannelNotAuthorized:
@@ -532,11 +566,17 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
     } seront désormais nécessaires pour rejoindre cette canal.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `Vous venez d'être nommé administrateur de cette chaîne Signalboost par ${addingAdmin}. Bienvenue!
+    `Bienvenue! Vous venez d'être nommé administrateur de cette chaîne Signalboost par ${addingAdmin}.
 
-Ensuite, ajoutez ce numéro de téléphone (${channelPhoneNumber}) à vos contacts. Les gens peuvent s'abonner à cette chaîne en envoyant HELLO à ${channelPhoneNumber}. Vous pouvez envoyer des diffusions à ces abonnés en envoyant BROADCAST [votre message ici].
+1. Ajoutez ce numéro de téléphone(${channelPhoneNumber}) à vos contacts.
+2. Envoyez une aide pour voir quelles commandes vous pouvez utiliser.
+3. Envoyez INFO pour voir combien d'administrateurs et d'abonnés sont sur ce canal.
+4. Consultez les ressources suivantes:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-Pour voir une liste complète des commandes, envoyez AIDE ou consultez notre guide pratique: https://signalboost.info/how-to.`,
+psIl nous en coûte ~3$/mois pour faire fonctionner chaque canal.Depuis que nous fabriquons ce logiciel pour la libération, sans but lucratif, nous comptons sur le soutien matériel de notre communauté pour maintenir le projet à flot.Si vous pouvez vous le permettre, veuillez envisager de faire un don ici: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

@@ -55,11 +55,6 @@ services:
     ports:
       - 0.0.0.0:8015:8016
 
-  signald_6:
-    <<: *signald-overrides
-    ports:
-      - 0.0.0.0:8016:8016
-
   ngrok:
     container_name: signalboost_ngrok
     ports:

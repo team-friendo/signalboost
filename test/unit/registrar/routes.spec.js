@@ -98,12 +98,9 @@ describe('routes', () => {
         await request(api.server)
           .post('/channels')
           .set('Token', authToken)
-          .send(pick(channelCreatedStatus, ['phoneNumber', 'name', 'admins']))
+          .send(pick(channelCreatedStatus, ['admins', 'phoneNumber']))
 
-        expect(pick(createStub.getCall(0).args[0], ['phoneNumber', 'admins'])).to.eql({
-          phoneNumber,
-          admins,
-        })
+        expect(createStub.getCall(0).args).to.have.deep.members([admins, phoneNumber])
       })
     })
 

@@ -15,6 +15,7 @@ const notSubscriber =
   'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
 const subscriberLimitReached = subscriberLimit =>
   `Entschuldigung, dieser Kanal hat sein Limit von ${subscriberLimit} Abonnenten erreicht.`
+const requestsClosed = `Sorry, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
 
 const vouchModeDisplay = {
@@ -101,6 +102,17 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // BROADCAST
   broadcast: {
     notAdmin,
+  },
+
+  // CHANNEL
+  channel: {
+    success: phoneNumber => `Ihr Signalboost-Kanal wurde erstellt! In Kürze sollten Sie eine Begrüßungsnachricht von Ihrer Kanal-Telefonnummer erhalten:
+${phoneNumber}.
+
+Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können Sie hier den Signalboost-Support benachrichtigen.
+`,
+    requestsClosed: requestsClosed,
+    error: `Entschuldigung, es ist ein Fehler bei der Verarbeitung Ihrer Kanalanfrage aufgetreten! Bitte versuchen Sie es später noch einmal. Wenn Ihr Problem weiterhin besteht, können Sie hier den Signalboost-Support benachrichtigen.`,
   },
 
   // DECLINE
@@ -316,6 +328,22 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
       `Entschuldigung, die Hotline-Nachrichtenkennung @${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
+  // REQUEST
+
+  request: {
+    success: `Hallo! Möchten Sie einen Signalboost-Kanal erstellen?
+
+Signalboost ist eine Technologie, mit der Sie Sendungen senden und Hotline-Nachrichten empfangen können, ohne Ihre Telefonnummer den Empfängern preiszugeben.
+
+Wenn Sie dieses Tool verwenden, vertrauen Sie darauf, dass wir die Telefonnummern aller Benutzer Ihres Kanals gut verwalten:
+https://signalboost.info/privacy
+
+Wenn Sie jetzt einen Kanal erstellen möchten, senden Sie CHANNEL, gefolgt von einer durch Kommas getrennten Liste von Admin-Telefonnummern mit Ländercodes, zum Beispiel:
+
+CHANNEL +1555123412, +1555123419`,
+    closed: `Entschuldigung, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`,
+  },
+
   // SET_LANGUAGE
 
   setLanguage: {
@@ -496,6 +524,13 @@ ${
   safetyNumberChanged:
     'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Neuer Kanal erstellt.` : `Die Kanalerstellung ist fehlgeschlagen.`}
+- ${numChannels} aktive Kanäle
+- ${numAvailablePhoneNumbers} verfügbare Telefonnummern`,
+
+  channelCreationError: err => `Fehler beim Erstellen des Kanals: ${err}`,
+
   restartRequesterNotAuthorized:
     'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',
   restartChannelNotAuthorized:
@@ -522,11 +557,17 @@ ${
     }.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.Herzlich willkommen!
+    `Willkommen! Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.
 
-Fügen Sie als Nächstes diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.Leute können diesen Kanal abonnieren, indem sie HALLO an ${channelPhoneNumber} senden.Sie können Sendungen an diese Abonnenten senden, indem Sie BROADCAST [Ihre Nachricht hier] senden.
+1. Fügen Sie diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.
+2. Senden Sie HELP, um zu sehen, welche Befehle Sie verwenden können.
+3. Senden Sie INFO, um zu sehen, wie viele Administratoren und Abonnenten sich auf diesem Kanal befinden.
+4. Überprüfen Sie die folgenden Ressourcen:
+- https://signalboost.info/how-to
+- https://www.instagram.com/_signalboost/
+- https://signalboost.info/privacy/
 
-Um eine vollständige Liste der Befehle anzuzeigen, senden Sie HILFE oder lesen Sie unsere Anleitung: https://signalboost.info/how-to.`,
+psDer Betrieb jedes Kanals kostet uns ~ 3 US-Dollar pro Monat. Da wir diese Software für die Befreiung und nicht für den Profit entwickeln, sind wir auf die materielle Unterstützung unserer Community angewiesen, um das Projekt am Laufen zu halten. Wenn Sie es sich leisten können, erwägen Sie bitte eine Spende hier: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {

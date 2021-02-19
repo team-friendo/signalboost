@@ -5,6 +5,7 @@ const { statuses } = require('../models/phoneNumber')
 const filters = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
+  VERIFIED: 'VERIFIED',
 }
 
 const create = ({ phoneNumber, twilioSid, status }) =>
@@ -31,6 +32,8 @@ const parseQueryFilter = filter => {
       return { status: statuses.ACTIVE }
     case filters.INACTIVE:
       return { status: { [Op.not]: statuses.ACTIVE } }
+    case filters.VERIFIED:
+      return { status: statuses.VERIFIED }
     default:
       return {}
   }

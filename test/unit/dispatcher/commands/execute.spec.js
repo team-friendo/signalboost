@@ -17,6 +17,7 @@ import deauthorizationRepository from '../../../../app/db/repositories/deauthori
 import eventRepository from '../../../../app/db/repositories/event'
 import hotlineMessageRepository from '../../../../app/db/repositories/hotlineMessage'
 import phoneNumberService from '../../../../app/registrar/phoneNumber'
+import channelRegistrar from '../../../../app/registrar/channel'
 import validator from '../../../../app/db/validations'
 import { subscriptionFactory } from '../../../support/factories/subscription'
 import { genPhoneNumber, parenthesize } from '../../../support/factories/phoneNumber'
@@ -32,7 +33,7 @@ import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
 const {
   auth: { maintainerPassphrase },
-  signal: { diagnosticsPhoneNumber },
+  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
 } = require('../../../../app/config')
 
 describe('executing commands', () => {
@@ -528,6 +529,181 @@ describe('executing commands', () => {
               attachments,
             })),
           ],
+        })
+      })
+    })
+  })
+
+  // CHANNEL
+  describe('CHANNEL command', () => {
+    describe('when sent on the support channel', () => {
+      const newAdminPhoneNumbers = [genPhoneNumber(), genPhoneNumber()]
+      const message = `${localizedCmds.CHANNEL} ${newAdminPhoneNumbers.join(',')}`
+      const supportChannel = { ...channel, phoneNumber: supportPhoneNumber }
+      const dispatchable = {
+        channel: supportChannel,
+        sender: randomPerson,
+        sdMessage: sdMessageOf({
+          sender: supportChannel,
+          message,
+        }),
+      }
+
+      describe('when sent a valid channel request', () => {
+        let createChannelStub
+        beforeEach(() => {
+          createChannelStub = sinon.stub(channelRegistrar, 'create')
+        })
+
+        describe('when creating a new channel succeeds', () => {
+          const phoneNumber = genPhoneNumber()
+
+          beforeEach(() => {
+            createChannelStub.returns(Promise.resolve({ ...channel, phoneNumber }))
+          })
+
+          it('passes in the admin phone numbers to the channel creation request', async () => {
+            await processCommand(dispatchable)
+
+            expect(createChannelStub.getCall(0).args).to.eql([newAdminPhoneNumbers])
+          })
+
+          it("returns a success status and message containing the new channel's phone number", async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.CHANNEL,
+              payload: '',
+              status: statuses.SUCCESS,
+              message: commandResponsesFor(randomPerson).channel.success(phoneNumber),
+              notifications: [],
+            })
+          })
+        })
+
+        describe('when creating the channel fails', () => {
+          describe('when creating the channel throws an error', () => {
+            beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
+            it('returns an error status and message', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.CHANNEL,
+                payload: '',
+                status: statuses.ERROR,
+                message: commandResponsesFor(randomPerson).channel.error,
+                notifications: [],
+              })
+            })
+          })
+
+          describe('when creating the channel returns an error status', () => {
+            beforeEach(() =>
+              createChannelStub.returns(
+                Promise.resolve({
+                  status: statuses.ERROR,
+                  error: 'No available phone numbers!',
+                  request: { newAdminPhoneNumbers },
+                }),
+              ),
+            )
+            it('returns an error status and notification for the channel requester to try again later', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.CHANNEL,
+                status: statuses.ERROR,
+                payload: '',
+                message: commandResponsesFor(randomPerson).channel.requestsClosed,
+                notifications: [],
+              })
+            })
+          })
+        })
+      })
+    })
+
+    describe('when not sent on the support channel', () => {
+      const message = `${localizedCmds.CHANNEL} for the secure comms!`
+      const sdMessage = sdMessageOf({ sender: channel, message })
+
+      describe('when sender is an admin', () => {
+        const dispatchable = { channel, sender: admin, sdMessage }
+
+        it('returns an ERROR status and unnecessary payload message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.CHANNEL,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(admin).none.error,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const dispatchable = { channel, sender: subscriber, sdMessage }
+
+        it('returns a success status and hotline notifications', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(subscriber).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const dispatchable = { channel, sender: randomPerson, sdMessage }
+
+        it('sends a subscriber help message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(randomPerson).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
         })
       })
     })
@@ -1643,6 +1819,121 @@ describe('executing commands', () => {
 
       it('does not attempt to add admin', () => {
         expect(removeMemberStub.callCount).to.eql(0)
+      })
+    })
+  })
+
+  // REQUEST
+  describe('REQUEST command', () => {
+    describe('when sent on the support channel', () => {
+      const supportChannel = { ...channel, phoneNumber: supportPhoneNumber }
+      const dispatchable = {
+        channel: supportChannel,
+        sender: randomPerson,
+        sdMessage: sdMessageOf({
+          sender: supportChannel,
+          message: `${localizedCmds.REQUEST}`,
+        }),
+      }
+      it("returns a success status and message containing the new channel's phone number", async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.REQUEST,
+          payload: '',
+          status: statuses.SUCCESS,
+          message: commandResponsesFor(randomPerson).request.success,
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when not sent on the support channel', () => {
+      const message = `${localizedCmds.REQUEST}`
+      const sdMessage = sdMessageOf({ sender: channel, message })
+
+      describe('when sender is an admin', () => {
+        const dispatchable = { channel, sender: admin, sdMessage }
+
+        it('returns an ERROR status and unnecessary payload message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.REQUEST,
+            payload: '',
+            status: statuses.ERROR,
+            message: commandResponsesFor(admin).none.error,
+            notifications: [],
+          })
+        })
+      })
+
+      describe('when sender is a subscriber', () => {
+        const dispatchable = { channel, sender: subscriber, sdMessage }
+
+        it('returns a success status and hotline notifications', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(subscriber).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
+      })
+
+      describe('when sender is a random person', () => {
+        const dispatchable = { channel, sender: randomPerson, sdMessage }
+
+        it('sends a subscriber help message', async () => {
+          expect(await processCommand(dispatchable)).to.eql({
+            command: commands.NONE,
+            payload: '',
+            status: statuses.SUCCESS,
+            message: notificationsFor(randomPerson).hotlineMessageSent,
+            notifications: [
+              {
+                recipient: adminMemberships[0].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[0].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[1].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[1].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+              {
+                recipient: adminMemberships[2].memberPhoneNumber,
+                message: `[${messagesIn(adminMemberships[2].language).prefixes.hotlineMessage(
+                  '42',
+                )}]\n${message}`,
+                attachments: [],
+              },
+            ],
+          })
+        })
       })
     })
   })
