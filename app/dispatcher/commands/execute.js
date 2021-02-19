@@ -53,7 +53,7 @@ const validSubscriberCommands = new Set([
   commands.SET_LANGUAGE,
 ])
 
-const validSupportChannelCommands = new Set([commands.REQUEST, commands.CHANNEL])
+const supportOnlyCommands = new Set([commands.REQUEST, commands.CHANNEL])
 
 // (ExecutableOrParseError, Dispatchable) -> Promise<CommandResult>
 const execute = async (executable, dispatchable) => {
@@ -81,7 +81,7 @@ const execute = async (executable, dispatchable) => {
     [commands.LEAVE]: () => maybeRemoveSender(channel, sender),
     [commands.PRIVATE]: () => privateMessageAdmins(channel, sender, payload, sdMessage),
     [commands.REMOVE]: () => maybeRemoveMember(channel, sender, payload),
-    [commands.REQUEST]: () => showRequest(channel, sender),
+    [commands.REQUEST]: () => promptChannel(channel, sender),
     [commands.REPLY]: () => replyToHotlineMessage(channel, sender, sdMessage, payload),
     [commands.RESTART]: () => maybeRestart(channel, sender, payload),
     [commands.VOUCHING_ON]: () => setVouchMode(channel, sender, vouchModes.ON),
@@ -100,30 +100,28 @@ const interveneIfBadMessage = async (executable, dispatchable) => {
   const { command, error, type } = executable
   const { channel, sender, sdMessage } = dispatchable
   const defaultResult = { command, status: statuses.ERROR, payload: '', notifications: [] }
+  const supportCommandOnWrongChannel =
+    supportOnlyCommands.has(command) && channel.phoneNumber !== supportPhoneNumber
 
   // return early if...
-  // admin sent a no-command message
-  if (command === commands.NONE && sender.type === memberTypes.ADMIN)
+  // (1) admin sent a no-command message or support-channel-only-message to a non-support channel
+  if (
+    sender.type === memberTypes.ADMIN &&
+    (command === commands.NONE || supportCommandOnWrongChannel)
+  )
     return { ...defaultResult, message: messagesIn(sender.language).commandResponses.none.error }
 
-  // someone sent a support channel command on a non-support phone number
-  if (validSupportChannelCommands.has(command) && channel.phoneNumber !== supportPhoneNumber) {
-    if (sender.type === ADMIN)
-      return {
-        ...defaultResult,
-        message: messagesIn(sender.language).commandResponses.none.error,
-      }
-    return { ...defaultResult, ...(await handleBadSubscriberMessage(channel, sender, sdMessage)) }
-  }
-
-  // subscriber/rando sent a no-command message, an admin-only command, or a no-payload command with a payload
+  // (2) subscriber/rando sent a no-command message, an admin-only command, a no-payload command with a payload,
+  // or a support-only command to a non-support channel
   if (
     sender.type !== ADMIN &&
-    (type === parseErrorTypes.NON_EMPTY_PAYLOAD || !validSubscriberCommands.has(command))
+    (type === parseErrorTypes.NON_EMPTY_PAYLOAD ||
+      !validSubscriberCommands.has(command) ||
+      supportCommandOnWrongChannel)
   )
     return { ...defaultResult, ...(await handleBadSubscriberMessage(channel, sender, sdMessage)) }
 
-  // anyone sent a valid command with an invalid payload (reported as a parse error)
+  // (3) anyone sent a valid command with an invalid payload (reported as a parse error)
   if (error) return { ...defaultResult, message: error }
 
   // if all is good, proceed!
@@ -581,7 +579,7 @@ const removalNotificationsOf = (channel, phoneNumber, sender, memberType) => {
 }
 
 // REQUEST
-const showRequest = (channel, sender) => ({
+const promptChannel = (channel, sender) => ({
   status: statuses.SUCCESS,
   message: messagesIn(sender.language).commandResponses.request.success,
 })
