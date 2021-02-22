@@ -110,8 +110,6 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
     dbError: 'Hoppla! Verbot fehlgeschlagen. Bitte versuche es erneut!',
     invalidHotlineMessageId: messageId =>
       `Entschuldigung, die Hotline-Nachrichten-ID ${messageId} ist abgelaufen oder hat nie existiert.`,
-    toBannedSubscriber:
-      'Ein Administrator dieses Kanals hat Sie gesperrt. Weitere Interaktionen werden von den Administratoren des Kanals nicht empfangen.',
   },
 
   // BROADCAST
@@ -451,6 +449,12 @@ const notifications = {
   subscriberRemoved: adminId => `ADMIN ${adminId} einen Abonnenten entfernt.`,
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
+
+  banIssued: (adminId, messageId) =>
+    `Admin ${adminId} verboten den Sender der Hotline-Nachricht ${messageId}`,
+
+  banReceived:
+    'Ein Administrator dieses Kanals hat Sie gesperrt. Weitere Interaktionen werden von den Administratoren des Kanals nicht empfangen.',
 
   channelDestroyedByAdmin: (adminId, audience) =>
     ({

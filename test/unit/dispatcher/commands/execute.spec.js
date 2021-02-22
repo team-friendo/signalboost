@@ -618,7 +618,9 @@ describe('executing commands', () => {
             },
             ...bystanderAdminMemberships.map(membership => ({
               recipient: membership.memberPhoneNumber,
-              message: 'The sender of hotline message 1312 has been banned.',
+              message: `[${prefixesFor(membership).notificationHeader}]\n${messagesIn(
+                membership.language,
+              ).notifications.banIssued(admin.adminId, 1312)}`,
             })),
           ],
           payload: { messageId: 1312, reply: '' },

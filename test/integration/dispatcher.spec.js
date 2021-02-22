@@ -380,7 +380,7 @@ describe('dispatcher service', () => {
         },
         {
           attachments: [],
-          messageBody: 'The sender of hotline message 1 has been banned.',
+          messageBody: '[NOTIFICATION]\nADMIN 1 banned the sender of hotline message 1.',
           recipientAddress: {
             number: admins[1].memberPhoneNumber,
           },

@@ -248,8 +248,7 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 const banMember = async (channel, sender, hotlineMessage) => {
   const cr = messagesIn(sender.language).commandResponses.ban
   try {
-    // Will throw `HotlineMessageMissingError` if no hotline exists w/ this id
-    // causing us to return early
+    // Try retrieving a hotline message. If it's been deleted, return early by throwing HotlineMessageMissingError
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineMessage.messageId,
     )
@@ -257,7 +256,7 @@ const banMember = async (channel, sender, hotlineMessage) => {
     if (await banRepository.isBanned(channel.phoneNumber, memberPhoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
 
-    // If we have a hotline record and its member has not been banned... bombs away!
+    // If we have a hotline record and its member has not been banned... do some banning!
     await banRepository.banMember(channel.phoneNumber, memberPhoneNumber)
     return {
       status: statuses.SUCCESS,
@@ -267,7 +266,6 @@ const banMember = async (channel, sender, hotlineMessage) => {
         sender,
         memberPhoneNumber,
         hotlineMessage.messageId,
-        cr,
       ),
     }
   } catch (e) {
@@ -278,16 +276,19 @@ const banMember = async (channel, sender, hotlineMessage) => {
   }
 }
 
-const banNotificationsOf = (channel, sender, memberPhoneNumber, messageId, cr) => {
+const banNotificationsOf = (channel, sender, memberPhoneNumber, messageId) => {
   const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return [
     {
       recipient: memberPhoneNumber,
-      message: cr.toBannedSubscriber,
+      // NOTE: We'd have to do spend some extra db queries to retrieve the ban recipient's language.
+      // (Which might not exist if they are not a subscriber!). Aaand, they're being banned anyway, right?
+      // So... let's just use the sender's language!
+      message: messagesIn(sender.language).notifications.banReceived,
     },
     ...bystanders.map(membership => ({
       recipient: membership.memberPhoneNumber,
-      message: cr.success(messageId),
+      message: appendHeaderToNotification(membership, 'banIssued', [sender.adminId, messageId]),
     })),
   ]
 }
