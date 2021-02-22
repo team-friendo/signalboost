@@ -8,6 +8,7 @@ import app from '../../../../app'
 import util from '../../../../app/util'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
+import { subscriberMembershipFactory } from '../../../support/factories/membership'
 
 describe('ban repository', async () => {
   const [memberPhoneNumber, memberPhoneNumber2] = times(2, genPhoneNumber)
@@ -29,7 +30,10 @@ describe('ban repository', async () => {
 
   describe('#isBanned', () => {
     beforeEach(async () => {
-      await db.ban.create({ channelPhoneNumber, memberPhoneNumber: util.sha256Hash(memberPhoneNumber) })
+      await db.ban.create({
+        channelPhoneNumber,
+        memberPhoneNumber: util.sha256Hash(memberPhoneNumber),
+      })
     })
     describe('for a member who has been banned', () => {
       it('returns true', async () => {
@@ -45,13 +49,40 @@ describe('ban repository', async () => {
 
   describe('#banMember', () => {
     beforeEach(async () => {
+      await app.db.membership.create(
+        subscriberMembershipFactory({ channelPhoneNumber, memberPhoneNumber }),
+      )
       banCount = await db.ban.count()
       await banRepository.banMember(channelPhoneNumber, memberPhoneNumber)
     })
-    describe('for valid phone numbers', async () => {
-      it('creates a new record', async () => {
-        expect(await db.ban.count()).to.eql(banCount + 1)
-      })
+
+    it('creates a new ban record for a member phone number on a channel', async () => {
+      expect(await db.ban.count()).to.eql(banCount + 1)
+    })
+
+    it('destroys a membership of the member phone number on the channel', async () => {
+      expect(await db.membership.findAll({ where: { channelPhoneNumber, memberPhoneNumber } })).to
+        .be.empty
+    })
+  })
+
+  describe('#findBanned', () => {
+    const allNumbers = times(4, genPhoneNumber)
+    const bannedNumbers = allNumbers.slice(0, 2)
+
+    beforeEach(async () => {
+      await Promise.all(
+        bannedNumbers.map(pNum =>
+          db.ban.create({
+            channelPhoneNumber,
+            memberPhoneNumber: util.sha256Hash(pNum),
+          }),
+        ),
+      )
+    })
+
+    it('returns the subset of a list of member phone numbers that are banned', async () => {
+      expect(await banRepository.findBanned(channelPhoneNumber, allNumbers)).to.eql(bannedNumbers)
     })
   })
 })
