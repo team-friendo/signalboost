@@ -248,19 +248,18 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
 const banMember = async (channel, sender, hotlineMessage) => {
   const cr = messagesIn(sender.language).commandResponses.ban
   try {
+    // Will throw `HotlineMessageMissingError` if no hotline exists w/ this id
+    // causing us to return early
     const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
       hotlineMessage.messageId,
     )
-    //the below line does not work, WIP
-    if (!memberPhoneNumber) {
-      return { status: statuses.ERROR, message: cr.doesNotExist }
-    }
-    const isBanned = await banRepository.isBanned(memberPhoneNumber)
-    if (isBanned)
+    // Also return early if the member is already banned
+    if (await banRepository.isBanned(channel.phoneNumber, memberPhoneNumber))
       return { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
 
-    // if memberPhoneNumber exists and has not been banned yet, go ahead and ban
-    return banRepository.banMember(channel.phoneNumber, memberPhoneNumber).then(() => ({
+    // If we have a hotline record and its member has not been banned... bombs away!
+    await banRepository.banMember(channel.phoneNumber, memberPhoneNumber)
+    return {
       status: statuses.SUCCESS,
       message: cr.success(hotlineMessage.messageId),
       notifications: banNotificationsOf(
@@ -270,18 +269,17 @@ const banMember = async (channel, sender, hotlineMessage) => {
         hotlineMessage.messageId,
         cr,
       ),
-    }))
-  } catch (e) {
-    if (e.name === 'HotlineMessageIdMissingError') {
-      return { status: statuses.ERROR, message: cr.doesNotExist }
-    } else {
-      return { status: statuses.ERROR, message: cr.dbError }
     }
+  } catch (e) {
+    logger.error(`Failed to issue ban on ${channel.phoneNumber}.\nERROR: ${e}`)
+    return e.name === 'HotlineMessageIdMissingError'
+      ? { status: statuses.ERROR, message: cr.doesNotExist }
+      : { status: statuses.ERROR, message: cr.dbError }
   }
 }
 
 const banNotificationsOf = (channel, sender, memberPhoneNumber, messageId, cr) => {
-  const bystanders = getAllAdminsExcept(channel, [sender.phoneNumber])
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
   return [
     {
       recipient: memberPhoneNumber,

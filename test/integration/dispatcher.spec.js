@@ -360,25 +360,32 @@ describe('dispatcher service', () => {
     it('relays the hotline reply to hotline message sender and all admins', () => {
       expect(getSentMessages(writeStub)).to.have.deep.members([
         {
+          attachments: [],
+          messageBody: 'The sender of hotline message 1 has been banned.',
+          recipientAddress: {
+            number: admins[0].memberPhoneNumber,
+          },
           type: 'send',
           username: channel.phoneNumber,
-          recipientAddress: { number: admins[0].memberPhoneNumber },
-          messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
-          attachments,
         },
         {
+          attachments: [],
+          messageBody:
+            'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
+          recipientAddress: {
+            number: randoPhoneNumber,
+          },
           type: 'send',
           username: channel.phoneNumber,
-          recipientAddress: { number: admins[1].memberPhoneNumber },
-          messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
-          attachments,
         },
         {
+          attachments: [],
+          messageBody: 'The sender of hotline message 1 has been banned.',
+          recipientAddress: {
+            number: admins[1].memberPhoneNumber,
+          },
           type: 'send',
           username: channel.phoneNumber,
-          recipientAddress: { number: randoPhoneNumber },
-          messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
-          attachments,
         },
       ])
     })
