@@ -92,12 +92,26 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   // ADD
 
   add: {
-    success: newAdmin =>
-      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Désolé, ${bannedNumber} est banni de ce canal`,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
+  },
+
+  // BAN
+  ban: {
+    success: messageId => `L'expéditeur du message de la hotline ${messageId} a été banni.`,
+    notAdmin,
+    doesNotExist:
+      "L'expéditeur de ce message de la hotline est inactif, nous ne stockons donc plus leurs enregistrements de messages. Veuillez réessayer une fois qu'ils ont de nouveau message",
+    alreadyBanned: messageId =>
+      `L'expéditeur du message de la hotline ${messageId} est déjà banni.`,
+    dbError: "Oups! Échec de l'émission de l'interdiction. Veuillez réessayer!",
+    invalidHotlineMessageId: messageId =>
+      `Désolé, l'ID de message de la hotline @${messageId} a expiré ou n'a jamais existé.`,
   },
 
   // BROADCAST
@@ -163,7 +177,7 @@ INVITE +33612345678, +336187654321
 AJOUTER +33612345678
 -> Ajouter +33612345678 en tant qu'admin du canal
 
-PRIVÉ bonjour admins / ~ bonjour admins
+PRIVÉ bonjour admins / ~bonjour admins
 -> envoie un message privé "bonjour admins" à tous les administrateurs de la canal
 
 ESPAÑOL / ENGLISH / DEUTSCH
@@ -178,11 +192,14 @@ SE PORTER GARANT ON / OFF / ADMIN
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
 
+AUREVOIR
+-> Se désabonner du canal
+
 SUPPRIMER +33612345678
 -> Supprimer +33612345678 del canal
 
-AUREVOIR
--> Se désabonner du canal
+INTERDIRE @1234
+-> interdit à l'utilisateur @ 1234 d'envoyer des messages et de recevoir des émissions de la chaîne.
 
 DÉTRUIRE
 -> Détruire définitivement ce canal et tous les enregistrements associés`,
@@ -260,13 +277,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input =>
-      `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
     adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette canal.',
+    bannedInvitees: bannedNumbers =>
+      `Pardon! Les numéros suivants sont bannis à partir de ce canal: ${bannedNumbers}`,
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
-
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Oups! Échec de l'envoi des invitations pour ${
         failedPhoneNumbers.length
@@ -275,9 +289,12 @@ ${support}`,
 Veuillez réessayer d'émettre INVITER pour les numéros suivants:
 
 ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input =>
+      `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Vous essayez d'inviter ${numInvitees} nouveaux abonnés? Désolé, cette canal est limitée à ${subscriberLimit} abonnés et compte déjà ${subscriberCount} abonnés.`,
+    success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
   },
 
   // JOIN
@@ -437,6 +454,12 @@ const notifications = {
   subscriberRemoved: adminId => `ADMIN ${adminId} a supprimé un abonné.`,
 
   adminLeft: adminId => `ADMIN ${adminId} vient de quitter le canal.`,
+
+  banIssued: (adminId, messageId) =>
+    `Admin ${adminId} a banni l'expéditeur de la hotline message ${messageId}`,
+
+  banReceived:
+    'Un administrateur de cette canal vous a banni. Aucune autre interaction ne sera reçue par les administrateurs de la canal.',
 
   channelDestroyedByAdmin: (adminId, audience) =>
     ({

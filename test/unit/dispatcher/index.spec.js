@@ -7,6 +7,7 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
 import membershipRepository from '../../../app/db/repositories/membership'
+import banRepository from '../../../app/db/repositories/ban'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import metrics from '../../../app/metrics'
 import phoneNumberRegistrar from '../../../app/registrar/phoneNumber'
@@ -33,6 +34,7 @@ describe('dispatcher module', () => {
   const channel = channels[0]
   const adminPhoneNumber = channels[0].memberships[0].memberPhoneNumber
   const subscriberPhoneNumber = channels[0].memberships[2].memberPhoneNumber
+  const bannedPhoneNumber = genPhoneNumber()
   const randoPhoneNumber = genPhoneNumber()
   const admin = {
     memberPhoneNumber: adminPhoneNumber,
@@ -109,7 +111,8 @@ describe('dispatcher module', () => {
     processCommandStub,
     dispatchStub,
     enqueueResendStub,
-    respondToHealthcheckStub
+    respondToHealthcheckStub,
+    isBannedStub
 
   before(async () => await app.run(testApp))
 
@@ -122,6 +125,10 @@ describe('dispatcher module', () => {
     respondToHealthcheckStub = sinon
       .stub(diagnostics, 'respondToHealthcheck')
       .returns(Promise.resolve('42'))
+
+    isBannedStub = sinon
+      .stub(banRepository, 'isBanned')
+      .callsFake((_, senderPhoneNumber) => senderPhoneNumber === bannedPhoneNumber)
 
     findMembershipStub = sinon
       .stub(membershipRepository, 'findMembership')
@@ -144,6 +151,31 @@ describe('dispatcher module', () => {
 
   describe('handling an incoming message', () => {
     describe('deciding whether to dispatch a message', () => {
+      describe('when message is from a banned user', () => {
+        it('ignores the message', async () => {
+          await dispatch(
+            JSON.stringify({
+              type: 'message',
+              data: {
+                username: channel.phoneNumber,
+                source: {
+                  number: bannedPhoneNumber,
+                },
+                dataMessage: {
+                  timestamp: new Date().toISOString(),
+                  body: 'foobar',
+                  expiresInSeconds: channel.messageExpiryTime,
+                  attachments: [],
+                },
+              },
+            }),
+          )
+          expect(isBannedStub.callCount).to.eql(1)
+          expect(processCommandStub.callCount).to.eql(0)
+          expect(dispatchStub.callCount).to.eql(0)
+        })
+      })
+
       describe('when message is not of type "message"', () => {
         it('ignores the message', async () => {
           await dispatch(

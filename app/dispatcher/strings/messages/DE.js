@@ -91,12 +91,26 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // ADD
 
   add: {
-    success: newAdmin =>
-      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
-    notAdmin,
+    banned: bannedNumber => `Es tut uns leid, ${bannedNumber} ist aus diesem Kanal verboten`,
     dbError: num =>
       `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
+  },
+
+  // BAN
+  ban: {
+    success: messageId => `Der Absender der Hotline-Nachricht ${messageId} wurde gesperrt.`,
+    notAdmin,
+    doesNotExist:
+      'Der Absender dieser Hotline-Nachricht ist inaktiv, sodass wir ihre Nachrichtendatensätze nicht mehr speichern. Bitte versuchen Sie es erneut, sobald die Nachricht erneut gesendet wird.',
+    alreadyBanned: messageId =>
+      `Der Absender der Hotline-Nachricht ${messageId} ist bereits gesperrt.`,
+    dbError: 'Hoppla! Verbot fehlgeschlagen. Bitte versuche es erneut!',
+    invalidHotlineMessageId: messageId =>
+      `Entschuldigung, die Hotline-Nachrichten-ID ${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
   // BROADCAST
@@ -138,7 +152,7 @@ Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können 
   // HELP
 
   help: {
-    admin: `----------------------------------------------
+    admin: `----------------------------------------------3
 BEFEHLE
 ----------------------------------------------
 
@@ -181,7 +195,10 @@ TSCHÜSS
 -> Entfernt dich aus diesem Kanal
 
 ENTFERNEN +491701234567
--> Entfernt +491701234567 aus dem Kanal
+-> +491701234567 als Administrator aus dem Kanal entfernt
+
+VERBIETEN @1234
+-> verbietet user @ 1234 das Senden von Nachrichten und das Empfangen von Sendungen vom Kanal.
 
 VERNICHTEN
 -> Löscht den Kanal und alle zugehörigen Daten unwiderruflich`,
@@ -259,13 +276,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input =>
-      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
     adminOnly: 'Leider können nur Administratoren Personen zu diesem Kanal einladen.',
+    bannedInvitees: bannedNumbers =>
+      `Es tut uns leid! Die folgenden Zahlen werden aus diesem Kanal verboten: ${bannedNumbers}`,
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
-
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
         allPhoneNumbers.length
@@ -274,9 +288,12 @@ ${support}`,
   Bitte versuchen Sie erneut, EINLADEN für die folgenden Telefonnummern auszugeben:
   
   ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input =>
+      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Versuchen Sie, ${numInvitees} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal ist auf ${subscriberLimit} Abonnenten begrenzt und hat bereits ${subscriberCount} Abonnenten.`,
+    success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
   },
 
   // JOIN
@@ -436,6 +453,12 @@ const notifications = {
   subscriberRemoved: adminId => `ADMIN ${adminId} einen Abonnenten entfernt.`,
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
+
+  banIssued: (adminId, messageId) =>
+    `Admin ${adminId} verboten den Sender der Hotline-Nachricht ${messageId}`,
+
+  banReceived:
+    'Ein Administrator dieses Kanals hat Sie gesperrt. Weitere Interaktionen werden von den Administratoren des Kanals nicht empfangen.',
 
   channelDestroyedByAdmin: (adminId, audience) =>
     ({

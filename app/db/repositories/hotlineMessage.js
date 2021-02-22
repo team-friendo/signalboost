@@ -5,6 +5,13 @@ const {
   jobs: { hotlineMessageExpiryInMillis },
 } = require('../../config')
 
+class HotlineMessageIdMissingError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'HotlineMessageIdMissingError'
+  }
+}
+
 // ({Database, string, string}) => Promise<string>
 const getMessageId = async ({ channelPhoneNumber, memberPhoneNumber }) => {
   const [hm] = await app.db.hotlineMessage.findOrCreate({
@@ -18,7 +25,7 @@ const findMemberPhoneNumber = async id => {
   const hm = await app.db.hotlineMessage.findOne({ where: { id } })
   return hm
     ? Promise.resolve(hm.memberPhoneNumber)
-    : Promise.reject(new Error('hotline message does not exist'))
+    : Promise.reject(new HotlineMessageIdMissingError('hotline message does not exist'))
 }
 
 // (Database) => Promise<number>

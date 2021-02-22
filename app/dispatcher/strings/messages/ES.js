@@ -89,12 +89,27 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // ADD
 
   add: {
-    success: newAdmin => `${newAdmin.memberPhoneNumber} agregó como ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Lo siento, ${bannedNumber} está prohibido de este canal`,
     dbError: num =>
       `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidPhoneNumber: num =>
       `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    notAdmin,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} agregó como ADMIN ${newAdmin.adminId}.`,
+  },
+
+  // BAN
+  ban: {
+    success: messageId =>
+      `El remitente del mensaje de la línea directa ${messageId} ha sido bloqueado.`,
+    notAdmin,
+    doesNotExist:
+      'El remitente de este mensaje de línea directa está inactivo, por lo que ya no almacenamos sus registros de mensajes. Vuelva a intentarlo una vez que vuelva a enviar el mensaje.',
+    alreadyBanned: messageId =>
+      `El remitente del mensaje de la línea directa ${messageId} ya está prohibido.`,
+    dbError: '¡Ups! No se pudo emitir la prohibición. ¡Inténtalo de nuevo!',
+    invalidHotlineMessageId: messageId =>
+      `Lo sentimos, el ID de mensaje de la línea directa @${messageId} caducó o nunca existió.`,
   },
 
   // BROADCAST
@@ -178,8 +193,11 @@ ATESTIGUANDO ACTIVADA / ADMIN / DESACTIVADA
 NIVEL DE ATESTIGUAR nivel
 -> cambia el numero de invitaciónes requeridos para unirse a este canal 
 
-QUITAR + 1-555-555-5555
--> quita + 1-555-555-5555 del canal
+QUITAR +1-555-555-5555
+-> quita + 1-555-555-5555 como admin del canal
+
+PROHIBIR @1234
+-> prohíbe al usuario @1234 enviar mensajes y recibir transmisiones del canal.
 
 ADIÓS
 -> le saca del canal
@@ -260,13 +278,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input =>
-      `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Se emitió la invitación` : `Se emitieron ${n} invitaciones`),
     adminOnly: 'Lo siento, solo administradores pueden emitir invitaciones para este canal.',
+    bannedInvitees: bannedNumbers =>
+      `¡Ay! Los siguientes números están prohibidos de este canal: ${bannedNumbers}`,
     dbError: '¡Ay! No se pudo emitir la invitación. Inténtelo de nuevo. :)',
-
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `¡Ay! No se pudo emitir las invitaciónes para ${
         failedPhoneNumbers.length
@@ -275,9 +290,12 @@ ${support}`,
 Intenta emitir nuevamente INVITAR para los siguientes números:
       
 ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input =>
+      `¡Ay! No se pudo emitir la invitación. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `¿Estás intentando invitar a ${numInvitees} nuevos suscriptores? Lo sentimos, este canal está limitado a ${subscriberLimit} suscriptores y ya tiene ${subscriberCount} suscriptores.`,
+    success: n => (n === 1 ? `Se emitió la invitación` : `Se emitieron ${n} invitaciones`),
   },
 
   // JOIN
@@ -434,6 +452,12 @@ const notifications = {
   subscriberRemoved: adminId => `ADMIN ${adminId} eliminó un suscriptor.`,
 
   adminLeft: adminId => `ADMIN ${adminId} dejó el canal.`,
+
+  banIssued: (adminId, messageId) =>
+    `Admin ${adminId} prohibió el remitente del mensaje de línea directa ${messageId}`,
+
+  banReceived:
+    'Un administrador de este canal te ha prohibido. Los administradores del canal no recibirán ninguna interacción adicional.',
 
   channelDestroyedByAdmin: (audience, adminId = '') =>
     ({

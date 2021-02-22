@@ -14,6 +14,7 @@ export const destroyAllChannels = async db => {
     truncate: true,
     restartIdentity: true,
   })
+  await db.ban.destroy({ where: {}, force: true })
   await db.channel.destroy({ where: {}, force: true })
 }
 

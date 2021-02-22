@@ -2,6 +2,7 @@ import { expect } from 'chai'
 import { describe, it, before, beforeEach, after, afterEach } from 'mocha'
 import { times } from 'lodash'
 import { run } from '../../../../app/db/index'
+import { banFactory } from '../../../support/factories/ban'
 import { channelFactory } from '../../../support/factories/channel'
 import { membershipFactory } from '../../../support/factories/membership'
 import { inviteFactory } from '../../../support/factories/invite'
@@ -44,6 +45,17 @@ describe('channel model', () => {
       },
       {
         include: [{ model: db.invite }],
+      },
+    )
+
+  const createChannelWithBans = () =>
+    db.channel.create(
+      {
+        ...channelFactory(),
+        bans: [banFactory(), banFactory()],
+      },
+      {
+        include: [{ model: db.ban }],
       },
     )
 
@@ -90,6 +102,7 @@ describe('channel model', () => {
       db.membership.destroy({ where: {}, force: true }),
       db.hotlineMessage.destroy({ where: {}, force: true }),
       db.destructionRequest.destroy({ where: {}, force: true }),
+      db.ban.destroy({ where: {}, force: true }),
     ])
     await db.channel.destroy({ where: {}, force: true })
   })
@@ -149,7 +162,7 @@ describe('channel model', () => {
   })
 
   describe('associations', () => {
-    let channel, messageCount, memberships, invites, deauthorizations, hotlineMessages
+    let channel, messageCount, memberships, invites, deauthorizations, hotlineMessages, bans
 
     describe('memberships', () => {
       beforeEach(async () => {
@@ -217,6 +230,17 @@ describe('channel model', () => {
         const inviteCount = await db.invite.count()
         await channel.destroy()
         expect(await db.invite.count()).to.eql(inviteCount - 2)
+      })
+    })
+
+    describe('bans', () => {
+      beforeEach(async () => {
+        channel = await createChannelWithBans()
+        bans = await channel.getBans()
+      })
+
+      it('has many bans', async () => {
+        expect(bans).to.have.length(2)
       })
     })
 

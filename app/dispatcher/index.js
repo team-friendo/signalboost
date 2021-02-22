@@ -1,5 +1,6 @@
 const signal = require('../signal')
 const callbacks = require('../signal/callbacks')
+const banRepository = require('../db/repositories/ban')
 const channelRepository = require('../db/repositories/channel')
 const membershipRepository = require('../db/repositories/membership')
 const phoneNumberRegistrar = require('../registrar/phoneNumber')
@@ -100,7 +101,7 @@ const dispatch = async (msg, socketId) => {
   const sideEffects = await detectAndPerformSideEffects(channel, sender, inboundMsg)
   await util.sequence(sideEffects)
 
-  // return early if we recieve a non-relayable message
+  // ... or if we recieve a non-relayable message
   if (!_isMessage(inboundMsg) || _isEmpty(inboundMsg)) return Promise.resolve()
 
   // else, follow the happy path!
@@ -125,6 +126,10 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
 
   const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
   if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
+
+  // early return if user is banned
+  const isBanned = await detectBanned(inboundMsg)
+  if (isBanned) return () => Promise.resolve()
 }
 
 // (Channel, string, SdMessage) => Promise<Array<function>>
@@ -264,6 +269,12 @@ const detectUpdatableFingerprint = async inSdMessage => {
       messageBody: messagesIn(language).notifications.safetyNumberChanged,
     },
   }
+}
+
+const detectBanned = async inboundMsg => {
+  const channelPhoneNumber = get(inboundMsg, 'data.username', '')
+  const memberPhoneNumber = get(inboundMsg, 'data.source.number', '')
+  return await banRepository.isBanned(channelPhoneNumber, memberPhoneNumber)
 }
 
 // InboundSdMessage -> SdMessage?

@@ -24,6 +24,7 @@ const parseErrorTypes = {
 const commands = {
   ADD: 'ADD',
   ACCEPT: 'ACCEPT',
+  BAN: 'BAN',
   BROADCAST: 'BROADCAST',
   CHANNEL: 'CHANNEL',
   DECLINE: 'DECLINE',

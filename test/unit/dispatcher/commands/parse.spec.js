@@ -20,6 +20,7 @@ describe('parse module', () => {
           'fire the missiles',
           'the ADD foo',
           'the ACCEPT',
+          'the BAN',
           'the BROADCAST',
           'the DECLINE',
           'the DESTROY',
@@ -42,6 +43,7 @@ describe('parse module', () => {
           'la AGREGAR foo',
           'la ACEPTAR',
           'la AYUDA',
+          'la PROHIBIR',
           'la INFO',
           'la INVITAR',
           'la HOLA',
@@ -60,6 +62,7 @@ describe('parse module', () => {
 
           'le AJOUTER',
           'le ACCEPTER',
+          'le INTERDIRE',
           'le REFUSER',
           'le AIDE',
           'le INFO',
@@ -178,8 +181,32 @@ describe('parse module', () => {
       })
     })
 
+    describe('BAN command', () => {
+      it('parses an BAN command and payload regardless of casing, spacing, accents, or language', () => {
+        const variants = [
+          {
+            language: languages.EN,
+            messages: ['BAN @1312', ' ban @1312'],
+          },
+        ]
+
+        variants.forEach(({ language, messages }) =>
+          messages.forEach(msg =>
+            expect(parseExecutable(msg)).to.eql({
+              command: commands.BAN,
+              language,
+              payload: {
+                messageId: 1312,
+                reply: '',
+              },
+            }),
+          ),
+        )
+      })
+    })
+
     describe('BROADCAST command', () => {
-      it('parses an ADD command and payload regardless of casing, spacing, accents, or language', () => {
+      it('parses a BROADCAST command and payload regardless of casing, spacing, accents, or language', () => {
         const variants = [
           {
             language: languages.EN,
@@ -1146,6 +1173,44 @@ describe('parse module', () => {
             messageId: 2,
             reply: 'friendos\n to\n the\n\n rescue!!!!!!',
           })
+        })
+      })
+    })
+
+    describe('a ban payload', () => {
+      describe('when it contains a valid message id', () => {
+        const variants = [
+          { language: languages.EN, message: 'BAN #1312' },
+          { language: languages.ES, message: 'PROHIBIR #1312' },
+          { language: languages.FR, message: 'INTERDIRE #1312' },
+          { language: languages.DE, message: 'VERBIETEN #1312' },
+        ]
+
+        it('returns a command match with a HotlineReply as a payload', () => {
+          variants.forEach(({ language, message }) =>
+            expect(parseExecutable(message)).to.eql({
+              command: commands.BAN,
+              language,
+              payload: { messageId: 1312, reply: '' },
+            }),
+          )
+        })
+      })
+
+      describe('when it does not contain a valid message id', () => {
+        const variants = [
+          { language: languages.EN, message: 'BAN #abc foo' },
+          { language: languages.ES, message: 'PROHIBIR #abc foo' },
+          { language: languages.FR, message: 'INTERDIRE #abc foo' },
+          { language: languages.DE, message: 'VERBIETEN #abc foo' },
+        ]
+        it('returns a parse error', () => {
+          variants.forEach(({ language, message }) =>
+            expect(parseExecutable(message)).to.include({
+              error: messagesIn(language).parseErrors.invalidHotlineMessageId('#abc foo'),
+              type: parseErrorTypes.INVALID_PAYLOAD,
+            }),
+          )
         })
       })
     })

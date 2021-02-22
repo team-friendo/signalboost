@@ -1,6 +1,7 @@
 module.exports = {
   ACCEPT: ['ANNEHMEN'],
   ADD: ['HINZUFÜGEN', 'HINZUFUEGEN', 'HINZUFUGEN', 'DAZU'],
+  BAN: ['VERBIETEN'],
   BROADCAST: ['SENDEN', '!'],
   CHANNEL: ['KANAL'],
   DECLINE: ['ABLEHNEN'],

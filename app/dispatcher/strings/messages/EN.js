@@ -86,10 +86,23 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // ADD
 
   add: {
-    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Sorry, ${bannedNumber} is banned from this channel`,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
+  },
+
+  // BAN
+  ban: {
+    success: messageId => `The sender of hotline message ${messageId} has been banned.`,
+    notAdmin,
+    doesNotExist:
+      'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
+    alreadyBanned: messageId => `The sender of hotline message ${messageId} is already banned.`,
+    dbError: 'Oops! Failed to issue ban. Please try again!',
+    invalidHotlineMessageId: messageId =>
+      `Sorry, the hotline message ID @${messageId} has expired or never existed.`,
   },
 
   // BROADCAST
@@ -172,7 +185,10 @@ VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
 
 REMOVE +1-555-555-5555
--> removes +1-555-555-5555 from the channel
+-> removes +1-555-555-5555 as admin from the channel
+
+BAN @1234
+-> bans user @1234 from sending messages and receiving broadcasts from the channel.
 
 GOODBYE
 -> leaves this channel
@@ -249,12 +265,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
     adminOnly: 'Sorry, only admins can invite people to this channel.',
+    bannedInvitees: bannedNumbers =>
+      `Oops! The following numbers are banned from this channel: ${bannedNumbers}`,
     dbError: 'Oops! Failed to issue invitation. Please try again. :)',
-
     dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
       failedPhoneNumbers.length
     } out of ${inviteCount} phone numbers.
@@ -262,9 +276,11 @@ ${support}`,
 Please trying issuing INVITE again for the following numbers:
 
 ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Trying to invite ${numInvitees} new subscriber(s)? Sorry, this channel is limited to ${subscriberLimit} subscribers and already has ${subscriberCount} subscribers.`,
+    success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
   },
 
   // JOIN
@@ -415,6 +431,12 @@ const notifications = {
   subscriberRemoved: adminId => `ADMIN ${adminId} removed a susbcriber.`,
 
   adminLeft: adminId => `ADMIN ${adminId} left the channel.`,
+
+  banIssued: (adminId, messageId) =>
+    `ADMIN ${adminId} banned the sender of hotline message ${messageId}.`,
+
+  banReceived:
+    'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
 
   channelDestroyedByAdmin: (audience, adminId) =>
     ({

@@ -11,6 +11,7 @@ import diagnostics from '../../../../app/diagnostics'
 import channelRepository, {
   getSubscriberMemberships,
 } from '../../../../app/db/repositories/channel'
+import banRepository from '../../../../app/db/repositories/ban'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
@@ -314,11 +315,12 @@ describe('executing commands', () => {
   })
 
   describe('ADD command', () => {
-    let addAdminStub, trustStub, destroyDeauthStub
+    let addAdminStub, trustStub, destroyDeauthStub, isBannedStub
     beforeEach(() => {
       addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
       trustStub = sinon.stub(signal, 'trust')
       destroyDeauthStub = sinon.stub(deauthorizationRepository, 'destroy')
+      isBannedStub = sinon.stub(banRepository, 'isBanned').returns(Promise.resolve(false))
     })
 
     describe('when sender is an admin', () => {
@@ -453,6 +455,20 @@ describe('executing commands', () => {
             })
           })
         })
+
+        describe('when phone number to be added has been banned', () => {
+          beforeEach(() => isBannedStub.returns(Promise.resolve(true)))
+
+          it('returns an error status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.ADD,
+              payload: newAdminPhoneNumber,
+              status: statuses.ERROR,
+              message: commandResponsesFor(sender).add.banned(newAdminPhoneNumber),
+              notifications: [],
+            })
+          })
+        })
       })
 
       describe('when payload is not a valid phone number', async () => {
@@ -489,6 +505,141 @@ describe('executing commands', () => {
         }
         await processCommand(dispatchable)
         expect(addAdminStub.callCount).to.eql(0)
+      })
+    })
+  })
+
+  describe('BAN command', () => {
+    const messageId = 1312
+    let isBannedStub, findMemberPhoneNumberStub, banMemberStub
+    beforeEach(() => {
+      findMemberPhoneNumberStub = sinon.stub(hotlineMessageRepository, 'findMemberPhoneNumber')
+      isBannedStub = sinon.stub(banRepository, 'isBanned')
+      banMemberStub = sinon.stub(banRepository, 'banMember')
+    })
+
+    describe('when hotline message could not be found', () => {
+      beforeEach(() => {
+        class HotlineMessageIdMissingError extends Error {
+          constructor(message) {
+            super(message)
+            this.name = 'HotlineMessageIdMissingError'
+          }
+        }
+        findMemberPhoneNumberStub.returns(Promise.reject(new HotlineMessageIdMissingError('error')))
+      })
+
+      it('returns ERROR doesNotExist', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message:
+            'The sender of this hotline message is inactive, so we no longer store their message records. Please try again once they message again.',
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
+    describe('when there was a generic error', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.reject(new Error('woops database')))
+      })
+
+      it('returns ERROR doesNotExist', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message: 'Oops! Failed to issue ban. Please try again!',
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
+    describe('when member is already banned', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+        isBannedStub.returns(Promise.resolve(true))
+      })
+
+      it('returns ERROR alreadybanned', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.ERROR,
+          message: `The sender of hotline message ${messageId} is already banned.`,
+          notifications: [],
+          payload: { messageId: 1312, reply: '' },
+        })
+      })
+    })
+
+    describe('when member is not already banned', () => {
+      beforeEach(() => {
+        findMemberPhoneNumberStub.returns(Promise.resolve(subscriber.phoneNumber))
+        isBannedStub.returns(Promise.resolve(false))
+        banMemberStub.returns(Promise.resolve())
+      })
+
+      it('returns SUCCESS with notifications for admins and banned member', async () => {
+        const dispatchable = {
+          channel,
+          sender: { ...admin, language: languages.EN },
+          sdMessage: sdMessageOf({
+            sender: channel.phoneNumber,
+            message: 'BAN @1312',
+            attachments,
+          }),
+        }
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.BAN,
+          status: statuses.SUCCESS,
+          message: 'The sender of hotline message 1312 has been banned.',
+          notifications: [
+            {
+              recipient: subscriber.phoneNumber,
+              message:
+                'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
+            },
+            ...bystanderAdminMemberships.map(membership => ({
+              recipient: membership.memberPhoneNumber,
+              message: `[${prefixesFor(membership).notificationHeader}]\n${messagesIn(
+                membership.language,
+              ).notifications.banIssued(admin.adminId, 1312)}`,
+            })),
+          ],
+          payload: { messageId: 1312, reply: '' },
+        })
       })
     })
   })
@@ -937,11 +1088,12 @@ describe('executing commands', () => {
       message: `${localizedCmds.INVITE} ${inviteePhoneNumbers.join(',')}`,
     })
 
-    let isMemberStub, issueInviteStub, countInvitesStub
+    let isMemberStub, issueInviteStub, countInvitesStub, findBannedStub
     beforeEach(() => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       issueInviteStub = sinon.stub(inviteRepository, 'issue')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
+      findBannedStub = sinon.stub(banRepository, 'findBanned').returns(Promise.resolve([]))
     })
 
     describe('when invites would cause channel to exceed subscriber limit', () => {
@@ -959,6 +1111,21 @@ describe('executing commands', () => {
             subscriberLimit,
             subscriberCount,
           ),
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when invitee is banned', () => {
+      const dispatchable = { sdMessage, channel, sender: admin }
+      beforeEach(() => findBannedStub.returns(Promise.resolve([inviteePhoneNumbers[0]])))
+
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.INVITE,
+          payload: inviteePhoneNumbers,
+          status: statuses.ERROR,
+          message: commandResponsesFor(admin).invite.bannedInvitees(inviteePhoneNumbers[0]),
           notifications: [],
         })
       })

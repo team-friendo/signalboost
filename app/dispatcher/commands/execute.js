@@ -5,6 +5,7 @@ const deauthorizationRepository = require('../../db/repositories/deauthorization
 const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
+const banRepository = require('../../db/repositories/ban')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
@@ -67,6 +68,7 @@ const execute = async (executable, dispatchable) => {
   const result = await {
     [commands.ACCEPT]: () => maybeAccept(channel, sender, language),
     [commands.ADD]: () => addAdmin(channel, sender, payload),
+    [commands.BAN]: () => banMember(channel, sender, payload),
     [commands.BROADCAST]: () => broadcastMessage(channel, sender, sdMessage, payload),
     [commands.CHANNEL]: () => maybeCreateChannel(sender, payload),
     [commands.DECLINE]: () => decline(channel, sender, language),
@@ -198,13 +200,22 @@ const accept = async (channel, sender, language, cr) =>
 const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.add
   try {
+    // return early if...
+    // this number has been de-authorized (due to changed safety number)
     const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
     if (deauth) {
       const { phoneNumber, socketId } = channel
       await signal.trust(phoneNumber, newAdminPhoneNumber, deauth.fingerprint, socketId)
       await deauthorizationRepository.destroy(phoneNumber, newAdminPhoneNumber)
     }
+    // this number has been banned
+    if (await banRepository.isBanned(channel.phoneNumber, newAdminPhoneNumber))
+      return {
+        status: statuses.ERROR,
+        message: cr.banned(newAdminPhoneNumber),
+      }
 
+    // otherwise rock 'n' roll!
     const newAdminMembership = await membershipRepository.addAdmin(
       channel.phoneNumber,
       newAdminPhoneNumber,
@@ -238,6 +249,55 @@ const addAdminNotificationsOf = (channel, newAdminMembership, sender) => {
         sender.adminId,
         newAdminMembership.adminId,
       ]),
+    })),
+  ]
+}
+
+// BAN
+const banMember = async (channel, sender, hotlineMessage) => {
+  const cr = messagesIn(sender.language).commandResponses.ban
+  try {
+    // Try retrieving a hotline message. If it's been deleted, return early by throwing HotlineMessageMissingError
+    const memberPhoneNumber = await hotlineMessageRepository.findMemberPhoneNumber(
+      hotlineMessage.messageId,
+    )
+    // Also return early if the member is already banned
+    if (await banRepository.isBanned(channel.phoneNumber, memberPhoneNumber))
+      return { status: statuses.ERROR, message: cr.alreadyBanned(hotlineMessage.messageId) }
+
+    // If we have a hotline record and its member has not been banned... do some banning!
+    await banRepository.banMember(channel.phoneNumber, memberPhoneNumber)
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success(hotlineMessage.messageId),
+      notifications: banNotificationsOf(
+        channel,
+        sender,
+        memberPhoneNumber,
+        hotlineMessage.messageId,
+      ),
+    }
+  } catch (e) {
+    logger.error(`Failed to issue ban on ${channel.phoneNumber}.\nERROR: ${e}`)
+    return e.name === 'HotlineMessageIdMissingError'
+      ? { status: statuses.ERROR, message: cr.doesNotExist }
+      : { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const banNotificationsOf = (channel, sender, memberPhoneNumber, messageId) => {
+  const bystanders = getAllAdminsExcept(channel, [sender.memberPhoneNumber])
+  return [
+    {
+      recipient: memberPhoneNumber,
+      // NOTE: We'd have to do spend some extra db queries to retrieve the ban recipient's language.
+      // (Which might not exist if they are not a subscriber!). Aaand, they're being banned anyway, right?
+      // So... let's just use the sender's language!
+      message: messagesIn(sender.language).notifications.banReceived,
+    },
+    ...bystanders.map(membership => ({
+      recipient: membership.memberPhoneNumber,
+      message: appendHeaderToNotification(membership, 'banIssued', [sender.adminId, messageId]),
     })),
   ]
 }
@@ -374,6 +434,7 @@ const showInfo = async (channel, sender) => {
 const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
 
+  // check for valid invite conditions
   if (!channelRepository.canAddSubscribers(channel, inviteePhoneNumbers.length))
     return {
       status: statuses.ERROR,
@@ -386,6 +447,14 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
   if (sender.type !== ADMIN && channel.vouchMode === vouchModes.ADMIN)
     return { status: statuses.UNAUTHORIZED, message: cr.adminOnly }
+
+  // check for bans
+  const bannedNumbers = await banRepository.findBanned(channel.phoneNumber, inviteePhoneNumbers)
+  if (!isEmpty(bannedNumbers))
+    return {
+      status: statuses.ERROR,
+      message: cr.bannedInvitees(bannedNumbers),
+    }
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>

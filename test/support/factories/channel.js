@@ -5,6 +5,7 @@ import { memberTypes } from '../../../app/db/repositories/membership'
 import { inviteFactory } from './invite'
 import { genPhoneNumber } from './phoneNumber'
 import { deauthorizationFactory } from './deauthorization'
+
 const {
   signal: { defaultMessageExpiryTime },
 } = require('../../../app/config')
