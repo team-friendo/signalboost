@@ -454,8 +454,9 @@ Si vous souhaitez détruire le canal maintenant, répondez avec DÉTRUIRE.
 
 Pour plus d'informations, visitez signalboost.info/how-to.`,
 
-  channelDestructionFailed: phoneNumber =>
-    `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}`,
+  channelDestructionFailed: (phoneNumber, error) =>
+    `Impossible de détruire la canal pour le numéro de téléphone: ${phoneNumber}.
+  ERROR: ${error}`,
 
   channelDestroyedBySystem:
     "Canal détruit par manque d'utilisation. Pour créer une nouvelle canal, visitez https://signalboost.info",

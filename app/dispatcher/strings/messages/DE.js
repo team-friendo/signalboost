@@ -453,8 +453,9 @@ Wenn Sie den Kanal jetzt zerstören möchten, antworten Sie mit VERNICHTEN.
 
 Weitere Informationen finden Sie unter signalboost.info/how-to.`,
 
-  channelDestructionFailed: phoneNumber =>
-    `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden`,
+  channelDestructionFailed: (phoneNumber, error) =>
+    `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden.
+ERROR: ${error}`,
 
   channelDestroyedBySystem:
     'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
