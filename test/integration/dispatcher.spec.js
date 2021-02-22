@@ -64,10 +64,9 @@ describe('dispatcher service', () => {
   })
   afterEach(async () => {
     try {
-      await destroyAllChannels(app.db)
-      await app.db.ban.destroy({ where: {} })
-      await app.socketPools[socketId].release(readSock)
       sinon.restore()
+      await destroyAllChannels(app.db)
+      await app.socketPools[socketId].release(readSock)
     } catch (ignored) {
       /**/
     }
@@ -335,10 +334,11 @@ describe('dispatcher service', () => {
   })
 
   describe('dispatching a BAN command', () => {
+    const bannedPhoneNumber = genPhoneNumber()
     beforeEach(async () => {
       await createChannelWithMembers()
       await enableHotlineMessages()
-      await createHotlineMessage({ id: 1, memberPhoneNumber: randoPhoneNumber })
+      await createHotlineMessage({ id: 2, memberPhoneNumber: bannedPhoneNumber })
       readSock.emit(
         'data',
         JSON.stringify({
@@ -348,7 +348,7 @@ describe('dispatcher service', () => {
             source: { number: admins[0].memberPhoneNumber },
             dataMessage: {
               timestamp: new Date().toISOString(),
-              body: 'BAN @1',
+              body: 'BAN @2',
               expiresInSeconds: channel.messageExpiryTime,
               attachments,
             },
@@ -362,7 +362,7 @@ describe('dispatcher service', () => {
       expect(getSentMessages(writeStub)).to.have.deep.members([
         {
           attachments: [],
-          messageBody: 'The sender of hotline message 1 has been banned.',
+          messageBody: 'The sender of hotline message 2 has been banned.',
           recipientAddress: {
             number: admins[0].memberPhoneNumber,
           },
@@ -374,14 +374,14 @@ describe('dispatcher service', () => {
           messageBody:
             'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
           recipientAddress: {
-            number: randoPhoneNumber,
+            number: bannedPhoneNumber,
           },
           type: 'send',
           username: channel.phoneNumber,
         },
         {
           attachments: [],
-          messageBody: '[NOTIFICATION]\nADMIN 1 banned the sender of hotline message 1.',
+          messageBody: '[NOTIFICATION]\nADMIN 1 banned the sender of hotline message 2.',
           recipientAddress: {
             number: admins[1].memberPhoneNumber,
           },
