@@ -5,6 +5,7 @@ import { genPhoneNumber } from '../../../support/factories/phoneNumber'
 import { channelFactory } from '../../../support/factories/channel'
 import banRepository from '../../../../app/db/repositories/ban'
 import app from '../../../../app'
+import util from '../../../../app/util'
 import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 
@@ -28,7 +29,7 @@ describe('ban repository', async () => {
 
   describe('#isBanned', () => {
     beforeEach(async () => {
-      await db.ban.create({ channelPhoneNumber, memberPhoneNumber })
+      await db.ban.create({ channelPhoneNumber, memberPhoneNumber: util.sha256Hash(memberPhoneNumber) })
     })
     describe('for a member who has been banned', () => {
       it('returns true', async () => {

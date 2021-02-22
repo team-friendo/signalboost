@@ -1,4 +1,4 @@
-const { isPhoneNumber } = require('../validations')
+const { isPhoneNumber, isSha256Hash } = require('../validations')
 
 const banOf = (sequelize, DataTypes) => {
   const ban = sequelize.define(
@@ -17,7 +17,7 @@ const banOf = (sequelize, DataTypes) => {
       },
       memberPhoneNumber: {
         type: DataTypes.STRING,
-        validate: isPhoneNumber,
+        validate: isSha256Hash,
         allowNull: false,
       },
       createdAt: {
