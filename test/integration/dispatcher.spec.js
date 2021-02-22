@@ -65,6 +65,7 @@ describe('dispatcher service', () => {
   afterEach(async () => {
     try {
       await destroyAllChannels(app.db)
+      await app.db.ban.destroy({ where: {} })
       await app.socketPools[socketId].release(readSock)
       sinon.restore()
     } catch (ignored) {
