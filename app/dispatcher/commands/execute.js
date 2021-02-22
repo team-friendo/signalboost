@@ -200,13 +200,22 @@ const accept = async (channel, sender, language, cr) =>
 const addAdmin = async (channel, sender, newAdminPhoneNumber) => {
   const cr = messagesIn(sender.language).commandResponses.add
   try {
+    // return early if...
+    // this number has been de-authorized (due to changed safety number)
     const deauth = channel.deauthorizations.find(d => d.memberPhoneNumber === newAdminPhoneNumber)
     if (deauth) {
       const { phoneNumber, socketId } = channel
       await signal.trust(phoneNumber, newAdminPhoneNumber, deauth.fingerprint, socketId)
       await deauthorizationRepository.destroy(phoneNumber, newAdminPhoneNumber)
     }
+    // this number has been banned
+    if (await banRepository.isBanned(channel.phoneNumber, newAdminPhoneNumber))
+      return {
+        status: statuses.ERROR,
+        message: cr.banned(newAdminPhoneNumber),
+      }
 
+    // otherwise rock 'n' roll!
     const newAdminMembership = await membershipRepository.addAdmin(
       channel.phoneNumber,
       newAdminPhoneNumber,

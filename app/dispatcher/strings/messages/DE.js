@@ -91,12 +91,13 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // ADD
 
   add: {
-    success: newAdmin =>
-      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
-    notAdmin,
+    banned: bannedNumber => `Es tut uns leid, ${bannedNumber} ist aus diesem Kanal verboten`,
     dbError: num =>
       `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} wurde als ADMIN ${newAdmin.adminId} hinzugefügt.`,
   },
 
   // BAN

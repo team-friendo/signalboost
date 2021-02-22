@@ -86,10 +86,11 @@ Reply with HELP to learn more or GOODBYE to unsubscribe.`,
   // ADD
 
   add: {
-    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Sorry, ${bannedNumber} is banned from this channel`,
     dbError: num => `Whoops! There was an error adding ${num} as an admin. Please try again!`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} added as ADMIN ${newAdmin.adminId}.`,
   },
 
   // BAN

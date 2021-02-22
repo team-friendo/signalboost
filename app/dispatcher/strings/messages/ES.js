@@ -89,12 +89,13 @@ Responda con AYUDA para obtener más información o ADIÓS para darse de baja.`,
   // ADD
 
   add: {
-    success: newAdmin => `${newAdmin.memberPhoneNumber} agregó como ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Lo siento, ${bannedNumber} está prohibido de este canal`,
     dbError: num =>
       `¡Ay! Se produjo un error al agregar a ${num} como administrador. ¡Inténtelo de nuevo!`,
     invalidPhoneNumber: num =>
       `¡Ay! Error al agregar a "${num}". Los números de teléfono deben incluir los códigos del país con el prefijo '+'`,
+    notAdmin,
+    success: newAdmin => `${newAdmin.memberPhoneNumber} agregó como ADMIN ${newAdmin.adminId}.`,
   },
 
   // BAN

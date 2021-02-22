@@ -92,12 +92,13 @@ Répondez avec AIDE pour en savoir plus ou ADIEU pour vous désinscrire.`,
   // ADD
 
   add: {
-    success: newAdmin =>
-      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
-    notAdmin,
+    banned: bannedNumber => `Désolé, ${bannedNumber} est banni de ce canal`,
     dbError: num =>
       `Oups! Une erreur s’est produite en tentant de supprimer ${num}. Veuillez essayer de nouveau.`,
     invalidPhoneNumber,
+    notAdmin,
+    success: newAdmin =>
+      `${newAdmin.memberPhoneNumber} a été ajouté e comme ADMIN ${newAdmin.adminId}.`,
   },
 
   // BAN

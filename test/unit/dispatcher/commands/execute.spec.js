@@ -32,7 +32,6 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
-import { banFactory } from '../../../support/factories/ban'
 const {
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber, supportPhoneNumber },
@@ -316,11 +315,12 @@ describe('executing commands', () => {
   })
 
   describe('ADD command', () => {
-    let addAdminStub, trustStub, destroyDeauthStub
+    let addAdminStub, trustStub, destroyDeauthStub, isBannedStub
     beforeEach(() => {
       addAdminStub = sinon.stub(membershipRepository, 'addAdmin')
       trustStub = sinon.stub(signal, 'trust')
       destroyDeauthStub = sinon.stub(deauthorizationRepository, 'destroy')
+      isBannedStub = sinon.stub(banRepository, 'isBanned').returns(Promise.resolve(false))
     })
 
     describe('when sender is an admin', () => {
@@ -452,6 +452,20 @@ describe('executing commands', () => {
                   expect(result.notifications.length).to.eql(3)
                 })
               })
+            })
+          })
+        })
+
+        describe('when phone number to be added has been banned', () => {
+          beforeEach(() => isBannedStub.returns(Promise.resolve(true)))
+
+          it('returns an error status', async () => {
+            expect(await processCommand(dispatchable)).to.eql({
+              command: commands.ADD,
+              payload: newAdminPhoneNumber,
+              status: statuses.ERROR,
+              message: commandResponsesFor(sender).add.banned(newAdminPhoneNumber),
+              notifications: [],
             })
           })
         })
