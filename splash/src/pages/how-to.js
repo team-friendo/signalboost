@@ -116,14 +116,67 @@ export default () => (
       <span className="command">INFO</span> shows stats and briefly explains how
       Signalboost works.
     </p>
-    <h3>Managing your channel</h3>
-    <h4 id="add-admin" className="anchor">
-      ADD / REMOVE +1-555-555-5555
+    <h3 id="add-admin" className="anchor">
+      How do I add or remove an admin on my channel?
+    </h3>
+    <p>Add an admin with phone number +1-555-555-5555:</p>
+    <blockquote className="command blockquote">
+      <p>ADD +1-555-555-5555</p>
+    </blockquote>
+    <p>Remove an admin with phone number +1-555-555-5555:</p>
+    <blockquote className="command blockquote">
+      <p>REMOVE +1-555-555-5555</p>
+    </blockquote>
+    <h3>Other useful commands</h3>
+    <h4 id="private-messages" className="anchor">
+      PRIVATE good morning fellow admins!
     </h4>
     <p>
-      Adds or removes +1-555-555-5555 as an admin of the channel. Any admins can
-      remove or add any other admins.
+      Sends a private message to admins only (subscribers will not be able to
+      see those messages).
     </p>
+    <p>For a shortcut, use the "~" symbol instead:</p>
+    <blockquote className="command blockquote">
+      <p>~ good morning fellow admins!</p>
+    </blockquote>
+    <h4 id="languages" className="anchor">
+      ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH{' '}
+    </h4>
+    <p>
+      Switches language to Spanish, French, or German. Language changes on
+      Signalboost are user-specific, so if you change your language to Spanish
+      other admins and subscribers' channels will be unaffected.
+    </p>
+    <h4 id="ban" className="anchor">
+      BAN
+    </h4>
+    <p>
+      Bans an abusive subscriber on your channel. Banned subscribers will be
+      prevented from any further interaction with the channel and cannot be
+      un-banned.
+    </p>
+    <blockquote className="command blockquote">
+      <p>BAN @123</p>
+    </blockquote>
+    <h4 id="leave" className="anchor">
+      GOODBYE
+    </h4>
+    <p>
+      Leaves the channel. If you're an admin, you will lose your admin access to
+      the channel but will still be able to subscribe as a subscriber. If you
+      want to obtain admin access again, you will need to ask a current admin to
+      add you using the ADD command.
+    </p>
+    <h4 id="destroy" className="anchor">
+      DESTROY
+    </h4>
+    <p>
+      Danger zone! This command permanently destroys the channel and all
+      associated records. Importantly, it does not erase the message history
+      from admin and subscribers phones until the duration of the disappearing
+      message timer is up.
+    </p>
+    <h3>Managing your channel</h3>
     <h4 id="vouching" className="anchor">
       VOUCHING ON / OFF / ADMIN
     </h4>
@@ -197,44 +250,6 @@ export default () => (
           hotline can be noisy and increase the chances of spam/abuse.
         </li>
       </ul>
-    </p>
-    <h3>Other useful commands</h3>
-    <h4 id="private-messages" className="anchor">
-      PRIVATE good morning fellow admins!
-    </h4>
-    <p>
-      Sends a private message to admins only (subscribers will not be able to
-      see those messages).
-    </p>
-    <p>For a shortcut, use the "~" symbol instead:</p>
-    <blockquote className="command blockquote">
-      <p>~ good morning fellow admins!</p>
-    </blockquote>
-    <h4 id="languages" className="anchor">
-      ENGLISH / ESPAÑOL / FRANÇAIS / DEUTSCH{' '}
-    </h4>
-    <p>
-      Switches language to Spanish, French, or German. Language changes on
-      Signalboost are user-specific, so if you change your language to Spanish
-      other admins and subscribers' channels will be unaffected.
-    </p>
-    <h4 id="leave" className="anchor">
-      GOODBYE
-    </h4>
-    <p>
-      Leaves the channel. If you're an admin, you will lose your admin access to
-      the channel but will still be able to subscribe as a subscriber. If you
-      want to obtain admin access again, you will need to ask a current admin to
-      add you using the ADD command.
-    </p>
-    <h4 id="destroy" className="anchor">
-      DESTROY
-    </h4>
-    <p>
-      Danger zone! This command permanently destroys the channel and all
-      associated records. Importantly, it does not erase the message history
-      from admin and subscribers phones until the duration of the disappearing
-      message timer is up.
     </p>
   </Layout>
 )
