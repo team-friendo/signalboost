@@ -194,7 +194,10 @@ TSCHÜSS
 -> Entfernt dich aus diesem Kanal
 
 ENTFERNEN +491701234567
--> Entfernt +491701234567 aus dem Kanal
+-> +491701234567 als Administrator aus dem Kanal entfernt
+
+VERBIETEN @1234
+-> verbietet user @ 1234 das Senden von Nachrichten und das Empfangen von Sendungen vom Kanal.
 
 VERNICHTEN
 -> Löscht den Kanal und alle zugehörigen Daten unwiderruflich`,

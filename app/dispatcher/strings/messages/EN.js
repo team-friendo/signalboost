@@ -184,7 +184,10 @@ VOUCH LEVEL level
 -> changes the number of invites needed to join the channel
 
 REMOVE +1-555-555-5555
--> removes +1-555-555-5555 from the channel
+-> removes +1-555-555-5555 as admin from the channel
+
+BAN @1234
+-> bans user @1234 from sending messages and receiving broadcasts from the channel.
 
 GOODBYE
 -> leaves this channel

@@ -192,8 +192,11 @@ ATESTIGUANDO ACTIVADA / ADMIN / DESACTIVADA
 NIVEL DE ATESTIGUAR nivel
 -> cambia el numero de invitaciónes requeridos para unirse a este canal 
 
-QUITAR + 1-555-555-5555
--> quita + 1-555-555-5555 del canal
+QUITAR +1-555-555-5555
+-> quita + 1-555-555-5555 como admin del canal
+
+PROHIBIR @1234
+-> prohíbe al usuario @1234 enviar mensajes y recibir transmisiones del canal.
 
 ADIÓS
 -> le saca del canal

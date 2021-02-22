@@ -176,7 +176,7 @@ INVITE +33612345678, +336187654321
 AJOUTER +33612345678
 -> Ajouter +33612345678 en tant qu'admin du canal
 
-PRIVÉ bonjour admins / ~ bonjour admins
+PRIVÉ bonjour admins / ~bonjour admins
 -> envoie un message privé "bonjour admins" à tous les administrateurs de la canal
 
 ESPAÑOL / ENGLISH / DEUTSCH
@@ -191,11 +191,14 @@ SE PORTER GARANT ON / OFF / ADMIN
 NIVEAU DE PORTER GARANT niveau
 -> Modifier le nombre d'invitations nécessaires pour rejoindre le canal
 
+AUREVOIR
+-> Se désabonner du canal
+
 SUPPRIMER +33612345678
 -> Supprimer +33612345678 del canal
 
-AUREVOIR
--> Se désabonner du canal
+INTERDIRE @1234
+-> interdit à l'utilisateur @ 1234 d'envoyer des messages et de recevoir des émissions de la chaîne.
 
 DÉTRUIRE
 -> Détruire définitivement ce canal et tous les enregistrements associés`,
