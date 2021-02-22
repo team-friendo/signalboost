@@ -432,8 +432,9 @@ If you would like to destroy the channel right now, respond with DESTROY.
 
 For more information, visit signalboost.info/how-to.`,
 
-  channelDestructionFailed: phoneNumber =>
-    `Failed to destroy channel for phone number: ${phoneNumber}`,
+  channelDestructionFailed: (phoneNumber, error) =>
+    `Failed to destroy channel for phone number: ${phoneNumber}.
+ERROR: ${error}`,
 
   channelDestroyedBySystem:
     'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',

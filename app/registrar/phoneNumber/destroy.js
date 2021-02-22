@@ -253,7 +253,7 @@ const handleDestroyFailure = async (err, phoneNumber, notifyOnFailure = false) =
   logger.error(err)
   if (notifyOnFailure)
     await notifier.notifyMaintainers(
-      messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber),
+      messagesIn(defaultLanguage).notifications.channelDestructionFailed(phoneNumber, err),
     )
   return {
     status: 'ERROR',
