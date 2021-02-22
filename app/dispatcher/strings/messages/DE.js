@@ -151,7 +151,7 @@ Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können 
   // HELP
 
   help: {
-    admin: `----------------------------------------------
+    admin: `----------------------------------------------3
 BEFEHLE
 ----------------------------------------------
 
@@ -275,13 +275,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input =>
-      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
     adminOnly: 'Leider können nur Administratoren Personen zu diesem Kanal einladen.',
+    bannedInvitees: bannedNumbers =>
+      `Es tut uns leid! Die folgenden Zahlen werden aus diesem Kanal verboten: ${bannedNumbers}`,
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
-
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
         allPhoneNumbers.length
@@ -290,9 +287,12 @@ ${support}`,
   Bitte versuchen Sie erneut, EINLADEN für die folgenden Telefonnummern auszugeben:
   
   ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input =>
+      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Versuchen Sie, ${numInvitees} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal ist auf ${subscriberLimit} Abonnenten begrenzt und hat bereits ${subscriberCount} Abonnenten.`,
+    success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
   },
 
   // JOIN

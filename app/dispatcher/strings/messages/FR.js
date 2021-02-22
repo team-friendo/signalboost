@@ -276,13 +276,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input =>
-      `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
     adminOnly: 'Désolé, seuls les administrateurs peuvent inviter des personnes à cette canal.',
+    bannedInvitees: bannedNumbers =>
+      `Pardon! Les numéros suivants sont bannis à partir de ce canal: ${bannedNumbers}`,
     dbError: `Oups! Échec de l'envoi de l'invitation. Veuillez réessayer. :)`,
-
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Oups! Échec de l'envoi des invitations pour ${
         failedPhoneNumbers.length
@@ -291,9 +288,12 @@ ${support}`,
 Veuillez réessayer d'émettre INVITER pour les numéros suivants:
 
 ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input =>
+      `Oups! Échec de l'envoi de l'invitation. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Vous essayez d'inviter ${numInvitees} nouveaux abonnés? Désolé, cette canal est limitée à ${subscriberLimit} abonnés et compte déjà ${subscriberCount} abonnés.`,
+    success: n => (n === 1 ? `Invitation envoyée.` : `${n} invitations ont été envoyées.`),
   },
 
   // JOIN

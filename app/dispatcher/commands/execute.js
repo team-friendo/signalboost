@@ -425,6 +425,7 @@ const showInfo = async (channel, sender) => {
 const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   const cr = messagesIn(sender.language).commandResponses.invite
 
+  // check for valid invite conditions
   if (!channelRepository.canAddSubscribers(channel, inviteePhoneNumbers.length))
     return {
       status: statuses.ERROR,
@@ -437,6 +438,14 @@ const maybeInvite = async (channel, sender, inviteePhoneNumbers, language) => {
   if (sender.type === NONE) return { status: statuses.UNAUTHORIZED, message: cr.notSubscriber }
   if (sender.type !== ADMIN && channel.vouchMode === vouchModes.ADMIN)
     return { status: statuses.UNAUTHORIZED, message: cr.adminOnly }
+
+  // check for bans
+  const bannedNumbers = await banRepository.findBanned(channel.phoneNumber, inviteePhoneNumbers)
+  if (!isEmpty(bannedNumbers))
+    return {
+      status: statuses.ERROR,
+      message: cr.bannedInvitees(bannedNumbers),
+    }
 
   const inviteResults = await Promise.all(
     uniq(inviteePhoneNumbers).map(inviteePhoneNumber =>

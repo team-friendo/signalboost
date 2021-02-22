@@ -32,6 +32,7 @@ import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 import { deauthorizationFactory } from '../../../support/factories/deauthorization'
 import { eventFactory } from '../../../support/factories/event'
 import { eventTypes } from '../../../../app/db/models/event'
+import { banFactory } from '../../../support/factories/ban'
 const {
   auth: { maintainerPassphrase },
   signal: { diagnosticsPhoneNumber, supportPhoneNumber },
@@ -1073,11 +1074,12 @@ describe('executing commands', () => {
       message: `${localizedCmds.INVITE} ${inviteePhoneNumbers.join(',')}`,
     })
 
-    let isMemberStub, issueInviteStub, countInvitesStub
+    let isMemberStub, issueInviteStub, countInvitesStub, findBannedStub
     beforeEach(() => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       issueInviteStub = sinon.stub(inviteRepository, 'issue')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
+      findBannedStub = sinon.stub(banRepository, 'findBanned').returns(Promise.resolve([]))
     })
 
     describe('when invites would cause channel to exceed subscriber limit', () => {
@@ -1095,6 +1097,21 @@ describe('executing commands', () => {
             subscriberLimit,
             subscriberCount,
           ),
+          notifications: [],
+        })
+      })
+    })
+
+    describe('when invitee is banned', () => {
+      const dispatchable = { sdMessage, channel, sender: admin }
+      beforeEach(() => findBannedStub.returns(Promise.resolve([inviteePhoneNumbers[0]])))
+
+      it('returns an ERROR status', async () => {
+        expect(await processCommand(dispatchable)).to.eql({
+          command: commands.INVITE,
+          payload: inviteePhoneNumbers,
+          status: statuses.ERROR,
+          message: commandResponsesFor(admin).invite.bannedInvitees(inviteePhoneNumbers[0]),
           notifications: [],
         })
       })

@@ -264,12 +264,10 @@ ${support}`,
   // INVITE
 
   invite: {
-    notSubscriber,
-    invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
-    success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
     adminOnly: 'Sorry, only admins can invite people to this channel.',
+    bannedInvitees: bannedNumbers =>
+      `Oops! The following numbers are banned from this channel: ${bannedNumbers}`,
     dbError: 'Oops! Failed to issue invitation. Please try again. :)',
-
     dbErrors: (failedPhoneNumbers, inviteCount) => `Oops! Failed to issue invitations for ${
       failedPhoneNumbers.length
     } out of ${inviteCount} phone numbers.
@@ -277,9 +275,11 @@ ${support}`,
 Please trying issuing INVITE again for the following numbers:
 
 ${failedPhoneNumbers.join(',')}`,
-
+    invalidPhoneNumber: input => `Whoops! Failed to issue invitation. ${invalidPhoneNumber(input)}`,
+    notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
       `Trying to invite ${numInvitees} new subscriber(s)? Sorry, this channel is limited to ${subscriberLimit} subscribers and already has ${subscriberCount} subscribers.`,
+    success: n => (n === 1 ? `Invite issued.` : `${n} invites issued.`),
   },
 
   // JOIN
