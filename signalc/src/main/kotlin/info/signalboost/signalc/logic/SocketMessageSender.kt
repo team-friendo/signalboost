@@ -165,14 +165,14 @@ class SocketMessageSender(private val app: Application) {
 
         private fun dispatch(socketMsg: SocketResponse): Unit = when (socketMsg) {
             is SocketResponse.Cleartext ->
-                writer.println("\nMessage from [${socketMsg.sender.number}]:\n${socketMsg.body}\n")
+                writer.println("\nMessage from [${socketMsg.data.source}]:\n${socketMsg.data.dataMessage.body}\n")
             is SocketResponse.Dropped ->
                 writer.println("Dropped: ${EnvelopeType.fromInt(socketMsg.envelope.type)}")
             is SocketResponse.Empty ->
                 writer.println("Dropped: EMPTY")
             is SocketResponse.Shutdown ->
                 writer.println("Shutting down. Bye!")
-            is SocketResponse.RequestHandlingException ->
+            is SocketResponse.RequestHandlingErrorLegacy ->
                 writer.println("Error dispatching command: ${socketMsg.error}")
             else -> writer.println(socketMsg.toString())
             // TODO: we want this:

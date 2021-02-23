@@ -3,9 +3,11 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import org.whispersystems.signalservice.api.messages.SendMessageResult
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.Socket
@@ -82,13 +84,13 @@ class SocketMessageReceiver(private val app: Application) {
                 is SocketRequest.Send -> send(inMsg)  // NOTE: this signals errors in return value and Throwable
                 is SocketRequest.Subscribe -> subscribe(inMsg)
                 is SocketRequest.ParseError ->
-                    app.socketMessageSender.send(SocketResponse.RequestInvalidException(inMsg.cause, inMsg.input))
+                    app.socketMessageSender.send(SocketResponse.RequestInvalidError(inMsg.error, inMsg.input))
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
             println("ERROR executing command $inMsg from socket $socketHash: $e")
             app.socketMessageSender.send(
-                SocketResponse.RequestHandlingException(e, inMsg)
+                SocketResponse.RequestHandlingErrorLegacy(e, inMsg)
             )
         }
     }
@@ -96,50 +98,42 @@ class SocketMessageReceiver(private val app: Application) {
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     // private suspend fun send(sender: String, recipient: String, msg: String): Unit {
     private suspend fun send(sendRequest: SocketRequest.Send): Unit {
-        val (_, recipientAddress, messageBody) = sendRequest
+        val (_, _, recipientAddress, messageBody) = sendRequest
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
             ?: return app.socketMessageSender.send(
-                SocketResponse.RequestHandlingException(
+                SocketResponse.RequestHandlingErrorLegacy(
                     Error("Can't send to ${sendRequest.username}: not registered."),
                     sendRequest
                 )
             )
-        val sendResult = app.signalMessageSender.send(
+        val sendResult: SendMessageResult = app.signalMessageSender.send(
             senderAccount,
             recipientAddress.asSignalAddress(),
             messageBody
         )
-        // TODO: handle following cases:
-        // - sendResult.success (yay!)
-        // - sendResult.identityFailure (b/c safety number change)
-        // - sendResult.isUnregisteredFailure (b/c user not on signal)
-        // - sendResult.isNetworkFailure (likely retry?)
-        return if (sendResult.success != null) {
-            println("Sent message to ${recipientAddress.number}")
-            app.socketMessageSender.send(SocketResponse.SendSuccess)
+        when(sendResult.type()){
+            SendResultType.SUCCESS -> app.socketMessageSender.send(SocketResponse.SendSuccessLegacy)
+            else -> app.socketMessageSender.send(SocketResponse.SendErrorLegacy)
         }
-        else {
-            println("Failed to send $messageBody to $recipientAddress.number.")
-            app.socketMessageSender.send(SocketResponse.SendException)
-        }
+        // TODO:
+        //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
+        //  - should we do any special handling for non-success cases?
+        // app.socketMessageSender.send(SocketResponse.SendResult.of(sendRequest, sendResult))
     }
 
 
     private suspend fun subscribe(subscribeRequest: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
-        val (username) = subscribeRequest
+        val (_,username) = subscribeRequest
         println("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
             ?: return run {
                 app.socketMessageSender.send(
-                    SocketResponse.RequestHandlingException(
-                        Error("Can't subscribe to messages for $username: not registered."),
-                        subscribeRequest,
-                    )
+                    SocketResponse.SubscriptionFailedLegacy(SignalcError.UnregisteredUser(username))
                 )
             }
 
         val subscribeJob = app.signalMessageReceiver.subscribe(account)
-        app.socketMessageSender.send(SocketResponse.SubscriptionSucceeded)
+        app.socketMessageSender.send(SocketResponse.SubscriptionSuccessLegacy)
         println("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
@@ -149,11 +143,11 @@ class SocketMessageReceiver(private val app: Application) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
                         println("...error subscribing to messages for ${account.username}: ${error}.")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionFailed(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionFailedLegacy(error))
                     }
                     else -> {
                         println("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionDisruptedLegacy(error))
                         delay(retryDelay)
                         subscribe(subscribeRequest, retryDelay * 2)
                     }

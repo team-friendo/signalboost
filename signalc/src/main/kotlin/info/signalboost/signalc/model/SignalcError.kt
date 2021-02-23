@@ -6,4 +6,5 @@ object SignalcError {
     ): Exception(error.message, error)
 
     class WriterMissing(message: String): Exception(message)
+    class UnregisteredUser(username: String): Exception("Can't subscribe to messages for $username: not registered.")
 }

@@ -2,15 +2,19 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
+import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
+import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
+import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.cleartext
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
+import info.signalboost.signalc.util.TimeUtil.nowInMillis
 import io.kotest.core.spec.style.FreeSpec
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,9 +25,11 @@ import org.signal.libsignal.metadata.ProtocolDuplicateMessageException
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
+import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.UNKNOWN_VALUE
+import java.util.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -54,6 +60,8 @@ class SignalMessageReceiverTest : FreeSpec({
         "#receiveMessages" - {
             val recipientAccount = genVerifiedAccount()
             val senderAddress = genSignalServiceAddress()
+            val now = nowInMillis()
+            val expiryTime = genInt()
             // We cancel the `listen` job after a very short duration so we don't iterate
             // endlessly through the infinite `while` loop that calls `messagePipe#read`
             val jobDuration = 1.milliseconds
@@ -62,6 +70,7 @@ class SignalMessageReceiverTest : FreeSpec({
                 val mockEnvelope = mockk<SignalServiceEnvelope>() {
                     every { type } returns envelopeType
                     every { sourceAddress } returns senderAddress
+                    every { timestamp } returns now
                 }
 
                 val mockMessagePipe = mockk<SignalServiceMessagePipe> {
@@ -88,8 +97,8 @@ class SignalMessageReceiverTest : FreeSpec({
                     coVerify {
                         app.socketMessageSender.send(
                             dropped(
-                                senderAddress.asSocketAddress(),
-                                recipientAccount.asSocketAddress(),
+                                senderAddress.asSerializable(),
+                                recipientAccount.asSerializable(),
                                 envelope
                             )
                         )
@@ -107,7 +116,11 @@ class SignalMessageReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     }  returns  mockk {
-                        every { dataMessage.orNull()?.body?.orNull() } returns secretMessage
+                        every { dataMessage.orNull() } returns mockk<SignalServiceDataMessage>{
+                            every { expiresInSeconds } returns expiryTime
+                            every { timestamp } returns now
+                            every { body.orNull() } returns secretMessage
+                        }
                     }
 
                     "relays Cleartext to socket sender" {
@@ -118,8 +131,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 cleartext(
-                                    senderAddress.asSocketAddress(),
-                                    recipientAccount.asSocketAddress(),
+                                    senderAddress.asSerializable(),
+                                    recipientAccount.asSerializable(),
                                     secretMessage
                                 )
                             )
@@ -164,8 +177,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 decryptionError(
-                                    senderAddress.asSocketAddress(),
-                                    recipientAccount.asSocketAddress(),
+                                    senderAddress.asSerializable(),
+                                    recipientAccount.asSerializable(),
                                     error
                                 )
                             )

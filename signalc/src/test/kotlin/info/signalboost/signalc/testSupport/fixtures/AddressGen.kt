@@ -1,6 +1,6 @@
 package info.signalboost.signalc.testSupport.fixtures
 
-import info.signalboost.signalc.model.SocketAddress
+import info.signalboost.signalc.model.SerializableAddress
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 import kotlin.random.Random
@@ -20,8 +20,8 @@ object AddressGen {
             genPhoneNumber(),
         )
 
-    fun genSocketAddress(verified: Boolean = true): SocketAddress =
-        SocketAddress(
+    fun genSerializableAddress(verified: Boolean = true): SerializableAddress =
+        SerializableAddress(
             genPhoneNumber(),
             if(verified) genUuidStr() else null
         )

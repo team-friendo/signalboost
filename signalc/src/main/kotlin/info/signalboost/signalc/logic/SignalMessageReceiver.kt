@@ -2,7 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.model.SocketAddress.Companion.asSocketAddress
+import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
 import kotlinx.coroutines.*
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
@@ -85,25 +85,32 @@ class SignalMessageReceiver(private val app: Application) {
         // Attempt to decrypt envelope in a new coroutine within CPU-intensive thread-pool
         // (don't suspend execution in the current coroutine or consume IO threadpool),
         // then relay result to socket message sender for handling.
-        val (sender, recipient) = Pair(envelope.asSocketAddress(), account.asSocketAddress())
+        val (sender, recipient) = Pair(envelope.asSerializable(), account.asSerializable())
         app.coroutineScope.launch(Dispatchers.Default) {
             try {
-                val cleartext = cipherOf(account).decrypt(envelope).dataMessage.orNull()?.body?.orNull()
-                cleartext
+                val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
+                dataMessage?.body?.orNull()
                     ?.let {
                         app.socketMessageSender.send(
-                        SocketResponse.Cleartext(sender, recipient, it)
+                            SocketResponse.Cleartext.of(
+                                sender,
+                                recipient,
+                                it,
+                                emptyList(), //TODO: actually handle attachments!
+                                dataMessage.expiresInSeconds,
+                                dataMessage.timestamp,
+                            )
                         )
                     }
                     ?: app.socketMessageSender.send(SocketResponse.Empty)
             } catch(e: Throwable) {
-                app.socketMessageSender.send(SocketResponse.DecryptionException(sender, recipient, e))
+                app.socketMessageSender.send(SocketResponse.DecryptionError(sender, recipient, e))
             }
         }
     }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        app.socketMessageSender.send(SocketResponse.Dropped(envelope.asSocketAddress(), account.asSocketAddress(), envelope))
+        app.socketMessageSender.send(SocketResponse.Dropped(envelope.asSerializable(), account.asSerializable(), envelope))
     }
 }
 
