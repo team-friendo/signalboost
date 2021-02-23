@@ -7,18 +7,18 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 
 @Serializable
-data class SocketAddress(
+data class SerializableAddress(
     val number: String?,
     val uuid: String? = null,
 ) {
    companion object {
-       fun SignalServiceAddress.asSocketAddress(): SocketAddress = SocketAddress(
+       fun SignalServiceAddress.asSerializable(): SerializableAddress = SerializableAddress(
            this.number.orNull(),
            this.uuid.orNull().toString(),
        )
 
-       fun SignalServiceEnvelope.asSocketAddress() = sourceAddress.asSocketAddress()
-       fun VerifiedAccount.asSocketAddress() = address.asSocketAddress()
+       fun SignalServiceEnvelope.asSerializable() = sourceAddress.asSerializable()
+       fun VerifiedAccount.asSerializable() = address.asSerializable()
    }
 
    fun asSignalAddress(): SignalServiceAddress = SignalServiceAddress(

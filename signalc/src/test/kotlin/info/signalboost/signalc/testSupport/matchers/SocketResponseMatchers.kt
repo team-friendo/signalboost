@@ -12,38 +12,44 @@ import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 object SocketResponseMatchers {
 
     fun MockKMatcherScope.cleartext(
-        sender: SocketAddress,
-        recipient: SocketAddress,
+        sender: SerializableAddress,
+        recipient: SerializableAddress,
         body: String,
     ): SocketResponse.Cleartext = match {
-        it.sender == sender &&
-            it.recipient == recipient &&
-            it.body == body
+        it.data.source == sender &&
+            it.data.username == recipient.number &&
+            it.data.dataMessage.body == body
     }
 
-    fun MockKMatcherScope.commandExecutionException(
+    fun MockKMatcherScope.requestHandlingError(
         error: Throwable,
         command: SocketRequest,
-    ): SocketResponse.RequestHandlingException = match {
+    ): SocketResponse.RequestHandlingErrorLegacy = match {
         it.request == command &&
             it.error.javaClass == error.javaClass &&
             it.error.message == error.message
     }
 
+    fun MockKMatcherScope.subscriptionFailed(
+        error: Throwable,
+    ): SocketResponse.SubscriptionFailedLegacy = match {
+        it.error.javaClass == error.javaClass && it.error.message == error.message
+    }
+
 
     fun MockKMatcherScope.decryptionError(
-        sender: SocketAddress,
-        recipient: SocketAddress,
+        sender: SerializableAddress,
+        recipient: SerializableAddress,
         cause: Throwable
-    ): SocketResponse.DecryptionException = match {
+    ): SocketResponse.DecryptionError = match {
         it.sender == sender &&
             it.recipient == recipient &&
             it.error == cause
     }
 
     fun MockKMatcherScope.dropped(
-        sender: SocketAddress,
-        recipient: SocketAddress,
+        sender: SerializableAddress,
+        recipient: SerializableAddress,
         envelope: SignalServiceEnvelope,
     ): SocketResponse.Dropped = match {
         it.sender == sender &&
@@ -58,24 +64,24 @@ object SocketResponseMatchers {
     }
 
     fun MockKMatcherScope.shouldBeLike(
-        other: SocketResponse.RequestHandlingException,
-    ): SocketResponse.RequestHandlingException = match {
+        other: SocketResponse.RequestHandlingErrorLegacy,
+    ): SocketResponse.RequestHandlingErrorLegacy = match {
         it.error.message == other.error.message &&
         it.request == other.request
     }
 
-    fun throwLike(other: SocketResponse.RequestHandlingException) = object:
-        Matcher<SocketResponse.RequestHandlingException> {
-        override fun test(value: SocketResponse.RequestHandlingException) = MatcherResult(
+    fun throwLike(other: SocketResponse.RequestHandlingErrorLegacy) = object:
+        Matcher<SocketResponse.RequestHandlingErrorLegacy> {
+        override fun test(value: SocketResponse.RequestHandlingErrorLegacy) = MatcherResult(
             value.error.message == other.error.message && value.request == other.request,
             "Request $value should have same error message and request as $other",
             "Request $value should not have same error message and request as $other",
         )
     }
 
-    fun SocketResponse.RequestHandlingException.shouldThrowLike(other: SocketResponse.RequestHandlingException) =
+    fun SocketResponse.RequestHandlingErrorLegacy.shouldThrowLike(other: SocketResponse.RequestHandlingErrorLegacy) =
         this should throwLike(other)
 
-    fun SocketResponse.RequestHandlingException.shouldNotThrowLike(other: SocketResponse.RequestHandlingException) =
+    fun SocketResponse.RequestHandlingErrorLegacy.shouldNotThrowLike(other: SocketResponse.RequestHandlingErrorLegacy) =
         this shouldNot throwLike(other)
 }

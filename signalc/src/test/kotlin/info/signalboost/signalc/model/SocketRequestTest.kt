@@ -1,172 +1,344 @@
 package info.signalboost.signalc.model
 
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSerializableAddress
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genTrustRequest
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genCaptchaToken
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genFingerprint
 import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genVerificationCode
+import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.beInstanceOf
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import kotlinx.serialization.SerializationException
 
 class SocketRequestTest : FreeSpec({
     val senderNumber = genPhoneNumber()
+    val requestId = genUuidStr()
+    val generatedUuid = genUuidStr()
+
     fun String.flatten() = this.trimMargin().replace("\n", "")
 
-    "serialization" - {
+    beforeSpec {
+        mockkObject(KeyUtil)
+        every { KeyUtil.genUuidStr() } returns generatedUuid
+    }
 
-        "SEND command" - {
-            val recipientAddress = SocketAddress(
-                number = genPhoneNumber(),
-                uuid = genUuidStr(),
-            )
-            val body = genPhrase()
+    afterSpec {
+        unmockkAll()
+    }
 
-            val model = SocketRequest.Send(
-                username =  senderNumber,
-                recipientAddress = recipientAddress,
-                messageBody = body,
+    "deserialization" - {
+
+        "ABORT request" - {
+            "decodes from JSON" {
+                SocketRequest.fromJson(
+                    """{"type":"abort","id":"$requestId"}"""
+                ) shouldBe SocketRequest.Abort(requestId)
+            }
+        }
+
+        "CLOSE request" - {
+            "decodes from JSON" {
+                SocketRequest.fromJson(
+                    """{"type":"close","id":"$requestId"}"""
+                ) shouldBe SocketRequest.Close(requestId)
+            }
+        }
+
+        "REGISTER request" - {
+
+            "with all fields present" - {
+                val request = SocketRequest.Register(
+                    id = requestId,
+                    username = senderNumber,
+                    captchaToken = genCaptchaToken(),
+                )
+
+                "decodes from JSON" {
+                    val json = """
+                    |{
+                      |"id":"$requestId",
+                      |"type":"register",
+                      |"username":"${request.username}",
+                      |"captchaToken":"${request.captchaToken}"              
+                    |}""".flatten()
+
+                    SocketRequest.fromJson(json) shouldBe request
+                }
+            }
+
+            "with missing captcha token" - {
+                val request = SocketRequest.Register(
+                    id = requestId,
+                    username = senderNumber,
+                )
+
+                "decodes from JSON" {
+                    val json = """
+                    |{
+                      |"id":"$requestId",
+                      |"type":"register",
+                      |"username":"${request.username}"
+                    |}""".flatten()
+
+                    SocketRequest.fromJson(json) shouldBe request
+                }
+            }
+
+            "with missing id" - {
+                val request = SocketRequest.Register(
+                    id = generatedUuid,
+                    username = senderNumber,
+                    captchaToken = genCaptchaToken(),
+                )
+
+                "decodes from JSON" {
+                    val json = """
+                    |{
+                      |"type":"register",
+                      |"username":"${request.username}",
+                      |"captchaToken":"${request.captchaToken}"
+                    |}""".flatten()
+
+                    SocketRequest.fromJson(json) shouldBe request
+                }
+            }
+        }
+
+        "SEND request" - {
+
+            val request = SocketRequest.Send(
+                id = requestId,
+                username =  genPhoneNumber(),
+                recipientAddress = genSerializableAddress(),
+                messageBody = genPhrase(),
                 attachments = emptyList(),
             )
 
-            val modelWithNullUuid = model.copy(
-                recipientAddress = recipientAddress.copy(
+            val requestWithNullId = request.copy(
+                recipientAddress = request.recipientAddress.copy(
                     uuid = null
                 )
             )
 
-            val json = """
-            |{
-               |"type":"send",
-               |"username":"$senderNumber",
-               |"recipientAddress":{
-                  |"number":"${recipientAddress.number}",
-                  |"uuid":"${recipientAddress.uuid}"
-               |},
-               |"messageBody":"$body",
-               |"attachments":[]
-            |}""".flatten()
-
-            val jsonWithNoUuid = """
-            |{
-               |"type":"send",
-               |"username":"$senderNumber",
-               |"recipientAddress":{
-                  |"number":"${recipientAddress.number}"
-               |},
-               |"messageBody":"$body",
-               |"attachments":[]
-            |}""".flatten()
-
-            val jsonWithNullUuid = """
-            |{
-               |"type":"send",
-               |"username":"$senderNumber",
-               |"recipientAddress":{
-                  |"number":"${recipientAddress.number}",
-                  |"uuid":null
-               |},
-               |"messageBody":"$body",
-               |"attachments":[]
-            |}""".flatten()
-
-
             "decodes from JSON" {
-                SocketRequest.fromJson(json) shouldBe model
+                val json = """
+                |{
+                  |"type":"send",
+                  |"id":"$requestId",
+                  |"username":"${request.username}",
+                  |"recipientAddress":{
+                    |"number":"${request.recipientAddress.number}",
+                    |"uuid":"${request.recipientAddress.uuid}"
+                  |},
+                |"messageBody":"${request.messageBody}",
+                |"attachments":[]
+                |}""".flatten()
+
+                SocketRequest.fromJson(json) shouldBe request
             }
 
             "decodes from JSON with missing uuid field" {
-                SocketRequest.fromJson(jsonWithNoUuid) shouldBe modelWithNullUuid
+                val jsonWithNoUuid = """
+                |{
+                   |"type":"send",
+                   |"id":"$requestId",
+                   |"username":"${request.username}",
+                   |"recipientAddress":{
+                      |"number":"${request.recipientAddress.number}"
+                   |},
+                   |"messageBody":"${request.messageBody}",
+                   |"attachments":[]
+                |}""".flatten()
+
+                SocketRequest.fromJson(jsonWithNoUuid) shouldBe requestWithNullId
             }
 
             "decodes from JSON with null uuid field" {
-                SocketRequest.fromJson(jsonWithNullUuid) shouldBe modelWithNullUuid
+                val jsonWithNullUuid = """
+                |{
+                   |"type":"send",
+                   |"id":"$requestId",
+                   |"username":"${request.username}",
+                   |"recipientAddress":{
+                      |"number":"${request.recipientAddress.number}",
+                      |"uuid":null
+                   |},
+                   |"messageBody":"${request.messageBody}",
+                   |"attachments":[]
+                |}""".flatten()
+
+                SocketRequest.fromJson(jsonWithNullUuid) shouldBe requestWithNullId
             }
 
-            "encodes to JSON" {
-                model.toJson() shouldBe json
-            }
-
-            "encodes to JSON with null uuid field" {
-                modelWithNullUuid.toJson() shouldBe jsonWithNoUuid
-            }
         }
 
-        "SUBSCRIBE command" - {
-
-            val model = SocketRequest.Subscribe(senderNumber)
-
-            val json = """
-                |{
-                   |"type":"subscribe",
-                   |"username":"$senderNumber"
-                |}
-            """.flatten()
+        "SET EXPIRATION request" - {
+            val request = SocketRequest.SetExpiration(
+                id = requestId,
+                username = senderNumber,
+                recipientAddress = genSerializableAddress(),
+                expiresInSeconds = genInt()
+            )
 
             "decodes from JSON" {
-                model.toJson() shouldBe json
+                val json = """
+                |{
+                  |"type":"set_expiration",
+                  |"id":"$requestId",
+                  |"username":"${request.username}",
+                  |"recipientAddress":{
+                     |"number":"${request.recipientAddress.number}",
+                     |"uuid":"${request.recipientAddress.uuid}"
+                  |},
+                  |"expiresInSeconds":"${request.expiresInSeconds}"
+                |}""".flatten()
+
+                SocketRequest.fromJson(json) shouldBe request
+            }
+        }
+
+        "SUBSCRIBE request" - {
+            val request = SocketRequest.Subscribe(
+                requestId,
+                senderNumber,
+            )
+
+            "decodes from JSON" {
+                val json = """
+                |{
+                   |"type":"subscribe",
+                   |"id":"$requestId",
+                   |"username":"$senderNumber"
+                |}""".flatten()
+
+                SocketRequest.fromJson(json) shouldBe request
+            }
+        }
+
+        "TRUST request" - {
+            val request = genTrustRequest(
+                id = requestId,
+                username = senderNumber,
+            )
+
+            "decodes JSON" {
+                val json = """
+                |{
+                  |"type":"trust",
+                  |"id":"$requestId",
+                  |"username":"${request.username}",
+                  |"recipientAddress":{
+                     |"number":"${request.recipientAddress.number}",
+                     |"uuid":"${request.recipientAddress.uuid}"
+                  |},
+                  |"fingerprint":"${request.fingerprint}"
+                |}""".flatten()
+
+                SocketRequest.fromJson(json) shouldBe request
+            }
+        }
+
+        "UNSUBSCRIBE request" - {
+            val request = SocketRequest.Unsubscribe(
+                id = requestId,
+                username = senderNumber
+            )
+
+            "decodes from JSON" {
+                val json = """
+                |{
+                   |"type":"unsubscribe",
+                   |"id":"$requestId",
+                   |"username":"$senderNumber"
+                |}""".flatten()
+
+                SocketRequest.fromJson(json) shouldBe request
+            }
+        }
+
+        "VERIFY request" - {
+            "with all fields" - {
+                val request = SocketRequest.Verify(
+                    id = requestId,
+                    username = senderNumber,
+                    code = genVerificationCode(),
+                )
+
+                "decodes from JSON" {
+                    val json = """
+                    |{
+                       |"type":"verify",
+                       |"id":"$requestId",
+                       |"username":"${request.username}",
+                       |"code":"${request.code}"
+                    |}""".flatten()
+
+                    SocketRequest.fromJson(json) shouldBe request
+                }
             }
 
-            "encodes to JSON" {
-                SocketRequest.fromJson(json) shouldBe model
+            "with missing id field" - {
+                val request = SocketRequest.Verify(
+                    id = generatedUuid,
+                    username = senderNumber,
+                    code = genVerificationCode(),
+                )
+
+                "decodes from JSON and generates id field" {
+                    val json = """
+                    |{
+                       |"type":"verify",
+                       |"username":"${request.username}",
+                       |"code":"${request.code}"
+                    |}""".flatten()
+
+                    SocketRequest.fromJson(json) shouldBe request
+                }
+            }
+        }
+
+        "VERSION request" - {
+            "decodes from JSON" {
+                SocketRequest.fromJson(
+                    """{"type":"version","id":"$requestId"}"""
+                ) shouldBe SocketRequest.Version(requestId)
             }
         }
 
 
-        "invalid input" - {
+        "invalid requests" - {
 
             "bad JSON" - {
-                val json = """{"type":"foo"}"""
-                val err = SocketRequest.fromJson(json) as SocketRequest.ParseError
+                val badJson = """{"type":"foo"}"""
+                val err = SocketRequest.fromJson(badJson) as SocketRequest.ParseError
 
                 "returns parse error"  {
-                    err.cause should beInstanceOf<SerializationException>()
-                    err.cause.message shouldContain "Polymorphic serializer was not found for class discriminator 'foo'"
-                    err.input shouldBe json
+                    err.error should beInstanceOf<SerializationException>()
+                    err.error.message shouldContain "Polymorphic serializer was not found for class discriminator 'foo'"
+                    err.input shouldBe badJson
                 }
             }
 
             "not JSON" - {
-                val str = "foo"
-                val err = SocketRequest.fromJson(str) as SocketRequest.ParseError
+                val notJson = "foo"
+                val err = SocketRequest.fromJson(notJson) as SocketRequest.ParseError
 
                 "returns parse error" {
-                    err.cause should beInstanceOf<SerializationException>()
-                    err.cause.message shouldContain "Expected class kotlinx.serialization.json.JsonObject as the serialized body"
-                    err.input shouldBe str
+                    err.error should beInstanceOf<SerializationException>()
+                    err.error.message shouldContain "Expected class kotlinx.serialization.json.JsonObject as the serialized body"
+                    err.input shouldBe notJson
                 }
             }
-        }
-
-
-        "special commands" - {
-            "CLOSE" - {
-                val model = SocketRequest.Close
-                val json = """{"type":"close"}"""
-
-                "decodes from JSON" {
-                    SocketRequest.fromJson(json) shouldBe model
-                }
-
-                "encodes to JSON" {
-                    model.toJson() shouldBe json
-                }
-            }
-
-            "ABORT" - {
-                val model = SocketRequest.Abort
-                val json = """{"type":"abort"}"""
-
-                "decodes from JSON" {
-                    SocketRequest.fromJson(json) shouldBe model
-                }
-
-                "encodes to JSON" {
-                    model.toJson() shouldBe json
-                }
-            }
-
         }
     }
 })

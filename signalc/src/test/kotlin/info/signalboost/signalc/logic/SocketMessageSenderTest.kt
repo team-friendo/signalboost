@@ -6,7 +6,7 @@ import info.signalboost.signalc.model.*
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleartext
-import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingException
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDropped
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genShutdown
 import io.kotest.core.spec.style.FreeSpec
@@ -127,7 +127,7 @@ class SocketMessageSenderTest : FreeSpec({
                     "writes serialized message to socket" {
                         app.socketMessageSender.send(msg)
                         verify {
-                            mockWriter.println("\nMessage from [${msg.sender.number}]:\n${msg.body}\n")
+                            mockWriter.println("\nMessage from [${msg.data.source}]:\n${msg.data.dataMessage.body}\n")
                         }
                     }
                 }
@@ -168,13 +168,13 @@ class SocketMessageSenderTest : FreeSpec({
                 }
 
                 "with a command execution error" - {
-                    val msg = genRequestHandlingException()
+                    val msg = genRequestHandlingError()
 
                     "writes serialized message to socket" {
                         app.socketMessageSender.send(msg)
                         delay(sendDelay)
                         verify {
-                            mockWriter.println("Error dispatching command: ${msg.error}")
+                            mockWriter.println(msg.toString())
                         }
                     }
                 }
@@ -182,10 +182,10 @@ class SocketMessageSenderTest : FreeSpec({
                 "with a miscelaneous message" - {
 
                     "writes it to socket" {
-                        app.socketMessageSender.send(SocketResponse.SendSuccess)
+                        app.socketMessageSender.send(SocketResponse.SendSuccessLegacy)
                         delay(sendDelay)
                         verify {
-                            mockWriter.println(SocketResponse.SendSuccess.toString())
+                            mockWriter.println(SocketResponse.SendSuccessLegacy.toString())
                         }
                     }
                 }
