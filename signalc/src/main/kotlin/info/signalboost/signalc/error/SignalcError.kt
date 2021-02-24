@@ -1,4 +1,4 @@
-package info.signalboost.signalc.model
+package info.signalboost.signalc.error
 
 object SignalcError {
     class MessagePipeNotCreated(

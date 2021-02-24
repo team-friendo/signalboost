@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
