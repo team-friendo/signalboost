@@ -4,7 +4,13 @@ import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSerializableAddress
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSetExpiration
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genTrustRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genUnsubscribe
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerify
 import info.signalboost.signalc.testSupport.fixtures.StringGen.genCaptchaToken
 import info.signalboost.signalc.testSupport.fixtures.StringGen.genFingerprint
 import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
@@ -57,16 +63,12 @@ class SocketRequestTest : FreeSpec({
         "REGISTER request" - {
 
             "with all fields present" - {
-                val request = SocketRequest.Register(
-                    id = requestId,
-                    username = senderNumber,
-                    captchaToken = genCaptchaToken(),
-                )
+                val request = genRegisterRequest()
 
                 "decodes from JSON" {
                     val json = """
                     |{
-                      |"id":"$requestId",
+                      |"id":"${request.id}",
                       |"type":"register",
                       |"username":"${request.username}",
                       |"captchaToken":"${request.captchaToken}"              
@@ -77,15 +79,12 @@ class SocketRequestTest : FreeSpec({
             }
 
             "with missing captcha token" - {
-                val request = SocketRequest.Register(
-                    id = requestId,
-                    username = senderNumber,
-                )
+                val request = genRegisterRequest(captchaToken = null)
 
                 "decodes from JSON" {
                     val json = """
                     |{
-                      |"id":"$requestId",
+                      |"id":"${request.id}",
                       |"type":"register",
                       |"username":"${request.username}"
                     |}""".flatten()
@@ -95,11 +94,7 @@ class SocketRequestTest : FreeSpec({
             }
 
             "with missing id" - {
-                val request = SocketRequest.Register(
-                    id = generatedUuid,
-                    username = senderNumber,
-                    captchaToken = genCaptchaToken(),
-                )
+                val request = genRegisterRequest(id = generatedUuid)
 
                 "decodes from JSON" {
                     val json = """
@@ -115,15 +110,7 @@ class SocketRequestTest : FreeSpec({
         }
 
         "SEND request" - {
-
-            val request = SocketRequest.Send(
-                id = requestId,
-                username =  genPhoneNumber(),
-                recipientAddress = genSerializableAddress(),
-                messageBody = genPhrase(),
-                attachments = emptyList(),
-            )
-
+            val request = genSendRequest()
             val requestWithNullId = request.copy(
                 recipientAddress = request.recipientAddress.copy(
                     uuid = null
@@ -134,7 +121,7 @@ class SocketRequestTest : FreeSpec({
                 val json = """
                 |{
                   |"type":"send",
-                  |"id":"$requestId",
+                  |"id":"${request.id}",
                   |"username":"${request.username}",
                   |"recipientAddress":{
                     |"number":"${request.recipientAddress.number}",
@@ -151,7 +138,7 @@ class SocketRequestTest : FreeSpec({
                 val jsonWithNoUuid = """
                 |{
                    |"type":"send",
-                   |"id":"$requestId",
+                   |"id":"${request.id}",
                    |"username":"${request.username}",
                    |"recipientAddress":{
                       |"number":"${request.recipientAddress.number}"
@@ -167,7 +154,7 @@ class SocketRequestTest : FreeSpec({
                 val jsonWithNullUuid = """
                 |{
                    |"type":"send",
-                   |"id":"$requestId",
+                   |"id":"${request.id}",
                    |"username":"${request.username}",
                    |"recipientAddress":{
                       |"number":"${request.recipientAddress.number}",
@@ -183,18 +170,13 @@ class SocketRequestTest : FreeSpec({
         }
 
         "SET EXPIRATION request" - {
-            val request = SocketRequest.SetExpiration(
-                id = requestId,
-                username = senderNumber,
-                recipientAddress = genSerializableAddress(),
-                expiresInSeconds = genInt()
-            )
+            val request = genSetExpiration()
 
             "decodes from JSON" {
                 val json = """
                 |{
                   |"type":"set_expiration",
-                  |"id":"$requestId",
+                  |"id":"${request.id}",
                   |"username":"${request.username}",
                   |"recipientAddress":{
                      |"number":"${request.recipientAddress.number}",
@@ -208,17 +190,14 @@ class SocketRequestTest : FreeSpec({
         }
 
         "SUBSCRIBE request" - {
-            val request = SocketRequest.Subscribe(
-                requestId,
-                senderNumber,
-            )
+            val request = genSubscribeRequest()
 
             "decodes from JSON" {
                 val json = """
                 |{
                    |"type":"subscribe",
-                   |"id":"$requestId",
-                   |"username":"$senderNumber"
+                   |"id":"${request.id}",
+                   |"username":"${request.username}"
                 |}""".flatten()
 
                 SocketRequest.fromJson(json) shouldBe request
@@ -226,16 +205,13 @@ class SocketRequestTest : FreeSpec({
         }
 
         "TRUST request" - {
-            val request = genTrustRequest(
-                id = requestId,
-                username = senderNumber,
-            )
+            val request = genTrustRequest()
 
             "decodes JSON" {
                 val json = """
                 |{
                   |"type":"trust",
-                  |"id":"$requestId",
+                  |"id":"${request.id}",
                   |"username":"${request.username}",
                   |"recipientAddress":{
                      |"number":"${request.recipientAddress.number}",
@@ -249,17 +225,14 @@ class SocketRequestTest : FreeSpec({
         }
 
         "UNSUBSCRIBE request" - {
-            val request = SocketRequest.Unsubscribe(
-                id = requestId,
-                username = senderNumber
-            )
+            val request = genUnsubscribe()
 
             "decodes from JSON" {
                 val json = """
                 |{
                    |"type":"unsubscribe",
-                   |"id":"$requestId",
-                   |"username":"$senderNumber"
+                   |"id":"${request.id}",
+                   |"username":"${request.username}"
                 |}""".flatten()
 
                 SocketRequest.fromJson(json) shouldBe request
@@ -268,17 +241,13 @@ class SocketRequestTest : FreeSpec({
 
         "VERIFY request" - {
             "with all fields" - {
-                val request = SocketRequest.Verify(
-                    id = requestId,
-                    username = senderNumber,
-                    code = genVerificationCode(),
-                )
+                val request = genVerify()
 
                 "decodes from JSON" {
                     val json = """
                     |{
                        |"type":"verify",
-                       |"id":"$requestId",
+                       |"id":"${request.id}",
                        |"username":"${request.username}",
                        |"code":"${request.code}"
                     |}""".flatten()
@@ -288,11 +257,7 @@ class SocketRequestTest : FreeSpec({
             }
 
             "with missing id field" - {
-                val request = SocketRequest.Verify(
-                    id = generatedUuid,
-                    username = senderNumber,
-                    code = genVerificationCode(),
-                )
+                val request = genVerify(id = generatedUuid,)
 
                 "decodes from JSON and generates id field" {
                     val json = """

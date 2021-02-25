@@ -108,7 +108,7 @@ class SocketMessageReceiverTest : FreeSpec({
             "SEND request" - {
                 val messageBody = "hi there"
                 val sendRequest = genSendRequest(
-                    senderNumber = senderAccount.username,
+                    username = senderAccount.username,
                     recipientAddress = recipientAccount.address.asSerializable(),
                     messageBody = messageBody,
                 )
