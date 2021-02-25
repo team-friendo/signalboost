@@ -73,36 +73,62 @@ class SocketMessageReceiver(private val app: Application) {
      *******************/
 
     private suspend fun dispatch(socketMessage: String, socketHash: SocketHashCode) {
-        val inMsg = SocketRequest.fromJson(socketMessage)
+        val request = SocketRequest.fromJson(socketMessage)
         try {
-            when (inMsg) {
-                is SocketRequest.Abort -> {
-                    println("Received `abort`. exiting.")
-                    app.socketMessageSender.send(SocketResponse.Shutdown(socketHash))
-                    app.stop()
-                }
+            when (request) {
+                is SocketRequest.Abort -> abort(request, socketHash)
                 is SocketRequest.Close -> disconnect(socketHash)
-                is SocketRequest.Send -> send(inMsg)  // NOTE: this signals errors in return value and Throwable
-                is SocketRequest.Subscribe -> subscribe(inMsg)
-                is SocketRequest.ParseError ->
-                    app.socketMessageSender.send(SocketResponse.RequestInvalidError(inMsg.error, inMsg.input))
+                is SocketRequest.ParseError -> parseError(request)
+                is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
+                is SocketRequest.Subscribe -> subscribe(request)
+                // TODO://////////////////////////////////////////////
+                is SocketRequest.Register -> unimplemented(request)
+                is SocketRequest.SetExpiration -> unimplemented(request)
+                is SocketRequest.Trust -> unimplemented(request)
+                is SocketRequest.Unsubscribe -> unimplemented(request)
+                is SocketRequest.Verify -> unimplemented(request)
+                is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
-            println("ERROR executing command $inMsg from socket $socketHash: $e")
+            println("ERROR executing command $request from socket $socketHash: $e")
             app.socketMessageSender.send(
-                SocketResponse.RequestHandlingErrorLegacy(e, inMsg)
+                SocketResponse.RequestHandlingError(request.id(), e, request)
             )
         }
     }
 
+    private suspend fun unimplemented(request: SocketRequest) {
+        app.socketMessageSender.send(
+            SocketResponse.RequestHandlingError(
+                request.id(),
+                Exception("handler for ${request.javaClass.name} not implemented yet!"),
+                request
+            )
+        )
+    }
+
+
+    private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
+        println("Received `abort`. Exiting.")
+        app.socketMessageSender.send(SocketResponse.AbortWarning(request.id, socketHash))
+        app.stop()
+    }
+
+
+    private suspend fun parseError(request: SocketRequest.ParseError) {
+        app.socketMessageSender.send(
+            SocketResponse.RequestInvalidError(request.error, request.input)
+        )
+    }
+
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
-    // private suspend fun send(sender: String, recipient: String, msg: String): Unit {
-    private suspend fun send(sendRequest: SocketRequest.Send): Unit {
+    private suspend fun send(sendRequest: SocketRequest.Send) {
         val (_, _, recipientAddress, messageBody) = sendRequest
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
             ?: return app.socketMessageSender.send(
-                SocketResponse.RequestHandlingErrorLegacy(
+                SocketResponse.RequestHandlingError(
+                    sendRequest.id,
                     Error("Can't send to ${sendRequest.username}: not registered."),
                     sendRequest
                 )
@@ -112,29 +138,25 @@ class SocketMessageReceiver(private val app: Application) {
             recipientAddress.asSignalAddress(),
             messageBody
         )
-        when(sendResult.type()){
-            SendResultType.SUCCESS -> app.socketMessageSender.send(SocketResponse.SendSuccessLegacy)
-            else -> app.socketMessageSender.send(SocketResponse.SendErrorLegacy)
-        }
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
-        //  - should we do any special handling for non-success cases?
-        // app.socketMessageSender.send(SocketResponse.SendResult.of(sendRequest, sendResult))
+        //  - should we do any special handling for non-success cases? (currently we don't!)
+        app.socketMessageSender.send(SocketResponse.SendResults.of(sendRequest, sendResult))
     }
 
 
-    private suspend fun subscribe(subscribeRequest: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
-        val (_,username) = subscribeRequest
+    private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
+        val (id,username) = request
         println("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
             ?: return run {
                 app.socketMessageSender.send(
-                    SocketResponse.SubscriptionFailedLegacy(SignalcError.UnregisteredUser(username))
+                    SocketResponse.SubscriptionFailed(id, SignalcError.UnregisteredUser(username))
                 )
             }
 
         val subscribeJob = app.signalMessageReceiver.subscribe(account)
-        app.socketMessageSender.send(SocketResponse.SubscriptionSuccessLegacy)
+        app.socketMessageSender.send(SocketResponse.SubscriptionSuccess(id))
         println("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
@@ -144,13 +166,13 @@ class SocketMessageReceiver(private val app: Application) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
                         println("...error subscribing to messages for ${account.username}: ${error}.")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionFailedLegacy(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
                         println("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionDisruptedLegacy(error))
+                        app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(id, error))
                         delay(retryDelay)
-                        subscribe(subscribeRequest, retryDelay * 2)
+                        subscribe(request, retryDelay * 2)
                     }
                 }
             }

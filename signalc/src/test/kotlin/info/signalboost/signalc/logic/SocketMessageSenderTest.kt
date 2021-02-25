@@ -5,12 +5,22 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleartext
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDecryptionError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDropped
-import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genShutdown
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRegistrationSuccess
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestInvalidError
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSendResults
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSubscriptionDisrupted
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSubscriptionFailed
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSubscriptionSuccess
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genTrustSuccess
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationError
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationSuccess
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVersionResponse
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.doubles.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.*
@@ -19,7 +29,6 @@ import java.io.PrintWriter
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 import kotlin.time.milliseconds
 
 @ExperimentalTime
@@ -121,74 +130,52 @@ class SocketMessageSenderTest : FreeSpec({
             "when called once" - {
                 app.socketMessageSender.connect(mockSocket)
 
-                "with a cleartext message" - {
-                    val msg = genCleartext()
+                "with a handled message" - {
+                    val responses = listOf(
+                        genAbortWarning(),
+                        genCleartext(),
+                        genDecryptionError(),
+                        genRegistrationSuccess(),
+                        genRequestHandlingError(),
+                        genRequestInvalidError(),
+                        genSendResults(),
+                        genSubscriptionSuccess(),
+                        genSubscriptionFailed(),
+                        genSubscriptionDisrupted(),
+                        genTrustSuccess(),
+                        genVerificationSuccess(),
+                        genVerificationError(),
+                        genVersionResponse(),
+                    )
 
-                    "writes serialized message to socket" {
-                        app.socketMessageSender.send(msg)
-                        verify {
-                            mockWriter.println("\nMessage from [${msg.data.source}]:\n${msg.data.dataMessage.body}\n")
+                    "writes serialized response to socket" {
+                        responses.forEach {
+                            app.socketMessageSender.send(it)
+                            delay(sendDelay)
+                            verify {
+                                mockWriter.println(it.toJson())
+                            }
                         }
                     }
                 }
 
-                "with a dropped message" - {
-                    val msg = genDropped(1)
-                    val envType =  EnvelopeType.fromInt(1)
+                "with an unhandled message" - {
+                    val responses = listOf(
+                        genDropped(1),
+                        SocketResponse.Empty,
+                    )
 
-                    "writes serialized message to socket" {
-                        app.socketMessageSender.send(msg)
-                        delay(sendDelay)
-                        verify {
-                            mockWriter.println("Dropped: $envType")
+                    "does not write to socket" {
+                        responses.forEach {
+                            app.socketMessageSender.send(it)
+                            delay(sendDelay)
+                            verify(exactly = 0) {
+                                mockWriter.println(any<String>())
+                            }
                         }
                     }
                 }
 
-                "with an empty message" - {
-                    "writes serialized message to socket" {
-                        app.socketMessageSender.send(SocketResponse.Empty)
-                        delay(sendDelay)
-                        verify {
-                            mockWriter.println("Dropped: EMPTY")
-                        }
-                    }
-                }
-
-                "with a shutdown message" - {
-                    val msg = genShutdown()
-
-                    "writes serialized message to socket" {
-                        app.socketMessageSender.send(msg)
-                        delay(sendDelay)
-                        verify {
-                            mockWriter.println("Shutting down. Bye!")
-                        }
-                    }
-                }
-
-                "with a command execution error" - {
-                    val msg = genRequestHandlingError()
-
-                    "writes serialized message to socket" {
-                        app.socketMessageSender.send(msg)
-                        delay(sendDelay)
-                        verify {
-                            mockWriter.println(msg.toString())
-                        }
-                    }
-                }
-
-                "with a miscelaneous message" - {
-
-                    "writes it to socket" {
-                        app.socketMessageSender.send(SocketResponse.SendSuccessLegacy)
-                        delay(sendDelay)
-                        verify {
-                            mockWriter.println(SocketResponse.SendSuccessLegacy.toString())
-                        }
-                    }
-                }
             }
 
             "when called many times concurrently" - {
@@ -197,40 +184,23 @@ class SocketMessageSenderTest : FreeSpec({
                 }
 
                 "distributes messages across socket writers" {
-                    repeat(100) {
+                    val response = genVerificationSuccess()
+                    val numMessages = 100
+
+                    repeat(numMessages) {
                         testScope.launch {
-                            app.socketMessageSender.send(SocketResponse.Empty)
+                            app.socketMessageSender.send(response)
                         }
                     }
-                    verify(atLeast = 20) {
+
+                    delay(sendDelay * numMessages)
+
+                    verify(atLeast = numMessages / 4) {
                         mockWriters[0].println(any<String>())
                     }
-                    verify(atLeast = 20) {
+                    verify(atLeast = numMessages / 4) {
                         mockWriters[1].println(any<String>())
                     }
-                }
-
-                "sends messages in parallel" {
-                    fun observeNWrites(n: Int) = async {
-                        writes.set(0)
-                        repeat(n) {
-                            app.socketMessageSender.send(SocketResponse.Empty)
-                        }
-                        while(writes.get() < n) {
-                            yield()
-                        }
-                        return@async
-                    }
-
-                    val single = measureTime {
-                        observeNWrites(1).await()
-                    }
-
-                    val many = measureTime {
-                        observeNWrites(100).await()
-                    }
-
-                    many / single shouldBeLessThan 100.0
                 }
             }
         }

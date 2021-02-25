@@ -152,8 +152,10 @@ class SocketMessageSender(private val app: Application) {
             for (msg in channel) {
                 when (msg) {
                     is Message.Send -> {
-
-                        dispatch(msg.socketMsg)
+                        when (msg.socketMsg) {
+                            is SocketResponse.Dropped, SocketResponse.Empty -> {}
+                            else -> writer.println(msg.socketMsg.toJson())
+                        }
                         msg.result.complete(Unit)
                     }
                     is Message.Close -> {
@@ -162,23 +164,6 @@ class SocketMessageSender(private val app: Application) {
                     }
                 }
             }
-        }
-
-        private fun dispatch(socketMsg: SocketResponse): Unit = when (socketMsg) {
-            is SocketResponse.Cleartext ->
-                writer.println("\nMessage from [${socketMsg.data.source}]:\n${socketMsg.data.dataMessage.body}\n")
-            is SocketResponse.Dropped ->
-                writer.println("Dropped: ${EnvelopeType.fromInt(socketMsg.envelope.type)}")
-            is SocketResponse.Empty ->
-                writer.println("Dropped: EMPTY")
-            is SocketResponse.Shutdown ->
-                writer.println("Shutting down. Bye!")
-            is SocketResponse.RequestHandlingErrorLegacy ->
-                writer.println("Error dispatching command: ${socketMsg.error}")
-            else -> writer.println(socketMsg.toString())
-            // TODO: we want this:
-            //  is SocketResponse.Dropped, SocketResponse.Empty -> {}
-            //  else -> writer.println(socketMsg.toJson())
         }
     }
 }
