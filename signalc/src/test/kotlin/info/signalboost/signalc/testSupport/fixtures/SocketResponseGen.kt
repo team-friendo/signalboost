@@ -56,7 +56,7 @@ object SocketResponseGen {
         request: SocketRequest = genRequest(),
     ) = SocketResponse.RequestHandlingError(id,error,request)
 
-    fun genRequestInvalidException(
+    fun genRequestInvalidError(
         error: Throwable = Error(genPhrase()),
         commandStr: String = genPhrase()
     ) = SocketResponse.RequestInvalidError(error,commandStr)
@@ -108,14 +108,6 @@ object SocketResponseGen {
         SendResultType.UNREGISTERED_FAILURE -> SocketResponse.SendResult(address, unregisteredFailure = true)
         SendResultType.UNKNOWN_ERROR -> SocketResponse.SendResult(address, unknownError = true)
     }
-
-    fun genSendException() = SocketResponse.SendErrorLegacy
-    fun genSendSuccess() = SocketResponse.SendSuccessLegacy
-
-    @Deprecated("use genAbortWarning instead")
-    fun genShutdown() = SocketResponse.Shutdown(
-        Any().hashCode()
-    )
 
     fun genSubscriptionSuccess(
         id: String = genUuidStr(),

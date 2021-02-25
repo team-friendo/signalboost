@@ -3,12 +3,16 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
+import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationError
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationSuccess
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVersionResponse
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -78,15 +82,18 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "enables sender to write to connections concurrently" {
+                val verificationSuccess = genVerificationSuccess()
+                val verificationError = genVerificationError()
+
                 launch {
-                    app.socketMessageSender.send(SocketResponse.SendSuccessLegacy)
+                    app.socketMessageSender.send(verificationSuccess)
                 }
                 launch {
-                    app.socketMessageSender.send(SocketResponse.SendErrorLegacy)
+                    app.socketMessageSender.send(verificationError)
                 }
                 receiveN(2) shouldBe setOf(
-                    SocketResponse.SendSuccessLegacy.toString(),
-                    SocketResponse.SendErrorLegacy.toString()
+                    verificationSuccess.toJson(),
+                    verificationError.toJson(),
                 )
             }
 
@@ -105,11 +112,14 @@ class SocketServerBigTest : FreeSpec({
 
 
             "handles roundtrip from socket receiver to signal sender to socket writer" - {
-                fun sendRequestOf(msg: String): String = genSendRequest(
+                fun sendRequestOf(msg: String): SocketRequest.Send = genSendRequest(
                     senderAccount.username,
                     recipientAccount.address.asSerializable(),
                     msg
-                ).toJson()
+                )
+
+                val helloRequest = sendRequestOf("hello")
+                val worldRequest = sendRequestOf("world")
 
                 coEvery {
                     app.signalMessageSender.send(any(),any(),any(),any(),any())
@@ -118,15 +128,15 @@ class SocketServerBigTest : FreeSpec({
                 }
 
                 launch {
-                    client1.send(sendRequestOf("hello"))
+                    client1.send(helloRequest.toJson())
                 }
                 launch {
-                    client2.send(sendRequestOf("world"))
+                    client2.send(worldRequest.toJson())
                 }
 
                 receiveN(2) shouldBe setOf(
-                    SocketResponse.SendSuccessLegacy.toString(),
-                    SocketResponse.SendSuccessLegacy.toString(),
+                    SocketResponse.SendResults.success(helloRequest).toJson(),
+                    SocketResponse.SendResults.success(worldRequest).toJson(),
                 )
 
                 coVerify {

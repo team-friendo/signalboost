@@ -15,10 +15,29 @@ sealed class SocketRequest {
             try {
                 Json.decodeFromString(jsonString)
             } catch(e: Throwable) {
-                ParseError(e, jsonString)
+                ParseError("", e, jsonString)
             }
     }
     fun toJson(): String = Json.encodeToString(this)
+
+    // ID ACCESSOR
+    fun id(): String = when (this) {
+        // - if we make `id` a field on `SocketRequest` itself then override it in subclasses
+        //   it messes up serialization logic
+        // - so... we provide this hacky way to access the id of a `SocketRequest` regardless of type
+        // - perhaps we will dig into `@Serializable` at some point to come up w/ a cleaner solution!
+        is Abort -> id
+        is Close -> id
+        is ParseError -> id
+        is Register -> id
+        is Send -> id
+        is SetExpiration -> id
+        is Subscribe -> id
+        is Trust -> id
+        is Unsubscribe -> id
+        is Verify -> id
+        is Version -> id
+    }
 
     // DATA TYPES
 
@@ -32,6 +51,7 @@ sealed class SocketRequest {
 
     @Serializable
     data class ParseError(
+        val id: String = "",
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,
         val input: String,

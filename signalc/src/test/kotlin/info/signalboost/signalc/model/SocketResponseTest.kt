@@ -9,7 +9,7 @@ import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleart
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDecryptionError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRegistrationSuccess
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingError
-import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestInvalidException
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestInvalidError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSendResults
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSubscriptionDisrupted
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genSubscriptionFailed
@@ -196,7 +196,7 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of RequestInvalidException" - {
-            val response = genRequestInvalidException()
+            val response = genRequestInvalidError()
 
             "encodes to JSON" {
                 response.toJson() shouldBe """

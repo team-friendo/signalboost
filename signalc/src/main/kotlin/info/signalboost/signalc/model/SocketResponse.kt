@@ -115,15 +115,6 @@ sealed class SocketResponse {
     ): SocketResponse()
 
 
-    @Deprecated("missing id field")
-    @Serializable
-    @SerialName("unexpected_error_legacy") // TODO: just error or request_handling_error
-    data class RequestHandlingErrorLegacy(
-        @Serializable(ThrowableSerializer::class)
-        val error: Throwable,
-        val request: SocketRequest,
-    ): SocketResponse()
-
     @Serializable
     @SerialName("unexpected_error") // TODO: just error or request_handling_error
     data class RequestHandlingError(
@@ -163,31 +154,44 @@ sealed class SocketResponse {
         val unregisteredFailure: Boolean = false,
         @Required
         val unknownError: Boolean = false
-    ):SocketResponse() {
+    ) {
         companion object {
-            fun of(request: SocketRequest.Send, signalSendResult: SendMessageResult): SendResult =
+            internal fun of(request: SocketRequest.Send, signalSendResult: SendMessageResult): SendResult =
                 when(signalSendResult.type()) {
-                    SendResultType.SUCCESS -> SendResult(
-                        request.recipientAddress,
-                        success = Success(),
+                    SendResultType.SUCCESS -> success(request)
+                    SendResultType.IDENTITY_FAILURE -> identityFailure(
+                        request,
+                        signalSendResult.identityFailure.identityKey.fingerprint
                     )
-                    SendResultType.IDENTITY_FAILURE -> SendResult(
-                        request.recipientAddress,
-                        identityFailure = signalSendResult.identityFailure.identityKey.fingerprint,
-                    )
-                    SendResultType.NETWORK_FAILURE -> SendResult(
-                        request.recipientAddress,
-                        networkFailure = true,
-                    )
-                    SendResultType.UNREGISTERED_FAILURE -> SendResult(
-                        request.recipientAddress,
-                        unregisteredFailure = true,
-                    )
-                    SendResultType.UNKNOWN_ERROR -> SendResult(
-                        request.recipientAddress,
-                        unknownError = true,
-                    )
+                    SendResultType.NETWORK_FAILURE -> networkFailure(request)
+                    SendResultType.UNREGISTERED_FAILURE -> unregisteredFailure(request)
+                    SendResultType.UNKNOWN_ERROR -> unknownError(request)
             }
+
+            internal fun success(request: SocketRequest.Send) = SendResult(
+                request.recipientAddress,
+                success = Success(),
+            )
+
+            internal fun identityFailure(request: SocketRequest.Send, fingerprint: String) = SendResult(
+                request.recipientAddress,
+                identityFailure = fingerprint
+            )
+
+            internal fun unregisteredFailure(request: SocketRequest.Send) = SendResult(
+                request.recipientAddress,
+                unregisteredFailure = true,
+            )
+
+            internal fun networkFailure(request: SocketRequest.Send) = SendResult(
+                request.recipientAddress,
+                networkFailure = true,
+            )
+
+            internal fun unknownError(request: SocketRequest.Send) = SendResult(
+                request.recipientAddress,
+                unknownError = true,
+            )
         }
 
         @Serializable
@@ -212,40 +216,32 @@ sealed class SocketResponse {
                id =  request.id,
                data = listOf(SendResult.of(request, signalSendResult))
             )
+
+            fun success(request: SocketRequest.Send) = SendResults(
+                id =  request.id,
+                data = listOf(SendResult.success(request))
+            )
+
+            fun identityFailure(request: SocketRequest.Send, fingerprint: String) = SendResults(
+                id =  request.id,
+                data = listOf(SendResult.identityFailure(request, fingerprint))
+            )
+
+            fun unregisteredFailure(request: SocketRequest.Send) = SendResults(
+                id =  request.id,
+                data = listOf(SendResult.unregisteredFailure(request))
+            )
+
+            fun networkFailure(request: SocketRequest.Send) = SendResults(
+                id =  request.id,
+                data = listOf(SendResult.networkFailure(request))
+            )
         }
     }
-
-    @Deprecated("use AbortWarning instead")
-    @Serializable
-    @SerialName("shutdown")
-    data class Shutdown(
-        val socketHash: SocketHashCode,
-    ) : SocketResponse()
-
-    @Deprecated("missing id field")
-    @Serializable
-    @SerialName("subscription_succeeded_legacy")
-    object SubscriptionSuccessLegacy: SocketResponse()
 
     @Serializable
     @SerialName("subscription_succeeded")
     data class SubscriptionSuccess(val id: String): SocketResponse()
-
-    @Deprecated("needs id field")
-    @Serializable
-    @SerialName("subscription_failed_legacy")
-    data class SubscriptionFailedLegacy(
-        @Serializable(ThrowableSerializer::class)
-        val error: Throwable,
-    ): SocketResponse()
-
-    @Deprecated("needs id field")
-    @Serializable
-    @SerialName("subscription_disrupted_legacy")
-    data class SubscriptionDisruptedLegacy(
-        @Serializable(ThrowableSerializer::class)
-        val error: Throwable,
-    ): SocketResponse()
 
     @Serializable
     @SerialName("subscription_failed")
@@ -300,10 +296,4 @@ sealed class SocketResponse {
         @Serializable
         data class VersionData(val version: String)
     }
-
-    // TODO: get rid of these!
-    @Deprecated("use full data class version")
-    object SendSuccessLegacy: SocketResponse()
-    @Deprecated("use full data class version")
-    object SendErrorLegacy: SocketResponse()
 }
