@@ -81,6 +81,13 @@ object SocketResponseGen {
         data : SocketResponse.UserData = genUserData(),
     ) = SocketResponse.RegistrationSuccess(id, data)
 
+    fun genRegistrationError(
+        id: String = genUuidStr(),
+        data : SocketResponse.UserData = genUserData(),
+        error: Throwable = Error(genPhrase()),
+    ) = SocketResponse.RegistrationError(id, data, error)
+
+
     fun genSendResults(
         id: String = genUuidStr(),
         address: SerializableAddress = genSerializableAddress(),
@@ -138,8 +145,9 @@ object SocketResponseGen {
 
     fun genVerificationError(
         id: String = genUuidStr(),
-        data: SocketResponse.UserData = genUserData()
-    ) = SocketResponse.VerificationError(id, data)
+        data: SocketResponse.UserData = genUserData(),
+        error: Throwable = Error(genPhrase()),
+    ) = SocketResponse.VerificationError(id, data, error)
 
     fun genVersionResponse(
         id: String = genUuidStr(),
