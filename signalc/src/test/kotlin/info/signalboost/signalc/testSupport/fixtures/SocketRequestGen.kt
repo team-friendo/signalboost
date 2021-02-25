@@ -84,7 +84,7 @@ object SocketRequestGen {
         username = username,
     )
 
-    fun genVerify(
+    fun genVerifyRequest(
         id: String = genUuidStr(),
         username: String = genPhoneNumber(),
         code: String = genVerificationCode(),

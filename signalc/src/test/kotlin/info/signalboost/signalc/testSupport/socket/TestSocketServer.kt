@@ -12,39 +12,36 @@ import java.io.PrintWriter
 import java.net.Socket
 
 @ExperimentalCoroutinesApi
-object TestSocketServer {
-    suspend fun startTestSocketServer(
-        socketPath: String,
-        scope: CoroutineScope
-    ): ReceiveChannel<Socket> = scope.async {
-        // starts a socket server at a path and returns a channel that emits
-        // new connections to the server
-        val out = Channel<Socket>()
-        AFUNIXServerSocket.newInstance().let {
-            it.bind(AFUNIXSocketAddress(File(socketPath)))
-            scope.launch(IO) {
-                while (!out.isClosedForReceive && this.isActive) {
-                    val sock = it.accept() as Socket
-                    println("Got connection on ${sock.hashCode()}")
-                    out.send(sock)
+class TestSocketServer(
+    private val connections: ReceiveChannel<Socket>,
+    private val listenJob: Job,
+) {
+    companion object {
+        suspend fun run(socketPath: String, scope: CoroutineScope): TestSocketServer = scope.async {
+            // - starts a socket server at a path
+            // - returns a TestSocketServer instance wrapping a `connections` channel
+            //   that recieves new connections for use in test suite
+            val out = Channel<Socket>()
+            lateinit var listenJob: Job
+            AFUNIXServerSocket.newInstance().let {
+                it.bind(AFUNIXSocketAddress(File(socketPath)))
+                listenJob = scope.launch(IO) {
+                    while (!out.isClosedForReceive && this.isActive) {
+                        val sock = it.accept() as Socket
+                        println("Got connection on ${sock.hashCode()}")
+                        out.send(sock)
+                    }
                 }
             }
-        }
-        out
-    }.await()
+            TestSocketServer(out, listenJob)
+        }.await()
+    }
 
-    suspend fun clientConnectsTo(
-        socketPath: String,
-        connections: ReceiveChannel<Socket>,
-        scope: CoroutineScope
-    ): Pair<Socket,PrintWriter> = scope.async {
-        val clientSock = AFUNIXSocket.newInstance().also {
-            it.connect(AFUNIXSocketAddress(File(socketPath)))
-        }
-        Pair(
-            connections.receive(),
-            PrintWriter(clientSock.getOutputStream(), true)
-        )
-    }.await()
+    suspend fun receive(): Socket = connections.receive()
+
+    fun close()  {
+        connections.cancel()
+        listenJob.cancel()
+    }
 
 }

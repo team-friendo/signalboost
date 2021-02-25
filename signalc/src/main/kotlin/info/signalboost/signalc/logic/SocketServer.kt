@@ -52,9 +52,9 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         return this
     }
 
-    suspend fun disconnect(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
-        app.socketMessageSender.disconnect(socketHash)
-        app.socketMessageReceiver.disconnect(socketHash)
+    suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
+        app.socketMessageSender.close(socketHash)
+        app.socketMessageReceiver.close(socketHash)
         closeConnection(socketHash)
         println("Server closed connection on socket $socketHash")
     }

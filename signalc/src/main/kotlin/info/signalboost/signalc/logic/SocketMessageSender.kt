@@ -32,7 +32,7 @@ class SocketMessageSender(private val app: Application) {
      *************/
 
     suspend fun connect(socket: Socket): Boolean = writerPool.add(socket)
-    suspend fun disconnect(socketHash: SocketHashCode): Boolean = writerPool.remove(socketHash)
+    suspend fun close(socketHash: SocketHashCode): Boolean = writerPool.remove(socketHash)
     suspend fun send(socketMsg: SocketResponse): Unit = writerPool.send(socketMsg)
     suspend fun stop(): Int = writerPool.clear()
 

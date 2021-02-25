@@ -8,7 +8,6 @@ import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.date.after
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.*
@@ -28,6 +27,7 @@ class SocketServerTest : FreeSpec({
         val app = Application(config).run(testScope)
 
         val closingDelay = 5.milliseconds
+        val connectDelay = 10.milliseconds
         val socketPath = config.socket.path
 
         afterTest {
@@ -48,6 +48,7 @@ class SocketServerTest : FreeSpec({
             lateinit var serverSock: Socket
             beforeTest {
                 client = TestSocketClient.connect(socketPath, testScope)
+                delay(connectDelay)
                 serverSock = getFirstConnection()
             }
             afterTest {
@@ -130,26 +131,26 @@ class SocketServerTest : FreeSpec({
             val socketHash = socket.hashCode()
 
             "disconnects a socket connection's message receiver" {
-                app.socketServer.disconnect(socketHash)
+                app.socketServer.close(socketHash)
                 coVerify {
-                    app.socketMessageSender.disconnect(socketHash)
+                    app.socketMessageSender.close(socketHash)
                 }
             }
 
             "disconnects a socket connection's message sender" {
-                app.socketServer.disconnect(socketHash)
+                app.socketServer.close(socketHash)
                 coVerify {
-                    app.socketMessageSender.disconnect(socketHash)
+                    app.socketMessageSender.close(socketHash)
                 }
             }
 
             "closes the socket connection" {
-                app.socketServer.disconnect(socketHash)
+                app.socketServer.close(socketHash)
                 socket.isClosed shouldBe true
             }
 
             "forgets about the socket connection" {
-                app.socketServer.disconnect(socketHash)
+                app.socketServer.close(socketHash)
                 app.socketServer.connections[socketHash] shouldBe null
             }
         }

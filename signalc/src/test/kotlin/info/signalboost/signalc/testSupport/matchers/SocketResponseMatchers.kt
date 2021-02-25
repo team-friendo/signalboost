@@ -28,38 +28,14 @@ object SocketResponseMatchers {
             it.data.dataMessage.body == body
     }
 
-    fun MockKMatcherScope.requestHandlingError(
-        error: Throwable,
-        command: SocketRequest,
-    ): SocketResponse.RequestHandlingError = match {
-        it.request == command &&
-                it.error.javaClass == error.javaClass &&
-                it.error.message == error.message
-    }
-
-    fun MockKMatcherScope.subscriptionFailed(
-        id: String,
-        error: Throwable,
-    ): SocketResponse.SubscriptionFailed = match {
-        it.id == id &&
-        it.error.javaClass == error.javaClass && it.error.message == error.message
-    }
-
-    fun MockKMatcherScope.sendSuccess(
-        request: SocketRequest.Send,
-    ): SocketResponse.SendResults = match {
-        it.id == request.id && it.data == listOf(SocketResponse.SendResult.success(request))
-    }
-
-
     fun MockKMatcherScope.decryptionError(
         sender: SerializableAddress,
         recipient: SerializableAddress,
         cause: Throwable
     ): SocketResponse.DecryptionError = match {
         it.sender == sender &&
-            it.recipient == recipient &&
-            it.error == cause
+                it.recipient == recipient &&
+                it.error == cause
     }
 
     fun MockKMatcherScope.dropped(
@@ -68,32 +44,50 @@ object SocketResponseMatchers {
         envelope: SignalServiceEnvelope,
     ): SocketResponse.Dropped = match {
         it.sender == sender &&
-            it.recipient == recipient &&
-            it.envelope == envelope
+                it.recipient == recipient &&
+                it.envelope == envelope
     }
 
-
-
-
-    fun MockKMatcherScope.shouldBeLike(
-        other: SocketResponse.RequestHandlingError,
+    fun MockKMatcherScope.requestHandlingError(
+        request: SocketRequest,
+        error: Throwable,
     ): SocketResponse.RequestHandlingError = match {
-        it.error.message == other.error.message &&
-        it.request == other.request
+        it.request == request && it.error throwsLike error
     }
 
-    fun throwLike(other: SocketResponse.RequestHandlingError) = object:
-        Matcher<SocketResponse.RequestHandlingError> {
-        override fun test(value: SocketResponse.RequestHandlingError) = MatcherResult(
-            value.error.message == other.error.message && value.request == other.request,
-            "Request $value should have same error message and request as $other",
-            "Request $value should not have same error message and request as $other",
-        )
+    fun MockKMatcherScope.registrationError(
+        id: String,
+        data: SocketResponse.UserData,
+        error: Throwable,
+    ): SocketResponse.RegistrationError = match {
+        it.id == id &&
+                it.data == data &&
+                it.error throwsLike error
     }
 
-    fun SocketResponse.RequestHandlingError.shouldThrowLike(other: SocketResponse.RequestHandlingError) =
-        this should throwLike(other)
+    fun MockKMatcherScope.subscriptionFailed(
+        id: String,
+        error: Throwable,
+    ): SocketResponse.SubscriptionFailed = match {
+        it.id == id && it.error throwsLike error
+    }
 
-    fun SocketResponse.RequestHandlingError.shouldNotThrowLike(other: SocketResponse.RequestHandlingError) =
-        this shouldNot throwLike(other)
+    fun MockKMatcherScope.sendSuccess(
+        request: SocketRequest.Send,
+    ): SocketResponse.SendResults = match {
+        it.id == request.id && it.data == listOf(SocketResponse.SendResult.success(request))
+    }
+
+    fun MockKMatcherScope.verificationError(
+        id: String,
+        data: SocketResponse.UserData,
+        error: Throwable,
+    ): SocketResponse.VerificationError = match {
+        it.id == id &&
+                it.data == data &&
+                it.error throwsLike error
+    }
+
+    private infix fun Throwable.throwsLike(other: Throwable): Boolean =
+        message == other.message && (cause == other.cause || javaClass == other.javaClass)
 }

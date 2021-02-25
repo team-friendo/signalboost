@@ -4,7 +4,6 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
@@ -41,7 +40,7 @@ class SocketMessageReceiver(private val app: Application) {
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
                     val socketMessage = reader.readLine() ?: run {
-                        disconnect(socketHash)
+                        close(socketHash)
                         return@launch
                     }
                     println("got message on socket $socketHash: $socketMessage")
@@ -52,7 +51,7 @@ class SocketMessageReceiver(private val app: Application) {
             }
         }
 
-    suspend fun disconnect(socketHash: SocketHashCode, listenJob: Job? = null) {
+    suspend fun close(socketHash: SocketHashCode) {
         val reader = readers[socketHash] ?: return // must have already been disconnected!
         readers.remove(socketHash) // will terminate loop and complete Job launched by `connect`
         app.coroutineScope.launch(IO) {
@@ -63,10 +62,10 @@ class SocketMessageReceiver(private val app: Application) {
             }
             println("Closed reader from socket $socketHash")
         }
-        app.socketServer.disconnect(socketHash)
+        app.socketServer.close(socketHash)
     }
 
-    suspend fun stop() = readers.keys.forEach { disconnect(it) }
+    suspend fun stop() = readers.keys.forEach { close(it) }
 
     /*******************
      * MESSAGE HANDLING
@@ -77,16 +76,16 @@ class SocketMessageReceiver(private val app: Application) {
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
-                is SocketRequest.Close -> disconnect(socketHash)
+                is SocketRequest.Close -> close(socketHash)
                 is SocketRequest.ParseError -> parseError(request)
+                is SocketRequest.Register -> register(request)
                 is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
                 is SocketRequest.Subscribe -> subscribe(request)
+                is SocketRequest.Verify -> verify(request)
                 // TODO://////////////////////////////////////////////
-                is SocketRequest.Register -> unimplemented(request)
                 is SocketRequest.SetExpiration -> unimplemented(request)
                 is SocketRequest.Trust -> unimplemented(request)
                 is SocketRequest.Unsubscribe -> unimplemented(request)
-                is SocketRequest.Verify -> unimplemented(request)
                 is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
@@ -98,16 +97,22 @@ class SocketMessageReceiver(private val app: Application) {
         }
     }
 
-    private suspend fun unimplemented(request: SocketRequest) {
-        app.socketMessageSender.send(
-            SocketResponse.RequestHandlingError(
-                request.id(),
-                Exception("handler for ${request.javaClass.name} not implemented yet!"),
-                request
-            )
-        )
-    }
+    // HANDLE SPECIAL CASES
 
+    private suspend fun unimplemented(request: SocketRequest): Unit = app.socketMessageSender.send(
+        SocketResponse.RequestHandlingError(
+            request.id(),
+            Exception("handler for ${request.javaClass.name} not implemented yet!"),
+            request
+        )
+    )
+
+
+    private suspend fun parseError(request: SocketRequest.ParseError): Unit = app.socketMessageSender.send(
+        SocketResponse.RequestInvalidError(request.error, request.input)
+    )
+
+    // HANDLE COMMANDS
 
     private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
         println("Received `abort`. Exiting.")
@@ -115,12 +120,21 @@ class SocketMessageReceiver(private val app: Application) {
         app.stop()
     }
 
-
-    private suspend fun parseError(request: SocketRequest.ParseError) {
-        app.socketMessageSender.send(
-            SocketResponse.RequestInvalidError(request.error, request.input)
-        )
+    private suspend fun register(request: SocketRequest.Register): Unit = try {
+        when(val account = app.accountManager.load(request.username)) {
+            // TODO: handle re-registration here
+            is RegisteredAccount, is VerifiedAccount -> app.socketMessageSender.send(
+                SocketResponse.RegistrationError.of(request, SignalcError.RegistrationOfRegsisteredUser)
+            )
+            is NewAccount -> {
+                app.accountManager.register(account)
+                app.socketMessageSender.send(SocketResponse.RegistrationSuccess.of(request))
+            }
+        }
+    } catch(e: Throwable) {
+        app.socketMessageSender.send(SocketResponse.RegistrationError.of(request, e))
     }
+
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(sendRequest: SocketRequest.Send) {
@@ -151,7 +165,7 @@ class SocketMessageReceiver(private val app: Application) {
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
             ?: return run {
                 app.socketMessageSender.send(
-                    SocketResponse.SubscriptionFailed(id, SignalcError.UnregisteredUser(username))
+                    SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)
                 )
             }
 
@@ -177,5 +191,19 @@ class SocketMessageReceiver(private val app: Application) {
                 }
             }
         }
+    }
+
+    private suspend fun verify(request: SocketRequest.Verify): Unit = try {
+        when(val account = app.accountManager.load(request.username)) {
+            is NewAccount, is VerifiedAccount -> app.socketMessageSender.send(
+                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewOrVerifiedUser)
+            )
+            is RegisteredAccount -> {
+                app.accountManager.verify(account, request.code)
+                app.socketMessageSender.send(SocketResponse.VerificationSuccess.of(request))
+            }
+        }
+    } catch(error: Throwable) {
+        app.socketMessageSender.send(SocketResponse.VerificationError.of(request, error))
     }
 }
