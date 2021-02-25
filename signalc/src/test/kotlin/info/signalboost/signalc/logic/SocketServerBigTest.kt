@@ -9,10 +9,10 @@ import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScop
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationSuccess
-import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVersionResponse
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -113,9 +113,10 @@ class SocketServerBigTest : FreeSpec({
 
             "handles roundtrip from socket receiver to signal sender to socket writer" - {
                 fun sendRequestOf(msg: String): SocketRequest.Send = genSendRequest(
-                    senderAccount.username,
-                    recipientAccount.address.asSerializable(),
-                    msg
+                    id = genUuidStr(),
+                    username = senderAccount.username,
+                    recipientAddress = recipientAccount.address.asSerializable(),
+                    messageBody = msg,
                 )
 
                 val helloRequest = sendRequestOf("hello")
