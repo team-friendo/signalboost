@@ -7,6 +7,7 @@ import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendReq
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genDecryptionError
+import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRegistrationError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRegistrationSuccess
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestHandlingError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genRequestInvalidError
@@ -175,6 +176,25 @@ class SocketResponseTest : FreeSpec({
             }
         }
 
+        "of RegistrationError" - {
+            val response = genRegistrationError()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                   |"type":"registration_error",
+                   |"id":"${response.id}",
+                   |"data":{
+                      |"username":"${response.data.username}"
+                   |},
+                   |"error":{
+                      |"cause":"${response.error.javaClass.name}",
+                      |"message":"${response.error.message}"
+                   |}
+                |}""".flatten()
+            }
+        }
+
         "of RequestHandlingException" - {
             val response = genRequestHandlingError(
                 id = requestId,
@@ -212,8 +232,6 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of SendResults" - {
-            val recipientAddress = genSerializableAddress()
-
             "of type SUCCESS" - {
                 val response = genSendResults(type = SendResultType.SUCCESS)
 
@@ -432,6 +450,10 @@ class SocketResponseTest : FreeSpec({
                   |"id":"${response.id}",
                   |"data":{
                     |"username":"${response.data.username}"
+                  |},
+                  |"error":{
+                    |"cause":"java.lang.Error",
+                    |"message":"${response.error.message}"
                   |}
                 |}
                 """.flatten()

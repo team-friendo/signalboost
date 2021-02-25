@@ -5,6 +5,7 @@ import info.signalboost.signalc.serialization.ThrowableSerializer
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import info.signalboost.signalc.util.SocketHashCode
+import org.h2.engine.User
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
@@ -112,8 +113,31 @@ sealed class SocketResponse {
     data class RegistrationSuccess(
         val id: String,
         val data: UserData,
-    ): SocketResponse()
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Register) = RegistrationSuccess(
+                request.id,
+                UserData(request.username)
+            )
+        }
+    }
 
+    @Serializable
+    @SerialName("registration_error")
+    data class RegistrationError(
+        val id: String,
+        val data: UserData,
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Register, error: Throwable) = RegistrationError(
+                request.id,
+                UserData(request.username),
+                error
+            )
+        }
+    }
 
     @Serializable
     @SerialName("unexpected_error") // TODO: just error or request_handling_error
@@ -122,8 +146,15 @@ sealed class SocketResponse {
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,
         val request: SocketRequest,
-    ): SocketResponse()
-
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest, error: Throwable) = RequestHandlingError(
+                request.id(),
+                error,
+                request
+            )
+        }
+    }
 
     // TODO: what does signald do here? "unrecognized"?
     @Serializable
@@ -278,14 +309,31 @@ sealed class SocketResponse {
     data class VerificationSuccess(
         val id: String,
         val data: UserData,
-    ): SocketResponse()
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Verify) = VerificationSuccess(
+                request.id,
+                UserData(request.username)
+            )
+        }
+    }
 
     @Serializable
     @SerialName("verification_error") // TODO: camelcase
     data class VerificationError(
         val id: String,
         val data: UserData,
-    ): SocketResponse()
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Verify, error: Throwable) = VerificationError(
+                request.id,
+                UserData(request.username),
+                error,
+            )
+        }
+    }
 
     @Serializable
     @SerialName("version")
