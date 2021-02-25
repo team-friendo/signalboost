@@ -1,20 +1,14 @@
 package info.signalboost.signalc.model
 
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSerializableAddress
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genTrustRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genUnsubscribe
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerify
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genCaptchaToken
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genFingerprint
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genVerificationCode
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
@@ -27,7 +21,6 @@ import io.mockk.unmockkAll
 import kotlinx.serialization.SerializationException
 
 class SocketRequestTest : FreeSpec({
-    val senderNumber = genPhoneNumber()
     val requestId = genUuidStr()
     val generatedUuid = genUuidStr()
 
@@ -71,7 +64,7 @@ class SocketRequestTest : FreeSpec({
                       |"id":"${request.id}",
                       |"type":"register",
                       |"username":"${request.username}",
-                      |"captchaToken":"${request.captchaToken}"              
+                      |"captchaToken":"${request.captchaToken}"
                     |}""".flatten()
 
                     SocketRequest.fromJson(json) shouldBe request
@@ -241,7 +234,7 @@ class SocketRequestTest : FreeSpec({
 
         "VERIFY request" - {
             "with all fields" - {
-                val request = genVerify()
+                val request = genVerifyRequest()
 
                 "decodes from JSON" {
                     val json = """
@@ -257,7 +250,7 @@ class SocketRequestTest : FreeSpec({
             }
 
             "with missing id field" - {
-                val request = genVerify(id = generatedUuid,)
+                val request = genVerifyRequest(id = generatedUuid,)
 
                 "decodes from JSON and generates id field" {
                     val json = """

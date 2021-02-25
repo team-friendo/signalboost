@@ -7,12 +7,17 @@ import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.fixtures.AccountGen.genNewAccount
+import info.signalboost.signalc.testSupport.fixtures.AccountGen.genRegisteredAccount
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationSuccess
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genVerificationCode
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -38,8 +43,12 @@ class SocketServerBigTest : FreeSpec({
         )
         val app = Application(config).run(testScope)
 
-        val senderPhone = genPhoneNumber()
-        val senderAccount = genVerifiedAccount(senderPhone)
+        val newSenderPhone = genPhoneNumber()
+        val newSenderAccount = genNewAccount(newSenderPhone)
+        val registeredSenderPhone = genPhoneNumber()
+        val registeredSenderAccount = genRegisteredAccount(registeredSenderPhone)
+        val verifiedSenderPhone = genPhoneNumber()
+        val verifiedSenderAccount = genVerifiedAccount(verifiedSenderPhone)
         val recipientPhone = genPhoneNumber()
         val recipientAccount = genVerifiedAccount(recipientPhone)
 
@@ -50,11 +59,22 @@ class SocketServerBigTest : FreeSpec({
                 app.accountManager.loadVerified(any())
             } answers {
                 when(firstArg<String>()) {
-                    senderPhone -> senderAccount
+                    verifiedSenderPhone -> verifiedSenderAccount
                     recipientPhone -> recipientAccount
                     else -> null
                 }
             }
+            coEvery {
+                app.accountManager.load(any())
+            } answers {
+                when(firstArg<String>()) {
+                    newSenderPhone -> newSenderAccount
+                    registeredSenderPhone -> registeredSenderAccount
+                    verifiedSenderPhone -> verifiedSenderAccount
+                    else -> newSenderAccount
+                }
+            }
+
         }
 
         afterSpec {
@@ -65,15 +85,23 @@ class SocketServerBigTest : FreeSpec({
 
 
         "#run" - {
-            val receivedMessages = Channel<String>()
+            lateinit var client1: TestSocketClient
+            lateinit var client2: TestSocketClient
+            lateinit var receivedMessages: Channel<String>
+            suspend fun receiveN(n: Int) = List(n) { receivedMessages.receive() }.toSet()
 
-            val client1 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
-            val client2 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
+            beforeTest {
+                receivedMessages = Channel<String>()
+                client1 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
+                client2 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
+                delay(20.milliseconds)
+            }
 
-            suspend fun receiveN(n: Int) = List(n) {
-                receivedMessages.receive()
-            }.toSet()
-
+            afterTest {
+                client1.close()
+                client2.close()
+                receivedMessages.close()
+            }
 
             "accepts connections" {
                 app.socketServer.connections.keys.size shouldBe 2
@@ -85,10 +113,10 @@ class SocketServerBigTest : FreeSpec({
                 val verificationSuccess = genVerificationSuccess()
                 val verificationError = genVerificationError()
 
-                launch {
+                testScope.launch {
                     app.socketMessageSender.send(verificationSuccess)
                 }
-                launch {
+                testScope.launch {
                     app.socketMessageSender.send(verificationError)
                 }
                 receiveN(2) shouldBe setOf(
@@ -97,11 +125,11 @@ class SocketServerBigTest : FreeSpec({
                 )
             }
 
-            "handles roundtrip from socket receiver to socket writer" {
-                launch {
+            "enables receiver to relay messages to sender" {
+                testScope.launch {
                     client1.send("foo")
                 }
-                launch {
+                testScope.launch {
                     client2.send("bar")
                 }
 
@@ -111,10 +139,11 @@ class SocketServerBigTest : FreeSpec({
             }
 
 
-            "handles roundtrip from socket receiver to signal sender to socket writer" - {
+            "enables roundtrip handling of concurrent SEND requests" {
+
                 fun sendRequestOf(msg: String): SocketRequest.Send = genSendRequest(
                     id = genUuidStr(),
-                    username = senderAccount.username,
+                    username = verifiedSenderAccount.username,
                     recipientAddress = recipientAccount.address.asSerializable(),
                     messageBody = msg,
                 )
@@ -141,10 +170,40 @@ class SocketServerBigTest : FreeSpec({
                 )
 
                 coVerify {
-                    app.signalMessageSender.send(senderAccount, recipientAccount.address, "hello", any(), any())
-                    app.signalMessageSender.send(senderAccount, recipientAccount.address, "world", any(), any())
+                    app.signalMessageSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
+                    app.signalMessageSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
                 }
             }
+
+            "enables roundtrip handling of a REGISTER request" {
+                coEvery {
+                    app.accountManager.register(newSenderAccount)
+                } returns registeredSenderAccount
+
+                val request = genRegisterRequest(username = newSenderPhone)
+                launch { client1.send(request.toJson()) }
+
+                receivedMessages.receive() shouldBe
+                        SocketResponse.RegistrationSuccess.of(request).toJson()
+                coVerify {
+                    app.accountManager.register(newSenderAccount)
+                }
+            }
+
+            "enables roundtrip handling of a VERIFY request" {
+                coEvery {
+                    app.accountManager.verify(registeredSenderAccount, any())
+                } returns verifiedSenderAccount
+
+                val request = genVerifyRequest(username = registeredSenderPhone)
+                launch { client1.send(request.toJson()) }
+
+                receivedMessages.receive() shouldBe SocketResponse.VerificationSuccess.of(request).toJson()
+                coVerify {
+                    app.accountManager.verify(registeredSenderAccount, request.code)
+                }
+            }
+
         }
 
         "#disconnect" - {
@@ -156,10 +215,10 @@ class SocketServerBigTest : FreeSpec({
             val (connection1, connection2) = app.socketServer.connections.values.take(2)
 
             testScope.launch {
-                app.socketServer.disconnect(connection1.hashCode())
+                app.socketServer.close(connection1.hashCode())
             }
             testScope.launch {
-                app.socketServer.disconnect(connection2.hashCode())
+                app.socketServer.close(connection2.hashCode())
             }
 
             "disconnects a socket connection's message receiver" {
@@ -174,14 +233,18 @@ class SocketServerBigTest : FreeSpec({
         }
 
         "#stop" - {
+            val restartDelay =20.milliseconds
+
             beforeTest {
                 TestSocketClient.connect(socketPath, testScope)
                 TestSocketClient.connect(socketPath, testScope)
                 app.socketServer.stop()
+                delay(restartDelay)
             }
 
             afterTest {
                 app.socketServer.run()
+                delay(restartDelay)
             }
 
             "disconnects receivers from all socket connections" {

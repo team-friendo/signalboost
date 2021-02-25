@@ -190,12 +190,12 @@ class Application(val config: Config.App) {
         }
         socketMessageReceiver = initializeColdComponent(SocketMessageReceiver::class) {
             coEvery { connect(any()) } returns mockk()
-            coEvery { disconnect(any()) } returns mockk()
+            coEvery { close(any()) } returns mockk()
             coEvery { stop() } returns mockk()
         }
         socketMessageSender = initializeColdComponent(SocketMessageSender::class){
             coEvery { connect(any()) } returns mockk()
-            coEvery { disconnect(any()) } returns mockk()
+            coEvery { close(any()) } returns mockk()
             coEvery { stop() } returns mockk()
             coEvery { send(any()) } returns mockk()
         }
@@ -204,7 +204,7 @@ class Application(val config: Config.App) {
         socketServer = initializeHotComponent(SocketServer::class) {
             coEvery { run() } returns mockk() {
                 coEvery { stop() } returns Unit
-                coEvery { disconnect(any()) } returns Unit
+                coEvery { close(any()) } returns Unit
             }
         }.run()
         println("running!\nlistening for connections at ${config.socket.path}...")

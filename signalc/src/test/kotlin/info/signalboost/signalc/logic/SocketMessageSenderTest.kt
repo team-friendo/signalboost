@@ -61,12 +61,11 @@ class SocketMessageSenderTest : FreeSpec({
         }
 
         afterTest {
-            // app.socketMessageSender.writerPool.clear()
             clearAllMocks(answers = false, childMocks = false, objectMocks = false)
         }
 
         afterSpec {
-            // app.stop()
+            app.stop()
             unmockkAll()
             testScope.teardown()
         }
@@ -95,7 +94,7 @@ class SocketMessageSenderTest : FreeSpec({
         "#disconnect" - {
             "when called with the hash of a socket with a writer in the pool" - {
                 app.socketMessageSender.connect(mockSocket)
-                app.socketMessageSender.disconnect(mockSocket.hashCode())
+                app.socketMessageSender.close(mockSocket.hashCode())
 
                 "closes the socket writer" {
                     verify {
@@ -188,7 +187,7 @@ class SocketMessageSenderTest : FreeSpec({
                     val numMessages = 100
 
                     repeat(numMessages) {
-                        testScope.launch {
+                        launch {
                             app.socketMessageSender.send(response)
                         }
                     }
