@@ -1,6 +1,7 @@
 package info.signalboost.signalc
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import kotlin.time.ExperimentalTime
 
 
@@ -12,7 +13,7 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 fun main() {
-    runBlocking {
+    runBlocking(IO) {
         Application(Config.fromEnv()).run(this)
     }
 }

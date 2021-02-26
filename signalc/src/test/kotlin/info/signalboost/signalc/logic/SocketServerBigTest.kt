@@ -17,8 +17,8 @@ import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendReq
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationError
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genVerificationSuccess
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genVerificationCode
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
+import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -176,17 +176,18 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "enables roundtrip handling of a REGISTER request" {
+                val request = genRegisterRequest(username = newSenderPhone)
+
                 coEvery {
-                    app.accountManager.register(newSenderAccount)
+                    app.accountManager.register(newSenderAccount, request.captchaToken)
                 } returns registeredSenderAccount
 
-                val request = genRegisterRequest(username = newSenderPhone)
                 launch { client1.send(request.toJson()) }
 
                 receivedMessages.receive() shouldBe
                         SocketResponse.RegistrationSuccess.of(request).toJson()
                 coVerify {
-                    app.accountManager.register(newSenderAccount)
+                    app.accountManager.register(newSenderAccount, request.captchaToken)
                 }
             }
 
@@ -200,7 +201,7 @@ class SocketServerBigTest : FreeSpec({
 
                 receivedMessages.receive() shouldBe SocketResponse.VerificationSuccess.of(request).toJson()
                 coVerify {
-                    app.accountManager.verify(registeredSenderAccount, request.code)
+                    app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
                 }
             }
 

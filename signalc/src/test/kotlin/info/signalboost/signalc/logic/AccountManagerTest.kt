@@ -13,6 +13,7 @@ import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -31,7 +32,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this // async funcs fail in this suite unless we do this. why?
         val config = Config.mockAllExcept(AccountManager::class)
         val app = Application(config).run(testScope)
         val accountManager = app.accountManager
