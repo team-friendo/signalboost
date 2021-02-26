@@ -179,7 +179,12 @@ class Application(val config: Config.App) {
         signal = initializeSignal()
 
         // "cold" components
-        accountManager = initializeColdComponent(AccountManager::class)
+        accountManager = initializeColdComponent(AccountManager::class) {
+            coEvery { load(any()) } returns mockk()
+            coEvery { register(any(),any()) } returns mockk()
+            coEvery { verify(any(),any()) } returns mockk()
+            coEvery { publishPreKeys(any()) } returns mockk()
+        }
         signalMessageReceiver = initializeColdComponent(SignalMessageReceiver::class){
             coEvery { subscribe(any()) } returns mockk()
         }

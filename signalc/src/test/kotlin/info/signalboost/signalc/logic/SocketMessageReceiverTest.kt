@@ -25,12 +25,14 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.send
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
 import info.signalboost.signalc.util.*
+import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
+import org.whispersystems.signalservice.api.push.exceptions.CaptchaRequiredException
 import java.io.IOException
 import java.net.Socket
 import java.time.Instant
@@ -128,11 +130,22 @@ class SocketMessageReceiverTest : FreeSpec({
                 val transmitDelay = 10.milliseconds
 
                 "when account is NEW" - {
-                    coEvery { app.accountManager.load(any()) } returns newSenderAccount
+                    coEvery { app.accountManager.load(senderPhoneNumber) } returns newSenderAccount
+
+                    "sends registration request to signal" - {
+                        coEvery {
+                            app.accountManager.register(newSenderAccount)
+                        } returns mockk()
+
+                        client.send(request.toJson(), wait = transmitDelay)
+                        coVerify {
+                            app.accountManager.register(newSenderAccount, request.captchaToken)
+                        }
+                    }
 
                     "when registration succeeds" - {
                         coEvery {
-                            app.accountManager.register(newSenderAccount)
+                            app.accountManager.register(newSenderAccount, request.captchaToken)
                         } returns registeredSenderAccount
 
                         "sends registration success response to socket" {
@@ -146,16 +159,17 @@ class SocketMessageReceiverTest : FreeSpec({
                     }
 
                     "when registration fails" - {
-                        val error = Error("BOOM!")
+                        val _request = request.copy(captchaToken = null)
+                        val error = CaptchaRequiredException()
                         coEvery {
-                            app.accountManager.register(newSenderAccount)
+                            app.accountManager.register(newSenderAccount, null)
                         } throws error
 
                         "sends registration error response to socket" {
-                            client.send(request.toJson(), wait = transmitDelay)
+                            client.send(_request.toJson(), wait = transmitDelay)
                             coVerify {
                                 app.socketMessageSender.send(
-                                    SocketResponse.RegistrationError.of(request, error)
+                                    SocketResponse.RegistrationError.of(_request, error)
                                 )
                             }
                         }
@@ -376,10 +390,32 @@ class SocketMessageReceiverTest : FreeSpec({
                         app.accountManager.load(senderPhoneNumber)
                     } returns registeredSenderAccount
 
+                    "sanitizes verification code and submits it to signal" {
+                        coEvery { app.accountManager.verify(any(), any())} returns mockk()
+                        client.send(request.toJson(), wait = sendDelay)
+                        coVerify {
+                            app.accountManager.verify(
+                                registeredSenderAccount,
+                                request.code.replace("-", "")
+                            )
+                        }
+                    }
+
                     "when verification succeeds" - {
                         coEvery {
-                            app.accountManager.verify(registeredSenderAccount, request.code)
+                            app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
                         } returns verifiedSenderAccount
+
+                        coEvery {
+                            app.accountManager.publishPreKeys(any())
+                        } returns verifiedSenderAccount
+
+                        "publishes prekeys for verified account" {
+                            client.send(request.toJson(), wait = sendDelay)
+                            coVerify {
+                                app.accountManager.publishPreKeys(verifiedSenderAccount)
+                            }
+                        }
 
                         "sends registration success response to socket" {
                             client.send(request.toJson(), wait = sendDelay)
@@ -391,10 +427,26 @@ class SocketMessageReceiverTest : FreeSpec({
                         }
                     }
 
-                    "when verification fails" - {
+                    "when verification throws" - {
                         val error = Error("BOOM!")
                         coEvery {
-                            app.accountManager.verify(registeredSenderAccount, request.code)
+                            app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
+                        } throws error
+
+                        "sends registration error response to socket" {
+                            client.send(request.toJson(), wait = sendDelay)
+                            coVerify {
+                                app.socketMessageSender.send(
+                                    SocketResponse.VerificationError.of(request, error)
+                                )
+                            }
+                        }
+                    }
+
+                    "when verification submits incorrect code" - {
+                        val error = Error("BOOM!")
+                        coEvery {
+                            app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
                         } throws error
 
                         "sends registration error response to socket" {

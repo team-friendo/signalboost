@@ -5,6 +5,7 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
+import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import org.whispersystems.signalservice.api.messages.SendMessageResult
@@ -127,7 +128,7 @@ class SocketMessageReceiver(private val app: Application) {
                 SocketResponse.RegistrationError.of(request, SignalcError.RegistrationOfRegsisteredUser)
             )
             is NewAccount -> {
-                app.accountManager.register(account)
+                app.accountManager.register(account, request.captchaToken)
                 app.socketMessageSender.send(SocketResponse.RegistrationSuccess.of(request))
             }
         }
@@ -199,8 +200,12 @@ class SocketMessageReceiver(private val app: Application) {
                 SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewOrVerifiedUser)
             )
             is RegisteredAccount -> {
-                app.accountManager.verify(account, request.code)
-                app.socketMessageSender.send(SocketResponse.VerificationSuccess.of(request))
+                app.accountManager.verify(account, request.code.asSanitizedCode())?.let {
+                    app.accountManager.publishPreKeys(it)
+                    app.socketMessageSender.send(SocketResponse.VerificationSuccess.of(request))
+                } ?: run {
+                    app.socketMessageSender.send(SocketResponse.VerificationError.of(request, SignalcError.AuthorizationFailed))
+                }
             }
         }
     } catch(error: Throwable) {

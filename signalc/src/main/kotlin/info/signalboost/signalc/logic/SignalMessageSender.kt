@@ -45,7 +45,7 @@ class SignalMessageSender(private val app: Application) {
             absent(),
             absent(),
             null,
-            null,
+            null, // TODO: we should likely pass an executor derrived from the coroutine context here!
         ).also { messageSenders[account]  = it }
 
     suspend fun send(
