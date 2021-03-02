@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import mu.KLoggable
 import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
@@ -16,7 +17,9 @@ class TestSocketServer(
     private val connections: ReceiveChannel<Socket>,
     private val listenJob: Job,
 ) {
-    companion object {
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+
         suspend fun run(socketPath: String, scope: CoroutineScope): TestSocketServer = scope.async {
             // - starts a socket server at a path
             // - returns a TestSocketServer instance wrapping a `connections` channel
@@ -25,10 +28,12 @@ class TestSocketServer(
             lateinit var listenJob: Job
             AFUNIXServerSocket.newInstance().let {
                 it.bind(AFUNIXSocketAddress(File(socketPath)))
+                logger.debug("Test server listening for connections on $socketPath...")
+
                 listenJob = scope.launch(IO) {
                     while (!out.isClosedForReceive && this.isActive) {
                         val sock = it.accept() as Socket
-                        println("Got connection on ${sock.hashCode()}")
+                        logger.debug("Got connection on ${sock.hashCode()}")
                         out.send(sock)
                     }
                 }
