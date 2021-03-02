@@ -72,7 +72,7 @@ sealed class SocketRequest {
         val username: String,
         val recipientAddress: SerializableAddress,
         val messageBody: String,
-        val attachments: List<Attachment>,
+        val attachments: List<Attachment> = emptyList(),
         // we could optionally support a QuoteObject here, but we don't. see:
         // https://docs.signald.org/structures/v1/JsonQuote.html
     ): SocketRequest() {
