@@ -4,8 +4,13 @@ const defaults = {
   authToken: process.env.SIGNALBOOST_API_TOKEN,
 }
 
+const test = {
+  ...defaults,
+  authToken: 'fakeToken',
+}
+
 module.exports = {
   development: defaults,
-  test: defaults,
+  test,
   production: defaults,
 }
