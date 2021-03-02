@@ -3,6 +3,7 @@ package info.signalboost.signalc.testSupport.socket
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.*
+import mu.KLoggable
 import okhttp3.internal.closeQuietly
 import org.newsclub.net.unix.AFUNIXSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
@@ -24,7 +25,9 @@ class TestSocketClient private constructor(
     private val scope: CoroutineScope,
     ) {
 
-    companion object {
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+
         private const val READ_BUFFER_SIZE = 10
 
         suspend fun connect(
@@ -39,10 +42,11 @@ class TestSocketClient private constructor(
             val writer = PrintWriter(socket.getOutputStream(), true)
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
 
+            logger.debug("Test client running...")
             scope.launch(IO) {
                 while(this.isActive && !out.isClosedForSend && !socket.isClosed) {
                     val msg = reader.readLine() ?: return@launch
-                    println("Test client ${socket.hashCode()} got msg: $msg")
+                    logger.debug("Test client ${socket.hashCode()} got msg: $msg")
                     out.send(msg)
                 }
             }
