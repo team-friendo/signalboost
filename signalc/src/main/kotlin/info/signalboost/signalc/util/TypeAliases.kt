@@ -5,4 +5,3 @@ import java.net.Socket
 
 typealias SocketHashCode = Int
 typealias UnixServerSocket = AFUNIXServerSocket
-typealias SocketConnection = Socket
