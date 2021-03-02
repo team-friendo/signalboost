@@ -4,6 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.logging.Loggable
 import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
@@ -21,7 +22,9 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageReceiver(private val app: Application) {
+class SocketMessageReceiver(private val app: Application):
+    Loggable by Loggable.Of(app, SocketMessageReceiver::class) {
+
     internal val readers = ConcurrentHashMap<SocketHashCode, BufferedReader>()
 
     // NOTE: this singleton is mainly here as a testing seam, but could be
@@ -44,7 +47,7 @@ class SocketMessageReceiver(private val app: Application) {
                         close(socketHash)
                         return@launch
                     }
-                    println("got message on socket $socketHash: $socketMessage")
+                    logger.debug { "got message on socket $socketHash: $socketMessage" }
                     app.coroutineScope.launch(IO) {
                         dispatch(socketMessage, socketHash)
                     }
@@ -59,9 +62,9 @@ class SocketMessageReceiver(private val app: Application) {
             try {
                 reader.close()
             } catch(e: Throwable) {
-                println("Error closing reader on socket $socketHash: $e")
+                logger.error { "Error closing reader on socket $socketHash: $e" }
             }
-            println("Closed reader from socket $socketHash")
+            logger.info("Closed reader from socket $socketHash")
         }
         app.socketServer.close(socketHash)
     }
@@ -91,7 +94,7 @@ class SocketMessageReceiver(private val app: Application) {
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
-            println("ERROR executing command $request from socket $socketHash: $e")
+            logger.error("ERROR handling request $request from socket $socketHash: $e")
             app.socketMessageSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
             )
@@ -116,7 +119,7 @@ class SocketMessageReceiver(private val app: Application) {
     // HANDLE COMMANDS
 
     private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
-        println("Received `abort`. Exiting.")
+        logger.info("Received `abort`. Exiting.")
         app.socketMessageSender.send(SocketResponse.AbortWarning(request.id, socketHash))
         app.stop()
     }
@@ -162,7 +165,7 @@ class SocketMessageReceiver(private val app: Application) {
 
     private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
         val (id,username) = request
-        println("Subscribing to messages for ${username}...")
+        logger.info("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
             ?: return run {
                 app.socketMessageSender.send(
@@ -171,8 +174,8 @@ class SocketMessageReceiver(private val app: Application) {
             }
 
         val subscribeJob = app.signalMessageReceiver.subscribe(account)
-        app.socketMessageSender.send(SocketResponse.SubscriptionSuccess(id))
-        println("...subscribed to messages for ${account.username}.")
+        app.socketMessageSender.send(SocketResponse.SubscriptionSuccess.of(request))
+        logger.info("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
             // TODO: Think about this more carefully...
@@ -180,11 +183,11 @@ class SocketMessageReceiver(private val app: Application) {
             app.coroutineScope.launch(IO) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
-                        println("...error subscribing to messages for ${account.username}: ${error}.")
+                        logger.info("...error subscribing to messages for ${account.username}: ${error}.")
                         app.socketMessageSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
-                        println("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
+                        logger.info("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
                         app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(id, error))
                         delay(retryDelay)
                         subscribe(request, retryDelay * 2)

@@ -10,6 +10,7 @@ import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
+import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
@@ -25,6 +26,8 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class AccountManager(private val app: Application) {
+
+    companion object: KLogging()
 
     private val accountStore = app.accountStore
     private val protocolStore = app.protocolStore

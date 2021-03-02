@@ -55,7 +55,6 @@ class SignalMessageSender(private val app: Application) {
         timestamp: Long = TimeUtil.nowInMillis(),
         expiration: Int = DEFAULT_EXPIRY_TIME,
     ): SendMessageResult {
-        println("sending $body")
         val dataMessage =  SignalServiceDataMessage
             .newBuilder()
             .withBody(body)

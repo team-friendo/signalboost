@@ -3,12 +3,11 @@ package info.signalboost.signalc
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
-import info.signalboost.signalc.util.UnixServerSocket
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.reflect.KClass
 import kotlin.time.ExperimentalTime
-
+import ch.qos.logback.classic.Level
 
 @ExperimentalTime
 @ExperimentalCoroutinesApi
@@ -35,6 +34,7 @@ object Config {
 
     data class App(
         val db: Database,
+        val logging: Logging,
         val signal: Signal,
         val socket: Socket,
         val mocked: Set<KClass<out Any>>,
@@ -44,6 +44,10 @@ object Config {
         val driver: String,
         val url: String,
         val user: String,
+    )
+
+    data class Logging(
+        val level: Level,
     )
 
     data class Signal(
@@ -87,6 +91,9 @@ object Config {
             driver = "com.impossibl.postgres.jdbc.PGDriver",
             url = "jdbc:pgsql://$dbHost/signalc",
             user= "postgres"
+        ),
+        logging = Logging(
+            level = Level.INFO,
         ),
         signal= Signal(
             addSecurityProvider = true,

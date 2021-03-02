@@ -2,12 +2,14 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.error.SignalcError
+import info.signalboost.signalc.logging.Loggable
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import mu.KLogging
 import java.io.PrintWriter
 import java.net.Socket
 import kotlin.time.ExperimentalTime
@@ -16,7 +18,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageSender(private val app: Application) {
+class SocketMessageSender(private val app: Application): Loggable by Loggable.Of(app, SocketMessageSender::class) {
 
     // this is mostly here as a testing seam
     internal object Writer {
@@ -25,7 +27,7 @@ class SocketMessageSender(private val app: Application) {
         }.await()
     }
 
-    internal val writerPool = WriterPool(app.coroutineScope)
+    internal val writerPool = WriterPool(app)
 
     /*************
      * INTERFACE
@@ -40,7 +42,7 @@ class SocketMessageSender(private val app: Application) {
      * WRITER POOL
      ***************/
 
-    class WriterPool(coroutineScope: CoroutineScope) {
+    class WriterPool(app: Application): Loggable by Loggable.Of(app, SocketMessageSender::class)  {
         internal val writers: MutableMap<SocketHashCode,WriterResource> = mutableMapOf()
 
         sealed class Message {
@@ -71,18 +73,18 @@ class SocketMessageSender(private val app: Application) {
         }
 
         // Here we use an actor to enforce threadsafe mutation of our pool of writers.
-        private val input = coroutineScope.actor<Message> {
+        private val input = app.coroutineScope.actor<Message> {
             for(msg in channel) {
                 when (msg) {
                     is Message.Add -> {
                         val socketHash = msg.socket.hashCode()
                         writers[socketHash]?.let {
-                            println("Failed to add writer for socket $socketHash")
+                            logger.error("Failed to add writer for socket $socketHash")
                             msg.result.complete(false)
                         } ?: run {
                             writers[socketHash] = WriterResource(
-                                coroutineScope,
-                                Writer.to(msg.socket, coroutineScope),
+                                app.coroutineScope,
+                                Writer.to(msg.socket, app.coroutineScope),
                             )
                             msg.result.complete(true)
                         }
@@ -111,13 +113,13 @@ class SocketMessageSender(private val app: Application) {
                             // of which to write to the socket. This increases throughput by allowing the actor
                             // to process the next `Send` message without waiting for the write to complete.
                             // (Queueing on the socket writer is handled by the Writer's internal socket below.)
-                            coroutineScope.launch(IO) {
+                            app.coroutineScope.launch(IO) {
                                 it.send(msg.socketMsg)
                             }
                             msg.result.complete(Unit)
                         } ?: run {
                             val errorMsg = "Failed to acquire writer for socket $socketHash"
-                            println(errorMsg)
+                            logger.error(errorMsg)
                             msg.result.completeExceptionally(SignalcError.WriterMissing(errorMsg))
                         }
                     }
