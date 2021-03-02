@@ -4,11 +4,11 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.logging.Loggable
 import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import mu.KLogging
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -22,8 +22,8 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageReceiver(private val app: Application):
-    Loggable by Loggable.Of(app, SocketMessageReceiver::class) {
+class SocketMessageReceiver(private val app: Application) {
+    companion object: KLogging()
 
     internal val readers = ConcurrentHashMap<SocketHashCode, BufferedReader>()
 

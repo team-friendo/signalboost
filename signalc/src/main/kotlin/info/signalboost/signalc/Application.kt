@@ -3,8 +3,6 @@ package info.signalboost.signalc
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
-import info.signalboost.signalc.logging.Loggable.Levels.level
-import info.signalboost.signalc.logging.Loggable
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -33,7 +31,6 @@ import kotlin.time.ExperimentalTime
 class Application(val config: Config.App){
     companion object: KLogging()
     init {
-        logger.level = config.logging.level
         if (config.signal.addSecurityProvider) {
             Security.addProvider(BouncyCastleProvider())
         }
@@ -166,8 +163,6 @@ class Application(val config: Config.App){
         if(config.mocked.contains(component)) mockk(block = mockAnswers)
         else (component.primaryConstructor!!::call)(arrayOf(this@Application))
 
-
-    lateinit var logging: Loggable
 
     @ExperimentalCoroutinesApi
     suspend fun run(scope: CoroutineScope): Application {

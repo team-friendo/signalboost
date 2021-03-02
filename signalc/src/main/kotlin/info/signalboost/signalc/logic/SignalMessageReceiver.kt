@@ -20,8 +20,8 @@ import kotlin.time.ExperimentalTime
 class SignalMessageReceiver(private val app: Application) {
     companion object {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
-
     }
+
     // FACTORIES
 
     private fun messagePipeOf(account: VerifiedAccount) = SignalServiceMessageReceiver(

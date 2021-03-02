@@ -2,7 +2,6 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.error.SignalcError
-import info.signalboost.signalc.logging.Loggable
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
 import kotlinx.coroutines.*
@@ -18,7 +17,8 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageSender(private val app: Application): Loggable by Loggable.Of(app, SocketMessageSender::class) {
+class SocketMessageSender(private val app: Application) {
+    companion object: KLogging()
 
     // this is mostly here as a testing seam
     internal object Writer {
@@ -42,7 +42,9 @@ class SocketMessageSender(private val app: Application): Loggable by Loggable.Of
      * WRITER POOL
      ***************/
 
-    class WriterPool(app: Application): Loggable by Loggable.Of(app, SocketMessageSender::class)  {
+    class WriterPool(app: Application) {
+        companion object: KLogging()
+
         internal val writers: MutableMap<SocketHashCode,WriterResource> = mutableMapOf()
 
         sealed class Message {
