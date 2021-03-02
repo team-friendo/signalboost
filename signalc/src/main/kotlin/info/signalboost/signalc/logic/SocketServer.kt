@@ -1,8 +1,8 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.util.SocketHashCode
-import info.signalboost.signalc.util.UnixServerSocket
+import info.signalboost.signalc.logging.Loggable
+import info.signalboost.signalc.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import org.newsclub.net.unix.AFUNIXServerSocket
@@ -15,14 +15,15 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketServer(val app: Application): Application.ReturningRunnable<SocketServer> {
+class SocketServer(val app: Application):
+    Application.ReturningRunnable<SocketServer>,
+    Loggable by Loggable.Of(app, SocketServer::class) {
 
     internal lateinit var socket: UnixServerSocket
     internal lateinit var listenJob: Job
     internal val connections = ConcurrentHashMap<SocketHashCode,Socket>()
 
     override suspend fun run(): SocketServer {
-
         socket = app.coroutineScope.async {
             AFUNIXServerSocket.newInstance().apply {
                 bind(AFUNIXSocketAddress(File(app.config.socket.path)))
@@ -31,20 +32,20 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
 
         listenJob = app.coroutineScope.launch(IO) {
             while (this.isActive && !socket.isClosed) {
-                println("Socker server listening...")
+                logger.info("Listening on ${app.config.socket.path}...")
                 val connection = try {
                     socket.accept() as Socket
                 } catch (e: Throwable) {
-                    println("Server socket closed.")
+                    logger.error("Connection disrupted: ${e.message}")
                     return@launch stop()
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
-                println("Got connection on socket $socketHash")
+                logger.info("Got connection on socket $socketHash")
                 launch(IO) {
                     app.socketMessageReceiver.connect(connection)
-                    println("Connected reader to socket $socketHash")
+                    logger.info("Connected reader to socket $socketHash")
                     app.socketMessageSender.connect(connection)
-                    println("Connected writer to socket $socketHash")
+                    logger.info("Connected writer to socket $socketHash")
                 }
             }
         }
@@ -56,7 +57,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         app.socketMessageSender.close(socketHash)
         app.socketMessageReceiver.close(socketHash)
         closeConnection(socketHash)
-        println("Server closed connection on socket $socketHash")
+        logger.info("Closed connection on socket $socketHash")
     }
 
     suspend fun stop(): Unit = app.coroutineScope.async(IO) {

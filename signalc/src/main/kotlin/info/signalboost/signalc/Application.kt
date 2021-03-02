@@ -3,10 +3,13 @@ package info.signalboost.signalc
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.logging.Loggable.Levels.level
+import info.signalboost.signalc.logging.Loggable
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
+import mu.KLogging
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
 import org.signal.libsignal.metadata.certificate.CertificateValidator
@@ -24,12 +27,13 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
-
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class Application(val config: Config.App) {
+class Application(val config: Config.App){
+    companion object: KLogging()
     init {
+        logger.level = config.logging.level
         if (config.signal.addSecurityProvider) {
             Security.addProvider(BouncyCastleProvider())
         }
@@ -163,8 +167,13 @@ class Application(val config: Config.App) {
         else (component.primaryConstructor!!::call)(arrayOf(this@Application))
 
 
+    lateinit var logging: Loggable
+
     @ExperimentalCoroutinesApi
     suspend fun run(scope: CoroutineScope): Application {
+
+        logger.info("Booting...")
+        logger.debug("Logging debug stuff...")
 
         // concurrency context
         coroutineScope = scope
@@ -212,8 +221,7 @@ class Application(val config: Config.App) {
                 coEvery { close(any()) } returns Unit
             }
         }.run()
-        println("running!\nlistening for connections at ${config.socket.path}...")
-
+        logger.info("...Running!")
         return this
     }
 

@@ -22,6 +22,7 @@ plugins {
 application {
     mainClass.set(entrypoint)
     mainClassName = entrypoint
+    applicationDefaultJvmArgs = listOf("-Dkotlinx.coroutines.debug")
 }
 
 tasks.withType<KotlinCompile> {
@@ -60,12 +61,23 @@ object Versions {
     const val libsignal = "2.15.3_unofficial_14"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
+    const val logback = "1.2.3"
+    const val log4j = "2.14.0"
+    const val logging = "2.0.2"
     const val mockk = "1.10.3"
     const val postgres = "42.2.18"
     const val pgjdbc = "0.8.3"
     const val shadowJar = "5.2.0"
     const val slf4j = "1.7.30"
     const val junixSocket = "2.3.2"
+}
+
+configurations {
+    // Necessary to avoid "muliple binding" errors from sl4j when it tries to provide a default
+    // logger when none is present. See: http://www.slf4j.org/codes.html#multiple_bindings
+    all {
+        exclude(group = "org.slf4j", module = "slf4j-nop")
+    }
 }
 
 dependencies {
@@ -80,6 +92,14 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
+    // Note: `kotlin-logback` wraps sl4j, which is an abstract facade that needs a concrete impl...
+    implementation ("io.github.microutils:kotlin-logging-jvm:${Versions.logging}")
+    // Logback is our current choice b/c (1) easier to configure, (2) https://www.marcobehler.com/guides/java-logging
+     implementation("ch.qos.logback:logback-classic:${Versions.logback}")
+    // Log4j2 is benched b/c harder to configure, but might be better according to : https://medium.com/@arunmannuru/java-logging-frameworks-ad07e0602de3
+    // implementation("org.apache.logging.log4j:log4j-api:${Versions.log4j}")
+    // implementation("org.apache.logging.log4j:log4j-core:${Versions.log4j}")
+    // implementation("org.apache.logging.log4j:log4j-slf4j-impl:${Versions.log4j}")
 
     // migrations
     implementation("org.liquibase:liquibase-core:${Versions.liquibase}")
@@ -90,7 +110,7 @@ dependencies {
     add("liquibaseRuntime", "com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     add("liquibaseRuntime", "org.postgresql:postgresql:42.2.5")
 
-    // mocks: yes this is weird, but mocck is not `testImplementation` on purpose!
+    // yes, we declare mocck as `implementation` not `testImplementation` on purpose! (see Application.kt)
     implementation("io.mockk:mockk:${Versions.mockk}")
 
     testImplementation("io.kotest:kotest-runner-junit5:${Versions.kotest}")
