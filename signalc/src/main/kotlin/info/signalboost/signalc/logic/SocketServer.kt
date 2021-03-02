@@ -1,10 +1,10 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.logging.Loggable
 import info.signalboost.signalc.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import mu.KLogging
 import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
@@ -15,9 +15,8 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketServer(val app: Application):
-    Application.ReturningRunnable<SocketServer>,
-    Loggable by Loggable.Of(app, SocketServer::class) {
+class SocketServer(val app: Application): Application.ReturningRunnable<SocketServer> {
+    companion object: KLogging()
 
     internal lateinit var socket: UnixServerSocket
     internal lateinit var listenJob: Job
