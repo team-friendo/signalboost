@@ -6,6 +6,8 @@ const defaults = {
   hotlineMessageExpiryInMillis: 1000 * 60 * 60 * 24 * 7, // 1 week
   inviteDeletionInterval: 1000 * 60 * 60, // 1 hour
   inviteExpiryInMillis: 1000 * 60 * 60 * 24 * 7, // 1 week
+  shouldRunKeystoreDeletion: process.env.SHOULD_RUN_KEYSTORE_DELETION === '1',
+  shouldRunHealthchecks: process.env.SHOULD_RUN_HEALTHCHECKS === '1',
 }
 
 const development = {
@@ -33,6 +35,8 @@ const test = {
   healthcheckInterval: testInterval, // millis
   inviteDeletionInterval: testInterval,
   inviteExpiryInMillis: 200, // 200 millis
+  shouldRunKeystoreDeletion: true,
+  shouldRunHealthchecks: true,
 }
 
 module.exports = {

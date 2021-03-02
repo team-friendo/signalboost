@@ -1,8 +1,8 @@
 const defaults = {
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
-  poolSize: 1,
-  availableSockets: 6,
+  poolSize: parseInt(process.env.SOCKET_POOL_SIZE) || 1,
+  availableSockets: parseInt(process.env.SHARD_COUNT) || 6,
   subscribersPerSocket: 1000,
   tierThresholds: [1000, 250, 125, 50, 0],
 }
@@ -18,7 +18,7 @@ const test = {
 }
 
 const development = {
-  availableSockets: 5,
+  availableSockets: 1,
 }
 
 module.exports = {
