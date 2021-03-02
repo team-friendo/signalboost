@@ -2,10 +2,10 @@
 
 set -eu
 
-echo "--- running app..."
+echo "[entrypoint] running app..."
 
 check-until-ngrok-url-available(){
-  echo "checking ngrok..."
+  echo "[entrypoint] checking ngrok..."
   # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
 
   if [[ "$(uname)" == 'Darwin' ]]
