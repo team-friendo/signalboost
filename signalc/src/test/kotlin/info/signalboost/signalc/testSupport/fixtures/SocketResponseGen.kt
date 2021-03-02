@@ -118,7 +118,8 @@ object SocketResponseGen {
 
     fun genSubscriptionSuccess(
         id: String = genUuidStr(),
-    ) = SocketResponse.SubscriptionSuccess(id)
+        username: String = genPhoneNumber(),
+    ) = SocketResponse.SubscriptionSuccess(id, username)
 
     fun genSubscriptionFailed(
         id: String = genUuidStr(),

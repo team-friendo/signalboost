@@ -315,7 +315,7 @@ class SocketMessageReceiverTest : FreeSpec({
                             client.send(requestJson, wait = sendDelay)
                             coVerify {
                                 app.socketMessageSender.send(
-                                    SocketResponse.SubscriptionSuccess(request.id)
+                                    SocketResponse.SubscriptionSuccess(request.id, request.username)
                                 )
                             }
                         }
