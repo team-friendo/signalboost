@@ -272,7 +272,17 @@ sealed class SocketResponse {
 
     @Serializable
     @SerialName("subscription_succeeded")
-    data class SubscriptionSuccess(val id: String): SocketResponse()
+    data class SubscriptionSuccess(
+        val id: String,
+        val username: String,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Subscribe) = SubscriptionSuccess(
+                request.id,
+                request.username,
+            )
+        }
+    }
 
     @Serializable
     @SerialName("subscription_failed")
