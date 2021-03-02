@@ -8,14 +8,14 @@ const {
   signal: { maxVouchLevel },
 } = require('../../../config')
 
-const systemName = 'Signalboost Systemadministrator'
+const systemName = 'Signalboost Systemadmins'
 const notAdmin =
   'Tut uns leid, nur Admins können diesen Befehl ausführen. Sende HILFE um eine Liste an gültigen Befehlen zu erhalten.'
 const notSubscriber =
-  'Dein Befehl konnte nicht bearbeitet werden, da du kein Teilnehmer dieses Kanals bist. Schicke HALLO um dich anzumelden.'
+  'Der Befehl konnte nicht verarbeitet werden, da du kein*e Teilnehmer*in dieses Kanals bist. Schicke HALLO um dich anzumelden.'
 const subscriberLimitReached = subscriberLimit =>
-  `Entschuldigung, dieser Kanal hat sein Limit von ${subscriberLimit} Abonnenten erreicht.`
-const requestsClosed = `Sorry, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`
+  `Entschuldigung, dieser Kanal hat sein Limit von ${subscriberLimit} Abonnent*innen erreicht.`
+const requestsClosed = `Sorry, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuche es später noch einmal.`
 const onOrOff = isOn => (isOn ? 'an' : 'aus')
 
 const vouchModeDisplay = {
@@ -25,38 +25,38 @@ const vouchModeDisplay = {
 }
 
 const support = `----------------------------
-WIE ES FUNKTIONIERT
+SO FUNKTIONIERT ES
 ----------------------------
 
-Signalboost hat Kanäle mit Admins und Teilnehmern:
+Signalboost hat Kanäle mit Admins und Teilnehmer*innen:
 
--> Wenn Admins Ankündigungen senden, werden diese an alle Teilnehmern gesendet.
--> Wenn die Hotline Funktion eingeschaltet ist können alle Teilnehmer anonym Nachrichten an die Hotline schicken
+-> Wenn Admins Ankündigungen senden, werden diese an alle Teilnehmer*innen gesendet.
+-> Wenn die Hotline-Funktion eingeschaltet ist, können alle Teilnehmer*innen anonym Nachrichten an die Hotline schicken
 
-Signalboost beschützt deine Privatsphäre:
+Signalboost schützt deine Privatsphäre:
 
--> Benutzer können nie die Telefonnummern anderer Nutzer sehen.
+-> Nutzer*innen können nie die Telefonnummern anderer Nutzer*innen sehen.
 -> Signalboost liest oder speichert nie den Inhalt der Nachrichten.
 
 Signalboost antwortet auf Befehle:
 
 -> Schicke HILFE um sie aufzulisten.
 
-Mehr infos gibts auf: https://signalboost.info`
+Mehr infos auf: https://signalboost.info`
 
 const validPhoneNumberHint =
   'Telefonnummern müssen mit Ländercodes und einem vorangestellten ' + ' beginnen`'
 
 const parseErrors = {
   missingCommand:
-    'Did you mean to prefix your message with SENDEN? Send HILFE to see a list of all commands.',
+    'Wolltest du dieser Nachricht SENDEN voranstellen? Schicke HILFE für eine Liste aller Befehle.',
 
   unnecessaryPayload: command =>
     `Sorry, dieser Befehl wurde nicht erkannt.
 
-Wollten Sie ${upperCase(command)} oder SENDEN verwenden?
+Wolltest du ${upperCase(command)} oder SENDEN verwenden?
 
-Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
+Sende HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu erhalten.`,
 
   invalidPhoneNumber: phoneNumber =>
     `"${phoneNumber}" ist keine gültige Telefonnummer. ${validPhoneNumberHint}`,
@@ -68,7 +68,7 @@ Senden Sie HILFE, um eine Liste aller gültigen Befehle und deren Verwendung zu 
     `"${vouchLevel}" ist kein gültiges Vertrauenslevel. Nutze bitte eine Zahl zwischen 1 und ${maxVouchLevel}.`,
 
   invalidHotlineMessageId: payload =>
-    `Haben Sie versucht, auf eine Hotline-Nachricht zu antworten? Entschuldigung, ${payload} ist keine gültige Hotline-ID. Eine gültige Hotline-ID sieht wie folgt aus: @123`,
+    `Hast du versucht, auf eine Hotline-Nachricht zu antworten? Entschuldigung, ${payload} ist keine gültige Hotline-ID. Eine gültige Hotline-ID sieht wie folgt aus: @123`,
 }
 
 const invalidPhoneNumber = parseErrors.invalidPhoneNumber
@@ -77,10 +77,10 @@ const commandResponses = {
   // ACCEPT
 
   accept: {
-    success: `Hallo! Sie haben jetzt diesen Signalboost-Kanal abonniert.
+    success: `Hallo! Du hast jetzt diesen Signalboost-Kanal abonniert.
 
 Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
-    alreadyMember: 'Ups! Du bist schon Teilnehmer an diesem Kanal.',
+    alreadyMember: 'Ups! Du bist schon Teilnehmer*in an diesem Kanal.',
     belowVouchLevel: (required, actual) =>
       `Entschuldigung, dieser Kanal erfordert ${required} Einladung(en). Du hast ${actual}.`,
     dbError:
@@ -91,9 +91,9 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
   // ADD
 
   add: {
-    banned: bannedNumber => `Es tut uns leid, ${bannedNumber} ist aus diesem Kanal verboten`,
+    banned: bannedNumber => `Es tut uns leid, ${bannedNumber} ist in diesem Kanal gesperrt`,
     dbError: num =>
-      `Oups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
+      `Ups! Es gab einen Fehler beim Versuch ${num} als Admin hinzuzufügen. Bitte versuche es erneut!`,
     invalidPhoneNumber,
     notAdmin,
     success: newAdmin =>
@@ -102,12 +102,12 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
 
   // BAN
   ban: {
-    success: messageId => `Der Absender der Hotline-Nachricht ${messageId} wurde gesperrt.`,
+    success: messageId => `Die Absender*in der Hotline-Nachricht ${messageId} wurde gesperrt.`,
     notAdmin,
     doesNotExist:
-      'Der Absender dieser Hotline-Nachricht ist inaktiv, sodass wir ihre Nachrichtendatensätze nicht mehr speichern. Bitte versuchen Sie es erneut, sobald die Nachricht erneut gesendet wird.',
+      'Die Absender*in dieser Hotline-Nachricht ist inaktiv, sodass wir ihre Nachrichtendaten nicht mehr speichern. Bitte versuche es erneut, sobald die Nachricht erneut gesendet wird.',
     alreadyBanned: messageId =>
-      `Der Absender der Hotline-Nachricht ${messageId} ist bereits gesperrt.`,
+      `Die Absender*in der Hotline-Nachricht ${messageId} ist bereits gesperrt.`,
     dbError: 'Hoppla! Verbot fehlgeschlagen. Bitte versuche es erneut!',
     invalidHotlineMessageId: messageId =>
       `Entschuldigung, die Hotline-Nachrichten-ID ${messageId} ist abgelaufen oder hat nie existiert.`,
@@ -120,13 +120,13 @@ Antworte mit HILFE um mehr zu erfahren oder TSCHÜSS um dich abzumelden.`,
 
   // CHANNEL
   channel: {
-    success: phoneNumber => `Ihr Signalboost-Kanal wurde erstellt! In Kürze sollten Sie eine Begrüßungsnachricht von Ihrer Kanal-Telefonnummer erhalten:
+    success: phoneNumber => `Dein Signalboost-Kanal wurde erstellt! In Kürze solltest du eine Begrüßungsnachricht von deiner Kanal-Telefonnummer erhalten:
 ${phoneNumber}.
 
-Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können Sie hier den Signalboost-Support benachrichtigen.
+Wenn du Fragen hast oder Probleme beim Zugriff auf deinen Kanal hast, kannst du hier den Signalboost-Support benachrichtigen.
 `,
     requestsClosed: requestsClosed,
-    error: `Entschuldigung, es ist ein Fehler bei der Verarbeitung Ihrer Kanalanfrage aufgetreten! Bitte versuchen Sie es später noch einmal. Wenn Ihr Problem weiterhin besteht, können Sie hier den Signalboost-Support benachrichtigen.`,
+    error: `Entschuldigung, es ist ein Fehler bei der Verarbeitung deiner Kanalanfrage aufgetreten! Bitte versuche es später noch einmal. Wenn dein Problem weiterhin besteht, kannst du hier den Signalboost-Support benachrichtigen.`,
   },
 
   // DECLINE
@@ -139,13 +139,13 @@ Wenn Sie Fragen haben oder Probleme beim Zugriff auf Ihren Kanal haben, können 
   destroy: {
     confirm: `Bist du sicher?
 
- Wenn Sie fortfahren, werden Sie diesen Kanal und alle damit verbundenen Datensätze dauerhaft zerstören.
+ Wenn du fortfährst, wird dieser Kanal und alle damit verbundenen Daten dauerhaft gelöscht.
 
- Um fortzufahren, antworten Sie mit:
+ Um fortzufahren, antworte mit:
 
  BESTÄTIGEN VERNICHTEN`,
-    success: 'Der Kanal und alle zugehörigen Aufzeichnungen wurden unwiderrufbar gelöscht.',
-    error: 'OH! Es gab einen Fehler beim Vernichten des Kanals! Bitte versuchs nochmal!',
+    success: 'Der Kanal und alle zugehörigen Daten wurden unwiderrufbar gelöscht.',
+    error: 'OH! Es gab einen Fehler beim Zerstören des Kanals! Bitte versuchs nochmal!',
     notAdmin,
   },
 
@@ -160,7 +160,7 @@ HILFE
 -> Zeigt alle Befehle an
 
 INFO
--> Zeigt einige statistische Infos über den Kanal, und erklärt wie Signalboost funktioniert
+-> Zeigt statistische Infos über den Kanal, und erklärt wie Signalboost funktioniert
 
 ----------------------------------------------
 
@@ -171,22 +171,22 @@ SENDEN hallo an alle / ! hallo an alle
 -> Sendet eine private Antwort an [HOTLINE @1312]
 
 EINLADEN +491701234567, +491707654321
--> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
+-> Lädt +491701234567 und +491707654321 ein, den Kanal zu abonnieren
 
 HINZUFÜGEN +491701234567
 -> Fügt +491701234567 als Admin des Kanals hinzu
 
 PRIVAT Hallo Admins / ~ Hallo admins
--> Dendet eine private Nachricht "Hallo Admins" an alle Admins des Kanals
+-> Sendet eine private Nachricht "Hallo Admins" an alle Admins des Kanals
 
 ESPAÑOL / FRANÇAIS / ENGLISH
 -> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
 
 HOTLINE AN / AUS
--> Schaltet die Hotline Funktion an oder aus
+-> Schaltet die Hotline-Funktion an oder aus
 
 VERTRAUEN AN / AUS / ADMIN
--> Schaltet die Gutscheine EIN / AUS. Wenn EIN, müssen Personen eingeladen werden, dem Kanal beizutreten. Bei ADMIN können nur Administratoren diese Einladungen senden.
+-> Schaltet das Verbürgen EIN / AUS. Wenn EIN, müssen Personen eingeladen werden, dem Kanal beizutreten. Bei ADMIN können nur Admins diese Einladungen senden.
 
 VERTRAUENS-LEVEL level
 -> Verändert die Zahl der benötigten Einladungen um dem Kanal beitreten zu können
@@ -195,10 +195,10 @@ TSCHÜSS
 -> Entfernt dich aus diesem Kanal
 
 ENTFERNEN +491701234567
--> +491701234567 als Administrator aus dem Kanal entfernt
+-> +491701234567 als Admin aus dem Kanal entfernt
 
 VERBIETEN @1234
--> verbietet user @ 1234 das Senden von Nachrichten und das Empfangen von Sendungen vom Kanal.
+-> Sperrt user @ 1234 vom Senden und Empfangen von Nachrichten aus dem Kanal.
 
 VERNICHTEN
 -> Löscht den Kanal und alle zugehörigen Daten unwiderruflich`,
@@ -211,18 +211,18 @@ HILFE
 -> Zeigt alle Befehle an
 
 INFO
--> Zeigt einige statistische Infos über den Kanal, und erklärt wie Signalboost funktioniert
+-> Zeigt statistische Infos über den Kanal, und erklärt wie Signalboost funktioniert
 
 ----------------------------------------------
 
 EINLADEN +491701234567, +491707654321
--> Lädt +491701234567 und +491707654321 ein den kanal zu abonnieren
+-> Lädt +491701234567 und +491707654321 ein, den Kanal zu abonnieren
 
 ESPAÑOL / FRANÇAIS / ENGLISH
 -> Stellt die Sprache auf Spanisch, Französisch oder Englisch um
 
 HALLO
--> Macht dich zum Teilnehmer am Kanal
+-> Macht dich zur Teilnehmer*in am Kanal
 
 TSCHÜSS
 -> Entfernt dich vom Kanal`,
@@ -240,8 +240,8 @@ Du bist ein Admin dieses Kanals.
 
 Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
-Teilnehmer: ${getSubscriberMemberships(channel).length}
-Teilnehmerlimit: ${channel.subscriberLimit}
+Teilnehmer*innen: ${getSubscriberMemberships(channel).length}
+Teilnehmer*innenlimit: ${channel.subscriberLimit}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}
@@ -252,7 +252,7 @@ ${support}`,
 KANAL INFO:
 ---------------------------
 
-Du bist als Teilnehmer dieses Kanals angemeldet.
+Du bist als Teilnehmer*in dieses Kanals angemeldet.
 
 Signal-Nummer: ${channel.phoneNumber}
 Hotline: ${onOrOff(channel.hotlineOn)}
@@ -265,10 +265,10 @@ ${support}`,
 KANAL INFO:
 ---------------------------
 
-Du bist nicht bei diesem Kanal angemeldet. Schicke HALLO um dich beim Kanal als Teilnehmer anzumelden.
+Du bist nicht bei diesem Kanal angemeldet. Schicke HALLO um dich beim Kanal als Teilnehmer*in anzumelden.
 
 Signal-Nummer: ${channel.phoneNumber}
-Teilnehmer: ${getSubscriberMemberships(channel).length}
+Teilnehmer*in: ${getSubscriberMemberships(channel).length}
 
 ${support}`,
   },
@@ -276,45 +276,45 @@ ${support}`,
   // INVITE
 
   invite: {
-    adminOnly: 'Leider können nur Administratoren Personen zu diesem Kanal einladen.',
+    adminOnly: 'Leider können nur Admins Personen zu diesem Kanal einladen.',
     bannedInvitees: bannedNumbers =>
-      `Es tut uns leid! Die folgenden Zahlen werden aus diesem Kanal verboten: ${bannedNumbers}`,
+      `Es tut uns leid! Die folgenden Nummern sind in diesem Kanal gesperrt: ${bannedNumbers}`,
     dbError: 'Upsi! Einladung konnte nicht verschickt werden. Bitte versuche es erneut :)',
     dbErrors: (failedPhoneNumbers, allPhoneNumbers) =>
       `Upsi! Einladungen konnten nicht gesendet werden für ${failedPhoneNumbers.length} von ${
         allPhoneNumbers.length
       } Telefonnummern.
       
-  Bitte versuchen Sie erneut, EINLADEN für die folgenden Telefonnummern auszugeben:
+  Bitte versuche erneut, EINLADEN für die folgenden Telefonnummern zu schicken:
   
   ${failedPhoneNumbers.join(',')}`,
     invalidPhoneNumber: input =>
-      `Oops! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
+      `Ups! Einladung wurde nicht verschickt. ${invalidPhoneNumber(input)}`,
     notSubscriber,
     subscriberLimitReached: (numInvitees, subscriberLimit, subscriberCount) =>
-      `Versuchen Sie, ${numInvitees} neue Abonnenten einzuladen? Entschuldigung, dieser Kanal ist auf ${subscriberLimit} Abonnenten begrenzt und hat bereits ${subscriberCount} Abonnenten.`,
+      `Versuche, ${numInvitees} neue Abonnent*innen einzuladen? Entschuldigung, dieser Kanal ist auf ${subscriberLimit} Abonnent*innen begrenzt und hat bereits ${subscriberCount} Abonnent*innen.`,
     success: n => (n === 1 ? `Einladung versandt.` : `${n} Einladungen wurden verschickt`),
   },
 
   // JOIN
 
   join: {
-    success: `Hallo! Sie haben jetzt diesen Signalboost-Kanal abonniert.
+    success: `Hallo! Du hast jetzt diesen Signalboost-Kanal abonniert.
 
 Du kannst jederzeit HILFE senden um mehr zu lernen, oder TSCHÜSS um dich abzumelden.`,
-    inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freunde nach einer Einladung!
+    inviteRequired: `Tut uns leid, für diesen Kanal brauchst du eine Einladung. Frage Freund*innen nach einer Einladung!
 
 Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     dbError: `Ups! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs nochmal!`,
-    alreadyMember: `Ups! Du bist schon Teilnehmer an diesem Kanal.`,
+    alreadyMember: `Ups! Du bist schon Teilnehmer*in an diesem Kanal.`,
     subscriberLimitReached,
   },
 
   // LEAVE
 
   leave: {
-    success: `Du wurdest vom Kanal abgemeldet! Tschüssi!`,
-    error: `UUps! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!`,
+    success: `Du wurdest vom Kanal abgemeldet! Tschüss!`,
+    error: `Upps! Es gab einen Fehler beim Versuch dich zum Kanal hinzuzufügen. Bitte versuchs noch einmal!`,
     notSubscriber,
   },
 
@@ -322,7 +322,7 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
 
   private: {
     notAdmin,
-    signalError: `Ups! Beim Versuch, den Admins dieses Kanals eine private Nachricht zu senden, ist ein Fehler aufgetreten. Bitte versuchs erneut!`,
+    signalError: `Upps! Beim Versuch, den Admins dieses Kanals eine private Nachricht zu senden, ist ein Fehler aufgetreten. Bitte versuchs erneut!`,
   },
 
   // REMOVE
@@ -330,7 +330,7 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
   remove: {
     success: num => `${num} wurde entfernt.`,
     notAdmin,
-    targetNotMember: num => `Ups! ${num} ist kein Teilnehmer an diesem Kanal.`,
+    targetNotMember: num => `Ups! ${num} ist kein*e Teilnehmer*in an diesem Kanal.`,
     dbError: num =>
       `Ups! Es gab einen Fehler beim Versuch ${num} zu entfernen. Bitte versuchs erneut!`,
     invalidPhoneNumber,
@@ -342,23 +342,23 @@ Falls du schon eine Einladung erhalten hast, versuche ANNEHMEN zu senden`,
     success: hotlineReply => notifications.hotlineReplyOf(hotlineReply, memberTypes.ADMIN),
     notAdmin,
     invalidMessageId: messageId =>
-      `Entschuldigung, die Hotline-Nachrichtenkennung @${messageId} ist abgelaufen oder hat nie existiert.`,
+      `Entschuldigung, die Hotline-Nachrichten-ID @${messageId} ist abgelaufen oder hat nie existiert.`,
   },
 
   // REQUEST
 
   request: {
-    success: `Hallo! Möchten Sie einen Signalboost-Kanal erstellen?
+    success: `Hallo! Möchtest du einen Signalboost-Kanal erstellen?
 
-Signalboost ist eine Technologie, mit der Sie Sendungen senden und Hotline-Nachrichten empfangen können, ohne Ihre Telefonnummer den Empfängern preiszugeben.
+Signalboost ist ein Dienst, mit dem du Nachrichten verschicken und Hotline-Nachrichten empfangen kannst, ohne deine Telefonnummer den Empfänger*innen preiszugeben.
 
-Wenn Sie dieses Tool verwenden, vertrauen Sie darauf, dass wir die Telefonnummern aller Benutzer Ihres Kanals gut verwalten:
+Wenn du dieses Tool verwendest, vertraust du darauf, dass wir die Telefonnummern aller Nutzer*innen deines Kanals gut verwalten:
 https://signalboost.info/privacy
 
-Wenn Sie jetzt einen Kanal erstellen möchten, senden Sie CHANNEL, gefolgt von einer durch Kommas getrennten Liste von Admin-Telefonnummern mit Ländercodes, zum Beispiel:
+Wenn du jetzt einen Kanal erstellen möchtest, sende CHANNEL, gefolgt von einer durch Kommas getrennten Liste von Admin-Telefonnummern mit Ländercodes, zum Beispiel:
 
 CHANNEL +1555123412, +1555123419`,
-    closed: `Entschuldigung, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuchen Sie es später noch einmal.`,
+    closed: `Entschuldigung, Signalboost akzeptiert derzeit keine neuen Kanalanfragen! Bitte versuche es später noch einmal.`,
   },
 
   // SET_LANGUAGE
@@ -367,7 +367,7 @@ CHANNEL +1555123412, +1555123419`,
     success: `Ab jetzt spreche ich mit dir auf Deutsch und du kannst deutsche Befehle schicken!
 
 Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
-    dbError: 'Upsi! Fehler beim speichern der Sprachwahl. Bitte versuchs nochmal!',
+    dbError: 'Upsi! Fehler beim Speichern der Sprachwahl. Bitte versuchs nochmal!',
   },
 
   // TOGGLES (HOTLINE)
@@ -377,7 +377,7 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
       success: isOn => `Hotline  ${onOrOff(isOn)}geschaltet.`,
       notAdmin,
       dbError: isOn =>
-        `Oops! Es gab einen Fehler beim Versuch die Hotline Funktion ${onOrOff(
+        `Upps! Es gab einen Fehler beim Versuch die Hotline-Funktion ${onOrOff(
           isOn,
         )} zu schalten. Bitte versuche es erneut!`,
     },
@@ -386,33 +386,33 @@ Sende HILFE um eine Liste der erkannten Befehle zu erhalten.`,
   // TRUST
 
   trust: {
-    success: phoneNumber => `Sicherheitsnummer für ${phoneNumber} wurde erneuert`,
+    success: phoneNumber => `Sicherheitsnummer für ${phoneNumber} wurde aktualisiert`,
     error: phoneNumber =>
-      `Sicherheitsnummer von ${phoneNumber} konnte nicht erneuert werden. Versuchs nochmal oder kontaktiere einen Signalboost Maintainer!`,
+      `Sicherheitsnummer von ${phoneNumber} konnte nicht aktualisiert werden. Versuchs nochmal oder kontaktiere einen Signalboost Maintainer!`,
     invalidPhoneNumber,
     notAdmin,
     dbError: phoneNumber =>
-      `Oups! Es gab einen Fehler beim updaten der Sicherheitsnummer von ${phoneNumber}. Bitte versuchs nochmal!`,
+      `Upps! Es gab einen Fehler beim Aktualisieren der Sicherheitsnummer von ${phoneNumber}. Bitte versuchs nochmal!`,
   },
 
   // VOUCHING
   vouchMode: {
     success: (mode, adminId) => {
       const vouchingStatus = adminId
-        ? `ADMIN ${adminId} schaltete der gutschein ${vouchModeDisplay[mode]}.`
-        : `Gutschein ist jetzt ${vouchModeDisplay[mode]}.`
+        ? `ADMIN ${adminId} schaltete das Verbürgen ${vouchModeDisplay[mode]}.`
+        : `Verbürgen ist jetzt ${vouchModeDisplay[mode]}.`
 
       const explanation = {
-        ON: `Dies bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
-Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+        ON: `Das bedeutet, dass eine Einladung eines vorhandenen Mitglieds erforderlich ist, um diesem Kanal beizutreten.
+Jede*r kann eine Einladung senden, indem sie EINLADEN + 1-555-123-1234 sendet.
 
-Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
-        OFF: `Dies bedeutet, dass jeder dem Kanal beitreten kann, indem er HALLO an die Kanalnummer sendet.`,
+Admins können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+        OFF: `Das bedeutet, dass jede*r dem Kanal beitreten kann, indem sie HALLO an die Kanalnummer sendet.`,
         ADMIN: `
-Dies bedeutet, dass eine Einladung eines *Administrators* erforderlich ist, um diesem Kanal beizutreten.
-Jeder kann eine Einladung senden, indem er EINLADEN + 1-555-123-1234 sendet.
+Das bedeutet, dass eine Einladung eines *Admins* erforderlich ist, um diesem Kanal beizutreten.
+Jede*r kann eine Einladung senden, indem sie EINLADEN + 1-555-123-1234 sendet.
 
-Administratoren können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
+Admins können die Anzahl der zum Beitritt erforderlichen Einladungen mithilfe des Befehls VERTRAUENS-LEVEL anpassen.`,
       }[mode]
 
       return `${vouchingStatus}
@@ -421,7 +421,7 @@ ${explanation}`
     },
     notAdmin,
     dbError:
-      'Beim Aktualisieren der Gutscheine für Ihren Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',
+      'Beim Aktualisieren des Verbürgens für deinen Kanal ist ein Fehler aufgetreten. Bitte versuche es erneut .',
   },
 
   // VOUCH_LEVEL
@@ -429,7 +429,7 @@ ${explanation}`
     success: level =>
       `VERTRAUENS-LEVEL auf ${level} gestellt. Jetzt benötigt es ${level} ${
         level > 1 ? 'Einladungen' : 'Einladung'
-      } um diesem Kanal als Teilnehmer beizutreten.`,
+      } um diesem Kanal als Teilnehmer*in beizutreten.`,
     invalid: parseErrors.invalidVouchLevel,
     notAdmin,
     dbError:
@@ -439,7 +439,7 @@ ${explanation}`
   // NONE
   none: {
     error:
-      'Wollten Sie Ihrer Nachricht SENDEN voranstellen? Senden Sie HILFE, um eine Liste aller Befehle anzuzeigen.',
+      'Wolltest du deiner Nachricht SENDEN voranstellen? Sende HILFE, um eine Liste aller Befehle anzuzeigen.',
   },
 }
 
@@ -450,49 +450,49 @@ const notifications = {
   adminRemoved: (removerAdminId, removedAdminId) =>
     `ADMIN ${removerAdminId} entfernte ADMIN ${removedAdminId}`,
 
-  subscriberRemoved: adminId => `ADMIN ${adminId} einen Abonnenten entfernt.`,
+  subscriberRemoved: adminId => `ADMIN ${adminId} hat eine*n Abonnent*in entfernt.`,
 
   adminLeft: adminId => `ADMIN ${adminId} hat den Kanal verlassen.`,
 
   banIssued: (adminId, messageId) =>
-    `Admin ${adminId} verboten den Sender der Hotline-Nachricht ${messageId}`,
+    `Admin ${adminId} hat die Absender*in der Hotline-Nachricht ${messageId} gesperrt.`,
 
   banReceived:
-    'Ein Administrator dieses Kanals hat Sie gesperrt. Weitere Interaktionen werden von den Administratoren des Kanals nicht empfangen.',
+    'Ein Admin dieses Kanals hat dich gesperrt. Weitere Interaktionen werden von den Admins des Kanals nicht empfangen.',
 
   channelDestroyedByAdmin: (adminId, audience) =>
     ({
       ADMIN: `ADMIN ${adminId} hat diesen Kanal zerstört. Alle zugehörigen Daten wurden gelöscht.`,
       SUBSCRIBER:
-        'Der Kanal und alle zugehörigen Daten wurden von den Administratoren dieses Kanals dauerhaft zerstört.',
+        'Der Kanal und alle zugehörigen Daten wurden von den Admins dieses Kanals dauerhaft zerstört.',
     }[audience]),
 
   channelDestructionScheduled: hoursToLive =>
     `Hallo! Dieser Kanal wird in ${hoursToLive} Stunden aufgrund mangelnder Nutzung zerstört.
 
-Um zu verhindern, dass es zerstört wird, senden Sie INFO innerhalb der nächsten ${hoursToLive} Stunden.
+Um zu verhindern, dass es zerstört wird, sende INFO innerhalb der nächsten ${hoursToLive} Stunden.
 
-Wenn Sie den Kanal jetzt zerstören möchten, antworten Sie mit VERNICHTEN.
+Wenn du den Kanal jetzt zerstören möchtest, antworte mit VERNICHTEN.
 
-Weitere Informationen finden Sie unter signalboost.info/how-to.`,
+Weitere Informationen findest du unter signalboost.info/how-to.`,
 
   channelDestructionFailed: (phoneNumber, error) =>
     `Der Kanal mit der Signal-Nummer: ${phoneNumber} konnte nicht zerstört werden.
 ERROR: ${error}`,
 
   channelDestroyedBySystem:
-    'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuchen Sie https://signalboost.info',
+    'Kanal wegen mangelnder Nutzung zerstört. Um einen neuen Kanal zu erstellen, besuche https://signalboost.info',
 
   channelRedeemed:
-    'Dieser Kanal sollte wegen mangelnder Nutzung zerstört werden. Da Sie den Kanal kürzlich verwendet haben, wird er jedoch nicht mehr zerstört. Yay!',
+    'Es war geplant, diesen Kanal wegen mangelnder Nutzung zu zerstören. Da du den Kanal kürzlich verwendet hast, wird er jedoch nicht mehr zerstört. Yay!',
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.
 
-Die warscheinlichste Ursache ist eine Neuinstallation von Signal auf einem neuen Gerät.
-Trotzdem besteht eine kleine Chance das ein Angreifer sich des Telefons bemächtigt hat und nun versucht sich als diese Person auszugeben.
+Die warscheinlichste Ursache ist die Neuinstallation von Signal auf einem neuen Gerät.
+Trotzdem besteht die Möglichkeit dass ein Angreifer sich des Telefons bemächtigt hat und nun versucht sich als diese Person auszugeben.
 
-Setze dich mit ${adminPhoneNumber} in Verbindung um sicherzustellen, dass das Telefon unter ihrer Kontrolle ist, danach kannst du sie so neu authorisieren:
+Setze dich mit ${adminPhoneNumber} in Verbindung um sicherzustellen, dass das Telefon unter ihrer Kontrolle ist. Danach kannst du sie so neu authorisieren:
 
 HINZUFÜGEN ${adminPhoneNumber}
 
@@ -501,14 +501,14 @@ Bis dahin kann ${adminPhoneNumber} weder Nachrichten von diesem Kanal lesen noch
   expiryUpdateNotAuthorized:
     'Sorry, nur Admins können den Timer für verschwindende Nachrichten umstellen.',
 
-  hotlineMessageSent: `Ihre Nachricht wurde an die Administratoren dieses Kanals weitergeleitet.
+  hotlineMessageSent: `Deine Nachricht wurde an die Admins dieses Kanals weitergeleitet.
 
-Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.`,
+Schicke HILFE für eine Auflistung aller erkannten Befehle. Schicke HALLO um dich als Teilnehmer*in der Liste anzumelden.`,
 
   hotlineMessagesDisabled: isSubscriber =>
     isSubscriber
-      ? 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
-      : 'Sorry, bei diesem Kanal ist die Hotline Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dich als Teilnehmer der Liste anzumelden.',
+      ? 'Sorry, bei diesem Kanal ist die Hotline-Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle.'
+      : 'Sorry, bei diesem Kanal ist die Hotline-Funktion nicht aktiv. Schicke HILFE für eine Auflistung aller erkannten Befehle. Schicke HALLO um dich als Teilnehmer*in der Liste anzumelden.',
 
   hotlineReplyOf: ({ messageId, reply }, memberType) => {
     const prefix =
@@ -516,26 +516,26 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schiche HALLO um dic
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: `Hallo! Sie haben eine Einladung erhalten, diesem Signalboost-Kanal beizutreten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
+  inviteReceived: `Hallo! Du hast eine Einladung erhalten, diesem Signalboost-Kanal beizutreten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
 
-  invitedToSupportChannel: `Hallo! Dies ist der Signalboost-Unterstützungskanal.
+  invitedToSupportChannel: `Hallo! Dies ist der Signalboost-Supportkanal.
   
-Signalboost-Betreuer senden damit gelegentlich Ankündigungen zu neuen Funktionen und beantworten eventuelle Fragen.
+Signalboost-Personal sendet damit gelegentlich Ankündigungen zu neuen Funktionen und beantwortet eventuelle Fragen.
 
-Bitte antworten Sie mit ACCEPT, um sich anzumelden, oder DECLINE, um sich nicht anzumelden.`,
+Bitte antworte mit ACCEPT, um dich anzumelden, oder DECLINE, um dich nicht anzumelden.`,
 
   vouchedInviteReceived: (invitesReceived, invitesNeeded) =>
-    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, diese Signalboost Kanal beizutreten. ${
+    `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, diese Signalboost-Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
     }`,
 
-  inviteAccepted: `Glückwunsch! Deine Einladung wurde angenommen, die Person ist jetzt Teilnehmer dieses Kanals.`,
+  inviteAccepted: `Glückwunsch! Deine Einladung wurde angenommen, die Person ist jetzt Teilnehmer*in dieses Kanals.`,
 
   promptToUseSignal:
-    'Diese Nummer akzeptiert nur Nachrichten, die mit dem Signal Private Messenger gesendet wurden. Bitte installieren Sie Signal von https://signal.org und versuchen Sie es erneut.',
+    'Diese Nummer akzeptiert nur Nachrichten, die mit Signal verschickt wurden. Bitte installiere Signal von https://signal.org und versuche es erneut.',
 
   rateLimitOccurred: (channelPhoneNumber, resendInterval) =>
-    `Nachrichtenrate auf: ${channelPhoneNumber} ist limitiert.
+    `Nachrichtenfrequenz von: ${channelPhoneNumber} ist limitiert.
 ${
   resendInterval
     ? `nächster Sendeversuch in: ${resendInterval.toString().slice(0, -3)} Sekunden`
@@ -546,7 +546,7 @@ ${
     `Fehler beim Zerstören des Kanals für die Telefonnummer: ${phoneNumber}`,
 
   safetyNumberChanged:
-    'Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat. Möglicherweise müssen Sie Ihre letzte Nachricht erneut senden! :)',
+    'Es sieht so aus, als ob sich deine Sicherheitsnummer gerade geändert hat. Möglicherweise musst du deine letzte Nachricht erneut senden! :)',
 
   channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
     `${success ? `Neuer Kanal erstellt.` : `Die Kanalerstellung ist fehlgeschlagen.`}
@@ -556,22 +556,22 @@ ${
   channelCreationError: err => `Fehler beim Erstellen des Kanals: ${err}`,
 
   restartRequesterNotAuthorized:
-    'Versuchen Sie, Signalboost neu zu starten? Sie sind dazu nicht berechtigt!',
+    'Versuchst du, Signalboost neu zu starten? Du bist dazu nicht berechtigt!',
   restartChannelNotAuthorized:
-    'Versuchen Sie, Signalboost neu zu starten? Sie benutzen dafür den falschen Kanal! Versuchen Sie es erneut auf dem Diagnosekanal.',
+    'Versuchst du, Signalboost neu zu starten? Du benutzt dafür den falschen Kanal! Versuche es erneut auf dem Diagnosekanal.',
   restartPassNotAuthorized:
-    'Versuchen Sie, Signalboost neu zu starten? Sie haben dafür die falsche Passphrase verwendet!',
+    'Versuchst du, Signalboost neu zu starten? Du hast dafür das falsche Passphrase verwendet!',
   restartSuccessNotification: adminId => `ADMIN ${adminId} hat den Signalboost neu gestartet.`,
   restartSuccessResponse: 'Signalboost wurde erfolgreich neu gestartet!',
   restartFailure: errorMessage => `Signalboost konnte nicht neu gestartet werden: ${errorMessage}`,
 
   toRemovedAdmin: adminId =>
-    `Soeben wurdest du als Admin von diesem Kanal entfernt von ADMIN ${adminId}. Schicke HALLO um dich wieder anzumelden.`,
+    `Soeben wurdest du als Admin von diesem Kanal entfernt durch ADMIN ${adminId}. Schicke HALLO um dich wieder anzumelden.`,
 
   toRemovedSubscriber:
     'Du wurdest gerade von einer/m Admin von diesem Kanal entfernt. Schicke Hallo um dich erneut anzumelden.',
 
-  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} hat die hotline ${onOrOff(isOn)}.`,
+  hotlineToggled: (isOn, adminId) => `ADMIN ${adminId} hat die Hotline ${onOrOff(isOn)}.`,
 
   vouchModeChanged: commandResponses.vouchMode.success,
 
@@ -581,17 +581,17 @@ ${
     }.`,
 
   welcome: (addingAdmin, channelPhoneNumber) =>
-    `Willkommen! Sie wurden gerade von ${addingAdmin} zum Administrator dieses Signalboost-Kanals ernannt.
+    `Willkommen! Du wurdest gerade von ${addingAdmin} zum Admin dieses Signalboost-Kanals ernannt.
 
-1. Fügen Sie diese Telefonnummer (${channelPhoneNumber}) zu Ihren Kontakten hinzu.
-2. Senden Sie HELP, um zu sehen, welche Befehle Sie verwenden können.
-3. Senden Sie INFO, um zu sehen, wie viele Administratoren und Abonnenten sich auf diesem Kanal befinden.
-4. Überprüfen Sie die folgenden Ressourcen:
+1. Füge diese Telefonnummer (${channelPhoneNumber}) zu deinen Kontakten hinzu.
+2. Sende HELP um zu sehen, welche Befehle du verwenden kannst.
+3. Sende INFO um zu sehen, wie viele Admins und Abonnent*innen sich auf diesem Kanal befinden.
+4. Weitere Informationen:
 - https://signalboost.info/how-to
 - https://www.instagram.com/_signalboost/
 - https://signalboost.info/privacy/
 
-psDer Betrieb jedes Kanals kostet uns ~ 3 US-Dollar pro Monat. Da wir diese Software für die Befreiung und nicht für den Profit entwickeln, sind wir auf die materielle Unterstützung unserer Community angewiesen, um das Projekt am Laufen zu halten. Wenn Sie es sich leisten können, erwägen Sie bitte eine Spende hier: https://signalboost.info/donate 💸`,
+P.S: Der Betrieb jedes Kanals kostet uns ~ 3 US-Dollar pro Monat. Da wir diese Software für die freiheitliche Zwecke und nicht für den Profit entwickeln, sind wir auf materielle Unterstützung angewiesen, um das Projekt am Laufen zu halten. Wenn du es dir leisten kannst, erwäge bitte eine Spende: https://signalboost.info/donate 💸`,
 }
 
 const prefixes = {
