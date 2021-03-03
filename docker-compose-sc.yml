@@ -94,5 +94,5 @@ services:
       - signalboost
     env_file: .env.dev
     environment:
-      - NGROK_PORT=app:3000
+      - NGROK_PORT=signalboost:3000
     restart: always
