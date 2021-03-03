@@ -42,6 +42,7 @@ services:
       SHOULD_RUN_HEALTHCHECKS: 0
       NODE_ENV: ${NODE_ENV:-development}
       PROJECT_ROOT: ${PWD}
+      SIGNALBOOST_DEV_DB_NAME: sc_signalboost_development
       SHARD_COUNT: 1
       SOCKET_POOL_SIZE: 8
       SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}

@@ -10,19 +10,19 @@ const defaults = {
 
 const development = {
   ...defaults,
-  database: 'signalboost_development',
+  database: process.env.SIGNALBOOST_DEV_DB_NAME || 'signalboost_development',
 }
 
 const test = {
   ...defaults,
-  database: 'signalboost_test',
+  database: process.env.SIGNALBOOST_TEST_DB_NAME || 'signalboost_test',
   connectionInterval: 10,
   maxConnectionAttempts: 10,
 }
 
 const production = {
   ...defaults,
-  database: 'signalboost',
+  database: process.env.SIGNALBOOST_DB_NAME || 'signalboost',
 }
 
 module.exports = {
