@@ -11,6 +11,11 @@ if [ "$NODE_ENV" = "development" ];then
   npx sequelize db:create --env development
   psql -U postgres -c "create database signalc_development;"
 
+  echo "----- creating dev databases for sc_signalboost..."
+  SIGNALBOOST_DEV_DB_NAME="sc_signalboost_development" \
+    npx sequelize db:create --env development
+  SIGNALBOOST_DEV_DB_NAME="sc_signalboost_development" \
+    psql -U postgres -c "create database signalc_development;"
 
 elif [ "$NODE_ENV" = "test" ];then
   echo "----- creating test database..."
