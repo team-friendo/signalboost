@@ -116,23 +116,25 @@ const loggerOf = prefix =>
         fatalError: () => null,
       }
     : {
-        log: msg => console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`),
+        log: msg => console.log(`${nowTimestamp()} [${prefix}] INFO | ${msg}`),
         logAndReturn: sbStatus => {
-          console.log(`[${prefix} | ${nowTimestamp()}] ${sbStatus.status} ${sbStatus.message}`)
+          console.log(`${nowTimestamp()} [${prefix}] INFO | ${sbStatus.status} ${sbStatus.message}`)
           return sbStatus
         },
         debug: msg => {
           if (process.env.SIGNALBOOST_VERBOSE_LOG === '1')
-            console.log(`[${prefix} | ${nowTimestamp()}] ${msg}`)
+            console.log(`${nowTimestamp()} [${prefix}] DEBUG | ${msg}`)
         },
         error: e =>
           console.error(
-            `[${prefix} | ${nowTimestamp()}] ${get(e, 'errors[0].message', e.message || e)}\n${
-              e.stack
-            }`,
+            `${nowTimestamp()} [${prefix}] ERROR | ${get(
+              e,
+              'errors[0].message',
+              e.message || e,
+            )}\n${e.stack}`,
           ),
         fatalError: e => {
-          console.error(`[${prefix} | ${nowTimestamp()}] ${e.message}\n${e.stack}`)
+          console.error(`${nowTimestamp()} [${prefix}] FATAL ERROR | ${e.message}\n${e.stack}`)
           console.log('ABORTING')
           process.exit(1)
         },
