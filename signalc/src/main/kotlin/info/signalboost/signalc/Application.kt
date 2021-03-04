@@ -7,6 +7,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
+import liquibase.pro.packaged.T
 import mu.KLogging
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
@@ -163,12 +164,11 @@ class Application(val config: Config.App){
         if(config.mocked.contains(component)) mockk(block = mockAnswers)
         else (component.primaryConstructor!!::call)(arrayOf(this@Application))
 
-
     @ExperimentalCoroutinesApi
     suspend fun run(scope: CoroutineScope): Application {
 
         logger.info("Booting...")
-        logger.debug("Logging debug stuff...")
+        logger.debug("(in debug mode)")
 
         // concurrency context:
         // we declare a supervisor job so that failure of a child coroutine won't cause the
@@ -186,39 +186,15 @@ class Application(val config: Config.App){
         signal = initializeSignal()
 
         // "cold" components
-        accountManager = initializeColdComponent(AccountManager::class) {
-            coEvery { load(any()) } returns mockk()
-            coEvery { register(any(),any()) } returns mockk()
-            coEvery { verify(any(),any()) } returns mockk()
-            coEvery { publishPreKeys(any()) } returns mockk()
-        }
-        signalReceiver = initializeColdComponent(SignalReceiver::class){
-            coEvery { subscribe(any()) } returns mockk()
-        }
-        signalSender = initializeColdComponent(SignalSender::class){
-            coEvery { send(any(),any(),any(),any(),any()) } returns mockk() {
-                every { success } returns  mockk()
-            }
-        }
-        socketReceiver = initializeColdComponent(SocketReceiver::class) {
-            coEvery { connect(any()) } returns mockk()
-            coEvery { close(any()) } returns mockk()
-            coEvery { stop() } returns mockk()
-        }
-        socketSender = initializeColdComponent(SocketSender::class){
-            coEvery { connect(any()) } returns mockk()
-            coEvery { close(any()) } returns mockk()
-            coEvery { stop() } returns mockk()
-            coEvery { send(any()) } returns mockk()
-        }
+        accountManager = initializeColdComponent(AccountManager::class, Mocks.accountManager)
+        signalReceiver = initializeColdComponent(SignalReceiver::class, Mocks.signalReceiver)
+        signalSender = initializeColdComponent(SignalSender::class, Mocks.signalSender)
+        socketReceiver = initializeColdComponent(SocketReceiver::class, Mocks.socketReceiver)
+        socketSender = initializeColdComponent(SocketSender::class, Mocks.socketSender)
 
         // "hot" components
-        socketServer = initializeHotComponent(SocketServer::class) {
-            coEvery { run() } returns mockk() {
-                coEvery { stop() } returns Unit
-                coEvery { close(any()) } returns Unit
-            }
-        }.run()
+        socketServer = initializeHotComponent(SocketServer::class, Mocks.socketServer).run()
+
         logger.info("...Running!")
         return this
     }
@@ -229,6 +205,40 @@ class Application(val config: Config.App){
         // TODO: close db connection?
         if(withPanic) exitProcess(1)
         return this
+    }
+
+    object Mocks {
+        val accountManager: AccountManager.() -> Unit = {
+            coEvery { load(any()) } returns mockk()
+            coEvery { register(any(),any()) } returns mockk()
+            coEvery { verify(any(),any()) } returns mockk()
+            coEvery { publishPreKeys(any()) } returns mockk()
+        }
+        val signalReceiver: SignalReceiver.() -> Unit = {
+            coEvery { subscribe(any()) } returns mockk()
+        }
+        val signalSender: SignalSender.() -> Unit = {
+            coEvery { send(any(),any(),any(),any(),any()) } returns mockk {
+                every { success } returns  mockk()
+            }
+        }
+        val socketReceiver: SocketReceiver.() -> Unit = {
+            coEvery { connect(any()) } returns mockk()
+            coEvery { close(any()) } returns mockk()
+            coEvery { stop() } returns mockk()
+        }
+        val socketSender: SocketSender.() -> Unit = {
+            coEvery { connect(any()) } returns mockk()
+            coEvery { close(any()) } returns mockk()
+            coEvery { stop() } returns mockk()
+            coEvery { send(any()) } returns mockk()
+        }
+        val socketServer: SocketServer.() -> Unit = {
+            coEvery { run() } returns mockk() {
+                coEvery { stop() } returns Unit
+                coEvery { close(any()) } returns Unit
+            }
+        }
     }
 }
 
