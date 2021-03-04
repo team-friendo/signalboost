@@ -3,13 +3,14 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import kotlinx.coroutines.*
+import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
 
@@ -18,7 +19,8 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalMessageReceiver(private val app: Application) {
-    companion object {
+    companion object: Any(), KLoggable {
+        override val logger = logger()
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
 
@@ -65,6 +67,7 @@ class SignalMessageReceiver(private val app: Application) {
             while (this.isActive) {
                 withContext(Dispatchers.IO) {
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                    logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}"}
                     dispatch(account, envelope)
                 }
             }
@@ -74,11 +77,14 @@ class SignalMessageReceiver(private val app: Application) {
     // MESSAGE HANDLING
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
-        when(envelope.type) {
-            CIPHERTEXT_VALUE -> handleCiphertext(envelope, account)
-            // TODO: handle other message types:
-            //  - UNKNOWN, KEY_EXCHANGE, PREKEY_BUNDLE, UNIDENTIFIED_SENDER, RECEIPT
-            else -> drop(envelope, account)
+        when(envelope.type.asEnum()) {
+            EnvelopeType.CIPHERTEXT,
+            EnvelopeType.PREKEY_BUNDLE -> handleCiphertext(envelope, account)
+            // TODO(aguestuser|2021-03-04): handle any of these?
+            EnvelopeType.KEY_EXCHANGE,
+            EnvelopeType.RECEIPT,
+            EnvelopeType.UNIDENTIFIED_SENDER,
+            EnvelopeType.UNKNOWN -> drop(envelope, account)
         }
     }
 

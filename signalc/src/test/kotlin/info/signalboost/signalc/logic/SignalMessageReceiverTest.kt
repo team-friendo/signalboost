@@ -182,6 +182,27 @@ class SignalMessageReceiverTest : FreeSpec({
                     }
                 }
             }
+
+            "when signal sends an envelope of type PREKEY_BUNDLE" - {
+                val envelope = signalSendsEnvelopeOf(PREKEY_BUNDLE_VALUE)
+
+                "it is handled as CIPHERTEXT" {
+                    every {
+                        anyConstructed<SignalServiceCipher>().decrypt(any())
+                    }  returns  mockk {
+                        every { dataMessage.orNull() } returns null
+                    }
+
+                    messageReceiver.subscribe(recipientAccount).let {
+                        delay(10)
+                        it.cancel()
+                    }
+
+                    verify {
+                        anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                    }
+                }
+            }
         }
     }
 })
