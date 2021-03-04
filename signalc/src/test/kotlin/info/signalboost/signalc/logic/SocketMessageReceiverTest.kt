@@ -4,7 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
+import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genNewAccount
@@ -205,7 +205,7 @@ class SocketMessageReceiverTest : FreeSpec({
                 val messageBody = "hi there"
                 val sendRequest = genSendRequest(
                     username = verifiedSenderAccount.username,
-                    recipientAddress = recipientAccount.address.asSerializable(),
+                    recipientAddress = recipientAccount.address.asSignalcAddress(),
                     messageBody = messageBody,
                 )
                 val sendRequestJson = sendRequest.toJson()

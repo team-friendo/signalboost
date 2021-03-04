@@ -1,6 +1,6 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSerializableAddress
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalcAddress
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
@@ -36,8 +36,8 @@ class SocketResponseTest : FreeSpec({
         "for Cleartext" - {
             "constructs a Cleartext from a message and metadata" {
                 SocketResponse.Cleartext.of(
-                    sender = genSerializableAddress(),
-                    recipient = genSerializableAddress(),
+                    sender = genSignalcAddress(),
+                    recipient = genSignalcAddress(),
                     body = genPhrase(),
                     attachments = emptyList(),
                     expiresInSeconds = genInt(),
@@ -49,7 +49,7 @@ class SocketResponseTest : FreeSpec({
         "for SendResult" - {
             val request = genSendRequest()
             val recipientAddress = request.recipientAddress
-            val recipientSignalAddress = recipientAddress.asSignalAddress()
+            val recipientSignalAddress = recipientAddress.asSignalServiceAddress()
 
             "constructs a SendResult from a SUCCESS" {
                 SocketResponse.SendResult.of(
@@ -358,7 +358,8 @@ class SocketResponseTest : FreeSpec({
                 response.toJson() shouldBe """
                 |{
                   |"type":"subscription_succeeded",
-                  |"id":"${response.id}"
+                  |"id":"${response.id}",
+                  |"username":"${response.username}"
                 |}
                 """.flatten()
             }

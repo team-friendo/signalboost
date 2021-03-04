@@ -70,7 +70,7 @@ sealed class SocketRequest {
     data class Send(
         val id: String,
         val username: String,
-        val recipientAddress: SerializableAddress,
+        val recipientAddress: SignalcAddress,
         val messageBody: String,
         val attachments: List<Attachment> = emptyList(),
         // we could optionally support a QuoteObject here, but we don't. see:
@@ -92,7 +92,7 @@ sealed class SocketRequest {
     data class SetExpiration(
         val id: String,
         val username: String, // e164 number
-        val recipientAddress: SerializableAddress,
+        val recipientAddress: SignalcAddress,
         val expiresInSeconds: Int,
     ): SocketRequest()
 
@@ -108,7 +108,7 @@ sealed class SocketRequest {
     data class Trust(
         val id: String,
         val username: String,
-        val recipientAddress: SerializableAddress,
+        val recipientAddress: SignalcAddress,
         val fingerprint: String,
     ): SocketRequest()
 

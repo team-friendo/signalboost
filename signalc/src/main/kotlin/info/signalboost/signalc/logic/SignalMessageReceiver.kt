@@ -3,7 +3,7 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
+import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import kotlinx.coroutines.*
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
@@ -75,18 +75,18 @@ class SignalMessageReceiver(private val app: Application) {
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
         when(envelope.type) {
-            CIPHERTEXT_VALUE -> handleCyphertext(envelope, account)
+            CIPHERTEXT_VALUE -> handleCiphertext(envelope, account)
             // TODO: handle other message types:
             //  - UNKNOWN, KEY_EXCHANGE, PREKEY_BUNDLE, UNIDENTIFIED_SENDER, RECEIPT
             else -> drop(envelope, account)
         }
     }
 
-    private suspend fun handleCyphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
+    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
         // Attempt to decrypt envelope in a new coroutine within CPU-intensive thread-pool
         // (don't suspend execution in the current coroutine or consume IO threadpool),
         // then relay result to socket message sender for handling.
-        val (sender, recipient) = Pair(envelope.asSerializable(), account.asSerializable())
+        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
         app.coroutineScope.launch(Dispatchers.Default) {
             try {
                 val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
@@ -111,7 +111,9 @@ class SignalMessageReceiver(private val app: Application) {
     }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        app.socketMessageSender.send(SocketResponse.Dropped(envelope.asSerializable(), account.asSerializable(), envelope))
+        app.socketMessageSender.send(
+            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+        )
     }
 }
 

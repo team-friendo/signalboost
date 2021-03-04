@@ -2,15 +2,13 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SerializableAddress.Companion.asSerializable
+import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
 import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
-import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.cleartext
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
@@ -27,9 +25,7 @@ import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.UNKNOWN_VALUE
-import java.util.*
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -97,8 +93,8 @@ class SignalMessageReceiverTest : FreeSpec({
                     coVerify {
                         app.socketMessageSender.send(
                             dropped(
-                                senderAddress.asSerializable(),
-                                recipientAccount.asSerializable(),
+                                senderAddress.asSignalcAddress(),
+                                recipientAccount.asSignalcAddress(),
                                 envelope
                             )
                         )
@@ -106,7 +102,7 @@ class SignalMessageReceiverTest : FreeSpec({
                 }
             }
 
-            "when signal sends an envelope of type CYPHERTEXT" - {
+            "when signal sends an envelope of type CIPHERTEXT" - {
                 signalSendsEnvelopeOf(CIPHERTEXT_VALUE)
 
                 "and decryption succeeds" - {
@@ -131,8 +127,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 cleartext(
-                                    senderAddress.asSerializable(),
-                                    recipientAccount.asSerializable(),
+                                    senderAddress.asSignalcAddress(),
+                                    recipientAccount.asSignalcAddress(),
                                     secretMessage
                                 )
                             )
@@ -177,8 +173,8 @@ class SignalMessageReceiverTest : FreeSpec({
                         coVerify {
                             app.socketMessageSender.send(
                                 decryptionError(
-                                    senderAddress.asSerializable(),
-                                    recipientAccount.asSerializable(),
+                                    senderAddress.asSignalcAddress(),
+                                    recipientAccount.asSignalcAddress(),
                                     error
                                 )
                             )
