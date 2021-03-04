@@ -22,7 +22,7 @@ import kotlin.time.milliseconds
 @ExperimentalCoroutinesApi
 class SocketServerTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val config = Config.mockAllExcept(SocketServer::class)
         val app = Application(config).run(testScope)
 

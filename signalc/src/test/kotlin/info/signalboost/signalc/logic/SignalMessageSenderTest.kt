@@ -4,7 +4,6 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.logic.SignalMessageSender.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
@@ -27,7 +26,7 @@ import kotlin.time.ExperimentalTime
 class SignalMessageSenderTest : FreeSpec({
     runBlockingTest {
 
-        val testScope = genTestScope()
+        val testScope = this
         val app = Application(Config.mockStore).run(testScope)
         val verifiedAccount = genVerifiedAccount()
         val messageSender = app.signalMessageSender

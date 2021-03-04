@@ -1,14 +1,10 @@
 package info.signalboost.signalc
 
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import io.kotest.core.spec.style.FreeSpec
-import io.kotest.matchers.date.after
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.beOfType
-import io.mockk.coVerify
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -20,7 +16,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class ApplicationTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val app = Application(Config.test).run(testScope)
 
         afterSpec {

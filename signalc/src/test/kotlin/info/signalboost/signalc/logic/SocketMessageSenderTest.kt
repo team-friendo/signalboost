@@ -3,7 +3,6 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.fixtures.SocketResponseGen.genCleartext
@@ -36,7 +35,7 @@ import kotlin.time.milliseconds
 @ExperimentalCoroutinesApi
 class SocketMessageSenderTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val config = Config.mockAllExcept(SocketMessageSender::class)
         val app = Application(config).run(testScope)
 

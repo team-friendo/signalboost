@@ -4,7 +4,6 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalServiceAddress
@@ -34,7 +33,7 @@ import kotlin.time.milliseconds
 @ExperimentalCoroutinesApi
 class SignalMessageReceiverTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val config = Config.mockAllExcept(SignalMessageReceiver::class)
         val app = Application(config).run(testScope)
         val messageReceiver = app.signalMessageReceiver

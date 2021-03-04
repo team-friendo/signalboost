@@ -11,8 +11,6 @@ import info.signalboost.signalc.testSupport.fixtures.AccountGen.genNewAccount
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genRegisteredAccount
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genAbortRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genCloseRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
@@ -45,7 +43,7 @@ import kotlin.time.milliseconds
 @ExperimentalCoroutinesApi
 class SocketMessageReceiverTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val serverScope = genTestScope()
         val config = Config.mockAllExcept(SocketMessageReceiver::class)
         val app = Application(config).run(testScope)
