@@ -3,10 +3,7 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.TimeUtil
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.messages.SendMessageResult
@@ -14,6 +11,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
@@ -45,7 +43,7 @@ class SignalMessageSender(private val app: Application) {
             absent(),
             absent(),
             null,
-            null, // TODO: we should likely pass an executor derrived from the coroutine context here!
+            Dispatchers.IO.asExecutor() as? ExecutorService,
         ).also { messageSenders[account]  = it }
 
     suspend fun send(
