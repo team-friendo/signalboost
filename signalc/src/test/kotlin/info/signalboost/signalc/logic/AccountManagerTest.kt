@@ -7,7 +7,7 @@ import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.ProtocolStore
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe

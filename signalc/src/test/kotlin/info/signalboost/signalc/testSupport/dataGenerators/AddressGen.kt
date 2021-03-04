@@ -1,4 +1,4 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.SignalcAddress
 import org.whispersystems.signalservice.api.push.SignalServiceAddress

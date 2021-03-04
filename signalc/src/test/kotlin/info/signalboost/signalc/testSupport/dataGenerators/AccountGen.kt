@@ -1,9 +1,9 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import java.util.*
 
 object AccountGen {

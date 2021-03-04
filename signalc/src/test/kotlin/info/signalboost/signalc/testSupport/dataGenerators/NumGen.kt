@@ -1,4 +1,4 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.util.SocketHashCode
 import kotlin.random.Random
