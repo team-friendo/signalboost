@@ -5,18 +5,20 @@ enum class EnvelopeType {
     CIPHERTEXT,
     KEY_EXCHANGE,
     PREKEY_BUNDLE,
-    RECEIPT_VALUE,
-    UNIDENTIFIED;
+    RECEIPT,
+    UNIDENTIFIED_SENDER;
 
     companion object {
-        fun fromInt(int: Int) = when(int) {
-            1 -> UNKNOWN
-            2 -> CIPHERTEXT
-            3 -> KEY_EXCHANGE
-            4 -> PREKEY_BUNDLE
-            5 -> RECEIPT_VALUE
-            else -> UNIDENTIFIED //6
+        fun fromInt(int: Int): EnvelopeType = when(int) {
+            1 -> CIPHERTEXT
+            2 -> KEY_EXCHANGE
+            3 -> PREKEY_BUNDLE
+            5 -> RECEIPT
+            6 -> UNIDENTIFIED_SENDER
+            else -> UNKNOWN
         }
+
+        fun Int.asEnum(): EnvelopeType = fromInt(this)
     }
 
 }
