@@ -6,6 +6,7 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
@@ -19,6 +20,7 @@ import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedE
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
@@ -33,7 +35,7 @@ class AccountManager(private val app: Application) {
     private val protocolStore = app.protocolStore
     private val signal = app.signal
 
-    private val accountManagers:  MutableMap<Account,SignalServiceAccountManager> = mutableMapOf()
+    private val accountManagers = ConcurrentHashMap<String,SignalServiceAccountManager>()
 
     private fun accountManagerOf(account: Account): SignalServiceAccountManager {
         // Return a Signal account manager instance for an account.
@@ -48,7 +50,7 @@ class AccountManager(private val app: Application) {
             )
         }
         return when(account) {
-            is VerifiedAccount -> accountManagers[account] ?: createAccountManager()
+            is VerifiedAccount -> getMemoized(accountManagers, account.username, createAccountManager)
             else -> createAccountManager()
         }
     }
