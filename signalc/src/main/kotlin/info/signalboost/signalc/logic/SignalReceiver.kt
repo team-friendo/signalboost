@@ -7,6 +7,7 @@ import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
@@ -36,9 +37,10 @@ class SignalReceiver(private val app: Application) {
     // FACTORIES
 
     private val messageReceivers = ConcurrentHashMap<String,SignalServiceMessageReceiver>()
+    private val ciphers = ConcurrentHashMap<String,SignalServiceCipher>()
 
-    // TODO: use this for attachments later!
-    //  (mistakenly made it for prekey bundle handling -- not needed, but useful so keeping!)
+    // TODO(aguestuser|2021-03-04):
+    //  use this for attachments later! (yes, this is bad Agile, to leave it in, but YOLO!)
     private fun attachmentStreamOf(account: VerifiedAccount, pointer: SignalServiceAttachmentPointer): InputStream =
         messageReceiverOf(account).retrieveAttachment(
             pointer,
@@ -46,7 +48,6 @@ class SignalReceiver(private val app: Application) {
             MAX_ATTACHMENT_SIZE
         )
 
-    // TODO: memoize these !!!
     private fun messageReceiverOf(account: VerifiedAccount): SignalServiceMessageReceiver =
         getMemoized(messageReceivers, account.username) {
             SignalServiceMessageReceiver(
@@ -62,12 +63,14 @@ class SignalReceiver(private val app: Application) {
     private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
         messageReceiverOf(account).createMessagePipe()
 
-    // TODO: memoize?
-    private fun cipherOf(account: VerifiedAccount): SignalServiceCipher = SignalServiceCipher(
-        account.address,
-        app.protocolStore.of(account),
-        app.signal.certificateValidator
-    )
+    private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =
+        getMemoized(ciphers, account.username) {
+            SignalServiceCipher(
+                account.address,
+                app.protocolStore.of(account),
+                app.signal.certificateValidator
+            )
+        }
 
     // MESSAGE LISTENING
 
@@ -85,18 +88,17 @@ class SignalReceiver(private val app: Application) {
         //  - random runtime error
         //  - cleanup message pipe on unsubscribe (by calling messagePipe.shutdown())
         // TODO: custom error for messagePipeCreation
-        return app.coroutineScope.launch {
+        return app.coroutineScope.launch(IO) {
             val messagePipe = try {
                 messagePipeOf(account)
             } catch(e: Throwable) {
+                logger.error { "Failed to create Signal message pipe: ${e.message}"}
                 throw SignalcError.MessagePipeNotCreated(e)
             }
             while (this.isActive) {
-                withContext(Dispatchers.IO) {
-                    val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}"}
-                    dispatch(account, envelope)
-                }
+                val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}"}
+                dispatch(account, envelope)
             }
         }
     }
