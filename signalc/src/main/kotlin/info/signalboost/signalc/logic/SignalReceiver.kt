@@ -22,7 +22,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SignalMessageReceiver(private val app: Application) {
+class SignalReceiver(private val app: Application) {
     companion object: Any(), KLoggable {
         override val logger = logger()
         private const val TMP_FILE_PREFIX = "signalc_attachment"
@@ -120,7 +120,7 @@ class SignalMessageReceiver(private val app: Application) {
                 val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                 dataMessage?.body?.orNull()
                     ?.let {
-                        app.socketMessageSender.send(
+                        app.socketSender.send(
                             SocketResponse.Cleartext.of(
                                 sender,
                                 recipient,
@@ -131,15 +131,15 @@ class SignalMessageReceiver(private val app: Application) {
                             )
                         )
                     }
-                    ?: app.socketMessageSender.send(SocketResponse.Empty)
+                    ?: app.socketSender.send(SocketResponse.Empty)
             } catch(e: Throwable) {
-                app.socketMessageSender.send(SocketResponse.DecryptionError(sender, recipient, e))
+                app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, e))
             }
         }
     }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        app.socketMessageSender.send(
+        app.socketSender.send(
             SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
         )
     }

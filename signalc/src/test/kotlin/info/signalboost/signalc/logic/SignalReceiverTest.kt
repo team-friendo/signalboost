@@ -31,12 +31,12 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SignalMessageReceiverTest : FreeSpec({
+class SignalReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this
-        val config = Config.mockAllExcept(SignalMessageReceiver::class)
+        val config = Config.mockAllExcept(SignalReceiver::class)
         val app = Application(config).run(testScope)
-        val messageReceiver = app.signalMessageReceiver
+        val messageReceiver = app.signalReceiver
 
         beforeSpec {
             mockkConstructor(SignalServiceMessageReceiver::class)
@@ -90,7 +90,7 @@ class SignalMessageReceiverTest : FreeSpec({
                         it.cancel()
                     }
                     coVerify {
-                        app.socketMessageSender.send(
+                        app.socketSender.send(
                             dropped(
                                 senderAddress.asSignalcAddress(),
                                 recipientAccount.asSignalcAddress(),
@@ -124,7 +124,7 @@ class SignalMessageReceiverTest : FreeSpec({
                             it.cancel()
                         }
                         coVerify {
-                            app.socketMessageSender.send(
+                            app.socketSender.send(
                                 cleartext(
                                     senderAddress.asSignalcAddress(),
                                     recipientAccount.asSignalcAddress(),
@@ -148,7 +148,7 @@ class SignalMessageReceiverTest : FreeSpec({
                             it.cancel()
                         }
                         coVerify {
-                            app.socketMessageSender.send(SocketResponse.Empty)
+                            app.socketSender.send(SocketResponse.Empty)
                         }
                     }
                 }
@@ -170,7 +170,7 @@ class SignalMessageReceiverTest : FreeSpec({
                         }
 
                         coVerify {
-                            app.socketMessageSender.send(
+                            app.socketSender.send(
                                 decryptionError(
                                     senderAddress.asSignalcAddress(),
                                     recipientAccount.asSignalcAddress(),
