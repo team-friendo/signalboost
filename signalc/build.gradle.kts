@@ -23,6 +23,7 @@ application {
     mainClass.set(entrypoint)
     mainClassName = entrypoint
     applicationDefaultJvmArgs = listOf("-Dkotlinx.coroutines.debug")
+
 }
 
 tasks.withType<KotlinCompile> {
@@ -38,6 +39,11 @@ tasks.withType<Jar> {
 tasks.withType<JavaExec>{
     run {
         standardInput = System.`in`
+        if (System.getenv("DEBUG_MODE") == "1") {
+            environment(
+                "JAVA_TOOL_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005"
+            )
+        }
     }
 }
 
