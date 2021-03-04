@@ -1,6 +1,6 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
+import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genLong
 
 object StringGen {
     private const val ALL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789-"

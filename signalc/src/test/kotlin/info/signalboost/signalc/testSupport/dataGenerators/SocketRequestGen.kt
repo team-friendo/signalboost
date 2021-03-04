@@ -1,15 +1,15 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SocketRequest
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalcAddress
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
-import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genCaptchaToken
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genFingerprint
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genPhrase
-import info.signalboost.signalc.testSupport.fixtures.StringGen.genVerificationCode
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalcAddress
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genCaptchaToken
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFingerprint
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genPhrase
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genVerificationCode
 
 object SocketRequestGen {
 

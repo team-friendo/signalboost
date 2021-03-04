@@ -1,13 +1,13 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSetExpiration
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genTrustRequest
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genUnsubscribe
-import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerifyRequest
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genTrustRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genUnsubscribe
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should

@@ -5,8 +5,8 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.logic.SignalMessageSender.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.fixtures.AccountGen.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.core.spec.style.FreeSpec
