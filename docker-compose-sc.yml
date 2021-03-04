@@ -38,6 +38,7 @@ services:
     environment:
       DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
       DB_HOST: db
+      DEBUG_MODE: ${DEBUG_MODE:-0}
       DIAGNOSTICS_CHANNEL_NUMBER: ''
       SHOULD_RUN_KEYSTORE_DELETION: 0
       SHOULD_RUN_HEALTHCHECKS: 0
@@ -74,7 +75,7 @@ services:
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-info}
       TRUST_STORE_PATH: /signalc/whisper.store
-      DEBUG_MODE: ${DEBUG_SIGNALC:-0}
+      DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
       - db
