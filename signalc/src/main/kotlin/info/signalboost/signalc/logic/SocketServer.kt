@@ -42,9 +42,9 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                 logger.info("Got connection on socket $socketHash")
                 launch(IO) {
                     app.socketReceiver.connect(connection)
-                    logger.info("Connected reader to socket $socketHash")
+                    logger.info("Connected receiver to socket $socketHash")
                     app.socketSender.connect(connection)
-                    logger.info("Connected writer to socket $socketHash")
+                    logger.info("Connected sender to socket $socketHash")
                 }
             }
         }
