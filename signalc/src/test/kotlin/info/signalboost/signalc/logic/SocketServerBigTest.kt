@@ -25,6 +25,7 @@ import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runBlockingTest
+import java.net.Socket
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -82,10 +83,10 @@ class SocketServerBigTest : FreeSpec({
             testScope.teardown()
         }
 
+        lateinit var client1: TestSocketClient
+        lateinit var client2: TestSocketClient
 
         "#run" - {
-            lateinit var client1: TestSocketClient
-            lateinit var client2: TestSocketClient
             lateinit var receivedMessages: Channel<String>
             suspend fun receiveN(n: Int) = List(n) { receivedMessages.receive() }.toSet()
 
@@ -208,27 +209,37 @@ class SocketServerBigTest : FreeSpec({
 
         "#disconnect" - {
 
-            app.socketServer.closeAllConnections()
-            TestSocketClient.connect(socketPath, testScope)
-            TestSocketClient.connect(socketPath, testScope)
-            delay(10.milliseconds)
-            val (connection1, connection2) = app.socketServer.connections.values.take(2)
+            lateinit var connections: List<Socket>
 
-            testScope.launch {
-                app.socketServer.close(connection1.hashCode())
+            beforeTest {
+                client1 = TestSocketClient.connect(socketPath, testScope)
+                client2 = TestSocketClient.connect(socketPath, testScope)
+
+                delay(10.milliseconds)
+                connections = app.socketServer.connections.values.take(2)
+
+                testScope.launch {
+                    app.socketServer.close(connections[0].hashCode())
+                }
+                testScope.launch {
+                    app.socketServer.close(connections[1].hashCode())
+                }
+
             }
-            testScope.launch {
-                app.socketServer.close(connection2.hashCode())
+
+            afterTest {
+                client1.close()
+                client2.close()
             }
 
             "disconnects a socket connection's message receiver" {
-                app.socketMessageReceiver.readers[connection1.hashCode()] shouldBe null
-                app.socketMessageReceiver.readers[connection2.hashCode()] shouldBe null
+                app.socketMessageReceiver.readers[connections[0].hashCode()] shouldBe null
+                app.socketMessageReceiver.readers[connections[1].hashCode()] shouldBe null
             }
 
             "disconnects a socket connection's message sender" {
-                app.socketMessageSender.writerPool.writers[connection1.hashCode()] shouldBe null
-                app.socketMessageSender.writerPool.writers[connection2.hashCode()] shouldBe null
+                app.socketMessageSender.writerPool.writers[connections[0].hashCode()] shouldBe null
+                app.socketMessageSender.writerPool.writers[connections[1].hashCode()] shouldBe null
             }
         }
 
@@ -236,10 +247,15 @@ class SocketServerBigTest : FreeSpec({
             val restartDelay =20.milliseconds
 
             beforeTest {
-                TestSocketClient.connect(socketPath, testScope)
-                TestSocketClient.connect(socketPath, testScope)
+                client1 = TestSocketClient.connect(socketPath, testScope)
+                client2 = TestSocketClient.connect(socketPath, testScope)
                 app.socketServer.stop()
                 delay(restartDelay)
+            }
+
+            afterTest {
+                client1.close()
+                client2.close()
             }
 
             afterTest {

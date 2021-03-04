@@ -119,7 +119,7 @@ object Config {
             url = "jdbc:pgsql://$dbHost/signalc_test",
         ),
         socket = default.socket.copy(
-            path = "/signalc/test.sock"
+            path = "/signalc/sock/test.sock"
         ),
     )
 
