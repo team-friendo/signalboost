@@ -32,7 +32,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({
     runBlockingTest {
-        val testScope = this // async funcs fail in this suite unless we do this. why?
+        val testScope = genTestScope()
         val config = Config.mockAllExcept(AccountManager::class)
         val app = Application(config).run(testScope)
         val accountManager = app.accountManager
