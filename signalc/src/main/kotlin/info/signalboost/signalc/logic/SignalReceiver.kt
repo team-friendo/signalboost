@@ -5,6 +5,7 @@ import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.util.CacheUtil.getMemoized
 import kotlinx.coroutines.*
 import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
@@ -15,6 +16,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
 
@@ -33,6 +35,7 @@ class SignalReceiver(private val app: Application) {
 
     // FACTORIES
 
+    private val messageReceivers = ConcurrentHashMap<String,SignalServiceMessageReceiver>()
 
     // TODO: use this for attachments later!
     //  (mistakenly made it for prekey bundle handling -- not needed, but useful so keeping!)
@@ -45,14 +48,16 @@ class SignalReceiver(private val app: Application) {
 
     // TODO: memoize these !!!
     private fun messageReceiverOf(account: VerifiedAccount): SignalServiceMessageReceiver =
-        SignalServiceMessageReceiver(
-            app.signal.configs,
-            account.credentialsProvider,
-            app.signal.agent,
-            null, // TODO: see [1] below
-            UptimeSleepTimer(),
-            app.signal.clientZkOperations?.profileOperations,
-        )
+        getMemoized(messageReceivers, account.username) {
+            SignalServiceMessageReceiver(
+                app.signal.configs,
+                account.credentialsProvider,
+                app.signal.agent,
+                null, // TODO: see [1] below
+                UptimeSleepTimer(),
+                app.signal.clientZkOperations?.profileOperations,
+            )
+        }
 
     private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
         messageReceiverOf(account).createMessagePipe()

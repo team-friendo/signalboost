@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.model.VerifiedAccount
+import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import org.whispersystems.libsignal.util.guava.Optional.absent
@@ -25,26 +26,24 @@ class SignalSender(private val app: Application) {
         fun UUID.asAddress() = SignalServiceAddress(this, null)
     }
 
-    private val messageSenders: ConcurrentHashMap<VerifiedAccount,SignalServiceMessageSender> =
-        ConcurrentHashMap()
+    private val messageSenders = ConcurrentHashMap<String,SignalServiceMessageSender>()
 
     private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
-        // return a memoized message sender for this account
-        messageSenders[account] ?:
-        // or create a new one and memoize it
-        SignalServiceMessageSender(
-            app.signal.configs,
-            account.credentialsProvider,
-            app.protocolStore.of(account),
-            app.signal.agent,
-            true,
-            false,
-            absent(),
-            absent(),
-            absent(),
-            null,
-            Dispatchers.IO.asExecutor() as? ExecutorService,
-        ).also { messageSenders[account]  = it }
+        getMemoized(messageSenders, account.username) {
+            SignalServiceMessageSender(
+                app.signal.configs,
+                account.credentialsProvider,
+                app.protocolStore.of(account),
+                app.signal.agent,
+                true,
+                false,
+                absent(),
+                absent(),
+                absent(),
+                null,
+                Dispatchers.IO.asExecutor() as? ExecutorService,
+            )
+        }
 
     suspend fun send(
         sender: VerifiedAccount,
