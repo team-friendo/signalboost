@@ -1,9 +1,7 @@
 package info.signalboost.signalc
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import kotlin.time.ExperimentalTime
-
 
 /*************
  * MAIN LOOP
@@ -12,8 +10,9 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+@Suppress("ControlFlowWithEmptyBody")
 fun main() {
-    runBlocking(IO) {
+    runBlocking {
         Application(Config.fromEnv()).run(this)
         while(true){}
     }
