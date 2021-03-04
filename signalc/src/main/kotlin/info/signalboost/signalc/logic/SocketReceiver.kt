@@ -182,11 +182,11 @@ class SocketReceiver(private val app: Application) {
             app.coroutineScope.launch(IO) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
-                        logger.info("...error subscribing to messages for ${account.username}: ${error}.")
+                        logger.error { "...error subscribing to messages for ${account.username}: ${error}." }
                         app.socketSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
-                        logger.info("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
+                        logger.error { "subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
                         app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
                         delay(retryDelay)
                         subscribe(request, retryDelay * 2)
