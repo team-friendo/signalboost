@@ -1,5 +1,6 @@
 package info.signalboost.signalc.testSupport.fixtures
 
+import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
 
 object StringGen {
     private const val ALL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789-"
@@ -19,6 +20,8 @@ object StringGen {
         "call me ishmael",
         "dead people never stop talkikng and sometimes the living hear",
     ).random()
+
+    fun genSocketPath(): String = "/signalc/sock/test${genLong()}.sock"
 
     fun genVerificationCode(): String = listOf(
         List(3) { DECIMAL_CHARS.random() }.joinToString(""),

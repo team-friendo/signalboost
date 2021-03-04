@@ -17,6 +17,7 @@ import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegiste
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genVerifyRequest
+import info.signalboost.signalc.testSupport.fixtures.StringGen.genSocketPath
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.registrationError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.requestHandlingError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.sendSuccess
@@ -58,7 +59,7 @@ class SocketMessageReceiverTest : FreeSpec({
         val connectDelay = 5.milliseconds
         val closeDelay = 20.milliseconds
 
-        val socketPath = app.config.socket.path
+        val socketPath = genSocketPath()
         val socketServer = TestSocketServer.run(socketPath, serverScope)
 
         lateinit var client: TestSocketClient
@@ -84,6 +85,7 @@ class SocketMessageReceiverTest : FreeSpec({
 
         afterSpec {
             app.stop()
+            client.close()
             socketServer.close()
             testScope.teardown()
             serverScope.teardown()
