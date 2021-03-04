@@ -7,10 +7,14 @@ import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import kotlinx.coroutines.*
 import mu.KLoggable
+import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
+import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
+import java.io.File
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
 
@@ -21,22 +25,40 @@ import kotlin.time.ExperimentalTime
 class SignalMessageReceiver(private val app: Application) {
     companion object: Any(), KLoggable {
         override val logger = logger()
+        private const val TMP_FILE_PREFIX = "signalc_attachment"
+        private const val TMP_FILE_SUFFIX = ".tmp"
+        private const val MAX_ATTACHMENT_SIZE = 150L * 1024 * 1024 // 150MB
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
 
     // FACTORIES
 
-    private fun messagePipeOf(account: VerifiedAccount) = SignalServiceMessageReceiver(
-        app.signal.configs,
-        account.credentialsProvider,
-        app.signal.agent,
-        null, // TODO: see [1] below
-        UptimeSleepTimer(),
-        app.signal.clientZkOperations?.profileOperations,
-    ).createMessagePipe()
 
-    // TODO: memoize this?
-    private fun cipherOf(account: VerifiedAccount) = SignalServiceCipher(
+    // TODO: use this for attachments later!
+    //  (mistakenly made it for prekey bundle handling -- not needed, but useful so keeping!)
+    private fun attachmentStreamOf(account: VerifiedAccount, pointer: SignalServiceAttachmentPointer): InputStream =
+        messageReceiverOf(account).retrieveAttachment(
+            pointer,
+            File.createTempFile(TMP_FILE_PREFIX, TMP_FILE_SUFFIX),
+            MAX_ATTACHMENT_SIZE
+        )
+
+    // TODO: memoize these !!!
+    private fun messageReceiverOf(account: VerifiedAccount): SignalServiceMessageReceiver =
+        SignalServiceMessageReceiver(
+            app.signal.configs,
+            account.credentialsProvider,
+            app.signal.agent,
+            null, // TODO: see [1] below
+            UptimeSleepTimer(),
+            app.signal.clientZkOperations?.profileOperations,
+        )
+
+    private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
+        messageReceiverOf(account).createMessagePipe()
+
+    // TODO: memoize?
+    private fun cipherOf(account: VerifiedAccount): SignalServiceCipher = SignalServiceCipher(
         account.address,
         app.protocolStore.of(account),
         app.signal.certificateValidator
