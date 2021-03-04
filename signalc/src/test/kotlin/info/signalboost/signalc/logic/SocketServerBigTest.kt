@@ -179,7 +179,7 @@ class SocketServerBigTest : FreeSpec({
                 val request = genRegisterRequest(username = newSenderPhone)
 
                 coEvery {
-                    app.accountManager.register(newSenderAccount, request.captchaToken)
+                    app.accountManager.register(newSenderAccount, request.captcha)
                 } returns registeredSenderAccount
 
                 launch { client1.send(request.toJson()) }
@@ -187,7 +187,7 @@ class SocketServerBigTest : FreeSpec({
                 receivedMessages.receive() shouldBe
                         SocketResponse.RegistrationSuccess.of(request).toJson()
                 coVerify {
-                    app.accountManager.register(newSenderAccount, request.captchaToken)
+                    app.accountManager.register(newSenderAccount, request.captcha)
                 }
             }
 

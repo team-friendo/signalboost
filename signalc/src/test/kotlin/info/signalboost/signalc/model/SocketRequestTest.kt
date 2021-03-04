@@ -64,7 +64,7 @@ class SocketRequestTest : FreeSpec({
                       |"id":"${request.id}",
                       |"type":"register",
                       |"username":"${request.username}",
-                      |"captchaToken":"${request.captchaToken}"
+                      |"captcha":"${request.captcha}"
                     |}""".flatten()
 
                     SocketRequest.fromJson(json) shouldBe request
@@ -72,7 +72,7 @@ class SocketRequestTest : FreeSpec({
             }
 
             "with missing captcha token" - {
-                val request = genRegisterRequest(captchaToken = null)
+                val request = genRegisterRequest(captcha = null)
 
                 "decodes from JSON" {
                     val json = """
@@ -94,7 +94,7 @@ class SocketRequestTest : FreeSpec({
                     |{
                       |"type":"register",
                       |"username":"${request.username}",
-                      |"captchaToken":"${request.captchaToken}"
+                      |"captcha":"${request.captcha}"
                     |}""".flatten()
 
                     SocketRequest.fromJson(json) shouldBe request

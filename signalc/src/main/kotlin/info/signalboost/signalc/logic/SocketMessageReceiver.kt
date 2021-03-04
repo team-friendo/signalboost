@@ -1,7 +1,6 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
@@ -131,7 +130,7 @@ class SocketMessageReceiver(private val app: Application) {
                 SocketResponse.RegistrationError.of(request, SignalcError.RegistrationOfRegsisteredUser)
             )
             is NewAccount -> {
-                app.accountManager.register(account, request.captchaToken)
+                app.accountManager.register(account, request.captcha)
                 app.socketMessageSender.send(SocketResponse.RegistrationSuccess.of(request))
             }
         }

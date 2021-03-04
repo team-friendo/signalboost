@@ -62,7 +62,7 @@ sealed class SocketRequest {
     data class Register(
         val id: String = KeyUtil.genUuidStr(),
         val username: String, // e164 phone number
-        val captchaToken: String? = null,
+        val captcha: String? = null,
     ): SocketRequest()
 
     @Serializable
