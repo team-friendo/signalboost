@@ -72,6 +72,7 @@ services:
     environment:
       SIGNALC_ENV: development
       GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       TRUST_STORE_PATH: /signalc/whisper.store
       DEBUG_MODE: ${DEBUG_SIGNALC:-0}
       DB_HOST: db

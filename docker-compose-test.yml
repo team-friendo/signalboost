@@ -45,6 +45,7 @@ services:
     environment:
       DB_HOST: db
       GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-error}
     depends_on:
       - db
     volumes:
