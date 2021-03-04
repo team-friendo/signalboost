@@ -41,10 +41,10 @@ class Application(val config: Config.App){
      *************/
 
     lateinit var accountManager: AccountManager
-    lateinit var signalMessageSender: SignalMessageSender
-    lateinit var signalMessageReceiver: SignalMessageReceiver
-    lateinit var socketMessageReceiver: SocketMessageReceiver
-    lateinit var socketMessageSender: SocketMessageSender
+    lateinit var signalSender: SignalSender
+    lateinit var signalReceiver: SignalReceiver
+    lateinit var socketReceiver: SocketReceiver
+    lateinit var socketSender: SocketSender
     lateinit var socketServer: SocketServer
 
     /*************
@@ -192,20 +192,20 @@ class Application(val config: Config.App){
             coEvery { verify(any(),any()) } returns mockk()
             coEvery { publishPreKeys(any()) } returns mockk()
         }
-        signalMessageReceiver = initializeColdComponent(SignalMessageReceiver::class){
+        signalReceiver = initializeColdComponent(SignalReceiver::class){
             coEvery { subscribe(any()) } returns mockk()
         }
-        signalMessageSender = initializeColdComponent(SignalMessageSender::class){
+        signalSender = initializeColdComponent(SignalSender::class){
             coEvery { send(any(),any(),any(),any(),any()) } returns mockk() {
                 every { success } returns  mockk()
             }
         }
-        socketMessageReceiver = initializeColdComponent(SocketMessageReceiver::class) {
+        socketReceiver = initializeColdComponent(SocketReceiver::class) {
             coEvery { connect(any()) } returns mockk()
             coEvery { close(any()) } returns mockk()
             coEvery { stop() } returns mockk()
         }
-        socketMessageSender = initializeColdComponent(SocketMessageSender::class){
+        socketSender = initializeColdComponent(SocketSender::class){
             coEvery { connect(any()) } returns mockk()
             coEvery { close(any()) } returns mockk()
             coEvery { stop() } returns mockk()

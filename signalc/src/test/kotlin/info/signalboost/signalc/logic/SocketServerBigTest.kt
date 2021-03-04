@@ -38,8 +38,8 @@ class SocketServerBigTest : FreeSpec({
         val testScope = this
         val config = Config.mockAllExcept(
             SocketServer::class,
-            SocketMessageSender::class,
-            SocketMessageReceiver::class,
+            SocketSender::class,
+            SocketReceiver::class,
         )
         val app = Application(config).run(testScope)
 
@@ -105,8 +105,8 @@ class SocketServerBigTest : FreeSpec({
 
             "accepts connections" {
                 app.socketServer.connections.keys.size shouldBe 2
-                app.socketMessageReceiver.readers.size shouldBe 2
-                app.socketMessageSender.writerPool.writers.size shouldBe 2
+                app.socketReceiver.readers.size shouldBe 2
+                app.socketSender.writerPool.writers.size shouldBe 2
             }
 
             "enables sender to write to connections concurrently" {
@@ -114,10 +114,10 @@ class SocketServerBigTest : FreeSpec({
                 val verificationError = genVerificationError()
 
                 testScope.launch {
-                    app.socketMessageSender.send(verificationSuccess)
+                    app.socketSender.send(verificationSuccess)
                 }
                 testScope.launch {
-                    app.socketMessageSender.send(verificationError)
+                    app.socketSender.send(verificationError)
                 }
                 receiveN(2) shouldBe setOf(
                     verificationSuccess.toJson(),
@@ -152,7 +152,7 @@ class SocketServerBigTest : FreeSpec({
                 val worldRequest = sendRequestOf("world")
 
                 coEvery {
-                    app.signalMessageSender.send(any(),any(),any(),any(),any())
+                    app.signalSender.send(any(),any(),any(),any(),any())
                 } returns mockk(){
                     every { success } returns mockk()
                 }
@@ -170,8 +170,8 @@ class SocketServerBigTest : FreeSpec({
                 )
 
                 coVerify {
-                    app.signalMessageSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
-                    app.signalMessageSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
+                    app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
+                    app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
                 }
             }
 
@@ -233,13 +233,13 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "disconnects a socket connection's message receiver" {
-                app.socketMessageReceiver.readers[connections[0].hashCode()] shouldBe null
-                app.socketMessageReceiver.readers[connections[1].hashCode()] shouldBe null
+                app.socketReceiver.readers[connections[0].hashCode()] shouldBe null
+                app.socketReceiver.readers[connections[1].hashCode()] shouldBe null
             }
 
             "disconnects a socket connection's message sender" {
-                app.socketMessageSender.writerPool.writers[connections[0].hashCode()] shouldBe null
-                app.socketMessageSender.writerPool.writers[connections[1].hashCode()] shouldBe null
+                app.socketSender.writerPool.writers[connections[0].hashCode()] shouldBe null
+                app.socketSender.writerPool.writers[connections[1].hashCode()] shouldBe null
             }
         }
 
@@ -264,11 +264,11 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "disconnects receivers from all socket connections" {
-                app.socketMessageReceiver.readers.isEmpty() shouldBe true
+                app.socketReceiver.readers.isEmpty() shouldBe true
             }
 
             "disconnects senders from all socket connections" {
-                app.socketMessageSender.writerPool.writers.isEmpty() shouldBe true
+                app.socketSender.writerPool.writers.isEmpty() shouldBe true
             }
         }
     }

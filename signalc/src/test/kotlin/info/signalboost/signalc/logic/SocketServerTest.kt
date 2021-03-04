@@ -66,12 +66,12 @@ class SocketServerTest : FreeSpec({
 
             "attaches a message receiver to a new connection" {
                 coVerify {
-                    app.socketMessageReceiver.connect(serverSock)
+                    app.socketReceiver.connect(serverSock)
                 }
             }
             "attaches a message sender to a new connection" {
                 coVerify {
-                    app.socketMessageSender.connect(serverSock)
+                    app.socketSender.connect(serverSock)
                 }
             }
 
@@ -133,14 +133,14 @@ class SocketServerTest : FreeSpec({
             "disconnects a socket connection's message receiver" {
                 app.socketServer.close(socketHash)
                 coVerify {
-                    app.socketMessageSender.close(socketHash)
+                    app.socketSender.close(socketHash)
                 }
             }
 
             "disconnects a socket connection's message sender" {
                 app.socketServer.close(socketHash)
                 coVerify {
-                    app.socketMessageSender.close(socketHash)
+                    app.socketSender.close(socketHash)
                 }
             }
 
@@ -169,13 +169,13 @@ class SocketServerTest : FreeSpec({
 
             "disconnects receivers from all socket connections" {
                 coVerify {
-                    app.socketMessageReceiver.stop()
+                    app.socketReceiver.stop()
                 }
 
             }
             "disconnects senders from all socket connections" {
                 coVerify {
-                    app.socketMessageSender.stop()
+                    app.socketSender.stop()
                 }
             }
 

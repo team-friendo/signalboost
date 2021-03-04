@@ -21,7 +21,7 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageReceiver(private val app: Application) {
+class SocketReceiver(private val app: Application) {
     companion object: KLogging()
 
     internal val readers = ConcurrentHashMap<SocketHashCode, BufferedReader>()
@@ -94,7 +94,7 @@ class SocketMessageReceiver(private val app: Application) {
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
             logger.error("ERROR handling request $request from socket $socketHash: $e")
-            app.socketMessageSender.send(
+            app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
             )
         }
@@ -102,7 +102,7 @@ class SocketMessageReceiver(private val app: Application) {
 
     // HANDLE SPECIAL CASES
 
-    private suspend fun unimplemented(request: SocketRequest): Unit = app.socketMessageSender.send(
+    private suspend fun unimplemented(request: SocketRequest): Unit = app.socketSender.send(
         SocketResponse.RequestHandlingError(
             request.id(),
             Exception("handler for ${request.javaClass.name} not implemented yet!"),
@@ -111,7 +111,7 @@ class SocketMessageReceiver(private val app: Application) {
     )
 
 
-    private suspend fun parseError(request: SocketRequest.ParseError): Unit = app.socketMessageSender.send(
+    private suspend fun parseError(request: SocketRequest.ParseError): Unit = app.socketSender.send(
         SocketResponse.RequestInvalidError(request.error, request.input)
     )
 
@@ -119,23 +119,23 @@ class SocketMessageReceiver(private val app: Application) {
 
     private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
         logger.info("Received `abort`. Exiting.")
-        app.socketMessageSender.send(SocketResponse.AbortWarning(request.id, socketHash))
+        app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
         app.stop()
     }
 
     private suspend fun register(request: SocketRequest.Register): Unit = try {
         when(val account = app.accountManager.load(request.username)) {
             // TODO: handle re-registration here
-            is RegisteredAccount, is VerifiedAccount -> app.socketMessageSender.send(
+            is RegisteredAccount, is VerifiedAccount -> app.socketSender.send(
                 SocketResponse.RegistrationError.of(request, SignalcError.RegistrationOfRegsisteredUser)
             )
             is NewAccount -> {
                 app.accountManager.register(account, request.captcha)
-                app.socketMessageSender.send(SocketResponse.RegistrationSuccess.of(request))
+                app.socketSender.send(SocketResponse.RegistrationSuccess.of(request))
             }
         }
     } catch(e: Throwable) {
-        app.socketMessageSender.send(SocketResponse.RegistrationError.of(request, e))
+        app.socketSender.send(SocketResponse.RegistrationError.of(request, e))
     }
 
 
@@ -143,14 +143,14 @@ class SocketMessageReceiver(private val app: Application) {
     private suspend fun send(sendRequest: SocketRequest.Send) {
         val (_, _, recipientAddress, messageBody) = sendRequest
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
-            ?: return app.socketMessageSender.send(
+            ?: return app.socketSender.send(
                 SocketResponse.RequestHandlingError(
                     sendRequest.id,
                     Error("Can't send to ${sendRequest.username}: not registered."),
                     sendRequest
                 )
             )
-        val sendResult: SendMessageResult = app.signalMessageSender.send(
+        val sendResult: SendMessageResult = app.signalSender.send(
             senderAccount,
             recipientAddress.asSignalServiceAddress(),
             messageBody
@@ -158,7 +158,7 @@ class SocketMessageReceiver(private val app: Application) {
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
         //  - should we do any special handling for non-success cases? (currently we don't!)
-        app.socketMessageSender.send(SocketResponse.SendResults.of(sendRequest, sendResult))
+        app.socketSender.send(SocketResponse.SendResults.of(sendRequest, sendResult))
     }
 
 
@@ -167,13 +167,13 @@ class SocketMessageReceiver(private val app: Application) {
         logger.info("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(username)
             ?: return run {
-                app.socketMessageSender.send(
+                app.socketSender.send(
                     SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)
                 )
             }
 
-        val subscribeJob = app.signalMessageReceiver.subscribe(account)
-        app.socketMessageSender.send(SocketResponse.SubscriptionSuccess.of(request))
+        val subscribeJob = app.signalReceiver.subscribe(account)
+        app.socketSender.send(SocketResponse.SubscriptionSuccess.of(request))
         logger.info("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
@@ -183,11 +183,11 @@ class SocketMessageReceiver(private val app: Application) {
                 when(error) {
                     is SignalcError.MessagePipeNotCreated -> {
                         logger.info("...error subscribing to messages for ${account.username}: ${error}.")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionFailed(id, error))
+                        app.socketSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
                         logger.info("subscription to ${account.username} disrupted: ${error.cause}. Resubscribing...")
-                        app.socketMessageSender.send(SocketResponse.SubscriptionDisrupted(id, error))
+                        app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
                         delay(retryDelay)
                         subscribe(request, retryDelay * 2)
                     }
@@ -198,19 +198,19 @@ class SocketMessageReceiver(private val app: Application) {
 
     private suspend fun verify(request: SocketRequest.Verify): Unit = try {
         when(val account = app.accountManager.load(request.username)) {
-            is NewAccount, is VerifiedAccount -> app.socketMessageSender.send(
+            is NewAccount, is VerifiedAccount -> app.socketSender.send(
                 SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewOrVerifiedUser)
             )
             is RegisteredAccount -> {
                 app.accountManager.verify(account, request.code.asSanitizedCode())?.let {
                     app.accountManager.publishPreKeys(it)
-                    app.socketMessageSender.send(SocketResponse.VerificationSuccess.of(request))
+                    app.socketSender.send(SocketResponse.VerificationSuccess.of(request))
                 } ?: run {
-                    app.socketMessageSender.send(SocketResponse.VerificationError.of(request, SignalcError.AuthorizationFailed))
+                    app.socketSender.send(SocketResponse.VerificationError.of(request, SignalcError.AuthorizationFailed))
                 }
             }
         }
     } catch(error: Throwable) {
-        app.socketMessageSender.send(SocketResponse.VerificationError.of(request, error))
+        app.socketSender.send(SocketResponse.VerificationError.of(request, error))
     }
 }

@@ -22,10 +22,10 @@ object Config {
         // components
         AccountManager::class,
         // note: we exclude Signal::class b/c currently we never need to mock it
-        SignalMessageReceiver::class,
-        SignalMessageSender::class,
-        SocketMessageReceiver::class,
-        SocketMessageSender::class,
+        SignalReceiver::class,
+        SignalSender::class,
+        SocketReceiver::class,
+        SocketSender::class,
         SocketServer::class,
     )
 

@@ -33,10 +33,10 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageSenderTest : FreeSpec({
+class SocketSenderTest : FreeSpec({
     runBlockingTest {
         val testScope = this
-        val config = Config.mockAllExcept(SocketMessageSender::class)
+        val config = Config.mockAllExcept(SocketSender::class)
         val app = Application(config).run(testScope)
 
         val mockSockets = List(2) { mockk<Socket>() }
@@ -53,8 +53,8 @@ class SocketMessageSenderTest : FreeSpec({
         val sendDelay = 2.milliseconds
 
         beforeSpec {
-            mockkObject(SocketMessageSender.Writer)
-            coEvery { SocketMessageSender.Writer.to(any(), any()) } coAnswers {
+            mockkObject(SocketSender.Writer)
+            coEvery { SocketSender.Writer.to(any(), any()) } coAnswers {
                 mockWriters[mockSockets.indexOf(firstArg())]
             }
         }
@@ -72,19 +72,19 @@ class SocketMessageSenderTest : FreeSpec({
         "#connect" - {
             "when called with a socket not yet in the pool" - {
                 "adds a writer on that socket to the to the writer pool" {
-                    app.socketMessageSender.connect(mockSocket) shouldBe true
-                    app.socketMessageSender.writerPool.writers[mockSocket.hashCode()]
+                    app.socketSender.connect(mockSocket) shouldBe true
+                    app.socketSender.writerPool.writers[mockSocket.hashCode()]
                         ?.writer shouldBe mockWriter
                 }
             }
 
             "when called with a socket already in the pool" - {
                 "does not add a writer to the pool" {
-                    app.socketMessageSender.connect(mockSocket)
-                    val poolSize = app.socketMessageSender.writerPool.writers.size
+                    app.socketSender.connect(mockSocket)
+                    val poolSize = app.socketSender.writerPool.writers.size
 
-                    app.socketMessageSender.connect(mockSocket) shouldBe false
-                    app.socketMessageSender.writerPool.writers.size shouldBe poolSize
+                    app.socketSender.connect(mockSocket) shouldBe false
+                    app.socketSender.writerPool.writers.size shouldBe poolSize
                 }
             }
 
@@ -92,8 +92,8 @@ class SocketMessageSenderTest : FreeSpec({
 
         "#disconnect" - {
             "when called with the hash of a socket with a writer in the pool" - {
-                app.socketMessageSender.connect(mockSocket)
-                app.socketMessageSender.close(mockSocket.hashCode())
+                app.socketSender.connect(mockSocket)
+                app.socketSender.close(mockSocket.hashCode())
 
                 "closes the socket writer" {
                     verify {
@@ -102,7 +102,7 @@ class SocketMessageSenderTest : FreeSpec({
                 }
 
                 "removes the writer from the pool" {
-                    app.socketMessageSender.writerPool.writers[mockSocket.hashCode()] shouldBe null
+                    app.socketSender.writerPool.writers[mockSocket.hashCode()] shouldBe null
                 }
             }
 
@@ -111,12 +111,12 @@ class SocketMessageSenderTest : FreeSpec({
         "#stop" - {
             "when there are 2 writers in pool" - {
                 mockSockets.forEach {
-                    app.socketMessageSender.connect(it)
+                    app.socketSender.connect(it)
                 }
 
                 "closes all both writers and removes them from pool" {
-                    app.socketMessageSender.stop() shouldBe 2
-                    app.socketMessageSender.writerPool.writers.size shouldBe 0
+                    app.socketSender.stop() shouldBe 2
+                    app.socketSender.writerPool.writers.size shouldBe 0
                     mockWriters.forEach {
                         verify { it.close() }
                     }
@@ -126,7 +126,7 @@ class SocketMessageSenderTest : FreeSpec({
 
         "#send" - {
             "when called once" - {
-                app.socketMessageSender.connect(mockSocket)
+                app.socketSender.connect(mockSocket)
 
                 "with a handled message" - {
                     val responses = listOf(
@@ -148,7 +148,7 @@ class SocketMessageSenderTest : FreeSpec({
 
                     "writes serialized response to socket" {
                         responses.forEach {
-                            app.socketMessageSender.send(it)
+                            app.socketSender.send(it)
                             delay(sendDelay)
                             verify {
                                 mockWriter.println(it.toJson())
@@ -165,7 +165,7 @@ class SocketMessageSenderTest : FreeSpec({
 
                     "does not write to socket" {
                         responses.forEach {
-                            app.socketMessageSender.send(it)
+                            app.socketSender.send(it)
                             delay(sendDelay)
                             verify(exactly = 0) {
                                 mockWriter.println(any<String>())
@@ -178,7 +178,7 @@ class SocketMessageSenderTest : FreeSpec({
 
             "when called many times concurrently" - {
                 mockSockets.forEach {
-                    app.socketMessageSender.connect(it)
+                    app.socketSender.connect(it)
                 }
 
                 "distributes messages across socket writers" {
@@ -187,7 +187,7 @@ class SocketMessageSenderTest : FreeSpec({
 
                     repeat(numMessages) {
                         launch {
-                            app.socketMessageSender.send(response)
+                            app.socketSender.send(response)
                         }
                     }
 

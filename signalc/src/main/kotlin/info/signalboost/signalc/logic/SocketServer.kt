@@ -41,9 +41,9 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                 val socketHash = connection.hashCode().also { connections[it] = connection }
                 logger.info("Got connection on socket $socketHash")
                 launch(IO) {
-                    app.socketMessageReceiver.connect(connection)
+                    app.socketReceiver.connect(connection)
                     logger.info("Connected reader to socket $socketHash")
-                    app.socketMessageSender.connect(connection)
+                    app.socketSender.connect(connection)
                     logger.info("Connected writer to socket $socketHash")
                 }
             }
@@ -53,16 +53,16 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     }
 
     suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
-        app.socketMessageSender.close(socketHash)
-        app.socketMessageReceiver.close(socketHash)
+        app.socketSender.close(socketHash)
+        app.socketReceiver.close(socketHash)
         closeConnection(socketHash)
         logger.info("Closed connection on socket $socketHash")
     }
 
     suspend fun stop(): Unit = app.coroutineScope.async(IO) {
         listenJob.cancel()
-        app.socketMessageReceiver.stop()
-        app.socketMessageSender.stop()
+        app.socketReceiver.stop()
+        app.socketSender.stop()
         closeAllConnections()
         socket.close()
     }.await()

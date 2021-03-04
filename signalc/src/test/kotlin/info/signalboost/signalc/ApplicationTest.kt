@@ -34,10 +34,10 @@ class ApplicationTest : FreeSpec({
             }
 
             "initializes all 'cold' application components" {
-                app.signalMessageReceiver
-                app.signalMessageSender
-                app.socketMessageReceiver
-                app.socketMessageSender
+                app.signalReceiver
+                app.signalSender
+                app.socketReceiver
+                app.socketSender
             }
 
             "initializes and runs all 'hot' application components" {

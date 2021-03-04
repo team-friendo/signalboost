@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SignalMessageSender(private val app: Application) {
+class SignalSender(private val app: Application) {
 
     companion object {
         const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day

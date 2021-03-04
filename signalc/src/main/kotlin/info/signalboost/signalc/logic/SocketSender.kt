@@ -17,7 +17,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SocketMessageSender(private val app: Application) {
+class SocketSender(private val app: Application) {
     companion object: KLogging()
 
     // this is mostly here as a testing seam
