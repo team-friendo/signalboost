@@ -1,43 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--<configuration scan="true">-->
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <!-- encoders are assigned the type
-             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+
+        <!-- pattern to show timestamp, classname, log level and logged message -->
         <encoder>
-            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] [%logger{24}] %-5level| %msg%n</pattern>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%logger{24}] %-5level | %msg%n</pattern>
         </encoder>
+
+        <!--use this simple logging for INFO and WARN -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+
+
+        <!--but not for other levels -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>TRACE</level>
+            <onMatch>DENY</onMatch>
+        </filter>
     </appender>
 
-    <root level="DEBUG">
-        <appender-ref ref="STDOUT" />
+    <appender name="stdout_with_thread_info" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
 
-    </root>
+        <!-- pattern to show threads alongside other log details -->
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%logger{24}] %-5level | (%thread\) %msg%n</pattern>
+        </encoder>
 
-    <root level="ERROR">
-        <appender-ref ref="STDOUT" />
-    </root>
+        <!--show thread/coroutine info for log levels ERROR or DEBUG -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>TRACE</level>
+            <onMatch>ACCEPT</onMatch>
+        </filter>
+
+        <!--but not for other levels -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>DENY</onMatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>DENY</onMatch>
+        </filter>
+    </appender>
 
     <root level="INFO">
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="stdout" />
     </root>
 
-    <root level="TRACE">
-        <appender-ref ref="STDOUT" />
-    </root>
-
-    <root level="WARN">
-        <appender-ref ref="STDOUT" />
-    </root>
-
-    <logger name="info.signalboost"
-            level="INFO"
-            additivity="false">
-        <appender-ref ref="STDOUT" />
+    <logger name="info.signalboost" level="${LOG_LEVEL}" additivity="false">
+        <appender-ref ref="stdout" />
+        <appender-ref ref="stdout_with_thread_info" />
     </logger>
 
-    <logger name="io.netty"
-            level="INFO"
-            additivity="false">
-         <appender-ref ref="STDOUT" />
+    <logger name="io.netty" level="info" additivity="false">
+         <appender-ref ref="stdout" />
     </logger>
 </configuration>
