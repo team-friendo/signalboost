@@ -1,6 +1,5 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.fixtures.SocketRequestGen.genSendRequest
