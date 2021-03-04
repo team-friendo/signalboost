@@ -233,6 +233,9 @@ sc.client: ## open a netcat session on the signalc unix socket
 sc.up: ## run signalboost against signalc in dev mode
 	docker-compose -f docker-compose-sc.yml up -d
 
+sc.up.debug: ## run signalboost against signalc in dev mode
+	DEBUG_SIGNALC=1 docker-compose -f docker-compose-sc.yml up -d
+
 sc.down: # stop signalc stack
 	docker-compose -f docker-compose-sc.yml down
 
@@ -241,6 +244,10 @@ sc.logs: ## view logs for signalc stack
 
 sc.restart: ## restart signalc stack
 	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d
+
+sc.restart.debug: ## restart signalc stack
+	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d && \
+	DEBUG_SIGNALC=1 docker-compose -f docker-compose-sc.yml up -d
 
 sc.db.up: ## run the signalc db in isolation (useful for tests)
 	docker-compose -f docker-compose-sc.yml up -d db
