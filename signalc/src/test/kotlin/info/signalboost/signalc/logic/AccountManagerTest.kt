@@ -6,14 +6,12 @@ import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.ProtocolStore
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -32,7 +30,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class AccountManagerTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val config = Config.mockAllExcept(AccountManager::class)
         val app = Application(config).run(testScope)
         val accountManager = app.accountManager

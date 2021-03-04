@@ -5,7 +5,6 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.SocketResponse
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genNewAccount
 import info.signalboost.signalc.testSupport.fixtures.AccountGen.genRegisteredAccount
@@ -35,7 +34,7 @@ import kotlin.time.milliseconds
 @ExperimentalCoroutinesApi
 class SocketServerBigTest : FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val config = Config.mockAllExcept(
             SocketServer::class,
             SocketMessageSender::class,

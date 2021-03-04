@@ -3,7 +3,6 @@ package info.signalboost.signalc.store
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.NewAccount
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
@@ -25,7 +24,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
-        val testScope = genTestScope()
+        val testScope = this
         val accountId = genPhoneNumber()
         val config = Config.mockAllExcept(ProtocolStore::class)
         val app = Application(config).run(testScope)
