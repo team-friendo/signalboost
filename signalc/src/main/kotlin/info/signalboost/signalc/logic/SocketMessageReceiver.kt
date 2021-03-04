@@ -165,7 +165,7 @@ class SocketMessageReceiver(private val app: Application) {
     private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
         val (id,username) = request
         logger.info("Subscribing to messages for ${username}...")
-        val account: VerifiedAccount = app.accountManager.loadVerified(Config.USER_PHONE_NUMBER)
+        val account: VerifiedAccount = app.accountManager.loadVerified(username)
             ?: return run {
                 app.socketMessageSender.send(
                     SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)
