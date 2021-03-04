@@ -139,13 +139,13 @@ class SocketMessageReceiverTest : FreeSpec({
 
                         client.send(request.toJson(), wait = transmitDelay)
                         coVerify {
-                            app.accountManager.register(newSenderAccount, request.captchaToken)
+                            app.accountManager.register(newSenderAccount, request.captcha)
                         }
                     }
 
                     "when registration succeeds" - {
                         coEvery {
-                            app.accountManager.register(newSenderAccount, request.captchaToken)
+                            app.accountManager.register(newSenderAccount, request.captcha)
                         } returns registeredSenderAccount
 
                         "sends registration success response to socket" {
@@ -159,7 +159,7 @@ class SocketMessageReceiverTest : FreeSpec({
                     }
 
                     "when registration fails" - {
-                        val _request = request.copy(captchaToken = null)
+                        val _request = request.copy(captcha = null)
                         val error = CaptchaRequiredException()
                         coEvery {
                             app.accountManager.register(newSenderAccount, null)

@@ -21,11 +21,11 @@ object SocketRequestGen {
     fun genRegisterRequest(
         id: String = genUuidStr(),
         username: String = genPhoneNumber(),
-        captchaToken: String? = genCaptchaToken(),
+        captcha: String? = genCaptchaToken(),
     ) = SocketRequest.Register(
         id = id,
         username = username,
-        captchaToken = captchaToken,
+        captcha = captcha,
     )
 
     fun genSendRequest(

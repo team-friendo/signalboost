@@ -63,11 +63,11 @@ class AccountManager(private val app: Application) {
 
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
-    suspend fun register(account: NewAccount, captchaToken: String? = null): RegisteredAccount {
-        app.coroutineScope.async {
+    suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {
+        app.coroutineScope.async(IO) {
             accountManagerOf(account).requestSmsVerificationCode(
                 false,
-                captchaToken?.let { Optional.of(it) } ?: Optional.absent(),
+                captcha?.let { Optional.of(it) } ?: Optional.absent(),
                 Optional.absent()
             )
         }.await()
@@ -77,7 +77,7 @@ class AccountManager(private val app: Application) {
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
     suspend fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
         val verifyResponse: VerifyAccountResponse = try {
-            app.coroutineScope.async {
+            app.coroutineScope.async(IO) {
                 accountManagerOf(account).verifyAccountWithCode(
                     code,
                     null,
