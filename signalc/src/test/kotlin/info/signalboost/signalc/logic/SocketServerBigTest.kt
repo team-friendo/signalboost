@@ -208,7 +208,6 @@ class SocketServerBigTest : FreeSpec({
         }
 
         "#disconnect" - {
-
             lateinit var connections: List<Socket>
 
             beforeTest {
@@ -232,25 +231,22 @@ class SocketServerBigTest : FreeSpec({
                 client2.close()
             }
 
-            "disconnects a socket connection's message receiver" {
+            "disconnects a socket connection's message receivers and senders" {
                 app.socketReceiver.readers[connections[0].hashCode()] shouldBe null
                 app.socketReceiver.readers[connections[1].hashCode()] shouldBe null
-            }
-
-            "disconnects a socket connection's message sender" {
                 app.socketSender.writerPool.writers[connections[0].hashCode()] shouldBe null
                 app.socketSender.writerPool.writers[connections[1].hashCode()] shouldBe null
             }
         }
 
         "#stop" - {
-            val restartDelay =20.milliseconds
+            val stopDelay =30.milliseconds
 
             beforeTest {
                 client1 = TestSocketClient.connect(socketPath, testScope)
                 client2 = TestSocketClient.connect(socketPath, testScope)
                 app.socketServer.stop()
-                delay(restartDelay)
+                delay(stopDelay)
             }
 
             afterTest {
@@ -258,16 +254,8 @@ class SocketServerBigTest : FreeSpec({
                 client2.close()
             }
 
-            afterTest {
-                app.socketServer.run()
-                delay(restartDelay)
-            }
-
-            "disconnects receivers from all socket connections" {
+            "disconnects receivers and senders from all socket connections" {
                 app.socketReceiver.readers.isEmpty() shouldBe true
-            }
-
-            "disconnects senders from all socket connections" {
                 app.socketSender.writerPool.writers.isEmpty() shouldBe true
             }
         }
