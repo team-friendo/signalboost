@@ -170,8 +170,11 @@ class Application(val config: Config.App){
         logger.info("Booting...")
         logger.debug("Logging debug stuff...")
 
-        // concurrency context
-        coroutineScope = scope
+        // concurrency context:
+        // we declare a supervisor job so that failure of a child coroutine won't cause the
+        // app's parent job (and thus all other child coroutines in the app) to be cancelled.
+        // see: https://kotlinlang.org/docs/exception-handling.html#supervision-job
+        coroutineScope = scope + SupervisorJob()
 
         // storage resources
         accountStore = initializeStore(AccountStore::class)

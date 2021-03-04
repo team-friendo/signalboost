@@ -15,5 +15,6 @@ import kotlin.time.ExperimentalTime
 fun main() {
     runBlocking(IO) {
         Application(Config.fromEnv()).run(this)
+        while(true){}
     }
 }
