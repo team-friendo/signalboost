@@ -10,10 +10,9 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-@Suppress("ControlFlowWithEmptyBody")
 fun main() {
     runBlocking {
         Application(Config.fromEnv()).run(this)
-        while(true){}
+        launch { while(true){ yield() } }
     }
 }
