@@ -2,7 +2,7 @@ package info.signalboost.signalc.testSupport.fixtures
 
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genPhoneNumber
-import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSerializableAddress
+import info.signalboost.signalc.testSupport.fixtures.AddressGen.genSignalcAddress
 import info.signalboost.signalc.testSupport.fixtures.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.fixtures.NumGen.genInt
 import info.signalboost.signalc.testSupport.fixtures.NumGen.genLong
@@ -41,7 +41,7 @@ object SocketResponseGen {
     fun genCleartext() = SocketResponse.Cleartext(
         data = SocketResponse.Cleartext.Data(
             username = genPhoneNumber(),
-            source = genSerializableAddress(),
+            source = genSignalcAddress(),
             dataMessage = SocketResponse.Cleartext.DataMessage(
                 body = genPhrase(),
                 attachments = emptyList(), // TODO: fix this!
@@ -63,14 +63,14 @@ object SocketResponseGen {
 
 
     fun genDecryptionError() = SocketResponse.DecryptionError(
-        genSerializableAddress(),
-        genSerializableAddress(),
+        genSignalcAddress(),
+        genSignalcAddress(),
         Error(genPhrase())
     )
 
     fun genDropped(envType: Int = 1) = SocketResponse.Dropped(
-        genSerializableAddress(),
-        genSerializableAddress(),
+        genSignalcAddress(),
+        genSignalcAddress(),
         mockk<SignalServiceEnvelope> {
             every { type } returns envType
         }
@@ -90,7 +90,7 @@ object SocketResponseGen {
 
     fun genSendResults(
         id: String = genUuidStr(),
-        address: SerializableAddress = genSerializableAddress(),
+        address: SignalcAddress = genSignalcAddress(),
         type: SendResultType = SendResultType.SUCCESS,
         untrustedFingerprint: String = genFingerprint(),
     ) = SocketResponse.SendResults(
@@ -105,7 +105,7 @@ object SocketResponseGen {
     )
 
     private fun genSendResult(
-        address: SerializableAddress = genSerializableAddress(),
+        address: SignalcAddress = genSignalcAddress(),
         type: SendResultType = SendResultType.SUCCESS,
         untrustedFingerprint: String? = null,
     ) = when(type) {

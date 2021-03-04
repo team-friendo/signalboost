@@ -2,10 +2,6 @@ package info.signalboost.signalc.testSupport.matchers
 
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
-import io.kotest.matchers.Matcher
-import io.kotest.matchers.MatcherResult
-import io.kotest.matchers.should
-import io.kotest.matchers.shouldNot
 import io.mockk.MockKMatcherScope
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
@@ -19,8 +15,8 @@ object SocketResponseMatchers {
     }
 
     fun MockKMatcherScope.cleartext(
-        sender: SerializableAddress,
-        recipient: SerializableAddress,
+        sender: SignalcAddress,
+        recipient: SignalcAddress,
         body: String,
     ): SocketResponse.Cleartext = match {
         it.data.source == sender &&
@@ -29,8 +25,8 @@ object SocketResponseMatchers {
     }
 
     fun MockKMatcherScope.decryptionError(
-        sender: SerializableAddress,
-        recipient: SerializableAddress,
+        sender: SignalcAddress,
+        recipient: SignalcAddress,
         cause: Throwable
     ): SocketResponse.DecryptionError = match {
         it.sender == sender &&
@@ -39,8 +35,8 @@ object SocketResponseMatchers {
     }
 
     fun MockKMatcherScope.dropped(
-        sender: SerializableAddress,
-        recipient: SerializableAddress,
+        sender: SignalcAddress,
+        recipient: SignalcAddress,
         envelope: SignalServiceEnvelope,
     ): SocketResponse.Dropped = match {
         it.sender == sender &&

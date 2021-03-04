@@ -7,21 +7,22 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 
 @Serializable
-data class SerializableAddress(
+@Suppress("ACCIDENTAL_OVERRIDE")
+data class SignalcAddress(
     val number: String?,
     val uuid: String? = null,
 ) {
    companion object {
-       fun SignalServiceAddress.asSerializable(): SerializableAddress = SerializableAddress(
+       fun SignalServiceAddress.asSignalcAddress() = SignalcAddress(
            this.number.orNull(),
            this.uuid.orNull().toString(),
        )
 
-       fun SignalServiceEnvelope.asSerializable() = sourceAddress.asSerializable()
-       fun VerifiedAccount.asSerializable() = address.asSerializable()
+       fun SignalServiceEnvelope.asSignalcAddress() = sourceAddress.asSignalcAddress()
+       fun VerifiedAccount.asSignalcAddress() = address.asSignalcAddress()
    }
 
-   fun asSignalAddress(): SignalServiceAddress = SignalServiceAddress(
+   fun asSignalServiceAddress() = SignalServiceAddress(
        this.uuid?.let { Optional.of(UUID.fromString(it))} ?: Optional.absent(),
        this.number?.let { Optional.of(it) } ?: Optional.absent(),
    )

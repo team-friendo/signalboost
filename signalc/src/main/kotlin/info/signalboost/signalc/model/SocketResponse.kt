@@ -5,7 +5,6 @@ import info.signalboost.signalc.serialization.ThrowableSerializer
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import info.signalboost.signalc.util.SocketHashCode
-import org.h2.engine.User
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
@@ -19,8 +18,8 @@ sealed class SocketResponse {
     // NON-SERIALIZABLE DATA TYPES
 
     data class Dropped(
-        val sender: SerializableAddress,
-        val recipient: SerializableAddress,
+        val sender: SignalcAddress,
+        val recipient: SignalcAddress,
         val envelope: SignalServiceEnvelope,
     ): SocketResponse()
 
@@ -53,7 +52,7 @@ sealed class SocketResponse {
         @Serializable
         data class Data(
             val username: String,
-            val source: SerializableAddress,
+            val source: SignalcAddress,
             val dataMessage: DataMessage,
             // signald provides and we omit:
             // type: String = "CLEARTEXT"
@@ -77,8 +76,8 @@ sealed class SocketResponse {
 
         companion object {
             fun of(
-                sender: SerializableAddress,
-                recipient: SerializableAddress,
+                sender: SignalcAddress,
+                recipient: SignalcAddress,
                 body: String,
                 attachments: List<Attachment> = emptyList(),
                 expiresInSeconds: Int,
@@ -102,8 +101,8 @@ sealed class SocketResponse {
     @Serializable
     @SerialName("decryption_error")
     data class DecryptionError(
-        val sender: SerializableAddress,
-        val recipient: SerializableAddress,
+        val sender: SignalcAddress,
+        val recipient: SignalcAddress,
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,
     ): SocketResponse()
@@ -174,7 +173,7 @@ sealed class SocketResponse {
     //  - we should have separate classes for SendSuccess/SendError cases? each error variant gets a type?
     @Serializable
     data class SendResult(
-        val address: SerializableAddress,
+        val address: SignalcAddress,
         @Required
         val success: Success? = null,
         @Required

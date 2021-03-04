@@ -152,7 +152,7 @@ class SocketMessageReceiver(private val app: Application) {
             )
         val sendResult: SendMessageResult = app.signalMessageSender.send(
             senderAccount,
-            recipientAddress.asSignalAddress(),
+            recipientAddress.asSignalServiceAddress(),
             messageBody
         )
         // TODO:
