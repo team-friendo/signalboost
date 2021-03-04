@@ -75,7 +75,7 @@ class SocketSender(private val app: Application) {
         }
 
         // Here we use an actor to enforce threadsafe mutation of our pool of writers.
-        private val input = app.coroutineScope.actor<Message> {
+        private val input = app.coroutineScope.actor<Message>(IO) {
             for(msg in channel) {
                 when (msg) {
                     is Message.Add -> {
@@ -152,7 +152,7 @@ class SocketSender(private val app: Application) {
 
         // Here we use an actor to enforce threadsafe usage of our PrintWriter resource
         // and to get "for-free" FIFO queueing of messages to be written by it.
-        private val input: SendChannel<Message> = coroutineScope.actor {
+        private val input: SendChannel<Message> = coroutineScope.actor(IO) {
             for (msg in channel) {
                 when (msg) {
                     is Message.Send -> {
