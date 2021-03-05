@@ -55,16 +55,8 @@ class SocketReceiver(private val app: Application) {
         }
 
     suspend fun close(socketHash: SocketHashCode) {
-        val reader = readers[socketHash] ?: return // must have already been disconnected!
+        readers[socketHash] ?: return // must have already been disconnected!
         readers.remove(socketHash) // will terminate loop and complete Job launched by `connect`
-        app.coroutineScope.launch(IO) {
-            try {
-                reader.close()
-            } catch(e: Throwable) {
-                logger.error { "Error closing reader on socket $socketHash: $e" }
-            }
-            logger.info("Closed reader from socket $socketHash")
-        }
         app.socketServer.close(socketHash)
     }
 

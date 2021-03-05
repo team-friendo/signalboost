@@ -53,18 +53,21 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     }
 
     suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
+        logger.info("Closing connection on socket $socketHash...")
         app.socketSender.close(socketHash)
         app.socketReceiver.close(socketHash)
         closeConnection(socketHash)
-        logger.info("Closed connection on socket $socketHash")
+        logger.info("... closed connection on socket $socketHash")
     }
 
     suspend fun stop(): Unit = app.coroutineScope.async(IO) {
-        listenJob.cancel()
+        logger.info("Stopping socket server...")
+        listenJob.cancel() // cancel listen loop first so we don't handle any messages during shutdown
         app.socketReceiver.stop()
         app.socketSender.stop()
         closeAllConnections()
         socket.close()
+        logger.info("... socket server stopped.")
     }.await()
 
     internal suspend fun closeAllConnections(): Unit =

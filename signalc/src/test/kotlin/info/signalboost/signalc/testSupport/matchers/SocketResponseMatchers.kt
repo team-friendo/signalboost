@@ -61,12 +61,27 @@ object SocketResponseMatchers {
                 it.error throwsLike error
     }
 
+    fun MockKMatcherScope.subscriptionDisrupted(
+        id: String,
+        error: Throwable,
+    ): SocketResponse.SubscriptionDisrupted = match {
+        it.id == id && it.error throwsLike error
+    }
+
     fun MockKMatcherScope.subscriptionFailed(
         id: String,
         error: Throwable,
     ): SocketResponse.SubscriptionFailed = match {
         it.id == id && it.error throwsLike error
     }
+
+    fun MockKMatcherScope.subscriptionSuccess(
+        id: String,
+        username: String,
+    ): SocketResponse.SubscriptionSuccess = match {
+        it.id == id && it.username == username
+    }
+
 
     fun MockKMatcherScope.sendSuccess(
         request: SocketRequest.Send,
