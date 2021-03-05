@@ -9,4 +9,4 @@ echo "[entrypoint] cleaning up socket path..."
 rm -f /signalc/sock/signald.sock
 
 echo "[entrypoint] running signalc unit tests..."
-gradle --console=plain test ## --info
+gradle --console=plain test --info
