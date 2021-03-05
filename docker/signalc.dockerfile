@@ -46,7 +46,10 @@ WORKDIR /signalc
 COPY signalc/whisper.store /signalc/whisper.store
 ENV WHISPER_STORE_PASSWORD "whisper"
 
+# make sure there is a directory to house sockets!
+RUN mkdir /signalc/sock
+
 # ---------------
 # --- version
 
-LABEL version="1.0.1"
+LABEL version="1.0.2"
