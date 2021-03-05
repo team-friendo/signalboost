@@ -12,7 +12,7 @@ const {
     channelDestructionInterval,
     healthcheckInterval,
     inviteDeletionInterval,
-    shouldRunKeyStoreDeletion,
+    shouldRunKeystoreDeletion,
     shouldRunHealthchecks,
   },
   signal: { diagnosticsPhoneNumber, signaldStartupTime },
@@ -53,7 +53,7 @@ const run = async () => {
   const messageIdsDeleted = await hotlineMessageRepository.deleteExpired()
   logger.log(`----- Deleted ${messageIdsDeleted} expired hotline records.`)
 
-  if (shouldRunKeyStoreDeletion) {
+  if (shouldRunKeystoreDeletion) {
     logger.log('----- Deleting vestigal keystore entries....')
     const entriesDeleted = await phoneNumberRegistrar.deleteVestigalKeystoreEntries()
     logger.log(`----- Deleted ${entriesDeleted} vestigal keystore entries.`)
