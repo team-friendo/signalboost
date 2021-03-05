@@ -22,6 +22,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+
   signalboost:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: test_signalboost
@@ -38,6 +39,7 @@ services:
       - ./package.json:/signalboost/package.json
       - ./test:/signalboost/test
       - ./yarn.lock:/signalboost/yarn.lock
+
   signalc:
     image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
     container_name: test_signalc
@@ -46,10 +48,15 @@ services:
       DB_HOST: db
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-error}
+      SIGNALC_ENV: test
     depends_on:
       - db
     volumes:
-      - ./signalc:/signalc
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/whisper.store:/signalc/whisper.store
       - ./bin:/signalc/bin
       - gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
