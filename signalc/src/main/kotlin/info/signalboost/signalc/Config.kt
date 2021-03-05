@@ -18,7 +18,6 @@ object Config {
         // resources
         AccountStore::class,
         ProtocolStore::class,
-        //UnixServerSocket::class,
         // components
         AccountManager::class,
         // note: we exclude Signal::class b/c currently we never need to mock it

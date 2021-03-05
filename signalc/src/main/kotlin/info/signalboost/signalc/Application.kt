@@ -136,51 +136,38 @@ class Application(val config: Config.App){
      * LIFECYCLE
      *************/
 
-    // Generic Component intializers
-    interface ReturningRunnable<T> {
-        suspend fun run(): T
-    }
-
-    private inline fun <reified T: Any>initializeStore(
-        component: KClass<T>,
-        mockAnswers: T.() -> Unit = {}
-    ):  T =
-        if(config.mocked.contains(component)) mockk(block = mockAnswers)
-        else (component.primaryConstructor!!::call)(arrayOf(db))
-
-
-    private inline fun <reified T: Any>initializeColdComponent(
-        component: KClass<T>,
-        mockAnswers: T.() -> Unit = {}
-    ):  T =
-        if(config.mocked.contains(component)) mockk(block = mockAnswers)
-        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
-
-
-    private inline fun <reified U: Any, reified T: ReturningRunnable<U>>initializeHotComponent(
-        component: KClass<T>,
-        mockAnswers: T.() -> Unit = { coEvery { run() } returns mockk() }
-    ): T =
-        if(config.mocked.contains(component)) mockk(block = mockAnswers)
-        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+    // PUBLIC METHODS
 
     @ExperimentalCoroutinesApi
     suspend fun run(scope: CoroutineScope): Application {
+        /***
+         * This method does 2 things:
+         *
+         * - (1) turns the app "on" from a unitialized/inert state to an initialized/running state
+         * - (2) allows us to vary how app components are initialized at runtime based on configs
+         *
+         * Notably, this initialization/configuration transition provides a seam where we can mock
+         * an arbitrary subset of app components, or set the app into various test-friendly configurations,
+         * which is the purpose of the initializer functions and the set of default `Mocks` provided below.
+         *
+         * For more on how we leverage this configuration seam, grep `//FACTORIES` in Config.kt...
+         ***/
 
         logger.info("Booting...")
         logger.debug("(in debug mode)")
 
         // concurrency context:
-        // we declare a supervisor job so that failure of a child coroutine won't cause the
-        // app's parent job (and thus all other child coroutines in the app) to be cancelled.
-        // see: https://kotlinlang.org/docs/exception-handling.html#supervision-job
         coroutineScope = scope + SupervisorJob()
+        /*** NOTE:
+         * we declare a supervisor job so that failure of a child coroutine won't cause the
+         * app's parent job (and thus all other child coroutines in the app) to be cancelled.
+         * see: https://kotlinlang.org/docs/exception-handling.html#supervision-job
+         ***/
+
 
         // storage resources
         accountStore = initializeStore(AccountStore::class)
-        protocolStore = initializeStore(ProtocolStore::class){
-            every { of(any()) } returns mockk()
-        }
+        protocolStore = initializeStore(ProtocolStore::class, Mocks.protocolStore)
 
         // network resources
         signal = initializeSignal()
@@ -207,12 +194,45 @@ class Application(val config: Config.App){
         return this
     }
 
+    // INITIALIZERS
+
+    private inline fun <reified T: Any>initializeStore(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(db))
+
+
+    private inline fun <reified T: Any>initializeColdComponent(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+
+    interface ReturningRunnable<T> {
+        suspend fun run(): T
+    }
+
+    private inline fun <reified U: Any, reified T: ReturningRunnable<U>>initializeHotComponent(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = { coEvery { run() } returns mockk() }
+    ): T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+
+    // MOCKS
+
     object Mocks {
         val accountManager: AccountManager.() -> Unit = {
             coEvery { load(any()) } returns mockk()
             coEvery { register(any(),any()) } returns mockk()
             coEvery { verify(any(),any()) } returns mockk()
             coEvery { publishPreKeys(any()) } returns mockk()
+        }
+        val protocolStore: ProtocolStore.() -> Unit = {
+            every { of(any()) } returns mockk()
         }
         val signalReceiver: SignalReceiver.() -> Unit = {
             coEvery { subscribe(any()) } returns mockk()
