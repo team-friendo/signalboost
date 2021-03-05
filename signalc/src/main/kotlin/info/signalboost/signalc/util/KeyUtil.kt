@@ -1,4 +1,4 @@
-package info.signalboost.signalc.logic
+package info.signalboost.signalc.util
 
 import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.IdentityKeyPair
@@ -7,8 +7,12 @@ import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.libsignal.util.KeyHelper
 import org.whispersystems.util.Base64
 import java.security.SecureRandom
+import java.util.*
 
 object KeyUtil {
+    // UUID generators (For testing seam)
+    fun genUuidStr(): String = UUID.randomUUID().toString()
+
     // random byte generators
     private fun genRandomBytes(n: Int): ByteArray {
         val bytes = ByteArray(size = n)

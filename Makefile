@@ -225,10 +225,29 @@ sc.jar: ## build
 
 sc.run: ## run signalc in dev mode
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain run' signalc
+	run -e SIGNALC_ENV=development --entrypoint 'rm /signalc/message.sock && gradle --console=plain run' signalc
 
-sc.down:
+sc.client: ## open a netcat session on the signalc unix socket
+	nc -U /signalc/sock/signald.sock
+
+sc.up: ## run signalboost against signalc in dev mode
+	docker-compose -f docker-compose-sc.yml up -d
+
+sc.up.debug: ## run signalboost against signalc in dev mode
+	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d
+
+sc.down: # stop signalc stack
 	docker-compose -f docker-compose-sc.yml down
+
+sc.logs: ## view logs for signalc stack
+	docker-compose -f docker-compose-sc.yml logs -f
+
+sc.restart: ## restart signalc stack
+	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d
+
+sc.restart.debug: ## restart signalc stack
+	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d && \
+	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d
 
 sc.db.up: ## run the signalc db in isolation (useful for tests)
 	docker-compose -f docker-compose-sc.yml up -d db
@@ -259,9 +278,12 @@ sc.db.rollback_n: ## run migrations
 	echo "----- rolling back $(N) test migrations" && \
 	docker-compose -f docker-compose-sc.yml \
 	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc
- 
+
 sc.db.psql: # get a psql shell on signalc db
 	./bin/sc/psql
+
+sc.sockclient: # get a socket client to signalc
+	nc -U /signalc/message.sock
 
 sc.test: # run signalc tests
 	./bin/test/sc

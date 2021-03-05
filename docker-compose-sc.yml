@@ -13,29 +13,95 @@ volumes:
   logs:
   gradle_cache:
   signalc_build_cache:
+  signalc_sock_0:
 
 services:
+
   db:
     image: postgres:12
     container_name: signalc_db
     ports:
-      - 5432:5432
+      - 0.0.0.0:5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
-  signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
-    container_name: test_signalc
+
+  signalboost:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
+    container_name: signalc_signalboost
+    depends_on:
+      - db
+      - signalc
+    entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env.dev
     environment:
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+      DB_HOST: db
+      DEBUG_MODE: ${DEBUG_MODE:-0}
+      DIAGNOSTICS_CHANNEL_NUMBER: ''
+      SHOULD_RUN_KEYSTORE_DELETION: 0
+      SHOULD_RUN_HEALTHCHECKS: 0
+      NODE_ENV: ${NODE_ENV:-development}
+      PROJECT_ROOT: ${PWD}
+      SIGNALBOOST_DEV_DB_NAME: sc_signalboost_development
+      SHARD_COUNT: 1
+      SOCKET_POOL_SIZE: 8
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
+      SUPORT_CHANNEL_NUMBER: ''
+      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
+    expose:
+      - 3000
+    networks:
+      - default
+    ports:
+      - 0.0.0.0:9229:9229 # for remote debugger
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./yarn.lock:/signalboost/yarn.lock
+      - signalc_sock_0:/var/run/signald-sockets/0
+
+  signalc:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    container_name: signalc_signalc
+    entrypoint: /signalc/bin/entrypoint/signalc
+    env_file: .env.dev
+    environment:
+      SIGNALC_ENV: development
       GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       TRUST_STORE_PATH: /signalc/whisper.store
+      DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
       - db
+    ports:
+    - 0.0.0.0:5005:5005 # for remote debugger
     volumes:
-      - ./signalc:/signalc
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/whisper.store:/signalc/whisper.store
       - ./bin:/signalc/bin
       - gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
+      - signalc_sock_0:/signalc/sock
+
+  ngrok:
+    container_name: signalboost_ngrok # todo: this should just be ngrok?
+    ports:
+      - 0.0.0.0:4040:4040
+    networks:
+      - default
+    image: wernight/ngrok
+    links:
+      - signalboost
+    env_file: .env.dev
+    environment:
+      - NGROK_PORT=signalboost:3000
+    restart: always

@@ -9,6 +9,14 @@ sleep 2
 if [ "$NODE_ENV" = "development" ];then
   echo "----- running development migrations..."
   npx sequelize db:migrate --env development
+
+  # TODO(aguestuser|2021-03-02): remove this once we are not running sc & sd in tandem
+  echo "----- running development migrations in sc_signalboost db"
+  SIGNALBOOST_DEV_DB_NAME="sc_signalboost_development" \
+    npx sequelize db:migrate --env development
+
+  echo "----- running development migrations..."
+
 elif [ "$NODE_ENV" = "test" ];then
   echo "----- running test migrations..."
   npx sequelize db:migrate --env test

@@ -8,7 +8,13 @@ const util = require('./util')
 const sharding = require('./socket/sharding')
 const { values } = require('lodash')
 const {
-  jobs: { healthcheckInterval, inviteDeletionInterval, channelDestructionInterval },
+  jobs: {
+    channelDestructionInterval,
+    healthcheckInterval,
+    inviteDeletionInterval,
+    shouldRunKeystoreDeletion,
+    shouldRunHealthchecks,
+  },
   signal: { diagnosticsPhoneNumber, signaldStartupTime },
 } = require('./config')
 
@@ -47,9 +53,11 @@ const run = async () => {
   const messageIdsDeleted = await hotlineMessageRepository.deleteExpired()
   logger.log(`----- Deleted ${messageIdsDeleted} expired hotline records.`)
 
-  logger.log('----- Deleting vestigal keystore entries....')
-  const entriesDeleted = await phoneNumberRegistrar.deleteVestigalKeystoreEntries()
-  logger.log(`----- Deleted ${entriesDeleted} vestigal keystore entries.`)
+  if (shouldRunKeystoreDeletion) {
+    logger.log('----- Deleting vestigal keystore entries....')
+    const entriesDeleted = await phoneNumberRegistrar.deleteVestigalKeystoreEntries()
+    logger.log(`----- Deleted ${entriesDeleted} vestigal keystore entries.`)
+  }
 
   /******************
    * REPEATING JOBS
@@ -74,15 +82,17 @@ const run = async () => {
   }, channelDestructionInterval)
   logger.log('---- Launched job to process channel destruction requests.')
 
-  logger.log('---- Launching healthcheck job...')
-  const launchHealthchecks = async () => {
-    await util.wait(signaldStartupTime)
-    cancelations.healtcheckJob = util.repeatUntilCancelled(() => {
-      diagnostics.sendHealthchecks().catch(logger.error)
-    }, healthcheckInterval)
+  if (shouldRunHealthchecks) {
+    logger.log('---- Launching healthcheck job...')
+    const launchHealthchecks = async () => {
+      await util.wait(signaldStartupTime)
+      cancelations.healtcheckJob = util.repeatUntilCancelled(() => {
+        diagnostics.sendHealthchecks().catch(logger.error)
+      }, healthcheckInterval)
+    }
+    if (diagnosticsPhoneNumber) launchHealthchecks().catch(launchHealthchecks)
+    logger.log('---- Launched healthcheck job...')
   }
-  if (diagnosticsPhoneNumber) launchHealthchecks().catch(launchHealthchecks)
-  logger.log('---- Launched healthcheck job...')
 
   logger.log('--- Startup jobs complete!')
   logger.log('--- Registrar running!')

@@ -1,20 +1,24 @@
-package info.signalboost.signalc.testSupport.fixtures
+package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import java.util.*
 
-object Account {
+object AccountGen {
     fun genNewAccount(phoneNumber: String = genPhoneNumber()) =
         NewAccount(phoneNumber)
 
-    fun genRegisteredAccount(newAccount: NewAccount = genNewAccount()) =
+    fun genRegisteredAccount(
+        phoneNumber: String = genPhoneNumber(),
+        newAccount: NewAccount = genNewAccount(phoneNumber),
+    ) =
         RegisteredAccount.fromNew(newAccount)
 
     fun genVerifiedAccount(
-        registeredAccount: RegisteredAccount = genRegisteredAccount(),
+        phoneNumber: String = genPhoneNumber(),
+        registeredAccount: RegisteredAccount = genRegisteredAccount(phoneNumber),
         uuid: UUID = UUID.randomUUID()
     ) =
         VerifiedAccount.fromRegistered(registeredAccount, uuid)

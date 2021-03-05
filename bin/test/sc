@@ -2,6 +2,12 @@
 
 echo "--- running signalc tests..."
 
-docker-compose -f docker-compose-test.yml run --entrypoint 'gradle --console=plain test' signalc
+docker-compose -f docker-compose-test.yml \
+  run --entrypoint ./bin/entrypoint/test-sc \
+  signalc
 
-docker ps --filter name=test_ -aq | xargs -I container_id docker rm -f container_id
+echo "--- spinning down environment..."
+
+docker-compose -f docker-compose-test.yml down
+
+docker ps --filter name=test_* -aq | xargs -I container_id docker rm -f container_id

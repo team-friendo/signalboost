@@ -2,27 +2,34 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalMessageSender.Companion.DEFAULT_EXPIRY_TIME
-import info.signalboost.signalc.logic.SignalMessageSender.Companion.asAddress
-import info.signalboost.signalc.testSupport.fixtures.Account.genVerifiedAccount
-import info.signalboost.signalc.testSupport.fixtures.PhoneNumber.genPhoneNumber
-import info.signalboost.signalc.testSupport.matchers.Matchers.signalDataMessage
+import info.signalboost.signalc.logic.SignalSender.Companion.DEFAULT_EXPIRY_TIME
+import info.signalboost.signalc.logic.SignalSender.Companion.asAddress
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
+import info.signalboost.signalc.util.TimeUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
+@ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class SignalMessageSenderTest : FreeSpec({
+class SignalSenderTest : FreeSpec({
     runBlockingTest {
 
-        val app = Application(Config.test, this)
+        val testScope = this
+        val app = Application(Config.mockStore).run(testScope)
         val verifiedAccount = genVerifiedAccount()
-        val messageSender = SignalMessageSender(app)
+        val messageSender = app.signalSender
 
         beforeSpec {
             mockkObject(TimeUtil)
@@ -35,6 +42,7 @@ class SignalMessageSenderTest : FreeSpec({
 
         afterSpec {
             unmockkAll()
+            testScope.teardown()
         }
 
         "#send" - {

@@ -1,15 +1,16 @@
 package info.signalboost.signalc.model
 
 import info.signalboost.signalc.db.Accounts
-import info.signalboost.signalc.logic.KeyUtil.genPassword
-import info.signalboost.signalc.logic.KeyUtil.genProfileKey
-import info.signalboost.signalc.logic.KeyUtil.genSignalingKey
+import info.signalboost.signalc.util.KeyUtil.genPassword
+import info.signalboost.signalc.util.KeyUtil.genProfileKey
+import info.signalboost.signalc.util.KeyUtil.genSignalingKey
 import org.jetbrains.exposed.sql.ResultRow
 import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 
+//TODO: make all DAT variants inner classes of `Account` (and change their names to be shorter)
 
 sealed class Account {
     abstract val username: String

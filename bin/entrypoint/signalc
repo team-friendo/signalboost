@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -eu
+
+echo "[entrypoint] cleaning up gradle damons..."
+gradle --stop
+
+echo "[entrypoint] cleaning up socket path..."
+rm -f /signalc/sock/signald.sock
+
+if [[ "$SIGNALC_ENV" == "development" ]]; then
+  echo "[entrypoint] running in development mode..."
+  gradle --console=plain run
+fi
+
+echo "[entrypoint] sorry: don't have prod figured out yet!"

@@ -3,7 +3,8 @@ package info.signalboost.signalc.testSupport.matchers
 import io.mockk.MockKMatcherScope
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 
-object Matchers {
+object SignalMessageMatchers {
+
     fun MockKMatcherScope.signalDataMessage(
         body: String? = null,
         timestamp: Long? = null,
