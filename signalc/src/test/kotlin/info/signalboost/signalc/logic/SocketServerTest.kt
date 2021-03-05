@@ -26,8 +26,8 @@ class SocketServerTest : FreeSpec({
         val config = Config.mockAllExcept(SocketServer::class)
         val app = Application(config).run(testScope)
 
-        val closingDelay = 5.milliseconds
-        val connectDelay = 10.milliseconds
+        val connectDelay = 20.milliseconds
+        val closingDelay = 20.milliseconds
         val socketPath = config.socket.path
 
         afterTest {

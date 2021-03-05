@@ -59,7 +59,7 @@ class SocketReceiverTest : FreeSpec({
         val recipientAccount = genVerifiedAccount()
 
         val now = Instant.now().toEpochMilli()
-        val connectDelay = 5.milliseconds
+        val connectDelay = 20.milliseconds
         val closeDelay = 20.milliseconds
 
         val socketPath = genSocketPath()
@@ -113,7 +113,7 @@ class SocketReceiverTest : FreeSpec({
             }
         }
 
-        "handling messages" - {
+        "handling command messages" - {
             afterTest{
                 client.close()
             }
@@ -130,7 +130,7 @@ class SocketReceiverTest : FreeSpec({
 
             "REGISTER request" - {
                 val request = genRegisterRequest(username = senderPhoneNumber)
-                val transmitDelay = 10.milliseconds
+                val transmitDelay = 20.milliseconds
 
                 "when account is NEW" - {
                     coEvery { app.accountManager.load(senderPhoneNumber) } returns newSenderAccount
@@ -489,7 +489,7 @@ class SocketReceiverTest : FreeSpec({
             }
         }
 
-        "handling terminations" - {
+        "handling connection terminations" - {
             "when server calls #close"  {
                 app.socketReceiver.close(socket.hashCode())
                 delay(closeDelay)
