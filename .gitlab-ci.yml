@@ -7,7 +7,7 @@
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 .sb-job:
-  image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
+  image: registry.0xacab.org/team-friendo/signalboost/signalboost:1.0.1
   extends: .mr-only
   cache:
     key: sb_build
@@ -22,7 +22,7 @@
     POSTGRES_DB: signalboost_test
 
 .sc-job:
-  image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+  image: registry.0xacab.org/team-friendo/signalboost/signalc:1.0.2
   extends: .mr-only
   cache:
     key: sc_build
