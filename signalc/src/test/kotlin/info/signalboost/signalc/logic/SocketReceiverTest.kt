@@ -21,6 +21,9 @@ import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genSocketPa
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.registrationError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.requestHandlingError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.sendSuccess
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionDisrupted
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionFailed
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
 import info.signalboost.signalc.util.*
@@ -117,7 +120,7 @@ class SocketReceiverTest : FreeSpec({
 
             "ABORT request" - {
                 "shuts down the app" {
-                    client.send(genAbortRequest().toJson(), wait = closeDelay)
+                    client.send(genAbortRequest().toJson(), wait = closeDelay * 2)
                     coVerify {
                         app.socketSender.send(any<SocketResponse.AbortWarning>())
                         app.socketServer.stop()
@@ -315,7 +318,7 @@ class SocketReceiverTest : FreeSpec({
                             client.send(requestJson, wait = sendDelay)
                             coVerify {
                                 app.socketSender.send(
-                                    SocketResponse.SubscriptionSuccess(request.id, request.username)
+                                    subscriptionSuccess(request.id, request.username)
                                 )
                             }
                         }
@@ -333,7 +336,7 @@ class SocketReceiverTest : FreeSpec({
                             subscribeJob.cancel(error.message!!, error)
                             coVerify {
                                 app.socketSender.send(
-                                    SocketResponse.SubscriptionFailed(request.id, error)
+                                    subscriptionFailed(request.id, error)
                                 )
                             }
                         }
@@ -349,10 +352,11 @@ class SocketReceiverTest : FreeSpec({
                         "sends error to socket and resubscribes" {
                             client.send(requestJson)
                             disruptedJob.cancel(error.message!!, error)
+                            delay(5.milliseconds)
 
                             coVerify {
                                 app.socketSender.send(
-                                    SocketResponse.SubscriptionDisrupted(request.id, error)
+                                    subscriptionDisrupted(request.id, error)
                                 )
                             }
 
@@ -371,7 +375,7 @@ class SocketReceiverTest : FreeSpec({
                         delay(10.milliseconds)
                         coVerify {
                             app.socketSender.send(
-                                SocketResponse.SubscriptionFailed(
+                                subscriptionFailed(
                                     request.id,
                                     SignalcError.SubscriptionOfUnregisteredUser,
                                 )

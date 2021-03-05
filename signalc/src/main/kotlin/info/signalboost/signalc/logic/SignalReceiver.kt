@@ -7,6 +7,7 @@ import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
@@ -15,6 +16,8 @@ import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.PREKEY_BUNDLE_VALUE
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -88,17 +91,21 @@ class SignalReceiver(private val app: Application) {
         //  - random runtime error
         //  - cleanup message pipe on unsubscribe (by calling messagePipe.shutdown())
         // TODO: custom error for messagePipeCreation
-        return app.coroutineScope.launch(IO) {
+        return app.coroutineScope.launch {
+            //TODO: why does launching this in IO Dispatcher cause tests to faiL?
+            val outerScope = this
             val messagePipe = try {
                 messagePipeOf(account)
-            } catch(e: Throwable) {
-                logger.error { "Failed to create Signal message pipe: ${e.message}"}
+            } catch (e: Throwable) {
+                logger.error { "Failed to create Signal message pipe: ${e.message}" }
                 throw SignalcError.MessagePipeNotCreated(e)
             }
-            while (this.isActive) {
-                val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}"}
-                dispatch(account, envelope)
+            launch(IO) {
+                while (outerScope.isActive) {
+                    val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                    logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}" }
+                    dispatch(account, envelope)
+                }
             }
         }
     }

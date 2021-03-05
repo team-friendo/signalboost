@@ -213,10 +213,9 @@ class SocketServerBigTest : FreeSpec({
             beforeTest {
                 client1 = TestSocketClient.connect(socketPath, testScope)
                 client2 = TestSocketClient.connect(socketPath, testScope)
-
                 delay(10.milliseconds)
-                connections = app.socketServer.connections.values.take(2)
 
+                connections = app.socketServer.connections.values.take(2)
                 testScope.launch {
                     app.socketServer.close(connections[0].hashCode())
                 }
@@ -224,6 +223,7 @@ class SocketServerBigTest : FreeSpec({
                     app.socketServer.close(connections[1].hashCode())
                 }
 
+                delay(10.milliseconds)
             }
 
             afterTest {
@@ -240,13 +240,14 @@ class SocketServerBigTest : FreeSpec({
         }
 
         "#stop" - {
-            val stopDelay =30.milliseconds
 
             beforeTest {
                 client1 = TestSocketClient.connect(socketPath, testScope)
                 client2 = TestSocketClient.connect(socketPath, testScope)
+                delay(10.milliseconds)
+
                 app.socketServer.stop()
-                delay(stopDelay)
+                delay(10.milliseconds)
             }
 
             afterTest {

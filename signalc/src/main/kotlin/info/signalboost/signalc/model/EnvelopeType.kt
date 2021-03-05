@@ -10,6 +10,7 @@ enum class EnvelopeType {
 
     companion object {
         fun fromInt(int: Int): EnvelopeType = when(int) {
+            0 -> UNKNOWN
             1 -> CIPHERTEXT
             2 -> KEY_EXCHANGE
             3 -> PREKEY_BUNDLE
@@ -20,6 +21,5 @@ enum class EnvelopeType {
 
         fun Int.asEnum(): EnvelopeType = fromInt(this)
     }
-
 }
 
