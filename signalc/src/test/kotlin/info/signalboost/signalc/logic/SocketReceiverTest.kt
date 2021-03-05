@@ -119,14 +119,18 @@ class SocketReceiverTest : FreeSpec({
             }
 
             "ABORT request" - {
+                val request = genAbortRequest()
+                val transmitDelay = 30.milliseconds
+
                 "shuts down the app" {
-                    client.send(genAbortRequest().toJson(), wait = closeDelay * 2)
+                    client.send(request.toJson(), wait = transmitDelay)
                     coVerify {
                         app.socketSender.send(any<SocketResponse.AbortWarning>())
                         app.socketServer.stop()
                     }
                 }
             }
+
 
             "REGISTER request" - {
                 val request = genRegisterRequest(username = senderPhoneNumber)
