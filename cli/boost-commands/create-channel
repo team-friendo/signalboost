@@ -31,9 +31,11 @@ done
 source ./_check-env
 check-env ${env_file}
 
-if [[ ! $phone_number =~ ^\+[0-9]{9,15}$ ]];then
-  echo "> ERROR: -p must be a valid phone number prefixed by a country code"
-  exit 1
+if [[ ! -z "$phone_number" ]];then
+  if [[ ! $phone_number =~ ^\+[0-9]{9,15}$ ]];then
+    echo "> ERROR: -p must be a valid phone number prefixed by a country code"
+    exit 1
+  fi
 fi
 
 if [[ -z "$admins" ]]
