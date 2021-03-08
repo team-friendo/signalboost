@@ -2,6 +2,7 @@ const Sequelize = require('sequelize')
 const { db: config } = require('../config')
 const { forEach, values } = require('lodash')
 const { channelOf } = require('./models/channel')
+const { channelRequestOf } = require('./models/channelRequest')
 const { deauthorizationOf } = require('./models/deauthorization')
 const { eventOf } = require('./models/event')
 const { hotlineMessageOf } = require('./models/hotlineMessages')
@@ -23,17 +24,18 @@ const run = async () => {
     : new Sequelize(config.database, config.username, config.password, config)
 
   const db = {
+    ban: banOf(sequelize, Sequelize),
     channel: channelOf(sequelize, Sequelize),
+    channelRequest: channelRequestOf(sequelize, Sequelize),
     deauthorization: deauthorizationOf(sequelize, Sequelize),
+    destructionRequest: destructionRequestOf(sequelize, Sequelize),
     event: eventOf(sequelize, Sequelize),
     hotlineMessage: hotlineMessageOf(sequelize, Sequelize),
     invite: inviteOf(sequelize, Sequelize),
     membership: membershipOf(sequelize, Sequelize),
     messageCount: messageCountOf(sequelize, Sequelize),
     phoneNumber: phoneNumberOf(sequelize, Sequelize),
-    destructionRequest: destructionRequestOf(sequelize, Sequelize),
     smsSender: smsSenderOf(sequelize, Sequelize),
-    ban: banOf(sequelize, Sequelize),
   }
 
   forEach(values(db), mdl => mdl.associate && mdl.associate(db))
