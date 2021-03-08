@@ -168,6 +168,7 @@ const statuses = {
   NOOP: 'NOOP',
   ERROR: 'ERROR',
   UNAUTHORIZED: 'UNAUTHORIZED',
+  UNAVAILABLE: 'UNAVAILABLE',
 }
 
 const defaultErrorOf = err => ({

@@ -6,6 +6,7 @@ const diagnostics = require('../../diagnostics')
 const eventRepository = require('../../db/repositories/event')
 const hotlineMessageRepository = require('../../db/repositories/hotlineMessage')
 const banRepository = require('../../db/repositories/ban')
+const channelRequestRepository = require('../../db/repositories/channelRequest')
 const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
@@ -336,22 +337,18 @@ const broadcastNotificationsOf = (channel, sender, { attachments }, messageBody)
 }
 
 // CHANNEL
-const maybeCreateChannel = async (sender, payload) => {
+/* (Membership, Array<String> -> SignalboostStatus */
+const maybeCreateChannel = async (sender, adminPhoneNumbers) => {
   const cr = messagesIn(sender.language).commandResponses.channel
   try {
-    const newChannel = await channelRegistrar.create(payload)
-    if (newChannel.status === statuses.ERROR) {
-      return {
-        status: statuses.ERROR,
-        payload: '',
-        message: cr.requestsClosed,
-      }
+    const newChannel = await channelRegistrar.create(adminPhoneNumbers)
+    if (newChannel.status === statuses.UNAVAILABLE) {
+      await channelRequestRepository.addToWaitlist(adminPhoneNumbers)
+      return { status: statuses.ERROR, payload: '', message: cr.requestsClosed }
     }
-    return {
-      status: statuses.SUCCESS,
-      payload: '',
-      message: cr.success(newChannel.phoneNumber),
-    }
+    if (newChannel.status === statuses.ERROR)
+      return { status: statuses.ERROR, payload: '', message: cr.error }
+    return { status: statuses.SUCCESS, payload: '', message: cr.success(newChannel.phoneNumber) }
   } catch (e) {
     logger.error(e)
     return { status: statuses.ERROR, payload: '', message: cr.error }

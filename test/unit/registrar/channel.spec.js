@@ -117,7 +117,7 @@ describe('channel registrar', () => {
 
         it('returns an error status', () => {
           expect(res).to.eql({
-            status: statuses.ERROR,
+            status: statuses.UNAVAILABLE,
             error: 'No available phone numbers!',
             request: { admins },
           })

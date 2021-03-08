@@ -12,6 +12,7 @@ import channelRepository, {
   getSubscriberMemberships,
 } from '../../../../app/db/repositories/channel'
 import banRepository from '../../../../app/db/repositories/ban'
+import channelRequestRepository from '../../../../app/db/repositories/channelRequest'
 import inviteRepository from '../../../../app/db/repositories/invite'
 import membershipRepository, { memberTypes } from '../../../../app/db/repositories/membership'
 import deauthorizationRepository from '../../../../app/db/repositories/deauthorization'
@@ -701,9 +702,10 @@ describe('executing commands', () => {
       }
 
       describe('when sent a valid channel request', () => {
-        let createChannelStub
+        let createChannelStub, addToWaitListStub
         beforeEach(() => {
           createChannelStub = sinon.stub(channelRegistrar, 'create')
+          addToWaitListStub = sinon.stub(channelRequestRepository, 'addToWaitlist')
         })
 
         describe('when creating a new channel succeeds', () => {
@@ -731,8 +733,44 @@ describe('executing commands', () => {
         })
 
         describe('when creating the channel fails', () => {
-          describe('when creating the channel throws an error', () => {
-            beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
+          describe('when there are no available channels', () => {
+            beforeEach(async () => {
+              createChannelStub.returns(
+                Promise.resolve({
+                  status: statuses.UNAVAILABLE,
+                  error: 'No available phone numbers!',
+                  request: { newAdminPhoneNumbers },
+                }),
+              )
+              await processCommand(dispatchable)
+            })
+
+            it('adds the new admins to the waitlist', () => {
+              expect(addToWaitListStub.getCall(0).args).to.have.deep.members([newAdminPhoneNumbers])
+            })
+
+            it('returns an error status and wailist notification', async () => {
+              expect(await processCommand(dispatchable)).to.eql({
+                command: commands.CHANNEL,
+                status: statuses.ERROR,
+                payload: '',
+                message: commandResponsesFor(randomPerson).channel.requestsClosed,
+                notifications: [],
+              })
+            })
+          })
+
+          describe('when creating the channel produces a handled error', () => {
+            beforeEach(() =>
+              createChannelStub.returns(
+                Promise.resolve({
+                  status: statuses.ERROR,
+                  error: 'Something random happened!',
+                  request: { newAdminPhoneNumbers },
+                }),
+              ),
+            )
+
             it('returns an error status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.CHANNEL,
@@ -744,22 +782,15 @@ describe('executing commands', () => {
             })
           })
 
-          describe('when creating the channel returns an error status', () => {
-            beforeEach(() =>
-              createChannelStub.returns(
-                Promise.resolve({
-                  status: statuses.ERROR,
-                  error: 'No available phone numbers!',
-                  request: { newAdminPhoneNumbers },
-                }),
-              ),
-            )
-            it('returns an error status and notification for the channel requester to try again later', async () => {
+          describe('when creating the channel throws', () => {
+            beforeEach(() => createChannelStub.callsFake(() => Promise.reject(new Error('oops'))))
+
+            it('returns an error status and message', async () => {
               expect(await processCommand(dispatchable)).to.eql({
                 command: commands.CHANNEL,
-                status: statuses.ERROR,
                 payload: '',
-                message: commandResponsesFor(randomPerson).channel.requestsClosed,
+                status: statuses.ERROR,
+                message: commandResponsesFor(randomPerson).channel.error,
                 notifications: [],
               })
             })
