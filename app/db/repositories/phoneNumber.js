@@ -48,4 +48,14 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, create, destroy, find, findAll, findAllPurchased, list, countIf, update }
+module.exports = {
+  filters,
+  create,
+  destroy,
+  find,
+  findAll,
+  findAllPurchased,
+  list,
+  countIf,
+  update,
+}
