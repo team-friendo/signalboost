@@ -12,9 +12,11 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.clea
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
 import info.signalboost.signalc.util.TimeUtil.nowInMillis
+import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runBlockingTest
@@ -59,7 +61,8 @@ class SignalReceiverTest : FreeSpec({
             val expiryTime = genInt()
             // We cancel the `listen` job after a very short duration so we don't iterate
             // endlessly through the infinite `while` loop that calls `messagePipe#read`
-            val jobDuration = 1.milliseconds
+            val timeout = 25.milliseconds
+            val pollInterval = 1.milliseconds
 
             fun signalSendsEnvelopeOf(envelopeType: Int): SignalServiceEnvelope {
                 val mockEnvelope = mockk<SignalServiceEnvelope>() {
@@ -83,20 +86,21 @@ class SignalReceiverTest : FreeSpec({
             "when signal sends an envelope of type UNKNOWN" - {
                 val envelope = signalSendsEnvelopeOf(UNKNOWN_VALUE)
 
-                "relays a DroppedMessage to the socket sender" {
+                lateinit var sub: Job
+                beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+                afterTest { sub.cancel() }
 
-                    messageReceiver.subscribe(recipientAccount).let {
-                        delay(jobDuration)
-                        it.cancel()
-                    }
-                    coVerify {
-                        app.socketSender.send(
-                            dropped(
-                                senderAddress.asSignalcAddress(),
-                                recipientAccount.asSignalcAddress(),
-                                envelope
+                "relays a DroppedMessage to the socket sender" {
+                    eventually(timeout, pollInterval) {
+                        coVerify {
+                            app.socketSender.send(
+                                dropped(
+                                    senderAddress.asSignalcAddress(),
+                                    recipientAccount.asSignalcAddress(),
+                                    envelope
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -118,19 +122,21 @@ class SignalReceiverTest : FreeSpec({
                         }
                     }
 
+                    lateinit var sub: Job
+                    beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+                    afterTest { sub.cancel() }
+
                     "relays Cleartext to socket sender" {
-                        messageReceiver.subscribe(recipientAccount).let {
-                            delay(10)
-                            it.cancel()
-                        }
-                        coVerify {
-                            app.socketSender.send(
-                                cleartext(
-                                    senderAddress.asSignalcAddress(),
-                                    recipientAccount.asSignalcAddress(),
-                                    secretMessage
+                        eventually(timeout, pollInterval) {
+                            coVerify {
+                                app.socketSender.send(
+                                    cleartext(
+                                        senderAddress.asSignalcAddress(),
+                                        recipientAccount.asSignalcAddress(),
+                                        secretMessage
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -142,13 +148,15 @@ class SignalReceiverTest : FreeSpec({
                         every { dataMessage.orNull()?.body?.orNull() } returns null
                     }
 
+                    lateinit var sub: Job
+                    beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+                    afterTest { sub.cancel() }
+
                     "relays Empty to socket sender" {
-                        messageReceiver.subscribe(recipientAccount).let {
-                            delay(10)
-                            it.cancel()
-                        }
-                        coVerify {
-                            app.socketSender.send(SocketResponse.Empty)
+                        eventually(timeout, pollInterval) {
+                            coVerify {
+                                app.socketSender.send(SocketResponse.Empty)
+                            }
                         }
                     }
                 }
@@ -163,20 +171,21 @@ class SignalReceiverTest : FreeSpec({
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     }  throws error
 
-                    "relays DecryptionError to socket sender" {
-                        messageReceiver.subscribe(recipientAccount).let {
-                            delay(10)
-                            it.cancel()
-                        }
+                    lateinit var sub: Job
+                    beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+                    afterTest { sub.cancel() }
 
-                        coVerify {
-                            app.socketSender.send(
-                                decryptionError(
-                                    senderAddress.asSignalcAddress(),
-                                    recipientAccount.asSignalcAddress(),
-                                    error
+                    "relays DecryptionError to socket sender" {
+                        eventually(timeout, pollInterval) {
+                            coVerify {
+                                app.socketSender.send(
+                                    decryptionError(
+                                        senderAddress.asSignalcAddress(),
+                                        recipientAccount.asSignalcAddress(),
+                                        error
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -185,20 +194,21 @@ class SignalReceiverTest : FreeSpec({
             "when signal sends an envelope of type PREKEY_BUNDLE" - {
                 val envelope = signalSendsEnvelopeOf(PREKEY_BUNDLE_VALUE)
 
+                every {
+                    anyConstructed<SignalServiceCipher>().decrypt(any())
+                }  returns  mockk {
+                    every { dataMessage.orNull() } returns null
+                }
+
+                lateinit var sub: Job
+                beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+                afterTest { sub.cancel() }
+
                 "it is handled as CIPHERTEXT" {
-                    every {
-                        anyConstructed<SignalServiceCipher>().decrypt(any())
-                    }  returns  mockk {
-                        every { dataMessage.orNull() } returns null
-                    }
-
-                    messageReceiver.subscribe(recipientAccount).let {
-                        delay(10)
-                        it.cancel()
-                    }
-
-                    verify {
-                        anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                    eventually(timeout, pollInterval){
+                        verify {
+                            anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                        }
                     }
                 }
             }
