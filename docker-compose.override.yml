@@ -38,13 +38,12 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
-    command: --port=4000
     environment:
       LETSENCRYPT_HOST: ${CADVISOR_HOST_URL}
       VIRTUAL_HOST: ${CADVISOR_HOST_URL}
-      VIRTUAL_PORT: 4000
+      VIRTUAL_PORT: 8080
     expose:
-      - 4000
+      - 8080
     logging: *loki-logging
     volumes:
       - /:/rootfs:ro
@@ -129,4 +128,4 @@ services:
     environment:
       LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_5}
       VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
-      VIRTUAL_PORT: 5002
+      VIRTUAL_PORT: 5005
