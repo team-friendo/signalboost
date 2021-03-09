@@ -19,6 +19,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.gen
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVerificationError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVerificationSuccess
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVersionResponse
+import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
@@ -29,6 +30,7 @@ import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
+import kotlin.time.seconds
 
 @ExperimentalTime
 @ObsoleteCoroutinesApi
@@ -50,7 +52,7 @@ class SocketSenderTest : FreeSpec({
             }
         }
         val mockWriter = mockWriters[0]
-        val sendDelay = 2.milliseconds
+        val timeout = 100.milliseconds
 
         beforeSpec {
             mockkObject(SocketSender.Writer)
@@ -149,9 +151,10 @@ class SocketSenderTest : FreeSpec({
                     "writes serialized response to socket" {
                         responses.forEach {
                             app.socketSender.send(it)
-                            delay(sendDelay)
-                            verify {
-                                mockWriter.println(it.toJson())
+                            eventually(timeout) {
+                                verify {
+                                    mockWriter.println(it.toJson())
+                                }
                             }
                         }
                     }
@@ -166,14 +169,14 @@ class SocketSenderTest : FreeSpec({
                     "does not write to socket" {
                         responses.forEach {
                             app.socketSender.send(it)
-                            delay(sendDelay)
-                            verify(exactly = 0) {
-                                mockWriter.println(any<String>())
+                            eventually(timeout) {
+                                verify(exactly = 0) {
+                                    mockWriter.println(any<String>())
+                                }
                             }
                         }
                     }
                 }
-
             }
 
             "when called many times concurrently" - {
@@ -191,13 +194,13 @@ class SocketSenderTest : FreeSpec({
                         }
                     }
 
-                    delay(sendDelay * numMessages)
-
-                    verify(atLeast = numMessages / 4) {
-                        mockWriters[0].println(any<String>())
-                    }
-                    verify(atLeast = numMessages / 4) {
-                        mockWriters[1].println(any<String>())
+                    eventually(2.seconds) {
+                        verify(atLeast = numMessages / 4) {
+                            mockWriters[0].println(any<String>())
+                        }
+                        verify(atLeast = numMessages / 4) {
+                            mockWriters[1].println(any<String>())
+                        }
                     }
                 }
             }
