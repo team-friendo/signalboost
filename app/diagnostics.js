@@ -24,7 +24,7 @@ const sendHealthchecks = async () => {
 
   try {
     const [[diagnosticsChannel], channels] = partition(
-      await channelRepository.findAll(),
+      await channelRepository.findAllHealthcheckable(),
       channel => channel.phoneNumber === diagnosticsPhoneNumber,
     )
 

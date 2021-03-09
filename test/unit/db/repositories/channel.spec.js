@@ -12,7 +12,7 @@ import { membershipFactory } from '../../../support/factories/membership'
 
 const {
   jobs: { channelExpiryInMillis },
-  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
+  signal: { diagnosticsPhoneNumber, numbersToExcludeFromHealthcheck, supportPhoneNumber },
 } = require('../../../../app/config')
 
 describe('channel repository', () => {
@@ -276,6 +276,29 @@ describe('channel repository', () => {
           'subscriberLimit',
         ])
       })
+    })
+  })
+
+  describe('#findHealtcheckable', () => {
+    const included = times(2, channelFactory)
+    const excluded = numbersToExcludeFromHealthcheck.map(phoneNumber =>
+      channelFactory({ phoneNumber }),
+    )
+    const allChannels = [...included, ...excluded]
+
+    beforeEach(async () => {
+      await Promise.all(allChannels.map(x => db.channel.create(x)))
+    })
+
+    it('fetches all numbers except those excluded from healthcheck', async () => {
+      const healthcheckableNumbers = map(
+        await channelRepository.findAllHealthcheckable(),
+        'phoneNumber',
+      )
+      expect(healthcheckableNumbers).to.eql(map(included, 'phoneNumber'))
+      numbersToExcludeFromHealthcheck.forEach(number =>
+        expect(healthcheckableNumbers).not.to.contain(number),
+      )
     })
   })
 
