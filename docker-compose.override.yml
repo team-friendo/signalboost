@@ -34,8 +34,60 @@ services:
     logging: *loki-logging
     networks:
       - proxy-tier
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    command: --port=4000
+    environment:
+      LETSENCRYPT_HOST: ${CADVISOR_HOST_URL}
+      VIRTUAL_HOST: ${CADVISOR_HOST_URL}
+      VIRTUAL_PORT: 4000
+    expose:
+      - 4000
+    logging: *loki-logging
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
   db:
     logging: *loki-logging
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
+    container_name: signalboost_letsencrypt
+    restart: always
+    volumes:
+      - certs:/etc/nginx/certs
+      - html:/usr/share/nginx/html
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme_config:/etc/acme.sh
+    networks:
+      - proxy-tier
+    logging: *loki-logging
+    depends_on:
+      - proxy
+
+  proxy:
+    image: jwilder/nginx-proxy:0.8.0
+    container_name: signalboost_proxy
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy-tier
+    logging: *loki-logging
+    restart: always
 
   signald_0:
     <<: *signald-overrides
@@ -78,37 +130,3 @@ services:
       LETSENCRYPT_HOST: ${SIGNALD_HOST_URL_5}
       VIRTUAL_HOST: ${SIGNALD_HOST_URL_5}
       VIRTUAL_PORT: 5002
-
-  proxy:
-    image: jwilder/nginx-proxy:0.8.0
-    container_name: signalboost_proxy
-    ports:
-      - 80:80
-      - 443:443
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-    volumes:
-      - certs:/etc/nginx/certs:ro
-      - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - proxy-tier
-    logging: *loki-logging
-    restart: always
-
-  letsencrypt:
-    image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
-    container_name: signalboost_letsencrypt
-    restart: always
-    volumes:
-      - certs:/etc/nginx/certs
-      - html:/usr/share/nginx/html
-      - ./nginx/vhost.d:/etc/nginx/vhost.d
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - acme_config:/etc/acme.sh
-    networks:
-      - proxy-tier
-    logging: *loki-logging
-    depends_on:
-      - proxy
