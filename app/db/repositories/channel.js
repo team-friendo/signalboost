@@ -6,7 +6,7 @@ const { memberTypes } = require('./membership')
 const { map } = require('lodash')
 const {
   jobs: { channelExpiryInMillis },
-  signal: { diagnosticsPhoneNumber, supportPhoneNumber },
+  signal: { diagnosticsPhoneNumber, numbersToExcludeFromHealthcheck, supportPhoneNumber },
 } = require('../../config')
 
 const logger = loggerOf('db.repositories.channel')
@@ -51,6 +51,11 @@ const destroy = async (phoneNumber, transaction = null) => {
 }
 
 const findAll = () => app.db.channel.findAll()
+
+const findAllHealthcheckable = () =>
+  app.db.channel.findAll({
+    where: { phoneNumber: { [Op.notIn]: numbersToExcludeFromHealthcheck } },
+  })
 
 const findAllDeep = () =>
   app.db.channel.findAll({
@@ -203,6 +208,7 @@ module.exports = {
   destroy,
   findAll,
   findAllDeep,
+  findAllHealthcheckable,
   findByPhoneNumber,
   findDeep,
   findManyDeep,

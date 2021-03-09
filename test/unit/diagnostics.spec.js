@@ -37,7 +37,7 @@ describe('diagnostics module', () => {
 
   beforeEach(() => {
     sinon
-      .stub(channelRepository, 'findAll')
+      .stub(channelRepository, 'findAllHealthcheckable')
       .returns(Promise.resolve([...channels, diagnosticsChannel]))
     sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(diagnosticsChannel))
     sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(socketId))
