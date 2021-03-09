@@ -5,6 +5,7 @@ const eventRepository = require('../db/repositories/event')
 const inviteRepository = require('../db/repositories/invite')
 const signal = require('../signal')
 const notifier = require('../notifier')
+const metrics = require('../metrics')
 const { eventTypes } = require('../db/models/event')
 const { pick } = require('lodash')
 const { messagesIn } = require('../dispatcher/strings/messages')
@@ -56,6 +57,7 @@ const create = async (admins, phoneNumber) => {
     const channel = await channelRepository.create(channelPhoneNumber, admins)
     await phoneNumberRepository.update(channelPhoneNumber, { status: pNumStatuses.ACTIVE })
     await eventRepository.log(eventTypes.CHANNEL_CREATED, channelPhoneNumber)
+    metrics.incrementCounter(metrics.counters.SYSTEM_LOAD, [metrics.loadEvents.CHANNEL_CREATED])
 
     // send new admins welcome messages
     const adminPhoneNumbers = channelRepository.getAdminPhoneNumbers(channel)

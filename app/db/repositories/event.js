@@ -1,4 +1,6 @@
 const app = require('../../../app')
+const metrics = require('../../metrics')
+const { counters, loadEvents } = metrics
 const { eventTypes } = require('../models/event')
 const { sha256Hash } = require('../../util')
 
@@ -18,14 +20,18 @@ const log = (eventType, phoneNumber, transaction = null) =>
 const logIfFirstMembership = async memberPhoneNumber => {
   // NOTE: this function should be called AFTER creating a membership
   const isFirst = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 1
-  return isFirst ? log(eventTypes.MEMBER_CREATED) : null
+  if (!isFirst) return null
+  metrics.incrementCounter(counters.SYSTEM_LOAD, [loadEvents.MEMBER_CREATED])
+  return log(eventTypes.MEMBER_CREATED)
 }
 
 // string => Promise<Event|null>
 const logIfLastMembership = async memberPhoneNumber => {
   // NOTE: this function should be called AFTER creating a membership
   const isLast = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 0
-  return isLast ? log(eventTypes.MEMBER_DESTROYED) : null
+  if (!isLast) return null
+  metrics.incrementCounter(counters.SYSTEM_LOAD, [loadEvents.MEMBER_DESTROYED])
+  return log(eventTypes.MEMBER_DESTROYED)
 }
 
 /**

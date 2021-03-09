@@ -56,6 +56,7 @@ const metricsResource = () => {
         RELAYABLE_MESSAGES: counterStub,
         SIGNALD_MESSAGES: counterStub,
         SIGNALBOOST_MESSAGES: counterStub,
+        SYSTEM_LOAD: counterStub,
       },
       histograms: {
         MESSAGE_ROUNDTRIP: histogramStub,
