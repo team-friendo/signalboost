@@ -14,6 +14,7 @@ const util = require('../../util')
 const { getAdminMemberships } = require('../../db/repositories/channel')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
+const { statuses: pNumStatuses } = require('../../db/models/phoneNumber')
 const { statuses, sequence } = require('../../util')
 const { eventTypes } = require('../../db/models/event')
 const {
@@ -91,6 +92,12 @@ const processDestructionRequests = async () => {
     logger.log(
       `${toDestroy.length} destruction requests processed:\n\n` +
         `${map(destructionResults, 'message').join('\n')}`,
+    )
+    return notifier.notifyMaintainers(
+      messagesIn(defaultLanguage).notifications.channelDestructionSucceeded(
+        await phoneNumberRepository.countIf(pNumStatuses.VERIFIED),
+        await channelRepository.count(),
+      ),
     )
   } catch (err) {
     logger.error(err)

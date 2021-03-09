@@ -23,8 +23,12 @@ const findAll = () => app.db.phoneNumber.findAll()
 
 const findAllPurchased = () => app.db.phoneNumber.findAll({ where: { status: statuses.PURCHASED } })
 
+// string -> Array<PhoneNumber>
 const list = filter =>
   app.db.phoneNumber.findAll({ order: [['status', 'DESC']], where: parseQueryFilter(filter) })
+
+// string ->  number
+const countIf = async filter => (await list(filter)).length
 
 const parseQueryFilter = filter => {
   switch (filter) {
@@ -44,4 +48,4 @@ const update = (phoneNumber, attrs) =>
     .update({ ...attrs }, { where: { phoneNumber }, returning: true })
     .then(([, [pNumInstance]]) => pNumInstance)
 
-module.exports = { filters, create, destroy, find, findAll, findAllPurchased, list, update }
+module.exports = { filters, create, destroy, find, findAll, findAllPurchased, list, countIf, update }

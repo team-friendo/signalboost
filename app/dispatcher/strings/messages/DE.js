@@ -462,6 +462,13 @@ const notifications = {
   banReceived:
     'Ein Admin dieses Kanals hat dich gesperrt. Weitere Interaktionen werden von den Admins des Kanals nicht empfangen.',
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Neuer Kanal erstellt.` : `Die Kanalerstellung ist fehlgeschlagen.`}
+- ${numAvailablePhoneNumbers} verfügbare Telefonnummern
+- ${numChannels} aktive Kanäle`,
+
+  channelCreationError: err => `Fehler beim Erstellen des Kanals: ${err}`,
+
   channelDestroyedByAdmin: (adminId, audience) =>
     ({
       ADMIN: `ADMIN ${adminId} hat diesen Kanal zerstört. Alle zugehörigen Daten wurden gelöscht.`,
@@ -487,6 +494,14 @@ ERROR: ${error}`,
 
   channelRedeemed:
     'Es war geplant, diesen Kanal wegen mangelnder Nutzung zu zerstören. Da du den Kanal kürzlich verwendet hast, wird er jedoch nicht mehr zerstört. Yay!',
+
+  channelDestructionSucceeded: (numAvailablePhoneNumbers, numChannels) =>
+    `Kanal zerstört.
+- ${numAvailablePhoneNumbers} verfügbare Telefonnummern
+- ${numChannels} aktive Kanäle`,
+
+  safetyNumberChanged:
+    'Es sieht so aus, als ob sich deine Sicherheitsnummer gerade geändert hat. Möglicherweise musst du deine letzte Nachricht erneut senden! :)',
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.
@@ -543,19 +558,6 @@ ${
     ? `nächster Sendeversuch in: ${resendInterval.toString().slice(0, -3)} Sekunden`
     : `Nachricht hat das Limit der Sendeversuche erreicht, es folgen keine weiteren Versuche`
 }`,
-
-  destroyChannelFailed: phoneNumber =>
-    `Fehler beim Zerstören des Kanals für die Telefonnummer: ${phoneNumber}`,
-
-  safetyNumberChanged:
-    'Es sieht so aus, als ob sich deine Sicherheitsnummer gerade geändert hat. Möglicherweise musst du deine letzte Nachricht erneut senden! :)',
-
-  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
-    `${success ? `Neuer Kanal erstellt.` : `Die Kanalerstellung ist fehlgeschlagen.`}
-- ${numChannels} aktive Kanäle
-- ${numAvailablePhoneNumbers} verfügbare Telefonnummern`,
-
-  channelCreationError: err => `Fehler beim Erstellen des Kanals: ${err}`,
 
   restartRequesterNotAuthorized:
     'Versuchst du, Signalboost neu zu starten? Du bist dazu nicht berechtigt!',
