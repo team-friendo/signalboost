@@ -15,7 +15,6 @@ const notSubscriber =
   'No se pudo procesar su comando porque no está suscrito a este canal. Envía HOLA para suscribirse.'
 const subscriberLimitReached = subscriberLimit =>
   `Lo sentimos, este canal ha alcanzado su límite de ${subscriberLimit} suscriptores.`
-const requestsClosed = `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento.Vuelva a verificar más tarde.`
 const onOrOff = isOn => (isOn ? 'activada' : 'desactivada')
 
 const vouchModeDisplay = {
@@ -124,7 +123,11 @@ ${phoneNumber}.
 
 Si tiene preguntas o tiene problemas para acceder a su canal, puede enviar un mensaje al soporte de Signalboost aquí.
 `,
-    requestsClosed: requestsClosed,
+    requestsClosed: `¡SignalBoost está en capacidad! Hemos agregado su solicitud de canal a nuestra lista de espera.
+    
+Cuando la capacidad se libera, se creará su canal y recibirá un mensaje de bienvenida.
+
+Mientras tanto, no dude en escribirnos en este número con cualquier pregunta! 🖤✨🖤`,
     error: `Lo sentimos, hubo un error al procesar tu solicitud de canal. Por favor, inténtelo de nuevo más tarde. Si su problema persiste, puede enviar un mensaje al soporte de Signalboost aquí.`,
   },
 
@@ -359,7 +362,6 @@ https://signalboost.info/privacy
 Ahora, si desea crear un canal, envíe CHANNEL seguido de una lista separada por comas de números de teléfono de administrador con códigos de país, por ejemplo:
 
 CANAL +1555123412, +1555123419`,
-    closed: `Lo sentimos, Signalboost no acepta nuevas solicitudes de canales en este momento. Vuelva a verificar más tarde.`,
   },
 
   // SET_LANGUAGE

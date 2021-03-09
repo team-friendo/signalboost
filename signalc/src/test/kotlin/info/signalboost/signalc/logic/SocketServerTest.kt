@@ -7,6 +7,7 @@ import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
@@ -16,6 +17,7 @@ import java.net.Socket
 import java.net.SocketException
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
+import kotlin.time.seconds
 
 @ExperimentalTime
 @ObsoleteCoroutinesApi
@@ -26,8 +28,8 @@ class SocketServerTest : FreeSpec({
         val config = Config.mockAllExcept(SocketServer::class)
         val app = Application(config).run(testScope)
 
-        val connectDelay = 20.milliseconds
         val closingDelay = 20.milliseconds
+        val timeout = 1.seconds
         val socketPath = config.socket.path
 
         afterTest {
@@ -41,15 +43,21 @@ class SocketServerTest : FreeSpec({
             testScope.teardown()
         }
 
-        fun getFirstConnection() = app.socketServer.connections.values.first()
+         suspend fun getFirstConnection(numAttempts: Int): Socket = try {
+            // tries to get a connection 10 times, giving up after timeout
+            app.socketServer.connections.values.first()
+        } catch (error: Throwable) {
+            if (numAttempts > 100) throw error
+            delay(timeout / 100)
+            getFirstConnection(numAttempts + 1)
+        }
 
         "#run" - {
             lateinit var client: TestSocketClient
             lateinit var serverSock: Socket
             beforeTest {
                 client = TestSocketClient.connect(socketPath, testScope)
-                delay(connectDelay)
-                serverSock = getFirstConnection()
+                serverSock = getFirstConnection(0)
             }
             afterTest {
                 client.close()
@@ -76,34 +84,33 @@ class SocketServerTest : FreeSpec({
             }
 
             "when client closes socket connection" - {
-                client.close()
-                delay(closingDelay)
-
                 "server continues listening for connections" {
-                    app.socketServer.listenJob.isCancelled shouldBe false
+                    client.close()
+                    eventually(timeout) {
+                        app.socketServer.listenJob.isCancelled shouldBe false
+                    }
                 }
             }
 
             "when server closes socket connection" - {
                 beforeTest {
                     app.socketServer.socket.close()
-                    delay(closingDelay)
                 }
                 afterTest {
                     app.socketServer.run()
                 }
 
-                "stops listening for connections" {
-                    app.socketServer.listenJob.isActive shouldBe false
-                }
-
-                "refuses new connections" {
-                    shouldThrow<SocketException> {
-                        TestSocketClient.connect(socketPath, genTestScope())
+                "stops accepting new connections" {
+                    eventually(timeout) {
+                        app.socketServer.listenJob.isActive shouldBe false
+                        shouldThrow<SocketException> {
+                            TestSocketClient.connect(socketPath, genTestScope())
+                        }
                     }
                 }
             }
 
+            // TODO: try to test this in a less brittle way!
             "when server closes socket connection then restarts" - {
                 beforeTest {
                     app.socketServer.socket.close()
@@ -111,47 +118,52 @@ class SocketServerTest : FreeSpec({
                     app.socketServer.run()
                 }
 
-                "listens for connections" {
-                    app.socketServer.listenJob.isActive shouldBe true
-                }
-
                 "accepts new connections" {
-                    shouldNotThrow<Throwable> {
-                        TestSocketClient.connect(socketPath, genTestScope())
+                    eventually(timeout * 2) {
+                        app.socketServer.listenJob.isActive shouldBe true
+                        shouldNotThrow<Throwable> {
+                            TestSocketClient.connect(socketPath, genTestScope())
+                        }
                     }
                 }
-
             }
-
         }
 
         "#disconnect" - {
             TestSocketClient.connect(socketPath,testScope)
-            val socket = getFirstConnection()
+            val socket = getFirstConnection(0)
             val socketHash = socket.hashCode()
 
             "disconnects a socket connection's message receiver" {
                 app.socketServer.close(socketHash)
-                coVerify {
-                    app.socketSender.close(socketHash)
+                eventually(timeout) {
+                    coVerify {
+                        app.socketSender.close(socketHash)
+                    }
                 }
             }
 
             "disconnects a socket connection's message sender" {
                 app.socketServer.close(socketHash)
-                coVerify {
-                    app.socketSender.close(socketHash)
+                eventually(timeout) {
+                    coVerify {
+                        app.socketSender.close(socketHash)
+                    }
                 }
             }
 
             "closes the socket connection" {
                 app.socketServer.close(socketHash)
-                socket.isClosed shouldBe true
+                eventually(timeout) {
+                    socket.isClosed shouldBe true
+                }
             }
 
             "forgets about the socket connection" {
                 app.socketServer.close(socketHash)
-                app.socketServer.connections[socketHash] shouldBe null
+                eventually(timeout) {
+                    app.socketServer.connections[socketHash] shouldBe null
+                }
             }
         }
 
@@ -168,29 +180,39 @@ class SocketServerTest : FreeSpec({
             }
 
             "disconnects receivers from all socket connections" {
-                coVerify {
-                    app.socketReceiver.stop()
+                eventually(timeout) {
+                    coVerify {
+                        app.socketReceiver.stop()
+                    }
                 }
-
             }
+
             "disconnects senders from all socket connections" {
-                coVerify {
-                    app.socketSender.stop()
+                eventually(timeout) {
+                    coVerify {
+                        app.socketSender.stop()
+                    }
                 }
             }
 
             "closes all socket connections" {
-                connections.forEach {
-                    it.isClosed shouldBe true
+                eventually(timeout) {
+                    connections.forEach {
+                        it.isClosed shouldBe true
+                    }
                 }
             }
 
             "forgets about all socket connections" {
-                app.socketServer.connections shouldBe emptyMap()
+                eventually(timeout) {
+                    app.socketServer.connections shouldBe emptyMap()
+                }
             }
 
             "cancels socket listening job" {
-                app.socketServer.listenJob.isCancelled shouldBe true
+                eventually(timeout) {
+                    app.socketServer.listenJob.isCancelled shouldBe true
+                }
             }
         }
     }

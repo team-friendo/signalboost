@@ -15,7 +15,6 @@ const notSubscriber =
   "Votre commande n'a pas pu être traitée car vous n'êtes pas abonné-e à ce canal. Envoyez BONJOUR pour vous abonner."
 const subscriberLimitReached = subscriberLimit =>
   `Désolé, cette canal a atteint sa limite de ${subscriberLimit} abonnés.`
-const requestsClosed = `Désolé, Signalboost n'accepte pas de nouvelles demandes de chaînes pour le moment! Veuillez vérifier à nouveau plus tard.`
 const onOrOff = isOn => (isOn ? 'activé' : 'désactivé')
 
 const vouchModeDisplay = {
@@ -126,7 +125,11 @@ ${phoneNumber}.
 
 Si vous avez des questions ou rencontrez des problèmes pour accéder à votre chaîne, vous pouvez envoyer un message à l'assistance Signalboost ici.
 `,
-    requestsClosed: requestsClosed,
+    requestsClosed: `SignalBoost est en capacité! Nous avons ajouté votre demande de chaîne à notre liste d'attente.
+    
+Lorsque la capacité libère, votre chaîne sera créée et vous recevrez un message de bienvenue.
+
+En attendant, n'hésitez pas à nous écrire à ce numéro avec toutes les questions! 🖤✨🖤`,
     error: `Désolé, une erreur s'est produite lors du traitement de votre demande de chaîne! Veuillez réessayer plus tard. Si votre problème persiste, vous pouvez envoyer un message à l'assistance Signalboost ici.`,
   },
 
@@ -358,7 +361,6 @@ https://signalboost.info/privacy
 Maintenant, si vous souhaitez créer une chaîne, envoyez CHANNEL suivi d'une liste de numéros de téléphone administrateur séparés par des virgules (y compris le code du pays), par exemple:
 
 CANAL +1555123412, +1555123419`,
-    closed: requestsClosed,
   },
 
   // SET_LANGUAGE

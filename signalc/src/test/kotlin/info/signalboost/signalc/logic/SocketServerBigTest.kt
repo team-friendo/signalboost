@@ -18,6 +18,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.gen
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVerificationSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
+import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -28,6 +29,7 @@ import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
+import kotlin.time.seconds
 
 @InternalCoroutinesApi
 @ExperimentalTime
@@ -53,6 +55,16 @@ class SocketServerBigTest : FreeSpec({
         val recipientAccount = genVerifiedAccount(recipientPhone)
 
         val socketPath = app.config.socket.path
+        val timeout = 1.seconds
+
+        suspend fun getFirstNConnections(numConnections: Int, numAttempts: Int = 0): List<Socket> = try {
+            // tries to get a connection 100 times, giving up after 10 times and timeout
+            app.socketServer.connections.values.take(numConnections)
+        } catch (error: Throwable) {
+            if (numAttempts > 100) throw error
+            delay(timeout / 100)
+            getFirstNConnections(numConnections, numAttempts + 1)
+        }
 
         beforeSpec {
             coEvery {
@@ -94,7 +106,7 @@ class SocketServerBigTest : FreeSpec({
                 receivedMessages = Channel<String>()
                 client1 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
                 client2 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
-                delay(20.milliseconds)
+                getFirstNConnections(2,0)
             }
 
             afterTest {
@@ -104,9 +116,11 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "accepts connections" {
-                app.socketServer.connections.keys.size shouldBe 2
-                app.socketReceiver.readers.size shouldBe 2
-                app.socketSender.writerPool.writers.size shouldBe 2
+                eventually(timeout) {
+                    app.socketServer.connections.keys.size shouldBe 2
+                    app.socketReceiver.readers.size shouldBe 2
+                    app.socketSender.writerPool.writers.size shouldBe 2
+                }
             }
 
             "enables sender to write to connections concurrently" {
@@ -119,10 +133,13 @@ class SocketServerBigTest : FreeSpec({
                 testScope.launch {
                     app.socketSender.send(verificationError)
                 }
-                receiveN(2) shouldBe setOf(
-                    verificationSuccess.toJson(),
-                    verificationError.toJson(),
-                )
+
+                eventually(timeout) {
+                    receiveN(2) shouldBe setOf(
+                        verificationSuccess.toJson(),
+                        verificationError.toJson(),
+                    )
+                }
             }
 
             "enables receiver to relay messages to sender" {
@@ -133,8 +150,10 @@ class SocketServerBigTest : FreeSpec({
                     client2.send("bar")
                 }
 
-                receiveN(2).forEach {
-                    it shouldContain "JsonDecodingException"
+                eventually(timeout) {
+                    receiveN(2).forEach {
+                        it shouldContain "JsonDecodingException"
+                    }
                 }
             }
 
@@ -164,14 +183,15 @@ class SocketServerBigTest : FreeSpec({
                     client2.send(worldRequest.toJson())
                 }
 
-                receiveN(2) shouldBe setOf(
-                    SocketResponse.SendResults.success(helloRequest).toJson(),
-                    SocketResponse.SendResults.success(worldRequest).toJson(),
-                )
-
-                coVerify {
-                    app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
-                    app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
+                eventually(timeout) {
+                    receiveN(2) shouldBe setOf(
+                        SocketResponse.SendResults.success(helloRequest).toJson(),
+                        SocketResponse.SendResults.success(worldRequest).toJson(),
+                    )
+                    coVerify {
+                        app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
+                        app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
+                    }
                 }
             }
 
@@ -184,10 +204,13 @@ class SocketServerBigTest : FreeSpec({
 
                 launch { client1.send(request.toJson()) }
 
-                receivedMessages.receive() shouldBe
-                        SocketResponse.RegistrationSuccess.of(request).toJson()
-                coVerify {
-                    app.accountManager.register(newSenderAccount, request.captcha)
+                eventually(timeout) {
+                    receivedMessages.receive() shouldBe
+                            SocketResponse.RegistrationSuccess.of(request).toJson()
+
+                    coVerify {
+                        app.accountManager.register(newSenderAccount, request.captcha)
+                    }
                 }
             }
 
@@ -199,12 +222,14 @@ class SocketServerBigTest : FreeSpec({
                 val request = genVerifyRequest(username = registeredSenderPhone)
                 launch { client1.send(request.toJson()) }
 
-                receivedMessages.receive() shouldBe SocketResponse.VerificationSuccess.of(request).toJson()
-                coVerify {
-                    app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
+                eventually(timeout) {
+                    receivedMessages.receive() shouldBe SocketResponse.VerificationSuccess.of(request).toJson()
+
+                    coVerify {
+                        app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
+                    }
                 }
             }
-
         }
 
         "#disconnect" - {
@@ -213,17 +238,14 @@ class SocketServerBigTest : FreeSpec({
             beforeTest {
                 client1 = TestSocketClient.connect(socketPath, testScope)
                 client2 = TestSocketClient.connect(socketPath, testScope)
-                delay(10.milliseconds)
+                connections = getFirstNConnections(2, 0)
 
-                connections = app.socketServer.connections.values.take(2)
                 testScope.launch {
                     app.socketServer.close(connections[0].hashCode())
                 }
                 testScope.launch {
                     app.socketServer.close(connections[1].hashCode())
                 }
-
-                delay(10.milliseconds)
             }
 
             afterTest {
@@ -232,10 +254,12 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "disconnects a socket connection's message receivers and senders" {
-                app.socketReceiver.readers[connections[0].hashCode()] shouldBe null
-                app.socketReceiver.readers[connections[1].hashCode()] shouldBe null
-                app.socketSender.writerPool.writers[connections[0].hashCode()] shouldBe null
-                app.socketSender.writerPool.writers[connections[1].hashCode()] shouldBe null
+                eventually(timeout) {
+                    app.socketReceiver.readers[connections[0].hashCode()] shouldBe null
+                    app.socketReceiver.readers[connections[1].hashCode()] shouldBe null
+                    app.socketSender.writerPool.writers[connections[0].hashCode()] shouldBe null
+                    app.socketSender.writerPool.writers[connections[1].hashCode()] shouldBe null
+                }
             }
         }
 
@@ -244,10 +268,8 @@ class SocketServerBigTest : FreeSpec({
             beforeTest {
                 client1 = TestSocketClient.connect(socketPath, testScope)
                 client2 = TestSocketClient.connect(socketPath, testScope)
-                delay(10.milliseconds)
-
+                getFirstNConnections(2, 0)
                 app.socketServer.stop()
-                delay(10.milliseconds)
             }
 
             afterTest {
@@ -256,8 +278,10 @@ class SocketServerBigTest : FreeSpec({
             }
 
             "disconnects receivers and senders from all socket connections" {
-                app.socketReceiver.readers.isEmpty() shouldBe true
-                app.socketSender.writerPool.writers.isEmpty() shouldBe true
+                eventually(timeout) {
+                    app.socketReceiver.readers.isEmpty() shouldBe true
+                    app.socketSender.writerPool.writers.isEmpty() shouldBe true
+                }
             }
         }
     }

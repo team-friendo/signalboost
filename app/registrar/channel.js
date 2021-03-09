@@ -42,7 +42,7 @@ const create = async (admins, phoneNumber) => {
         messagesIn(defaultLanguage).notifications.channelCreationResult(false, 0, numChannels),
       )
       return {
-        status: pNumStatuses.ERROR,
+        status: sbStatuses.UNAVAILABLE,
         error: 'No available phone numbers!',
         request: { admins },
       }
