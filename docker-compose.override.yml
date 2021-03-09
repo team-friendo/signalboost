@@ -45,6 +45,8 @@ services:
     expose:
       - 8080
     logging: *loki-logging
+    networks:
+      - proxy-tier
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
