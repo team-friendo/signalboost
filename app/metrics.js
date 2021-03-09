@@ -3,9 +3,11 @@ const app = require('./index')
 const { redact } = require('./util')
 
 const _counters = {
+  MEMBER_LOAD: 'MEMBER_LOAD',
   RELAYABLE_MESSAGES: 'RELAYABLE_MESSAGES',
   SIGNALD_MESSAGES: 'SIGNALD_MESSAGES',
   SIGNALBOOST_MESSAGES: 'SIGNALBOOST_MESSAGES',
+  SYSTEM_LOAD: 'SYSTEM_LOAD',
   ERRORS: 'ERRORS',
 }
 
@@ -18,6 +20,13 @@ const _gauges = {
   SOCKET_POOL_LARGEST_CHANNEL: 'SOCKET_POOL_LARGEST_CHANNEL',
   SOCKET_POOL_NUM_CHANNELS: 'SOCKET_POOL_NUM_CHANNELS',
   SOCKET_POOL_NUM_MEMBERS: 'SOCKET_POOL_NUM_MEMBERS',
+}
+
+const loadEvents = {
+  CHANNEL_CREATED: 'channel_created',
+  CHANNEL_DESTROYED: 'channel_created',
+  MEMBER_CREATED: 'member_created',
+  MEMBER_DESTROYED: 'member_created',
 }
 
 const messageDirection = {
@@ -63,6 +72,12 @@ const run = () => {
         'Message types include: broadcasts, hotline messages, hotline replies, and commands.',
       registers: [register],
       labelNames: ['channel', 'messageType', 'messageSubtype'],
+    }),
+    [c.SYSTEM_LOAD]: new prometheus.Counter({
+      name: 'system_load',
+      help: 'Counts when channels/members are created/destroyed',
+      registers: [register],
+      labelNames: ['loadEvent'],
     }),
   }
 
@@ -140,4 +155,5 @@ module.exports = {
   histograms: _histograms,
   messageDirection,
   errorTypes,
+  loadEvents,
 }

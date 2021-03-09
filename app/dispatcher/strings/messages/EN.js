@@ -441,6 +441,13 @@ const notifications = {
   banReceived:
     'An admin of this channel has banned you. Any further interaction will not be received by the admins of the channel.',
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `New channel created.` : `Channel creation failed.`}
+- ${numAvailablePhoneNumbers} available phone numbers
+- ${numChannels} active channels`,
+
+  channelCreationError: err => `Error creating channel: ${err}`,
+
   channelDestroyedByAdmin: (audience, adminId) =>
     ({
       ADMIN: `ADMIN ${adminId} has destroyed this channel. All associated data has been deleted.`,
@@ -466,6 +473,11 @@ ERROR: ${error}`,
 
   channelRedeemed:
     'This channel was scheduled to be destroyed due to lack of use. However, since you used the channel recently, it will no longer be destroyed. Yay!',
+
+  channelDestructionSucceeded: (numAvailablePhoneNumbers, numChannels) =>
+    `Channel destroyed.
+- ${numAvailablePhoneNumbers} available phone numbers
+- ${numChannels} active channels`,
 
   deauthorization: adminPhoneNumber => `
   ${adminPhoneNumber} has been removed from this channel because their safety number changed.
@@ -517,15 +529,6 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
         ? `next resend attempt in: ${resendInterval.toString().slice(0, -3)} sec`
         : `message has exceeded resend threshold and will not be resent`
     }`,
-
-  destroyChannelFailed: phoneNumber => `Failed to destroy channel for phone number: ${phoneNumber}`,
-
-  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
-    `${success ? `New channel created.` : `Channel creation failed.`}
-- ${numAvailablePhoneNumbers} available phone numbers
-- ${numChannels} active channels`,
-
-  channelCreationError: err => `Error creating channel: ${err}`,
 
   restartRequesterNotAuthorized:
     'Trying to restart Signalboost? You are not authorized to do that!',

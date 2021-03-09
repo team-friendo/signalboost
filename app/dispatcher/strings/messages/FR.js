@@ -463,6 +463,13 @@ const notifications = {
   banReceived:
     'Un administrateur de cette canal vous a banni. Aucune autre interaction ne sera reçue par les administrateurs de la canal.',
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Nouvelle chaîne créée.` : `La création du canal a échoué.`}
+- ${numAvailablePhoneNumbers} numéros de téléphone disponibles
+- ${numChannels} canaux actifs`,
+
+  channelCreationError: err => `Erreur lors de la création de la chaîne: ${err}`,
+
   channelDestroyedByAdmin: (adminId, audience) =>
     ({
       ADMIN: `ADMIN ${adminId} a détruit ce canal. Toutes les données associées ont été supprimées.`,
@@ -488,6 +495,11 @@ Pour plus d'informations, visitez signalboost.info/how-to.`,
 
   channelRedeemed:
     "Cette canal devait être détruite en raison d'un manque d'utilisation. Cependant, puisque vous avez utilisé la canal récemment, elle ne sera plus détruite. Yay!",
+
+  channelDestructionSucceeded: (numAvailablePhoneNumbers, numChannels) =>
+    `Canal détruit.
+- ${numAvailablePhoneNumbers} numéros de téléphone disponibles
+- ${numChannels} canaux actifs`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} a été retiré de ce canal parce que leur numéro de sécurité a été modifié.
@@ -544,16 +556,6 @@ Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abon
           .slice(0, -3)}s`
       : `le message a dépassé le seuil de renvoi et ne sera pas renvoyé`
   }`,
-
-  destroyChannelFailed: phoneNumber =>
-    `Échec de la destruction du canal pour le numéro de téléphone: ${phoneNumber}`,
-
-  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
-    `${success ? `Nouvelle chaîne créée.` : `La création du canal a échoué.`}
-- ${numChannels} canaux actifs
-- ${numAvailablePhoneNumbers} numéros de téléphone disponibles`,
-
-  channelCreationError: err => `Erreur lors de la création de la chaîne: ${err}`,
 
   restartRequesterNotAuthorized:
     "Vous essayez de redémarrer Signalboost? Vous n'êtes pas autorisé à faire ça!",

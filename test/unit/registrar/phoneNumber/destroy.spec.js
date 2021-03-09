@@ -34,6 +34,8 @@ import {
   destructionRequestFactory,
 } from '../../../support/factories/destructionRequest'
 import { memberTypes } from '../../../../app/db/repositories/membership'
+import { defaultLanguage } from '../../../../app/language'
+import { messagesIn } from '../../../../app/dispatcher/strings/messages'
 
 describe('phone number registrar -- destroy module', () => {
   const phoneNumber = genPhoneNumber()
@@ -42,23 +44,23 @@ describe('phone number registrar -- destroy module', () => {
   const channel = deepChannelFactory({ phoneNumber })
   const admin = channel.memberships[0].memberPhoneNumber
 
-  let findChannelStub,
-    findPhoneNumberStub,
-    destroyPhoneNumberStub,
-    removeDirStub,
-    twilioRemoveStub,
-    signaldUnsubscribeStub,
-    commitStub,
-    rollbackStub,
-    notifyMembersExceptStub,
-    updatePhoneNumberStub,
+  let commitStub,
+    createDestructionRequestStub,
     destroyChannelStub,
+    destroyPhoneNumberStub,
+    findChannelStub,
+    findPhoneNumberStub,
     logEventStub,
     notifyAdminsStub,
-    notifySubscribersStub,
     notifyMaintainersStub,
+    notifyMembersExceptStub,
     notifyMembersStub,
-    createDestructionRequestStub
+    notifySubscribersStub,
+    removeDirStub,
+    rollbackStub,
+    signaldUnsubscribeStub,
+    twilioRemoveStub,
+    updatePhoneNumberStub
 
   before(async () => {
     await app.run(testApp)
@@ -66,6 +68,8 @@ describe('phone number registrar -- destroy module', () => {
 
   beforeEach(() => {
     commitStub = sinon.stub()
+    sinon.stub(channelRepository, 'count').returns(Promise.resolve(94))
+    sinon.stub(phoneNumberRepository, 'countIf').returns(Promise.resolve(19))
     rollbackStub = sinon.stub()
     sinon.stub(app.db.sequelize, 'transaction').returns({
       commit: commitStub,
@@ -668,6 +672,12 @@ describe('phone number registrar -- destroy module', () => {
       it('deletes all destruction requests that were just processed', () => {
         expect(destroyDestructionRequestsStub.getCall(0).args).to.eql([
           map(toDestroy, 'channelPhoneNumber'),
+        ])
+      })
+
+      it('notifies maintainers of destruction and remaining resources', () => {
+        expect(notifyMaintainersStub.getCall(0).args).to.eql([
+          messagesIn(defaultLanguage).notifications.channelDestructionSucceeded(19, 94),
         ])
       })
     })

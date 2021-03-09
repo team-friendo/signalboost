@@ -461,6 +461,13 @@ const notifications = {
   banReceived:
     'Un administrador de este canal te ha prohibido. Los administradores del canal no recibirán ninguna interacción adicional.',
 
+  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
+    `${success ? `Nuevo canal creó.` : `Creación de canal falló.`}
+- ${numAvailablePhoneNumbers} numeros de teléfono activos
+- ${numChannels} canales activos`,
+
+  channelCreationError: err => `Error construyendo canal: ${err}`,
+
   channelDestroyedByAdmin: (audience, adminId = '') =>
     ({
       ADMIN: `ADMIN ${adminId} ha destruido este canal. Se han eliminado todos los datos asociados.`,
@@ -486,6 +493,11 @@ Para obtener más información, visite signalboost.info/how-to.`,
 
   channelRedeemed:
     'Este canal estaba programado para ser destruido por falta de uso. Sin embargo, dado que usó el canal recientemente, ya no se destruirá. ¡Hurra!',
+
+  channelDestructionSucceeded: (numAvailablePhoneNumbers, numChannels) =>
+    `Canal destruido.
+- ${numAvailablePhoneNumbers} numeros de teléfono activos
+- ${numChannels} canales activos`,
 
   deauthorization: adminPhoneNumber => `
 ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
@@ -551,16 +563,6 @@ ${
     ? `se intentará reenviar el mensaje en: ${resendInterval.toString().slice(0, -3)}s`
     : `el mensaje ha excedido el umbral de reenvío y no se reenviará`
 }`,
-
-  destroyChannelFailed: phoneNumber =>
-    `No se pudo destruir el canal para el número de teléfono ${phoneNumber}`,
-
-  channelCreationResult: (success, numAvailablePhoneNumbers, numChannels) =>
-    `${success ? `Nuevo canal creó.` : `Creación de canal falló.`}
-- ${numChannels} canales activos
-- ${numAvailablePhoneNumbers} numeros de teléfono activos`,
-
-  channelCreationError: err => `Error construyendo canal: ${err}`,
 
   restartRequesterNotAuthorized:
     '¿Estás intentando reiniciar Signalboost? ¡No estás autorizado para hacer eso!',
