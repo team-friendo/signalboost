@@ -24,9 +24,9 @@ const _gauges = {
 
 const loadEvents = {
   CHANNEL_CREATED: 'channel_created',
-  CHANNEL_DESTROYED: 'channel_created',
+  CHANNEL_DESTROYED: 'channel_destroyed',
   MEMBER_CREATED: 'member_created',
-  MEMBER_DESTROYED: 'member_created',
+  MEMBER_DESTROYED: 'member_destroyed',
 }
 
 const messageDirection = {

@@ -12,6 +12,8 @@ const notifier = require('../../notifier')
 const signal = require('../../signal')
 const util = require('../../util')
 const metrics = require('../../metrics')
+const { counters, loadEvents } = metrics
+const { times } = require('lodash')
 const { getAdminMemberships } = require('../../db/repositories/channel')
 const { notificationKeys } = notifier
 const { messagesIn } = require('../../dispatcher/strings/messages')
@@ -95,7 +97,9 @@ const processDestructionRequests = async () => {
         `${map(destructionResults, 'message').join('\n')}`,
     )
 
-    metrics.incrementCounter(metrics.counters.SYSTEM_LOAD, [metrics.loadEvents.CHANNEL_DESTROYED])
+    times(destructionResults.length, () =>
+      metrics.incrementCounter(counters.SYSTEM_LOAD, [loadEvents.CHANNEL_DESTROYED]),
+    )
 
     return notifier.notifyMaintainers(
       messagesIn(defaultLanguage).notifications.channelDestructionSucceeded(
