@@ -1,0 +1,6 @@
+export const spyIcon = require('./cute_spy.svg')
+export const moneyIcon = require('./money.svg')
+export const selfieIcon = require('./selfie.svg')
+export const calyxLogo = require('./funder_calyx.svg')
+export const emersonLogo = require('./funder_emerson.png')
+export const mozillaLogo = require('./funder_mozilla.svg')
