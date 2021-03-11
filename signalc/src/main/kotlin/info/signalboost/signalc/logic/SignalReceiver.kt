@@ -97,7 +97,7 @@ class SignalReceiver(private val app: Application) {
             val messagePipe = try {
                 messagePipeOf(account)
             } catch (e: Throwable) {
-                logger.error { "Failed to create Signal message pipe: ${e.message}" }
+                logger.error { "Failed to create Signal message pipe: ${e.printStackTrace()}" }
                 throw SignalcError.MessagePipeNotCreated(e)
             }
             launch(IO) {

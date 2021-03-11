@@ -127,6 +127,7 @@ class SocketReceiver(private val app: Application) {
             }
         }
     } catch(e: Throwable) {
+        logger.error { e.printStackTrace() }
         app.socketSender.send(SocketResponse.RegistrationError.of(request, e))
     }
 
@@ -190,8 +191,11 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun verify(request: SocketRequest.Verify): Unit = try {
         when(val account = app.accountManager.load(request.username)) {
-            is NewAccount, is VerifiedAccount -> app.socketSender.send(
-                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewOrVerifiedUser)
+            is NewAccount -> app.socketSender.send(
+                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewUser)
+            )
+            is VerifiedAccount -> app.socketSender.send(
+                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfVerifiedUser)
             )
             is RegisteredAccount -> {
                 app.accountManager.verify(account, request.code.asSanitizedCode())?.let {
