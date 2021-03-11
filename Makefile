@@ -24,65 +24,6 @@ _.upgrade: # upgrade node packages
 _.unlock: ## unlock signalboost secrets
 	./bin/blackbox/decrypt_all_files
 
-
-########################
-# cli-related commands #
-########################
-
-cli.install: ## install the boost cli (puts ./cli/boost-commands on your $PATH)
-	sudo ./cli/install
-
-cli.uninstall: ## removes boost cli files from your path
-	sudo ./cli/uninstall
-
-# TODO: add aliases to commands here that accept args...
-
-
-##################
-# docker-related #
-##################
-docker.pull: ## pull most recent versions of all the docker images in our dev env!
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull
-
-docker.pull.signalboost: ## pull the most recent version of our signalboost image
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull app
-
-docker.pull.signalc: ## pull the most recent version of our signalc image
-	docker-compose -f docker-compoe.yml -f docker-compose-dev.yml pull signalc
-
-docker.pull.signald: ## pull the most recent version of our signald image
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull signald
-
-docker.build.base: ## build the base docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build base $(TAG)
-
-docker.build.signalboost: ## build the signalboost docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build signalboost $(TAG)
-
-docker.build.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build signalc $(TAG)
-
-docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build signald $(TAG)
-
-docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build splash $(TAG)
-
-docker.push.base: ## push the base docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push base $(TAG)
-
-docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push signalboost $(TAG)
-
-docker.push.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push signalc $(TAG)
-
-docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push signald $(TAG)
-
-docker.push.splash: ## push the splash site docker image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push splash $(TAG)
-
 ###################
 # ansible-related #
 ###################
@@ -145,6 +86,19 @@ ansible.restore: # restore from backup on sb_backup host to prod
 
 ansible.restart: # restart prod
 	cd ansible && ansible-playbook -i inventory playbooks/restart.yml
+
+
+########################
+# cli-related commands #
+########################
+
+cli.install: ## install the boost cli (puts ./cli/boost-commands on your $PATH)
+	sudo ./cli/install
+
+cli.uninstall: ## removes boost cli files from your path
+	sudo ./cli/uninstall
+
+# TODO: add aliases to commands here that accept args...
 
 
 #######################
@@ -214,6 +168,73 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
 	up -d
 
+##################
+# docker-related #
+##################
+docker.pull: ## pull most recent versions of all the docker images in our dev env!
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull
+
+docker.pull.signalboost: ## pull the most recent version of our signalboost image
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull app
+
+docker.pull.signalc: ## pull the most recent version of our signalc image
+	docker-compose -f docker-compoe.yml -f docker-compose-dev.yml pull signalc
+
+docker.pull.signald: ## pull the most recent version of our signald image
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml pull signald
+
+docker.build.base: ## build the base docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build base $(TAG)
+
+docker.build.signalboost: ## build the signalboost docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalboost $(TAG)
+
+docker.build.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalc $(TAG)
+
+docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signald $(TAG)
+
+docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build splash $(TAG)
+
+docker.push.base: ## push the base docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push base $(TAG)
+
+docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signalboost $(TAG)
+
+docker.push.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signalc $(TAG)
+
+docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signald $(TAG)
+
+docker.push.splash: ## push the splash site docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push splash $(TAG)
+
+##############
+# load tests #
+##############
+
+load.logs: ## show logs from load env
+	docker-compose -f docker-compose-test-load.yml logs -f
+
+load.nc.simulator: ## get a netcat shell inside the loadtest simulator
+	docker-compose -f docker-compose-test-load.yml exec signalc_simulator nc -U /signalc/sock/signald.sock
+
+load.up: ## start
+	./bin/load/run
+
+load.down: ## start
+	docker-compose -f docker-compose-test-load.yml down
+
+load.setup: ## start
+	./bin/load/setup
+
+load.restart: ## restart loadtest stack
+	docker-compose -f docker-compose-test-load.yml down && ./bin/load/run
+
 ###########
 # signalc #
 ###########
@@ -263,6 +284,7 @@ sc.db.migrate: ## run migrations
 	docker-compose -f docker-compose-sc.yml \
 	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
 
+# TODO: inject the DB_NAME here!!!!
 sc.db.rollback: ## run migrations
 	echo "----- rolling back 1 development migration" && \
 	docker-compose -f docker-compose-sc.yml \

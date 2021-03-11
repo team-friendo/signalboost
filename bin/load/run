@@ -4,65 +4,18 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-check-until-ngrok-url-available(){
-  # fetch the ngrok public url, then strip the everything but the domain name (ie: schema, quotes, etc.)
+# ordering we want:
+# 1. signal server
+# 2. localtunnel
+# 3. signalc
+# 4. everything else...
 
-  if [[ "$(uname)" == 'Darwin' ]]
-    then # we are in Mac and must use sed -E
-      host_url=$(curl --max-time 5 -s localhost:4041/api/tunnels | \
-        jq ".tunnels[0].public_url" | \
-        sed -E 's/(http|https):\/\///' | \
-        cut -c 2- | rev | cut -c 2- | rev)
+echo "--- starting load test simulator..."
+# docker-compose -f docker-compose-test-load.yml up -d  signal_server redis ngrok_simulator signalboost_ngrok 2>/dev/null 1>&2
+docker-compose -f docker-compose-test-load.yml up -d signalc_simulator
 
-    else # we are in Linux and may use sed -re
-      host_url=$(curl --max-time 5 -s localhost:4041/api/tunnels | \
-        jq ".tunnels[0].public_url" | \
-        sed -re 's/(http|https):\/\///' | \
-        cut -c 2- | rev | cut -c 2- | rev)
-  fi
 
-  if [[ -z ${host_url} ]] || [[ ${#host_url} -lt 20 ]];then
-    sleep 1
-    check-until-ngrok-url-available
-  fi
-}
-
-### START DB
-
-echo "--- SETUP: setting up service databases..."
-docker-compose -f docker-compose-test-load.yml up -d db 2>/dev/null 1>&2
-
-sleep 2
-
-### MIGRATIONS
-
-#### signal-server
-psql -q postgresql://postgres@localhost:5432 -c "CREATE USER signal WITH PASSWORD 'password';" 2>/dev/null 1>&2
-psql -q postgresql://postgres@localhost:5432 -c "CREATE DATABASE signal;" 2>/dev/null 1>&2
-psql -q "postgresql://localhost:5432/signal?user=signal&password=password" -f ./simulator/files/db_100_accounts.sql 2>/dev/null 1>&2
-
-#### sigarillo
-psql -q postgresql://postgres@localhost:5432 -c "CREATE USER sigarillo WITH PASSWORD 'sigarillo';" 2>/dev/null 1>&2
-psql -q postgresql://postgres@localhost:5432 -c "CREATE DATABASE sigarillo;" 2>/dev/null 1>&2
-
-#### signalboost
-docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin/db/setup app 2>/dev/null 1>&2
-
-### RUN SERVICES
-
-echo "--- SETUP: starting load test services..."
-docker-compose -f docker-compose-test-load.yml up -d signal_server redis ngrok_simulator signalboost_ngrok 2>/dev/null 1>&2
-
-check-until-ngrok-url-available
-host_url="sb-load.loca.lt"
-
-echo "--- SETUP: building signald with local SIGNAL_URL..."
-
-docker build --build-arg SIGNAL_URL=${host_url} -t team-friendo/signalboost/signald:load -f ./docker/signald.dockerfile . 2>/dev/null 1>&2
-
-echo "--- RUN: starting signald for app + simulator..."
-# docker-compose -f docker-compose-test-load.yml up -d signald_app signald_simulator localtunnel
-docker-compose -f docker-compose-test-load.yml up -d localtunnel sigarillo 2>/dev/null 1>&2
+echo "--- starting signald for app + simulator..."
 
 ### RUN SIMULATOR
 
