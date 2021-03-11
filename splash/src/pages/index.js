@@ -3,9 +3,14 @@ import Layout from '../components/layout'
 import SEO from '../components/seo'
 import { Link } from '@reach/router'
 import indexStyles from '../components/index.module.css'
-import selfieIcon from '../images/selfie.svg'
-import moneyIcon from '../images/money.svg'
-import spyIcon from '../images/cute_spy.svg'
+import {
+  spyIcon,
+  selfieIcon,
+  moneyIcon,
+  calyxLogo,
+  emersonLogo,
+  mozillaLogo,
+} from '../images/'
 
 const IndexPage = () => (
   <Layout>
@@ -25,7 +30,9 @@ const IndexPage = () => (
         </p>
       </div>
       <div className={indexStyles.text__left}>
-        <h3>Private and secure tiplines</h3>
+        <h3>
+          Anonymous<Link to="/privacy">*</Link> tiplines
+        </h3>
         <p>
           Empower journalists, legal observers, and human rights defenders with
           a safe and lightweight way to receive sensitive tips and requests for
@@ -102,6 +109,16 @@ const IndexPage = () => (
       <Link className={indexStyles.getting__started__link} to="/how-to">
         Try it out &rarr;
       </Link>
+    </div>
+    <h3>Signalboost is supported by:</h3>
+    <div className={indexStyles.funders}>
+      <img
+        className={indexStyles.funder__logo_moz}
+        src={mozillaLogo}
+        alt="mozilla logo"
+      />
+      <img src={emersonLogo} alt="emerson logo" />
+      <img src={calyxLogo} height="130" alt="calyx logo" />
     </div>
   </Layout>
 )

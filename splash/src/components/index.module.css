@@ -38,3 +38,12 @@
 .getting__started__link:hover {
   border-color: white;
 }
+.funders {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 25px;
+}
+.funder__logo_moz {
+  margin-top: 10px;
+}
+
