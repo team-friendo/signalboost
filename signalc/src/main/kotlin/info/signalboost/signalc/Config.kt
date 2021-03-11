@@ -12,7 +12,8 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 object Config {
-    const val USER_PHONE_NUMBER = "+17347962920"
+    const val FAKE_SIGNAL_SERVER_URL = "https://signalserver.signalboost.info"
+    const val FAKE_SIGNAL_SERVER_TRUSTSTORE_PATH = "fake.whisper.store"
 
     private val appComponents = listOf(
         // resources
@@ -62,27 +63,37 @@ object Config {
         val path: String,
     )
 
-    // FACTORIES
+    // FACTORY HELPERS
 
     enum class Env(val value: String) {
         Dev("development"),
         Prod("production"),
         Test("test"),
+        Load("load"),
     }
 
-    fun fromEnv(env: String? = System.getenv("SIGNALC_ENV")): App = when(env) {
-        Env.Dev.value -> dev
-        Env.Prod.value -> prod
-        Env.Test.value -> mockStore
-        else -> throw(Error("ERROR: missing or illegal value for \$SIGNALC_ENV: $env"))
-    }
+    fun fromEnv(env: String? = System.getenv("SIGNALC_ENV")): App =
+        when(env) {
+            Env.Dev.value -> dev
+            Env.Prod.value -> prod
+            Env.Test.value -> mockStore
+            Env.Load.value -> load
+            else -> throw(Error("ERROR: missing or illegal value for \$SIGNALC_ENV: $env"))
+        }
+    private val dbName = System.getenv("SIGNALC_DB_NAME")
+        ?: when(System.getenv("SIGNALC_ENV")) {
+            Env.Dev.value -> "signalc_development"
+            Env.Test.value -> "signalc_test"
+            Env.Load.value -> "signalc_load_test"
+            else -> "signalc"
+        }
 
     private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
 
     private val default  = App(
         db = Database(
             driver = "com.impossibl.postgres.jdbc.PGDriver",
-            url = "jdbc:pgsql://$dbHost/signalc",
+            url = "jdbc:pgsql://$dbHost/$dbName",
             user= "postgres"
         ),
         signal= Signal(
@@ -93,9 +104,9 @@ object Config {
             contactDiscoveryUrl = System.getenv("SIGNAL_CONTACTS_URL") ?: "https://cms.souqcdn.com",
             keyBackupServiceUrl = System.getenv("SIGNAL_BACKUPS_URL") ?: "https://api.backup.signal.org",
             serviceUrl = System.getenv("SIGNAL_SERVICE_URL") ?: "https://textsecure-service.whispersystems.org",
-            storageUrl = System.getenv("SIGNAL_SERVICE_URL") ?: "https://storage.signal.org",
+            storageUrl = System.getenv("SIGNAL_STORAGE_URL") ?: "https://storage.signal.org",
             trustStorePassword = System.getenv("WHISPER_STORE_PASSWORD") ?: "whisper",
-            trustStorePath = System.getenv("WHISPER_STORE_PATH") ?: "/signalc/whisper.store",
+            trustStorePath = System.getenv("WHISPER_STORE_PATH") ?: "whisper.store",
             unidentifiedSenderTrustRoot = System.getenv("SIGNAL_UNIDENTIFIED_SENDER_TRUST_ROOT") ?: "BXu6QIKVz5MA8gstzfOgRQGqyLqOwNKHL6INkv3IHWMF",
             zkGroupServerPublicParams = System.getenv("SIGNAL_ZKGROUP_PUBLIC_PARAMS") ?: "AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X0=",
         ),
@@ -105,21 +116,20 @@ object Config {
         mocked = emptySet(),
     )
 
+    // FACTORIES
+
     val prod = default
-
-    val dev = default.copy(
-        db = default.db.copy(
-            url = "jdbc:pgsql://$dbHost/signalc_development",
-        ),
-    )
-
+    val dev = default
     val test = default.copy(
-        db = default.db.copy(
-            url = "jdbc:pgsql://$dbHost/signalc_test",
-        ),
         socket = default.socket.copy(
             path = "/signalc/sock/test.sock"
         ),
+    )
+    val load = default.copy(
+        signal = default.signal.copy(
+            serviceUrl = FAKE_SIGNAL_SERVER_URL,
+            trustStorePath = FAKE_SIGNAL_SERVER_TRUSTSTORE_PATH,
+        )
     )
 
     fun withMocked(mockTargets: List<KClass<out Any>>) = test.copy(
@@ -127,8 +137,6 @@ object Config {
     )
 
     fun withMocked(vararg mockTargets: KClass<out Any>) = withMocked(mockTargets.toList())
-
-    val mockAll = withMocked(appComponents)
 
     val mockStore = withMocked(
         AccountStore::class,

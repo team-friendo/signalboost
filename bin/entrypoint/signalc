@@ -8,7 +8,7 @@ gradle --stop
 echo "[entrypoint] cleaning up socket path..."
 rm -f /signalc/sock/signald.sock
 
-if [[ "$SIGNALC_ENV" == "development" ]]; then
+if [[ "$SIGNALC_ENV" != "production" ]]; then
   echo "[entrypoint] running in development mode..."
   gradle --console=plain run
 fi

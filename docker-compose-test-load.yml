@@ -22,18 +22,85 @@ networks:
 
 volumes:
   # postgres_data:
+  gradle_cache:
+  pg_data:
   signal_sock:
   signal_data:
+  signalc_build_cache:
   simulator_sock:
 
 services:
+
+  app:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    container_name: load_test_app
+    depends_on:
+      - db
+    entrypoint: /signalboost/bin/entrypoint/app
+    env_file: .env.dev
+    environment:
+      DB_HOST: db
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
+      PROJECT_ROOT: ${PWD}
+      NODE_ENV: ${NODE_ENV:-development}
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
+    expose:
+      - 3000
+    networks:
+      - default
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - signal_data:/var/lib/signald/data
+      - signal_sock:/var/run/signald/
+      - ./yarn.lock:/signalboost/yarn.lock
+    restart: unless-stopped
+
+
   db:
     image: postgres:12
     container_name: load_test_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - 0.0.0.0:5432:5432
+    restart: unless-stopped
+
+  signalc_simulator:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    container_name: load_test_signalc_for_simulator
+    entrypoint: /signalc/bin/entrypoint/signalc
+    env_file: .env.dev
+    environment:
+      # TODO: inject env vars for local signal-server
+      SIGNALC_ENV: ${SIGNALC_ENV:-load}
+      SIGNALC_DB_NAME: signalc_load_test_simulator
+      GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TRUST_STORE_PATH: /signalc/whisper.store
+      DEBUG_MODE: 0 #${DEBUG_MODE:-0}
+      DB_HOST: db
+    depends_on:
+      - db
+    ports:
+      - 0.0.0.0:5005:5005 # for remote debugger
+    volumes:
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/migrations:/signalc/migrations
+      - ./bin:/signalc/bin
+      # TODO: fix locking issues
+      - gradle_cache:/home/gradle/.gradle
+      - signalc_build_cache:/signalc/build
+      - simulator_sock:/signalc/sock
     restart: unless-stopped
 
   signald_app:
@@ -56,67 +123,6 @@ services:
       - signal_sock:/var/run/signald/
     restart: unless-stopped
 
-  signald_simulator:
-    image: team-friendo/signalboost/signald:load
-    container_name: load_test_signald_simulator
-    env_file: .env.dev
-    environment:
-      SIGNALD_VERBOSE_LOG: 0
-    networks:
-      - default
-    expose:
-      - 1313
-    ports:
-      - 0.0.0.0:9011:9011
-      - 0.0.0.0:8016:8016
-    volumes:
-      - ./bin:/signalboost/bin
-      - signal_data:/var/lib/signald/data
-      - simulator_sock:/var/run/signald/
-    restart: unless-stopped
-
-  sigarillo:
-    image: registry.0xacab.org/team-friendo/signalboost/sigarillo:latest
-    container_name: load_test_sigarillo
-    ports:
-      - 0.0.0.0:3000:3000
-    volumes:
-      - ./sigarillo/libsignal-overrides/production.json:/opt/sigarillo/node_modules/@throneless/libsignal-service/config/production.json
-      - ./sigarillo/libsignal-overrides/WebAPI.js:/opt/sigarillo/node_modules/@throneless/libsignal-service/src/WebAPI.js
-    environment:
-      - SECRETS=change_me
-      - NODE_ENV=production
-      - DB_CLIENT=pg
-      - DB_CONNECTION=postgres://sigarillo:sigarillo@db:5432/sigarillo
-
-  app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost
-    container_name: load_test_app
-    depends_on:
-      - db
-    entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env.dev
-    environment:
-      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
-      PROJECT_ROOT: ${PWD}
-      NODE_ENV: ${NODE_ENV:-development}
-      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
-      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
-    expose:
-      - 3000
-    networks:
-      - default
-    volumes:
-      - ./.sequelizerc:/signalboost/.sequelizerc
-      - ./app:/signalboost/app
-      - ./bin:/signalboost/bin
-      - ./node_modules:/signalboost/node_modules
-      - ./package.json:/signalboost/package.json
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
-      - ./yarn.lock:/signalboost/yarn.lock
-    restart: unless-stopped
-
   simulator:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: load_test_simulator
@@ -124,6 +130,8 @@ services:
       - db
     entrypoint: /signalboost/bin/entrypoint/simulator
     env_file: .env.dev
+    environment:
+      DB_HOST: db
     expose:
       - 3001
     networks:
@@ -140,23 +148,6 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
 
-  signal_server:
-    image: registry.0xacab.org/team-friendo/signalboost/signal-server:3.21
-    container_name: load_test_signal_server
-    depends_on:
-      - db
-      - redis
-    ports:
-      - 0.0.0.0:8015:8015
-      - 0.0.0.0:8080:8080
-      - 0.0.0.0:8081:8081
-
-  redis:
-    image: redis
-    container_name: load_test_signal_redis
-    ports:
-      - 0.0.0.0:6379:6379
-    restart: always
 
   # prefer ngrok_signalboost, need to change url to ngrok in app entrypoint
   signalboost_ngrok:
@@ -172,24 +163,3 @@ services:
     environment:
       - NGROK_PORT=app:3000
     restart: unless-stopped
-
-  ngrok_simulator:
-    container_name: load_test_ngrok_simulator
-    ports:
-      - 0.0.0.0:4041:4040
-    networks:
-      - default
-    image: wernight/ngrok
-    links:
-      - signal_server
-    env_file: .env.dev
-    environment:
-      - NGROK_PORT=signal_server:8080
-    restart: unless-stopped
-
-  localtunnel:
-    image: efrecon/localtunnel
-    links:
-      - signal_server
-    command:
-      --local-host signal_server --port 8080 --subdomain sb-load

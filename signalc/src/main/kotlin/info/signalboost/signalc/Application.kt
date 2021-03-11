@@ -80,7 +80,9 @@ class Application(val config: Config.App){
 
     private val trustStore by lazy {
         object : TrustStore {
-            override fun getKeyStoreInputStream(): InputStream = FileInputStream(config.signal.trustStorePath)
+            override fun getKeyStoreInputStream(): InputStream = {}::class.java.getResourceAsStream(
+                config.signal.trustStorePath
+            )
             override fun getKeyStorePassword(): String = config.signal.trustStorePassword
         }
     }

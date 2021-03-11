@@ -80,13 +80,13 @@ services:
     depends_on:
       - db
     ports:
-    - 0.0.0.0:5005:5005 # for remote debugger
+      - 0.0.0.0:5005:5005 # for remote debugger
     volumes:
       - ./signalc/src:/signalc/src
       - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-      - ./signalc/whisper.store:/signalc/whisper.store
+      - ./signalc/migrations:/signalc/migrations
       - ./bin:/signalc/bin
       - gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
