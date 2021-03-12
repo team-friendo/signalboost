@@ -1,5 +1,5 @@
 ```
-CURRENT REVISION AS OF Fri 05 Feb 2021 01:03:56 PM EST
+CURRENT REVISION AS OF Fri 12 Mar 2021 05:44:52 PM EST
 ```
 
 # Overview
@@ -25,15 +25,11 @@ We first outline the contours of our security objectives, threat model, and desi
 
 All designs involve some variation on encrypting user data at rest to the public key of an asymmetric keypair, the private key of which is encrypted to another (symmetric) key that is controlled by users, stored on a client not accessible to the Signalboost server, and transmitted by the client to the server to temporarily decrypt and re-encrypt data on an as-needed basis. We derive the general schema of this approach from [TREES](https://0xacab.org/liberate/trees), the library that [riseup.net](https://riseup.net) uses to encrypt email contents at rest.
 
-This is intended to be a living document.
+This is intended to be a "living document" -- a jumping off point for further design and conversation.
 
-Its revision history can be accessed here:
+Its revision history can be accessed here: https://0xacab.org/team-friendo/signalboost/-/merge_requests/487/commits
 
-https://0xacab.org/team-friendo/signalboost/-/merge_requests/487/commits
-
-Anyone may offer comment, critique, or suggested revisions here:
-
-https://0xacab.org/team-friendo/signalboost/-/merge_requests/487
+Anyone may offer comment, critique, or suggested revisions here: https://0xacab.org/team-friendo/signalboost/-/merge_requests/487
 
 # Security Objectives
 
@@ -50,9 +46,9 @@ Broadly speaking, there are 2 classes of assets that we wish to defend in this d
 
 Use of such "social graph" metadata as leverage to disrupt the activities of a targeted group is a well-documented tactic in efforts to counter political free speech. Since protecting the ability of our users to speak and organize freely is one of our core values, protecting this metadata is of utmost importance to us.
 
-* NOTE: while engineering work is currently being done to allow Signalboost to identify users by a Signal-provided UUIDs (unique user identifiers), this task could take several months to complete, and, having completed it, we would still consider Signal UUIDs to be "personally identifying." Because Signal UUIDs are less widely tied to a users' identity in the real world than phone numbers, their leakage would be slightly less damaging. However, to the extent that UUIDs still uniquely identify a user's activity on our service and Signal more broadly, they could be used by an adversary with advanced capabilities (or access to user's unlocked phones) to correlate data to a user in the real world.
-
-As such, we wish to design a system that would be capable of defending disclosure of user ID's on the assumption that these ID's are phone numbers, with the understanding that were they not phone numbers, they would still be valuable assets worth defending.
+> \* NOTE: while engineering work is currently being done to allow Signalboost to identify users by a Signal-provided UUIDs (unique user identifiers), this task could take several months to complete, and, having completed it, we would still consider Signal UUIDs to be "personally identifying." Because Signal UUIDs are less widely tied to a users' identity in the real world than phone numbers, their leakage would be slightly less damaging. However, to the extent that UUIDs still uniquely identify a user's activity on our service and Signal more broadly, they could be used by an adversary with advanced capabilities (or access to user's unlocked phones) to correlate data to a user in the real world.
+>
+> As such, we wish to design a system that would be capable of defending disclosure of user ID's on the assumption that these ID's are phone numbers, with the understanding that were they not phone numbers, they would still be valuable assets worth defending.
 
 ### Signal Protocol Store Data
 
@@ -63,7 +59,7 @@ All data in the Signalboost Protocol Store uses a user's phone number as an ID. 
 * UUIDs (discussed above: these are currently redundant with phone numbers, but exist as a precursor to Signal migrating away from using phone numbers as unique IDs)
 * Ephemeral encryption and decryption keys for sessions between a proxy phone number and a user (which are updated as the key materials "ratchets" forward with each message exchange)
 * Long-term identity keys ("fingerprints" or "safety numbers") associated with a user's current Signal installation
-* Identity keys for each device the user uses to send Signal messages, and for the devices of users with wi
+* Identity keys for each device a Signal account uses to send Signal messages, and for the devices of accounts with which it has communicated
 
 Depending on the implementation of the Signal Protocol Store, these records may be stored in a way that tracks when they were last updated, which may, in turn, leak information of when a user last used Signal, and by association, Signalboost.
 
@@ -94,7 +90,6 @@ We are also concerned with a technically-sophisticated civilian adversary with p
 * seize the devices of Signalboost maintainers
 * launch phishing attacks on Signalboost maintainers
 
-
 ## Attacks
 
 For the purposes of this design, we wish to concern ourselves primarily with attacks that give an adversary access to the data stored on the filesystem of Signalboost servers at rest.
@@ -118,11 +113,11 @@ While undetected hijack attacks are doubtless concerning, since they does not to
 * Messages must be routed from an admin Signal account to subscriber Signal accounts via a proxy Signal account controlled by a Signalboost server (aka a "Signalboost channel")
 * All subscribers must receive messages on one of the official Signal clients (Android, IOS, or Desktop) maintained by signal.org
 * Admins may use a Signalboost-provided client (desktop or mobile) which can securely store key information and access the Signalboost server over secure network connection.
-* Key material between
 * A Signalboost server must store the user metadata noted in the "Assets" section above in order to route and encrypt messages
 * User metadata must be stored encrypted at rest in a manner that prevents it from being decrypted by a Signalboost maintainer, or by the Signalboost software without use of key material that is not permanently stored on the Signalboost server
 * User metadata must be decrypted for the shortest amount of time possible necessary to encrypt and route messages to their recipients
 * Decryption using client-provided key material must take place in a manner that creates the least amount of risk of (1) exposing the location or identity of the admin using the client, (2) leaking user data to an attacker who has compromised a client instance
+* Admins must have a way of negotiating updates to shared private key material and/or sharing private key material with new admins with minimal participation from the Signalboost server.
 
 # Provisional Designs
 
@@ -155,7 +150,7 @@ When a channel with multiple admins is created, or when an existing channel adds
 ### Sending broadcast messages
 
 When an admin wishes to send a broadcast message, their client will load SK into memory and transmit it to the Signalboost server. The server will use SK to "unlock" the channel as described above (by first decrypting DK and using it to decrypt date encrypted to EK), allowing it to inspect the membership records for the channel to figure out which phone numbers should receive the broadcast. After sending the broadcast, Signalboost "locks" the channel again (by removing SK and decrypted user data from memory).
-q
+
 ### Variations on client-server key transmission
 
 #### The problem of Hotline Messages
