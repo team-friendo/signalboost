@@ -10,6 +10,19 @@ volumes:
   acme_config:
 
 services:
+  code-retriever:
+    image: registry.0xacab.org/team-friendo/signalboost/code-retriever:latest
+    container_name: signalserver_code_retriever
+    networks: 
+      - default
+      - proxy-tier
+    environment:
+      LETSENCRYPT_HOST: coderetriever.signalboost.info
+      VIRTUAL_HOST: coderetriever.signalboost.info
+      VIRTUAL_PORT: 3000
+    ports:
+      - 0.0.0.0:3000:3000
+    restart: unless-stopped
 
   db:
     image: postgres:12
@@ -68,7 +81,7 @@ services:
 
   signal_server:
     image: registry.0xacab.org/team-friendo/signalboost/signal-server:3.21
-    container_name: signal_server
+    container_name: signalserver
     environment:
       LETSENCRYPT_HOST: signalserver.signalboost.info
       VIRTUAL_HOST: signalserver.signalboost.info
