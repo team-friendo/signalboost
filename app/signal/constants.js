@@ -8,6 +8,8 @@ const messageTypes = {
   INBOUND_IDENTITY_FAILURE: 'inbound_identity_failure',
   MESSAGE: 'message',
   REGISTER: 'register',
+  REGISTRATION_ERROR: 'registration_error',
+  REGISTRATION_SUCCESS: 'registration_succeeded',
   SEND: 'send',
   SEND_RESULTS: 'send_results',
   SET_EXPIRATION: 'set_expiration',

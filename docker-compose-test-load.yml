@@ -82,7 +82,7 @@ services:
       SIGNALC_ENV: ${SIGNALC_ENV:-load}
       SIGNALC_DB_NAME: signalc_load_test_simulator
       GRADLE_USER_HOME: /home/gradle/.gradle
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
       TRUST_STORE_PATH: /signalc/whisper.store
       DEBUG_MODE: 0 #${DEBUG_MODE:-0}
       DB_HOST: db
@@ -128,10 +128,12 @@ services:
     container_name: load_test_simulator
     depends_on:
       - db
+      - signalc_simulator
     entrypoint: /signalboost/bin/entrypoint/simulator
     env_file: .env.dev
     environment:
       DB_HOST: db
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
     expose:
       - 3001
     networks:

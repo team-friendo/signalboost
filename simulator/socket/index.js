@@ -55,6 +55,7 @@ const connect = () => {
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
     sock.on('data', msg => {
+      console.log(msg)
       let parsed_msg
       try {
         parsed_msg = JSON.parse(msg)

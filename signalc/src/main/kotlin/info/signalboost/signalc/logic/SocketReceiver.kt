@@ -68,6 +68,7 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun dispatch(socketMessage: String, socketHash: SocketHashCode) {
         val request = SocketRequest.fromJson(socketMessage)
+        logger.debug { "Received message: $request"}
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
@@ -201,6 +202,7 @@ class SocketReceiver(private val app: Application) {
                 app.accountManager.verify(account, request.code.asSanitizedCode())?.let {
                     app.accountManager.publishPreKeys(it)
                     app.socketSender.send(SocketResponse.VerificationSuccess.of(request))
+                    logger.debug { "Verify succeeded for ${account.username}" }
                 } ?: run {
                     app.socketSender.send(SocketResponse.VerificationError.of(request, SignalcError.AuthorizationFailed))
                 }

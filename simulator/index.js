@@ -12,20 +12,12 @@ app.run = async ({ socketPool, signal }) => {
 
   app.socketPool = await socketService.run().catch(logger.fatalError)
 
-  const firstBotNumber = 12223334001
+  const firstBotNumber = 12223370000
   const botCount = 100
   const botPhoneNumbers = range(firstBotNumber, firstBotNumber + botCount).map(pn => "+" + pn)
-
-  const dbPool = new Pool({
-    host: 'db',
-    user: 'signal',
-    database: 'signal',
-    password: 'password',
-    port: 5432,
-  })
   
   logger.log(`--- Creating ${botCount} bots...`)
-  await signalService.run(botPhoneNumbers, dbPool).catch(logger.fatalError)
+  await signalService.run(botPhoneNumbers).catch(logger.fatalError)
 }
 
 module.exports = app

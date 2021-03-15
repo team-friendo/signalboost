@@ -35,8 +35,12 @@ const messages = {
   timeout: messageType => `Signald response timed out for request of type: ${messageType}`,
   verification: {
     error: (phoneNumber, reason) =>
-      `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
+      `Verification failed for ${phoneNumber}. Reason: ${reason}`,
   },
+  registration: {
+    error: (phoneNumber, reason) =>
+      `Registration failed for ${phoneNumber}. Reason: ${reason}`
+  }
 }
 
 // CallbackRegistry
@@ -57,18 +61,24 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 // SignaldMessageType -> Callback
 const _callbackFor = messageType =>
   ({
+    [messageTypes.REGISTER]: _handleRegisterResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
   }[messageType])
 
 // SignaldMessageType => number
 const _timeoutFor = messageType =>
   ({
-    [messageTypes.VERIFY]: signaldVerifyTimeout,
+    [messageTypes.REGISTER]: 30000,
+    [messageTypes.VERIFY]: 30000,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
 const handle = message => {
   const { callback, resolve, reject, state } = {
+    [messageTypes.REGISTRATION_SUCCESS]:
+      registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
+    [messageTypes.REGISTRATION_ERROR]:
+      registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
@@ -78,6 +88,23 @@ const handle = message => {
 }
 
 // CALLBACKS
+
+const _handleRegisterResponse= ({ message, resolve, reject }) => {
+  if (message.type === messageTypes.REGISTRATION_ERROR)
+    reject(
+      new Error(
+        messages.registration.error(
+          get(message, 'data.username', 'N/A'),
+          get(message, 'data.message', 'N/A'),
+        ),
+      ),
+    )
+  if (message.type === messageTypes.REGISTRATION_SUCCESS)
+    resolve({
+      status: statuses.SUCCESS,
+      message: get(message, 'data.username', 'N/A'),
+    })
+}
 
 // (IncomingSignaldMessage, function, function) -> void
 const _handleVerifyResponse = ({ message, resolve, reject }) => {

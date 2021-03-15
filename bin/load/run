@@ -10,17 +10,11 @@ cd ../.. # cd to project root
 # 3. signalc
 # 4. everything else...
 
+echo "--- reset signal-server database..."
+curl -X POST https://coderetriever.signalboost.info/reset
+
 echo "--- starting load test simulator..."
-# docker-compose -f docker-compose-test-load.yml up -d  signal_server redis ngrok_simulator signalboost_ngrok 2>/dev/null 1>&2
-docker-compose -f docker-compose-test-load.yml up -d signalc_simulator
-
-
-echo "--- starting signald for app + simulator..."
-
-### RUN SIMULATOR
-
-# echo "--- RUN: starting simulator"
-# docker-compose -f docker-compose-test-load.yml up -d simulator
+docker-compose -f docker-compose-test-load.yml up -d simulator
 
 ### RUN LOAD TEST
 

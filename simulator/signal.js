@@ -14,16 +14,15 @@ const logger = loggerOf('signal')
  * STARTUP
  **********************/
 
-const run = async (botPhoneNumbers, dbPool) => {
+const run = async (botPhoneNumbers) => {
   logger.log(`--- Creating bot phoneNumbers...`)
   try {
-    for (pn of botPhoneNumbers) {
-      // await register(pn, null, dbPool)
-      await util.wait(500)
-      await subscribe(pn)
-    }
-    logger.log(`--- Created bot phoneNumbers!!`)
-    // await Promise.all(botPhoneNumbers.map(subscribe))
+    // for (pn of botPhoneNumbers) {
+    //   await register(pn, null)
+    // }
+    await Promise.all(botPhoneNumbers.map(registerAndVerify))
+    logger.log(`--- Created bot phoneNumbers!`)
+    await Promise.all(botPhoneNumbers.map(subscribe))
     logger.log(`--- Subscribed bot phoneNumbers!`)
     return
   } catch (e) {
@@ -37,17 +36,24 @@ const run = async (botPhoneNumbers, dbPool) => {
  ********************/
 
 // (string, string || null) -> Promise<SignalboostStatus>
-const register = async (phoneNumber, captchaToken, dbPool) => {
+const registerAndVerify = async (phoneNumber) => {
   logger.log(`${phoneNumber}: Registering...`)
   socketWriter.write({
     type: messageTypes.REGISTER,
     username: phoneNumber,
-    ...(captchaToken ? { captcha: captchaToken } : {}),
   })
+  
+  await new Promise((resolve, reject) =>
+    callbacks.register({
+      messageType: messageTypes.REGISTER,
+      id: phoneNumber,
+      resolve,
+      reject,
+    }),
+  )
 
-  await util.wait(10000)
   logger.log(`${phoneNumber}: Verifying...`)
-  await verify(phoneNumber, dbPool)
+  await verify(phoneNumber)
 
   return new Promise((resolve, reject) =>
     callbacks.register({
@@ -59,13 +65,9 @@ const register = async (phoneNumber, captchaToken, dbPool) => {
   )
 }
 
-// (string, string) -> Promise<SignalboostStatus>
-const verify = async (phoneNumber, dbPool) => {
-
-  const params = new URLSearchParams()
-  params.append('number', phoneNumber)
-
-  const code = await fetchVerificationCode(phoneNumber, dbPool)
+// (string) -> Promise<SignalboostStatus>
+const verify = async (phoneNumber) => {
+  const code = await fetchVerificationCode(phoneNumber)
 
   return socketWriter
     .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
@@ -73,26 +75,23 @@ const verify = async (phoneNumber, dbPool) => {
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 }
 
-const fetchVerificationCode = async (phoneNumber, dbPool, retries = 3) => {  
-  const query = "SELECT verification_code FROM pending_accounts WHERE number = $1;"
-  
+const fetchVerificationCode = async (phoneNumber, retries = 3) => {    
   try {
-    const { rows } = await dbPool.query(query, [phoneNumber])
+    const response = await fetch(`https://coderetriever.signalboost.info/phone/${phoneNumber}`);
+    const data = await response.json();
 
-    if (isEmpty(rows)) {
+    if (!data.verificationCode) {
       if (retries > 0) {
-        logger.log(`${phoneNumber}: Retrying fetch verification code. Retries left: ${retries}`)
-        return fetchVerificationCode(phoneNumber, dbPool, retries - 1)
+        await util.wait(1000)
+        return fetchVerificationCode(phoneNumber, retries - 1)
       } else {
-        throw new Error('Failed to fetch verification code')
+        throw new Error()
       }
     }
     
-    const verification_code = rows[0]["verification_code"]
-    return verification_code
+    return data.verificationCode
   } catch (e) {
     logger.error(`${phoneNumber}: Failed to fetch verification code`)
-    logger.error(e)
   }
 }
 
@@ -127,7 +126,7 @@ module.exports = {
   messages,
   messageTypes,
   parseVerificationCode,
-  register,
+  registerAndVerify,
   run,
   sendMessage,
   subscribe,

@@ -235,6 +235,10 @@ load.setup: ## start
 load.restart: ## restart loadtest stack
 	docker-compose -f docker-compose-test-load.yml down && ./bin/load/run
 
+load.reset: ## clean signalc + signal-server databases
+	curl -X POST https://coderetriever.signalboost.info/reset && \
+	psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
+
 ###########
 # signalc #
 ###########
