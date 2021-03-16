@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+echo "--- seeding simulator..."
+docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin/entrypoint/simulator-seed simulator
+popd

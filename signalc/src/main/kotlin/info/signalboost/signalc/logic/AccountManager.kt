@@ -67,14 +67,12 @@ class AccountManager(private val app: Application) {
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {
         app.coroutineScope.async(IO) {
-            logger.debug { "Registering account ${account.username}" }
             accountManagerOf(account).requestSmsVerificationCode(
                 false,
                 captcha?.let { Optional.of(it) } ?: Optional.absent(),
                 Optional.absent()
             )
         }.await()
-        logger.debug { "Registered account ${account.username}" }
         return RegisteredAccount.fromNew(account).also { accountStore.save(it) }
     }
 

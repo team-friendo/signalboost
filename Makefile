@@ -226,6 +226,9 @@ load.nc.simulator: ## get a netcat shell inside the loadtest simulator
 load.up: ## start
 	./bin/load/run
 
+load.seed: ## seed the simulator environment
+	./bin/load/seed
+
 load.down: ## start
 	docker-compose -f docker-compose-test-load.yml down
 
@@ -238,6 +241,9 @@ load.restart: ## restart loadtest stack
 load.reset: ## clean signalc + signal-server databases
 	curl -X POST https://coderetriever.signalboost.info/reset && \
 	psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
+
+load.psql: 
+	docker-compose -f docker-compose-test-load.yml exec db psql postgresql://postgres@localhost:5432/signalc_load_test_simulator
 
 ###########
 # signalc #

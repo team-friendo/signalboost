@@ -32,7 +32,7 @@ const logger = require('../app/registrar/logger')
  ***/
 
 const messages = {
-  timeout: messageType => `Signald response timed out for request of type: ${messageType}`,
+  timeout: (messageType, id) => `Signald response timed out for request of type: ${messageType}, id: ${id}`,
   verification: {
     error: (phoneNumber, reason) =>
       `Verification failed for ${phoneNumber}. Reason: ${reason}`,
@@ -54,7 +54,7 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
   return util.wait(timeout).then(() => {
     // delete expired callbacks and reject their promise if not yet handled
     delete registry[`${messageType}-${id}`]
-    reject && reject({ status: statuses.ERROR, message: messages.timeout(messageType) })
+    reject && reject({ status: statuses.ERROR, message: messages.timeout(messageType, id) })
   })
 }
 
@@ -68,8 +68,8 @@ const _callbackFor = messageType =>
 // SignaldMessageType => number
 const _timeoutFor = messageType =>
   ({
-    [messageTypes.REGISTER]: 30000,
-    [messageTypes.VERIFY]: 30000,
+    [messageTypes.REGISTER]: 1000 * 30 * 1,
+    [messageTypes.VERIFY]: 1000 * 30 * 1,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
@@ -90,6 +90,7 @@ const handle = message => {
 // CALLBACKS
 
 const _handleRegisterResponse= ({ message, resolve, reject }) => {
+  delete registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`]
   if (message.type === messageTypes.REGISTRATION_ERROR)
     reject(
       new Error(
@@ -108,6 +109,7 @@ const _handleRegisterResponse= ({ message, resolve, reject }) => {
 
 // (IncomingSignaldMessage, function, function) -> void
 const _handleVerifyResponse = ({ message, resolve, reject }) => {
+  delete registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`]
   if (message.type === messageTypes.VERIFICATION_ERROR)
     reject(
       new Error(

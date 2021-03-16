@@ -15,18 +15,12 @@ const logger = loggerOf('signal')
  **********************/
 
 const run = async (botPhoneNumbers) => {
-  logger.log(`--- Creating bot phoneNumbers...`)
   try {
-    // for (pn of botPhoneNumbers) {
-    //   await register(pn, null)
-    // }
-    await Promise.all(botPhoneNumbers.map(registerAndVerify))
-    logger.log(`--- Created bot phoneNumbers!`)
     await Promise.all(botPhoneNumbers.map(subscribe))
     logger.log(`--- Subscribed bot phoneNumbers!`)
     return
   } catch (e) {
-    logger.log(`--- Error creating bot phoneNumbers...  `)
+    logger.log(`--- Error subscribing to bot phoneNumbers...  `)
     logger.error(e)
   }
 }

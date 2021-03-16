@@ -4,17 +4,14 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-# ordering we want:
-# 1. signal server
-# 2. localtunnel
-# 3. signalc
-# 4. everything else...
+docker-compose -f docker-compose-test-load.yml up -d db
 
-echo "--- reset signal-server database..."
-curl -X POST https://coderetriever.signalboost.info/reset
+# echo "--- reset signal-server database..."
+# curl -X POST https://coderetriever.signalboost.info/reset
+# psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
 
 echo "--- starting load test simulator..."
-docker-compose -f docker-compose-test-load.yml up -d simulator
+docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin/entrypoint/simulator-run simulator
 
 ### RUN LOAD TEST
 
@@ -27,3 +24,4 @@ docker-compose -f docker-compose-test-load.yml up -d simulator
 # echo "--- DONE!"
 
 popd
+

@@ -3,6 +3,7 @@ const callbacks = require('../callbacks')
 const net = require('net')
 const fs = require('fs-extra')
 const { wait, loggerOf } = require('../../app/util')
+const { isEmpty } = require('lodash')
 const {
   socket: { connectionInterval, maxConnectionAttempts, poolSize },
 } = require('../../app/config')
@@ -54,15 +55,18 @@ const connect = () => {
     const sock = net.createConnection(SIGNALD_SOCKET_PATH)
     sock.setEncoding('utf8')
     sock.setMaxListeners(0) // removes ceiling on number of listeners (useful for `await` handlers below)
-    sock.on('data', msg => {
-      console.log(msg)
-      let parsed_msg
-      try {
-        parsed_msg = JSON.parse(msg)
-      } catch (e) {
-        parsed_msg = msg
-      }
-      callbacks.handle(parsed_msg)
+    sock.on('data', msgs => {
+      console.log("###################")
+      console.log(msgs)
+      // let parsed_msg = JSON.parse(msgs)
+      msgs.split("\n").filter(Boolean).forEach(msg => {
+        try {
+          callbacks.handle(JSON.parse(msg))
+        }
+        catch (e) {
+          logger.error("Failed to parse msg: ", msg)
+        }
+      })
     })
     return new Promise(resolve => sock.on('connect', () => resolve(sock)))
   } catch (e) {
