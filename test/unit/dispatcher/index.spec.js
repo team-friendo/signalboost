@@ -1,12 +1,11 @@
 import { expect } from 'chai'
-import { describe, it, beforeEach, afterEach, before, after } from 'mocha'
+import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
-import { times, merge, map } from 'lodash'
+import { map, merge, times } from 'lodash'
 import { languages } from '../../../app/language'
-import { memberTypes } from '../../../app/db/repositories/membership'
+import membershipRepository, { memberTypes } from '../../../app/db/repositories/membership'
 import { dispatch } from '../../../app/dispatcher'
 import channelRepository, { getAllAdminsExcept } from '../../../app/db/repositories/channel'
-import membershipRepository from '../../../app/db/repositories/membership'
 import banRepository from '../../../app/db/repositories/ban'
 import safetyNumbers from '../../../app/registrar/safetyNumbers'
 import metrics from '../../../app/metrics'
@@ -150,6 +149,42 @@ describe('dispatcher module', () => {
   after(() => app.stop())
 
   describe('handling an incoming message', () => {
+    describe('handling bursts of messages', () => {
+      it('dispatches one message at a time', async () => {
+        await dispatch(
+          [
+            JSON.stringify({
+              type: 'message',
+              data: {
+                username: channel.phoneNumber,
+                source: genPhoneNumber(),
+                dataMessage: {
+                  timestamp: new Date().toISOString(),
+                  body: 'foobar',
+                  expiresInSeconds: channel.messageExpiryTime,
+                  attachments: [],
+                },
+              },
+            }),
+            JSON.stringify({
+              type: 'message',
+              data: {
+                username: channel.phoneNumber,
+                source: genPhoneNumber(),
+                dataMessage: {
+                  timestamp: new Date().toISOString(),
+                  body: 'foobar',
+                  expiresInSeconds: channel.messageExpiryTime,
+                  attachments: [],
+                },
+              },
+            }),
+          ].join('\n'),
+        )
+        expect(dispatchStub.callCount).to.eql(2)
+      })
+    })
+
     describe('deciding whether to dispatch a message', () => {
       describe('when message is from a banned user', () => {
         it('ignores the message', async () => {

@@ -64,8 +64,15 @@ const {
 // number => string => Promise<SignalboostStatus>
 const dispatcherOf = socketId => msg => dispatch(msg, socketId).catch(logger.error)
 
-// (string, number) -> Promise<SignalBoostStatus>
-const dispatch = async (msg, socketId) => {
+const dispatch = async (data, socketId) =>
+  Promise.all(
+    data
+      .split('\n')
+      .filter(Boolean)
+      .map(msg => dispatchOne(msg, socketId)),
+  )
+
+const dispatchOne = async (msg, socketId) => {
   logger.debug(emphasize(redact(msg)))
 
   // parse basic info from message
