@@ -16,6 +16,7 @@ const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const { emphasize, redact } = require('../util')
 const metrics = require('../metrics')
+const { counters, labels } = metrics
 const { isCommand } = require('./strings/commands')
 const { commands } = require('./commands/constants')
 const {
@@ -64,8 +65,15 @@ const {
 // number => string => Promise<SignalboostStatus>
 const dispatcherOf = socketId => msg => dispatch(msg, socketId).catch(logger.error)
 
-// (string, number) -> Promise<SignalBoostStatus>
-const dispatch = async (msg, socketId) => {
+const dispatch = async (data, socketId) =>
+  Promise.all(
+    data
+      .split('\n')
+      .filter(Boolean)
+      .map(msg => dispatchOne(msg, socketId)),
+  )
+
+const dispatchOne = async (msg, socketId) => {
   logger.debug(emphasize(redact(msg)))
 
   // parse basic info from message
@@ -214,7 +222,8 @@ const parseInboundSignaldMessage = inboundMsg => {
   try {
     return JSON.parse(inboundMsg)
   } catch (e) {
-    return inboundMsg
+    metrics.incrementCounter(counters.ERRORS, [labels.errorTypes.JSON_PARSE_ERROR])
+    logger.error(`Failed to parse JSON: ${e.message}`)
   }
 }
 
