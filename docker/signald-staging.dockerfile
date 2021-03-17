@@ -57,9 +57,12 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sudo
 
 # build signald from a given commit hash
 
+ENV SIGNAL_URL="https://signalserver.signalboost.info"
+ENV TRUST_STORE="fake.whisper.store"
+
 ENV REPO_URL "https://0xacab.org/team-friendo/signald-fork.git"
 ENV BRANCH "main"
-ENV COMMIT_HASH "6735f6a992330aecfa00fe4887826adfbc38681b"
+ENV COMMIT_HASH "bd8adee011ec19b8eccf4fb48c7a973b0bc5f248"
 
 # fetch repo at desired commit
 RUN git init && \
@@ -68,7 +71,7 @@ RUN git init && \
     git reset --hard $COMMIT_HASH
 
 # build from source
-RUN make installDist && make setup
+RUN SIGNAL_URL="${SIGNAL_URL}" SIGNAL_URL="${SIGNAL_URL}" make installDist && make setup
 
 # put signald binary on path
 RUN ln -s ${PWD}/build/install/signald/bin/signald /usr/local/bin/signald
@@ -84,4 +87,4 @@ ENTRYPOINT /signalboost/bin/entrypoint/signald
 # ------------------
 # Version
 # ------------------
-LABEL version="1.0.12"
+LABEL version="1.0.0"
