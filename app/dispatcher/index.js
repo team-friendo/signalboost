@@ -16,6 +16,7 @@ const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const { emphasize, redact } = require('../util')
 const metrics = require('../metrics')
+const { counters, labels } = metrics
 const { isCommand } = require('./strings/commands')
 const { commands } = require('./commands/constants')
 const {
@@ -221,7 +222,8 @@ const parseInboundSignaldMessage = inboundMsg => {
   try {
     return JSON.parse(inboundMsg)
   } catch (e) {
-    return inboundMsg
+    metrics.incrementCounter(counters.ERRORS, [labels.errorTypes.JSON_PARSE_ERROR])
+    logger.error(`Failed to parse JSON: ${e.message}`)
   }
 }
 

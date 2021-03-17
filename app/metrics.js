@@ -37,6 +37,7 @@ const messageDirection = {
 const errorTypes = {
   RATE_LIMIT_RESENDING: 'RATE_LIMIT_RESENDING',
   RATE_LIMIT_ABORTING: 'RATE_LIMIT_ABORTING',
+  JSON_PARSE_ERROR: 'JSON_PARSE_ERROR',
 }
 
 const run = () => {
