@@ -10,10 +10,9 @@ networks:
 
 volumes:
   postgres_data:
-  logs:
-  gradle_cache:
+  signalc_gradle_cache:
   signalc_build_cache:
-  signalc_sock_0:
+  signalc_sock:
 
 services:
 
@@ -63,7 +62,7 @@ services:
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
       - ./yarn.lock:/signalboost/yarn.lock
-      - signalc_sock_0:/var/run/signald-sockets/0
+      - signalc_sock:/signalboost/sockets/0
 
   signalc:
     image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
@@ -74,7 +73,6 @@ services:
       SIGNALC_ENV: development
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      TRUST_STORE_PATH: /signalc/whisper.store
       DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
@@ -88,9 +86,9 @@ services:
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
       - ./signalc/migrations:/signalc/migrations
       - ./bin:/signalc/bin
-      - gradle_cache:/home/gradle/.gradle
+      - signalc_gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
-      - signalc_sock_0:/signalc/sock
+      - signalc_sock:/signalc/sock
 
   ngrok:
     container_name: signalboost_ngrok # todo: this should just be ngrok?

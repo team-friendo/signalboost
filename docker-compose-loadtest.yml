@@ -21,11 +21,11 @@ networks:
       name: localdev
 
 volumes:
+  loadtest_app_sock:
   loadtest_gradle_cache:
   loadtest_postgres_data:
   loadtest_signald_data:
   loadtest_signalc_build_cache:
-  loadtest_app_sock:
   loadtest_simulator_sock:
 
 services:
@@ -56,8 +56,7 @@ services:
       - ./package.json:/signalboost/package.json
       - ./yarn.lock:/signalboost/yarn.lock
       - loadtest_signald_data:/var/lib/signald/data
-      # TODO: mount this to /signalboost/sockets/0
-      - loadtest_app_sock:/var/run/signald-sockets/0
+      - loadtest_app_sock:/signalboost/sockets/0
     restart: unless-stopped
 
   db:
@@ -124,7 +123,7 @@ services:
       - ./bin:/signalc/bin
       - loadtest_gradle_cache:/home/gradle/.gradle
       - loadtest_signalc_build_cache:/signalc/build
-      - loadtest_simulator_sock:/signalc/sock
+      - loadtest_app_sock:/signalc/sock
     restart: unless-stopped
 
 

@@ -68,12 +68,12 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
       - /var/run/docker.sock:/var/run/docker.sock
       - signal_data:/var/lib/signald/data
-      - signald_sock_0:/var/run/signald-sockets/0
-      - signald_sock_1:/var/run/signald-sockets/1
-      - signald_sock_2:/var/run/signald-sockets/2
-      - signald_sock_3:/var/run/signald-sockets/3
-      - signald_sock_4:/var/run/signald-sockets/4
-      - signald_sock_5:/var/run/signald-sockets/5
+      - signald_sock_0:/signalboost/sockets/0
+      - signald_sock_1:/signalboost/sockets/1
+      - signald_sock_2:/signalboost/sockets/2
+      - signald_sock_3:/signalboost/sockets/3
+      - signald_sock_4:/signalboost/sockets/4
+      - signald_sock_5:/signalboost/sockets/5
 
     restart: always
 

@@ -11,7 +11,7 @@ const {
 // CONSTANTS
 
 const logger = loggerOf('socket')
-const signaldSocketDir = '/var/run/signald-sockets'
+const socketDir = '/signalboost/sockets'
 const messages = {
   error: {
     socketTimeout: 'Maximum signald connection attempts exceeded.',
@@ -47,7 +47,7 @@ const socketPoolOf = async ({ create, destroy }) => {
 
 // (number, number) -> Promise<Socket>
 const getSocketConnection = async (socketId, attempts = 0) => {
-  const socketFilePath = `${signaldSocketDir}/${socketId}/signald.sock`
+  const socketFilePath = `${socketDir}/${socketId}/signald.sock`
   if (!(await fs.pathExists(socketFilePath))) {
     if (attempts > maxConnectionAttempts) {
       return Promise.reject(new Error(messages.error.socketTimeout))
