@@ -13,7 +13,7 @@ if [[ -z $SEED_TARGET ]];then
   exit 1
 fi
 
-compose="docker-compose -f docker-compose-test-load.yml"
+compose="docker-compose -f docker-compose-loadtest.yml"
 
 if [[ $SEED_TARGET = "signalc_simulator" ]];then
   SOCK_VOLUME="simulator_sock"

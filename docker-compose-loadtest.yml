@@ -21,13 +21,12 @@ networks:
       name: localdev
 
 volumes:
-  # postgres_data:
-  gradle_cache:
-  pg_data:
-  staging_signal_data:
-  signalc_build_cache:
-  app_sock:
-  simulator_sock:
+  loadtest_gradle_cache:
+  loadtest_postgres_data:
+  loadtest_signald_data:
+  loadtest_signalc_build_cache:
+  loadtest_app_sock:
+  loadtest_simulator_sock:
 
 services:
 
@@ -55,16 +54,17 @@ services:
       - ./bin:/signalboost/bin
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      - staging_signal_data:/var/lib/signald/data
-      - app_sock:/signalboost/sock/
       - ./yarn.lock:/signalboost/yarn.lock
+      - loadtest_signald_data:/var/lib/signald/data
+      # TODO: mount this to /signalboost/sockets/0
+      - loadtest_app_sock:/var/run/signald-sockets/0
     restart: unless-stopped
 
   db:
     image: postgres:12
     container_name: load_test_db
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - loadtest_postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
@@ -77,13 +77,11 @@ services:
     entrypoint: /signalc/bin/entrypoint/signalc
     env_file: .env.dev
     environment:
-      # TODO: inject env vars for local signal-server
       SIGNALC_ENV: ${SIGNALC_ENV:-load}
       SIGNALC_DB_NAME: signalc_load_test_simulator
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-debug}
-      TRUST_STORE_PATH: /signalc/whisper.store
-      DEBUG_MODE: 0 #${DEBUG_MODE:-0}
+      DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
       - db
@@ -96,11 +94,39 @@ services:
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
       - ./signalc/migrations:/signalc/migrations
       - ./bin:/signalc/bin
-      # TODO: fix locking issues
-      - gradle_cache:/home/gradle/.gradle
-      - signalc_build_cache:/signalc/build
-      - simulator_sock:/signalc/sock
+      - loadtest_gradle_cache:/home/gradle/.gradle
+      - loadtest_signalc_build_cache:/signalc/build
+      - loadtest_simulator_sock:/signalc/sock
     restart: unless-stopped
+
+  signalc_app:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    container_name: load_test_signalc_for_app
+    entrypoint: /signalc/bin/entrypoint/signalc
+    env_file: .env.dev
+    environment:
+      SIGNALC_ENV: ${SIGNALC_ENV:-load}
+      SIGNALC_DB_NAME: signalc_load_test_app
+      GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      DEBUG_MODE: ${DEBUG_MODE:-0}
+      DB_HOST: db
+    depends_on:
+      - db
+    ports:
+      - 0.0.0.0:5006:5005 # for remote debugger
+    volumes:
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/migrations:/signalc/migrations
+      - ./bin:/signalc/bin
+      - loadtest_gradle_cache:/home/gradle/.gradle
+      - loadtest_signalc_build_cache:/signalc/build
+      - loadtest_simulator_sock:/signalc/sock
+    restart: unless-stopped
+
 
   signald_app:
     image: registry.0xacab.org/team-friendo/signalboost/signald-staging:latest
@@ -118,8 +144,8 @@ services:
     volumes:
       - ./bin:/signalboost/bin
       - ./signald/jmx:/var/lib/jmx
-      - staging_signal_data:/var/lib/signald/data
-      - app_sock:/var/run/signald/
+      - loadtest_signald_data:/var/lib/signald/data
+      - loadtest_app_sock:/var/run/signald/
     restart: unless-stopped
 
   simulator:
@@ -144,9 +170,9 @@ services:
       - ./bin:/signalboost/bin
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      - staging_signal_data:/var/lib/signald/data
+      - loadtest_signald_data:/var/lib/signald/data
       - ./yarn.lock:/signalboost/yarn.lock
-      - ${SOCK_VOLUME:-simulator_sock}:/signalboost/sock/
+      - ${SOCK_VOLUME:-loadtest_simulator_sock}:/signalboost/sock/
     restart: unless-stopped
 
 

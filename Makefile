@@ -224,10 +224,10 @@ docker.push.splash: ## push the splash site docker image (accepts optional TAG=#
 ##############
 
 load.logs: ## show logs from load env
-	docker-compose -f docker-compose-test-load.yml logs -f
+	docker-compose -f docker-compose-loadtest.yml logs -f
 
 load.nc.simulator: ## get a netcat shell inside the loadtest simulator
-	docker-compose -f docker-compose-test-load.yml exec signalc_simulator nc -U /signalc/sock/signald.sock
+	docker-compose -f docker-compose-loadtest.yml exec signalc_simulator nc -U /signalc/sock/signald.sock
 
 load.up: ## start
 	./bin/load/run
@@ -242,20 +242,20 @@ load.seed.signald: ## seed the simulator environment backed by signald
 	SEED_TARGET=signald_app ./bin/load/seed
 
 load.down: ## start
-	docker-compose -f docker-compose-test-load.yml down
+	docker-compose -f docker-compose-loadtest.yml down
 
 load.setup: ## start
 	./bin/load/setup
 
 load.restart: ## restart loadtest stack
-	docker-compose -f docker-compose-test-load.yml down && ./bin/load/run
+	docker-compose -f docker-compose-loadtest.yml down && ./bin/load/run
 
 load.reset: ## clean signalc + signal-server databases
 	curl -X POST https://coderetriever.signalboost.info/reset && \
 	psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
 
 load.psql: 
-	docker-compose -f docker-compose-test-load.yml exec db psql postgresql://postgres@localhost:5432/signalc_load_test_simulator
+	docker-compose -f docker-compose-loadtest.yml exec db psql postgresql://postgres@localhost:5432/signalc_load_test_simulator
 
 ###########
 # signalc #
