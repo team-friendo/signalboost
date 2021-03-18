@@ -2,10 +2,6 @@ const { messageTypes } = require('../app/signal/constants')
 const util = require('../app/util')
 const { statuses } = util
 const { get } = require('lodash')
-const {
-  signal: { signaldVerifyTimeout },
-} = require('../app/config')
-const logger = require('../app/registrar/logger')
 
 /**
  * type Callback = ({
@@ -32,15 +28,14 @@ const logger = require('../app/registrar/logger')
  ***/
 
 const messages = {
-  timeout: (messageType, id) => `Signald response timed out for request of type: ${messageType}, id: ${id}`,
+  timeout: (messageType, id) =>
+    `Signald response timed out for request of type: ${messageType}, id: ${id}`,
   verification: {
-    error: (phoneNumber, reason) =>
-      `Verification failed for ${phoneNumber}. Reason: ${reason}`,
+    error: (phoneNumber, reason) => `Verification failed for ${phoneNumber}. Reason: ${reason}`,
   },
   registration: {
-    error: (phoneNumber, reason) =>
-      `Registration failed for ${phoneNumber}. Reason: ${reason}`
-  }
+    error: (phoneNumber, reason) => `Registration failed for ${phoneNumber}. Reason: ${reason}`,
+  },
 }
 
 // CallbackRegistry
@@ -77,6 +72,8 @@ const handle = message => {
   const { callback, resolve, reject, state } = {
     [messageTypes.REGISTRATION_SUCCESS]:
       registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
+    [messageTypes.REGISTRATION_SUCCESS_SIGNALD]:
+      registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
     [messageTypes.REGISTRATION_ERROR]:
       registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_SUCCESS]:
@@ -89,7 +86,7 @@ const handle = message => {
 
 // CALLBACKS
 
-const _handleRegisterResponse= ({ message, resolve, reject }) => {
+const _handleRegisterResponse = ({ message, resolve, reject }) => {
   delete registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`]
   if (message.type === messageTypes.REGISTRATION_ERROR)
     reject(

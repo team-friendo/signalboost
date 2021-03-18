@@ -10,6 +10,7 @@ const messageTypes = {
   REGISTER: 'register',
   REGISTRATION_ERROR: 'registration_error',
   REGISTRATION_SUCCESS: 'registration_succeeded',
+  REGISTRATION_SUCCESS_SIGNALD: 'verification_required',
   SEND: 'send',
   SEND_RESULTS: 'send_results',
   SET_EXPIRATION: 'set_expiration',

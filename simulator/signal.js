@@ -1,24 +1,21 @@
 const socketWriter = require('./socket/write')
 const callbacks = require('./callbacks')
-const { pick, isEmpty } = require('lodash')
-const fetch = require("node-fetch")
-const { messages, messageTypes, trustLevels } = require('../app/signal/constants')
+const { isEmpty } = require('lodash')
+const fetch = require('node-fetch')
+const { messages, messageTypes } = require('../app/signal/constants')
 const util = require('../app/util')
 const { statuses, loggerOf } = util
-const {
-  signal: { diagnosticsPhoneNumber, broadcastSpacing },
-} = require('../app/config')
 const logger = loggerOf('signal')
 
 /**********************
  * STARTUP
  **********************/
 
-const run = async (botPhoneNumbers) => {
+const run = async botPhoneNumbers => {
   try {
     await Promise.all(botPhoneNumbers.map(subscribe))
     logger.log(`--- Subscribed bot phoneNumbers!`)
-    return
+    return Promise.resolve()
   } catch (e) {
     logger.log(`--- Error subscribing to bot phoneNumbers...  `)
     logger.error(e)
@@ -30,13 +27,13 @@ const run = async (botPhoneNumbers) => {
  ********************/
 
 // (string, string || null) -> Promise<SignalboostStatus>
-const registerAndVerify = async (phoneNumber) => {
+const registerAndVerify = async phoneNumber => {
   logger.log(`${phoneNumber}: Registering...`)
   socketWriter.write({
     type: messageTypes.REGISTER,
     username: phoneNumber,
   })
-  
+
   await new Promise((resolve, reject) =>
     callbacks.register({
       messageType: messageTypes.REGISTER,
@@ -60,7 +57,7 @@ const registerAndVerify = async (phoneNumber) => {
 }
 
 // (string) -> Promise<SignalboostStatus>
-const verify = async (phoneNumber) => {
+const verify = async phoneNumber => {
   const code = await fetchVerificationCode(phoneNumber)
 
   return socketWriter
@@ -69,10 +66,10 @@ const verify = async (phoneNumber) => {
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 }
 
-const fetchVerificationCode = async (phoneNumber, retries = 3) => {    
+const fetchVerificationCode = async (phoneNumber, retries = 3) => {
   try {
-    const response = await fetch(`https://coderetriever.signalboost.info/phone/${phoneNumber}`);
-    const data = await response.json();
+    const response = await fetch(`https://coderetriever.signalboost.info/phone/${phoneNumber}`)
+    const data = await response.json()
 
     if (!data.verificationCode) {
       if (retries > 0) {
@@ -82,7 +79,7 @@ const fetchVerificationCode = async (phoneNumber, retries = 3) => {
         throw new Error()
       }
     }
-    
+
     return data.verificationCode
   } catch (e) {
     logger.error(`${phoneNumber}: Failed to fetch verification code`)

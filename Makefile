@@ -195,6 +195,9 @@ docker.build.signalc: ## build the test runner image (accepts optional TAG=#.#.#
 docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signald $(TAG)
 
+docker.build.signald.staging: ## build the signald staging docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signald-staging $(TAG)
+
 docker.build.splash: ## build the splash site docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build splash $(TAG)
 
@@ -209,6 +212,9 @@ docker.push.signalc: ## build the test runner image (accepts optional TAG=#.#.# 
 
 docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signald $(TAG)
+
+docker.push.signald.staging: ## push the signald staging docker image (accepts optional TAG=#.#.# argument)
+	./bin/docker-push signald-staging $(TAG)
 
 docker.push.splash: ## push the splash site docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push splash $(TAG)
@@ -226,8 +232,14 @@ load.nc.simulator: ## get a netcat shell inside the loadtest simulator
 load.up: ## start
 	./bin/load/run
 
-load.seed: ## seed the simulator environment
-	./bin/load/seed
+load.seed.signalc.app: ## seed the simulator environment backed by signalc
+	SEED_TARGET=signalc_app ./bin/load/seed
+
+load.seed.signalc.simulator: ## seed the simulator environment backed by signalc
+	SEED_TARGET=signalc_simulator ./bin/load/seed
+
+load.seed.signald: ## seed the simulator environment backed by signald
+	SEED_TARGET=signald_app ./bin/load/seed
 
 load.down: ## start
 	docker-compose -f docker-compose-test-load.yml down

@@ -24,9 +24,9 @@ volumes:
   # postgres_data:
   gradle_cache:
   pg_data:
-  signal_sock:
-  signal_data:
+  staging_signal_data:
   signalc_build_cache:
+  app_sock:
   simulator_sock:
 
 services:
@@ -55,11 +55,10 @@ services:
       - ./bin:/signalboost/bin
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
+      - staging_signal_data:/var/lib/signald/data
+      - app_sock:/signalboost/sock/
       - ./yarn.lock:/signalboost/yarn.lock
     restart: unless-stopped
-
 
   db:
     image: postgres:12
@@ -104,11 +103,11 @@ services:
     restart: unless-stopped
 
   signald_app:
-    image: team-friendo/signalboost/signald:load
+    image: registry.0xacab.org/team-friendo/signalboost/signald-staging:latest
     container_name: load_test_signald_app
     env_file: .env.dev
     environment:
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-0}
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-1}
     networks:
       - default
     expose:
@@ -119,8 +118,8 @@ services:
     volumes:
       - ./bin:/signalboost/bin
       - ./signald/jmx:/var/lib/jmx
-      - signal_data:/var/lib/signald/data
-      - signal_sock:/var/run/signald/
+      - staging_signal_data:/var/lib/signald/data
+      - app_sock:/var/run/signald/
     restart: unless-stopped
 
   simulator:
@@ -128,7 +127,6 @@ services:
     container_name: load_test_simulator
     depends_on:
       - db
-      - signalc_simulator
     entrypoint: /signalboost/bin/entrypoint/simulator
     env_file: .env.dev
     environment:
@@ -146,9 +144,9 @@ services:
       - ./bin:/signalboost/bin
       - ./node_modules:/signalboost/node_modules
       - ./package.json:/signalboost/package.json
-      - signal_data:/var/lib/signald/data
-      - simulator_sock:/var/run/signald/
+      - staging_signal_data:/var/lib/signald/data
       - ./yarn.lock:/signalboost/yarn.lock
+      - ${SOCK_VOLUME:-simulator_sock}:/signalboost/sock/
     restart: unless-stopped
 
 

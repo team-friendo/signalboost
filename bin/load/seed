@@ -4,6 +4,25 @@ pushd `pwd` # store current dir
 cd `dirname "$0"` # cd to script path
 cd ../.. # cd to project root
 
-echo "--- seeding simulator..."
-docker-compose -f docker-compose-test-load.yml run --entrypoint /signalboost/bin/entrypoint/simulator-seed simulator
+if [[ -z $SEED_TARGET ]];then
+  echo "$SEED_TARGET not defined!"
+  echo "must be one of: "
+  echo "- signalc_simulator"
+  echo "- signalc_app"
+  echo "- signald_app"
+  exit 1
+fi
+
+compose="docker-compose -f docker-compose-test-load.yml"
+
+if [[ $SEED_TARGET = "signalc_simulator" ]];then
+  SOCK_VOLUME="simulator_sock"
+else
+  SOCK_VOLUME="app_sock"
+fi
+
+echo "seeding ${SEED_TARGET}..."
+$compose up -d $SEED_TARGET
+SOCK_VOLUME=$SOCK_VOLUME $compose run --entrypoint /signalboost/bin/entrypoint/simulator-seed simulator
+echo "... seeded ${SEED_TARGET}"
 popd
