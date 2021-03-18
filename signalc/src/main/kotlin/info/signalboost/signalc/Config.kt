@@ -84,7 +84,7 @@ object Config {
         ?: when(System.getenv("SIGNALC_ENV")) {
             Env.Dev.value -> "signalc_development"
             Env.Test.value -> "signalc_test"
-            Env.Load.value -> "signalc_load_test"
+            Env.Load.value -> "loadtest_sender_signalc"
             else -> "signalc"
         }
 

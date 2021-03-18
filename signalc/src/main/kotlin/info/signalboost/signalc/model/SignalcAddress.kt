@@ -15,7 +15,7 @@ data class SignalcAddress(
    companion object {
        fun SignalServiceAddress.asSignalcAddress() = SignalcAddress(
            this.number.orNull(),
-           this.uuid.orNull().toString(),
+           this.uuid.orNull()?.toString(),
        )
 
        fun SignalServiceEnvelope.asSignalcAddress() = sourceAddress.asSignalcAddress()

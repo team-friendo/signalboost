@@ -40,7 +40,8 @@
 
         <!-- pattern to show threads alongside other log details -->
         <encoder>
-            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%logger{24}] %-5level | (%thread\) %msg%n</pattern>
+<!--            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%logger{24}] %-5level | (%thread\) %msg%n</pattern>-->
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%logger{24}] %-5level | %msg%n</pattern>
         </encoder>
 
         <!--show thread/coroutine info for log levels ERROR or DEBUG -->

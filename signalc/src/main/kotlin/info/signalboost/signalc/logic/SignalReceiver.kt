@@ -103,7 +103,9 @@ class SignalReceiver(private val app: Application) {
             launch(IO) {
                 while (outerScope.isActive) {
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}" }
+                    logger.debug {
+                        "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
+                    }
                     dispatch(account, envelope)
                 }
             }
