@@ -5,6 +5,8 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Unconfined
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.messages.SendMessageResult
@@ -41,7 +43,7 @@ class SignalSender(private val app: Application) {
                 absent(),
                 absent(),
                 null,
-                Dispatchers.IO.asExecutor() as? ExecutorService,
+                IO.asExecutor() as? ExecutorService,
             )
         }
 
@@ -59,8 +61,8 @@ class SignalSender(private val app: Application) {
             .withExpiration(expiration)
             .build()
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
-        return withContext(Dispatchers.IO) {
+        return app.coroutineScope.async(IO) {
             messageSenderOf(sender).sendMessage(recipient, absent(), dataMessage)
-        }
+        }.await()
     }
 }

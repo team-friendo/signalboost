@@ -1,6 +1,6 @@
 const { range } = require('lodash')
 
-const numBots = 100
+const numBots = 1000
 const numChannels = 4
 const channelSizes = [1, 10, 100, 1000]
 

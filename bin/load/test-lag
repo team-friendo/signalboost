@@ -26,14 +26,14 @@ echo "[entrypoint] running receiver_simulator(s) ..."
 docker-compose -f docker-compose-loadtest.yml up -d receiver_simulator
 
 echo "sleeping..."
-sleep 60
+sleep 45
 echo "...awake!"
 
 echo "[entrypoint] running ${TEST_SUBJECT}..."
 docker-compose -f docker-compose-loadtest.yml up -d $TEST_SUBJECT
 
 echo "sleeping..."
-sleep 60
+sleep 45
 echo "...awake!"
 
 echo "[entrypoint] running tests in sender simulator..."

@@ -1,7 +1,7 @@
 const app = require('./app')
 const { mean, max, min, take, map } = require('lodash')
 const { signalcPhoneNumbers, signaldPhoneNumbers, botPhoneNumbers } = require('./constants')
-const { nowInMillis, nowTimestamp, loggerOf } = require('../app/util')
+const { nowInMillis, nowTimestamp, loggerOf, wait } = require('../app/util')
 const logger = loggerOf('testLag')
 
 /**
@@ -20,7 +20,7 @@ const logger = loggerOf('testLag')
   const senderNumber = client === 'SIGNALC' ? signalcPhoneNumbers[0] : signaldPhoneNumbers[0]
 
   // for (const numRecipients of channelSizes) {
-  for (const numRecipients of [100]) {
+  for (const numRecipients of [1000]) {
     logger.log(`Running trial for ${numRecipients} on ${client} from ${senderNumber}...`)
     const report = await testSendingN(senderNumber, numRecipients, client)
     logger.log(`...Completed trial for ${numRecipients} on ${client}...`)
@@ -28,6 +28,8 @@ const logger = loggerOf('testLag')
   }
 
   logger.log('------- LOAD TEST COMPLETE! -------')
+
+  await wait(10000)
   process.exit(0)
 })()
 
