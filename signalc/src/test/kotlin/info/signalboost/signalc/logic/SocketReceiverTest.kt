@@ -518,7 +518,7 @@ class SocketReceiverTest : FreeSpec({
                                 app.socketSender.send(
                                     SocketResponse.VerificationError.of(
                                         request,
-                                        SignalcError.VerificationOfNewOrVerifiedUser
+                                        SignalcError.VerificationOfNewUser
                                     )
                                 )
                             }
