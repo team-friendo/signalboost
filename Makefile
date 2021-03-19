@@ -227,19 +227,22 @@ load.logs: ## show logs from load env
 	docker-compose -f docker-compose-loadtest.yml logs -f
 
 load.nc.simulator: ## get a netcat shell inside the loadtest simulator
-	docker-compose -f docker-compose-loadtest.yml exec signalc_simulator nc -U /signalc/sock/signald.sock
+	docker-compose -f docker-compose-loadtest.yml exec receiver_signalc nc -U /signalc/sock/signald.sock
+
+load.db.up: ## start load test db
+	docker-compose -f docker-compose-loadtest.yml up -d db
 
 load.up: ## start
 	./bin/load/run
 
 load.seed.signalc.app: ## seed the simulator environment backed by signalc
-	SEED_TARGET=signalc_app ./bin/load/seed
+	SEED_TARGET=sender_signalc ./bin/load/seed
 
 load.seed.signalc.simulator: ## seed the simulator environment backed by signalc
-	SEED_TARGET=signalc_simulator ./bin/load/seed
+	SEED_TARGET=receiver_signalc ./bin/load/seed
 
 load.seed.signald: ## seed the simulator environment backed by signald
-	SEED_TARGET=signald_app ./bin/load/seed
+	SEED_TARGET=sender_signald ./bin/load/seed
 
 load.down: ## start
 	docker-compose -f docker-compose-loadtest.yml down
@@ -252,10 +255,16 @@ load.restart: ## restart loadtest stack
 
 load.reset: ## clean signalc + signal-server databases
 	curl -X POST https://coderetriever.signalboost.info/reset && \
-	psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
+	psql postgresql://postgres@localhost:5432/loadtest_receiver_signalc -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
 
 load.psql: 
-	docker-compose -f docker-compose-loadtest.yml exec db psql postgresql://postgres@localhost:5432/signalc_load_test_simulator
+	docker-compose -f docker-compose-loadtest.yml exec db psql postgresql://postgres@localhost:5432
+
+load.test.lag.signald: ## run load tests to measure lag in a client
+	TEST_SUBJECT=sender_signald ./bin/load/test-lag
+
+load.test.lag.signalc:
+	TEST_SUBJECT=sender_signalc ./bin/load/test-lag
 
 ###########
 # signalc #

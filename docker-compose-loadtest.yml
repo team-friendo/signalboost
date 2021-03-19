@@ -21,47 +21,20 @@ networks:
       name: localdev
 
 volumes:
-  loadtest_app_sock:
-  loadtest_gradle_cache:
+  loadtest_sender_sock:
   loadtest_postgres_data:
+  loadtest_receiver_signalc_gradle_cache:
+  loadtest_receiver_signalc_build_cache:
+  loadtest_sender_signalc_gradle_cache:
+  loadtest_sender_signalc_build_cache:
   loadtest_signald_data:
-  loadtest_signalc_build_cache:
-  loadtest_simulator_sock:
+  loadtest_receiver_sock:
 
 services:
 
-  app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalboost
-    container_name: load_test_app
-    depends_on:
-      - db
-    entrypoint: /signalboost/bin/entrypoint/app
-    env_file: .env.dev
-    environment:
-      DB_HOST: db
-      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
-      PROJECT_ROOT: ${PWD}
-      NODE_ENV: ${NODE_ENV:-development}
-      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
-      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
-    expose:
-      - 3000
-    networks:
-      - default
-    volumes:
-      - ./.sequelizerc:/signalboost/.sequelizerc
-      - ./app:/signalboost/app
-      - ./bin:/signalboost/bin
-      - ./node_modules:/signalboost/node_modules
-      - ./package.json:/signalboost/package.json
-      - ./yarn.lock:/signalboost/yarn.lock
-      - loadtest_signald_data:/var/lib/signald/data
-      - loadtest_app_sock:/signalboost/sockets/0
-    restart: unless-stopped
-
   db:
     image: postgres:12
-    container_name: load_test_db
+    container_name: loadtest_db
     volumes:
       - loadtest_postgres_data:/var/lib/postgresql/data
     environment:
@@ -70,14 +43,14 @@ services:
       - 0.0.0.0:5432:5432
     restart: unless-stopped
 
-  signalc_simulator:
+  receiver_signalc:
     image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
-    container_name: load_test_signalc_for_simulator
+    container_name: loadtest_receiver_signalc
     entrypoint: /signalc/bin/entrypoint/signalc
     env_file: .env.dev
     environment:
       SIGNALC_ENV: ${SIGNALC_ENV:-load}
-      SIGNALC_DB_NAME: signalc_load_test_simulator
+      SIGNALC_DB_NAME: loadtest_receiver_signalc
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       DEBUG_MODE: ${DEBUG_MODE:-0}
@@ -93,63 +66,41 @@ services:
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
       - ./signalc/migrations:/signalc/migrations
       - ./bin:/signalc/bin
-      - loadtest_gradle_cache:/home/gradle/.gradle
-      - loadtest_signalc_build_cache:/signalc/build
-      - loadtest_simulator_sock:/signalc/sock
+      - loadtest_receiver_signalc_gradle_cache:/home/gradle/.gradle
+      - loadtest_receiver_signalc_build_cache:/signalc/build
+      - loadtest_receiver_sock:/signalc/sock
     restart: unless-stopped
 
-  signalc_app:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
-    container_name: load_test_signalc_for_app
-    entrypoint: /signalc/bin/entrypoint/signalc
-    env_file: .env.dev
-    environment:
-      SIGNALC_ENV: ${SIGNALC_ENV:-load}
-      SIGNALC_DB_NAME: signalc_load_test_app
-      GRADLE_USER_HOME: /home/gradle/.gradle
-      LOG_LEVEL: ${LOG_LEVEL:-debug}
-      DEBUG_MODE: ${DEBUG_MODE:-0}
-      DB_HOST: db
+  receiver_simulator:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    container_name: loadtest_simulator
     depends_on:
       - db
-    ports:
-      - 0.0.0.0:5006:5005 # for remote debugger
-    volumes:
-      - ./signalc/src:/signalc/src
-      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
-      - ./signalc/gradle.properties:/signalc/gradle.properties
-      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-      - ./signalc/migrations:/signalc/migrations
-      - ./bin:/signalc/bin
-      - loadtest_gradle_cache:/home/gradle/.gradle
-      - loadtest_signalc_build_cache:/signalc/build
-      - loadtest_app_sock:/signalc/sock
-    restart: unless-stopped
-
-
-  signald_app:
-    image: registry.0xacab.org/team-friendo/signalboost/signald-staging:latest
-    container_name: load_test_signald_app
+      - receiver_signalc
+    entrypoint: "node /signalboost/simulator/receive.js"
     env_file: .env.dev
     environment:
-      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-1}
+      DB_HOST: db
+      SOCKET_POOL_SIZE: 4
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
+    expose:
+      - 3001
     networks:
       - default
-    expose:
-      - 1312
-    ports:
-      - 0.0.0.0:9010:9010
-      - 0.0.0.0:8017:8016
     volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./simulator:/signalboost/simulator
       - ./bin:/signalboost/bin
-      - ./signald/jmx:/var/lib/jmx
-      - loadtest_signald_data:/var/lib/signald/data
-      - loadtest_app_sock:/var/run/signald/
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./yarn.lock:/signalboost/yarn.lock
+      - loadtest_receiver_sock:/signalboost/sock/
     restart: unless-stopped
 
-  simulator:
+  seeder:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
-    container_name: load_test_simulator
+    container_name: loadtest_simulator
     depends_on:
       - db
     entrypoint: /signalboost/bin/entrypoint/simulator
@@ -171,21 +122,125 @@ services:
       - ./package.json:/signalboost/package.json
       - loadtest_signald_data:/var/lib/signald/data
       - ./yarn.lock:/signalboost/yarn.lock
-      - ${SOCK_VOLUME:-loadtest_simulator_sock}:/signalboost/sock/
+      - ${SOCK_VOLUME:-loadtest_receiver_sock}:/signalboost/sock/
     restart: unless-stopped
+
+  sender_signalc:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    container_name: loadtest_sender_signalc
+    entrypoint: /signalc/bin/entrypoint/signalc
+    env_file: .env.dev
+    environment:
+      SIGNALC_ENV: ${SIGNALC_ENV:-load}
+      SIGNALC_DB_NAME: loadtest_sender_signalc
+      GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      DEBUG_MODE: ${DEBUG_MODE:-0}
+      DB_HOST: db
+    depends_on:
+      - db
+    ports:
+      - 0.0.0.0:5006:5005 # for remote debugger
+    volumes:
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/migrations:/signalc/migrations
+      - ./bin:/signalc/bin
+      - loadtest_sender_signalc_gradle_cache:/home/gradle/.gradle
+      - loadtest_sender_signalc_build_cache:/signalc/build
+      - loadtest_sender_sock:/signalc/sock
+    restart: unless-stopped
+
+  sender_signald:
+    image: registry.0xacab.org/team-friendo/signalboost/signald-staging:latest
+    container_name: loadtest_sender_signald
+    env_file: .env.dev
+    environment:
+      SIGNALD_VERBOSE_LOG: ${SIGNALD_VERBOSE_LOG:-1}
+    networks:
+      - default
+    expose:
+      - 1312
+    ports:
+      - 0.0.0.0:9010:9010
+      - 0.0.0.0:8017:8016
+    volumes:
+      - ./bin:/signalboost/bin
+      - ./signald/jmx:/var/lib/jmx
+      - loadtest_signald_data:/var/lib/signald/data
+      - loadtest_sender_sock:/var/run/signald/
+    restart: unless-stopped
+
+  sender_simulator:
+    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+    container_name: loadtest_simulator
+    depends_on:
+      - db
+    entrypoint: /signalboost/bin/entrypoint/simulator
+    env_file: .env.dev
+    environment:
+      DB_HOST: db
+      SOCKET_POOL_SIZE: 1
+      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
+    expose:
+      - 3001
+    networks:
+      - default
+    volumes:
+      - ./.sequelizerc:/signalboost/.sequelizerc
+      - ./app:/signalboost/app
+      - ./simulator:/signalboost/simulator
+      - ./bin:/signalboost/bin
+      - ./node_modules:/signalboost/node_modules
+      - ./package.json:/signalboost/package.json
+      - ./yarn.lock:/signalboost/yarn.lock
+      - loadtest_sender_sock:/signalboost/sock/
+    restart: unless-stopped
+
+
+  #  app:
+  #    image: registry.0xacab.org/team-friendo/signalboost/signalboost
+  #    container_name: loadtest_app
+  #    depends_on:
+  #      - db
+  #    entrypoint: /signalboost/bin/entrypoint/app
+  #    env_file: .env.dev
+  #    environment:
+  #      DB_HOST: db
+  #      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
+  #      PROJECT_ROOT: ${PWD}
+  #      NODE_ENV: ${NODE_ENV:-development}
+  #      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
+  #      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
+  #    expose:
+  #      - 3000
+  #    networks:
+  #      - default
+  #    volumes:
+  #      - ./.sequelizerc:/signalboost/.sequelizerc
+  #      - ./app:/signalboost/app
+  #      - ./bin:/signalboost/bin
+  #      - ./node_modules:/signalboost/node_modules
+  #      - ./package.json:/signalboost/package.json
+  #      - ./yarn.lock:/signalboost/yarn.lock
+  #      - loadtest_signald_data:/var/lib/signald/data
+  #      - loadtest_sender_sock:/signalboost/sockets/0
+  #    restart: unless-stopped
 
 
   # prefer ngrok_signalboost, need to change url to ngrok in app entrypoint
-  signalboost_ngrok:
-    container_name: load_test_app_signalboost_ngrok
-    ports:
-      - 0.0.0.0:4040:4040
-    networks:
-      - default
-    image: wernight/ngrok
-    links:
-      - app
-    env_file: .env.dev
-    environment:
-      - NGROK_PORT=app:3000
-    restart: unless-stopped
+#  signalboost_ngrok:
+#    container_name: loadtest_app_signalboost_ngrok
+#    ports:
+#      - 0.0.0.0:4040:4040
+#    networks:
+#      - default
+#    image: wernight/ngrok
+#    links:
+#      - app
+#    env_file: .env.dev
+#    environment:
+#      - NGROK_PORT=app:3000
+#    restart: unless-stopped

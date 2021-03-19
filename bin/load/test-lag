@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+docker-compose -f docker-compose-loadtest.yml up -d db
+
+if [[ -z $TEST_SUBJECT ]];then
+  echo "$TEST_SUBJECT not defined!"
+  echo "must be one of: "
+  echo "- sender_signalc"
+  echo "- sender_signald"
+  exit 1
+fi
+
+
+# things we need running:
+# - db
+# - receiver_simulator
+# - receiver_signalc
+# - sender_simulator
+# - sender_signald OR sender_signalc
+
+echo "[entrypoint] running receiver_simulator(s) ..."
+docker-compose -f docker-compose-loadtest.yml up -d receiver_simulator
+
+echo "sleeping..."
+sleep 60
+echo "...awake!"
+
+echo "[entrypoint] running ${TEST_SUBJECT}..."
+docker-compose -f docker-compose-loadtest.yml up -d $TEST_SUBJECT
+
+echo "sleeping..."
+sleep 60
+echo "...awake!"
+
+echo "[entrypoint] running tests in sender simulator..."
+docker-compose -f docker-compose-loadtest.yml run \
+ -e TEST_SUBJECT=$TEST_SUBJECT \
+ --entrypoint "node /signalboost/simulator/testLag" \
+ sender_simulator
+
+## STOP SERVICESA
+
+echo "[entrypoint] stopping load test services..."
+docker-compose -f docker-compose-loadtest.yml down
+echo "[entrypoint] DONE!"
+
+popd
