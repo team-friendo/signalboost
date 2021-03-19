@@ -35,6 +35,8 @@ object Config {
         val db: Database,
         val signal: Signal,
         val socket: Socket,
+        val threads: Threads,
+        /*******************************/
         val mocked: Set<KClass<out Any>>,
     )
 
@@ -57,6 +59,10 @@ object Config {
         val trustStorePath: String,
         val unidentifiedSenderTrustRoot: String,
         val zkGroupServerPublicParams: String,
+    )
+
+    data class Threads(
+        val perProcessor: Int,
     )
 
     data class Socket(
@@ -113,6 +119,9 @@ object Config {
         socket = Socket(
           path = "/signalc/sock/signald.sock"
         ),
+        threads = Threads(
+            perProcessor = 128,
+        ),
         mocked = emptySet(),
     )
 
@@ -123,6 +132,9 @@ object Config {
     val test = default.copy(
         socket = default.socket.copy(
             path = "/signalc/sock/test.sock"
+        ),
+        threads = default.threads.copy(
+            perProcessor = 64
         ),
     )
     val load = default.copy(

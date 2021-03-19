@@ -7,7 +7,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
-import liquibase.pro.packaged.T
 import mu.KLogging
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
@@ -32,9 +31,11 @@ import kotlin.time.ExperimentalTime
 class Application(val config: Config.App){
     companion object: KLogging()
     init {
-        if (config.signal.addSecurityProvider) {
-            Security.addProvider(BouncyCastleProvider())
-        }
+        Security.addProvider(BouncyCastleProvider())
+        System.setProperty(
+            IO_PARALLELISM_PROPERTY_NAME,
+            "${Runtime.getRuntime().availableProcessors() * config.threads.perProcessor}"
+        )
     }
 
     /**************
