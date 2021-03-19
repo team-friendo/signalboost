@@ -1,4 +1,4 @@
-const simulator = require('../index')
+const simulator = require('../app')
 const util = require('../../app/util')
 const { statuses, promisifyCallback } = require('../../app/util')
 const logger = util.loggerOf('socket.write')

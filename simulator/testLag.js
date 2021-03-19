@@ -1,7 +1,7 @@
 const app = require('./app')
 const { mean, max, min, take, map } = require('lodash')
 const { signalcPhoneNumbers, signaldPhoneNumbers, botPhoneNumbers } = require('./constants')
-const { nowInMillis, loggerOf } = require('../app/util')
+const { nowInMillis, nowTimestamp, loggerOf } = require('../app/util')
 const logger = loggerOf('testLag')
 
 /**
@@ -32,7 +32,7 @@ const logger = loggerOf('testLag')
 })()
 
 const testSendingN = async (senderNumber, numRecipients, client) => {
-  const start = nowInMillis()
+  const startTime = nowInMillis()
   const timesPerMessage = await Promise.all(
     map(take(botPhoneNumbers, numRecipients), async (recipientNumber, idx) => {
       logger.log(`Sending message to ${recipientNumber}...`)
@@ -48,13 +48,15 @@ const testSendingN = async (senderNumber, numRecipients, client) => {
       return result
     }),
   )
+  const endTime = nowInMillis()
   const nonNullTimes = timesPerMessage.filter(Boolean)
 
   return {
     client,
     numRecipients,
+    timestamp: nowTimestamp(),
     socketPoolSize: process.env.SOCKET_POOL_SIZE,
-    totalElapsed: nowInMillis() - start,
+    totalElapsed: endTime - startTime,
     minElapsed: min(nonNullTimes),
     maxElapsed: max(nonNullTimes),
     meanElapsed: mean(nonNullTimes),

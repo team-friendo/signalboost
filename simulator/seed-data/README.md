@@ -39,6 +39,7 @@ cd simulator/seed-data
 unzip signald-10-numbers-for-channels.zip
 sudo su
 chown -R root:root signalboost_loadtest_signald_data
+rm -rf /var/lib/docker/volumes/signalboost_loadtest_signald_data
 mv signalboost_loadtest_signald_data /var/lib/docker/volumes/
 ```
 

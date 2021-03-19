@@ -108,7 +108,6 @@ const _handleRegisterResponse = ({ message, resolve, reject }) => {
 }
 
 const _handleSendResponse = ({ message, state, resolve }) => {
-  logger.log(`Handling send`)
   delete registry[`${messageTypes.SEND}-${message.id}`]
   const { whenSent } = state
   const elapsed = util.nowInMillis() - whenSent
