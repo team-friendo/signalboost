@@ -57,6 +57,7 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 const _callbackFor = messageType =>
   ({
     [messageTypes.REGISTER]: _handleRegisterResponse,
+    [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
   }[messageType])
 
@@ -65,6 +66,7 @@ const _timeoutFor = messageType =>
   ({
     [messageTypes.REGISTER]: 1000 * 30 * 1,
     [messageTypes.VERIFY]: 1000 * 30 * 1,
+    [messageTypes.SEND]: 1000 * 120,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
@@ -76,6 +78,7 @@ const handle = message => {
       registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
     [messageTypes.REGISTRATION_ERROR]:
       registry[`${messageTypes.REGISTER}-${get(message, 'data.username')}`],
+    [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
     [messageTypes.VERIFICATION_SUCCESS]:
       registry[`${messageTypes.VERIFY}-${get(message, 'data.username')}`],
     [messageTypes.VERIFICATION_ERROR]:
@@ -102,6 +105,14 @@ const _handleRegisterResponse = ({ message, resolve, reject }) => {
       status: statuses.SUCCESS,
       message: get(message, 'data.username', 'N/A'),
     })
+}
+
+const _handleSendResponse = ({ message, state, resolve }) => {
+  logger.log(`Handling send`)
+  delete registry[`${messageTypes.SEND}-${message.id}`]
+  const { whenSent } = state
+  const elapsed = util.nowInMillis() - whenSent
+  resolve(elapsed)
 }
 
 // (IncomingSignaldMessage, function, function) -> void

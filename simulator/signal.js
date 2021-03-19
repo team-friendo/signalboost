@@ -90,21 +90,19 @@ const fetchVerificationCode = async (phoneNumber, retries = 3) => {
 const subscribe = phoneNumber =>
   socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
-// (string, OutboundSignaldMessage) -> Promise<string>
+// (string, OutboundSignaldMessage) -> Promise<number|null>
 const sendMessage = async (recipientNumber, sdMessage) => {
   const recipientAddress = { number: recipientNumber }
   const id = await socketWriter.write({ ...sdMessage, recipientAddress })
-  callbacks.register({
-    id,
-    messageType: messageTypes.SEND,
-    state: {
-      channelPhoneNumber: sdMessage.username,
-      messageBody: sdMessage.messageBody,
-      attachments: sdMessage.attachments,
-      whenSent: util.nowInMillis(),
-    },
-  })
-  return id
+  return new Promise((resolve, reject) =>
+    callbacks.register({
+      id,
+      messageType: messageTypes.SEND,
+      state: { whenSent: util.nowInMillis() },
+      resolve,
+      reject,
+    }),
+  ).catch(null)
 }
 
 // string -> [boolean, string]
