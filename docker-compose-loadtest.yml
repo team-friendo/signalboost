@@ -182,7 +182,7 @@ services:
     env_file: .env.dev
     environment:
       DB_HOST: db
-      SOCKET_POOL_SIZE: 1
+      SOCKET_POOL_SIZE: 8
       SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-1}
     expose:
       - 3001
