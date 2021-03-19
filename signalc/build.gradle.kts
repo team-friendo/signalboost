@@ -64,6 +64,7 @@ object Versions {
     const val kotest = "4.3.1"
     const val kotlin = "1.4.21"
     const val h2 = "1.4.199"
+    const val hikariCp = "4.0.3"
     const val libsignal = "2.15.3_unofficial_14"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
@@ -98,6 +99,7 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
+    implementation("com.zaxxer:HikariCP:${Versions.hikariCp}")
     // Note: `kotlin-logback` wraps sl4j, which is an abstract facade that needs a concrete impl...
     implementation ("io.github.microutils:kotlin-logging-jvm:${Versions.logging}")
     // Logback is our current choice b/c (1) easier to configure, (2) https://www.marcobehler.com/guides/java-logging

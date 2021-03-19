@@ -1,5 +1,7 @@
 package info.signalboost.signalc
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
@@ -7,6 +9,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
+import mu.KLoggable
 import mu.KLogging
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
@@ -29,12 +32,17 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class Application(val config: Config.App){
-    companion object: KLogging()
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+        val availableProcessors by lazy {
+            Runtime.getRuntime().availableProcessors()
+        }
+    }
     init {
         Security.addProvider(BouncyCastleProvider())
         System.setProperty(
             IO_PARALLELISM_PROPERTY_NAME,
-            "${Runtime.getRuntime().availableProcessors() * config.threads.perProcessor}"
+            "${availableProcessors * config.threads.perProcessor}"
         )
     }
 
@@ -128,11 +136,18 @@ class Application(val config: Config.App){
     lateinit var protocolStore: ProtocolStore
 
     private val db by lazy {
-        Database.connect(
-            driver = config.db.driver,
-            url = config.db.url,
-            user = config.db.user,
+        val dataSource = HikariDataSource(
+            HikariConfig().apply {
+                driverClassName = config.db.driver
+                jdbcUrl = config.db.url
+                username = config.db.user
+                // as per: https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+                maximumPoolSize = (availableProcessors * 2) + 1
+                isAutoCommit = false
+                validate()
+            }
         )
+        Database.connect(dataSource)
     }
 
     /**************
