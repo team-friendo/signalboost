@@ -16,15 +16,15 @@ docker-compose -f docker-compose-loadtest.yml run --entrypoint /signalboost/bin/
 
 
 #### signalc
-psql -q postgresql://postgres@localhost:5432 -U postgres -c "create database signalc_load_test_simulator;"
+psql -q postgresql://postgres@localhost:5432 -U postgres -c "create database loadtest_receiver_signalc;"
 docker-compose -f docker-compose-loadtest.yml run \
-  -e SIGNALC_DB_NAME=signalc_load_test_simulator -e SIGNALC_ENV=load \
-  --entrypoint 'gradle --console=plain update' signalc_simulator
+  -e SIGNALC_DB_NAME=loadtest_receiver_signalc -e SIGNALC_ENV=load \
+  --entrypoint 'gradle --console=plain update' receiver_signalc
 
-psql -q postgresql://postgres@localhost:5432 -U postgres -c "create database signalc_load_test_app;"
+psql -q postgresql://postgres@localhost:5432 -U postgres -c "create database loadtest_sender_signalc;"
 docker-compose -f docker-compose-loadtest.yml run \
-  -e SIGNALC_DB_NAME=signalc_load_test_app -e SIGNALC_ENV=load \
-  --entrypoint 'gradle --console=plain update' signalc_app
+  -e SIGNALC_DB_NAME=loadtest_sender_signalc -e SIGNALC_ENV=load \
+  --entrypoint 'gradle --console=plain update' sender_signalc
 
 docker-compose -f docker-compose-loadtest.yml down
 

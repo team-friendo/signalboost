@@ -8,7 +8,7 @@ docker-compose -f docker-compose-loadtest.yml up -d db
 
 # echo "--- reset signal-server database..."
 # curl -X POST https://coderetriever.signalboost.info/reset
-# psql postgresql://postgres@localhost:5432/signalc_load_test_simulator -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
+# psql postgresql://postgres@localhost:5432/loadtest_receiver_signalc -c "delete from accounts; delete from identities; delete from ownidentities; delete from prekeys; delete from sessions; delete from signedprekeys;"
 
 echo "--- starting load test simulator..."
 docker-compose -f docker-compose-loadtest.yml run --entrypoint /signalboost/bin/entrypoint/simulator-run simulator
