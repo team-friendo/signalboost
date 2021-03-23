@@ -226,6 +226,15 @@ docker.push.splash: ## push the splash site docker image (accepts optional TAG=#
 load.logs: ## show logs from load env
 	docker-compose -f docker-compose-loadtest.yml logs -f
 
+load.logs.receiver: ## show logs from load env
+	docker logs loadtest_receiver_signalc -f
+
+load.logs.sender.signalc: ## show logs from load env
+	docker logs loadtest_sender_signalc -f
+
+load.logs.sender.signald: ## show logs from load env
+	docker logs loadtest_sender_signald -f
+
 load.nc.simulator: ## get a netcat shell inside the loadtest simulator
 	docker-compose -f docker-compose-loadtest.yml exec receiver_signalc nc -U /signalc/sock/signald.sock
 
