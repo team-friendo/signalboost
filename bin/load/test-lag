@@ -17,35 +17,37 @@ fi
 
 # things we need running:
 # - db
-# - receiver_simulator
+# - receiver_driver
 # - receiver_signalc
-# - sender_simulator
+# - sender_driver
 # - sender_signald OR sender_signalc
 
-echo "[entrypoint] running receiver_simulator(s) ..."
-docker-compose -f docker-compose-loadtest.yml up -d receiver_simulator
+echo "[entrypoint] ensuring sender and receiver are running..."
+if [ -z $(docker ps -qf name=receiver_signalc) ];then
+  echo "[entrypoint] starting receiver_signalc..."
+  docker-compose -f docker-compose-loadtest.yml up -d receiver_signalc
 
-echo "sleeping..."
-sleep 45
-echo "...awake!"
+  if [ -z $(docker ps -qf name=${TEST_SUBJECT}) ];then
+    echo "[entrypoint] starting ${TEST_SUBJECT}..."
+    docker-compose -f docker-compose-loadtest.yml up -d $TEST_SUBJECT
+  fi
 
-echo "[entrypoint] running ${TEST_SUBJECT}..."
-docker-compose -f docker-compose-loadtest.yml up -d $TEST_SUBJECT
+  echo "[entrypoint] waiting for compilation..."
+  sleep 60
+fi
 
-echo "sleeping..."
-sleep 45
-echo "...awake!"
+echo "[entrypoint] ...sender and receiver running!"
 
-echo "[entrypoint] running tests in sender simulator..."
+echo "[entrypoint] starting receiver_driver ..."
+docker-compose -f docker-compose-loadtest.yml up -d receiver_driver
+
+echo "[entrypoint] waiting for receiver to subscribe ..."
+sleep 3
+
+echo "[entrypoint] starting sender driver..."
 docker-compose -f docker-compose-loadtest.yml run \
  -e TEST_SUBJECT=$TEST_SUBJECT \
  --entrypoint "node /signalboost/simulator/testLag" \
- sender_simulator
-
-## STOP SERVICESA
-
-echo "[entrypoint] stopping load test services..."
-docker-compose -f docker-compose-loadtest.yml down
-echo "[entrypoint] DONE!"
+ sender_driver
 
 popd

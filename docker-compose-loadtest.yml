@@ -71,7 +71,7 @@ services:
       - loadtest_receiver_sock:/signalc/sock
     restart: unless-stopped
 
-  receiver_simulator:
+  receiver_driver:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: loadtest_simulator
     depends_on:
@@ -173,7 +173,7 @@ services:
       - loadtest_sender_sock:/var/run/signald/
     restart: unless-stopped
 
-  sender_simulator:
+  sender_driver:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
     container_name: loadtest_simulator
     depends_on:
