@@ -6,12 +6,15 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import org.whispersystems.libsignal.util.guava.Optional.absent
+import org.whispersystems.libsignal.state.SignalProtocolStore
+import org.whispersystems.libsignal.util.guava.Optional
+import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
+import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import kotlin.time.ExperimentalTime
@@ -37,12 +40,13 @@ class SignalSender(private val app: Application) {
                 app.protocolStore.of(account),
                 app.signal.agent,
                 true,
-                false,
-                absent(),
-                absent(),
-                absent(),
+                Optional.of(app.signalReceiver.messagePipeOf(account)), // pipe
+                Optional.absent(), // unidentifiedPipe
+                Optional.absent(), // eventListener
                 null,
                 IO.asExecutor() as? ExecutorService,
+                -1L,
+                true,
             )
         }
 
@@ -61,7 +65,7 @@ class SignalSender(private val app: Application) {
             .build()
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
         return app.coroutineScope.async(IO) {
-            messageSenderOf(sender).sendMessage(recipient, absent(), dataMessage)
+            messageSenderOf(sender).sendMessage(recipient, Optional.absent(), dataMessage)
         }.await()
     }
 }

@@ -106,8 +106,9 @@ class Application(val config: Config.App){
             arrayOf(SignalContactDiscoveryUrl(config.signal.contactDiscoveryUrl, trustStore)),
             arrayOf(SignalKeyBackupServiceUrl(config.signal.keyBackupServiceUrl, trustStore)),
             arrayOf(SignalStorageUrl(config.signal.storageUrl, trustStore)),
-            mutableListOf(),
-            Optional.absent(),
+            mutableListOf(), // interceptors
+            Optional.absent(), // dns
+            Optional.absent(), // proxy
             Base64.decode(config.signal.zkGroupServerPublicParams)
         )
     }

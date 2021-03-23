@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
+import org.whispersystems.signalservice.api.account.AccountAttributes
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
@@ -46,6 +47,7 @@ class AccountManager(private val app: Application) {
                 account.credentialsProvider,
                 signal.agent,
                 signal.groupsV2Operations,
+                true, // automaticNetworkRetry
                 UptimeSleepTimer()
             )
         }
@@ -89,7 +91,7 @@ class AccountManager(private val app: Application) {
                     null,
                     UnidentifiedAccess.deriveAccessKeyFrom(account.profileKey),
                     false,
-                    SignalServiceProfile.Capabilities(true, false, false),
+                    AccountAttributes.Capabilities(true, false, false, false),
                     true
                 )
             }.await()

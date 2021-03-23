@@ -16,8 +16,6 @@ import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.PREKEY_BUNDLE_VALUE
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -60,10 +58,11 @@ class SignalReceiver(private val app: Application) {
                 null, // TODO: see [1] below
                 UptimeSleepTimer(),
                 app.signal.clientZkOperations?.profileOperations,
+                true
             )
         }
 
-    private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
+    public fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
         messageReceiverOf(account).createMessagePipe()
 
     private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =

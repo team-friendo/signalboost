@@ -139,7 +139,7 @@ class AccountManagerTest : FreeSpec({
                     anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                     )
-                } throws AuthorizationFailedException("oh noes!")
+                } throws AuthorizationFailedException(1312, "oh noes!")
 
                 "attempts to verify code" {
                     accountManager.verify(registeredAccount, code)
