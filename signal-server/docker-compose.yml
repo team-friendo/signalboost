@@ -8,6 +8,14 @@ volumes:
   html:
   vhost.d:
   acme_config:
+  postgres_data:
+
+x-logging: &logging
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "1"
+      max-size: 100m
 
 services:
   code-retriever:
@@ -20,6 +28,7 @@ services:
       LETSENCRYPT_HOST: coderetriever.signalboost.info
       VIRTUAL_HOST: coderetriever.signalboost.info
       VIRTUAL_PORT: 3000
+    <<: *logging
     ports:
       - 0.0.0.0:3000:3000
     restart: unless-stopped
@@ -33,10 +42,12 @@ services:
       POSTGRES_PASSWORD: password
     networks:
       - default
+    <<: *logging
     ports:
       - 0.0.0.0:5432:5432
     restart: unless-stopped
-
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   letsencrypt:
     image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
@@ -50,6 +61,7 @@ services:
       - acme_config:/etc/acme.sh
     networks:
       - proxy-tier
+    <<: *logging
     depends_on:
       - proxy
 
@@ -68,6 +80,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
       - proxy-tier
+    <<: *logging
     restart: always
 
   redis:
@@ -75,6 +88,7 @@ services:
     container_name: signalserver_redis
     networks:
       - default
+    <<: *logging
     ports:
       - 0.0.0.0:6379:6379
     restart: always
@@ -92,6 +106,7 @@ services:
     networks:
       - default
       - proxy-tier
+    <<: *logging
     ports:
       - 0.0.0.0:8015:8015
       - 0.0.0.0:8080:8080
