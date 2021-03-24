@@ -93,16 +93,22 @@ const subscribe = phoneNumber =>
 // (string, OutboundSignaldMessage) -> Promise<number|null>
 const sendMessage = async (recipientNumber, sdMessage) => {
   const recipientAddress = { number: recipientNumber }
-  const id = await socketWriter.write({ ...sdMessage, recipientAddress })
-  return new Promise((resolve, reject) =>
-    callbacks.register({
-      id,
-      messageType: messageTypes.SEND,
-      state: { whenSent: util.nowInMillis() },
-      resolve,
-      reject,
-    }),
-  ).catch(null)
+  try {
+    const id = await socketWriter.write({ ...sdMessage, recipientAddress })
+    const result = await new Promise((resolve, reject) => 
+      callbacks.register({
+        id,
+        messageType: messageTypes.SEND,
+        state: { whenSent: util.nowInMillis() },
+        resolve,
+        reject,
+      })
+    )
+    return result
+  } catch(e) {
+    logger.error(`Error sending to ${recipientNumber}: ${e}`)
+    return null
+  }
 }
 
 // string -> [boolean, string]
