@@ -73,7 +73,7 @@ services:
 
   receiver_driver:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
-    container_name: loadtest_simulator
+    container_name: loadtest_receiver_driver
     depends_on:
       - db
       - receiver_signalc
@@ -175,7 +175,7 @@ services:
 
   sender_driver:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost
-    container_name: loadtest_simulator
+    container_name: loadtest_sender_driver
     depends_on:
       - db
     entrypoint: /signalboost/bin/entrypoint/simulator
