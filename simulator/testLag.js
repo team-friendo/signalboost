@@ -66,6 +66,7 @@ const reportOf = (client, numRecipients, elapsedPerMessage, totalElapsed) => {
     minElapsed: min(nonNullTimes),
     maxElapsed: max(nonNullTimes),
     meanElapsed: mean(nonNullTimes),
+    variance: max(nonNullTimes) - min(nonNullTimes),
     elapsedPerMessage,
   }
 }
