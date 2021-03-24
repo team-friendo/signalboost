@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo "Starting reseed!"
 
@@ -22,7 +22,7 @@ psql postgresql://postgres@localhost:5432 -U postgres -c "create database loadte
 docker-compose -f docker-compose-loadtest.yml exec -T db psql -U postgres loadtest_sender_signalc < simulator/seed-data/signalc-10-numbers-for-channels.sql
 
 echo "Reseeding signald sender..."
-unzip simulator/seed-data/signald-10-numbers-for-channels.zip
+unzip simulator/seed-data/signald-10-numbers-for-channels.zip -d simulator/seed-data
 sudo chown -R root:root simulator/seed-data/signalboost_loadtest_signald_data
 sudo rm -rf /var/lib/docker/volumes/signalboost_loadtest_signald_data
 sudo mv simulator/seed-data/signalboost_loadtest_signald_data /var/lib/docker/volumes/
