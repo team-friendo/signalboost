@@ -59,7 +59,7 @@ object Versions {
     const val bouncyCastle = "1.66"
     const val coroutines = "1.4.2"
     const val exposed = "0.25.1"
-    const val googleProtobuf = "3.15.6"
+    const val googleProtobuf = "3.10.0"
     const val jsonSerialization = "1.0.1"
     const val kaml = "0.26.0"
     const val kotest = "4.3.1"
@@ -101,7 +101,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
     implementation("com.zaxxer:HikariCP:${Versions.hikariCp}")
-    implementation("com.google.protobuf:protobuf-java:${Versions.googleProtobuf}")
+    implementation("com.google.protobuf:protobuf-javalite:${Versions.googleProtobuf}")
     // Note: `kotlin-logback` wraps sl4j, which is an abstract facade that needs a concrete impl...
     implementation ("io.github.microutils:kotlin-logging-jvm:${Versions.logging}")
     // Logback is our current choice b/c (1) easier to configure, (2) https://www.marcobehler.com/guides/java-logging

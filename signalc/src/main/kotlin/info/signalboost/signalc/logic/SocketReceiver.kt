@@ -86,7 +86,7 @@ class SocketReceiver(private val app: Application) {
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
-            logger.error("ERROR handling request $request from socket $socketHash: $e")
+            logger.error("ERROR handling request $request from socket $socketHash: ${e.printStackTrace()}")
             app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
             )
