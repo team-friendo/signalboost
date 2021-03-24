@@ -66,7 +66,7 @@ const _timeoutFor = messageType =>
   ({
     [messageTypes.REGISTER]: 1000 * 30 * 1,
     [messageTypes.VERIFY]: 1000 * 30 * 1,
-    [messageTypes.SEND]: 1000 * 60 * 20,
+    [messageTypes.SEND]: 1000 * 60,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse) -> CallbackRoute
