@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
@@ -44,6 +45,7 @@ class Application(val config: Config.App){
             IO_PARALLELISM_PROPERTY_NAME,
             "${availableProcessors * config.threads.perProcessor}"
         )
+        LibSignalLogger.init()
     }
 
     /**************

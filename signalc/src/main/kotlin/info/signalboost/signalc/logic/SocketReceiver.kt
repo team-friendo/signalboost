@@ -146,7 +146,7 @@ class SocketReceiver(private val app: Application) {
                 )
             )
         val afterLoadVerified = System.currentTimeMillis()
-        logger.debug { "${afterLoadVerified - beforeLoadVerified}ms: DATABASE call for send to ${recipientAddress.number}"}
+        logger.debug { "${afterLoadVerified - beforeLoadVerified}ms: ACCOUNT LOOKUP call for send to ${recipientAddress.number}"}
 
         val beforeSendResult = System.currentTimeMillis()
         val sendResult: SendMessageResult = app.signalSender.send(
@@ -155,7 +155,8 @@ class SocketReceiver(private val app: Application) {
             messageBody
         )
         val afterSendResult = System.currentTimeMillis()
-        logger.debug { "${afterSendResult - beforeSendResult}ms: NETWORK call for send to ${recipientAddress.number}" }
+        logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
+        logger.debug { "${afterSendResult - beforeSendResult}ms: MESSAGE SENDING call for send to ${recipientAddress.number}" }
 //        logger.debug { "Sent message to ${recipientAddress.number}" }
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)

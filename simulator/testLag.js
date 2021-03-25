@@ -12,10 +12,11 @@ const logger = loggerOf('testLag')
 
 ;(async () => {
   logger.log('STARTING LOAD TEST...')
-  await app.run([])
 
   const client = process.env.TEST_SUBJECT === 'sender_signalc' ? 'SIGNALC' : 'SIGNALD'
   const senderNumber = client === 'SIGNALC' ? signalcPhoneNumbers[0] : signaldPhoneNumbers[0]
+
+  await app.run([senderNumber])
   // TODO: test different numbers here
   await testSendingN(senderNumber, numBots, client)
 
@@ -61,13 +62,13 @@ const reportOf = (client, numRecipients, elapsedPerMessage, totalElapsed) => {
     numRecipients,
     socketPoolSize: process.env.SOCKET_POOL_SIZE,
     timestamp: nowTimestamp(),
-    totalElapsed,
     percentDelivered: round((nonNullTimes.length / elapsedPerMessage.length) * 100, 3),
+    totalElapsed,
     minElapsed: min(nonNullTimes),
     maxElapsed: max(nonNullTimes),
     meanElapsed: mean(nonNullTimes),
     variance: max(nonNullTimes) - min(nonNullTimes),
-    elapsedPerMessage,
+    // elapsedPerMessage,
   }
 }
 

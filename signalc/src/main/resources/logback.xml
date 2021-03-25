@@ -12,11 +12,11 @@
         <!--use this simple logging for INFO and WARN -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>INFO</level>
-            <onMatch>ACCEPT</onMatch>
+            <onMatch>DENY</onMatch>
         </filter>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>WARN</level>
-            <onMatch>ACCEPT</onMatch>
+            <onMatch>DENY</onMatch>
         </filter>
 
 
@@ -61,11 +61,11 @@
         <!--but not for other levels -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>INFO</level>
-            <onMatch>DENY</onMatch>
+            <onMatch>ACCEPT</onMatch>
         </filter>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>WARN</level>
-            <onMatch>DENY</onMatch>
+            <onMatch>ACCEPT</onMatch>
         </filter>
     </appender>
 
@@ -80,5 +80,13 @@
 
     <logger name="io.netty" level="info" additivity="false">
          <appender-ref ref="stdout" />
+    </logger>
+
+    <logger name="org.whispersystems" level="${LOG_LEVEL}" additivity="false">
+        <appender-ref ref="stdout" />
+    </logger>
+
+    <logger name="org.signal" level="${LOG_LEVEL}" additivity="false">
+        <appender-ref ref="stdout" />
     </logger>
 </configuration>
