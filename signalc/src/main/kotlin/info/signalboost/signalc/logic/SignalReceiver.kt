@@ -26,6 +26,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class SignalReceiver(private val app: Application) {
     companion object: Any(), KLoggable {
         override val logger = logger()

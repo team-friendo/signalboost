@@ -21,6 +21,7 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class SocketReceiver(private val app: Application) {
     companion object: KLogging()
 

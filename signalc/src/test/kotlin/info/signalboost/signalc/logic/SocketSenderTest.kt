@@ -35,6 +35,7 @@ import kotlin.time.seconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class SocketSenderTest : FreeSpec({
     runBlockingTest {
         val testScope = this

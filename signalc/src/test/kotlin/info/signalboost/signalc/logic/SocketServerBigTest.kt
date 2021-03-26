@@ -28,13 +28,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
 import kotlin.time.seconds
 
-@InternalCoroutinesApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class SocketServerBigTest : FreeSpec({
     runBlockingTest {
         val testScope = this

@@ -7,7 +7,7 @@ import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.channels.SendChannel
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.messages.SendMessageResult
@@ -21,6 +21,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class SignalSender(private val app: Application) {
     companion object {
         const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
@@ -57,20 +58,77 @@ class SignalSender(private val app: Application) {
         val result: CompletableDeferred<SendMessageResult>,
     )
 
-    private val messageQueues = ConcurrentHashMap<String,Channel<QueuedMessage>>()
-    private suspend fun messageQueueOf(account: VerifiedAccount): Channel<QueuedMessage> =
+    private val messageQueues = ConcurrentHashMap<String,SendChannel<QueuedMessage>>()
+    private suspend fun messageQueueOf(account: VerifiedAccount): SendChannel<QueuedMessage> =
         getMemoized(messageQueues, account.username) {
+//            **** Actor way *******
+//            app.coroutineScope.actor(IO, MESSAGE_QUEUE_SIZE) {
+//                for (qm in channel) {
+//                    qm.result.complete(
+//                        messageSenderOf(qm.sender).sendMessage(
+//                            qm.recipient,
+//                            Optional.absent(),
+//                            qm.dataMessage
+//                        )
+//                    )
+//                }
+//            }
+//          **** Channel way *****
             Channel<QueuedMessage>(MESSAGE_QUEUE_SIZE).also {
                 app.coroutineScope.launch(IO) {
                     while(!it.isClosedForReceive) {
-                        val (sender, recipient, dataMessage, result) = it.receive()
-                        result.complete(
-                            messageSenderOf(sender).sendMessage(recipient, Optional.absent(), dataMessage)
+                        val qm = it.receive()
+                        qm.result.complete(
+                            messageSenderOf(qm.sender).sendMessage(
+                                qm.recipient,
+                                Optional.absent(),
+                                qm.dataMessage
+                            )
                         )
                     }
                 }
             }
         }
+
+
+
+// FAILED BATCHING ATTEMPTS (both not faster and get stuck when mesages are not increments of QUEUE_SIZE)
+//    private suspend fun messageQueueOf(account: VerifiedAccount): Channel<QueuedMessage> =
+//        getMemoized(messageQueues, account.username) {
+//            Channel<QueuedMessage>(MESSAGE_QUEUE_SIZE).also { chan ->
+//                app.coroutineScope.launch(IO) {
+//                    while(!chan.isClosedForReceive) {
+//                        **** with a list ****
+//                        List(MESSAGE_QUEUE_SIZE) { chan.receive() }
+//                        .forEach { (sender, recipient, dataMessage, result) ->
+//                            result.complete(
+//                                messageSenderOf(sender).sendMessage(
+//                                    recipient,
+//                                    Optional.absent(),
+//                                    dataMessage
+//                                )
+//                            )
+//                        }
+//                        **** with a Flow *****
+//                        List(MESSAGE_QUEUE_SIZE) { chan.receive() }
+//                            .asFlow()
+//                            .map {
+//                                Pair(
+//                                    it.result,
+//                                    messageSenderOf(it.sender).sendMessage(
+//                                        it.recipient,
+//                                        Optional.absent(),
+//                                        it.dataMessage
+//                                    )
+//                                )
+//                            }
+//                            .toList()
+//                            .forEach { it.first.complete(it.second) }
+//
+//                    }
+//                }
+//            }
+//        }
 
     suspend fun send(
         sender: VerifiedAccount,
@@ -91,15 +149,3 @@ class SignalSender(private val app: Application) {
         return result.await()
     }
 }
-
-//    private val sendQueue = app.coroutineScope.actor<SendQueueMesssage>(IO, Application.availableProcessors * 4) {
-//        for (msg in channel) {
-//            when(msg) {
-//                is SendQueueMesssage.Send -> {
-//                    msg.result.complete(
-//                        messageSenderOf(msg.sender).sendMessage(msg.recipient, Optional.absent(), msg.dataMessage)
-//                    )
-//                }
-//            }
-//        }
-//    }

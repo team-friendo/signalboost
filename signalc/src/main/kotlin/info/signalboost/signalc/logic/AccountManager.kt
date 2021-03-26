@@ -28,6 +28,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 class AccountManager(private val app: Application) {
 
     companion object: KLogging()

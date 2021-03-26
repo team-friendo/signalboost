@@ -11,6 +11,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+//@InternalCoroutinesApi
 fun main() {
     runBlocking {
         Application(Config.fromEnv()).run(this)
