@@ -12,7 +12,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
-//@InternalCoroutinesApi
+
 object Config {
     const val FAKE_SIGNAL_SERVER_URL = "https://signalserver.signalboost.info"
     const val FAKE_SIGNAL_SERVER_TRUSTSTORE_PATH = "fake.whisper.store"

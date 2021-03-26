@@ -7,7 +7,7 @@ import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Default
+
 import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
@@ -26,7 +26,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class SignalReceiver(private val app: Application) {
     companion object: Any(), KLoggable {
         override val logger = logger()

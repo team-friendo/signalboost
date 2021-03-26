@@ -33,7 +33,6 @@ import kotlin.time.seconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class SocketServerBigTest : FreeSpec({
     runBlockingTest {
         val testScope = this

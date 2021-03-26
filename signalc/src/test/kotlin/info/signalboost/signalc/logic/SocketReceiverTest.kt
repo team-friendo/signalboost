@@ -47,7 +47,6 @@ import kotlin.time.seconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class SocketReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this

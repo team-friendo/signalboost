@@ -23,7 +23,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
         val testScope = this

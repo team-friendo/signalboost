@@ -11,7 +11,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class ConfigTest : FreeSpec({
 
     "provides default configs for every env" {

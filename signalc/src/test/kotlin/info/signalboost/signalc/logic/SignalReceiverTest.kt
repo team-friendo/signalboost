@@ -30,7 +30,6 @@ import kotlin.time.milliseconds
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class SignalReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this

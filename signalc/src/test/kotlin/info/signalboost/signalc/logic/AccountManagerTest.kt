@@ -29,7 +29,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-//@InternalCoroutinesApi
 class AccountManagerTest : FreeSpec({
     runBlockingTest {
         val testScope = this
