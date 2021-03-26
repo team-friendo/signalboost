@@ -16,13 +16,11 @@ Hi, we're so glad you're here! Team Friendo is trying to make software for liber
 
 We want everyone to be good to one another, we want to have clear definitions of what we think that means, and clear recourses you can take if you feel the community is not upholding its values in a way that makes you feel disempowered or unsafe.
 
-Toward that end, we are currently drafting a code of conduct, which should be live shortly. You can read it in draft form here:
+Toward that end, we have a Code of Conduct that you can read here:
 
-http://our.solidarity.camp/s/QMRYJJ9eLYCawby
+https://0xacab.org/team-friendo/signalboost/-/wikis/Team-Friendo-Values-and-CoC
 
-As a baseline set of norms, we would also encourage you to read and abide by the Recurse Center Social Rules, the main point of which is to make people feel very safe asking questions and seeking help from others, which we'd really like to encourage here on Team Friendo:
-
-https://www.recurse.com/social-rules
+We ask that you read and actively consent to those agreements before starting work on the project. :)
 
 # The Basics of Contributing <a name="basics"></a>
 
@@ -32,12 +30,12 @@ Carefully reading the entire contributor guide below will greatly increase the c
 * Open a feature or bug report [issue](https://0xacab.org/team-friendo/signalboost/-/boards) for your code so we can support you and be prepared for the coming merge request. Please tag either @aguestuser or @margot so we see it. We provide ideal helpful issue/bug report templates below.
 * Use your issue id in your branch naming and commit messages eg: 99-add-lollipops-branch / "[99] adds the red pops in cherry flavor"
 * Please rebase master into your branch before you create a merge request, we prefer rebase to merge.
-* If possible please write or extend exiting unit tests. 
+* If possible please write or extend exiting unit tests.
 * Please use ES6 style JS and features: https://ponyfoo.com/articles/es6
 * Please run tests before submitting your merge request (see `make test.all` and other `make test.x` utilities) this will also run a lint, run `make test.lint-fix` to just automatically tidy formatting.
 * Make a merge request and tag either @aguestuser or @fdbk -- we will try to review as soon as we can.
 
-Details about each of these points are below. 
+Details about each of these points are below.
 
 # Opening Issues <a name="issues"></a>
 
