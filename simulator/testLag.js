@@ -17,6 +17,7 @@ const logger = loggerOf('testLag')
   const senderNumber = client === 'SIGNALC' ? signalcPhoneNumbers[0] : signaldPhoneNumbers[0]
 
   await app.run([senderNumber])
+  await wait(2000)
   // TODO: test different numbers here
   await testSendingN(senderNumber, numBots, client)
 
@@ -57,17 +58,18 @@ const testSendingN = async (senderNumber, numRecipients, client) => {
 
 const reportOf = (client, numRecipients, elapsedPerMessage, totalElapsed) => {
   const nonNullTimes = elapsedPerMessage.filter(Boolean)
+  const fmt = millis => round(millis / 1000, 3)
   return {
     client,
     numRecipients,
     socketPoolSize: process.env.SOCKET_POOL_SIZE,
     timestamp: nowTimestamp(),
     percentDelivered: round((nonNullTimes.length / elapsedPerMessage.length) * 100, 3),
-    totalElapsed,
-    minElapsed: min(nonNullTimes),
-    maxElapsed: max(nonNullTimes),
-    meanElapsed: mean(nonNullTimes),
-    variance: max(nonNullTimes) - min(nonNullTimes),
+    totalElapsed: fmt(totalElapsed),
+    minElapsed: fmt(min(nonNullTimes)),
+    maxElapsed: fmt(max(nonNullTimes)),
+    meanElapsed: fmt(mean(nonNullTimes)),
+    variance: fmt(max(nonNullTimes) - min(nonNullTimes)),
     // elapsedPerMessage,
   }
 }
@@ -82,7 +84,7 @@ const sdMessageOf = ({ sender, recipient, message, attachments }) => ({
 
 const print = report => {
   console.log('\n\n')
-  console.log(`------------------ LAG REPORT -------------------`)
+  console.log(`------------------ LAG IN SEC -------------------`)
   console.log(JSON.stringify(report, null, '  '))
   console.log('----------------------------------------------------')
 }
