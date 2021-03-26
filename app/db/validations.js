@@ -16,7 +16,7 @@ const validatePhoneNumber = maybePhoneNumber => Boolean(maybePhoneNumber.match(p
 const parseValidPhoneNumber = input => {
   // `phoneNumber` field is a string if valid e164 number can be parsed from input, null otherwise
   //  see: https://www.twilio.com/docs/glossary/what-e164 for e164 definition
-  const stripped = (input || '').replace(/["\-().\s]/g, '')
+  const stripped = strip(input)
   return { input, phoneNumber: validatePhoneNumber(stripped) ? stripped : null }
 }
 
@@ -29,6 +29,13 @@ const isSha256Hash = {
     args: [sha256Pattern],
     msg: 'must be valid hex-encoded 32-byte sha256 hash',
   },
+}
+
+const strip = str => {
+  const chars = (str || '').replace(/"/g, '').split('')
+  const [hd, ...tail] = chars
+  const strippedTail = tail.map(x => parseInt(x)).filter(x => !isNaN(x))
+  return [hd, ...strippedTail].join('')
 }
 
 module.exports = {
