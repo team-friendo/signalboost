@@ -23,7 +23,7 @@ import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
 @ObsoleteCoroutinesApi
-@ExperimentalCoroutinesApis
+@ExperimentalCoroutinesApi
 class SignalSenderTest : FreeSpec({
     runBlockingTest {
 
