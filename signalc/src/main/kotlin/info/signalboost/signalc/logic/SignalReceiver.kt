@@ -130,7 +130,7 @@ class SignalReceiver(private val app: Application) {
         // (don't suspend execution in the current coroutine or consume IO threadpool),
         // then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        app.coroutineScope.launch(Dispatchers.Default) {
+        app.coroutineScope.launch(IO) {
             try {
                 val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                 dataMessage?.body?.orNull()
