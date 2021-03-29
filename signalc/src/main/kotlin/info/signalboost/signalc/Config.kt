@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +32,8 @@ object Config {
         SocketReceiver::class,
         SocketSender::class,
         SocketServer::class,
+        // singletons
+        Metrics::class,
     )
 
     // SCHEMA

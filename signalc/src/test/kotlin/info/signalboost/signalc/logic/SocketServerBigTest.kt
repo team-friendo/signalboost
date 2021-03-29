@@ -173,12 +173,6 @@ class SocketServerBigTest : FreeSpec({
                 val helloRequest = sendRequestOf("hello")
                 val worldRequest = sendRequestOf("world")
 
-                coEvery {
-                    app.signalSender.send(any(), any(), any(), any(), any(), any())
-                } returns mockk(){
-                    every { success } returns mockk()
-                }
-
                 launch {
                     client1.send(helloRequest.toJson())
                 }

@@ -2,10 +2,12 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import okhttp3.internal.closeQuietly
@@ -39,7 +41,9 @@ object Mocks {
     }
     val signalSender: SignalSender.() -> Unit = {
         coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {
-            every { success } returns mockk()
+            every { success } returns  mockk {
+                every { duration } returns 1
+            }
         }
         coEvery { setExpiration(any(), any(), any()) } returns mockk {
             every { success } returns mockk()
@@ -62,5 +66,11 @@ object Mocks {
             coEvery { stop() } returns Unit
             coEvery { close(any()) } returns Unit
         }
+    }
+    val metrics: Metrics.() -> Unit = {
+        mockkObject(Metrics.AccountManager)
+        mockkObject(Metrics.LibSignal)
+        mockkObject(Metrics.SignalSender)
+        mockkObject(Metrics.SocketSender)
     }
 }

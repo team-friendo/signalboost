@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'sender-signalc'
+    scrape_interval: 5s
+    metrics_path: '/'
+    static_configs:
+      - targets: ['sender_signalc:1312']

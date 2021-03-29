@@ -2,8 +2,10 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
@@ -59,6 +61,7 @@ class Application(val config: Config.App){
     lateinit var socketReceiver: SocketReceiver
     lateinit var socketSender: SocketSender
     lateinit var socketServer: SocketServer
+    lateinit var metrics: Metrics
 
     /*************
      * RESOURCES
@@ -162,6 +165,7 @@ class Application(val config: Config.App){
                 // as per: https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
                 maximumPoolSize = connectionPoolParallelism
                 isAutoCommit = false
+                metricsTrackerFactory = PrometheusMetricsTrackerFactory()
                 validate()
             }
         )
@@ -193,6 +197,12 @@ class Application(val config: Config.App){
         if(config.mocked.contains(component)) mockk(block = mockAnswers)
         else (component.primaryConstructor!!::call)(arrayOf(this@Application))
 
+    private inline fun <reified T: Any>initializeSingleton(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else component.objectInstance!!
 
     // PUBLIC METHODS
 
@@ -238,6 +248,7 @@ class Application(val config: Config.App){
         signalSender = initializeColdComponent(SignalSender::class, Mocks.signalSender)
         socketReceiver = initializeColdComponent(SocketReceiver::class, Mocks.socketReceiver)
         socketSender = initializeColdComponent(SocketSender::class, Mocks.socketSender)
+        metrics = initializeSingleton(Metrics::class, Mocks.metrics)
 
         // "hot" components
         socketServer = initializeHotComponent(SocketServer::class, Mocks.socketServer).run()

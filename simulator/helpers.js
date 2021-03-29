@@ -20,7 +20,7 @@ const testSendingN = async (app, senderNumber, numRecipients, client, test) => {
             message: `test message ${idx}`,
           }),
         )
-        //logger.log(`...sent message to ${recipientNumber}!`)
+        logger.log(`...sent message to ${recipientNumber}!`)
         return result
       }),
     )

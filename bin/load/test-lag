@@ -34,13 +34,16 @@ if [ -z $(docker ps -qf name=receiver_signalc) ];then
 
   # comment these if running against pinned-jar container
   echo "[entrypoint] waiting for compilation..."
-  sleep 60
+  sleep 30
 fi
 
 echo "[entrypoint] ...sender and receiver running!"
 
 echo "[entrypoint] starting receiver_driver ..."
 docker-compose -f docker-compose-loadtest.yml up -d receiver_driver
+
+echo "[entrypoint] starting metrics services ..."
+docker-compose -f docker-compose-loadtest.yml up -d prometheus grafana
 
 echo "[entrypoint] waiting for receiver to subscribe ..."
 sleep 3

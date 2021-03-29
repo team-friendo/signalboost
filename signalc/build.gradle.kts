@@ -1,12 +1,15 @@
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import kotlin.system.exitProcess
+import java.net.URI
 
 group = "info.signalboost"
 version = "0.0.3"
 val entrypoint = "info.signalboost.signalc.MainKt"
 
 repositories {
+    maven {
+        url = URI("https://0xacab.org/api/v4/projects/1563/packages/maven")
+    }
     mavenCentral()
     jcenter()
 }
@@ -72,7 +75,7 @@ object Versions {
     const val kotlin = "1.4.30"
     const val h2 = "1.4.199"
     const val hikariCp = "4.0.3"
-    const val libsignal = "2.15.3_unofficial_19"
+    const val libsignal = "2.15.3_unofficial_19_sb_2"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
     const val logback = "1.2.3"
@@ -97,7 +100,7 @@ configurations {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${Versions.coroutines}")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${Versions.kotlin}")
-    implementation("com.github.turasa:signal-service-java:${Versions.libsignal}")
+    implementation("info.signalboost:libsignal-service:${Versions.libsignal}")
     implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncyCastle}")
     implementation("org.jetbrains.exposed:exposed-core:${Versions.exposed}")
     implementation("org.jetbrains.exposed:exposed-jdbc:${Versions.exposed}")
@@ -116,6 +119,10 @@ dependencies {
     // implementation("org.apache.logging.log4j:log4j-api:${Versions.log4j}")
     // implementation("org.apache.logging.log4j:log4j-core:${Versions.log4j}")
     // implementation("org.apache.logging.log4j:log4j-slf4j-impl:${Versions.log4j}")
+
+    implementation("io.prometheus:simpleclient:0.9.0")
+    implementation("io.prometheus:simpleclient_hotspot:0.9.0")
+    implementation("io.prometheus:simpleclient_httpserver:0.9.0")
 
     // migrations
     implementation("org.liquibase:liquibase-core:${Versions.liquibase}")

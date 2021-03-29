@@ -289,12 +289,6 @@ class SocketReceiverTest : FreeSpec({
                     }
 
                     "when sending signal message succeeds" - {
-                        coEvery {
-                            app.signalSender.send(any(), any(), any(), any(), any(), any())
-                        } returns mockk {
-                            every { success } returns mockk()
-                        }
-
                         "sends success message to socket" {
                             client.send(sendRequestJson)
                             eventually(timeout) {

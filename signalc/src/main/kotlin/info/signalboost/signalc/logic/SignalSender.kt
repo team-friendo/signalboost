@@ -1,13 +1,17 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
+import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import mu.KLogging
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.asExecutor
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
@@ -25,7 +29,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.*
-import kotlin.time.TimeSource.*
 
 
 @ExperimentalTime
@@ -53,9 +56,10 @@ class SignalSender(private val app: Application) {
                 Optional.absent(), // unidentifiedPipe
                 Optional.absent(), // eventListener
                 null,
-                IO.asExecutor() as? ExecutorService,
+                Dispatcher.Main.asExecutor() as? ExecutorService,
                 -1L,
                 true,
+                Metrics.LibSignal
             )
         }
 
@@ -137,8 +141,9 @@ class SignalSender(private val app: Application) {
         sender: VerifiedAccount,
         recipient: SignalServiceAddress,
         dataMessage: SignalServiceDataMessage,
-    ): SendMessageResult = app.coroutineScope.async(IO) {
+    ): SendMessageResult = app.coroutineScope.async(Dispatcher.Main) {
         try {
+            Metrics.SignalSender.numberOfMessageSends.inc()
             messagesInFlight.getAndIncrement()
             messageSenderOf(sender).sendMessage(
                 recipient,

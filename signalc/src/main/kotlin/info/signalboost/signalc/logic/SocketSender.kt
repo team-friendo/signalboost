@@ -2,10 +2,12 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcError
+import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
+import io.prometheus.client.Histogram
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import mu.KLogging
@@ -23,7 +25,7 @@ class SocketSender(private val app: Application) {
 
     // this is mostly here as a testing seam
     internal object Writer {
-        suspend fun to(socket: Socket, coroutineScope: CoroutineScope): PrintWriter = coroutineScope.async(IO) {
+        suspend fun to(socket: Socket, coroutineScope: CoroutineScope): PrintWriter = coroutineScope.async(Dispatcher.Main) {
             PrintWriter(socket.getOutputStream(), true)
         }.await()
     }
@@ -51,7 +53,7 @@ class SocketSender(private val app: Application) {
         sealed class Message {
             data class Add(val socket: Socket, val result: CompletableDeferred<Boolean>): Message()
             data class Remove(val socketHash: SocketHashCode, val result: CompletableDeferred<Boolean>): Message()
-            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>): Message()
+            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>, val timer: Histogram.Timer): Message()
             data class Clear(val result: CompletableDeferred<Int>): Message()
         }
 
@@ -71,12 +73,13 @@ class SocketSender(private val app: Application) {
         }
 
         suspend fun send(socketMsg: SocketResponse): Unit = CompletableDeferred<Unit>().let {
-            input.send(Message.Send(socketMsg, it))
+            val timer = Metrics.SocketSender.timeWaitingToSendMessageOverSocket.startTimer()
+            input.send(Message.Send(socketMsg, it, timer))
             it.await()
         }
 
         // Here we use an actor to enforce threadsafe mutation of our pool of writers.
-        private val input = app.coroutineScope.actor<Message>(IO) {
+        private val input = app.coroutineScope.actor<Message>(Dispatcher.Main) {
             for(msg in channel) {
                 when (msg) {
                     is Message.Add -> {
@@ -116,9 +119,7 @@ class SocketSender(private val app: Application) {
                             // of which to write to the socket. This increases throughput by allowing the actor
                             // to process the next `Send` message without waiting for the write to complete.
                             // (Queueing on the socket writer is handled by the Writer's internal socket below.)
-                            app.coroutineScope.launch(IO) {
-                                it.send(msg.socketMsg)
-                            }
+                            it.send(msg.socketMsg, msg.timer)
                             msg.result.complete(Unit)
                         } ?: run {
                             val errorMsg = "Failed to acquire writer for socket $socketHash"
@@ -137,12 +138,12 @@ class SocketSender(private val app: Application) {
 
     class WriterResource(coroutineScope: CoroutineScope, internal val writer: PrintWriter) {
         sealed class Message {
-            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>) : Message()
+            data class Send(val socketMsg: SocketResponse, val result: CompletableDeferred<Unit>, val timer: Histogram.Timer) : Message()
             data class Close(val result: CompletableDeferred<Unit>) : Message()
         }
 
-        suspend fun send(socketMsg: SocketResponse): Unit = CompletableDeferred<Unit>().let {
-            input.send(Message.Send(socketMsg, it))
+        suspend fun send(socketMsg: SocketResponse, timer: Histogram.Timer): Unit = CompletableDeferred<Unit>().let {
+            input.send(Message.Send(socketMsg, it, timer))
             it.await()
         }
 
@@ -153,10 +154,11 @@ class SocketSender(private val app: Application) {
 
         // Here we use an actor to enforce threadsafe usage of our PrintWriter resource
         // and to get "for-free" FIFO queueing of messages to be written by it.
-        private val input: SendChannel<Message> = coroutineScope.actor(IO) {
+        private val input: SendChannel<Message> = coroutineScope.actor(Dispatcher.Main) {
             for (msg in channel) {
                 when (msg) {
                     is Message.Send -> {
+                        msg.timer.observeDuration()
                         when (msg.socketMsg) {
                             is SocketResponse.Dropped, SocketResponse.Empty -> {}
                             else -> writer.println(msg.socketMsg.toJson())

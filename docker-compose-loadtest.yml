@@ -29,7 +29,9 @@ volumes:
   loadtest_sender_signalc_gradle_cache:
   loadtest_sender_signalc_build_cache:
   loadtest_signald_data:
-
+  loadtest_receiver_sock:
+  loadtest_grafana_data:
+  loadtest_prometheus_data:
 
 services:
 
@@ -78,6 +80,8 @@ services:
     depends_on:
       - db
       - receiver_signalc
+      - prometheus
+      - grafana
     entrypoint: "node /signalboost/simulator/receive.js"
     env_file: .env.dev
     environment:
@@ -173,6 +177,7 @@ services:
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
       - ./signalc/migrations:/signalc/migrations
+      - ~/.m2/:/root/.m2/
       - ./bin:/signalc/bin
       - loadtest_sender_signalc_gradle_cache:/home/gradle/.gradle
       - loadtest_sender_signalc_build_cache:/signalc/build
@@ -198,3 +203,35 @@ services:
       - loadtest_signald_data:/var/lib/signald/data
       - loadtest_sender_sock:/var/run/signald/
     restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.18.1
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - default
+    volumes:
+      - ./prometheus/prometheus_load.yml:/etc/prometheus/prometheus.yml
+      - loadtest_prometheus_data:/prometheus_data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus_data'
+      - '--log.level=debug'
+    restart: always
+
+  grafana:
+    image: grafana/grafana:7.0.3
+    depends_on:
+      - prometheus
+    ports:
+      - 5000:5000
+    networks:
+      - default
+    volumes:
+      - loadtest_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/config/grafana.ini:/etc/grafana/grafana.ini
+    environment:
+      - GF_SERVER_HTTP_PORT=5000
+    restart: always
