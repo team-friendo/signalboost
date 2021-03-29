@@ -65,11 +65,11 @@ const reportOf = (client, numRecipients, elapsedPerMessage, totalElapsed) => {
     socketPoolSize: process.env.SOCKET_POOL_SIZE,
     timestamp: nowTimestamp(),
     percentDelivered: round((nonNullTimes.length / elapsedPerMessage.length) * 100, 3),
-    totalElapsed: fmt(totalElapsed),
     minElapsed: fmt(min(nonNullTimes)),
     maxElapsed: fmt(max(nonNullTimes)),
     meanElapsed: fmt(mean(nonNullTimes)),
     variance: fmt(max(nonNullTimes) - min(nonNullTimes)),
+    totalElapsed: fmt(totalElapsed),
     // elapsedPerMessage,
   }
 }
