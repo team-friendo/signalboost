@@ -157,7 +157,6 @@ class SocketReceiver(private val app: Application) {
         val afterSendResult = System.currentTimeMillis()
         logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
         logger.debug { "${afterSendResult - beforeSendResult}ms: MESSAGE SENDING call for send to ${recipientAddress.number}" }
-//        logger.debug { "Sent message to ${recipientAddress.number}" }
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
         //  - should we do any special handling for non-success cases? (currently we don't!)

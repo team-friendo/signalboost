@@ -38,13 +38,12 @@ class Application(val config: Config.App){
         val availableProcessors by lazy {
             Runtime.getRuntime().availableProcessors()
         }
+        val poolParallelism = (availableProcessors * 2) + 1
+        val maxParallelsim = availableProcessors * 64
     }
     init {
         Security.addProvider(BouncyCastleProvider())
-        System.setProperty(
-            IO_PARALLELISM_PROPERTY_NAME,
-            "${availableProcessors * config.threads.perProcessor}"
-        )
+        System.setProperty(IO_PARALLELISM_PROPERTY_NAME,"${maxParallelsim}")
         LibSignalLogger.init()
     }
 
