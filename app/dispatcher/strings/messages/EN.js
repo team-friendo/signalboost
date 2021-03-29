@@ -509,7 +509,9 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: `Hello! You have received an invite to join this Signalboost channel. Please respond with ACCEPT or DECLINE.`,
+  inviteReceived: `Hello! You have received an invite to join this Signalboost channel. 
+
+If you would like to receive broadcasts from this channel, send a message here saying "ACCEPT". To decline, send "DECLINE"`,
 
   invitedToSupportChannel: `Hello! This is the Signalboost support channel.
   

@@ -532,7 +532,9 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: `Bonjour! Vous avez reçu le invitation a rejoindre cette canal Signalboost. Veuillez répondre avec ACCEPTER ou REFUSER.`,
+  inviteReceived: `Bonjour! Vous avez reçu une invitation à rejoindre cette chaîne Signalboost.
+
+Si vous souhaitez recevoir des émissions de cette chaîne, envoyez un message ici en disant "ACCEPTER". Pour refuser, envoyez "REFUSER" `,
 
   invitedToSupportChannel: `Bonjour! Il s'agit du canal de support Signalboost.
   
