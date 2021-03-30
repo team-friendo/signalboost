@@ -130,7 +130,6 @@ services:
     container_name: loadtest_sender_driver
     depends_on:
       - db
-    entrypoint: /signalboost/bin/entrypoint/simulator
     env_file: .env.dev
     environment:
       DB_HOST: db
@@ -198,48 +197,3 @@ services:
       - loadtest_signald_data:/var/lib/signald/data
       - loadtest_sender_sock:/var/run/signald/
     restart: unless-stopped
-
-  #  app:
-  #    image: registry.0xacab.org/team-friendo/signalboost/signalboost
-  #    container_name: loadtest_app
-  #    depends_on:
-  #      - db
-  #    entrypoint: /signalboost/bin/entrypoint/app
-  #    env_file: .env.dev
-  #    environment:
-  #      DB_HOST: db
-  #      SIGNALBOOST_VERBOSE_LOG: ${SIGNALBOOST_VERBOSE_LOG:-0}
-  #      PROJECT_ROOT: ${PWD}
-  #      NODE_ENV: ${NODE_ENV:-development}
-  #      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-EN}
-  #      REREGISTER_ON_STARTUP: ${REREGISTER_ON_STARTUP:-0}
-  #    expose:
-  #      - 3000
-  #    networks:
-  #      - default
-  #    volumes:
-  #      - ./.sequelizerc:/signalboost/.sequelizerc
-  #      - ./app:/signalboost/app
-  #      - ./bin:/signalboost/bin
-  #      - ./node_modules:/signalboost/node_modules
-  #      - ./package.json:/signalboost/package.json
-  #      - ./yarn.lock:/signalboost/yarn.lock
-  #      - loadtest_signald_data:/var/lib/signald/data
-  #      - loadtest_sender_sock:/signalboost/sockets/0
-  #    restart: unless-stopped
-
-
-  # prefer ngrok_signalboost, need to change url to ngrok in app entrypoint
-#  signalboost_ngrok:
-#    container_name: loadtest_app_signalboost_ngrok
-#    ports:
-#      - 0.0.0.0:4040:4040
-#    networks:
-#      - default
-#    image: wernight/ngrok
-#    links:
-#      - app
-#    env_file: .env.dev
-#    environment:
-#      - NGROK_PORT=app:3000
-#    restart: unless-stopped
