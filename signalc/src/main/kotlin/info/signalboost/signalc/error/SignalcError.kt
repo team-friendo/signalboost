@@ -5,6 +5,7 @@ object SignalcError {
     object AuthorizationFailed: Exception("Authorization with Signal Service failed.")
     object SubscriptionOfUnregisteredUser: Exception("Cannot subscribe to messages for unregistered account")
     object RegistrationOfRegsisteredUser: Exception("Cannot register account that is already registered")
-    object VerificationOfNewOrVerifiedUser: Exception("Cannot verify account that is not newly registered")
+    object VerificationOfNewUser: Exception("Cannot verify a new (unregistered) account")
+    object VerificationOfVerifiedUser: Exception("Cannot verify account that is already verified")
     class WriterMissing(message: String): Exception(message)
 }

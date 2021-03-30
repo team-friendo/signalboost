@@ -34,6 +34,7 @@
   variables:
     SIGNALC_ENV: test # TODO: let's change this to `ci` soon?
     POSTGRES_DB: signalc_test
+    SIGNALC_DB_NAME: signalc_test
 
 .uses-postgres:
   services:

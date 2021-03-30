@@ -7,12 +7,14 @@ import kotlin.time.ExperimentalTime
  * MAIN LOOP
  *************/
 
+@Suppress("ControlFlowWithEmptyBody")
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
+
 fun main() {
     runBlocking {
         Application(Config.fromEnv()).run(this)
-        launch { while(true){ yield() } }
     }
+    while(true) { }
 }

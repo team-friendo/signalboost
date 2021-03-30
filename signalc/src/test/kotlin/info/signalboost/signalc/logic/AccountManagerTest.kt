@@ -13,6 +13,7 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.IdentityKey
@@ -139,7 +140,7 @@ class AccountManagerTest : FreeSpec({
                     anyConstructed<SignalServiceAccountManager>().verifyAccountWithCode(
                         code, any(), any(), any(), any(), any(), any(), any(), any(), any()
                     )
-                } throws AuthorizationFailedException("oh noes!")
+                } throws AuthorizationFailedException(1312, "oh noes!")
 
                 "attempts to verify code" {
                     accountManager.verify(registeredAccount, code)

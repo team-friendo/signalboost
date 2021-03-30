@@ -59,12 +59,14 @@ object Versions {
     const val bouncyCastle = "1.66"
     const val coroutines = "1.4.2"
     const val exposed = "0.25.1"
+    const val googleProtobuf = "3.10.0"
     const val jsonSerialization = "1.0.1"
     const val kaml = "0.26.0"
     const val kotest = "4.3.1"
     const val kotlin = "1.4.21"
     const val h2 = "1.4.199"
-    const val libsignal = "2.15.3_unofficial_14"
+    const val hikariCp = "4.0.3"
+    const val libsignal = "2.15.3_unofficial_19"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
     const val logback = "1.2.3"
@@ -98,6 +100,8 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
+    implementation("com.zaxxer:HikariCP:${Versions.hikariCp}")
+    implementation("com.google.protobuf:protobuf-javalite:${Versions.googleProtobuf}")
     // Note: `kotlin-logback` wraps sl4j, which is an abstract facade that needs a concrete impl...
     implementation ("io.github.microutils:kotlin-logging-jvm:${Versions.logging}")
     // Logback is our current choice b/c (1) easier to configure, (2) https://www.marcobehler.com/guides/java-logging
@@ -127,11 +131,7 @@ dependencies {
 
 liquibase {
     val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
-    val dbName = when (System.getenv("SIGNALC_ENV")) {
-        "development" -> "signalc_development"
-        "test" -> "signalc_test"
-        else -> "signalc"
-    }
+    val dbName = System.getenv("SIGNALC_DB_NAME") ?: "signalc"
     activities.register("main") {
         this.arguments = mapOf(
 //            "logLevel" to "info",

@@ -68,6 +68,7 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun dispatch(socketMessage: String, socketHash: SocketHashCode) {
         val request = SocketRequest.fromJson(socketMessage)
+//        logger.debug { "Received message: $request"}
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
@@ -85,7 +86,7 @@ class SocketReceiver(private val app: Application) {
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
-            logger.error("ERROR handling request $request from socket $socketHash: $e")
+            logger.error("ERROR handling request $request from socket $socketHash: ${e.printStackTrace()}")
             app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
             )
@@ -127,6 +128,7 @@ class SocketReceiver(private val app: Application) {
             }
         }
     } catch(e: Throwable) {
+        logger.error { e.printStackTrace() }
         app.socketSender.send(SocketResponse.RegistrationError.of(request, e))
     }
 
@@ -134,6 +136,7 @@ class SocketReceiver(private val app: Application) {
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(sendRequest: SocketRequest.Send) {
         val (_, _, recipientAddress, messageBody) = sendRequest
+        val beforeLoadVerified = System.currentTimeMillis()
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
             ?: return app.socketSender.send(
                 SocketResponse.RequestHandlingError(
@@ -142,11 +145,18 @@ class SocketReceiver(private val app: Application) {
                     sendRequest
                 )
             )
+        val afterLoadVerified = System.currentTimeMillis()
+        logger.debug { "${afterLoadVerified - beforeLoadVerified}ms: ACCOUNT LOOKUP call for send to ${recipientAddress.number}"}
+
+        val beforeSendResult = System.currentTimeMillis()
         val sendResult: SendMessageResult = app.signalSender.send(
             senderAccount,
             recipientAddress.asSignalServiceAddress(),
             messageBody
         )
+        val afterSendResult = System.currentTimeMillis()
+        logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
+        logger.debug { "${afterSendResult - beforeSendResult}ms: MESSAGE SENDING call for send to ${recipientAddress.number}" }
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
         //  - should we do any special handling for non-success cases? (currently we don't!)
@@ -190,13 +200,17 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun verify(request: SocketRequest.Verify): Unit = try {
         when(val account = app.accountManager.load(request.username)) {
-            is NewAccount, is VerifiedAccount -> app.socketSender.send(
-                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewOrVerifiedUser)
+            is NewAccount -> app.socketSender.send(
+                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfNewUser)
+            )
+            is VerifiedAccount -> app.socketSender.send(
+                SocketResponse.VerificationError.of(request, SignalcError.VerificationOfVerifiedUser)
             )
             is RegisteredAccount -> {
                 app.accountManager.verify(account, request.code.asSanitizedCode())?.let {
                     app.accountManager.publishPreKeys(it)
                     app.socketSender.send(SocketResponse.VerificationSuccess.of(request))
+                    logger.debug { "Verify succeeded for ${account.username}" }
                 } ?: run {
                     app.socketSender.send(SocketResponse.VerificationError.of(request, SignalcError.AuthorizationFailed))
                 }

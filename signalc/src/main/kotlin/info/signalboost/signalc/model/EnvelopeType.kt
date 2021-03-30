@@ -1,5 +1,7 @@
 package info.signalboost.signalc.model
 
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
+
 enum class EnvelopeType {
     UNKNOWN,
     CIPHERTEXT,
@@ -10,12 +12,11 @@ enum class EnvelopeType {
 
     companion object {
         fun fromInt(int: Int): EnvelopeType = when(int) {
-            0 -> UNKNOWN
-            1 -> CIPHERTEXT
-            2 -> KEY_EXCHANGE
-            3 -> PREKEY_BUNDLE
-            5 -> RECEIPT
-            6 -> UNIDENTIFIED_SENDER
+            UNKNOWN_VALUE -> UNKNOWN // 0
+            CIPHERTEXT_VALUE, PREKEY_BUNDLE_VALUE -> CIPHERTEXT // 1, 3
+            KEY_EXCHANGE_VALUE -> KEY_EXCHANGE // 2
+            RECEIPT_VALUE -> RECEIPT // 5
+            UNIDENTIFIED_SENDER_VALUE -> UNIDENTIFIED_SENDER // 6
             else -> UNKNOWN
         }
 

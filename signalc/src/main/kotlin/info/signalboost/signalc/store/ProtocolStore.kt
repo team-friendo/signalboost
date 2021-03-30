@@ -17,6 +17,7 @@ import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.*
+import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 
 class ProtocolStore(private val db: Database) {
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
@@ -27,7 +28,7 @@ class ProtocolStore(private val db: Database) {
     class AccountProtocolStore(
         private val db: Database,
         private val accountId: String,
-    ): SignalProtocolStore {
+    ): SignalServiceProtocolStore {
 
         /********* IDENTITIES *********/
 
@@ -267,6 +268,14 @@ class ProtocolStore(private val db: Database) {
                 Sessions.deleteWhere {
                     Sessions.accountId eq accountId and (Sessions.name eq name)
                 }
+            }
+        }
+
+        override fun archiveSession(address: SignalProtocolAddress) {
+            // TODO: WRITE A TEST FOR THIS!!!!!!!!!!!!!!!!!!
+            loadSession(address).let {
+                it.archiveCurrentState()
+                storeSession(address, it)
             }
         }
     }

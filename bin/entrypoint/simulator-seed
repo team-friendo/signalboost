@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -eu
+
+echo "--- seeding simulator..."
+cd /signalboost
+node simulator/seed

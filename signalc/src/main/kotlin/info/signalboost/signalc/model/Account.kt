@@ -25,7 +25,6 @@ sealed class Account {
           null,
           this.username,
           this.password,
-          this.signalingKey,
           this.deviceId
       )
 }
@@ -136,7 +135,6 @@ data class VerifiedAccount(
             this.uuid,
             this.username,
             this.password,
-            this.signalingKey,
             this.deviceId
         )
     }

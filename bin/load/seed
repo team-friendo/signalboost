@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+if [[ -z $SEED_TARGET ]];then
+  echo "$SEED_TARGET not defined!"
+  echo "must be one of: "
+  echo "- receiver_signalc"
+  echo "- sender_signalc"
+  echo "- sender_signald"
+  exit 1
+fi
+
+compose="docker-compose -f docker-compose-loadtest.yml"
+
+if [[ $SEED_TARGET = "receiver_signalc" ]];then
+  SOCK_VOLUME="receiver_sock"
+else
+  SOCK_VOLUME="sender_sock"
+fi
+
+echo "seeding ${SEED_TARGET}..."
+$compose up -d $SEED_TARGET
+SOCK_VOLUME=$SOCK_VOLUME $compose run --entrypoint /signalboost/bin/entrypoint/simulator-seed seeder
+echo "... seeded ${SEED_TARGET}"
+popd

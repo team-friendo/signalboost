@@ -54,7 +54,7 @@ class SocketResponseTest : FreeSpec({
             "constructs a SendResult from a SUCCESS" {
                 SocketResponse.SendResult.of(
                     request,
-                    SendMessageResult.success(recipientSignalAddress, false, true)
+                    SendMessageResult.success(recipientSignalAddress, false, true, 1)
                 ) shouldBe SocketResponse.SendResult(
                     address = recipientAddress,
                     success = SocketResponse.SendResult.Success()

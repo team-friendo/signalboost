@@ -1,0 +1,113 @@
+version: '3'
+
+networks:
+  proxy-tier:
+
+volumes:
+  certs:
+  html:
+  vhost.d:
+  acme_config:
+  postgres_data:
+
+x-logging: &logging
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "1"
+      max-size: 100m
+
+services:
+  code-retriever:
+    image: registry.0xacab.org/team-friendo/signalboost/code-retriever:latest
+    container_name: signalserver_code_retriever
+    networks: 
+      - default
+      - proxy-tier
+    environment:
+      LETSENCRYPT_HOST: coderetriever.signalboost.info
+      VIRTUAL_HOST: coderetriever.signalboost.info
+      VIRTUAL_PORT: 3000
+    <<: *logging
+    ports:
+      - 0.0.0.0:3000:3000
+    restart: unless-stopped
+
+  db:
+    image: postgres:12
+    container_name: signalserver_db
+    environment:
+      POSTGRES_USER: signal
+      POSTGRES_DB: signal
+      POSTGRES_PASSWORD: password
+    networks:
+      - default
+    <<: *logging
+    ports:
+      - 0.0.0.0:5432:5432
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion:2.0.2
+    container_name: signalserver_letsencrypt
+    restart: always
+    volumes:
+      - certs:/etc/nginx/certs
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme_config:/etc/acme.sh
+    networks:
+      - proxy-tier
+    <<: *logging
+    depends_on:
+      - proxy
+
+  proxy:
+    image: jwilder/nginx-proxy:alpine
+    container_name: signalserver_proxy
+    ports:
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
+    volumes:
+      - certs:/etc/nginx/certs:ro
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy-tier
+    <<: *logging
+    restart: always
+
+  redis:
+    image: redis
+    container_name: signalserver_redis
+    networks:
+      - default
+    <<: *logging
+    ports:
+      - 0.0.0.0:6379:6379
+    restart: always
+
+  signal_server:
+    image: registry.0xacab.org/team-friendo/signalboost/signal-server:3.21
+    container_name: signalserver
+    environment:
+      LETSENCRYPT_HOST: signalserver.signalboost.info
+      VIRTUAL_HOST: signalserver.signalboost.info
+      VIRTUAL_PORT: 8080
+    depends_on:
+      - db
+      - redis
+    networks:
+      - default
+      - proxy-tier
+    <<: *logging
+    ports:
+      - 0.0.0.0:8015:8015
+      - 0.0.0.0:8080:8080
+      - 0.0.0.0:8081:8081

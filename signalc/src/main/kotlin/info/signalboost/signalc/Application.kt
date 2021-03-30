@@ -1,5 +1,8 @@
 package info.signalboost.signalc
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
@@ -7,8 +10,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.*
-import liquibase.pro.packaged.T
-import mu.KLogging
+import mu.KLoggable
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jetbrains.exposed.sql.Database
 import org.signal.libsignal.metadata.certificate.CertificateValidator
@@ -26,15 +28,24 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
+
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class Application(val config: Config.App){
-    companion object: KLogging()
-    init {
-        if (config.signal.addSecurityProvider) {
-            Security.addProvider(BouncyCastleProvider())
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+        val availableProcessors by lazy {
+            Runtime.getRuntime().availableProcessors()
         }
+        val queueParallelism = availableProcessors + 1
+        val connectionPoolParallelism = (2 * availableProcessors) + 1
+        val maxParallelism = availableProcessors * 128
+    }
+    init {
+        Security.addProvider(BouncyCastleProvider())
+        System.setProperty(IO_PARALLELISM_PROPERTY_NAME,"${maxParallelism}")
+        LibSignalLogger.init()
     }
 
     /**************
@@ -80,7 +91,9 @@ class Application(val config: Config.App){
 
     private val trustStore by lazy {
         object : TrustStore {
-            override fun getKeyStoreInputStream(): InputStream = FileInputStream(config.signal.trustStorePath)
+            override fun getKeyStoreInputStream(): InputStream = {}::class.java.getResourceAsStream(
+                config.signal.trustStorePath
+            )
             override fun getKeyStorePassword(): String = config.signal.trustStorePassword
         }
     }
@@ -95,8 +108,9 @@ class Application(val config: Config.App){
             arrayOf(SignalContactDiscoveryUrl(config.signal.contactDiscoveryUrl, trustStore)),
             arrayOf(SignalKeyBackupServiceUrl(config.signal.keyBackupServiceUrl, trustStore)),
             arrayOf(SignalStorageUrl(config.signal.storageUrl, trustStore)),
-            mutableListOf(),
-            Optional.absent(),
+            mutableListOf(), // interceptors
+            Optional.absent(), // dns
+            Optional.absent(), // proxy
             Base64.decode(config.signal.zkGroupServerPublicParams)
         )
     }
@@ -125,11 +139,18 @@ class Application(val config: Config.App){
     lateinit var protocolStore: ProtocolStore
 
     private val db by lazy {
-        Database.connect(
-            driver = config.db.driver,
-            url = config.db.url,
-            user = config.db.user,
+        val dataSource = HikariDataSource(
+            HikariConfig().apply {
+                driverClassName = config.db.driver
+                jdbcUrl = config.db.url
+                username = config.db.user
+                // as per: https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+                maximumPoolSize = connectionPoolParallelism
+                isAutoCommit = false
+                validate()
+            }
         )
+        Database.connect(dataSource)
     }
 
     /**************

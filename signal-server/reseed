@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd /srv/signalserver
+docker-compose down
+docker-compose up -d db
+
+sleep 5
+
+docker-compose exec -T db psql -U signal -d postgres -c "drop database signal"
+docker-compose exec -T db psql -U signal -d postgres -c "create database signal"
+docker-compose exec -T db psql -U signal -d signal < simulator-signalserver-1020-numbers.sql
+docker-compose up -d

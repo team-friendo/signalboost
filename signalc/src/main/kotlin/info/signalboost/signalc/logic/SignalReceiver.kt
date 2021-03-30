@@ -7,7 +7,7 @@ import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Default
+
 import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
@@ -16,8 +16,6 @@ import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.CIPHERTEXT_VALUE
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.PREKEY_BUNDLE_VALUE
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -60,10 +58,11 @@ class SignalReceiver(private val app: Application) {
                 null, // TODO: see [1] below
                 UptimeSleepTimer(),
                 app.signal.clientZkOperations?.profileOperations,
+                true
             )
         }
 
-    private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
+    public fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
         messageReceiverOf(account).createMessagePipe()
 
     private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =
@@ -97,13 +96,15 @@ class SignalReceiver(private val app: Application) {
             val messagePipe = try {
                 messagePipeOf(account)
             } catch (e: Throwable) {
-                logger.error { "Failed to create Signal message pipe: ${e.message}" }
+                logger.error { "Failed to create Signal message pipe: ${e.printStackTrace()}" }
                 throw SignalcError.MessagePipeNotCreated(e)
             }
             launch(IO) {
                 while (outerScope.isActive) {
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    logger.debug { "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number}" }
+                    logger.debug {
+                        "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
+                    }
                     dispatch(account, envelope)
                 }
             }
@@ -129,7 +130,7 @@ class SignalReceiver(private val app: Application) {
         // (don't suspend execution in the current coroutine or consume IO threadpool),
         // then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        app.coroutineScope.launch(Dispatchers.Default) {
+        app.coroutineScope.launch(IO) {
             try {
                 val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                 dataMessage?.body?.orNull()
