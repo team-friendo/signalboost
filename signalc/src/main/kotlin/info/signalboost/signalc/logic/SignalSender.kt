@@ -60,8 +60,8 @@ class SignalSender(private val app: Application) {
     private val messageQueues = ConcurrentHashMap<String,List<SendChannel<QueuedMessage>>>()
     private fun messageQueueOf(account: VerifiedAccount): SendChannel<QueuedMessage> =
         getMemoized(messageQueues, account.username) {
-            List(Application.poolParallelism) {
-                Channel<QueuedMessage>(Application.poolParallelism).also { chan ->
+            List(Application.queueParallelism) {
+                Channel<QueuedMessage>(Application.queueParallelism).also { chan ->
                     app.coroutineScope.launch(IO) {
                         while (!chan.isClosedForReceive) {
                             val qm = chan.receive()

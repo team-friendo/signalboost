@@ -38,12 +38,13 @@ class Application(val config: Config.App){
         val availableProcessors by lazy {
             Runtime.getRuntime().availableProcessors()
         }
-        val poolParallelism = (availableProcessors * 2) + 1
-        val maxParallelsim = availableProcessors * 64
+        val queueParallelism = availableProcessors + 1
+        val connectionPoolParallelism = (2 * availableProcessors) + 1
+        val maxParallelism = availableProcessors * 128
     }
     init {
         Security.addProvider(BouncyCastleProvider())
-        System.setProperty(IO_PARALLELISM_PROPERTY_NAME,"${maxParallelsim}")
+        System.setProperty(IO_PARALLELISM_PROPERTY_NAME,"${maxParallelism}")
         LibSignalLogger.init()
     }
 
@@ -144,7 +145,7 @@ class Application(val config: Config.App){
                 jdbcUrl = config.db.url
                 username = config.db.user
                 // as per: https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
-                maximumPoolSize = (availableProcessors * 2) + 1
+                maximumPoolSize = connectionPoolParallelism
                 isAutoCommit = false
                 validate()
             }
