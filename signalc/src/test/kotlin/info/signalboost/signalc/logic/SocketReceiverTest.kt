@@ -514,11 +514,19 @@ class SocketReceiverTest : FreeSpec({
                             client.send(request.toJson())
                         }
                         eventually(timeout) {
-                            coVerify(exactly = 2) {
+                            coVerify {
                                 app.socketSender.send(
                                     SocketResponse.VerificationError.of(
                                         request,
                                         SignalcError.VerificationOfNewUser
+                                    )
+                                )
+                            }
+                            coVerify {
+                                app.socketSender.send(
+                                    SocketResponse.VerificationError.of(
+                                        request,
+                                        SignalcError.VerificationOfVerifiedUser
                                     )
                                 )
                             }
