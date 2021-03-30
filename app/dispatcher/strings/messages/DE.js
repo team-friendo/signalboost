@@ -533,7 +533,9 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schicke HALLO um dic
     return `[${prefix}]\n${reply}`
   },
 
-  inviteReceived: `Hallo! Du hast eine Einladung erhalten, diesem Signalboost-Kanal beizutreten. Bitte antworte mit ANNEHMEN oder ABLEHNEN.`,
+  inviteReceived: `Hallo! Sie haben eine Einladung erhalten, diesem Signalboost-Kanal beizutreten.
+
+Wenn Sie Sendungen von diesem Kanal empfangen möchten, senden Sie hier eine Nachricht mit der Aufschrift "AKZEPTIEREN". Um abzulehnen, senden Sie "DECLINE"`,
 
   invitedToSupportChannel: `Hallo! Dies ist der Signalboost-Supportkanal.
   
