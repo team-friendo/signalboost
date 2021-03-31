@@ -1,11 +1,11 @@
 const { createPool } = require('generic-pool')
-const callbacks = require('../callbacks')
+const callbacks = require('./callbacks')
 const net = require('net')
 const fs = require('fs-extra')
-const { wait, loggerOf } = require('../../app/util')
+const { wait, loggerOf, genUuid, promisifyCallback, statuses } = require('../app/util')
 const {
   socket: { connectionInterval, maxConnectionAttempts, poolSize },
-} = require('../../app/config')
+} = require('../app/config')
 
 // CONSTANTS
 
@@ -32,6 +32,7 @@ const run = async () => {
 const socketPoolOf = async ({ create, destroy }) => {
   const pool = await createPool({ create, destroy }, { min: poolSize, max: poolSize })
   pool.stop = () => pool.drain().then(() => pool.clear())
+  pool.write = writeTo(pool)
   return pool
 }
 
@@ -75,6 +76,37 @@ const connect = () => {
 
 // Socket -> void
 const destroySocketConnection = sock => sock.destroy()
+
+const writeTo = pool => data => {
+  const id = genUuid()
+  const msg = signaldEncode({ ...data, id })
+  return new Promise((resolve, reject) =>
+    pool
+      .acquire()
+      .then(sock =>
+        sock.write(
+          msg,
+          promisifyCallback(
+            () => {
+              pool.release(sock)
+              return resolve(id)
+            },
+            e => {
+              pool.release(sock)
+              return reject({
+                status: statuses.ERROR,
+                message: `Error writing message ${id}: ${e.message}`,
+              })
+            },
+          ),
+        ),
+      )
+      .catch(reject),
+  )
+}
+
+// object -> string
+const signaldEncode = data => JSON.stringify(data) + '\n'
 
 module.exports = {
   run,

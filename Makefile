@@ -274,6 +274,13 @@ load.test.lag.signald: ## run load tests to measure lag in a client
 load.test.lag.signalc:
 	TEST_SUBJECT=sender_signalc ./bin/load/test-lag
 
+load.test.concurrency.signald: ## run load tests to measure concurrency in a client
+	TEST_SUBJECT=sender_signald ./bin/load/test-concurrency
+
+load.test.concurrency.signalc:
+	TEST_SUBJECT=sender_signalc ./bin/load/test-concurrency
+
+
 ###########
 # signalc #
 ###########
