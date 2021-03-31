@@ -1,4 +1,3 @@
-const socketWriter = require('./socket/write')
 const callbacks = require('./callbacks')
 const { isEmpty } = require('lodash')
 const fetch = require('node-fetch')
@@ -6,6 +5,7 @@ const { messages, messageTypes } = require('../app/signal/constants')
 const util = require('../app/util')
 const { statuses, loggerOf } = util
 const logger = loggerOf('signal')
+const app = require('./app')
 
 /**********************
  * STARTUP
@@ -29,7 +29,7 @@ const run = async botPhoneNumbers => {
 // (string, string || null) -> Promise<SignalboostStatus>
 const registerAndVerify = async phoneNumber => {
   logger.log(`${phoneNumber}: Registering...`)
-  socketWriter.write({
+  app.socketPool.write({
     type: messageTypes.REGISTER,
     username: phoneNumber,
   })
@@ -60,7 +60,7 @@ const registerAndVerify = async phoneNumber => {
 const verify = async phoneNumber => {
   const code = await fetchVerificationCode(phoneNumber)
 
-  return socketWriter
+  return app.socketPool
     .write({ type: messageTypes.VERIFY, username: phoneNumber, code })
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
@@ -88,24 +88,24 @@ const fetchVerificationCode = async (phoneNumber, retries = 3) => {
 
 // string -> Promise<string>
 const subscribe = phoneNumber =>
-  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
+  app.socketPool.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber })
 
 // (string, OutboundSignaldMessage) -> Promise<number|null>
 const sendMessage = async (recipientNumber, sdMessage) => {
   const recipientAddress = { number: recipientNumber }
   try {
-    const id = await socketWriter.write({ ...sdMessage, recipientAddress })
-    const result = await new Promise((resolve, reject) => 
+    const id = await app.socketPool.write({ ...sdMessage, recipientAddress })
+    const result = await new Promise((resolve, reject) =>
       callbacks.register({
         id,
         messageType: messageTypes.SEND,
         state: { whenSent: util.nowInMillis() },
         resolve,
         reject,
-      })
+      }),
     )
     return result
-  } catch(e) {
+  } catch (e) {
     logger.error(`Error sending to ${recipientNumber}: ${e}`)
     return null
   }
