@@ -1,3 +1,4 @@
+// language shortcodes sourced from: https://www.npmjs.com/package/locale-codes
 const { languages } = require('../../../language')
 const commandStringsEN = require('./EN')
 const commandStringsES = require('./ES')
