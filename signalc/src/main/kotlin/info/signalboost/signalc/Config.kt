@@ -4,15 +4,12 @@ import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.reflect.KClass
-import kotlin.time.ExperimentalTime
 
-@ExperimentalTime
+
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
-
 object Config {
     const val FAKE_SIGNAL_SERVER_URL = "https://signalserver.signalboost.info"
     const val FAKE_SIGNAL_SERVER_TRUSTSTORE_PATH = "fake.whisper.store"

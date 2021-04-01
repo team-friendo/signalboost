@@ -16,9 +16,7 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import kotlin.time.ExperimentalTime
 
-@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {

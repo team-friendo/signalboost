@@ -26,10 +26,8 @@ import java.security.Security
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
-import kotlin.time.ExperimentalTime
 
 
-@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class Application(val config: Config.App){
