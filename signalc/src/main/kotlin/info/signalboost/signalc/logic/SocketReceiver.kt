@@ -15,10 +15,8 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
-@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketReceiver(private val app: Application) {
@@ -68,7 +66,6 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun dispatch(socketMessage: String, socketHash: SocketHashCode) {
         val request = SocketRequest.fromJson(socketMessage)
-//        logger.debug { "Received message: $request"}
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
@@ -135,7 +132,14 @@ class SocketReceiver(private val app: Application) {
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(sendRequest: SocketRequest.Send) {
-        val (_, _, recipientAddress, messageBody) = sendRequest
+        val (
+            _,
+            _,
+            recipientAddress,
+            messageBody,
+            _,
+            expiresInSeconds,
+        ) = sendRequest
         val beforeLoadVerified = System.currentTimeMillis()
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
             ?: return app.socketSender.send(
@@ -152,7 +156,8 @@ class SocketReceiver(private val app: Application) {
         val sendResult: SendMessageResult = app.signalSender.send(
             senderAccount,
             recipientAddress.asSignalServiceAddress(),
-            messageBody
+            messageBody,
+            expiresInSeconds,
         )
         val afterSendResult = System.currentTimeMillis()
         logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
@@ -164,7 +169,7 @@ class SocketReceiver(private val app: Application) {
     }
 
 
-    private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Duration = 1.milliseconds) {
+    private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Long = 1 /*millis*/) {
         val (id,username) = request
         logger.info("Subscribing to messages for ${username}...")
         val account: VerifiedAccount = app.accountManager.loadVerified(username)

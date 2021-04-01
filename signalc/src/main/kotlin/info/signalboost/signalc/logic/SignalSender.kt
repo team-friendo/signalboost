@@ -23,7 +23,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {
     companion object {
-        const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
         fun String.asAddress() = SignalServiceAddress(null, this)
         fun UUID.asAddress() = SignalServiceAddress(this, null)
     }
@@ -94,8 +93,8 @@ class SignalSender(private val app: Application) {
         sender: VerifiedAccount,
         recipient: SignalServiceAddress,
         body: String,
+        expiration: Int,
         timestamp: Long = TimeUtil.nowInMillis(),
-        expiration: Int = DEFAULT_EXPIRY_TIME,
     ): SendMessageResult {
         val dataMessage =  SignalServiceDataMessage
             .newBuilder()
