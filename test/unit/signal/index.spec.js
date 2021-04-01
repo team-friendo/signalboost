@@ -363,7 +363,7 @@ describe('signal module', () => {
       describe('when signald is alive', () => {
         it('resolves with the version of signald that is running', async () => {
           wait(5).then(() => emit(versionResponse))
-          expect(await signal.isAlive()).to.eql(version)
+          expect(await signal.isAlive(0)).to.eql(version)
         })
       })
 

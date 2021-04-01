@@ -1,6 +1,5 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.logic.SignalSender
 import info.signalboost.signalc.serialization.ThrowableSerializer
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.serialization.*

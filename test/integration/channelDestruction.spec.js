@@ -10,6 +10,7 @@ import util from '../../app/util'
 import phoneNumberRegistrar from '../../app/registrar/phoneNumber'
 import { getSentMessages } from '../support/socket'
 import { createChannels, destroyAllChannels } from '../support/db'
+import { take } from 'lodash'
 const {
   jobs: { channelDestructionInterval, channelDestructionGracePeriod },
 } = require('../../app/config')
@@ -58,10 +59,11 @@ describe('channel destruction', () => {
 
     it('it sends 3 warning to admins then deletes the channel', function() {
       const messages = getSentMessages(writeStub)
-      if (messages.length !== 11) {
+      if (messages.length < 11) {
         console.log('FLAKEY TEST: integration.channelDestruction')
       } else {
-        expect(messages).to.have.deep.members([
+        const _messages = take(messages, 11)
+        expect(_messages).to.have.deep.members([
           /*************** FIRST WARNING ***************/
           {
             attachments: [],
@@ -72,6 +74,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -82,6 +85,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
 
           /*************** SECOND WARNING ***************/
@@ -94,6 +98,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -104,6 +109,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
 
           /*************** THIRD WARNING ***************/
@@ -116,6 +122,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -126,6 +133,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
 
           /*************** MEMBER DELETION NOTICES ***************/
@@ -138,6 +146,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -148,6 +157,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -158,6 +168,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
           {
             attachments: [],
@@ -168,6 +179,7 @@ describe('channel destruction', () => {
             },
             type: 'send',
             username: channel.phoneNumber,
+            expiresInSeconds: channel.messageExpiryTime,
           },
 
           /*************** UNSUBSCRIBE ***************/

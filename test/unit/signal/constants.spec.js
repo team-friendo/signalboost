@@ -9,24 +9,27 @@ describe('signal constants', () => {
     const recipient = genPhoneNumber()
     const message = 'foo'
     const attachments = [{ filename: 'some/path', width: 42, height: 42, voiceNote: false }]
+    const expiresInSeconds = 60 * 60 // 1 hour in secs
 
-    it('constructs a signald message from a channel number, recipient, message, and attachments', () => {
-      expect(sdMessageOf({ sender, recipient, message, attachments })).to.eql({
+    it('constructs a signald message from a channel number, recipient, message, attachments, and expiry time', () => {
+      expect(sdMessageOf({ sender, recipient, message, attachments, expiresInSeconds })).to.eql({
         type: 'send',
         username: sender,
         recipientAddress: { number: recipient },
         messageBody: message,
         attachments,
+        expiresInSeconds,
       })
     })
 
-    it('provides an empty attachments array if none is provided', () => {
+    it('provides an empty attachments array and expiry time if none are provided', () => {
       expect(sdMessageOf({ sender, recipient, message })).to.eql({
         type: 'send',
         username: sender,
         recipientAddress: { number: recipient },
         messageBody: message,
         attachments: [],
+        expiresInSeconds: 60 * 60 * 24 * 7, // 1 week in sec
       })
     })
   })
