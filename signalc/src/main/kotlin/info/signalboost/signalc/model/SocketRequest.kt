@@ -1,5 +1,6 @@
 package info.signalboost.signalc.model
 
+import info.signalboost.signalc.logic.SignalSender
 import info.signalboost.signalc.serialization.ThrowableSerializer
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.serialization.*
@@ -11,6 +12,7 @@ sealed class SocketRequest {
 
     // SERIALIZATION
     companion object {
+        const val DEFAULT_EXPIRY_TIME = 60 * 60 * 24 // 1 day
         fun fromJson(jsonString: String): SocketRequest =
             try {
                 Json.decodeFromString(jsonString)
@@ -73,6 +75,7 @@ sealed class SocketRequest {
         val recipientAddress: SignalcAddress,
         val messageBody: String,
         val attachments: List<Attachment> = emptyList(),
+        val expiresInSeconds: Int = DEFAULT_EXPIRY_TIME,
         // we could optionally support a QuoteObject here, but we don't. see:
         // https://docs.signald.org/structures/v1/JsonQuote.html
     ): SocketRequest() {
