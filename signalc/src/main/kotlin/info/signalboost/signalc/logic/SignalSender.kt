@@ -112,4 +112,20 @@ class SignalSender(private val app: Application) {
 //            dataMessage
 //        )
     }
+
+    suspend fun setExpiration(
+        sender: VerifiedAccount,
+        recipient: SignalServiceAddress,
+        expiresInSeconds: Int,
+    ): SendMessageResult {
+        val dataMessage = SignalServiceDataMessage
+            .newBuilder()
+            .asExpirationUpdate()
+            .withExpiration(expiresInSeconds)
+            .build()
+        return CompletableDeferred<SendMessageResult>().let {
+            messageQueueOf(sender).send(QueuedMessage(sender, recipient, dataMessage, it))
+            it.await()
+        }
+    }
 }

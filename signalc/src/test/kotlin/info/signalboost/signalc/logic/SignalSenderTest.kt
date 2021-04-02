@@ -8,6 +8,7 @@ import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
+import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalExpirationUpdate
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
@@ -53,7 +54,7 @@ class SignalSenderTest : FreeSpec({
                 every { success } returns mockk()
             }
 
-            "sends a message from a message sender" {
+            "sends a data message to intended recipient" {
                 val now = TimeUtil.nowInMillis()
                 val result = messageSender.send(
                     sender = verifiedAccount,
@@ -86,6 +87,31 @@ class SignalSenderTest : FreeSpec({
                         signalDataMessage(timestamp = 1000L)
                     )
                 }
+            }
+        }
+
+        "#setExpiration" - {
+            val recipientPhone = genPhoneNumber()
+            every {
+                anyConstructed<SignalServiceMessageSender>().sendMessage(any(), any(), any())
+            } returns mockk {
+                every { success } returns mockk()
+            }
+
+            "sends an expiration update to intended recipient" {
+                val result = messageSender.setExpiration(
+                    sender = verifiedAccount,
+                    recipient = recipientPhone.asAddress(),
+                    expiresInSeconds = 60,
+                )
+                verify {
+                    anyConstructed<SignalServiceMessageSender>().sendMessage(
+                        SignalServiceAddress(null, recipientPhone),
+                        absent(),
+                        signalExpirationUpdate(60)
+                    )
+                }
+                result.success shouldNotBe null
             }
         }
     }

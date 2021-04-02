@@ -27,9 +27,13 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
+import kotlin.io.path.deleteIfExists
 import kotlin.time.ExperimentalTime
 import kotlin.time.seconds
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -89,6 +93,7 @@ class SocketServerBigTest : FreeSpec({
 
         afterSpec {
             app.stop()
+            Path(socketPath).deleteIfExists()
             unmockkAll()
             testScope.teardown()
         }

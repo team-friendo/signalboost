@@ -38,7 +38,7 @@ class Application(val config: Config.App){
         }
         val queueParallelism = availableProcessors + 1
         val connectionPoolParallelism = (2 * availableProcessors) + 1
-        val maxParallelism = availableProcessors * 128
+        val maxParallelism = availableProcessors * 256
     }
     init {
         Security.addProvider(BouncyCastleProvider())
@@ -258,6 +258,9 @@ class Application(val config: Config.App){
         }
         val signalSender: SignalSender.() -> Unit = {
             coEvery { send(any(),any(),any(),any(),any()) } returns mockk {
+                every { success } returns  mockk()
+            }
+            coEvery { setExpiration(any(), any(), any()) } returns mockk {
                 every { success } returns  mockk()
             }
         }

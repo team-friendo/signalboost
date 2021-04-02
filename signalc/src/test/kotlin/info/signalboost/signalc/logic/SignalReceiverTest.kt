@@ -142,17 +142,25 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     }  returns  mockk {
-                        every { dataMessage.orNull()?.body?.orNull() } returns null
+                        every { dataMessage.orNull() } returns mockk<SignalServiceDataMessage>{
+                            every { expiresInSeconds } returns expiryTime
+                            every { timestamp } returns now
+                            every { body.orNull() } returns null
+                        }
                     }
 
                     lateinit var sub: Job
                     beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
                     afterTest { sub.cancel() }
 
-                    "relays Empty to socket sender" {
+                    "relays empty message to socket sender" {
                         eventually(timeout, pollInterval) {
                             coVerify {
-                                app.socketSender.send(SocketResponse.Empty)
+                                app.socketSender.send(cleartext(
+                                    senderAddress.asSignalcAddress(),
+                                    recipientAccount.asSignalcAddress(),
+                                    ""
+                                ))
                             }
                         }
                     }

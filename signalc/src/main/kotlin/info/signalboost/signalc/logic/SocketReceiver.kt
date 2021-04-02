@@ -3,6 +3,7 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.error.SignalcError
 import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
@@ -69,14 +70,13 @@ class SocketReceiver(private val app: Application) {
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
-                is SocketRequest.Close -> close(socketHash)
                 is SocketRequest.ParseError -> parseError(request)
                 is SocketRequest.Register -> register(request)
                 is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
+                is SocketRequest.SetExpiration -> setExpiration(request)
                 is SocketRequest.Subscribe -> subscribe(request)
                 is SocketRequest.Verify -> verify(request)
                 // TODO://////////////////////////////////////////////
-                is SocketRequest.SetExpiration -> unimplemented(request)
                 is SocketRequest.Trust -> unimplemented(request)
                 is SocketRequest.Unsubscribe -> unimplemented(request)
                 is SocketRequest.Version -> unimplemented(request)
@@ -131,24 +131,12 @@ class SocketReceiver(private val app: Application) {
 
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
-    private suspend fun send(sendRequest: SocketRequest.Send) {
-        val (
-            _,
-            _,
-            recipientAddress,
-            messageBody,
-            _,
-            expiresInSeconds,
-        ) = sendRequest
+    private suspend fun send(request: SocketRequest.Send) {
+        val (_, _, recipientAddress, messageBody, _, expiresInSeconds) = request
         val beforeLoadVerified = System.currentTimeMillis()
-        val senderAccount: VerifiedAccount = app.accountManager.loadVerified(sendRequest.username)
-            ?: return app.socketSender.send(
-                SocketResponse.RequestHandlingError(
-                    sendRequest.id,
-                    Error("Can't send to ${sendRequest.username}: not registered."),
-                    sendRequest
-                )
-            )
+        val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
+            ?: return request.rejectUnverified()
+
         val afterLoadVerified = System.currentTimeMillis()
         logger.debug { "${afterLoadVerified - beforeLoadVerified}ms: ACCOUNT LOOKUP call for send to ${recipientAddress.number}"}
 
@@ -165,9 +153,23 @@ class SocketReceiver(private val app: Application) {
         // TODO:
         //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
         //  - should we do any special handling for non-success cases? (currently we don't!)
-        app.socketSender.send(SocketResponse.SendResults.of(sendRequest, sendResult))
+        app.socketSender.send(SocketResponse.SendResults.of(request, sendResult))
     }
 
+    private suspend fun setExpiration(request: SocketRequest.SetExpiration) {
+        val(id, username, recipientAddress,expiresInSeconds) = request
+        val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
+            ?: return request.rejectUnverified()
+        val sendResult = app.signalSender.setExpiration(
+            senderAccount,
+            recipientAddress.asSignalServiceAddress(),
+            expiresInSeconds
+        )
+        when(val resultType = sendResult.type()) {
+            SendResultType.SUCCESS -> app.socketSender.send(SocketResponse.SetExpirationSuccess.of(request))
+            else -> app.socketSender.send(SocketResponse.SetExpirationFailed.of(request, resultType))
+        }
+    }
 
     private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Long = 1 /*millis*/) {
         val (id,username) = request
@@ -224,4 +226,22 @@ class SocketReceiver(private val app: Application) {
     } catch(error: Throwable) {
         app.socketSender.send(SocketResponse.VerificationError.of(request, error))
     }
+
+    // HELPERS
+    private suspend fun SocketRequest.rejectUnverified(): Unit =
+        when(this) {
+            is SocketRequest.SetExpiration -> this.username
+            is SocketRequest.Send -> this.username
+            else -> null
+        }?.let { username ->
+            app.socketSender.send(
+                SocketResponse.RequestHandlingError(
+                    this.id(),
+                    Error("Can't send to ${username}: not registered."),
+                    this
+                )
+            )
+        } ?: Unit
+
+
 }
