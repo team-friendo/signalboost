@@ -130,6 +130,14 @@ prod.psql: # get a psql shell on prod db
 # start and stop the app #
 ##########################
 
+dev.db.up: ## run signalboost db in docker (for use in local unit tests or psql explorations)
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	up -d db
+
+dev.db.down: ## spin down signalboost db
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	stop db
+
 dev.up: ## run signalboost in local dev mode
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
 	up -d ngrok app
