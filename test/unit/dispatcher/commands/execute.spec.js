@@ -150,16 +150,18 @@ describe('executing commands', () => {
   afterEach(() => sinon.restore())
 
   describe('ACCEPT command', () => {
+    const inviter = membershipFactory()
     const dispatchable = {
       channel: { ...channel, vouchMode: 'ON', vouchLevel: 1 },
       sender: randomPerson,
       sdMessage: sdMessageOf({ sender: channel.phoneNumber, message: localizedCmds.ACCEPT }),
     }
-    let isMemberStub, countInvitesStub, acceptStub
+    let isMemberStub, countInvitesStub, acceptStub, findInviterStub
     beforeEach(() => {
       isMemberStub = sinon.stub(membershipRepository, 'isMember')
       countInvitesStub = sinon.stub(inviteRepository, 'count')
       acceptStub = sinon.stub(inviteRepository, 'accept')
+      findInviterStub = sinon.stub(inviteRepository, 'findInviter')
     })
 
     describe('when channel has reached its subscriber limit', () => {
@@ -211,8 +213,11 @@ describe('executing commands', () => {
         })
 
         describe('when sender has sufficient invites', () => {
-          describe('when accept db call succeeds', () => {
-            beforeEach(() => acceptStub.returns(Promise.resolve([membershipFactory(), 1])))
+          describe('when accept db calls succeed', () => {
+            beforeEach(() => {
+              findInviterStub.returns(Promise.resolve(inviter))
+              acceptStub.returns(Promise.resolve([membershipFactory(), 1]))
+            })
 
             it('returns SUCCESS status', async () => {
               expect(await processCommand(dispatchable)).to.eql({
@@ -220,7 +225,14 @@ describe('executing commands', () => {
                 payload: '',
                 status: statuses.SUCCESS,
                 message: commandResponsesInCommandLang.accept.success,
-                notifications: [],
+                notifications: [
+                  {
+                    recipient: inviter.memberPhoneNumber,
+                    message: notificationsFor(inviter).inviteAccepted(
+                      randomPerson.memberPhoneNumber,
+                    ),
+                  },
+                ],
               })
             })
           })
@@ -238,6 +250,17 @@ describe('executing commands', () => {
               })
             })
           })
+
+          describe('when inviter no longer exists', () => {
+            beforeEach(() => {
+              findInviterStub.returns(Promise.resolve(null))
+              acceptStub.returns(Promise.resolve([membershipFactory(), 1]))
+            })
+
+            it('does not return acceptance notifcation', async () => {
+              expect((await processCommand(dispatchable)).notifications).to.eql([])
+            })
+          })
         })
       })
 
@@ -245,8 +268,11 @@ describe('executing commands', () => {
         const _dispatchable = { ...dispatchable, channel }
         beforeEach(() => countInvitesStub.returns(Promise.resolve(0)))
 
-        describe('when accept db call succeeds', () => {
-          beforeEach(() => acceptStub.returns(Promise.resolve([membershipFactory(), 1])))
+        describe('when accept db calls succeed', () => {
+          beforeEach(() => {
+            findInviterStub.returns(Promise.resolve(inviter))
+            acceptStub.returns(Promise.resolve([membershipFactory(), 1]))
+          })
 
           it('logs membership creation (if applicable)', async () => {
             await processCommand(_dispatchable)
@@ -262,7 +288,12 @@ describe('executing commands', () => {
               payload: '',
               status: statuses.SUCCESS,
               message: commandResponsesInCommandLang.accept.success,
-              notifications: [],
+              notifications: [
+                {
+                  recipient: inviter.memberPhoneNumber,
+                  message: notificationsFor(inviter).inviteAccepted(randomPerson.memberPhoneNumber),
+                },
+              ],
             })
           })
         })

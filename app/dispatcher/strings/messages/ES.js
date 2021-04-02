@@ -530,6 +530,8 @@ Enviar AYUDA para enumerar comandos válidos. Enviar HOLA para subscribirse.`,
     return `[${prefix}]\n${reply}`
   },
 
+  inviteAccepted: inviteePhoneNumber => `¡Tu invitación a ${inviteePhoneNumber} fue aceptada!`,
+
   inviteReceived: `¡Hola! Ha recibido una invitación para unirse a este canal de Signalboost.
 
 Si desea recibir transmisiones de este canal, envíe un mensaje aquí diciendo "ACEPTAR". Para rechazar, envíe "RECHAZAR"`,
@@ -546,8 +548,6 @@ Responda ACEPTAR para suscribirse o RECHAZAR para no suscribirse.`,
   ) => `Hola! Usted ha recibido ${invitesReceived}/${invitesNeeded} invitaciónes necesarios para unirse a este canal de Signalboost. 
       ${invitesReceived === invitesNeeded ? `Por favor, responda con ACEPTAR o RECHAZAR.` : ''}
     `,
-
-  inviteAccepted: `¡Felicidades! Alguien ha aceptado su invitación y ahora está suscrito a este canal.`,
 
   promptToUseSignal:
     'Este número solo acepta mensajes enviados con Signal Private Messenger. Instale Signal desde https://signal.org y intente nuevamente.',

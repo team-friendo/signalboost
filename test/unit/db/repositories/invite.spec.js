@@ -115,6 +115,39 @@ describe('invite repository', () => {
     })
   })
 
+  describe('#findInviter', () => {
+    describe('given channel and number of invitee to channel', () => {
+      it('returns the membership of the invite issuer', async () => {
+        const inviter = await inviteRepository.findInviter(
+          channelPhoneNumber,
+          pendingInviteePhoneNumber,
+        )
+        expect(inviter.memberPhoneNumber).to.eql(subscriberPhoneNumber)
+      })
+    })
+
+    describe('given non-existing invitee', () => {
+      it('rejects with error message', async () => {
+        const err = await inviteRepository
+          .findInviter(channelPhoneNumber, genPhoneNumber())
+          .catch(x => x)
+        expect(err).to.eql('No invite found')
+      })
+    })
+
+    describe('given non-existing inviter', () => {
+      beforeEach(async () => {
+        await app.db.membership.destroy({ where: { memberPhoneNumber: subscriberPhoneNumber } })
+      })
+
+      it('returns null', async () => {
+        expect(
+          await inviteRepository.findInviter(channelPhoneNumber, pendingInviteePhoneNumber),
+        ).to.eql(null)
+      })
+    })
+  })
+
   describe('#count', () => {
     it('counts the number of invites received by a number on a channel', async () => {
       expect(await inviteRepository.count(channelPhoneNumber, adminPhoneNumber)).to.eql(0)

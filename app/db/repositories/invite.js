@@ -20,6 +20,13 @@ const issue = async (channelPhoneNumber, inviterPhoneNumber, inviteePhoneNumber)
 const count = (channelPhoneNumber, inviteePhoneNumber) =>
   app.db.invite.count({ where: { channelPhoneNumber, inviteePhoneNumber } })
 
+// (string, string) -> Promise<Membership | null>
+const findInviter = async (channelPhonenumber, inviteePhoneNumber) => {
+  const invite = await app.db.invite.findOne({ where: { inviteePhoneNumber } })
+  if (!invite) return Promise.reject('No invite found')
+  return membershipRepository.findMembership(channelPhonenumber, invite.inviterPhoneNumber)
+}
+
 // (string, string, string) -> Promise<Array<Membership,number>>
 const accept = (channelPhoneNumber, inviteePhoneNumber, language = defaultLanguage) =>
   Promise.all([
@@ -41,4 +48,4 @@ const deleteExpired = async () =>
     },
   })
 
-module.exports = { issue, count, accept, decline, deleteExpired }
+module.exports = { issue, count, accept, decline, deleteExpired, findInviter }

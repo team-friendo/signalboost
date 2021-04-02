@@ -189,12 +189,38 @@ const maybeAccept = async (channel, sender, language) => {
   }
 }
 
-const accept = async (channel, sender, language, cr) =>
-  inviteRepository
-    .accept(channel.phoneNumber, sender.memberPhoneNumber, language)
-    .then(() => eventRepository.logIfFirstMembership(sender.memberPhoneNumber))
-    .then(() => ({ status: statuses.SUCCESS, message: cr.success }))
-    .catch(() => ({ status: statuses.ERROR, message: cr.dbError }))
+const accept = async (channel, sender, language, cr) => {
+  try {
+    const inviteePhoneNumber = sender.memberPhoneNumber
+    const inviterMembership = await inviteRepository.findInviter(
+      channel.phoneNumber,
+      inviteePhoneNumber,
+    )
+    await inviteRepository.accept(channel.phoneNumber, inviteePhoneNumber, language)
+    await eventRepository.logIfFirstMembership(inviteePhoneNumber)
+
+    return {
+      status: statuses.SUCCESS,
+      message: cr.success,
+      notifications: _acceptedInviteNotificationsOf(inviteePhoneNumber, inviterMembership),
+    }
+  } catch (e) {
+    logger.error(e)
+    return { status: statuses.ERROR, message: cr.dbError }
+  }
+}
+
+const _acceptedInviteNotificationsOf = (inviteePhoneNumber, inviterMembership) =>
+  isEmpty(inviterMembership)
+    ? []
+    : [
+        {
+          recipient: inviterMembership.memberPhoneNumber,
+          message: messagesIn(inviterMembership.language).notifications.inviteAccepted(
+            inviteePhoneNumber,
+          ),
+        },
+      ]
 
 // ADD
 
