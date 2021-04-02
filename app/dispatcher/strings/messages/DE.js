@@ -533,6 +533,8 @@ Schicke HILFE für eine Auflistung aller erkannten Befehle. Schicke HALLO um dic
     return `[${prefix}]\n${reply}`
   },
 
+  inviteAccepted: inviteePhoneNumber => `Ihre Einladung zu ${inviteePhoneNumber} wurde akzeptiert!`,
+
   inviteReceived: `Hallo! Sie haben eine Einladung erhalten, diesem Signalboost-Kanal beizutreten.
 
 Wenn Sie Sendungen von diesem Kanal empfangen möchten, senden Sie hier eine Nachricht mit der Aufschrift "AKZEPTIEREN". Um abzulehnen, senden Sie "DECLINE"`,
@@ -547,8 +549,6 @@ Bitte antworte mit ACCEPT, um dich anzumelden, oder DECLINE, um dich nicht anzum
     `Hallo! Du hast ${invitesReceived}/${invitesNeeded} Einladungen, diese Signalboost-Kanal beizutreten. ${
       invitesReceived === invitesNeeded ? 'Bitte antworte mit ANNEHMEN oder ABLEHNEN.' : ''
     }`,
-
-  inviteAccepted: `Glückwunsch! Deine Einladung wurde angenommen, die Person ist jetzt Teilnehmer*in dieses Kanals.`,
 
   promptToUseSignal:
     'Diese Nummer akzeptiert nur Nachrichten, die mit Signal verschickt wurden. Bitte installiere Signal von https://signal.org und versuche es erneut.',

@@ -509,6 +509,8 @@ Send HELP to list valid commands. Send HELLO to subscribe.`,
     return `[${prefix}]\n${reply}`
   },
 
+  inviteAccepted: inviteePhoneNumber => `Your invite to ${inviteePhoneNumber} was accepted!`,
+
   inviteReceived: `Hello! You have received an invite to join this Signalboost channel. 
 
 If you would like to receive broadcasts from this channel, send a message here saying "ACCEPT". To decline, send "DECLINE"`,
@@ -518,8 +520,6 @@ If you would like to receive broadcasts from this channel, send a message here s
 Signalboost maintainers use it to send out occasional announcements about new features and answer any questions you might have.
 
 Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
-
-  inviteAccepted: `Congrats! Someone has accepted your invite and is now a subscriber to this channel.`,
 
   promptToUseSignal:
     'This number only accepts messages sent with the Signal Private Messenger. Please install Signal from https://signal.org and try again.',

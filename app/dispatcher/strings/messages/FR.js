@@ -532,6 +532,8 @@ Envoyez AIDE pour répertorier les commandes valides. Envoyez SALUT pour vous ab
     return `[${prefix}]\n${reply}`
   },
 
+  inviteAccepted: inviteePhoneNumber => `Votre invitation à ${inviteePhoneNumber} a été acceptée!`,
+
   inviteReceived: `Bonjour! Vous avez reçu une invitation à rejoindre cette chaîne Signalboost.
 
 Si vous souhaitez recevoir des émissions de cette chaîne, envoyez un message ici en disant "ACCEPTER". Pour refuser, envoyez "REFUSER" `,
@@ -541,8 +543,6 @@ Si vous souhaitez recevoir des émissions de cette chaîne, envoyez un message i
 Les responsables de Signalboost l'utilisent pour envoyer des annonces occasionnelles sur les nouvelles fonctionnalités et répondre à toutes vos questions.
 
 Veuillez répondre par ACCEPTER pour vous abonner ou REFUSER de ne pas vous abonner.`,
-
-  inviteAccepted: `Félicitations! Quelqu'un a accepté votre invitation et est maintenant abonné à cette canal.`,
 
   promptToUseSignal:
     'Ce numéro accepte uniquement les messages envoyés avec Signal Private Messenger. Veuillez installer Signal depuis https://signal.org et réessayer.',
