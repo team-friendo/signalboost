@@ -116,6 +116,29 @@ object SocketResponseGen {
         SendResultType.UNKNOWN_ERROR -> SocketResponse.SendResult(address, unknownError = true)
     }
 
+    fun genSetExpirationFailed(
+        id: String = genUuidStr(),
+        username: String = genPhoneNumber(),
+        recipientAddress: SignalcAddress = genSignalcAddress(),
+        resultType: SendResultType = SendResultType.NETWORK_FAILURE,
+    ) = SocketResponse.SetExpirationFailed(
+        id = id,
+        username = username,
+        recipientAddress = recipientAddress,
+        resultType = resultType,
+    )
+
+    fun genSetExpirationSuccess(
+        id: String = genUuidStr(),
+        username: String = genPhoneNumber(),
+        recipientAddress: SignalcAddress = genSignalcAddress(),
+    ) = SocketResponse.SetExpirationSuccess(
+        id = id,
+        username = username,
+        recipientAddress = recipientAddress,
+    )
+
+
     fun genSubscriptionSuccess(
         id: String = genUuidStr(),
         username: String = genPhoneNumber(),

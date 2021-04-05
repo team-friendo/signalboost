@@ -4,6 +4,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalc
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDecryptionError
@@ -12,6 +13,8 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.gen
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRequestHandlingError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRequestInvalidError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSendResults
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSetExpirationFailed
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSetExpirationSuccess
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSubscriptionDisrupted
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSubscriptionFailed
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genSubscriptionSuccess
@@ -348,6 +351,44 @@ class SocketResponseTest : FreeSpec({
                        |}]
                     |}""".flatten()
                 }
+            }
+        }
+
+        "of SetExpirationFailed" - {
+            val response = genSetExpirationFailed()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                  |"type":"set_expiration_failed",
+                  |"id":"${response.id}",
+                  |"username":"${response.username}",
+                  |"recipientAddress":{
+                    |"number":"${response.recipientAddress.number}",
+                    |"uuid":"${response.recipientAddress.uuid}"
+                  |},
+                  |"resultType":"NETWORK_FAILURE"
+                |}
+                """.flatten()
+            }
+        }
+
+
+        "of SetExpirationSuccess" - {
+            val response = genSetExpirationSuccess()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                  |"type":"set_expiration_succeeded",
+                  |"id":"${response.id}",
+                  |"username":"${response.username}",
+                  |"recipientAddress":{
+                    |"number":"${response.recipientAddress.number}",
+                    |"uuid":"${response.recipientAddress.uuid}"
+                  |}
+                |}
+                """.flatten()
             }
         }
 

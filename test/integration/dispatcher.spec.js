@@ -107,6 +107,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[BROADCAST FROM ADMIN 1]\nfoobar`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -114,6 +115,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[BROADCAST FROM ADMIN 1]\nfoobar`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -121,6 +123,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: subscribers[0].memberPhoneNumber },
           messageBody: `foobar`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -128,6 +131,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: subscribers[1].memberPhoneNumber },
           messageBody: `foobar`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })
@@ -147,8 +151,8 @@ describe('dispatcher service', () => {
             dataMessage: {
               timestamp: new Date().toISOString(),
               body: 'a screaming came across the sky',
-              expiresInSeconds: channel.messageExpiryTime,
               attachments,
+              expiresInSeconds: channel.messageExpiryTime,
             },
           },
         }),
@@ -167,6 +171,7 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           attachments: [],
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -174,6 +179,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[HOTLINE FROM @1]\na screaming came across the sky`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -181,6 +187,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[HOTLINE FROM @1]\na screaming came across the sky`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })
@@ -199,8 +206,8 @@ describe('dispatcher service', () => {
             dataMessage: {
               timestamp: new Date().toISOString(),
               body: 'HELLO',
-              expiresInSeconds: channel.messageExpiryTime,
               attachments,
+              expiresInSeconds: channel.messageExpiryTime,
             },
           },
         }),
@@ -227,14 +234,15 @@ describe('dispatcher service', () => {
           type: 'send',
           username: channel.phoneNumber,
           attachments: [],
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
-          expiresInSeconds: channel.messageExpiryTime,
           recipientAddress: {
             number: randoPhoneNumber,
           },
           type: 'set_expiration',
           username: channel.phoneNumber,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })
@@ -255,8 +263,8 @@ describe('dispatcher service', () => {
             dataMessage: {
               timestamp: new Date().toISOString(),
               body: 'REPLY @1 it has happened before but there is nothing to compare it to now',
-              expiresInSeconds: channel.messageExpiryTime,
               attachments,
+              expiresInSeconds: channel.messageExpiryTime,
             },
           },
         }),
@@ -272,6 +280,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -279,6 +288,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[REPLY TO @1 FROM ADMIN 1]\nit has happened before but there is nothing to compare it to now`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -286,6 +296,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: randoPhoneNumber },
           messageBody: `[PRIVATE REPLY FROM ADMINS]\nit has happened before but there is nothing to compare it to now`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })
@@ -304,8 +315,8 @@ describe('dispatcher service', () => {
             dataMessage: {
               timestamp: new Date().toISOString(),
               body: 'PRIVATE There was a wall. It did not look important.',
-              expiresInSeconds: channel.messageExpiryTime,
               attachments,
+              expiresInSeconds: channel.messageExpiryTime,
             },
           },
         }),
@@ -321,6 +332,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[0].memberPhoneNumber },
           messageBody: `[PRIVATE FROM ADMIN 1]\nThere was a wall. It did not look important.`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           type: 'send',
@@ -328,6 +340,7 @@ describe('dispatcher service', () => {
           recipientAddress: { number: admins[1].memberPhoneNumber },
           messageBody: `[PRIVATE FROM ADMIN 1]\nThere was a wall. It did not look important.`,
           attachments,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })
@@ -349,8 +362,8 @@ describe('dispatcher service', () => {
             dataMessage: {
               timestamp: new Date().toISOString(),
               body: 'BAN @2',
-              expiresInSeconds: channel.messageExpiryTime,
               attachments,
+              expiresInSeconds: channel.messageExpiryTime,
             },
           },
         }),
@@ -368,6 +381,7 @@ describe('dispatcher service', () => {
           },
           type: 'send',
           username: channel.phoneNumber,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           attachments: [],
@@ -378,6 +392,7 @@ describe('dispatcher service', () => {
           },
           type: 'send',
           username: channel.phoneNumber,
+          expiresInSeconds: channel.messageExpiryTime,
         },
         {
           attachments: [],
@@ -387,6 +402,7 @@ describe('dispatcher service', () => {
           },
           type: 'send',
           username: channel.phoneNumber,
+          expiresInSeconds: channel.messageExpiryTime,
         },
       ])
     })

@@ -25,12 +25,12 @@ const dbResource = {
 }
 
 const socketPoolsResource = () =>
-  times(availableSockets, () => {
+  times(availableSockets, idx => {
     const pool = createPool(
       {
         create: () => {
           const sock = new EventEmitter().setMaxListeners(0)
-          sock.on('data', dispatcher.dispatch)
+          sock.on('data', dispatcher.dispatcherOf(idx))
           sock.write = (msg, cb) => cb(null, true)
           return sock
         },

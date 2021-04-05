@@ -52,6 +52,7 @@ const notifyMany = ({ channel, recipients, notificationKey, message, args }) =>
           sender: channel.phoneNumber,
           recipient: recipient.memberPhoneNumber,
           message: _messageOf(recipient, message, notificationKey, args), //message || messagesIn(recipient.language).notifications[notificationKey],
+          expiresInSeconds: channel.messageExpiryTime,
         }),
         channel.socketId,
       ),

@@ -3,8 +3,9 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.error.SignalcError
-import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.SendResultType
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genNewAccount
@@ -12,9 +13,9 @@ import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genRegiste
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genAbortRequest
-import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genCloseRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genSocketPath
@@ -26,8 +27,9 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subs
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
-import info.signalboost.signalc.util.*
+import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
+import info.signalboost.signalc.util.TimeUtil
 import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -39,11 +41,14 @@ import org.whispersystems.signalservice.api.push.exceptions.CaptchaRequiredExcep
 import java.io.IOException
 import java.net.Socket
 import java.time.Instant
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
+import kotlin.io.path.deleteIfExists
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
-import kotlin.time.seconds
 
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -75,12 +80,10 @@ class SocketReceiverTest : FreeSpec({
                 every { TimeUtil.nowInMillis() } returns now
             }
         }
-
         beforeTest{
             client = TestSocketClient.connect(socketPath, testScope)
             socket = socketServer.receive()
             listenJob = app.socketReceiver.connect(socket)
-            delay(20.milliseconds)
         }
 
         afterTest {
@@ -89,22 +92,15 @@ class SocketReceiverTest : FreeSpec({
 
         afterSpec {
             app.stop()
-            client.close()
             socketServer.close()
+            Path(socketPath).deleteIfExists()
             testScope.teardown()
             serverScope.teardown()
             unmockkAll()
         }
 
-        fun verifyClosed(socket: Socket) {
-            app.socketReceiver.readers[socket.hashCode()] shouldBe null
-            coVerify {
-                app.socketServer.close(socket.hashCode())
-            }
-        }
-
         "handling connections" - {
-            afterTest{
+            afterTest {
                 client.close()
             }
 
@@ -114,8 +110,32 @@ class SocketReceiverTest : FreeSpec({
             }
         }
 
-        "handling command messages" - {
-            afterTest{
+        "handling connection terminations" - {
+            "when client terminates socket connection"  {
+                client.close()
+
+                listenJob.invokeOnCompletion {
+                    app.socketReceiver.readers[socket.hashCode()] shouldBe null
+                    coVerify {
+                        app.socketServer.close(socket.hashCode())
+                    }
+                }
+            }
+
+            "when server calls #close"  {
+                app.socketReceiver.close(socket.hashCode())
+
+                listenJob.invokeOnCompletion {
+                    app.socketReceiver.readers[socket.hashCode()] shouldBe null
+                    coVerify {
+                        app.socketServer.close(socket.hashCode())
+                    }
+                }
+            }
+        }
+
+        "handling requests" - {
+            afterTest {
                 client.close()
             }
 
@@ -132,7 +152,6 @@ class SocketReceiverTest : FreeSpec({
                     }
                 }
             }
-
 
             "REGISTER request" - {
                 val request = genRegisterRequest(username = senderPhoneNumber)
@@ -256,9 +275,7 @@ class SocketReceiverTest : FreeSpec({
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
-                                    app.socketSender.send(
-                                        sendSuccess(sendRequest)
-                                    )
+                                    app.socketSender.send(sendSuccess(sendRequest))
                                 }
                             }
                         }
@@ -315,6 +332,91 @@ class SocketReceiverTest : FreeSpec({
                                 app.socketSender.send(
                                     requestHandlingError(
                                         sendRequest,
+                                        Error("Can't send to $senderPhoneNumber: not registered.")
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            "SET_EXPIRATION request" - {
+                val request = genSetExpiration(
+                    username = verifiedSenderAccount.username,
+                    recipientAddress = recipientAccount.address.asSignalcAddress(),
+                    expiresInSeconds = 60,
+                )
+
+                "when sender account is verified" - {
+                    coEvery { app.accountManager.loadVerified(request.username) } returns verifiedSenderAccount
+
+                    "attempts to set expiration timer with recipient" {
+                        client.send(request.toJson())
+                        eventually(timeout) {
+                            coVerify {
+                                app.signalSender.setExpiration(
+                                    verifiedSenderAccount,
+                                    recipientAccount.address,
+                                    60,
+                                )
+                            }
+                        }
+                    }
+
+                    "when setting expiration succeeds" - {
+                        "sends success message to socket" {
+                            client.send(request.toJson())
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(SocketResponse.SetExpirationSuccess.of(request))
+                                }
+                            }
+                        }
+                    }
+
+                    "when setting expiration fails" - {
+                        coEvery {
+                            app.signalSender.setExpiration(any(),any(),any())
+                        } returns mockk {
+                            every { success } returns null
+                            every { isNetworkFailure } returns true
+                        }
+
+                        "sends failure message to socket" {
+                            client.send(request.toJson())
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        SocketResponse.SetExpirationFailed.of(request, SendResultType.NETWORK_FAILURE)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "when sender account is not verified" - {
+                    coEvery { app.accountManager.loadVerified(any()) } returns null
+
+                    "does not attempt to set expiration timer with recipient" {
+                        client.send(request.toJson())
+                        coVerify(exactly = 0) {
+                            app.signalSender.setExpiration(
+                                any(),
+                                any(),
+                                any(),
+                            )
+                        }
+                    }
+
+                    "sends error message to socket" {
+                        client.send(request.toJson())
+                        eventually(timeout) {
+                            coVerify {
+                                app.socketSender.send(
+                                    requestHandlingError(
+                                        request,
                                         Error("Can't send to $senderPhoneNumber: not registered.")
                                     )
                                 )
@@ -423,6 +525,7 @@ class SocketReceiverTest : FreeSpec({
 
                     "sanitizes verification code and submits it to signal" {
                         coEvery { app.accountManager.verify(any(), any())} returns mockk()
+
                         client.send(request.toJson())
                         eventually(timeout) {
                             coVerify {
@@ -510,9 +613,8 @@ class SocketReceiverTest : FreeSpec({
                     )
 
                     "it sends registration error response to socket" {
-                        repeat(2) {
-                            client.send(request.toJson())
-                        }
+                        client.send(request.toJson())
+                        client.send(request.toJson())
                         eventually(timeout) {
                             coVerify {
                                 app.socketSender.send(
@@ -522,6 +624,8 @@ class SocketReceiverTest : FreeSpec({
                                     )
                                 )
                             }
+                        }
+                        eventually(timeout) {
                             coVerify {
                                 app.socketSender.send(
                                     SocketResponse.VerificationError.of(
@@ -532,30 +636,6 @@ class SocketReceiverTest : FreeSpec({
                             }
                         }
                     }
-                }
-            }
-        }
-
-        "handling connection terminations" - {
-            "when server calls #close"  {
-                app.socketReceiver.close(socket.hashCode())
-                listenJob.invokeOnCompletion {
-                    verifyClosed(socket)
-                }
-            }
-
-            "when client terminates socket connection"  {
-                client.close()
-                listenJob.invokeOnCompletion {
-                    verifyClosed(socket)
-                }
-
-            }
-
-            "on CLOSE request" - {
-                client.send(genCloseRequest().toJson())
-                listenJob.invokeOnCompletion {
-                    verifyClosed(socket)
                 }
             }
         }

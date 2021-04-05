@@ -15,4 +15,10 @@ object SignalMessageMatchers {
             timestamp?.let { _ -> it.timestamp == timestamp } ?: true &&
             expiresInSeconds?.let { _ -> it.expiresInSeconds == expiresInSeconds } ?: true
     }
+
+    fun MockKMatcherScope.signalExpirationUpdate(
+        expiresInSeconds: Int,
+    ): SignalServiceDataMessage = match {
+        it.isExpirationUpdate && it.expiresInSeconds == expiresInSeconds
+    }
 }

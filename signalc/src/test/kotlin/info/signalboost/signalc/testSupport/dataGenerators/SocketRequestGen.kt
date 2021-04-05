@@ -2,6 +2,7 @@ package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SocketRequest
+import info.signalboost.signalc.model.SocketRequest.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalcAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
@@ -34,13 +35,15 @@ object SocketRequestGen {
         messageBody: String = genPhrase(),
         hasAttachments: Boolean = false,
         attachments: List<SocketRequest.Send.Attachment> =
-            if (hasAttachments) genAttachments() else emptyList()
+            if (hasAttachments) genAttachments() else emptyList(),
+        expiresInSeconds: Int = DEFAULT_EXPIRY_TIME,
     ) =  SocketRequest.Send(
         id = id,
         username = username,
         recipientAddress = recipientAddress,
         messageBody= messageBody,
-        attachments = attachments
+        attachments = attachments,
+        expiresInSeconds = expiresInSeconds,
     )
 
     fun genSetExpiration(

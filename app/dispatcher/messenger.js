@@ -114,7 +114,12 @@ const respond = ({ channel, message, sender, command }) => {
   // because respond doesn't handle attachments, don't want to repeat message here
   return signal
     .sendMessage(
-      sdMessageOf({ sender: channel.phoneNumber, recipient: sender.memberPhoneNumber, message }),
+      sdMessageOf({
+        sender: channel.phoneNumber,
+        recipient: sender.memberPhoneNumber,
+        message,
+        expiresInSeconds: channel.messageExpiryTime,
+      }),
       channel.socketId,
     )
     .then(async () => {
@@ -139,7 +144,13 @@ const sendNotifications = (channel, notifications, delay = 0) => {
   return sequence(
     notifications.map(({ recipient, message, attachments = [] }) => () =>
       signal.sendMessage(
-        sdMessageOf({ sender: channel.phoneNumber, recipient, message, attachments }),
+        sdMessageOf({
+          sender: channel.phoneNumber,
+          recipient,
+          message,
+          attachments,
+          expiresInSeconds: channel.messageExpiryTime,
+        }),
         channel.socketId,
       ),
     ),

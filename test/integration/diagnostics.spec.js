@@ -7,10 +7,10 @@ import db from '../../app/db'
 import signal from '../../app/signal'
 import socket from '../../app/socket/write'
 import util from '../../app/util'
-import { map, times } from 'lodash'
+import { map, take, times } from 'lodash'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
 import { failedHealthchecks, sendHealthchecks } from '../../app/diagnostics'
-import { messageTypes } from '../../app/signal/constants'
+import { defaultExpiryTime, messageTypes } from '../../app/signal/constants'
 import { destroyAllChannels } from '../support/db'
 
 const {
@@ -47,6 +47,7 @@ describe('diagnostics jobs', () => {
         dataMessage: {
           body: outSdMessage.messageBody,
           attachments: outSdMessage.attachments,
+          expiresInSeconds: outSdMessage.expiresInSeconds,
         },
       },
     }
@@ -95,6 +96,7 @@ describe('diagnostics jobs', () => {
               recipientAddress: { number: channels[idx].phoneNumber },
               type: messageTypes.SEND,
               username: diagnosticsPhoneNumber,
+              expiresInSeconds: defaultExpiryTime,
             },
             diagnosticsChannel.socketId,
           ]),
@@ -105,6 +107,7 @@ describe('diagnostics jobs', () => {
               type: messageTypes.SEND,
               username: channels[idx].phoneNumber,
               attachments: [],
+              expiresInSeconds: defaultExpiryTime,
             },
             channel.socketId,
           ]),
@@ -140,115 +143,20 @@ describe('diagnostics jobs', () => {
       it('notifies maintainers and restarts signalboost', async () => {
         // refetch socket ids b/c restart will trigger shard job which reassigns sockets
         const numHealtchecks = 2 * channels.length
-        const numRestartMessages = 24
+        const numRestartMessages = 16
+        const numMessagesUnderTest = numHealtchecks + numRestartMessages
         const messageCalls = writeStub
           .getCalls()
           .filter(isNotHealthcheck)
           .filter(isNotRestartTimeout)
 
-        if (messageCalls.length !== numHealtchecks + numRestartMessages) {
+        if (messageCalls.length < numMessagesUnderTest) {
           // TODO(2020-11-01|aguestuser) let's do something much better than this!
           // problem: this test is timing dependent and so often has not gathered the correct number of calls by time we check
           console.log('FLAKEY TEST: test.integration.diagnostics')
         } else {
-          expect(messageCalls.length).to.eql(numHealtchecks + numRestartMessages)
-          expect(map(messageCalls, 'args')).to.have.deep.members([
-            [
-              {
-                messageBody: `Channel ${channels[0].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[0].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[0].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[1].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[1].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[0].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[1].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[1].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[2].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[0].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[2].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[1].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[3].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[0].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
-            [
-              {
-                messageBody: `Channel ${channels[3].phoneNumber} failed to respond to 2 consecutive healthchecks.`,
-                recipientAddress: {
-                  number: diagnosticsChannel.memberships[1].memberPhoneNumber,
-                },
-                type: 'send',
-                username: diagnosticsPhoneNumber,
-                attachments: [],
-              },
-              diagnosticsChannel.socketId,
-            ],
+          const _messageCalls = take(messageCalls, numMessagesUnderTest)
+          expect(map(_messageCalls, 'args')).to.have.deep.members([
             [
               {
                 messageBody: `Restarting shard ${channels[0].socketId} due to failed healthchecks on ${channels[0].phoneNumber}.`,
@@ -258,6 +166,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -270,6 +179,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -282,6 +192,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -294,6 +205,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -306,6 +218,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -318,6 +231,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -330,6 +244,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],
@@ -342,6 +257,7 @@ describe('diagnostics jobs', () => {
                 type: 'send',
                 username: diagnosticsPhoneNumber,
                 attachments: [],
+                expiresInSeconds: diagnosticsChannel.messageExpiryTime,
               },
               diagnosticsChannel.socketId,
             ],

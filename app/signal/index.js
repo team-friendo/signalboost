@@ -2,7 +2,7 @@ const socketWriter = require('../socket/write')
 const channelRepository = require('../db/repositories/channel')
 const callbacks = require('./callbacks')
 const { pick, isEmpty } = require('lodash')
-const { messages, messageTypes, trustLevels } = require('./constants')
+const { defaultExpiryTime, messages, messageTypes, trustLevels } = require('./constants')
 const util = require('../util')
 const { statuses, loggerOf } = util
 const {
@@ -122,6 +122,7 @@ const healthcheck = async (channelPhoneNumber, socketId) => {
       username: diagnosticsPhoneNumber,
       messageBody: `${messageTypes.HEALTHCHECK} ${id}`,
       recipientAddress: { number: channelPhoneNumber },
+      expiresInSeconds: defaultExpiryTime,
     },
     socketId,
   )

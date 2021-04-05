@@ -33,18 +33,21 @@ const trustLevels = {
   UNTRUSTED: 'UNTRUSTED',
 }
 
+const defaultExpiryTime = 60 * 60 * 24 * 7 // 1 week in seconds
+
 // ({ sender: string, recipient?: string, message: string, attachments: Array<SignaldOutboundAttachment> | null }) => SignaldOutboundMessage
 // `sender` and `recipient` are both e164 phone numbers
-const sdMessageOf = ({ sender, recipient, message, attachments }) => ({
+const sdMessageOf = ({ sender, recipient, message, attachments, expiresInSeconds }) => ({
   type: messageTypes.SEND,
   username: sender,
   recipientAddress: { number: recipient },
   messageBody: message,
   attachments: attachments || [],
+  expiresInSeconds: expiresInSeconds || defaultExpiryTime,
 })
 
 const sdRecipientAddressOf = number => ({
   number,
 })
 
-module.exports = { messageTypes, trustLevels, sdMessageOf, sdRecipientAddressOf }
+module.exports = { messageTypes, trustLevels, defaultExpiryTime, sdMessageOf, sdRecipientAddressOf }

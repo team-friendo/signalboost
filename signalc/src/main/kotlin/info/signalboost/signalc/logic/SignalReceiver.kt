@@ -14,16 +14,15 @@ import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
+import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.time.ExperimentalTime
 
 
-@ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalReceiver(private val app: Application) {
@@ -126,27 +125,24 @@ class SignalReceiver(private val app: Application) {
     }
 
     private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
-        // Attempt to decrypt envelope in a new coroutine within CPU-intensive thread-pool
-        // (don't suspend execution in the current coroutine or consume IO threadpool),
-        // then relay result to socket message sender for handling.
+        // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
         app.coroutineScope.launch(IO) {
             try {
-                val dataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
-                dataMessage?.body?.orNull()
-                    ?.let {
-                        app.socketSender.send(
-                            SocketResponse.Cleartext.of(
-                                sender,
-                                recipient,
-                                it,
-                                emptyList(), //TODO: actually handle attachments!
-                                dataMessage.expiresInSeconds,
-                                dataMessage.timestamp,
-                            )
+                val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
+                    ?: return@launch // drop other message types (eg: typing message, sync message, etc)
+                dataMessage.body?.orNull().let {
+                    app.socketSender.send(
+                        SocketResponse.Cleartext.of(
+                            sender,
+                            recipient,
+                            it ?: "", // allow empty message bodies b/c that's how expiry timer changes are sent
+                            emptyList(),
+                            dataMessage.expiresInSeconds,
+                            dataMessage.timestamp,
                         )
-                    }
-                    ?: app.socketSender.send(SocketResponse.Empty)
+                    )
+                }
             } catch(e: Throwable) {
                 app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, e))
             }

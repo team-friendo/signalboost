@@ -178,6 +178,7 @@ describe('messenger service', () => {
             recipient: adminPhoneNumbers[0],
             message: `[BROADCAST]\n${payload}`,
             attachments,
+            expiresInSeconds: channel.messageExpiryTime,
           }),
           channel.socketId,
         ])
@@ -188,6 +189,7 @@ describe('messenger service', () => {
             recipient: adminPhoneNumbers[1],
             message: `[BROADCAST]\n${payload}`,
             attachments,
+            expiresInSeconds: channel.messageExpiryTime,
           }),
           channel.socketId,
         ])
@@ -198,6 +200,7 @@ describe('messenger service', () => {
             recipient: adminPhoneNumbers[2],
             message: `[BROADCAST]\n${payload}`,
             attachments,
+            expiresInSeconds: channel.messageExpiryTime,
           }),
           channel.socketId,
         ])
@@ -208,6 +211,7 @@ describe('messenger service', () => {
             recipient: subscriberPhoneNumbers[0],
             message: payload,
             attachments,
+            expiresInSeconds: channel.messageExpiryTime,
           }),
           channel.socketId,
         ])
@@ -250,6 +254,7 @@ describe('messenger service', () => {
               sender: channel.phoneNumber,
               recipient: sender.memberPhoneNumber,
               message: response,
+              expiresInSeconds: channel.messageExpiryTime,
             }),
             channel.socketId,
           ])
@@ -286,6 +291,7 @@ describe('messenger service', () => {
               sender: channel.phoneNumber,
               recipient: sender.memberPhoneNumber,
               message: response,
+              expiresInSeconds: channel.messageExpiryTime,
             }),
             channel.socketId,
           ])
@@ -299,6 +305,7 @@ describe('messenger service', () => {
                 recipient: phoneNumber,
                 message,
                 attachments,
+                expiresInSeconds: channel.messageExpiryTime,
               }),
               channel.socketId,
             ])
@@ -339,6 +346,7 @@ describe('messenger service', () => {
               sender: channel.phoneNumber,
               recipient: adminSender.memberPhoneNumber,
               message: 'yay!',
+              expiresInSeconds: channel.messageExpiryTime,
             }),
             channel.socketId,
           ])
@@ -369,6 +377,7 @@ describe('messenger service', () => {
               sender: channel.phoneNumber,
               recipient: adminSender.memberPhoneNumber,
               message: errorMessage,
+              expiresInSeconds: channel.messageExpiryTime,
             }),
             channel.socketId,
           ])
@@ -459,6 +468,7 @@ describe('messenger service', () => {
               recipient: phoneNumber,
               message: 'foobar',
               attachments: [],
+              expiresInSeconds: channel.messageExpiryTime,
             }),
             channel.socketId,
           ])

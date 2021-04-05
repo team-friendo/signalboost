@@ -284,6 +284,40 @@ sealed class SocketResponse {
     }
 
     @Serializable
+    @SerialName("set_expiration_failed")
+    data class SetExpirationFailed(
+        val id: String,
+        val username: String,
+        val recipientAddress: SignalcAddress,
+        val resultType: SendResultType,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.SetExpiration, resultType: SendResultType) = SetExpirationFailed(
+                request.id,
+                request.username,
+                request.recipientAddress,
+                resultType,
+            )
+        }
+    }
+
+    @Serializable
+    @SerialName("set_expiration_succeeded")
+    data class SetExpirationSuccess(
+        val id: String,
+        val username: String,
+        val recipientAddress: SignalcAddress,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.SetExpiration) = SetExpirationSuccess(
+                request.id,
+                request.username,
+                request.recipientAddress,
+            )
+        }
+    }
+
+    @Serializable
     @SerialName("subscription_failed")
     data class SubscriptionFailed(
         val id: String,

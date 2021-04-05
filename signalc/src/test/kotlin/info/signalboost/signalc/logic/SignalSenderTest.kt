@@ -2,18 +2,18 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalSender.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.logic.SignalSender.Companion.asAddress
+import info.signalboost.signalc.model.SocketRequest.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalDataMessage
+import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalExpirationUpdate
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional.absent
@@ -54,7 +54,7 @@ class SignalSenderTest : FreeSpec({
                 every { success } returns mockk()
             }
 
-            "sends a message from a message sender" {
+            "sends a data message to intended recipient" {
                 val now = TimeUtil.nowInMillis()
                 val result = messageSender.send(
                     sender = verifiedAccount,
@@ -79,7 +79,7 @@ class SignalSenderTest : FreeSpec({
 
             "provides a default timestamp if none provided" {
                 every { TimeUtil.nowInMillis() } returns 1000L
-                messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
+                messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!", DEFAULT_EXPIRY_TIME)
                 verify {
                     anyConstructed<SignalServiceMessageSender>().sendMessage(
                         any(),
@@ -88,16 +88,30 @@ class SignalSenderTest : FreeSpec({
                     )
                 }
             }
+        }
 
-            "provides a default expiry time if none provided" {
-                messageSender.send(verifiedAccount, recipientPhone.asAddress(), "hello!")
+        "#setExpiration" - {
+            val recipientPhone = genPhoneNumber()
+            every {
+                anyConstructed<SignalServiceMessageSender>().sendMessage(any(), any(), any())
+            } returns mockk {
+                every { success } returns mockk()
+            }
+
+            "sends an expiration update to intended recipient" {
+                val result = messageSender.setExpiration(
+                    sender = verifiedAccount,
+                    recipient = recipientPhone.asAddress(),
+                    expiresInSeconds = 60,
+                )
                 verify {
                     anyConstructed<SignalServiceMessageSender>().sendMessage(
-                        any(),
-                        any(),
-                        signalDataMessage(expiresInSeconds = DEFAULT_EXPIRY_TIME)
+                        SignalServiceAddress(null, recipientPhone),
+                        absent(),
+                        signalExpirationUpdate(60)
                     )
                 }
+                result.success shouldNotBe null
             }
         }
     }

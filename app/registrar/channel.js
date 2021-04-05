@@ -24,7 +24,12 @@ const addAdmin = async ({ channelPhoneNumber, adminPhoneNumber }) => {
   const channel = await channelRepository.findByPhoneNumber(channelPhoneNumber)
   const message = _welcomeNotificationOf(channel)
   await signal.sendMessage(
-    sdMessageOf({ sender: channelPhoneNumber, recipient: adminPhoneNumber, message }),
+    sdMessageOf({
+      sender: channelPhoneNumber,
+      recipient: adminPhoneNumber,
+      message,
+      expiresInSeconds: 0,
+    }),
     channel.socketId,
   )
   return { status: sbStatuses.SUCCESS, message }
@@ -103,6 +108,7 @@ const _sendWelcomeMessages = async (channel, adminPhoneNumbers) =>
           sender: channel.phoneNumber,
           recipient: adminPhoneNumber,
           message: _welcomeNotificationOf(channel),
+          expiresInSeconds: 0,
         }),
         channel.socketId,
       )
@@ -132,6 +138,7 @@ const _inviteToSupportChannel = async (supportChannel, adminPhoneNumbers) => {
           sender: supportChannel.phoneNumber,
           recipient: adminPhoneNumber,
           message: messagesIn(defaultLanguage).notifications.invitedToSupportChannel,
+          expiresInSeconds: 0,
         }),
         supportChannel.socketId,
       )

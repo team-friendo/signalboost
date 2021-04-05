@@ -22,4 +22,14 @@ object Metrics {
         logger.debug("$elapsed:  $label")
         return res
     }
+
+    fun <T>withTimedMillis(
+        block: () -> T,
+    ): Pair<T,Long> {
+        var res: T
+        val elapsed = measureTimeMillis {
+            res = block()
+        }
+        return Pair(res, elapsed)
+    }
 }
