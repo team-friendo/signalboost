@@ -12,8 +12,8 @@ module.exports = {
   HOTLINE_OFF: ['HOTLINE OFF'],
   INFO: ['INFO'],
   INVITE: ['INVITE'],
-  JOIN: ['HELLO', 'JOIN'], // we recognize "JOIN" and "LEAVE" for backwards compatibility
-  LEAVE: ['GOODBYE', 'LEAVE', 'STOP', 'UNSUBSCRIBE'],
+  JOIN: ['HELLO', 'JOIN', 'ချိတ်ဆက်မည်', '你好'], // includes "JOIN" and "LEAVE" for backwards compatibility + partial language support for other languages besides en/es/de/fr
+  LEAVE: ['GOODBYE', 'LEAVE', 'STOP', 'UNSUBSCRIBE', 'နှုတ်ဆက်ပါတယ်', 'kwaheri', '拜拜'],
   PRIVATE: ['PRIVATE', '~'],
   REMOVE: ['REMOVE'],
   REPLY: ['REPLY', '@'],
