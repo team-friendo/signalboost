@@ -6,8 +6,6 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.Channel
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.messages.SendMessageResult
@@ -46,46 +44,6 @@ class SignalSender(private val app: Application) {
             )
         }
 
-    data class QueuedMessage(
-        val sender: VerifiedAccount,
-        val recipient: SignalServiceAddress,
-        val dataMessage: SignalServiceDataMessage,
-        val result: CompletableDeferred<SendMessageResult>,
-    )
-
-
-    private val messageQueues = ConcurrentHashMap<String,List<SendChannel<QueuedMessage>>>()
-    private fun messageQueueOf(account: VerifiedAccount): SendChannel<QueuedMessage> =
-        getMemoized(messageQueues, account.username) {
-            List(Application.queueParallelism) {
-                Channel<QueuedMessage>(Application.queueParallelism).also { chan ->
-                    app.coroutineScope.launch(IO) {
-                        while (!chan.isClosedForReceive) {
-                            val qm = chan.receive()
-                            val result = messageSenderOf(qm.sender).sendMessage(
-                                qm.recipient,
-                                Optional.absent(),
-                                qm.dataMessage
-                            )
-                            qm.result.complete(result)
-                        }
-                    }
-                }
-//            ******* Actor way *******
-//            app.coroutineScope.actor<QueuedMessage>(IO) {
-//                for (qm in channel) {
-//                    qm.result.complete(
-//                        messageSenderOf(qm.sender).sendMessage(
-//                            qm.recipient,
-//                            Optional.absent(),
-//                            qm.dataMessage
-//                        )
-//                    )
-//                }
-//            }
-//        }
-            }
-        }.random()
 
     suspend fun send(
         sender: VerifiedAccount,
@@ -93,39 +51,45 @@ class SignalSender(private val app: Application) {
         body: String,
         expiration: Int,
         timestamp: Long = TimeUtil.nowInMillis(),
-    ): SendMessageResult {
-        val dataMessage =  SignalServiceDataMessage
-            .newBuilder()
-            .withBody(body)
-            .withTimestamp(timestamp)
-            .withExpiration(expiration)
-            .build()
+    ): SendMessageResult =
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
-        val result = CompletableDeferred<SendMessageResult>()
-        messageQueueOf(sender).send(QueuedMessage(sender, recipient, dataMessage, result))
-        return result.await()
-
-        /*** FULLY PARALLELIZED VERSION ***/
-//        return messageSenderOf(sender).sendMessage(
-//            recipient,
-//            Optional.absent(),
-//            dataMessage
-//        )
-    }
+        sendDataMessage(
+            sender,
+            recipient,
+            SignalServiceDataMessage
+                .newBuilder()
+                .withBody(body)
+                .withTimestamp(timestamp)
+                .withExpiration(expiration)
+                .build()
+        )
 
     suspend fun setExpiration(
         sender: VerifiedAccount,
         recipient: SignalServiceAddress,
-        expiresInSeconds: Int,
-    ): SendMessageResult {
-        val dataMessage = SignalServiceDataMessage
-            .newBuilder()
-            .asExpirationUpdate()
-            .withExpiration(expiresInSeconds)
-            .build()
-        return CompletableDeferred<SendMessageResult>().let {
-            messageQueueOf(sender).send(QueuedMessage(sender, recipient, dataMessage, it))
-            it.await()
-        }
-    }
+        expiresInSeconds: Int
+    ): SendMessageResult =
+        sendDataMessage(
+            sender,
+            recipient,
+            SignalServiceDataMessage
+                .newBuilder()
+                .asExpirationUpdate()
+                .withExpiration(expiresInSeconds)
+                .build()
+        )
+
+
+    // helper
+    private suspend fun sendDataMessage(
+        sender: VerifiedAccount,
+        recipient: SignalServiceAddress,
+        dataMessage: SignalServiceDataMessage,
+    ): SendMessageResult = app.coroutineScope.async(IO) {
+        messageSenderOf(sender).sendMessage(
+            recipient,
+            Optional.absent(),
+            dataMessage
+        )
+    }.await()
 }
