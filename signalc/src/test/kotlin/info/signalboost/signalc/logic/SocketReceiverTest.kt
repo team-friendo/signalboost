@@ -13,7 +13,6 @@ import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genRegiste
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genAbortRequest
-import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genCloseRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
@@ -28,6 +27,7 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subs
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
+import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.assertions.timing.eventually
@@ -80,13 +80,18 @@ class SocketReceiverTest : FreeSpec({
                 every { TimeUtil.nowInMillis() } returns now
             }
         }
+        beforeTest{
+            client = TestSocketClient.connect(socketPath, testScope)
+            socket = socketServer.receive()
+            listenJob = app.socketReceiver.connect(socket)
+        }
 
         afterTest {
             clearAllMocks(answers = false, childMocks = false, objectMocks = false)
         }
 
         afterSpec {
-            app.socketReceiver.stop()
+            app.stop()
             socketServer.close()
             Path(socketPath).deleteIfExists()
             testScope.teardown()
@@ -94,21 +99,43 @@ class SocketReceiverTest : FreeSpec({
             unmockkAll()
         }
 
-        fun verifyClosed(socket: Socket) {
-            app.socketReceiver.readers[socket.hashCode()] shouldBe null
-            coVerify {
-                app.socketServer.close(socket.hashCode())
+        "handling connections" - {
+            afterTest {
+                client.close()
+            }
+
+            "opens a reader on a socket and stores a reference to it" {
+                app.socketReceiver.readers[socket.hashCode()] shouldNotBe null
+                app.socketReceiver.close(socket.hashCode())
             }
         }
 
-        "handling command messages" - {
-            beforeTest{
-                client = TestSocketClient.connect(socketPath, testScope)
-                socket = socketServer.receive()
-                listenJob = app.socketReceiver.connect(socket)
+        "handling connection terminations" - {
+            "when client terminates socket connection"  {
+                client.close()
+
+                listenJob.invokeOnCompletion {
+                    app.socketReceiver.readers[socket.hashCode()] shouldBe null
+                    coVerify {
+                        app.socketServer.close(socket.hashCode())
+                    }
+                }
             }
 
-            afterTest{
+            "when server calls #close"  {
+                app.socketReceiver.close(socket.hashCode())
+
+                listenJob.invokeOnCompletion {
+                    app.socketReceiver.readers[socket.hashCode()] shouldBe null
+                    coVerify {
+                        app.socketServer.close(socket.hashCode())
+                    }
+                }
+            }
+        }
+
+        "handling requests" - {
+            afterTest {
                 client.close()
             }
 
@@ -610,46 +637,6 @@ class SocketReceiverTest : FreeSpec({
                         }
                     }
                 }
-            }
-        }
-
-        "handling connections" - {
-            beforeTest{
-                client = TestSocketClient.connect(socketPath, testScope)
-                socket = socketServer.receive()
-                listenJob = app.socketReceiver.connect(socket)
-            }
-
-            afterTest{
-                client.close()
-            }
-
-            "opens a reader on a socket and stores a reference to it" {
-                app.socketReceiver.readers[socket.hashCode()] shouldNotBe null
-                app.socketReceiver.close(socket.hashCode())
-            }
-        }
-
-        "handling connection terminations" - {
-            beforeTest{
-                client = TestSocketClient.connect(socketPath, testScope)
-                socket = socketServer.receive()
-                listenJob = app.socketReceiver.connect(socket)
-            }
-
-            "when server calls #close"  {
-                app.socketReceiver.close(socket.hashCode())
-                listenJob.invokeOnCompletion {
-                    verifyClosed(socket)
-                }
-            }
-
-            "when client terminates socket connection"  {
-                client.close()
-                listenJob.invokeOnCompletion {
-                    verifyClosed(socket)
-                }
-
             }
         }
     }
