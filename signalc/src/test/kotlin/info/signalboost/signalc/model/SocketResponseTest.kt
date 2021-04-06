@@ -134,7 +134,34 @@ class SocketResponseTest : FreeSpec({
                       |"body":"${response.data.dataMessage.body}",
                       |"expiresInSeconds":${response.data.dataMessage.expiresInSeconds},
                       |"timestamp":${response.data.dataMessage.timestamp},
-                      |"attachments":[]
+                      |"attachments":[
+                        |{
+                          |"blurHash":null,
+                          |"caption":null,
+                          |"contentType":"${response.data.dataMessage.attachments[0].contentType}",
+                          |"digest":null,
+                          |"filename":"${response.data.dataMessage.attachments[0].filename}",
+                          |"height":${response.data.dataMessage.attachments[0].height},
+                          |"id":"${response.data.dataMessage.attachments[0].id}",
+                          |"key":"${response.data.dataMessage.attachments[0].key}",
+                          |"size":null,
+                          |"width":${response.data.dataMessage.attachments[0].width},
+                          |"voiceNote":false
+                        |},
+                        |{
+                          |"blurHash":null,
+                          |"caption":null,
+                          |"contentType":"${response.data.dataMessage.attachments[1].contentType}",
+                          |"digest":null,
+                          |"filename":"${response.data.dataMessage.attachments[1].filename}",
+                          |"height":${response.data.dataMessage.attachments[1].height},
+                          |"id":"${response.data.dataMessage.attachments[1].id}",
+                          |"key":"${response.data.dataMessage.attachments[1].key}",
+                          |"size":null,
+                          |"width":${response.data.dataMessage.attachments[1].width},
+                          |"voiceNote":false
+                        |}
+                      |]
                     |}
                   |}
                 |}""".flatten()

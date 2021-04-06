@@ -28,10 +28,12 @@ import kotlinx.coroutines.test.runBlockingTest
 import java.io.PrintWriter
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 import kotlin.time.seconds
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi

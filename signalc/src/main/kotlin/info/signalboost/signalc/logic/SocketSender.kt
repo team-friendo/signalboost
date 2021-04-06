@@ -11,8 +11,9 @@ import kotlinx.coroutines.channels.actor
 import mu.KLogging
 import java.io.PrintWriter
 import java.net.Socket
+import kotlin.io.path.ExperimentalPathApi
 
-
+@ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketSender(private val app: Application) {

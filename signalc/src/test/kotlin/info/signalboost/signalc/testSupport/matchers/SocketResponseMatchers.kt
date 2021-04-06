@@ -18,10 +18,12 @@ object SocketResponseMatchers {
         sender: SignalcAddress,
         recipient: SignalcAddress,
         body: String,
+        attachments: List<SocketResponse.Cleartext.Attachment> = emptyList(),
     ): SocketResponse.Cleartext = match {
         it.data.source == sender &&
-            it.data.username == recipient.number &&
-            it.data.dataMessage.body == body
+                it.data.username == recipient.number &&
+                it.data.dataMessage.body == body &&
+                it.data.dataMessage.attachments == attachments
     }
 
     fun MockKMatcherScope.decryptionError(

@@ -21,14 +21,17 @@ networks:
       name: localdev
 
 volumes:
-  loadtest_sender_sock:
   loadtest_postgres_data:
   loadtest_receiver_signalc_gradle_cache:
   loadtest_receiver_signalc_build_cache:
+  loadtest_receiver_attachments:
+  loadtest_receiver_sock:
+  loadtest_sender_sock:
   loadtest_sender_signalc_gradle_cache:
   loadtest_sender_signalc_build_cache:
+  loadtest_sender_signalc_attachments:
   loadtest_signald_data:
-  loadtest_receiver_sock:
+
 
 services:
 
@@ -69,6 +72,7 @@ services:
       - loadtest_receiver_signalc_gradle_cache:/home/gradle/.gradle
       - loadtest_receiver_signalc_build_cache:/signalc/build
       - loadtest_receiver_sock:/signalc/sock
+      - loadtest_receiver_attachments:/signalc/attachments
     restart: unless-stopped
 
   receiver_driver:
@@ -176,6 +180,7 @@ services:
       - loadtest_sender_signalc_gradle_cache:/home/gradle/.gradle
       - loadtest_sender_signalc_build_cache:/signalc/build
       - loadtest_sender_sock:/signalc/sock
+      - loadtest_sender_signalc_attachments:/signalc/attachments
     restart: unless-stopped
 
   sender_signald:

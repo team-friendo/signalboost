@@ -5,9 +5,11 @@ import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
 
 
+@ExperimentalPathApi
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 object Config {
@@ -47,6 +49,7 @@ object Config {
     data class Signal(
         val addSecurityProvider: Boolean,
         val agent: String,
+        val attachmentsPath: String,
         val cdnUrl: String,
         val cdn2Url: String,
         val contactDiscoveryUrl: String,
@@ -99,6 +102,7 @@ object Config {
         signal= Signal(
             addSecurityProvider = true,
             agent = "signalc",
+            attachmentsPath = System.getenv("SIGNAL_ATTACHMENTS_PATH") ?: "/signalc/attachments",
             cdnUrl = System.getenv("SIGNAL_CDN_URL") ?: "https://cdn.signal.org",
             cdn2Url = System.getenv("SIGNAL_CDN2_URL") ?: "https://cdn2.signal.org",
             contactDiscoveryUrl = System.getenv("SIGNAL_CONTACTS_URL") ?: "https://cms.souqcdn.com",

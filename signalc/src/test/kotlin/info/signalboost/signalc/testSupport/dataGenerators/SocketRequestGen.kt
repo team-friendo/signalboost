@@ -8,6 +8,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalc
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genCaptchaToken
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFileName
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFingerprint
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genPhrase
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genVerificationCode
@@ -35,7 +36,7 @@ object SocketRequestGen {
         messageBody: String = genPhrase(),
         hasAttachments: Boolean = false,
         attachments: List<SocketRequest.Send.Attachment> =
-            if (hasAttachments) genAttachments() else emptyList(),
+            if (hasAttachments) genSendAttachments() else emptyList(),
         expiresInSeconds: Int = DEFAULT_EXPIRY_TIME,
     ) =  SocketRequest.Send(
         id = id,
@@ -96,18 +97,33 @@ object SocketRequestGen {
         code = code,
     )
 
-    private fun genAttachments(): List<SocketRequest.Send.Attachment> = listOf(
-        SocketRequest.Send.Attachment(
-            filename = "/foo/bar.jpg",
-            caption = "baz is really bamming!",
-            width = 42,
-            height = 42,
-        ),
-        SocketRequest.Send.Attachment(
-            filename = "/bar/foo.jpg",
-            caption = "bam is really bazzing!",
-            width = 24,
-            height = 24,
-        )
+    fun genSendAttachment(
+        blurHash: String? = null,
+        caption: String? = null,
+        contentType: String = "image/jpeg",
+        digest: String? = null,
+        filename: String = genFileName(),
+        height: Int = genInt(),
+        id: String = genUuidStr(),
+        key: String? = null,
+        size: Int? = null,
+        width: Int = genInt(),
+        voiceNote: Boolean = false,
+    ): SocketRequest.Send.Attachment = SocketRequest.Send.Attachment(
+        blurHash,
+        caption,
+        contentType,
+        digest,
+        filename,
+        height,
+        id,
+        key,
+        size,
+        width,
+        voiceNote,
     )
+
+    private fun genSendAttachments(): List<SocketRequest.Send.Attachment> = List(2) {
+        genSendAttachment()
+    }
 }

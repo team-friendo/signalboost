@@ -15,10 +15,12 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
 import java.net.SocketException
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 import kotlin.time.seconds
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi

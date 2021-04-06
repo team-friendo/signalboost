@@ -10,7 +10,9 @@ import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.path.ExperimentalPathApi
 
+@ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketServer(val app: Application): Application.ReturningRunnable<SocketServer> {

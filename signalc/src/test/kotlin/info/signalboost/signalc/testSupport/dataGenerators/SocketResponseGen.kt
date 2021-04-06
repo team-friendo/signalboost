@@ -12,6 +12,8 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genC
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genTrustRequest
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genBase64EncodedBytes
+import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFileName
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFingerprint
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genPhrase
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genVersionStr
@@ -38,18 +40,57 @@ object SocketResponseGen {
         socketHash: SocketHashCode = genSocketHash(),
     ) = SocketResponse.AbortWarning(id, socketHash)
 
-    fun genCleartext() = SocketResponse.Cleartext(
+    fun genCleartext(
+        username: String = genPhoneNumber(),
+        source: SignalcAddress = genSignalcAddress(),
+        body: String = genPhrase(),
+        attachments: List<SocketResponse.Cleartext.Attachment> = genCleartextAttachments(),
+        expiresInSeconds: Int = genInt(),
+        timestamp: Long = genLong(),
+    ) = SocketResponse.Cleartext(
         data = SocketResponse.Cleartext.Data(
-            username = genPhoneNumber(),
-            source = genSignalcAddress(),
+            username = username,
+            source = source,
             dataMessage = SocketResponse.Cleartext.DataMessage(
-                body = genPhrase(),
-                attachments = emptyList(), // TODO: fix this!
-                expiresInSeconds = genInt(),
-                timestamp = genLong(),
+                body = body,
+                attachments = attachments,
+                expiresInSeconds = expiresInSeconds,
+                timestamp = timestamp,
             )
         )
     )
+
+    fun genCleartextAttachment(
+        blurHash: String? = null,
+        caption: String? = null,
+        contentType: String = "image/jpeg",
+        digest: String? = null,
+        filename: String = genFileName(),
+        height: Int = genInt(),
+        id: String = genUuidStr(),
+        key: String = genBase64EncodedBytes(),
+        size: Int? = null,
+        width: Int = genInt(),
+        voiceNote: Boolean = false,
+    ) = SocketResponse.Cleartext.Attachment(
+        blurHash,
+        caption,
+        contentType,
+        digest,
+        filename,
+        height,
+        id,
+        key,
+        size,
+        width,
+        voiceNote,
+    )
+
+    private fun genCleartextAttachments() = List(2) {
+        genCleartextAttachment()
+    }
+
+
     fun genRequestHandlingError(
         id: String = genUuidStr(),
         error: Throwable = Error(genPhrase()),

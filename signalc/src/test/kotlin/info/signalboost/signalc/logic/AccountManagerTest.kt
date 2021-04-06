@@ -23,9 +23,11 @@ import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import java.util.*
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi

@@ -22,12 +22,18 @@ import org.whispersystems.signalservice.api.push.TrustStore
 import org.whispersystems.signalservice.internal.configuration.*
 import org.whispersystems.util.Base64
 import java.io.*
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.attribute.PosixFilePermissions
 import java.security.Security
+import java.util.*
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 import kotlin.system.exitProcess
 
 
+@ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class Application(val config: Config.App){
@@ -69,6 +75,7 @@ class Application(val config: Config.App){
 
     data class Signal(
         val agent: String,
+        val attachmentsPath: String,
         val certificateValidator: CertificateValidator,
         val clientZkOperations: ClientZkOperations?,
         val configs: SignalServiceConfiguration,
@@ -80,6 +87,7 @@ class Application(val config: Config.App){
 
     private fun initializeSignal(): Signal = Signal(
         agent = config.signal.agent,
+        attachmentsPath = config.signal.attachmentsPath,
         certificateValidator = certificateValidator,
         clientZkOperations = clientZkOperations,
         configs = signalConfigs,
@@ -91,7 +99,7 @@ class Application(val config: Config.App){
         object : TrustStore {
             override fun getKeyStoreInputStream(): InputStream = {}::class.java.getResourceAsStream(
                 config.signal.trustStorePath
-            )
+            )!!
             override fun getKeyStorePassword(): String = config.signal.trustStorePassword
         }
     }
@@ -257,7 +265,7 @@ class Application(val config: Config.App){
             coEvery { subscribe(any()) } returns mockk()
         }
         val signalSender: SignalSender.() -> Unit = {
-            coEvery { send(any(),any(),any(),any(),any()) } returns mockk {
+            coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {
                 every { success } returns  mockk()
             }
             coEvery { setExpiration(any(), any(), any()) } returns mockk {

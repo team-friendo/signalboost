@@ -13,6 +13,7 @@ volumes:
   signalc_gradle_cache:
   signalc_build_cache:
   signalc_sock:
+  signalc_attachments:
 
 services:
 
@@ -89,6 +90,7 @@ services:
       - signalc_gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
       - signalc_sock:/signalc/sock
+      - signalc_attachments:/signalc/attachments
 
   ngrok:
     container_name: signalboost_ngrok # todo: this should just be ngrok?
