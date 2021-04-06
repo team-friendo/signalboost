@@ -289,7 +289,19 @@ const transformToInboundMessage = message => {
 // SignaldInboundAttachment -> SignaldOutboundAttachment
 const parseOutboundAttachment = inAttachment => ({
   filename: inAttachment.storedFilename || inAttachment.filename || '',
-  ...pick(inAttachment, ['caption', 'width', 'height', 'voiceNote']),
+  ...pick(inAttachment, [
+    'blurHash',
+    'caption',
+    'contentType',
+    'digest',
+    'filename',
+    'height',
+    'id',
+    'key',
+    'size',
+    'width',
+    'voiceNote',
+  ]),
 })
 
 // string -> [boolean, string]
