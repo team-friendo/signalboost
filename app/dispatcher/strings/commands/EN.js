@@ -1,4 +1,10 @@
-module.exports = {
+import { isArray, mergeWith } from 'lodash'
+
+const MY = require('./MY')
+const SW = require('./SW')
+const zhCN = require('./ZH-CN')
+
+const EN = {
   ACCEPT: ['ACCEPT'],
   ADD: ['ADD'],
   BAN: ['BAN'],
@@ -25,3 +31,10 @@ module.exports = {
   VOUCHING_OFF: ['VOUCHING OFF'],
   VOUCHING_ADMIN: ['VOUCHING ADMIN'],
 }
+
+const mergeLang = (langA, langB) =>
+  mergeWith(langA, langB, (a, b) => (isArray(a) ? a.concat(b) : a))
+const mergeLangs = langs => langs.slice(1).reduce((acc, lang) => mergeLang(acc, lang), langs[0])
+
+// export an EN commands module with MY and yueCN variants merged into the command strings arrays for each command:
+module.exports = mergeLangs([EN, MY, SW, zhCN])

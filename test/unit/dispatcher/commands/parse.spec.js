@@ -1215,4 +1215,17 @@ describe('parse module', () => {
       })
     })
   })
+
+  describe('commands in partially supported languages', () => {
+    it('returns a JOIN command and recognizes it as english regardless of the language', () => {
+      const variants = ['ချိတ်ဆက်မည်', 'HABARI', '你好']
+      variants.forEach(msg => {
+        expect(parseExecutable(msg)).to.eql({
+          command: commands.JOIN,
+          language: languages.EN,
+          payload: '',
+        })
+      })
+    })
+  })
 })
