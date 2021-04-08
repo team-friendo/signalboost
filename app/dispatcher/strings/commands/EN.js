@@ -1,4 +1,4 @@
-import { isArray, mergeWith } from 'lodash'
+const { isArray, mergeWith } = require('lodash')
 
 const MY = require('./MY')
 const SW = require('./SW')
