@@ -1,4 +1,4 @@
 module.exports = {
-  JOIN: ['HABARI'],
+  JOIN: ['MAMBO', 'HABARI'],
   LEAVE: ['KWAHERI'],
 }
