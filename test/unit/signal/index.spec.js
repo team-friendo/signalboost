@@ -463,11 +463,17 @@ describe('signal module', () => {
         messageBody: '',
         attachments: [
           {
+            contentType: 'image/svg+xml',
+            id: 843096872067478927,
+            size: 1714,
             filename: '/var/lib/signald/attachments/843096872067478927',
+            caption: 'foobar',
             width: 0,
             height: 0,
             voiceNote: false,
-            caption: 'foobar',
+            key:
+              'nPa/YAJ2diyCpUYlAkUL/G5ORfzDSpP0GQCDBquy0e57vJ+/CKMlL1Uo53546IZblnXJYzKpz+7gbCeryo+wMA==',
+            digest: '1/Hn4gpQIVGthpq9Q+IsEs9GuKr+KRF7YmW/4U/BGkw=',
           },
         ],
       })
@@ -498,17 +504,15 @@ describe('signal module', () => {
         expect(keys(parseOutboundAttachment(inboundAttachment))).to.have.members([
           'filename',
           'caption',
+          'contentType',
+          'digest',
           'height',
+          'id',
+          'key',
+          'size',
           'width',
           'voiceNote',
         ])
-      })
-
-      it('discards all other fields', () => {
-        const members = keys(parseOutboundAttachment(inboundAttachment))
-        ;['contentType', 'id', 'size', 'preview', 'key', 'digest'].forEach(member =>
-          expect(members).not.to.include(member),
-        )
       })
 
       it('parses a filename from a storedFilename', () => {
