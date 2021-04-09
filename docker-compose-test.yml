@@ -56,7 +56,6 @@ services:
       - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-      - ./signalc/whisper.store:/signalc/whisper.store
       - ./bin:/signalc/bin
       - gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
