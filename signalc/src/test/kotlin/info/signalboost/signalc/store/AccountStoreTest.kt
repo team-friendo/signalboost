@@ -18,8 +18,10 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import java.util.*
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
+@ExperimentalPathApi
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi

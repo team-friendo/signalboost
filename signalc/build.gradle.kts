@@ -13,8 +13,8 @@ repositories {
 plugins {
     application
     java
-    kotlin("jvm") version "1.4.21"
-    kotlin("plugin.serialization") version "1.4.10"
+    kotlin("jvm") version "1.4.30"
+    kotlin("plugin.serialization") version "1.4.30"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("org.liquibase.gradle") version "2.0.4"
 }
@@ -63,7 +63,7 @@ object Versions {
     const val jsonSerialization = "1.0.1"
     const val kaml = "0.26.0"
     const val kotest = "4.3.1"
-    const val kotlin = "1.4.21"
+    const val kotlin = "1.4.30"
     const val h2 = "1.4.199"
     const val hikariCp = "4.0.3"
     const val libsignal = "2.15.3_unofficial_19"

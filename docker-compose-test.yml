@@ -9,17 +9,16 @@ networks:
       name: localdev
 
 volumes:
-  postgres_data:
-  logs:
-  gradle_cache:
-  signalc_build_cache:
+  test_postgres_data:
+  test_gradle_cache:
+  test_signalc_build_cache:
 
 services:
   db:
     image: postgres:12
     container_name: test_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - test_postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
 
@@ -56,7 +55,6 @@ services:
       - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-      - ./signalc/whisper.store:/signalc/whisper.store
       - ./bin:/signalc/bin
-      - gradle_cache:/home/gradle/.gradle
-      - signalc_build_cache:/signalc/build
+      - test_gradle_cache:/home/gradle/.gradle
+      - test_signalc_build_cache:/signalc/build

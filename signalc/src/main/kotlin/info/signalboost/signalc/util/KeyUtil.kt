@@ -20,7 +20,7 @@ object KeyUtil {
     fun genUuidStr(): String = UUID.randomUUID().toString()
 
     // random byte generators
-    private fun genRandomBytes(n: Int): ByteArray {
+    fun genRandomBytes(n: Int): ByteArray {
         val bytes = ByteArray(size = n)
         SecureRandom.getInstance("SHA1PRNG").nextBytes(bytes)
         return bytes

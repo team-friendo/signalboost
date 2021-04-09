@@ -80,12 +80,17 @@ sealed class SocketRequest {
     ): SocketRequest() {
         @Serializable
         data class Attachment(
-            val filename: String, // (The filename of the attachment) == `storedFilename`
-            val caption: String?,
-            val width: Int,
+            val blurHash: String? = null,
+            val caption: String? = null,
+            val contentType: String,
+            val digest: String? = null,
+            val filename: String,
             val height: Int,
-            val voiceNote: Boolean = false, //  (True if this attachment is a voice note)
-            val preview: String? = null,// (The preview data to send, base64 encoded)
+            val id: String,
+            val key: String? = null,
+            val size: Int? = null,
+            val width: Int,
+            val voiceNote: Boolean,
         )
     }
 

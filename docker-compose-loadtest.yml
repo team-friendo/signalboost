@@ -21,14 +21,15 @@ networks:
       name: localdev
 
 volumes:
-  loadtest_sender_sock:
   loadtest_postgres_data:
   loadtest_receiver_signalc_gradle_cache:
   loadtest_receiver_signalc_build_cache:
+  loadtest_receiver_sock:
+  loadtest_sender_sock:
   loadtest_sender_signalc_gradle_cache:
   loadtest_sender_signalc_build_cache:
   loadtest_signald_data:
-  loadtest_receiver_sock:
+
 
 services:
 

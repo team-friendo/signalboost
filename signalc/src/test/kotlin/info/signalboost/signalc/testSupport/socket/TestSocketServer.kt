@@ -39,7 +39,7 @@ class TestSocketServer(
                         val connection = try {
                             it.accept() as Socket
                         } catch (e: Throwable) {
-                            logger.error { e.printStackTrace() }
+                            logger.error { e.stackTraceToString() }
                             return@launch
                         }
                         logger.debug("Got connection on ${connection.hashCode()}")

@@ -174,7 +174,7 @@ class SocketServerBigTest : FreeSpec({
                 val worldRequest = sendRequestOf("world")
 
                 coEvery {
-                    app.signalSender.send(any(),any(),any(),any(),any())
+                    app.signalSender.send(any(), any(), any(), any(), any(), any())
                 } returns mockk(){
                     every { success } returns mockk()
                 }
@@ -192,8 +192,22 @@ class SocketServerBigTest : FreeSpec({
                         SocketResponse.SendResults.success(worldRequest).toJson(),
                     )
                     coVerify {
-                        app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "hello", any(), any())
-                        app.signalSender.send(verifiedSenderAccount, recipientAccount.address, "world", any(), any())
+                        app.signalSender.send(
+                            verifiedSenderAccount,
+                            recipientAccount.address,
+                            "hello",
+                            any(),
+                            any(),
+                            any()
+                        )
+                        app.signalSender.send(
+                            verifiedSenderAccount,
+                            recipientAccount.address,
+                            "world",
+                            any(),
+                            any(),
+                            any()
+                        )
                     }
                 }
             }

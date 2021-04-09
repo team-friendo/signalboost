@@ -27,7 +27,6 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subs
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
-import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.assertions.timing.eventually
@@ -259,6 +258,7 @@ class SocketReceiverTest : FreeSpec({
                                     messageBody,
                                     any(),
                                     any(),
+                                    any(),
                                 )
                             }
                         }
@@ -266,7 +266,7 @@ class SocketReceiverTest : FreeSpec({
 
                     "when sending signal message succeeds" - {
                         coEvery {
-                            app.signalSender.send(any(),any(),any(),any(),any())
+                            app.signalSender.send(any(), any(), any(), any(), any(), any())
                         } returns mockk {
                             every { success } returns mockk()
                         }
@@ -284,7 +284,7 @@ class SocketReceiverTest : FreeSpec({
                     "when sending signal message throws" - {
                         val error = Throwable("arbitrary error!")
                         coEvery {
-                            app.signalSender.send(any(),any(),any(),any(),any())
+                            app.signalSender.send(any(), any(), any(), any(), any(), any())
                         } throws error
 
                         "sends error message to socket" {
@@ -303,7 +303,7 @@ class SocketReceiverTest : FreeSpec({
 
                     "when sending signal message returns failure status" - {
                         coEvery {
-                            app.signalSender.send(any(),any(),any(),any(),any())
+                            app.signalSender.send(any(), any(), any(), any(), any(), any())
                         } returns mockk {
                             every { success } returns null
                             every { isNetworkFailure } returns true

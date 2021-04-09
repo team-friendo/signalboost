@@ -66,13 +66,26 @@ sealed class SocketResponse {
             val timestamp: Long,
             @Required
             val attachments: List<Attachment> = emptyList(),
-            // signald includes the below, but we should signal this with different message types
+            // NOTE: we don't support the below types of DataMessages, but they exist...
             // val endSession: Boolean = false,
             // val profileKeyUpdate: Boolean = false,
         )
 
         @Serializable
-        data class Attachment(val filepath: String) // TODO: flush this out!
+        data class Attachment(
+            val blurHash: String?,
+            val caption: String?,
+            val contentType: String,
+            val digest: String?,
+            val filename: String,
+            val height: Int,
+            val id: String,
+            val key: String,
+            // val preview: String?,
+            val size: Int?,
+            val width: Int,
+            val voiceNote: Boolean,
+        )
 
         companion object {
             fun of(

@@ -15,9 +15,9 @@ import java.io.InputStreamReader
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
-import kotlin.time.Duration
-import kotlin.time.milliseconds
+import kotlin.io.path.ExperimentalPathApi
 
+@ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SocketReceiver(private val app: Application) {
@@ -83,7 +83,7 @@ class SocketReceiver(private val app: Application) {
             }
         } catch(e: Throwable) {
             // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
-            logger.error("ERROR handling request $request from socket $socketHash: ${e.printStackTrace()}")
+            logger.error("ERROR handling request $request from socket $socketHash:\n ${e.stackTraceToString()}")
             app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
             )
@@ -125,14 +125,14 @@ class SocketReceiver(private val app: Application) {
             }
         }
     } catch(e: Throwable) {
-        logger.error { e.printStackTrace() }
         app.socketSender.send(SocketResponse.RegistrationError.of(request, e))
+        logger.error { "Error registering account:\n ${e.stackTraceToString()}" }
     }
 
 
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(request: SocketRequest.Send) {
-        val (_, _, recipientAddress, messageBody, _, expiresInSeconds) = request
+        val (_, _, recipientAddress, messageBody, attachments, expiresInSeconds) = request
         val beforeLoadVerified = System.currentTimeMillis()
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
             ?: return request.rejectUnverified()
@@ -146,6 +146,7 @@ class SocketReceiver(private val app: Application) {
             recipientAddress.asSignalServiceAddress(),
             messageBody,
             expiresInSeconds,
+            attachments,
         )
         val afterSendResult = System.currentTimeMillis()
         logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
@@ -157,7 +158,7 @@ class SocketReceiver(private val app: Application) {
     }
 
     private suspend fun setExpiration(request: SocketRequest.SetExpiration) {
-        val(id, username, recipientAddress,expiresInSeconds) = request
+        val(_, _, recipientAddress,expiresInSeconds) = request
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
             ?: return request.rejectUnverified()
         val sendResult = app.signalSender.setExpiration(
@@ -170,7 +171,6 @@ class SocketReceiver(private val app: Application) {
             else -> app.socketSender.send(SocketResponse.SetExpirationFailed.of(request, resultType))
         }
     }
-
     private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Long = 1 /*millis*/) {
         val (id,username) = request
         logger.info("Subscribing to messages for ${username}...")

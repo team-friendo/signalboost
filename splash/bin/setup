@@ -13,6 +13,15 @@ docker-compose -f docker-compose-dev.yml \
                run --entrypoint 'yarn install' \
                splash
 docker-compose -f docker-compose-dev.yml down
+
+echo "--- creating directories for local signalc runs..."
+
+sudo mkdir -p -- /signalc/sock
+sudo chown `whoami`:`whoami` /signalc/sock
+
+sudo mkdir -p -- /signalc/attachments
+sudo chown `whoami`:`whoami` /signalc/attachments
+
 echo "--- DONE!"
 
 popd

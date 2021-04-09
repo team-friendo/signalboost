@@ -48,6 +48,8 @@ ENV WHISPER_STORE_PASSWORD "whisper"
 
 # make sure there is a directory to house sockets!
 RUN mkdir /signalc/sock
+# and one to house attachments!
+RUN mkdir /signalc/attachments
 
 # install netcat-openbsd for debugging
 RUN apt-get update -qq
@@ -56,4 +58,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netcat-openbsd
 # ---------------
 # --- version
 
-LABEL version="1.0.3"
+LABEL version="1.0.4"
