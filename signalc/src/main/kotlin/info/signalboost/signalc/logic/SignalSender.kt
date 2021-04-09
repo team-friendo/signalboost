@@ -16,8 +16,9 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStre
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.io.File
-import java.io.FileInputStream
 import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -60,7 +61,7 @@ class SignalSender(private val app: Application) {
 
     // gross testing seam... sorry!
     object AttachmentStream {
-        fun of(sendAttachment: SocketRequest.Send.Attachment, file: File, inputStream: FileInputStream): SignalServiceAttachmentStream =
+        fun of(sendAttachment: SocketRequest.Send.Attachment, file: File, inputStream: InputStream): SignalServiceAttachmentStream =
             SignalServiceAttachmentStream(
                 inputStream,
                 sendAttachment.contentType,
@@ -144,7 +145,7 @@ class SignalSender(private val app: Application) {
     private fun SocketRequest.Send.Attachment.asSignalAttachment(): SignalServiceAttachmentStream? {
         return try {
             File(app.signal.attachmentsPath, this.filename).let {
-                AttachmentStream.of(this, it, FileInputStream(it))
+                AttachmentStream.of(this, it, Files.newInputStream(it.toPath()))
             }
         } catch (e: IOException) {
             logger.error { "Failed to read attachment from file system:\n ${e.stackTraceToString()}"}

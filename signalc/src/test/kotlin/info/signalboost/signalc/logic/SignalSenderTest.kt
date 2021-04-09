@@ -29,6 +29,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
@@ -122,7 +123,7 @@ class SignalSenderTest : FreeSpec({
                 )
 
                 val mockAttachmentStream = mockk<SignalServiceAttachmentStream>()
-                val inputStreamSlot = slot<FileInputStream>()
+                val inputStreamSlot = slot<InputStream>()
 
                 mockkObject(SignalSender.AttachmentStream)
                 every {
@@ -153,16 +154,15 @@ class SignalSenderTest : FreeSpec({
                             any(),
                         )
                     }
-                    // NOTE: there is no great way to assert that this file input stream came from our jpeg file.
-                    // the below hacky reflection sort of gets at it. Perhaps more importantly, we know that
-                    // because this test did not throw, an input stream was successfully created,
-                    // which means that our file must have been successfully read from the file system!
-
-                    val inputStreamPath = FileInputStream::class.java.getDeclaredField("path").let {
-                        it.isAccessible = true
-                        it.get(inputStreamSlot.captured)
-                    }
-                    inputStreamPath shouldBe file.absolutePath
+                    /************************************************
+                     * The below assertion demonstrates 2 important (non-obvious) things:
+                     * (1) the input stream was produced by our jpeg file (b/c it is ready to
+                     *     produce a byte stream the same size as our jpeg attachment
+                     * (2) the stream is NOT CLOSED (very important b/c libsignal will
+                     *     throw when it tries to use the stream to upload the attachemnt
+                     *     and the input stream has been closed
+                     ***********************************************/
+                    inputStreamSlot.captured.available() shouldBe file.length()
 
                     verify {
                         anyConstructed<SignalServiceMessageSender>().sendMessage(
