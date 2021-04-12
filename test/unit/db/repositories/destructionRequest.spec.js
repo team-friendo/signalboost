@@ -8,7 +8,7 @@ import testApp from '../../../support/testApp'
 import dbService from '../../../../app/db'
 import destructionRequestRepository from '../../../../app/db/repositories/destructionRequest'
 import util from '../../../../app/util'
-import { times, values, map, get } from 'lodash'
+import { times, values, map, get, omit } from 'lodash'
 import { channelFactory, deepChannelFactory } from '../../../support/factories/channel'
 import { Op } from 'sequelize'
 import {
@@ -16,6 +16,7 @@ import {
   subscriberMembershipFactory,
 } from '../../../support/factories/membership'
 import { destructionRequestFactory } from '../../../support/factories/destructionRequest'
+import { messageCountFactory } from '../../../support/factories/messageCount'
 
 const {
   jobs: { channelDestructionGracePeriod },
@@ -32,9 +33,10 @@ describe('destructionRequest repository', () => {
           channelFactory({
             phoneNumber: channelPhoneNumber,
             memberships: get(channel, 'memberships', []),
+            messageCount: get(channel, 'messageCount', {}),
           }),
           {
-            include: [{ model: app.db.membership }],
+            include: [{ model: app.db.membership }, { model: app.db.messageCount }],
           },
         ),
       ),
@@ -58,6 +60,7 @@ describe('destructionRequest repository', () => {
   })
   afterEach(async () => {
     await app.db.destructionRequest.destroy({ where: {} })
+    await app.db.membership.destroy({ where: {} })
     await app.db.messageCount.destroy({ where: {} })
     await app.db.channel.destroy({ where: {} })
     sinon.restore()
@@ -242,11 +245,16 @@ describe('destructionRequest repository', () => {
       pending: genPhoneNumber(),
     }
 
+    const memberships = [...times(2, adminMembershipFactory), subscriberMembershipFactory()]
+    const messageCount = messageCountFactory({ channelPhoneNumber: channelPhoneNumbers.toDestroy })
+
     const destructionRequestAttrs = {
       toDestroy: {
         channelPhoneNumber: channelPhoneNumbers.toDestroy,
         // mature (created before start of grace period)
         createdAt: gracePeriodStart.clone().subtract(1, 'ms'),
+        // nested attributes we wish to retrieve for inclusion in event log..
+        channel: deepChannelFactory({ memberships, messageCount }),
       },
       pending: {
         channelPhoneNumber: channelPhoneNumbers.pending,
@@ -260,9 +268,17 @@ describe('destructionRequest repository', () => {
       await createDestructionRequestsFromAttrs(destructionRequestAttrs)
     })
 
-    it('retrieves all mature destruction requests and returns their phone numbers', async () => {
+    it('retrieves channels with mature destruction requests', async () => {
       const res = await destructionRequestRepository.getMatureDestructionRequests()
       expect(map(res, 'channelPhoneNumber')).to.eql([channelPhoneNumbers.toDestroy])
+    })
+
+    it('it includes nested channel attributes needed for event log', async () => {
+      const res = await destructionRequestRepository.getMatureDestructionRequests()
+      expect(res[0].channel.memberships.length).to.be.eql(memberships.length)
+      expect(omit(res[0].channel.messageCount.dataValues, ['createdAt', 'updatedAt'])).to.eql(
+        messageCount,
+      )
     })
   })
 })

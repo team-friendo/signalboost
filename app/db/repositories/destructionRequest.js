@@ -64,7 +64,7 @@ const recordNotifications = (timestamp, channelPhoneNumbers) =>
     { where: { channelPhoneNumber: { [Op.in]: channelPhoneNumbers } } },
   )
 
-// () => Promise<Array<DstructionRequest>>
+// () => Promise<Array<DestructionRequest>>
 const getMatureDestructionRequests = async () => {
   // Admins have a 3 day grace period to redeem a channel slated for destruction by using it.
   // Here, we find all the requests issued before the start of the grace period, and return their
@@ -76,6 +76,12 @@ const getMatureDestructionRequests = async () => {
     .subtract(channelDestructionGracePeriod, 'ms')
   return app.db.destructionRequest.findAll({
     where: { createdAt: { [Op.lte]: gracePeriodStart } },
+    include: [
+      {
+        model: app.db.channel,
+        include: [{ model: app.db.membership }, { model: app.db.messageCount }],
+      },
+    ],
   })
 }
 
