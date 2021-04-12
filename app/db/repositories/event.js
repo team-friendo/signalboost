@@ -4,12 +4,13 @@ const { counters, loadEvents } = metrics
 const { eventTypes } = require('../models/event')
 const { sha256Hash } = require('../../util')
 
-// (string, string, sequelize.Transaction | null) => Promise<Event>
-const log = (eventType, phoneNumber, transaction = null) =>
+// (string, string, object, sequelize.Transaction | null) => Promise<Event>
+const log = (eventType, phoneNumber, metadata, transaction = null) =>
   app.db.event.create(
     {
       type: eventType,
       phoneNumberHash: sha256Hash(phoneNumber),
+      metadata,
     },
     {
       transaction,
