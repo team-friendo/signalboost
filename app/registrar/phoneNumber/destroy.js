@@ -1,6 +1,6 @@
 const moment = require('moment')
 const fs = require('fs-extra')
-const { map, flatMap, isEmpty, round } = require('lodash')
+const { map, flatMap, isEmpty, omit, round } = require('lodash')
 const app = require('../../index')
 const common = require('./common')
 const channelRepository = require('../../db/repositories/channel')
@@ -175,7 +175,15 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
       logger.log(`...deleted channel ${phoneNumber}`)
 
       logger.log(`logging destruction of ${phoneNumber}...`)
-      await eventRepository.log(eventTypes.CHANNEL_DESTROYED, phoneNumber, tx)
+      await eventRepository.log(
+        eventTypes.CHANNEL_DESTROYED,
+        phoneNumber,
+        {
+          memberCount: channel.memberships.length,
+          messageCount: omit(channel.messageCount.dataValues, 'channelPhoneNumber'),
+        },
+        tx,
+      )
       logger.log(`...logged destruction of ${phoneNumber}`)
 
       logger.log(`sending deletion notice to members of: ${phoneNumber} in background...`)
