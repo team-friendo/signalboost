@@ -9,7 +9,7 @@ networks:
       name: localdev
 
 volumes:
-  test_postgres_data:
+  postgres_data:
   test_gradle_cache:
   test_signalc_build_cache:
 
@@ -18,7 +18,7 @@ services:
     image: postgres:12
     container_name: test_db
     volumes:
-      - test_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
 

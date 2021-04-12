@@ -5,6 +5,7 @@ import { sha256Hash } from '../../../app/util'
 export const eventFactory = attrs => ({
   type: sample(eventTypes),
   phoneNumberHash: sha256Hash(random().toString()),
+  metadata: { memberCount: null, messageCount: null },
   ...attrs,
 })
 

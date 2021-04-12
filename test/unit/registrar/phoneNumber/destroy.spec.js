@@ -3,7 +3,7 @@ import { after, afterEach, before, beforeEach, describe, it } from 'mocha'
 import sinon from 'sinon'
 import commonService from '../../../../app/registrar/phoneNumber/common'
 import fs from 'fs-extra'
-import { times, map, flatten } from 'lodash'
+import { times, map, flatten, omit } from 'lodash'
 import channelRepository from '../../../../app/db/repositories/channel'
 import destructionRequestRepository from '../../../../app/db/repositories/destructionRequest'
 import eventRepository from '../../../../app/db/repositories/event'
@@ -42,6 +42,7 @@ describe('phone number registrar -- destroy module', () => {
   const phoneNumberRecord = phoneNumberFactory({ phoneNumber })
   const phoneNumbers = times(2, genPhoneNumber)
   const channel = deepChannelFactory({ phoneNumber })
+  channel.messageCount.dataValues = channel.messageCount
   const admin = channel.memberships[0].memberPhoneNumber
 
   let commitStub,
@@ -224,6 +225,10 @@ describe('phone number registrar -- destroy module', () => {
           expect(logEventStub.getCall(0).args.slice(0, -1)).to.eql([
             eventTypes.CHANNEL_DESTROYED,
             phoneNumber,
+            {
+              memberCount: channel.memberships.length,
+              messageCount: omit(channel.messageCount, 'channelPhoneNumber'),
+            },
           ])
         })
 

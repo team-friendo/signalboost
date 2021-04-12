@@ -24,6 +24,11 @@ const eventOf = (sequelize, Sequelize) =>
       type: Sequelize.STRING,
       validate: isSha256Hash,
     },
+    metadata: {
+      allowNull: false,
+      type: Sequelize.JSONB,
+      defaultValue: {},
+    },
     createdAt: {
       allowNull: false,
       type: Sequelize.DATE,

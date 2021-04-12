@@ -4,12 +4,13 @@ const { counters, loadEvents } = metrics
 const { eventTypes } = require('../models/event')
 const { sha256Hash } = require('../../util')
 
-// (string, string, sequelize.Transaction | null) => Promise<Event>
-const log = (eventType, phoneNumber, transaction = null) =>
+// (string, string, object, sequelize.Transaction | null) => Promise<Event>
+const log = (eventType, phoneNumber, metadata = undefined, transaction = undefined) =>
   app.db.event.create(
     {
       type: eventType,
       phoneNumberHash: sha256Hash(phoneNumber),
+      metadata,
     },
     {
       transaction,
@@ -22,7 +23,7 @@ const logIfFirstMembership = async memberPhoneNumber => {
   const isFirst = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 1
   if (!isFirst) return null
   metrics.incrementCounter(counters.SYSTEM_LOAD, [loadEvents.MEMBER_CREATED])
-  return log(eventTypes.MEMBER_CREATED)
+  return log(eventTypes.MEMBER_CREATED, memberPhoneNumber)
 }
 
 // string => Promise<Event|null>
@@ -31,7 +32,7 @@ const logIfLastMembership = async memberPhoneNumber => {
   const isLast = (await app.db.membership.count({ where: { memberPhoneNumber } })) === 0
   if (!isLast) return null
   metrics.incrementCounter(counters.SYSTEM_LOAD, [loadEvents.MEMBER_DESTROYED])
-  return log(eventTypes.MEMBER_DESTROYED)
+  return log(eventTypes.MEMBER_DESTROYED, memberPhoneNumber)
 }
 
 /**

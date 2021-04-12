@@ -33,20 +33,35 @@ describe('events repository', () => {
       expect(await db.event.count()).to.eql(eventCount + 1)
       expect(event.type).to.eql(eventTypes.CHANNEL_CREATED)
       expect(event.phoneNumberHash).to.eql(sha256Hash(memberPhoneNumber))
+      expect(event.metadata).to.eql({})
+    })
+
+    it('records metadata if any included', async () => {
+      const event = await eventRepository.log(eventTypes.CHANNEL_DESTROYED, memberPhoneNumber, {
+        memberCount: 42,
+        messageCount: { broadcastIn: 1 },
+      })
+      expect(event.metadata.memberCount).to.eql(42)
+      expect(event.metadata.messageCount.broadcastIn).to.eql(1)
     })
   })
 
   describe('#logIfFirstMembership', () => {
+    let event
+
     describe('given a phone number with only one existing memberships', () => {
       beforeEach(async () => {
         await db.membership.create(membershipFactory({ memberPhoneNumber }))
+        event = await eventRepository.logIfFirstMembership(memberPhoneNumber)
       })
 
       it('logs a MEMBER_CREATED event', async () => {
-        expect((await eventRepository.logIfFirstMembership(memberPhoneNumber)).type).to.eql(
-          eventTypes.MEMBER_CREATED,
-        )
+        expect(event.type).to.eql(eventTypes.MEMBER_CREATED)
         expect(await db.event.count()).to.eql(eventCount + 1)
+      })
+
+      it('hashes member phone number in event log', () => {
+        expect(event.phoneNumberHash).to.eql(sha256Hash(memberPhoneNumber))
       })
     })
 
@@ -65,12 +80,20 @@ describe('events repository', () => {
   })
 
   describe('#logIfLastMembership', () => {
+    let event
+
     describe('given a phone number with no remaining memberships', () => {
+      beforeEach(async () => {
+        event = await eventRepository.logIfLastMembership(memberPhoneNumber)
+      })
+
       it('creates a MEMBER_DESTROYED event', async () => {
-        expect((await eventRepository.logIfLastMembership(memberPhoneNumber)).type).to.eql(
-          eventTypes.MEMBER_DESTROYED,
-        )
         expect(await db.event.count()).to.eql(eventCount + 1)
+        expect(event.type).to.eql(eventTypes.MEMBER_DESTROYED)
+      })
+
+      it('hashes member phone number in event log', () => {
+        expect(event.phoneNumberHash).to.eql(sha256Hash(memberPhoneNumber))
       })
     })
 
