@@ -121,6 +121,33 @@ sealed class SocketResponse {
     ): SocketResponse()
 
     @Serializable
+    @SerialName("inbound_identity_failure")
+    data class InboundIdentityFailure(
+        val data: Data,
+    ): SocketResponse() {
+        @Serializable
+        data class Data(
+            val local_address: LocalAddress,
+            val remote_address: RemoteAddress,
+            @Required
+            val fingerprint: String?
+        )
+
+        @Serializable
+        @SerialName("local_address")
+        data class LocalAddress(val number: String)
+
+        @Serializable
+        @SerialName("remote_address")
+        data class RemoteAddress(val number: String)
+
+        companion object {
+            fun of(localAddress: SignalcAddress, remoteAddress: SignalcAddress, fingerprint: String? = null) =
+                InboundIdentityFailure(Data(LocalAddress(localAddress.number!!), RemoteAddress(remoteAddress.number!!), fingerprint))
+        }
+    }
+
+    @Serializable
     @SerialName("registration_succeeded")
     data class RegistrationSuccess(
         val id: String,
@@ -346,6 +373,24 @@ sealed class SocketResponse {
         val error: Throwable,
     ): SocketResponse()
 
+    @Serializable
+    @SerialName("trusted_fingerprint") // TODO: change to trust_success
+    data class TrustSuccess(
+        val id: String,
+        val data: Data,
+    ): SocketResponse() {
+        @Serializable
+        data class Data(
+            val message: String,
+            val request: SocketRequest.Trust,
+        )
+        companion object {
+            fun of(request: SocketRequest.Trust) = TrustSuccess(
+                request.id,
+                Data("", request) // TODO: remove unused message from TrustData
+            )
+        }
+    }
 
     @Serializable
     @SerialName("unsubscribe_succeeded")
@@ -368,20 +413,6 @@ sealed class SocketResponse {
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,
     ): SocketResponse()
-
-
-    @Serializable
-    @SerialName("trusted_fingerprint") // TODO: change to trust_success
-    data class TrustSuccess(
-        val id: String,
-        val data: TrustData,
-    ): SocketResponse() {
-        @Serializable
-        data class TrustData(
-            val message: String,
-            val request: SocketRequest.Trust,
-        )
-    }
 
     @Serializable
     @SerialName("verification_succeeded") // TODO: verificationSucceeded

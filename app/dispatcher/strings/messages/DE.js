@@ -503,10 +503,10 @@ ERROR: ${error}`,
 - ${numChannels} aktive Kanäle`,
 
   safetyNumberChanged:
-    'Es sieht so aus, als ob sich deine Sicherheitsnummer gerade geändert hat. Möglicherweise musst du deine letzte Nachricht erneut senden! :)',
+    'Hallo! Es sieht so aus, als ob sich Ihre Sicherheitsnummer gerade geändert hat (wahrscheinlich, weil Sie Signal neu installiert haben). Wenn Sie gerade eine Nachricht gesendet haben, senden Sie sie bitte erneut. ',
 
   deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.
+Admin mit Nummer ${adminPhoneNumber} wurde vom Kanal entfernt weil ihre Sicherheitsnummer sich geändert hat.
 
 Die warscheinlichste Ursache ist die Neuinstallation von Signal auf einem neuen Gerät.
 Trotzdem besteht die Möglichkeit dass ein Angreifer sich des Telefons bemächtigt hat und nun versucht sich als diese Person auszugeben.

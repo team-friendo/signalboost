@@ -1,6 +1,7 @@
 package info.signalboost.signalc.testSupport.dataGenerators
 
 import info.signalboost.signalc.model.SignalcAddress
+import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.*
 import kotlin.random.Random
@@ -12,7 +13,10 @@ object AddressGen {
 
     fun genUuid(): UUID = UUID.randomUUID()
 
+
     fun genUuidStr(): String = UUID.randomUUID().toString()
+
+    fun genDeviceId(): Int = (0..100).random()
 
     fun genSignalServiceAddress(verified: Boolean = true): SignalServiceAddress =
         SignalServiceAddress(
@@ -24,5 +28,10 @@ object AddressGen {
         SignalcAddress(
             genPhoneNumber(),
             if(verified) genUuidStr() else null
+        )
+
+    fun genSignalProtocolAddress(): SignalProtocolAddress =
+        SignalProtocolAddress(
+            genPhoneNumber(), genDeviceId()
         )
 }

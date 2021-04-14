@@ -5,6 +5,7 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
@@ -15,6 +16,8 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.gen
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.cleartext
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decryptionError
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.inboundIdentityFailure
+import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.util.TimeUtil.nowInMillis
 import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
@@ -24,6 +27,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
 import org.postgresql.util.Base64
 import org.signal.libsignal.metadata.ProtocolDuplicateMessageException
+import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
+import org.whispersystems.libsignal.UntrustedIdentityException
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
@@ -206,26 +211,86 @@ class SignalReceiverTest : FreeSpec({
                     }
 
                     "and decryption fails" - {
-                        val error = ProtocolDuplicateMessageException(
-                            Exception("FAKE ERROR! oh no!"),
-                            senderAddress.identifier,
-                            42
-                        )
-                        every {
-                            anyConstructed<SignalServiceCipher>().decrypt(any())
-                        } throws error
+                        "and is an untrusted identity exception" - {
+                            "and has a fingerprint on the untrusted identity" - {
+                                val identityKey = KeyUtil.genIdentityKeyPair().publicKey
+                                val untrustedIdentityError = ProtocolUntrustedIdentityException(
+                                    UntrustedIdentityException("", identityKey),
+                                    senderAddress.identifier,
+                                    genDeviceId()
+                                )
+                                every {
+                                    anyConstructed<SignalServiceCipher>().decrypt(any())
+                                } throws untrustedIdentityError
 
-                        "relays DecryptionError to socket sender" {
-                            messageReceiver.subscribe(recipientAccount)!!
-                            eventually(timeout, pollInterval) {
-                                coVerify {
-                                    app.socketSender.send(
-                                        decryptionError(
-                                            senderAddress.asSignalcAddress(),
-                                            recipientAccount.asSignalcAddress(),
-                                            error
+                                beforeTest { messageReceiver.subscribe(recipientAccount)!! }
+
+                                "relays InboundIdentityFailure to socket sender" {
+                                    eventually(timeout, pollInterval) {
+                                        coVerify {
+                                            app.socketSender.send(
+                                                inboundIdentityFailure(
+                                                    senderAddress.asSignalcAddress(),
+                                                    recipientAccount.asSignalcAddress(),
+                                                    identityKey.fingerprint
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            "and does not have a fingerprint on the untrusted identity" - {
+                                val identityKey = KeyUtil.genIdentityKeyPair().publicKey
+                                val untrustedIdentityError = ProtocolUntrustedIdentityException(
+                                    UntrustedIdentityException(recipientAccount.username),
+                                    senderAddress.identifier,
+                                    genDeviceId()
+                                )
+                                every {
+                                    anyConstructed<SignalServiceCipher>().decrypt(any())
+                                } throws untrustedIdentityError
+
+                                beforeTest { messageReceiver.subscribe(recipientAccount)!! }
+
+                                "relays InboundIdentityFailure to socket sender" {
+                                    eventually(timeout, pollInterval) {
+                                        coVerify {
+                                            app.socketSender.send(
+                                                inboundIdentityFailure(
+                                                    senderAddress.asSignalcAddress(),
+                                                    recipientAccount.asSignalcAddress(),
+                                                    null
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        "and is a non specified exception" - {
+                            val error = ProtocolDuplicateMessageException(
+                                Exception("FAKE ERROR! oh no!"),
+                                senderAddress.identifier,
+                                42
+                            )
+                            every {
+                                anyConstructed<SignalServiceCipher>().decrypt(any())
+                            } throws error
+
+                            beforeTest { messageReceiver.subscribe(recipientAccount)!! }
+
+                            "relays DecryptionError to socket sender" {
+                                eventually(timeout, pollInterval) {
+                                    coVerify {
+                                        app.socketSender.send(
+                                            decryptionError(
+                                                senderAddress.asSignalcAddress(),
+                                                recipientAccount.asSignalcAddress(),
+                                                error
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }

@@ -67,3 +67,6 @@ grafana_data
 /signald/jmx/jmxremote.password
 /nginx/vhost.d/signald.signalboost.info
 /.env.staging
+
+# scratch pad
+scratch.txt

@@ -7,6 +7,7 @@ import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.SendResultType
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
+import info.signalboost.signalc.store.ProtocolStore
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genNewAccount
@@ -18,6 +19,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genR
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genTrustRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genUnsubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genSocketPath
@@ -27,8 +29,10 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.send
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionDisrupted
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionFailed
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.subscriptionSuccess
+import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.trustSuccess
 import info.signalboost.signalc.testSupport.socket.TestSocketClient
 import info.signalboost.signalc.testSupport.socket.TestSocketServer
+import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import info.signalboost.signalc.util.TimeUtil
 import io.kotest.assertions.timing.eventually
@@ -323,6 +327,51 @@ class SocketReceiverTest : FreeSpec({
                             }
                         }
                     }
+
+                    "when sending signal message returns identity failure" - {
+                        val newIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
+                        coEvery {
+                            app.signalSender.send(any(), any(), any(), any(), any(), any())
+                        } returns mockk {
+                            every { success } returns null
+                            every { isNetworkFailure } returns false
+                            every { isUnregisteredFailure } returns false
+                            every { identityFailure } returns mockk {
+                                every { identityKey } returns newIdentityKey
+                            }
+                        }
+
+                        val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
+                            every { saveFingerprintForAllIdentities(any(), any()) } returns 1
+                        }
+
+                        every {
+                            app.protocolStore.of(verifiedSenderAccount)
+                        } returns mockProtocolStore
+
+                        "sends error message to socket" {
+                            client.send(sendRequestJson)
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        SocketResponse.SendResults.identityFailure(sendRequest, newIdentityKey.fingerprint)
+                                    )
+                                }
+                            }
+                        }
+
+                        "saves the new identity key" {
+                            client.send(sendRequestJson)
+                            eventually(timeout) {
+                                verify {
+                                   mockProtocolStore.saveFingerprintForAllIdentities(
+                                       recipientAccount.address,
+                                       newIdentityKey.serialize(),
+                                   )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 "and account is not verified" - {
@@ -527,6 +576,79 @@ class SocketReceiverTest : FreeSpec({
                                     subscriptionFailed(
                                         request.id,
                                         SignalcError.SubscriptionOfUnregisteredUser,
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            "TRUST request" - {
+                val request = genTrustRequest(recipientAccount.username)
+                val requestJson = request.toJson()
+
+                "account is verified" - {
+                    coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
+                    coEvery {
+                        app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(any())
+                    } returns 1
+
+                    "attempts to trust the correct fingerprint" {
+                        client.send(requestJson)
+                        eventually(timeout) {
+                            coVerify {
+                                app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                            }
+                        }
+                    }
+
+                    "when trust fingerprint succeeds" - {
+                        "sends success to socket" {
+                            client.send(requestJson)
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        trustSuccess(request)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    "when trust fingerprint fails" - {
+                        "sends success to socket" {
+                            client.send(requestJson)
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        trustSuccess(request)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                "account is not verified" - {
+                    coEvery { app.accountManager.loadVerified(any()) } returns null
+
+                    "does not attempt to trust the fingerprint" {
+                        client.send(requestJson)
+                        eventually(timeout) {
+                            coVerify(exactly = 0) {
+                                app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                            }
+                        }
+                    }
+
+                    "sends error to socket" {
+                        client.send(requestJson)
+                        eventually(timeout) {
+                            coVerify {
+                                app.socketSender.send(
+                                    requestHandlingError(
+                                        request,
+                                        Error("Can't send to ${request.username}: not registered.")
                                     )
                                 )
                             }

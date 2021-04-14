@@ -12,6 +12,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.postgresql.util.Base64
+import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
+import org.whispersystems.libsignal.UntrustedIdentityException
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
@@ -21,6 +23,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.*
+import java.lang.Exception
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -97,6 +100,7 @@ class SignalReceiver(private val app: Application) {
             }
             launch(IO) {
                 while (subscription.isActive) {
+                    // TODO: handle TimeoutException here and then keep reading
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
                     logger.debug {
                         "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
@@ -154,10 +158,27 @@ class SignalReceiver(private val app: Application) {
                         dataMessage.timestamp,
                     )
                 )
+            } catch(e: Exception) {
+                when(e) {
+                    is ProtocolUntrustedIdentityException -> {
+                        // untrustedIdentity is usually null on the exception here, need to trigger send to reset session
+                        // see libsignal intialization of exception: https://github.com/signalapp/libsignal-client/blob/113e849d7620c7a0ad8aa29a43e6243026bfdb89/rust/bridge/shared/src/jni/mod.rs#L106
+                        // see signal-android handling: https://github.com/signalapp/Signal-Android/blob/763aeabdddcbeff526589afa964d61defdd3e589/app/src/main/java/org/thoughtcrime/securesms/messages/MessageDecryptionUtil.java#L82
+                        val untrustedIdentityException = e.cause as UntrustedIdentityException
+                        val fingerprint = untrustedIdentityException.untrustedIdentity?.fingerprint
 
-            } catch(e: Throwable) {
-                app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, e))
-                logger.error { "Decryption Error:\n ${e.stackTraceToString()}" }
+                        app.socketSender.send(
+                            SocketResponse.InboundIdentityFailure.of(
+                                recipient,
+                                sender,
+                                fingerprint
+                            )
+                        )
+                    } else -> {
+                        app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, e))
+                        logger.error { "Decryption Error:\n ${e.stackTraceToString()}" }
+                    }
+                }
             }
         }
     }

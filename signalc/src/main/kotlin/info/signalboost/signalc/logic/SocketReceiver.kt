@@ -76,10 +76,10 @@ class SocketReceiver(private val app: Application) {
                 is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
                 is SocketRequest.SetExpiration -> setExpiration(request)
                 is SocketRequest.Subscribe -> subscribe(request)
+                is SocketRequest.Trust -> trust(request)
                 is SocketRequest.Unsubscribe -> unsubscribe(request)
                 is SocketRequest.Verify -> verify(request)
                 // TODO://////////////////////////////////////////////
-                is SocketRequest.Trust -> unimplemented(request)
                 is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
@@ -134,14 +134,9 @@ class SocketReceiver(private val app: Application) {
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(request: SocketRequest.Send) {
         val (_, _, recipientAddress, messageBody, attachments, expiresInSeconds) = request
-        val beforeLoadVerified = System.currentTimeMillis()
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
             ?: return request.rejectUnverified()
 
-        val afterLoadVerified = System.currentTimeMillis()
-        logger.debug { "${afterLoadVerified - beforeLoadVerified}ms: ACCOUNT LOOKUP call for send to ${recipientAddress.number}"}
-
-        val beforeSendResult = System.currentTimeMillis()
         val sendResult: SendMessageResult = app.signalSender.send(
             senderAccount,
             recipientAddress.asSignalServiceAddress(),
@@ -149,12 +144,15 @@ class SocketReceiver(private val app: Application) {
             expiresInSeconds,
             attachments,
         )
-        val afterSendResult = System.currentTimeMillis()
-        logger.debug { "${sendResult.success.duration}ms: SIGNAL-SERVICE call for send to ${recipientAddress.number}"}
-        logger.debug { "${afterSendResult - beforeSendResult}ms: MESSAGE SENDING call for send to ${recipientAddress.number}" }
-        // TODO:
-        //  - sendResult has 5 variant cases (success, network failure, identity failure, unregistered, unknown)
-        //  - should we do any special handling for non-success cases? (currently we don't!)
+
+        when(sendResult.type()) {
+            // TODO: sendResult has 5 variant cases. should we handle: network failure, unregistered, unknown?
+            SendResultType.IDENTITY_FAILURE -> app.protocolStore.of(senderAccount).saveFingerprintForAllIdentities(
+                recipientAddress.asSignalServiceAddress(),
+                sendResult.identityFailure.identityKey.serialize(),
+            )
+        }
+
         app.socketSender.send(SocketResponse.SendResults.of(request, sendResult))
     }
 
@@ -241,10 +239,17 @@ class SocketReceiver(private val app: Application) {
         app.socketSender.send(SocketResponse.VerificationError.of(request, error))
     }
 
+    private suspend fun trust(request: SocketRequest.Trust) {
+        val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
+            ?: return request.rejectUnverified()
+        app.protocolStore.of(senderAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+        app.socketSender.send(SocketResponse.TrustSuccess.of(request))
+    }
+
     // HELPERS
     private suspend fun SocketRequest.rejectUnverified(): Unit =
         when(this) {
-            is SocketRequest.SetExpiration, is SocketRequest.Send ->
+            is SocketRequest.SetExpiration, is SocketRequest.Send, is SocketRequest.Trust ->
                 SocketResponse.RequestHandlingError(id(), Error("Can't send to ${username()}: not registered."),this)
             is SocketRequest.Subscribe ->
                 SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)

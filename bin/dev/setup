@@ -14,24 +14,53 @@ fi
 echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 
+
+
 echo "--- installing node dependencies..."
-docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-  run --entrypoint 'yarn install' \
-  app
+ docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+   run --entrypoint 'yarn install' \
+   app
 
 echo "--- setting up dev database..."
+docker-compose -f docker-compose-sc.yml \
+               up -d db
+
 docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
-   run --entrypoint /signalboost/bin/db/setup \
-   app
+  run --entrypoint /signalboost/bin/db/setup-sb \
+  app
+
+docker-compose -f docker-compose-sc.yml \
+               exec -e SIGNALC_ENV=development db /bin/db/setup-sc
+
+echo "----- running development migrations"
+docker-compose -f docker-compose-sc.yml \
+	             run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc
+
+docker-compose -f docker-compose-sc.yml \
+               stop db
 
 echo "--- setting up test database..."
 docker-compose -f docker-compose-test.yml \
-  run --entrypoint /signalboost/bin/db/setup \
-  signalboost
+               up -d db
+
+docker-compose -f docker-compose-test.yml \
+ run --entrypoint /signalboost/bin/db/setup-sb \
+ signalboost
+
+docker-compose -f docker-compose-test.yml \
+               exec -e SIGNALC_ENV=test db /bin/db/setup-sc
+
+echo "----- running test migrations"
+docker-compose -f docker-compose-test.yml \
+	             run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
+
+docker-compose -f docker-compose-test.yml \
+               stop db
 
 echo "--- removing db containers..."
 docker rm -f signalboost_db
 docker rm -f test_db
+docker rm -f signalc_db
 
 echo "--- DONE!"
 

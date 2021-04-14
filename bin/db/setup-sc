@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+pushd `pwd` # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../..
+
+sleep 5
+
+if [ "$SIGNALC_ENV" = "development" ]; then
+    echo "----- creating dev database..."
+    psql -U postgres -c "create database signalc_development;"
+elif [ "$SIGNALC_ENV" = "test" ]; then
+    echo "----- creating test database..."
+    psql -U postgres -c "create database signalc_test;"
+else
+    echo "----- creating prod database..."
+    psql -U postgres -c "create database signalc;"
+fi
+
+popd # return to original dir

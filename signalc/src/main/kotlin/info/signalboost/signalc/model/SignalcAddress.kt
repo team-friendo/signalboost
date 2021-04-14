@@ -1,6 +1,7 @@
 package info.signalboost.signalc.model
 
 import kotlinx.serialization.Serializable
+import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
@@ -19,7 +20,6 @@ data class SignalcAddress(
        )
 
        fun SignalServiceEnvelope.asSignalcAddress() = sourceAddress.asSignalcAddress()
-       fun VerifiedAccount.asSignalcAddress() = address.asSignalcAddress()
    }
 
    fun asSignalServiceAddress() = SignalServiceAddress(

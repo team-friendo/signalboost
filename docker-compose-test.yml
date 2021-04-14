@@ -19,6 +19,7 @@ services:
     container_name: test_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./bin/db/:/bin/db/
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
 
@@ -55,6 +56,7 @@ services:
       - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/migrations:/signalc/migrations
       - ./bin:/signalc/bin
       - test_gradle_cache:/home/gradle/.gradle
       - test_signalc_build_cache:/signalc/build
