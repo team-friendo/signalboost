@@ -79,7 +79,17 @@ const dispatchOne = async (msg, socketId) => {
   // parse basic info from message
   const inboundMsg = parseInboundSignaldMessage(msg)
 
-  const channelPhoneNumber = get(inboundMsg, 'data.username', 'SYSTEM')
+  /*****
+   * TODO(aguestuser|2021-04-14):
+   *  in a post signald world, we would like to eliminate the intermediate
+   *  `data` field wrapping respose bodies. in which dase, `username` will be directly
+   *  readable from the `inboundMsg` in case of a Cleartext resposne, the `request` field in case
+   *  of some errores, and and we might want to infer channel # from other SocketResponse types
+   ****/
+  const channelPhoneNumber =
+    get(inboundMsg, 'data.username') || // for a cleartext message
+    get(inboundMsg, 'request.username') || // for an error
+    'SYSTEM'
 
   // count what kind of message we are processing
   metrics.incrementCounter(SIGNALD_MESSAGES, [inboundMsg.type, channelPhoneNumber, INBOUND])
@@ -177,10 +187,11 @@ const logAndResendRateLimitedMessage = async rateLimitedMessage => {
   const channelPhoneNumber = rateLimitedMessage.username
   const socketId = await channelRepository.getSocketId(channelPhoneNumber)
   const resendInterval = resend.enqueueResend(rateLimitedMessage, socketId)
-  metrics.incrementCounter(ERRORS, [
-    resendInterval ? errorTypes.RATE_LIMIT_RESENDING : errorTypes.RATE_LIMIT_ABORTING,
-    channelPhoneNumber,
-  ])
+  const errorType = resendInterval
+    ? errorTypes.RATE_LIMIT_RESENDING
+    : errorTypes.RATE_LIMIT_ABORTING
+  logger.error(`Rate Limit Error: ${errorType}`)
+  metrics.incrementCounter(ERRORS, [errorType, channelPhoneNumber])
 }
 
 // (Database, Socket, Channel, number) -> Promise<void>
@@ -287,12 +298,14 @@ const detectBanned = async inboundMsg => {
 }
 
 // InboundSdMessage -> SdMessage?
-const detectRateLimitedMessage = inboundMsg =>
-  inboundMsg.type === signal.messageTypes.ERROR &&
-  (get(inboundMsg, 'data.message', '').includes('413') ||
-    get(inboundMsg, 'data.message', '').includes('Rate limit'))
-    ? inboundMsg.data.request
+const detectRateLimitedMessage = inboundMsg => {
+  if (inboundMsg.type !== signal.messageTypes.ERROR) return null
+  const errMsg = get(inboundMsg, 'data.message', '') // provided in signald case
+  const errCause = get(inboundMsg, 'error.cause', '') // provided in signalc case
+  return errMsg.includes('413') || errCause.includes('RateLimit') // signald || signalc
+    ? get(inboundMsg, 'data.request') || get(inboundMsg, 'request') // signald || signalc
     : null
+}
 
 // (SdMessage, Channel) -> UpdatableExpiryTime?
 const detectUpdatableExpiryTime = (inboundMsg, channel) =>

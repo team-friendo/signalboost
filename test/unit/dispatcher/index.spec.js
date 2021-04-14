@@ -23,6 +23,7 @@ import testApp from '../../support/testApp'
 import { genFingerprint, genSafetyNumber } from '../../support/factories/deauthorization'
 import { membershipFactory } from '../../support/factories/membership'
 import { messagesIn } from '../../../app/dispatcher/strings/messages'
+import { inboundAttachmentFactory } from '../../support/factories/sdMessage'
 
 const {
   signal: { defaultMessageExpiryTime, minResendInterval, diagnosticsPhoneNumber },
@@ -310,7 +311,7 @@ describe('dispatcher module', () => {
     })
 
     describe('processing interventions', () => {
-      describe('when message is a rate limit error notification', () => {
+      describe('when message is a rate limit error notification from signald', () => {
         const recipientNumber = genPhoneNumber()
         const messageBody = '[foo]\nbar'
         const originalSdMessage = {
@@ -330,6 +331,54 @@ describe('dispatcher module', () => {
             username: channel.phoneNumber,
             request: originalSdMessage,
           },
+        }
+        let incrementCounterStub
+
+        beforeEach(async () => {
+          enqueueResendStub.returns(minResendInterval)
+          incrementCounterStub = sinon.stub(metrics, 'incrementCounter')
+          sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(channel.socketId))
+          await dispatch(JSON.stringify(sdErrorMessage), {})
+          await wait(2 * socketDelay)
+        })
+
+        it('enqueues the message for resending', () => {
+          expect(enqueueResendStub.getCall(0).args).to.eql([originalSdMessage, channel.socketId])
+        })
+
+        it('logs the rate limit error', () => {
+          expect(map(incrementCounterStub.getCalls(), 'args')).to.have.deep.members([
+            [
+              metrics.counters.SIGNALD_MESSAGES,
+              [signal.messageTypes.ERROR, channel.phoneNumber, metrics.messageDirection.INBOUND],
+            ],
+            [
+              metrics.counters.ERRORS,
+              [metrics.errorTypes.RATE_LIMIT_RESENDING, channel.phoneNumber],
+            ],
+          ])
+        })
+      })
+
+      describe('when message is a rate limit error notification from signalc', () => {
+        const recipientNumber = genPhoneNumber()
+        const messageBody = '[foo]\nbar'
+        const originalSdMessage = {
+          type: 'send',
+          id: genUuid(),
+          username: channel.phoneNumber,
+          messageBody,
+          recipientAddress: { number: recipientNumber },
+          attachments: [inboundAttachmentFactory()],
+          expiresInSeconds: 0,
+        }
+        const sdErrorMessage = {
+          type: signal.messageTypes.ERROR,
+          error: {
+            cause: 'org.whispersystems.signalservice.api.push.exceptions.RateLimitException',
+            message: 'Rate limit exceeded: 413',
+          },
+          request: originalSdMessage,
         }
         let incrementCounterStub
 
