@@ -79,7 +79,7 @@ object SocketRequestGen {
         fingerprint,
     )
 
-    fun genUnsubscribe(
+    fun genUnsubscribeRequest(
         id: String = genUuidStr(),
         username: String = genPhoneNumber(),
     ) = SocketRequest.Unsubscribe(

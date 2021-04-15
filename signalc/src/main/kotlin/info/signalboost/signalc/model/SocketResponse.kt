@@ -283,20 +283,6 @@ sealed class SocketResponse {
     }
 
     @Serializable
-    @SerialName("subscription_succeeded")
-    data class SubscriptionSuccess(
-        val id: String,
-        val username: String,
-    ): SocketResponse() {
-        companion object {
-            fun of(request: SocketRequest.Subscribe) = SubscriptionSuccess(
-                request.id,
-                request.username,
-            )
-        }
-    }
-
-    @Serializable
     @SerialName("set_expiration_failed")
     data class SetExpirationFailed(
         val id: String,
@@ -331,6 +317,20 @@ sealed class SocketResponse {
     }
 
     @Serializable
+    @SerialName("subscription_succeeded")
+    data class SubscriptionSuccess(
+        val id: String,
+        val username: String,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Subscribe) = SubscriptionSuccess(
+                request.id,
+                request.username,
+            )
+        }
+    }
+
+    @Serializable
     @SerialName("subscription_failed")
     data class SubscriptionFailed(
         val id: String,
@@ -341,6 +341,29 @@ sealed class SocketResponse {
     @Serializable
     @SerialName("subscription_disrupted")
     data class SubscriptionDisrupted(
+        val id: String,
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse()
+
+
+    @Serializable
+    @SerialName("unsubscribe_succeeded")
+    data class UnsubscribeSuccess(
+        val id: String,
+        val username: String,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.Unsubscribe) = UnsubscribeSuccess(
+                request.id,
+                request.username,
+            )
+        }
+    }
+
+    @Serializable
+    @SerialName("unsubscribe_failed")
+    data class UnsubscribeFailure(
         val id: String,
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,

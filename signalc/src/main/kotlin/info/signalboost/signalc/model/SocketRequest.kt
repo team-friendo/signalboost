@@ -21,7 +21,7 @@ sealed class SocketRequest {
     }
     fun toJson(): String = Json.encodeToString(this)
 
-    // ID ACCESSOR
+    // ACCESSORS
     fun id(): String = when (this) {
         // - if we make `id` a field on `SocketRequest` itself then override it in subclasses
         //   it messes up serialization logic
@@ -38,6 +38,17 @@ sealed class SocketRequest {
         is Unsubscribe -> id
         is Verify -> id
         is Version -> id
+    }
+
+    fun username(): String? = when(this) {
+        is Register -> username
+        is Send -> username
+        is SetExpiration -> username
+        is Subscribe -> username
+        is Trust -> username
+        is Unsubscribe -> username
+        is Verify -> username
+        else -> null
     }
 
     // DATA TYPES

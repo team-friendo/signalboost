@@ -2,7 +2,8 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.error.SignalcError
+import info.signalboost.signalc.exception.SignalcCancellation
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.SendResultType
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
@@ -17,6 +18,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genR
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genUnsubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genSocketPath
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.registrationError
@@ -62,7 +64,8 @@ class SocketReceiverTest : FreeSpec({
         val newSenderAccount = genNewAccount(senderPhoneNumber)
         val registeredSenderAccount = genRegisteredAccount(senderPhoneNumber)
         val verifiedSenderAccount = genVerifiedAccount(senderPhoneNumber)
-        val recipientAccount = genVerifiedAccount()
+        val recipientPhoneNumber = genPhoneNumber()
+        val recipientAccount = genVerifiedAccount(recipientPhoneNumber)
 
         val now = Instant.now().toEpochMilli()
         val timeout = 500.milliseconds
@@ -430,7 +433,7 @@ class SocketReceiverTest : FreeSpec({
                 val request = genSubscribeRequest(recipientAccount.username)
                 val requestJson = request.toJson()
 
-                "and account is verified" - {
+                "when account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
 
                     "when subscription succeeds" - {
@@ -494,6 +497,23 @@ class SocketReceiverTest : FreeSpec({
                             }
                         }
                     }
+
+                    "when subscription is purposefully cancelled by client" - {
+                        val sub = Job()
+                        coEvery {
+                            app.signalReceiver.subscribe(recipientAccount)
+                        } returns sub
+
+                        client.send(requestJson)
+                        sub.cancel(SignalcCancellation.SubscriptionCancelled)
+                        delay(40.milliseconds)
+
+                        "does not attempt to resubscribe".config(invocations = 3) {
+                            coVerify(exactly = 1) {
+                                app.signalReceiver.subscribe(recipientAccount)
+                            }
+                        }
+                    }
                 }
 
                 "and account is not verified" - {
@@ -508,6 +528,71 @@ class SocketReceiverTest : FreeSpec({
                                         request.id,
                                         SignalcError.SubscriptionOfUnregisteredUser,
                                     )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            "UNSUBSCRIBE request" - {
+                val request = genUnsubscribeRequest(username = recipientPhoneNumber)
+
+                "when account is verified" - {
+                    coEvery {
+                        app.accountManager.loadVerified(recipientPhoneNumber)
+                    } returns verifiedSenderAccount
+
+                    "when unsubscribe succeeds" - {
+                        coEvery { app.signalReceiver.unsubscribe(any()) } returns Unit
+
+                        "sends success to socket" {
+                            client.send(request.toJson())
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        SocketResponse.UnsubscribeSuccess(request.id, request.username)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    "when unsubscribe fails" - {
+                        val error = IOException("whoops!")
+                        coEvery { app.signalReceiver.unsubscribe(any()) } throws error
+
+                        "sends failure to socket" {
+                            client.send(request.toJson())
+                            eventually(timeout) {
+                                coVerify {
+                                    app.socketSender.send(
+                                        SocketResponse.UnsubscribeFailure(request.id, error)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "when account is not verified" - {
+                    coEvery {
+                        app.accountManager.loadVerified(recipientPhoneNumber)
+                    } returns null
+
+                    "does not attempt to unsubscribe" {
+                        client.send(request.toJson())
+                        coVerify(exactly = 0) {
+                            app.signalReceiver.unsubscribe(any())
+                        }
+                    }
+
+                    "sends failure to socket" {
+                        client.send(request.toJson())
+                        eventually(timeout) {
+                            coVerify {
+                                app.socketSender.send(
+                                    SocketResponse.UnsubscribeFailure(request.id, SignalcError.UnsubscribeUnregisteredUser)
                                 )
                             }
                         }
