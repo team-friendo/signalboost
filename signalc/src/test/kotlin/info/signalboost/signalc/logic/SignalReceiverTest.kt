@@ -5,6 +5,7 @@ import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.deleteAllAttachments
@@ -46,12 +47,56 @@ class SignalReceiverTest : FreeSpec({
         val app = Application(config).run(testScope)
         val messageReceiver = app.signalReceiver
 
+        val recipientAccount = genVerifiedAccount()
+        val senderAddress = genSignalServiceAddress()
+
+        val timeout = 40.milliseconds
+        val pollInterval = 1.milliseconds
+        val now = nowInMillis()
+
+        fun signalSendsEnvelopeOf(envelopeType: Int): SignalServiceEnvelope {
+            val mockEnvelope = mockk<SignalServiceEnvelope> {
+                every { type } returns envelopeType
+                every { sourceAddress } returns senderAddress
+                every { timestamp } returns now
+            }
+
+            val mockMessagePipe = mockk<SignalServiceMessagePipe> {
+                every { read(any(), any()) } returns mockEnvelope
+                every { shutdown() } returns Unit
+            }
+
+            every {
+                anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
+            }  returns  mockMessagePipe
+
+            return mockEnvelope
+        }
+
+        // this pipe emits messages that will be dropped (for tests where we don't care about message handling)
+        val junkMessagePipe = mockk<SignalServiceMessagePipe> {
+            every { read(any(), any()) } returns mockk {
+                every { type } returns UNKNOWN_VALUE
+                every { sourceAddress } returns mockk {
+                    every { number } returns Optional.of(genPhoneNumber())
+                    every { uuid } returns Optional.absent()
+                }
+            }
+            every { shutdown() } returns Unit
+        }
+
+        fun emitJunkMessages() =
+            every {
+                anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
+            }  returns  junkMessagePipe
+
         beforeSpec {
             mockkConstructor(SignalServiceMessageReceiver::class)
             mockkConstructor(SignalServiceCipher::class)
         }
 
         afterTest {
+            messageReceiver.unsubscribe(recipientAccount)
             clearAllMocks(answers = false, childMocks = false, objectMocks = false)
         }
 
@@ -61,41 +106,26 @@ class SignalReceiverTest : FreeSpec({
             testScope.teardown()
         }
 
-        "#receiveMessages" - {
-            val recipientAccount = genVerifiedAccount()
-            val senderAddress = genSignalServiceAddress()
-            val now = nowInMillis()
+        "#subscribe" - {
             val expiryTime = genInt()
-            // We cancel the `listen` job after a very short duration so we don't iterate
-            // endlessly through the infinite `while` loop that calls `messagePipe#read`
-            val timeout = 40.milliseconds
-            val pollInterval = 1.milliseconds
+            afterTest {
+                messageReceiver.unsubscribe(recipientAccount)
+            }
 
-            fun signalSendsEnvelopeOf(envelopeType: Int): SignalServiceEnvelope {
-                val mockEnvelope = mockk<SignalServiceEnvelope>() {
-                    every { type } returns envelopeType
-                    every { sourceAddress } returns senderAddress
-                    every { timestamp } returns now
+            "in all cases" - {
+                emitJunkMessages()
+                val sub = messageReceiver.subscribe(recipientAccount)!!
+
+                "creates a message pipe and listens for messages in a coroutine" {
+                    messageReceiver.subscriptionCount shouldBe 1
+                    messageReceiver.messagePipeCount shouldBe 1
+                    sub.isActive shouldBe true
                 }
-
-                val mockMessagePipe = mockk<SignalServiceMessagePipe> {
-                    every { read(any(), any()) } returns mockEnvelope
-                    every { shutdown() } returns Unit
-                }
-
-                every {
-                    anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
-                }  returns  mockMessagePipe
-
-                return mockEnvelope
             }
 
             "when signal sends an envelope of type UNKNOWN" - {
                 val envelope = signalSendsEnvelopeOf(UNKNOWN_VALUE)
-
-                lateinit var sub: Job
-                beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
-                afterTest { sub.cancel() }
+                messageReceiver.subscribe(recipientAccount)!!
 
                 "relays a DroppedMessage to the socket sender" {
                     eventually(timeout, pollInterval) {
@@ -130,9 +160,7 @@ class SignalReceiverTest : FreeSpec({
                             }
                         }
 
-                        lateinit var sub: Job
-                        beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
-                        afterTest { sub.cancel() }
+                        messageReceiver.subscribe(recipientAccount)
 
                         "relays Cleartext to socket sender" {
                             eventually(timeout, pollInterval) {
@@ -161,11 +189,8 @@ class SignalReceiverTest : FreeSpec({
                             }
                         }
 
-                        lateinit var sub: Job
-                        beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
-                        afterTest { sub.cancel() }
-
                         "relays empty message to socket sender" {
+                            messageReceiver.subscribe(recipientAccount)
                             eventually(timeout, pollInterval) {
                                 coVerify {
                                     app.socketSender.send(
@@ -190,11 +215,8 @@ class SignalReceiverTest : FreeSpec({
                             anyConstructed<SignalServiceCipher>().decrypt(any())
                         } throws error
 
-                        lateinit var sub: Job
-                        beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
-                        afterTest { sub.cancel() }
-
                         "relays DecryptionError to socket sender" {
+                            messageReceiver.subscribe(recipientAccount)!!
                             eventually(timeout, pollInterval) {
                                 coVerify {
                                     app.socketSender.send(
@@ -266,14 +288,13 @@ class SignalReceiverTest : FreeSpec({
                     }
 
 
-                    lateinit var sub: Job
-                    beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
+
                     afterTest {
-                        sub.cancel()
                         deleteAllAttachments(app)
                     }
 
                     "reads the attachment to the filesystem and includes it in Cleartext sent to socket" {
+                        messageReceiver.subscribe(recipientAccount)
                         eventually(timeout * 4, pollInterval) {
                             val path = try {
                                 Path(app.signal.attachmentsPath, cleartextAttachment.filename)
@@ -306,16 +327,64 @@ class SignalReceiverTest : FreeSpec({
                     every { dataMessage.orNull() } returns null
                 }
 
-                lateinit var sub: Job
-                beforeTest { sub = messageReceiver.subscribe(recipientAccount) }
-                afterTest { sub.cancel() }
-
                 "it is handled as CIPHERTEXT" {
+                    messageReceiver.subscribe(recipientAccount)
                     eventually(timeout, pollInterval){
                         verify {
                             anyConstructed<SignalServiceCipher>().decrypt(envelope)
                         }
                     }
+                }
+            }
+
+            "when issued for an account that is already subscribed" - {
+                emitJunkMessages()
+                messageReceiver.subscribe(recipientAccount)!!
+
+                "does not create a new subscription" {
+                    messageReceiver.subscribe(recipientAccount) shouldBe null
+                    messageReceiver.subscriptionCount shouldBe 1
+                    verify(exactly = 1) {
+                        anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
+                    }
+                }
+            }
+        }
+
+        "#unsubscribe" - {
+            emitJunkMessages()
+
+            "when issued for a subscribed account" - {
+                val sub = messageReceiver.subscribe(recipientAccount)!!
+                messageReceiver.unsubscribe(recipientAccount)
+
+                "shuts down message pipe" {
+                    verify {
+                        junkMessagePipe.shutdown()
+                    }
+                }
+
+                "cancels listening coroutine" {
+                    sub.isCancelled shouldBe true
+                }
+
+                "removes account from caches" {
+                    messageReceiver.subscriptionCount shouldBe 0
+                    messageReceiver.messagePipeCount shouldBe 0
+                }
+            }
+
+            "when issued for a non-subscribed account" - {
+                val sub =messageReceiver.subscribe(recipientAccount)!!
+                messageReceiver.unsubscribe(genVerifiedAccount())
+
+                "does nothing" {
+                    verify(exactly = 0) {
+                        junkMessagePipe.shutdown()
+                    }
+                    sub.isActive shouldBe true
+                    messageReceiver.subscriptionCount shouldBe 1
+                    messageReceiver.messagePipeCount shouldBe 1
                 }
             }
         }

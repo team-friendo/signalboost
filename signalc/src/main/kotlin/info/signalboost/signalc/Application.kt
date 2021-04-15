@@ -263,6 +263,7 @@ class Application(val config: Config.App){
         }
         val signalReceiver: SignalReceiver.() -> Unit = {
             coEvery { subscribe(any()) } returns mockk()
+            coEvery { unsubscribe(any()) } returns mockk()
         }
         val signalSender: SignalSender.() -> Unit = {
             coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {

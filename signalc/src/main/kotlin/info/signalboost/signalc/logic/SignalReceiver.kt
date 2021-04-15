@@ -1,7 +1,8 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.error.SignalcError
+import info.signalboost.signalc.exception.SignalcCancellation
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
@@ -24,7 +25,6 @@ import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.deleteIfExists
 
 
 @ExperimentalPathApi
@@ -41,7 +41,9 @@ class SignalReceiver(private val app: Application) {
 
     // FACTORIES
 
+    private val subscriptions = ConcurrentHashMap<String,Job>()
     private val messageReceivers = ConcurrentHashMap<String,SignalServiceMessageReceiver>()
+    private val messagePipes = ConcurrentHashMap<String,SignalServiceMessagePipe>()
     private val ciphers = ConcurrentHashMap<String,SignalServiceCipher>()
 
     private fun messageReceiverOf(account: VerifiedAccount): SignalServiceMessageReceiver =
@@ -57,8 +59,10 @@ class SignalReceiver(private val app: Application) {
             )
         }
 
-    fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
-        messageReceiverOf(account).createMessagePipe()
+    private fun messagePipeOf(account: VerifiedAccount): SignalServiceMessagePipe =
+        getMemoized(messagePipes, account.username) {
+            messageReceiverOf(account).createMessagePipe()
+        }
 
     private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =
         getMemoized(ciphers, account.username) {
@@ -69,25 +73,22 @@ class SignalReceiver(private val app: Application) {
             )
         }
 
-    // MESSAGE LISTENING
+    // LIFECYCLE / INTERFACE
 
-    suspend fun subscribe(account: VerifiedAccount): Job {
-        // TODO(aguestuser|2021-01-21):
-        //  make this resilient to duplicate subscriptions by:
-        //  - keeping hashmap of messagePipes
-        //  - if caller tries to create a message pipe for an account that already has one, return null
-        //  -> caller only gets a receive channel if one doesn't already exist somewhere else
-        //  -> we can leverage the hashmap for unsubscribing
-        //  handle:
+    internal val subscriptionCount: Int
+       get() = subscriptions.size
+
+    internal val messagePipeCount: Int
+        get() = messagePipes.size
+
+    suspend fun subscribe(account: VerifiedAccount): Job? {
+        // TODO(aguestuser|2021-01-21) handle:
         //  - timeout
         //  - closed connection (understand `readyOrEmtpy()`?)
-        //  - closed channel
         //  - random runtime error
-        //  - cleanup message pipe on unsubscribe (by calling messagePipe.shutdown())
-        // TODO: custom error for messagePipeCreation
+        if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
         return app.coroutineScope.launch {
-            //TODO: why does launching this in IO Dispatcher cause tests to faiL?
-            val outerScope = this
+            val subscription = this
             val messagePipe = try {
                 messagePipeOf(account)
             } catch (e: Throwable) {
@@ -95,7 +96,7 @@ class SignalReceiver(private val app: Application) {
                 throw SignalcError.MessagePipeNotCreated(e)
             }
             launch(IO) {
-                while (outerScope.isActive) {
+                while (subscription.isActive) {
                     val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
                     logger.debug {
                         "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
@@ -103,8 +104,21 @@ class SignalReceiver(private val app: Application) {
                     dispatch(account, envelope)
                 }
             }
+        }.also {
+            subscriptions[account.username] = it
         }
     }
+
+    suspend fun unsubscribe(account: VerifiedAccount) = app.coroutineScope.async(IO) {
+        try {
+            messagePipes[account.username]?.shutdown()
+            subscriptions[account.username]?.cancel(SignalcCancellation.SubscriptionCancelled)
+        } finally {
+            listOf(subscriptions, messageReceivers, messagePipes, ciphers).forEach {
+                it.remove(account.username)
+            }
+        }
+    }.await()
 
     // MESSAGE HANDLING
 

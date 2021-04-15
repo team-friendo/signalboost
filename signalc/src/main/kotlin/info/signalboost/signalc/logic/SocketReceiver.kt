@@ -1,7 +1,8 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.error.SignalcError
+import info.signalboost.signalc.exception.SignalcCancellation
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
@@ -75,10 +76,10 @@ class SocketReceiver(private val app: Application) {
                 is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
                 is SocketRequest.SetExpiration -> setExpiration(request)
                 is SocketRequest.Subscribe -> subscribe(request)
+                is SocketRequest.Unsubscribe -> unsubscribe(request)
                 is SocketRequest.Verify -> verify(request)
                 // TODO://////////////////////////////////////////////
                 is SocketRequest.Trust -> unimplemented(request)
-                is SocketRequest.Unsubscribe -> unimplemented(request)
                 is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
@@ -173,35 +174,48 @@ class SocketReceiver(private val app: Application) {
     }
     private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Long = 1 /*millis*/) {
         val (id,username) = request
-        logger.info("Subscribing to messages for ${username}...")
-        val account: VerifiedAccount = app.accountManager.loadVerified(username)
-            ?: return run {
-                app.socketSender.send(
-                    SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)
-                )
-            }
+        val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
 
-        val subscribeJob = app.signalReceiver.subscribe(account)
+        logger.info("Subscribing to messages for ${username}...")
+        val subscribeJob = app.signalReceiver.subscribe(account) ?:
+           return app.socketSender.send(SocketResponse.SubscriptionFailed(id, Error("Already subscribed to $username.")))
         app.socketSender.send(SocketResponse.SubscriptionSuccess.of(request))
         logger.info("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
-            // TODO: Think about this more carefully...
             val error = it?.cause ?: return@invokeOnCompletion
             app.coroutineScope.launch(IO) {
                 when(error) {
+                    is SignalcCancellation.SubscriptionCancelled -> {
+                        logger.info { "...subscription job for ${account.username} cancelled." }
+                    }
                     is SignalcError.MessagePipeNotCreated -> {
                         logger.error { "...error subscribing to messages for ${account.username}: ${error}." }
                         app.socketSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
-                        logger.error { "subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
+                        logger.error { "Subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
                         app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
                         delay(retryDelay)
                         subscribe(request, retryDelay * 2)
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun unsubscribe(request: SocketRequest.Unsubscribe) {
+        val (id, username) = request
+        val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
+
+        logger.info("Unsubscribing to messages for ${username}...")
+        try {
+            app.signalReceiver.unsubscribe(account)
+            app.socketSender.send(SocketResponse.UnsubscribeSuccess(id, username))
+            logger.info("...unsubscribed to messages for $username")
+        } catch (err: Throwable) {
+            app.socketSender.send(SocketResponse.UnsubscribeFailure(id, err))
+            logger.error { "...error unsubscribing to messages for $username:\n${err.stackTraceToString()}" }
         }
     }
 
@@ -230,18 +244,15 @@ class SocketReceiver(private val app: Application) {
     // HELPERS
     private suspend fun SocketRequest.rejectUnverified(): Unit =
         when(this) {
-            is SocketRequest.SetExpiration -> this.username
-            is SocketRequest.Send -> this.username
+            is SocketRequest.SetExpiration, is SocketRequest.Send ->
+                SocketResponse.RequestHandlingError(id(), Error("Can't send to ${username()}: not registered."),this)
+            is SocketRequest.Subscribe ->
+                SocketResponse.SubscriptionFailed(id, SignalcError.SubscriptionOfUnregisteredUser)
+            is SocketRequest.Unsubscribe ->
+                SocketResponse.UnsubscribeFailure(id, SignalcError.UnsubscribeUnregisteredUser)
             else -> null
-        }?.let { username ->
-            app.socketSender.send(
-                SocketResponse.RequestHandlingError(
-                    this.id(),
-                    Error("Can't send to ${username}: not registered."),
-                    this
-                )
-            )
-        } ?: Unit
+        }?.let { app.socketSender.send(it) }
+            ?: Unit
 
 
 }

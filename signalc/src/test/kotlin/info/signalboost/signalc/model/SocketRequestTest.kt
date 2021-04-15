@@ -6,7 +6,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genS
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genTrustRequest
-import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genUnsubscribe
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genUnsubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genVerifyRequest
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.core.spec.style.FreeSpec
@@ -217,7 +217,7 @@ class SocketRequestTest : FreeSpec({
         }
 
         "UNSUBSCRIBE request" - {
-            val request = genUnsubscribe()
+            val request = genUnsubscribeRequest()
 
             "decodes from JSON" {
                 val json = """
