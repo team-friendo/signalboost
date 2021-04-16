@@ -176,6 +176,10 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
 	up -d
 
+dev.nc: ## get a netcat terminal on a running signald instance in dev stack
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	exec signald_0 nc -U /var/run/signald/signald.sock
+
 ##################
 # docker-related #
 ##################
