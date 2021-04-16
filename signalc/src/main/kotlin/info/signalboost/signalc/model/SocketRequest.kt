@@ -29,6 +29,7 @@ sealed class SocketRequest {
         // - perhaps we will dig into `@Serializable` at some point to come up w/ a cleaner solution!
         is Abort -> id
         is Close -> id
+        is IsAlive -> id
         is ParseError -> id
         is Register -> id
         is Send -> id
@@ -60,6 +61,10 @@ sealed class SocketRequest {
     @Serializable
     @SerialName("close")
     data class Close(val id: String): SocketRequest()
+
+    @Serializable
+    @SerialName("is_alive")
+    data class IsAlive(val id: String): SocketRequest()
 
     @Serializable
     data class ParseError(

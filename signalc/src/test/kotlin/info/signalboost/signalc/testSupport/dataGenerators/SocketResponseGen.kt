@@ -90,6 +90,9 @@ object SocketResponseGen {
         genCleartextAttachment()
     }
 
+    fun genIsAliveResponse(
+        id: String = genUuidStr()
+    ) = SocketResponse.IsAlive(id)
 
     fun genRequestHandlingError(
         id: String = genUuidStr(),

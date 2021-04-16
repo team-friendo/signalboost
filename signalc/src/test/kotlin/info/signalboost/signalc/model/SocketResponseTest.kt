@@ -8,6 +8,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genS
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDecryptionError
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genIsAliveResponse
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genInboundIdentityFailure
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationSuccess
@@ -188,6 +189,18 @@ class SocketResponseTest : FreeSpec({
                       |"cause":"${response.error.javaClass.name}",
                       |"message":"${response.error.message}"
                    |}
+                |}""".flatten()
+            }
+        }
+
+        "of IsAlive" - {
+            val response = genIsAliveResponse()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                   |"type":"is_alive",
+                   |"id":"${response.id}"
                 |}""".flatten()
             }
         }

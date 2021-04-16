@@ -71,6 +71,7 @@ class SocketReceiver(private val app: Application) {
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
+                is SocketRequest.IsAlive -> isAlive(request)
                 is SocketRequest.ParseError -> parseError(request)
                 is SocketRequest.Register -> register(request)
                 is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
@@ -112,6 +113,10 @@ class SocketReceiver(private val app: Application) {
         logger.info("Received `abort`. Exiting.")
         app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
         app.stop()
+    }
+
+    private suspend fun isAlive(request: SocketRequest.IsAlive) {
+        app.socketSender.send(SocketResponse.IsAlive(request.id))
     }
 
     private suspend fun register(request: SocketRequest.Register): Unit = try {

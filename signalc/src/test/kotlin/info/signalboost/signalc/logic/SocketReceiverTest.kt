@@ -15,6 +15,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genRegiste
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genAbortRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genIsAliveRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
@@ -154,6 +155,19 @@ class SocketReceiverTest : FreeSpec({
                         coVerify {
                             app.socketSender.send(any<SocketResponse.AbortWarning>())
                             app.socketServer.stop()
+                        }
+                    }
+                }
+            }
+
+            "IS_ALIVE request" - {
+                val request = genIsAliveRequest()
+
+                "echoes the request back to socket" {
+                    client.send(request.toJson())
+                    eventually(timeout) {
+                        coVerify {
+                            app.socketSender.send(SocketResponse.IsAlive(request.id))
                         }
                     }
                 }

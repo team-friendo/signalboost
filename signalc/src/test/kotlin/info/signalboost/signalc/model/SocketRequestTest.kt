@@ -44,6 +44,14 @@ class SocketRequestTest : FreeSpec({
             }
         }
 
+        "IS_ALIVE request" - {
+            "decodes from JSON" {
+                SocketRequest.fromJson(
+                    """{"type":"is_alive","id":"$requestId"}"""
+                ) shouldBe SocketRequest.IsAlive(requestId)
+            }
+        }
+
         "CLOSE request" - {
             "decodes from JSON" {
                 SocketRequest.fromJson(

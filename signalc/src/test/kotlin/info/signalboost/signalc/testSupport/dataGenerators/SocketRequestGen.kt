@@ -17,6 +17,8 @@ object SocketRequestGen {
 
     fun genAbortRequest() = SocketRequest.Abort(genUuidStr())
 
+    fun genIsAliveRequest(id: String = genUuidStr()) = SocketRequest.IsAlive(id)
+
     fun genCloseRequest() = SocketRequest.Close(genUuidStr())
 
     fun genRegisterRequest(
