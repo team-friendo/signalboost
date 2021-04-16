@@ -302,8 +302,9 @@ sc.run: ## run signalc in dev mode
 	docker-compose -f docker-compose-sc.yml \
 	run -e SIGNALC_ENV=development --entrypoint 'rm /signalc/message.sock && gradle --console=plain run' signalc
 
-sc.client: ## open a netcat session on the signalc unix socket
-	nc -U /signalc/sock/signald.sock
+sc.nc: ## open a netcat session on the signalc unix socket
+	docker-compose -f docker-compose-sc.yml \
+	exec signalc nc -U /signalc/sock/signald.sock
 
 sc.up: ## run signalboost against signalc in dev mode
 	docker-compose -f docker-compose-sc.yml up -d
