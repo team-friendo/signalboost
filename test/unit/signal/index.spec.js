@@ -34,6 +34,8 @@ describe('signal module', () => {
   const channel = channelFactory({ phoneNumber: channelPhoneNumber })
   const subscriberNumber = genPhoneNumber()
   const fingerprint = genFingerprint()
+  const uuid = util.genUuid()
+
   let writeStub
 
   const emit = async msg => {
@@ -48,7 +50,7 @@ describe('signal module', () => {
       await app.run({ ...testApp, signal })
     })
     beforeEach(async () => {
-      writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
+      writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(uuid))
       sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
       sinon
         .stub(membershipRepository, 'findMembership')
@@ -89,7 +91,6 @@ describe('signal module', () => {
     })
 
     describe('sending a healthcheck', () => {
-      const id = util.genUuid()
       const nowInMillis = new Date().getTime()
       const oneMinuteInMillis = 1000 * 60
       const oneMinuteAgoInMillis = nowInMillis - oneMinuteInMillis
@@ -102,7 +103,7 @@ describe('signal module', () => {
           },
           dataMessage: {
             timestamp: new Date().toISOString(),
-            body: `${messageTypes.HEALTHCHECK_RESPONSE} ${id}`,
+            body: `${messageTypes.HEALTHCHECK_RESPONSE} ${uuid}`,
             expiresInSeconds: 0,
             attachments: [],
           },
@@ -111,7 +112,7 @@ describe('signal module', () => {
 
       describe('when healthcheck receives a response', () => {
         beforeEach(() => {
-          sinon.stub(util, 'genUuid').returns(id)
+          sinon.stub(util, 'genUuid').returns(uuid)
           sinon
             .stub(util, 'nowInMillis')
             .onCall(0)
@@ -206,6 +207,7 @@ describe('signal module', () => {
       }
       const trustResponse = {
         type: messageTypes.TRUSTED_FINGERPRINT,
+        id: uuid,
         data: {
           msg_number: 0,
           message: 'Successfully trusted fingerprint',
@@ -349,28 +351,19 @@ describe('signal module', () => {
     })
 
     describe('checking to see if signald is alive', () => {
-      const version = '+git2020-10-06r6cf17ecb.0'
-      const versionResponse = {
-        type: messageTypes.VERSION,
-        data: {
-          name: 'signald',
-          version,
-          branch: 'master',
-          commit: '6cf17ecb7b82f2ba209a0b9059c7355d88773b78',
-        },
-      }
+      const isAliveMsg = { type: messageTypes.IS_ALIVE, id: uuid }
 
       describe('when signald is alive', () => {
-        it('resolves with the version of signald that is running', async () => {
-          wait(5).then(() => emit(versionResponse))
-          expect(await signal.isAlive(0)).to.eql(version)
+        it('resolves with `is_alive` message', async () => {
+          emitWithDelay(5, isAliveMsg)
+          expect(await signal.isAlive(0)).to.eql(messageTypes.IS_ALIVE)
         })
       })
 
       describe('when signald is not alive', () => {
         it('rejects with an error', async () => {
           expect(await signal.isAlive().catch(e => e)).to.eql({
-            message: 'Singald response timed out for request of type: version',
+            message: 'Singald response timed out for request of type: is_alive',
             status: 'ERROR',
           })
         })

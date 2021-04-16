@@ -73,6 +73,7 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 const _callbackFor = messageType =>
   ({
     [messageTypes.HEALTHCHECK]: _handleHealthcheckResponse,
+    [messageTypes.IS_ALIVE]: _handleIsAliveResponse,
     [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
@@ -83,6 +84,7 @@ const _callbackFor = messageType =>
 const _timeoutFor = messageType =>
   ({
     [messageTypes.HEALTHCHECK]: healthcheckTimeout,
+    [messageTypes.IS_ALIVE]: signaldRestartTimeout, // TODO: use restart timeout (for now)
     [messageTypes.SEND]: signaldSendTimeout,
     [messageTypes.TRUST]: signaldRequestTimeout,
     [messageTypes.VERIFY]: signaldVerifyTimeout,
@@ -93,6 +95,7 @@ const _timeoutFor = messageType =>
 const handle = (message, socketId) => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
+    [messageTypes.IS_ALIVE]: registry[`${messageTypes.IS_ALIVE}-${message.id}`],
     [messageTypes.MESSAGE]:
       registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`],
     [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
@@ -108,6 +111,8 @@ const handle = (message, socketId) => {
 }
 
 // CALLBACKS
+
+const _handleIsAliveResponse = ({ resolve }) => resolve(messageTypes.IS_ALIVE)
 
 const _handleSendResponse = ({ message, state }) => {
   delete registry[`${messageTypes.SEND}-${message.id}`]
@@ -196,6 +201,7 @@ module.exports = {
   handle,
   register,
   _handleHealthcheckResponse,
+  _handleIsAliveResponse,
   _handleSendResponse,
   _handleTrustResponse,
   _handleVerifyResponse,

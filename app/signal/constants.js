@@ -6,6 +6,7 @@ const messageTypes = {
   HEALTHCHECK_RESPONSE: 'healthcheck_response',
   IDENTITIES: 'identities',
   INBOUND_IDENTITY_FAILURE: 'inbound_identity_failure',
+  IS_ALIVE: 'is_alive',
   MESSAGE: 'message',
   REGISTER: 'register',
   REGISTRATION_ERROR: 'registration_error',

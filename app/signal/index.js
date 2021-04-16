@@ -147,14 +147,14 @@ const abort = socketId =>
   socketWriter.write({ type: messageTypes.ABORT }, socketId)
 
 // string => Promise<string>
-const isAlive = socketId => {
-  // checks to see if signald is a live by asking for version.
-  // resolves with version or rejects with error.
-  socketWriter.write({ type: messageTypes.VERSION }, socketId)
+const isAlive = async socketId => {
+  // checks to see if signald is a live by pinging and waiting for echo back
+  // resolves with success or rejects with timeout
+  const id = await socketWriter.write({ type: messageTypes.IS_ALIVE }, socketId).catch(e => e)
   return new Promise((resolve, reject) =>
     callbacks.register({
-      id: socketId,
-      messageType: messageTypes.VERSION,
+      id,
+      messageType: messageTypes.IS_ALIVE,
       resolve,
       reject,
     }),

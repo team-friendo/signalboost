@@ -15,6 +15,7 @@ const {
     diagnosticsPhoneNumber,
     healthcheckTimeout,
     signaldRequestTimeout,
+    signaldRestartTimeout,
     signaldSendTimeout,
     signaldVerifyTimeout,
   },
@@ -98,6 +99,7 @@ describe('callback registry', () => {
         expect(callbacks.registry[`${messageTypes.VERIFY}-${channelPhoneNumber}`]).to.eql(undefined)
       })
     })
+
     describe('for a SEND request', () => {
       it('registers a SEND_RESULT response handler', () => {
         callbacks.register({
@@ -150,6 +152,34 @@ describe('callback registry', () => {
         })
         await util.wait(healthcheckTimeout)
         expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
+      })
+    })
+
+    describe('for an IS_ALIVE request', () => {
+      it('registers an IS_ALIVE response handler', () => {
+        callbacks.register({
+          messageType: messageTypes.IS_ALIVE,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        expect(callbacks.registry[`${messageTypes.IS_ALIVE}-${id}`]).to.eql({
+          callback: callbacks._handleIsAliveResponse,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: undefined,
+        })
+      })
+
+      it('deletes the handler after a timeout', async () => {
+        callbacks.register({
+          messageType: messageTypes.IS_ALIVE,
+          id,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        await util.wait(signaldRestartTimeout)
+        expect(callbacks.registry[`${messageTypes.IS_ALIVE}-${id}`]).to.eql(undefined)
       })
     })
 
@@ -385,6 +415,31 @@ describe('callback registry', () => {
         callbacks.handle(healthcheckResponse)
         expect(callbacks.registry[`${messageTypes.HEALTHCHECK}-${id}`]).to.eql(undefined)
       })
+    })
+  })
+
+  describe('an IS_ALIVE response', () => {
+    const isAliveMessage = {
+      type: messageTypes.IS_ALIVE,
+      id: util.genUuid(),
+    }
+
+    beforeEach(() => {
+      callbacks.register({
+        id: isAliveMessage.id,
+        messageType: messageTypes.IS_ALIVE,
+        resolve: resolveStub,
+        reject: rejectStub,
+      })
+      callbacks.handle(isAliveMessage, 0)
+    })
+
+    it('resolves a promise with an `is_alive` message', () => {
+      expect(resolveStub.getCall(0).args).to.eql([messageTypes.IS_ALIVE])
+    })
+
+    it('deletes the registry entry', () => {
+      expect(callbacks.registry[`${messageTypes.VERSION}-${isAliveMessage.id}`]).to.eql(undefined)
     })
   })
 

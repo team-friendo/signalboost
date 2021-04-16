@@ -344,25 +344,25 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[0].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[1].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[2].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[3].socketId,
             ],
