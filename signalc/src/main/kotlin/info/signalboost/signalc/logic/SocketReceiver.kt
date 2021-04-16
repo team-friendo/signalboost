@@ -74,17 +74,14 @@ class SocketReceiver(private val app: Application) {
                 is SocketRequest.IsAlive -> isAlive(request)
                 is SocketRequest.ParseError -> parseError(request)
                 is SocketRequest.Register -> register(request)
-                is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
+                is SocketRequest.Send -> send(request)  // this signals errors as both `SendResult` and `Throwable`
                 is SocketRequest.SetExpiration -> setExpiration(request)
                 is SocketRequest.Subscribe -> subscribe(request)
                 is SocketRequest.Trust -> trust(request)
                 is SocketRequest.Unsubscribe -> unsubscribe(request)
                 is SocketRequest.Verify -> verify(request)
-                // TODO://////////////////////////////////////////////
-                is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
-            // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
             logger.error("ERROR handling request $request from socket $socketHash:\n ${e.stackTraceToString()}")
             app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)

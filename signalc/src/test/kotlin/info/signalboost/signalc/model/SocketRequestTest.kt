@@ -52,14 +52,6 @@ class SocketRequestTest : FreeSpec({
             }
         }
 
-        "CLOSE request" - {
-            "decodes from JSON" {
-                SocketRequest.fromJson(
-                    """{"type":"close","id":"$requestId"}"""
-                ) shouldBe SocketRequest.Close(requestId)
-            }
-        }
-
         "REGISTER request" - {
 
             "with all fields present" - {
@@ -271,15 +263,6 @@ class SocketRequestTest : FreeSpec({
                 }
             }
         }
-
-        "VERSION request" - {
-            "decodes from JSON" {
-                SocketRequest.fromJson(
-                    """{"type":"version","id":"$requestId"}"""
-                ) shouldBe SocketRequest.Version(requestId)
-            }
-        }
-
 
         "invalid requests" - {
 
