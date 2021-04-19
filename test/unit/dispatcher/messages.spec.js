@@ -82,9 +82,7 @@ describe('messages module', () => {
       phoneNumber: '+13333333333',
       vouchMode: 'ON',
       vouchLevel: 1,
-      invites: [
-        ...times(4, () => inviteFactory({ channelPhoneNumber: '+13333333333' }))
-      ],
+      invites: [...times(4, () => inviteFactory({ channelPhoneNumber: '+13333333333' }))],
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
         ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
