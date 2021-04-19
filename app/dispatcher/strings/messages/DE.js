@@ -2,6 +2,7 @@ const { upperCase } = require('lodash')
 const { memberTypes } = require('../../../db/repositories/membership')
 const {
   getAdminMemberships,
+  getInvites,
   getSubscriberMemberships,
 } = require('../../../db/repositories/channel')
 const {
@@ -245,6 +246,7 @@ Signal-Nummer: ${channel.phoneNumber}
 Admins: ${getAdminMemberships(channel).length}
 Teilnehmer*innen: ${getSubscriberMemberships(channel).length}
 Teilnehmer*innenlimit: ${channel.subscriberLimit}
+Ausstehende Einladungen: ${getInvites(channel).length}
 Hotline: ${onOrOff(channel.hotlineOn)}
 Vertrauen: ${vouchModeDisplay[channel.vouchMode]}
 ${channel.vouchMode !== 'OFF' ? `Vertrauens-Level: ${channel.vouchLevel}` : ''}

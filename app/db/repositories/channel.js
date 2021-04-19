@@ -201,6 +201,8 @@ const getSubscriberPhoneNumbers = channel =>
 const canAddSubscribers = (channel, numSubscribers = 1) =>
   getSubscriberMemberships(channel).length + numSubscribers <= channel.subscriberLimit
 
+const getInvites = channel => channel.invites || []
+
 module.exports = {
   canAddSubscribers,
   count,
@@ -217,6 +219,7 @@ module.exports = {
   getAdminPhoneNumbers,
   getChannelsOnSocket,
   getDiagnosticsChannel,
+  getInvites,
   getMaintainers,
   getChannelsSortedBySize,
   getMemberPhoneNumbers,

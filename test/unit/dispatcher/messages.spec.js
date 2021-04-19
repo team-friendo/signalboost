@@ -12,6 +12,7 @@ import {
   adminMembershipFactory,
   subscriberMembershipFactory,
 } from '../../support/factories/membership'
+import { inviteFactory } from '../../support/factories/invite'
 import { genPhoneNumber } from '../../support/factories/phoneNumber'
 
 describe('messages module', () => {
@@ -81,6 +82,7 @@ describe('messages module', () => {
       phoneNumber: '+13333333333',
       vouchMode: 'ON',
       vouchLevel: 1,
+      invites: [...times(4, () => inviteFactory({ channelPhoneNumber: '+13333333333' }))],
       memberships: [
         ...times(2, () => adminMembershipFactory({ channelPhoneNumber: '+13333333333' })),
         ...times(2, () => subscriberMembershipFactory({ channelPhoneNumber: '+13333333333' })),
@@ -92,9 +94,10 @@ describe('messages module', () => {
       describe('for admin', () => {
         const msg = cr.info[memberTypes.ADMIN](channel)
 
-        it('shows admin and subscriber counts', () => {
+        it('shows admin, subscriber, and pending invite counts', () => {
           expect(msg).to.include('admins: 2')
           expect(msg).to.include('subscribers: 2')
+          expect(msg).to.include('pending invites: 4')
         })
 
         describe('when vouch mode is on', () => {
