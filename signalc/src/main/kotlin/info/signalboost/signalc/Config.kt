@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.store.EnvelopeStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -19,6 +20,7 @@ object Config {
     private val appComponents = listOf(
         // resources
         AccountStore::class,
+        EnvelopeStore::class,
         ProtocolStore::class,
         // components
         AccountManager::class,

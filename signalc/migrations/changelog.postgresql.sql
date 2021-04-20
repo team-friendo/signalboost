@@ -75,3 +75,13 @@ CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes)
 -- changeset fdbk:1618858708962-2 failOnError:false
 CREATE INDEX identities_account_id_name ON identities (account_id, "name")
 -- rollback drop index identities_account_id_name;
+
+-- changeset aguestuser:1618854201895-1 failOnError:false
+CREATE TABLE IF NOT EXISTS envelopes
+(
+    id uuid PRIMARY KEY,
+    account_id VARCHAR(255) NOT NULL,
+    envelope_bytes bytea NOT NULL,
+    server_delivered_timestamp BIGINT NOT NULL
+);
+-- rollback drop table envelopes;
