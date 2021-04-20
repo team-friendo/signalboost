@@ -131,7 +131,6 @@ dependencies {
 
 liquibase {
     val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
-
     val dbName = System.getenv("SIGNALC_DB_NAME")
         ?: when(System.getenv("SIGNALC_ENV")) {
             "development" -> "signalc_development"
@@ -139,7 +138,6 @@ liquibase {
             "load" -> "loadtest_sender_signalc"
             else -> "signalc"
         }
-
     activities.register("main") {
         this.arguments = mapOf(
 //            "logLevel" to "info",
