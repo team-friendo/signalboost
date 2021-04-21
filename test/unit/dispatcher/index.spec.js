@@ -438,6 +438,7 @@ describe('dispatcher module', () => {
               sdMessage: {
                 type: messageTypes.SEND,
                 username: channel.phoneNumber,
+                recipientAddress: { number: subscriberPhoneNumber },
                 messageBody: messagesIn(languages.FR).notifications.safetyNumberChanged,
               },
             },

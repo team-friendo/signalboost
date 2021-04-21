@@ -129,7 +129,11 @@ const _updateFingerprint = async (message, state) => {
     channelPhoneNumber,
     memberPhoneNumber,
     fingerprint: identityFailure,
-    sdMessage: sdMessageOf({ sender: channelPhoneNumber, message: messageBody }),
+    sdMessage: sdMessageOf({
+      sender: channelPhoneNumber,
+      recipient: memberPhoneNumber,
+      message: messageBody,
+    }),
   })
 }
 

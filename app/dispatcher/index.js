@@ -286,6 +286,7 @@ const detectUpdatableFingerprint = async inSdMessage => {
     sdMessage: {
       type: signal.messageTypes.SEND,
       username: channelPhoneNumber,
+      recipientAddress: { number: memberPhoneNumber },
       messageBody: messagesIn(language).notifications.safetyNumberChanged,
     },
   }
