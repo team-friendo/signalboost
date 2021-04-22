@@ -2,23 +2,21 @@ package info.signalboost.signalc.store
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
-import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.serialization.EnvelopeSerializer.toByteArray
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuid
 import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
-import info.signalboost.signalc.util.TimeUtil.nowInMillis
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
-import io.kotest.mpp.env
+import io.mockk.every
+import io.mockk.mockkConstructor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.dao.id.EntityID
 import java.util.*
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -69,11 +67,26 @@ class EnvelopeStoreTest : FreeSpec({
                     store.count() shouldBe startingCount + 2
                 }
             }
+
+            "when some random db error happens" - {
+                // NOTE(aguestuser|2021-04-21): yes, this is a very weird test!! sorry!!!
+                // i tried mocking `Envelopes.insertAndGetId` but ran into all sorts of weird runtime
+                // type errors when mockk could not resolve the right kind of `Function2` blah blah
+                // so this seems like a random enough error to prove the point!
+                mockkConstructor(EntityID::class)
+                every {
+                    anyConstructed<EntityID<UUID>>().value
+                } throws Error("BOOM!")
+
+                "returns null" {
+                    store.create(accountId, envelope) shouldBe null
+                }
+            }
         }
 
         "#delete" - {
             "given the UUID of an existing envelope" - {
-                val cacheId = store.create(accountId, genEnvelope())
+                val cacheId = store.create(accountId, genEnvelope())!!
                 val startingCount = store.count()
 
                 "deletes the envelope from the store" {

@@ -17,13 +17,18 @@ class EnvelopeStore(val db: Database) {
     }
 
     // NOTE: #create is blocking b/c it is passed as a callback to libsignal
-    fun create(accountId: String, envelope: SignalServiceEnvelope): UUID = transaction(db) {
-        Envelopes.insert {
-            it[this.accountId] = accountId
-            it[this.envelopeBytes] = envelope.toByteArray()
-            it[this.serverDeliveredTimestamp] = envelope.serverDeliveredTimestamp
-        }[Envelopes.id].value
-    }
+    fun create(accountId: String, envelope: SignalServiceEnvelope): UUID? =
+        try {
+            transaction(db) {
+                Envelopes.insertAndGetId {
+                    it[this.accountId] = accountId
+                    it[this.envelopeBytes] = envelope.toByteArray()
+                    it[this.serverDeliveredTimestamp] = envelope.serverDeliveredTimestamp
+                }.value
+            }
+        } catch (err: Throwable) {
+            null
+        }
 
     suspend fun delete(cacheId: UUID): Unit = newSuspendedTransaction(IO, db) {
         Envelopes.deleteWhere {
