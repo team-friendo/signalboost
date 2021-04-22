@@ -2,9 +2,8 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalSender.Companion.asAddress
+import info.signalboost.signalc.model.SignalServiceAddressConverter.asSignalServiceAddress
 import info.signalboost.signalc.model.SocketRequest.Companion.DEFAULT_EXPIRY_TIME
-import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
@@ -127,7 +126,7 @@ class SignalSenderTest : FreeSpec({
                 val now = TimeUtil.nowInMillis()
                 val result = messageSender.send(
                     sender = verifiedAccount,
-                    recipient = recipientPhone.asAddress(),
+                    recipient = recipientPhone.asSignalServiceAddress(),
                     body = "hello!",
                     expiration = 5000,
                     attachments = emptyList(),
@@ -151,7 +150,7 @@ class SignalSenderTest : FreeSpec({
                 every { TimeUtil.nowInMillis() } returns 1000L
                 messageSender.send(
                     verifiedAccount,
-                    recipientPhone.asAddress(),
+                    recipientPhone.asSignalServiceAddress(),
                     "hello!",
                     DEFAULT_EXPIRY_TIME,
                     emptyList()
@@ -171,7 +170,7 @@ class SignalSenderTest : FreeSpec({
                     every { app.signalSender.messagesInFlight.getAndDecrement() } returns 0
                     every { app.signalSender.messagesInFlight.set(any()) } returns Unit
                 }
-                messageSender.send(verifiedAccount, recipientPhone.asAddress(),"", DEFAULT_EXPIRY_TIME, emptyList())
+                messageSender.send(verifiedAccount, recipientPhone.asSignalServiceAddress(),"", DEFAULT_EXPIRY_TIME, emptyList())
 
                 verify {
                     app.signalSender.messagesInFlight.getAndIncrement()
@@ -205,7 +204,7 @@ class SignalSenderTest : FreeSpec({
 
                 messageSender.send(
                     sender = verifiedAccount,
-                    recipient = recipientPhone.asAddress(),
+                    recipient = recipientPhone.asSignalServiceAddress(),
                     body = "hello!",
                     expiration = 5000,
                     attachments = listOf(sendAttachment),
@@ -253,7 +252,7 @@ class SignalSenderTest : FreeSpec({
             "sends an expiration update to intended recipient" {
                 val result = messageSender.setExpiration(
                     sender = verifiedAccount,
-                    recipient = recipientPhone.asAddress(),
+                    recipient = recipientPhone.asSignalServiceAddress(),
                     expiresInSeconds = 60,
                 )
                 verify {

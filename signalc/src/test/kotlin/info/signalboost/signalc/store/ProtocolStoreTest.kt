@@ -2,8 +2,8 @@ package info.signalboost.signalc.store
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.logic.SignalSender.Companion.asAddress
 import info.signalboost.signalc.model.NewAccount
+import info.signalboost.signalc.model.SignalServiceAddressConverter.asSignalServiceAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
@@ -96,7 +96,7 @@ class ProtocolStoreTest: FreeSpec({
             "updates the key for all identities with name + accountId" {
                 store.saveIdentity(recipient.addresses[0], identityKey)
                 store.saveIdentity(recipient.addresses[1], identityKey)
-                store.saveFingerprintForAllIdentities(recipient.addresses[0].name.asAddress(), rotatedIdentityKey.serialize())
+                store.saveFingerprintForAllIdentities(recipient.addresses[0].name.asSignalServiceAddress(), rotatedIdentityKey.serialize())
                 store.getIdentity(recipient.addresses[0])!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
                 store.getIdentity(recipient.addresses[1])!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
             }

@@ -7,7 +7,7 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import mu.KLoggable
+import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
@@ -20,7 +20,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,12 +33,7 @@ import kotlin.time.TimeSource.*
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {
-    companion object: KLoggable {
-        override val logger = logger()
-        // TODO: move these?
-        fun String.asAddress() = SignalServiceAddress(null, this)
-        fun UUID.asAddress() = SignalServiceAddress(this, null)
-    }
+    companion object: KLogging()
 
     /********************
      * FIELDS/FACTORIES
