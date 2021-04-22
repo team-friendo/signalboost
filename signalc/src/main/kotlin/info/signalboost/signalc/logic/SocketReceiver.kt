@@ -17,7 +17,9 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -110,6 +112,7 @@ class SocketReceiver(private val app: Application) {
         logger.info("Received `abort`. Exiting.")
         app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
         app.stop()
+        app.exit()
     }
 
     private suspend fun isAlive(request: SocketRequest.IsAlive) {

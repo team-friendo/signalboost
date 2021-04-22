@@ -1,5 +1,6 @@
 package info.signalboost.signalc
 
+import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.EnvelopeStore
@@ -24,6 +25,7 @@ object Config {
 
     private val appComponents = listOf(
         // resources
+        HikariDataSource::class,
         AccountStore::class,
         EnvelopeStore::class,
         ProtocolStore::class,
