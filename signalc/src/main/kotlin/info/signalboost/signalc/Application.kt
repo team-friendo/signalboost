@@ -22,12 +22,8 @@ import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations
 import org.whispersystems.signalservice.api.push.TrustStore
 import org.whispersystems.signalservice.internal.configuration.*
 import org.whispersystems.util.Base64
-import java.io.*
-import java.nio.file.Files
-import java.nio.file.attribute.PosixFilePermission
-import java.nio.file.attribute.PosixFilePermissions
+import java.io.InputStream
 import java.security.Security
-import java.util.*
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
@@ -196,7 +192,7 @@ class Application(val config: Config.App){
 
         // storage resources
         accountStore = initializeStore(AccountStore::class)
-        envelopeStore = initializeStore(EnvelopeStore::class)
+        envelopeStore = initializeStore(EnvelopeStore::class, Mocks.envelopeStore)
         protocolStore = initializeStore(ProtocolStore::class, Mocks.protocolStore)
 
         // network resources
@@ -260,6 +256,11 @@ class Application(val config: Config.App){
             coEvery { register(any(),any()) } returns mockk()
             coEvery { verify(any(),any()) } returns mockk()
             coEvery { publishPreKeys(any()) } returns mockk()
+        }
+        val envelopeStore: EnvelopeStore.() -> Unit = {
+            every { create(any(), any()) } returns mockk()
+            coEvery { delete(any()) } returns Unit
+            coEvery { findAll(any()) } returns emptyList()
         }
         val protocolStore: ProtocolStore.() -> Unit = {
             every { of(any()) } returns mockk {

@@ -16,15 +16,15 @@ object SocketResponseMatchers {
     }
 
     fun MockKMatcherScope.cleartext(
-        sender: SignalcAddress,
-        recipient: SignalcAddress,
-        body: String,
-        attachments: List<SocketResponse.Cleartext.Attachment> = emptyList(),
+        sender: SignalcAddress? = null,
+        recipient: SignalcAddress? = null,
+        body: String? = null,
+        attachments: List<SocketResponse.Cleartext.Attachment>?  = null,
     ): SocketResponse.Cleartext = match {
-        it.data.source == sender &&
-                it.data.username == recipient.number &&
-                it.data.dataMessage.body == body &&
-                it.data.dataMessage.attachments == attachments
+        sender?.let { _ ->it.data.source == sender  } ?: true &&
+        recipient?.let { _ -> it.data.username == recipient.number } ?: true &&
+        body?.let { _ -> it.data.dataMessage.body == body } ?: true &&
+        attachments?.let { _ -> it.data.dataMessage.attachments == attachments } ?: true
     }
 
     fun MockKMatcherScope.decryptionError(

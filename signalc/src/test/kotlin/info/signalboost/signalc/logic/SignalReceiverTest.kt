@@ -3,12 +3,15 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuid
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.deleteAllAttachments
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.genJpegInputStream
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
@@ -37,6 +40,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
+import java.util.*
 import kotlin.io.path.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
@@ -54,20 +58,24 @@ class SignalReceiverTest : FreeSpec({
 
         val recipientAccount = genVerifiedAccount()
         val senderAddress = genSignalServiceAddress()
+        val cacheId = genUuid()
 
         val timeout = 40.milliseconds
         val pollInterval = 1.milliseconds
         val now = nowInMillis()
+        val expiryTime = genInt()
 
-        fun signalSendsEnvelopeOf(envelopeType: Int): SignalServiceEnvelope {
-            val mockEnvelope = mockk<SignalServiceEnvelope> {
-                every { type } returns envelopeType
-                every { sourceAddress } returns senderAddress
-                every { timestamp } returns now
-            }
+        fun signalSendsEnvelopeOf(envelopeType: Int): Pair<SignalServiceEnvelope,SignalServiceMessagePipe> {
+            val envelope = genEnvelope(
+                type = envelopeType,
+                sender = senderAddress,
+            )
 
             val mockMessagePipe = mockk<SignalServiceMessagePipe> {
-                every { read(any(), any()) } returns mockEnvelope
+                every { read(any(), any(), any()) } answers {
+                    this.thirdArg<SignalServiceMessagePipe.MessagePipeCallback>().onMessage(envelope)
+                    envelope
+                }
                 every { shutdown() } returns Unit
             }
 
@@ -75,25 +83,23 @@ class SignalReceiverTest : FreeSpec({
                 anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
             }  returns  mockMessagePipe
 
-            return mockEnvelope
+            return Pair(envelope, mockMessagePipe)
         }
 
-        // this pipe emits messages that will be dropped (for tests where we don't care about message handling)
-        val junkMessagePipe = mockk<SignalServiceMessagePipe> {
-            every { read(any(), any()) } returns mockk {
-                every { type } returns UNKNOWN_VALUE
-                every { sourceAddress } returns mockk {
-                    every { number } returns Optional.of(genPhoneNumber())
-                    every { uuid } returns Optional.absent()
+        fun signalSendsJunkEnvelopes() = signalSendsEnvelopeOf(UNKNOWN_VALUE)
+
+        fun decryptionYields(cleartexts: List<String>) =
+            every {
+                anyConstructed<SignalServiceCipher>().decrypt(any())
+            } returns mockk {
+                every { dataMessage.orNull() } returns mockk {
+                    every { expiresInSeconds } returns expiryTime
+                    every { timestamp } returns now
+                    every { body.orNull() } returnsMany cleartexts
+                    every { attachments.orNull() } returns null
                 }
             }
-            every { shutdown() } returns Unit
-        }
 
-        fun emitJunkMessages() =
-            every {
-                anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
-            }  returns  junkMessagePipe
 
         beforeSpec {
             mockkConstructor(SignalServiceMessageReceiver::class)
@@ -112,24 +118,76 @@ class SignalReceiverTest : FreeSpec({
         }
 
         "#subscribe" - {
-            val expiryTime = genInt()
             afterTest {
                 messageReceiver.unsubscribe(recipientAccount)
             }
 
             "in all cases" - {
-                emitJunkMessages()
-                val sub = messageReceiver.subscribe(recipientAccount)!!
+                val (junkEnvelope) = signalSendsJunkEnvelopes()
+                coEvery {
+                    app.envelopeStore.create(recipientAccount.username, junkEnvelope)
+                } returns cacheId
+
+                lateinit var sub: Job
+                beforeTest {
+                    sub = messageReceiver.subscribe(recipientAccount)!!
+                }
+
+                "attempts to retrieve cached envelopes from previous subscriptions" {
+                    coVerify {
+                        app.envelopeStore.findAll(recipientAccount.username)
+                    }
+                }
 
                 "creates a message pipe and listens for messages in a coroutine" {
                     messageReceiver.subscriptionCount shouldBe 1
                     messageReceiver.messagePipeCount shouldBe 1
                     sub.isActive shouldBe true
                 }
+
+                "caches each envelope it receives before attempting decryption" {
+                    verify {
+                        app.envelopeStore.create(recipientAccount.username, junkEnvelope)
+                    }
+                }
+
+                "deletes the cached envelope after attempting decryption" {
+                    coVerify {
+                        app.envelopeStore.delete(cacheId)
+                    }
+                }
+            }
+
+            "when the recipient account has cached (unprocessed) envelopes" - {
+                coEvery {
+                    app.envelopeStore.findAll(recipientAccount.username)
+                } returns List(3) { genEnvelope(type = CIPHERTEXT_VALUE) }
+                decryptionYields(listOf("msg1", "msg2", "msg3"))
+                signalSendsJunkEnvelopes()
+
+                "dispatches cached envelopes before processing new messages" {
+                    messageReceiver.subscribe(recipientAccount)!!
+                    eventually(timeout, pollInterval) {
+                        coVerifyOrder {
+                            app.socketSender.send(
+                                cleartext(body = "msg1")
+                            )
+                            app.socketSender.send(
+                                cleartext(body ="msg2")
+                            )
+                            app.socketSender.send(
+                                cleartext(body ="msg3")
+                            )
+                            app.socketSender.send(
+                                any<SocketResponse.Dropped>()
+                            )
+                        }
+                    }
+                }
             }
 
             "when signal sends an envelope of type UNKNOWN" - {
-                val envelope = signalSendsEnvelopeOf(UNKNOWN_VALUE)
+                val (envelope) = signalSendsEnvelopeOf(UNKNOWN_VALUE)
                 messageReceiver.subscribe(recipientAccount)!!
 
                 "relays a DroppedMessage to the socket sender" {
@@ -384,7 +442,7 @@ class SignalReceiverTest : FreeSpec({
             }
 
             "when signal sends an envelope of type PREKEY_BUNDLE" - {
-                val envelope = signalSendsEnvelopeOf(PREKEY_BUNDLE_VALUE)
+                val (envelope) = signalSendsEnvelopeOf(PREKEY_BUNDLE_VALUE)
 
                 every {
                     anyConstructed<SignalServiceCipher>().decrypt(any())
@@ -403,7 +461,7 @@ class SignalReceiverTest : FreeSpec({
             }
 
             "when issued for an account that is already subscribed" - {
-                emitJunkMessages()
+                signalSendsJunkEnvelopes()
                 messageReceiver.subscribe(recipientAccount)!!
 
                 "does not create a new subscription" {
@@ -417,7 +475,7 @@ class SignalReceiverTest : FreeSpec({
         }
 
         "#unsubscribe" - {
-            emitJunkMessages()
+            val (_, messagePipe) = signalSendsJunkEnvelopes()
 
             "when issued for a subscribed account" - {
                 val sub = messageReceiver.subscribe(recipientAccount)!!
@@ -425,7 +483,7 @@ class SignalReceiverTest : FreeSpec({
 
                 "shuts down message pipe" {
                     verify {
-                        junkMessagePipe.shutdown()
+                        messagePipe.shutdown()
                     }
                 }
 
@@ -445,7 +503,7 @@ class SignalReceiverTest : FreeSpec({
 
                 "does nothing" {
                     verify(exactly = 0) {
-                        junkMessagePipe.shutdown()
+                        messagePipe.shutdown()
                     }
                     sub.isActive shouldBe true
                     messageReceiver.subscriptionCount shouldBe 1

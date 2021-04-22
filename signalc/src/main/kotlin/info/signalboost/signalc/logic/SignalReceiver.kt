@@ -3,9 +3,11 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
-import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.EnvelopeType
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SocketResponse
+import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.FileUtil.readToFile
 import kotlinx.coroutines.*
@@ -22,9 +24,10 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPoin
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
-import java.io.*
+import java.io.File
 import java.lang.Exception
 import java.nio.file.Files
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
@@ -85,10 +88,7 @@ class SignalReceiver(private val app: Application) {
         get() = messagePipes.size
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
-        // TODO(aguestuser|2021-01-21) handle:
-        //  - timeout
-        //  - closed connection (understand `readyOrEmtpy()`?)
-        //  - random runtime error
+        // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmtpy()`?)
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
         return app.coroutineScope.launch {
             val subscription = this
@@ -99,13 +99,27 @@ class SignalReceiver(private val app: Application) {
                 throw SignalcError.MessagePipeNotCreated(e)
             }
             launch(IO) {
+                // first, retry all envelopes previously cached but unhandled (due to interruption during handling)
+                app.envelopeStore.findAll(account.username).map {
+                    // join on each retry job to prevent handling new message before cached ones are processed
+                    dispatch(account, it)?.join()
+                }
+                // now proceed to handle new messages...
                 while (subscription.isActive) {
+                    var cacheId: UUID? = null
                     // TODO: handle TimeoutException here and then keep reading
-                    val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    logger.debug {
-                        "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
+                    val envelope: SignalServiceEnvelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS) {
+                        logger.debug { "Got ${it.type.asEnum()} from ${it.sourceAddress.number} to ${account.username}" }
+                        // cache new envelopes before acknowledging receipt to server or decrypting (see docs for #read)
+                        cacheId = app.envelopeStore.create(account.username, it)
                     }
+                    // handle the envelope, decrypting and relaying if possible
                     dispatch(account, envelope)
+                    // remove the envelope from the cache, since we handled it successfully and won't need to retry
+                    // but don't wait for deletion to complete before handling next message (hence the `launch`)
+                    cacheId?.let {
+                        launch(IO) { app.envelopeStore.delete(it) }
+                    }
                 }
             }
         }.also {
@@ -126,22 +140,29 @@ class SignalReceiver(private val app: Application) {
 
     // MESSAGE HANDLING
 
-    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
-        when(envelope.type.asEnum()) {
+    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job? =
+        when (envelope.type.asEnum()) {
             EnvelopeType.CIPHERTEXT,
-            EnvelopeType.PREKEY_BUNDLE -> handleCiphertext(envelope, account)
+            EnvelopeType.PREKEY_BUNDLE -> {
+                handleCiphertext(envelope, account)
+            }
             // TODO(aguestuser|2021-03-04): handle any of these?
             EnvelopeType.KEY_EXCHANGE,
             EnvelopeType.RECEIPT,
             EnvelopeType.UNIDENTIFIED_SENDER,
-            EnvelopeType.UNKNOWN -> drop(envelope, account)
+            EnvelopeType.UNKNOWN -> {
+                app.socketSender.send(
+                    SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+                )
+                null
+            }
         }
-    }
 
-    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
+
+    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        app.coroutineScope.launch(IO) {
+        return app.coroutineScope.launch(IO) {
             try {
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
@@ -210,11 +231,6 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        app.socketSender.send(
-            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
-        )
-    }
 }
 
 /*[1]**********
