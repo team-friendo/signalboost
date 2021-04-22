@@ -23,23 +23,28 @@ import java.nio.file.Files
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.*
+import kotlin.time.TimeSource.*
 
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {
     companion object: KLoggable {
         override val logger = logger()
+        // TODO: move these?
         fun String.asAddress() = SignalServiceAddress(null, this)
         fun UUID.asAddress() = SignalServiceAddress(this, null)
     }
 
-    /**************
-     * FACTORIES
-     **************/
-
+    /********************
+     * FIELDS/FACTORIES
+     *******************/
+    internal val messagesInFlight = AtomicInteger(0)
     private val messageSenders = ConcurrentHashMap<String,SignalServiceMessageSender>()
 
     private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
@@ -124,6 +129,21 @@ class SignalSender(private val app: Application) {
                 .build()
         )
 
+    suspend fun drain(): Triple<Boolean,Int,Int> {
+        // attempt to drain the sender of in-flight messages before a timeout is reached
+        // return tuple indicating:
+        // - if drain completed (true if yes)
+        // - number of messages attempted to drain
+        // - number of undrained messages remaining at completion
+        val numToDrain = messagesInFlight.get()
+        val end = Monotonic.markNow().plus(app.config.timers.drainTimeout)
+        while(true) {
+            if(end.hasPassedNow()) return Triple(false, numToDrain, messagesInFlight.get())
+            if(messagesInFlight.get() == 0) return Triple(true, numToDrain, 0)
+            delay(app.config.timers.drainPollInterval)
+        }
+    }
+
     /***********
      * HELPERS
      ***********/
@@ -134,6 +154,7 @@ class SignalSender(private val app: Application) {
         dataMessage: SignalServiceDataMessage,
     ): SendMessageResult = app.coroutineScope.async(IO) {
         try {
+            messagesInFlight.getAndIncrement()
             messageSenderOf(sender).sendMessage(
                 recipient,
                 Optional.absent(),
@@ -141,6 +162,8 @@ class SignalSender(private val app: Application) {
             )
         } catch (e: UntrustedIdentityException) {
             SendMessageResult.identityFailure(recipient, e.identityKey)
+        } finally {
+            messagesInFlight.getAndDecrement()
         }
     }.await()
 

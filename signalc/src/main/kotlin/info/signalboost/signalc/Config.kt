@@ -8,8 +8,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
+import kotlin.time.milliseconds
+import kotlin.time.minutes
 
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
@@ -36,10 +41,11 @@ object Config {
 
     data class App(
         val db: Database,
+        val mocked: Set<KClass<out Any>>,
         val signal: Signal,
         val socket: Socket,
-        /*******************************/
-        val mocked: Set<KClass<out Any>>,
+        val toggles: Toggles,
+        val timers: Timers,
     )
 
     data class Database(
@@ -66,6 +72,15 @@ object Config {
 
     data class Socket(
         val path: String,
+    )
+
+    data class Toggles(
+        val shouldExit: Boolean,
+    )
+
+    data class Timers(
+        val drainTimeout: Duration,
+        val drainPollInterval: Duration,
     )
 
     // FACTORY HELPERS
@@ -95,12 +110,13 @@ object Config {
 
     private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
 
-    private val default  = App(
+    val default  = App(
         db = Database(
             driver = "com.impossibl.postgres.jdbc.PGDriver",
             url = "jdbc:pgsql://$dbHost/$dbName",
             user= "postgres"
         ),
+        mocked = emptySet(),
         signal= Signal(
             addSecurityProvider = true,
             agent = "signalc",
@@ -119,7 +135,13 @@ object Config {
         socket = Socket(
           path = "/signalc/sock/signald.sock"
         ),
-        mocked = emptySet(),
+        toggles = Toggles(
+            shouldExit = true,
+        ),
+        timers = Timers(
+            drainTimeout = 2.minutes,
+            drainPollInterval = 200.milliseconds,
+        )
     )
 
     // FACTORIES
@@ -130,6 +152,9 @@ object Config {
         socket = default.socket.copy(
             path = "/signalc/sock/test.sock"
         ),
+        toggles = default.toggles.copy(
+            shouldExit = false
+        )
     )
     val load = default.copy(
         signal = default.signal.copy(

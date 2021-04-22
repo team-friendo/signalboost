@@ -4,6 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.logic.SignalSender.Companion.asAddress
 import info.signalboost.signalc.model.SocketRequest.Companion.DEFAULT_EXPIRY_TIME
+import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
@@ -20,6 +21,8 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.libsignal.util.guava.Optional.absent
@@ -28,10 +31,10 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStre
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.io.File
-import java.io.FileInputStream
 import java.io.InputStream
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
+import kotlin.time.milliseconds
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -41,7 +44,16 @@ class SignalSenderTest : FreeSpec({
     runBlockingTest {
 
         val testScope = this
-        val app = Application(Config.mockStore).run(testScope)
+        val drainPollInterval = 10.milliseconds
+        val drainTimeout = 50.milliseconds
+        val config = Config.mockAllExcept(SignalSender::class).copy(
+            timers = Config.default.timers.copy(
+                drainPollInterval = drainPollInterval,
+                drainTimeout = drainTimeout,
+            )
+        )
+
+        val app = Application(config).run(testScope)
         val verifiedAccount = genVerifiedAccount()
         val messageSender = app.signalSender
 
@@ -56,8 +68,47 @@ class SignalSenderTest : FreeSpec({
 
         afterSpec {
             unmockkAll()
+            app.signalSender.messagesInFlight.set(0)
             testScope.teardown()
         }
+
+        "#drain" - {
+            /********************************
+             * NOTE(aguestuser|2021-04-22):
+             * For reasons that are beyond me, this bracket will only pass deterministically
+             * when *not* run not in isolation if it runs before all other tests in the suite.
+             * (Perhaps something to do with thread contention?)
+             ********************************/
+            beforeTest {
+                app.signalSender.messagesInFlight.set(3)
+            }
+            afterTest {
+                app.signalSender.messagesInFlight.set(0)
+            }
+
+            "when all messages can be drained before timeout" - {
+                "returns true and the number of messages drained" {
+                    launch {
+                        delay(drainPollInterval)
+                        repeat(3) {
+                            app.signalSender.messagesInFlight.getAndDecrement()
+                        }
+                    }
+                    app.signalSender.drain() shouldBe Triple(true, 3, 0)
+                }
+            }
+
+            "when all messages cannot be drained before timeout" - {
+                "returns false and number messages remaining" {
+                    launch {
+                        delay(drainPollInterval)
+                        app.signalSender.messagesInFlight.getAndDecrement()
+                    }
+                    app.signalSender.drain() shouldBe Triple(false, 3, 2)
+                }
+            }
+        }
+
 
         "#send" - {
             val recipientPhone = genPhoneNumber()
@@ -111,6 +162,20 @@ class SignalSenderTest : FreeSpec({
                         any(),
                         signalDataMessage(timestamp = 1000L)
                     )
+                }
+            }
+
+            "increments and decrements a messages-in-flight-counter (for queue size tracking)" {
+                mockkObject(app.signalSender.messagesInFlight).also {
+                    every { app.signalSender.messagesInFlight.getAndIncrement() } returns 1
+                    every { app.signalSender.messagesInFlight.getAndDecrement() } returns 0
+                    every { app.signalSender.messagesInFlight.set(any()) } returns Unit
+                }
+                messageSender.send(verifiedAccount, recipientPhone.asAddress(),"", DEFAULT_EXPIRY_TIME, emptyList())
+
+                verify {
+                    app.signalSender.messagesInFlight.getAndIncrement()
+                    app.signalSender.messagesInFlight.getAndDecrement()
                 }
             }
 
