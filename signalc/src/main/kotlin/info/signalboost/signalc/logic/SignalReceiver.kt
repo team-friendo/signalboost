@@ -94,37 +94,34 @@ class SignalReceiver(private val app: Application) {
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
         return app.coroutineScope.launch {
             val subscription = this
+
+            // try to estabilish a message pipe with signal
             val messagePipe = try {
                 messagePipeOf(account)
             } catch (e: Throwable) {
                 logger.error { "Failed to create message pipe:\n ${e.stackTraceToString()}" }
                 throw SignalcError.MessagePipeNotCreated(e)
             }
+
+            // handle messages from the pipe...
             launch(IO) {
                 // first, retry all envelopes previously cached but unhandled (due to interruption during handling)
-                app.envelopeStore.findAll(account.username).map {
-                    // join on each retry job to prevent handling new message before cached ones are processed
-                    dispatch(account, it)?.join()
-                }
-                // now proceed to handle new messages...
+                // (join on each retry job to prevent handling new message before cached ones are processed)
+                app.envelopeStore.findAll(account.username).map { dispatch(account, it)?.join() }
+                // handle new messages...
                 while (subscription.isActive) {
-                    var cacheId: UUID? = null
-                    // TODO: handle TimeoutException here and then keep reading
-                    val envelope: SignalServiceEnvelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS) {
-                        logger.debug { "Got ${it.type.asEnum()} from ${it.sourceAddress.number} to ${account.username}" }
-                        // cache new envelopes before acknowledging receipt to server or decrypting (see docs for #read)
-                        cacheId = app.envelopeStore.create(account.username, it)
-                    }
+                    // read (and cache) one envelope from the message pipe (we cache so we can retry if decryption fails)
+                    val (envelope, cacheId) = receiveOnce(messagePipe, account)
                     // handle the envelope, decrypting and relaying if possible
                     dispatch(account, envelope)
-                    // remove the envelope from the cache, since we handled it successfully and won't need to retry
-                    // but don't wait for deletion to complete before handling next message (hence the `launch`)
+                    // delete envelope cache, but don't wait for deletion to complete before handling next message
                     cacheId?.let {
                         launch(IO) { app.envelopeStore.delete(it) }
                     }
                 }
             }
         }.also {
+            // cache the subscription to aid in cleanup later
             subscriptions[account.username] = it
         }
     }
@@ -140,10 +137,26 @@ class SignalReceiver(private val app: Application) {
         }
     }.await()
 
-    // MESSAGE HANDLING
+    // HELPERS
 
-    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job? =
-        when (envelope.type.asEnum()) {
+    private fun receiveOnce(messagePipe: SignalServiceMessagePipe, account: VerifiedAccount): Pair<SignalServiceEnvelope,UUID?> {
+        var cacheId: UUID? = null
+        val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS) {
+            // cache new envelopes before acknowledging receipt to server or decrypting (see docs for #read)
+            cacheId = try {
+                app.envelopeStore.create(account.username, it)
+            } catch (err: Throwable) {
+                // don't propagate error b/c we don't want to disrupt the message-listening loop!
+                logger.error { "Failed to cache envelope for ${account.username}:\n${err.stackTraceToString()}" }
+                null
+            }
+        }
+        return Pair(envelope, cacheId)
+    }
+
+    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
+        logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+        return when (envelope.type.asEnum()) {
             EnvelopeType.CIPHERTEXT,
             EnvelopeType.PREKEY_BUNDLE -> {
                 handleCiphertext(envelope, account)
@@ -159,6 +172,7 @@ class SignalReceiver(private val app: Application) {
                 null
             }
         }
+    }
 
 
     private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {

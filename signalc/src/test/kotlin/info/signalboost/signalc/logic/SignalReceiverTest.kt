@@ -88,7 +88,7 @@ class SignalReceiverTest : FreeSpec({
 
         fun signalSendsJunkEnvelopes() = signalSendsEnvelopeOf(UNKNOWN_VALUE)
 
-        fun decryptionYields(cleartexts: List<String>) =
+        fun decryptionYields(cleartexts: List<String?>) =
             every {
                 anyConstructed<SignalServiceCipher>().decrypt(any())
             } returns mockk {
@@ -169,18 +169,10 @@ class SignalReceiverTest : FreeSpec({
                     messageReceiver.subscribe(recipientAccount)!!
                     eventually(timeout, pollInterval) {
                         coVerifyOrder {
-                            app.socketSender.send(
-                                cleartext(body = "msg1")
-                            )
-                            app.socketSender.send(
-                                cleartext(body ="msg2")
-                            )
-                            app.socketSender.send(
-                                cleartext(body ="msg3")
-                            )
-                            app.socketSender.send(
-                                any<SocketResponse.Dropped>()
-                            )
+                            app.socketSender.send(cleartext(body = "msg1"))
+                            app.socketSender.send(cleartext(body ="msg2"))
+                            app.socketSender.send(cleartext(body ="msg3"))
+                            app.socketSender.send(any<SocketResponse.Dropped>())
                         }
                     }
                 }
@@ -211,18 +203,7 @@ class SignalReceiverTest : FreeSpec({
                 "with no attachments" - {
                     "and decryption succeeds" - {
                         val cleartextBody = "a screaming comes across the sky..."
-
-                        every {
-                            anyConstructed<SignalServiceCipher>().decrypt(any())
-                        } returns mockk {
-                            every { dataMessage.orNull() } returns mockk<SignalServiceDataMessage> {
-                                every { expiresInSeconds } returns expiryTime
-                                every { timestamp } returns now
-                                every { body.orNull() } returns cleartextBody
-                                every { attachments.orNull() } returns null
-                            }
-                        }
-
+                        decryptionYields(listOf(cleartextBody))
                         messageReceiver.subscribe(recipientAccount)
 
                         "relays Cleartext to socket sender" {
@@ -241,16 +222,7 @@ class SignalReceiverTest : FreeSpec({
                     }
 
                     "and message is empty" - {
-                        every {
-                            anyConstructed<SignalServiceCipher>().decrypt(any())
-                        } returns mockk {
-                            every { dataMessage.orNull() } returns mockk<SignalServiceDataMessage> {
-                                every { expiresInSeconds } returns expiryTime
-                                every { timestamp } returns now
-                                every { body.orNull() } returns null
-                                every { attachments.orNull() } returns null
-                            }
-                        }
+                        decryptionYields(listOf<String?>(null))
 
                         "relays empty message to socket sender" {
                             messageReceiver.subscribe(recipientAccount)
@@ -351,6 +323,28 @@ class SignalReceiverTest : FreeSpec({
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                "when caching envelope fails" - {
+                    every {
+                        app.envelopeStore.create(any(),any())
+                    } throws Error("oh noes!")
+                    decryptionYields(listOf("hello", "world"))
+                    messageReceiver.subscribe(recipientAccount)!!
+
+                    "does not disrupt message listening loop" {
+                        eventually(timeout, pollInterval) {
+                            coVerifyOrder {
+                                app.socketSender.send(cleartext(body = "hello"))
+                                app.socketSender.send(cleartext(body = "world"))
+                            }
+                        }
+                    }
+                    "does not try to delete cache entry" {
+                        coVerify(exactly = 0) {
+                            app.envelopeStore.delete(any())
                         }
                     }
                 }

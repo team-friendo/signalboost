@@ -67,21 +67,6 @@ class EnvelopeStoreTest : FreeSpec({
                     store.count() shouldBe startingCount + 2
                 }
             }
-
-            "when some random db error happens" - {
-                // NOTE(aguestuser|2021-04-21): yes, this is a very weird test!! sorry!!!
-                // i tried mocking `Envelopes.insertAndGetId` but ran into all sorts of weird runtime
-                // type errors when mockk could not resolve the right kind of `Function2` blah blah
-                // so this seems like a random enough error to prove the point!
-                mockkConstructor(EntityID::class)
-                every {
-                    anyConstructed<EntityID<UUID>>().value
-                } throws Error("BOOM!")
-
-                "returns null" {
-                    store.create(accountId, envelope) shouldBe null
-                }
-            }
         }
 
         "#delete" - {

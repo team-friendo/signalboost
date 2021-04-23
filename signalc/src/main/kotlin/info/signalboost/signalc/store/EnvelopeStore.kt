@@ -9,25 +9,21 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
-import java.util.*
+import java.util.UUID
 
 class EnvelopeStore(val db: Database) {
     companion object: KLoggable {
         override val logger = logger()
     }
 
-    // NOTE: #create is blocking b/c it is passed as a callback to libsignal
-    fun create(accountId: String, envelope: SignalServiceEnvelope): UUID? =
-        try {
-            transaction(db) {
-                Envelopes.insertAndGetId {
-                    it[this.accountId] = accountId
-                    it[this.envelopeBytes] = envelope.toByteArray()
-                    it[this.serverDeliveredTimestamp] = envelope.serverDeliveredTimestamp
-                }.value
-            }
-        } catch (err: Throwable) {
-            null
+    // NOTE: #create must be blocking b/c it is passed as a callback to libsignal
+    fun create(accountId: String, envelope: SignalServiceEnvelope): UUID =
+        transaction(db) {
+            Envelopes.insertAndGetId {
+                it[this.accountId] = accountId
+                it[this.envelopeBytes] = envelope.toByteArray()
+                it[this.serverDeliveredTimestamp] = envelope.serverDeliveredTimestamp
+            }.value
         }
 
     suspend fun delete(cacheId: UUID): Unit = newSuspendedTransaction(IO, db) {
