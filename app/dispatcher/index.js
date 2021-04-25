@@ -303,9 +303,9 @@ const detectRateLimitedMessage = inboundMsg => {
   if (inboundMsg.type !== signal.messageTypes.ERROR) return null
   const errMsg = get(inboundMsg, 'data.message', '') // provided in signald case
   const errCause = get(inboundMsg, 'error.cause', '') // provided in signalc case
-  return errMsg.includes('413') || errCause.includes('RateLimit') // signald || signalc
-    ? get(inboundMsg, 'data.request') || get(inboundMsg, 'request') // signald || signalc
-    : null
+  if (errMsg.includes('413')) return get(inboundMsg, 'data.request') // signald
+  if (errCause.includes('RateLimit')) return get(inboundMsg, 'request') // signalc
+  return null
 }
 
 // (SdMessage, Channel) -> UpdatableExpiryTime?
