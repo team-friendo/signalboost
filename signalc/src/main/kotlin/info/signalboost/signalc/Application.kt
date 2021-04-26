@@ -214,8 +214,9 @@ class Application(val config: Config.App){
          * For more on how we leverage this configuration seam, grep `//FACTORIES` in Config.kt...
          ***/
 
-        logger.info("Booting...")
-        logger.debug("(in debug mode)")
+        val version = System.getenv("SIGNALC_COMMIT_HASH") ?: "unknown"
+        logger.info("Booting version: $version...")
+        logger.debug("...debug mode active.")
 
         /***
          * concurrency context
