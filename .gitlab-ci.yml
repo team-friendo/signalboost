@@ -22,7 +22,7 @@
     POSTGRES_DB: signalboost_test
 
 .sc-job:
-  image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+  image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
   extends: .mr-only
   cache:
     key: sc_build

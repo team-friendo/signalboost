@@ -66,9 +66,8 @@ services:
       - signalc_sock:/signalboost/sockets/0
 
   signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
     container_name: signalc_signalc
-    entrypoint: /signalc/bin/entrypoint/signalc
     env_file: .env.dev
     environment:
       SIGNALC_ENV: development
@@ -81,12 +80,12 @@ services:
     ports:
       - 0.0.0.0:5005:5005 # for remote debugger
     volumes:
+      - ./bin:/signalc/bin
       - ./signalc/src:/signalc/src
       - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
       - ./signalc/gradle.properties:/signalc/gradle.properties
       - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
       - ./signalc/migrations:/signalc/migrations
-      - ./bin:/signalc/bin
       - signalc_gradle_cache:/home/gradle/.gradle
       - signalc_build_cache:/signalc/build
       - signalc_sock:/signalc/sock

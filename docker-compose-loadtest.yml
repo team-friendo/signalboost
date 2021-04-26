@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
 
   receiver_signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
     container_name: loadtest_receiver_signalc
     entrypoint: /signalc/bin/entrypoint/signalc
     env_file: .env.dev
@@ -152,7 +152,7 @@ services:
     restart: unless-stopped
 
   sender_signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
     container_name: loadtest_sender_signalc
     entrypoint: /signalc/bin/entrypoint/signalc
     env_file: .env.dev
