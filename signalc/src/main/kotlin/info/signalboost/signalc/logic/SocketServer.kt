@@ -9,6 +9,7 @@ import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
 import java.net.Socket
+import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -25,9 +26,11 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     internal val connections = ConcurrentHashMap<SocketHashCode,Socket>()
 
     override suspend fun run(): SocketServer {
+        val socketFile = File(app.config.socket.path)
         socket = app.coroutineScope.async {
+            Files.deleteIfExists(socketFile.toPath())
             AFUNIXServerSocket.newInstance().apply {
-                bind(AFUNIXSocketAddress(File(app.config.socket.path)))
+                bind(AFUNIXSocketAddress(socketFile))
             }
         }.await()
 
