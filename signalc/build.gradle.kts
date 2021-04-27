@@ -31,6 +31,8 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Jar> {
+    val commitHash = System.getenv("COMMIT_HASH") ?: "NO_VERSION"
+    archiveFileName.set("signalc-$commitHash.jar")
     manifest {
         attributes["Main-Class"] = application.mainClass
     }

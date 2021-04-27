@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+set -eu
+
+commit_hash=`git rev-parse --short HEAD`
+registry=registry.0xacab.org/team-friendo/signalboost
+
+# build jar
+
+echo "> building signalc jar for commit ${commit_hash}..."
+
+docker-compose -f docker-compose-build.yml \
+  run -e COMMIT_HASH=${commit_hash} \
+  --entrypoint 'gradle shadowJar' signalc
+
+echo "> ... jar available in:"
+echo "  signalc/build/libs/signalc-${commit_hash}.jar"
+
+# build image
+
+echo "> building signalc docker image for commit ${commit_hash}..."
+docker build \
+  --build-arg commit_hash=${commit_hash} \
+  -t ${registry}/signalc:${commit_hash} \
+  -f ./docker/signalc.dockerfile .
+echo "> ... built signalc docker image."
+
+echo "> pushing signalc docker image..."
+docker push ${registry}/signalc:${commit_hash}
+echo "> ... pushed signalc docker image."
+
+echo "> ... signalc docker image available as:"
+echo "  ${registry}/signalc:${commit_hash}"
+
+popd > /dev/null

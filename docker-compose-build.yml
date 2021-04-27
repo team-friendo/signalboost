@@ -1,0 +1,23 @@
+version: '3'
+
+volumes:
+  build_gradle_cache:
+  build_build_cache:
+
+services:
+  signalc:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
+    container_name: build_signalc
+    env_file: ${ENV_FILE:-.env.dev}
+    environment:
+      SIGNALC_ENV: ${SIGNALC_ENV:-development}
+      GRADLE_USER_HOME: /home/gradle/.gradle
+    volumes:
+      - ./bin:/signalc/bin
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/build/libs:/signalc/build/libs
+      - build_gradle_cache:/home/gradle/.gradle
+      - build_build_cache:/signalc/build
