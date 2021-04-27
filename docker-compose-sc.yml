@@ -14,25 +14,48 @@ volumes:
   signalc_build_cache:
   signalc_sock:
 
+x-signalc-base: &signalc-base
+  env_file: .env.dev
+  environment:
+    SIGNALC_ENV: development
+    GRADLE_USER_HOME: /home/gradle/.gradle
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    DEBUG_MODE: ${DEBUG_MODE:-0}
+    DB_HOST: db
+  depends_on:
+    - db
+  ports:
+    - 0.0.0.0:5005:5005 # for remote debugger
+  volumes:
+    - ./bin:/signalc/bin
+    - ./signalc/src:/signalc/src
+    - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+    - ./signalc/gradle.properties:/signalc/gradle.properties
+    - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+    - ./signalc/migrations:/signalc/migrations
+    - signalc_gradle_cache:/home/gradle/.gradle
+    - signalc_build_cache:/signalc/build
+    - signalc_sock:/signalc/sock
+
 services:
 
-  db:
-    image: postgres:12
-    container_name: signalc_db
-    ports:
-      - 0.0.0.0:5432:5432
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./bin/db/:/bin/db/
-    environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
+  signalc_dev:
+    # floating commit: will build jar on every run (w/ gradle), slower boot sequence, allows iterations:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
+    container_name: signalc_dev
+    <<: *signalc-base
+
+  signalc_pinned:
+    # pinned commit: bakes jar into image, faster boot sequence, cannot iterate w/o rebuilding image:
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:42cfbc9e
+    container_name: signalc_pinned
+    <<: *signalc-base
 
   signalboost:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
     container_name: signalc_signalboost
     depends_on:
       - db
-      - signalc
     entrypoint: /signalboost/bin/entrypoint/app
     env_file: .env.dev
     environment:
@@ -65,30 +88,16 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
       - signalc_sock:/signalboost/sockets/0
 
-  signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
-    container_name: signalc_signalc
-    env_file: .env.dev
-    environment:
-      SIGNALC_ENV: development
-      GRADLE_USER_HOME: /home/gradle/.gradle
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      DEBUG_MODE: ${DEBUG_MODE:-0}
-      DB_HOST: db
-    depends_on:
-      - db
+  db:
+    image: postgres:12
+    container_name: signalc_db
     ports:
-      - 0.0.0.0:5005:5005 # for remote debugger
+      - 0.0.0.0:5432:5432
     volumes:
-      - ./bin:/signalc/bin
-      - ./signalc/src:/signalc/src
-      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
-      - ./signalc/gradle.properties:/signalc/gradle.properties
-      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-      - ./signalc/migrations:/signalc/migrations
-      - signalc_gradle_cache:/home/gradle/.gradle
-      - signalc_build_cache:/signalc/build
-      - signalc_sock:/signalc/sock
+      - postgres_data:/var/lib/postgresql/data
+      - ./bin/db/:/bin/db/
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
 
   ngrok:
     container_name: signalboost_ngrok # todo: this should just be ngrok?
