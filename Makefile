@@ -259,6 +259,9 @@ load.nc.simulator: ## get a netcat shell inside the loadtest simulator
 load.db.up: ## start load test db
 	docker-compose -f docker-compose-loadtest.yml up -d db
 
+load.db.psql: ## get a psql shell on loadtest db
+	./bin/load/psql
+
 load.up: ## start
 	./bin/load/run
 
@@ -282,9 +285,6 @@ load.restart: ## restart loadtest stack
 
 load.reseed: ## clean signalc + signal-server databases
 	./bin/load/reseed
-
-load.psql: 
-	docker-compose -f docker-compose-loadtest.yml exec db psql postgresql://postgres@localhost:5432
 
 load.test.lag.signald: ## run load tests to measure lag in a client
 	TEST_SUBJECT=sender_signald ./bin/load/test-lag
@@ -357,10 +357,11 @@ sc.db.down: ## stop the signalc db in isolation (useful for tests)
 sc.db.migrate: ## run migrations
 	echo "----- running development migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc && \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc_pinned && \
 	echo "----- running test migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc_pinned && \
+	echo "----- run migrations for loadtests w/ 'make load.reseed'"
 
 # TODO: inject the DB_NAME here!!!!
 sc.db.rollback: ## run migrations

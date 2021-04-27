@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+pushd `pwd` > /dev/null # store current dir
+cd `dirname "$0"` # cd to script path
+cd ../.. # cd to project root
+
+if [ -z $(docker ps -qf name=loadtest_db) ];then
+  echo "--- starting db container..."
+  docker-compose -f docker-compose-loadtest.yml up -d db
+
+  sleep 4
+
+  echo "--- running psql (for sender_signalc db)..."
+  docker-compose -f docker-compose-loadtest.yml \
+    exec db psql -U postgres -d loadtest_sender_signalc
+
+  echo "--- shutting down db..."
+  docker-compose -f docker-compose-loadtest.yml \
+    stop db
+
+else
+  echo "--- running psql (for sender_signalc db)..."
+  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+    exec db psql -U postgres -d loadtest_sender_signalc
+fi
+
+popd > /dev/null

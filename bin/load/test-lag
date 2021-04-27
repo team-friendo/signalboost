@@ -32,6 +32,7 @@ if [ -z $(docker ps -qf name=receiver_signalc) ];then
     docker-compose -f docker-compose-loadtest.yml up -d $TEST_SUBJECT
   fi
 
+  # comment these if running against pinned-jar container
   echo "[entrypoint] waiting for compilation..."
   sleep 60
 fi

@@ -17,6 +17,8 @@ docker-compose -f docker-compose-build.yml \
   run -e COMMIT_HASH=${commit_hash} \
   --entrypoint 'gradle shadowJar' signalc
 
+docker-compose -f docker-compose-build.yml down
+
 echo "> ... jar available in:"
 echo "  signalc/build/libs/signalc-${commit_hash}.jar"
 
