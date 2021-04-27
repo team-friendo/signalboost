@@ -126,16 +126,19 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
-    suspend fun unsubscribe(account: VerifiedAccount) = app.coroutineScope.async(IO) {
+
+    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(IO) {
         try {
-            messagePipes[account.username]?.shutdown()
-            subscriptions[account.username]?.cancel(SignalcCancellation.SubscriptionCancelled)
+            messagePipes[accountId]?.shutdown()
+            subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
         } finally {
             listOf(subscriptions, messageReceivers, messagePipes, ciphers).forEach {
-                it.remove(account.username)
+                it.remove(accountId)
             }
         }
     }.await()
+
+    suspend fun unsubscribeAll() = subscriptions.keys.forEach { unsubscribe(it) }
 
     // HELPERS
 

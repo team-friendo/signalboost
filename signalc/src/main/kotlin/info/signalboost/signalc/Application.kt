@@ -261,12 +261,22 @@ class Application(val config: Config.App){
 
     suspend fun stop(): Application {
         logger.info { "Stopping application..."}
-        socketServer.stop()
-        dataSource.closeQuietly()
+
+        // first stop the flow of incoming messages from signal...
+        // (which will in turn stop new messages from signalboost and thus freeze our outgoing send queue)
+        signalReceiver.unsubscribeAll()
+
+        // then drain the send queue...
         signalSender.drain().let { (didDrain, numToDrain, numDropped) ->
             if(didDrain) logger.info { "SignaldSender drained $numToDrain messages before shutdown."}
             else logger.error { "SignalSender failed to drain $numToDrain messages before shutdown. $numDropped messages dropped."}
         }
+
+        // then shutdown all resources...
+        // (we need to wait until now to close the socket b/c it is needed to report results of draining send queue)
+        socketServer.stop()
+        dataSource.closeQuietly()
+
         logger.info { "...application stopped!"}
         return this
     }

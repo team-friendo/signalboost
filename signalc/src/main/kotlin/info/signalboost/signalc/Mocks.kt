@@ -2,6 +2,7 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
+import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.EnvelopeStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery

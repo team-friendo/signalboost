@@ -107,7 +107,7 @@ class SignalReceiverTest : FreeSpec({
         }
 
         afterTest {
-            messageReceiver.unsubscribe(recipientAccount)
+            messageReceiver.unsubscribe(recipientAccount.username)
             clearAllMocks(answers = false, childMocks = false, objectMocks = false)
         }
 
@@ -119,7 +119,7 @@ class SignalReceiverTest : FreeSpec({
 
         "#subscribe" - {
             afterTest {
-                messageReceiver.unsubscribe(recipientAccount)
+                messageReceiver.unsubscribe(recipientAccount.username)
             }
 
             "in all cases" - {
@@ -473,7 +473,7 @@ class SignalReceiverTest : FreeSpec({
 
             "when issued for a subscribed account" - {
                 val sub = messageReceiver.subscribe(recipientAccount)!!
-                messageReceiver.unsubscribe(recipientAccount)
+                messageReceiver.unsubscribe(recipientAccount.username)
 
                 "shuts down message pipe" {
                     verify {
@@ -493,7 +493,7 @@ class SignalReceiverTest : FreeSpec({
 
             "when issued for a non-subscribed account" - {
                 val sub =messageReceiver.subscribe(recipientAccount)!!
-                messageReceiver.unsubscribe(genVerifiedAccount())
+                messageReceiver.unsubscribe(genVerifiedAccount().username)
 
                 "does nothing" {
                     verify(exactly = 0) {
@@ -502,6 +502,22 @@ class SignalReceiverTest : FreeSpec({
                     sub.isActive shouldBe true
                     messageReceiver.subscriptionCount shouldBe 1
                     messageReceiver.messagePipeCount shouldBe 1
+                }
+            }
+        }
+
+        "#unsubscribeAll" - {
+            val (_, messagePipe) = signalSendsJunkEnvelopes()
+            val sub1 = messageReceiver.subscribe(genVerifiedAccount())!!
+            val sub2 = messageReceiver.subscribe(genVerifiedAccount())!!
+            val sub3 = messageReceiver.subscribe(genVerifiedAccount())!!
+            messageReceiver.unsubscribeAll()
+
+            "unsubscribes all cached subscriptions" {
+                messageReceiver.subscriptionCount shouldBe 0
+                messageReceiver.messagePipeCount shouldBe 0
+                listOf(sub1, sub2, sub3).forEach {
+                    it.isCancelled shouldBe true
                 }
             }
         }

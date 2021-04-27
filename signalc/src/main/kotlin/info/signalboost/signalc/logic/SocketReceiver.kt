@@ -213,7 +213,7 @@ class SocketReceiver(private val app: Application) {
 
         logger.info("Unsubscribing to messages for ${username}...")
         try {
-            app.signalReceiver.unsubscribe(account)
+            app.signalReceiver.unsubscribe(username)
             app.socketSender.send(SocketResponse.UnsubscribeSuccess(id, username))
             logger.info("...unsubscribed to messages for $username")
         } catch (err: Throwable) {
