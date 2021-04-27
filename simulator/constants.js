@@ -16,6 +16,7 @@ const signalcPhoneNumbers = range(firstSignalcNumber, firstSignalcNumber + numCh
 const signaldPhoneNumbers = range(firstSignaldNumber, firstSignaldNumber + numChannels).map(format)
 
 module.exports = {
+  numBots,
   botPhoneNumbers,
   signalcPhoneNumbers,
   signaldPhoneNumbers,
