@@ -28,6 +28,7 @@ services:
     container_name: signalboost_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./bin/db/:/bin/db/
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
     restart: always

@@ -23,6 +23,7 @@ services:
       - 0.0.0.0:5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./bin/db/:/bin/db/
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
 

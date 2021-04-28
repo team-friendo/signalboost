@@ -502,7 +502,7 @@ Para obtener más información, visite signalboost.info/how-to.`,
 - ${numChannels} canales activos`,
 
   deauthorization: adminPhoneNumber => `
-${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
+Admin con número ${adminPhoneNumber} se ha eliminado de este canal porque su número de seguridad cambió.
     
 Es casi seguro porque reinstalaron Signal en un nuevo teléfono.
 
@@ -579,7 +579,7 @@ ${
   restartFailure: errorMessage => `No se pudo reiniciar Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
-    'Parece que su número de seguridad acaba de cambiar. ¡Es posible que deba reenviar su último mensaje! :)',
+    '¡Hola! Parece que tu número de seguridad acaba de cambiar (probablemente porque reinstalaste Signal). Si acaba de enviar un mensaje, vuelva a enviarlo.',
 
   toRemovedAdmin: adminId =>
     `Usted ha sido eliminado como administrador de este canal por ADMIN ${adminId}. Envíe HOLA para subscribirse de nuevo.`,

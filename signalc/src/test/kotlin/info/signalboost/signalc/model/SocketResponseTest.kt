@@ -8,6 +8,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genS
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDecryptionError
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genInboundIdentityFailure
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationSuccess
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRequestHandlingError
@@ -188,6 +189,26 @@ class SocketResponseTest : FreeSpec({
                       |"message":"${response.error.message}"
                    |}
                 |}""".flatten()
+            }
+        }
+
+        "of InboundIdentityFailure" - {
+            val response = genInboundIdentityFailure()
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                  |"type":"inbound_identity_failure",
+                  |"data":{
+                    |"local_address":{
+                      |"number":"${response.data.local_address.number}"
+                    |},
+                    |"remote_address":{
+                      |"number":"${response.data.remote_address.number}"
+                    |},
+                    |"fingerprint":"${response.data.fingerprint}"
+                  |}
+                |}
+                """.flatten()
             }
         }
 
@@ -468,7 +489,7 @@ class SocketResponseTest : FreeSpec({
             }
         }
 
-        "of TrustSucess" - {
+        "of TrustSuccess" - {
             val response = genTrustSuccess()
 
             "encodes to JSON" {

@@ -482,7 +482,7 @@ ERROR: ${error}`,
 - ${numChannels} active channels`,
 
   deauthorization: adminPhoneNumber => `
-  ${adminPhoneNumber} has been removed from this channel because their safety number changed.
+Admin with number ${adminPhoneNumber} has been removed from this channel because their safety number changed.
   
 This is almost certainly because they reinstalled Signal on a new phone.
 
@@ -545,7 +545,7 @@ Please respond with ACCEPT to subscribe or DECLINE to not subscribe.`,
   restartFailure: errorMessage => `Failed to restart Signalboost: ${errorMessage}`,
 
   safetyNumberChanged:
-    'It looks like you safety number just changed. You might need to resend your last message! :)',
+    'Hi! It looks like your safety number has just changed (likely because you reinstalled Signal). If you just sent a message, please resend it.',
 
   toRemovedAdmin: adminId =>
     `ADMIN ${adminId} removed you as an admin from this channel. Send HELLO to resubscribe.`,

@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
+import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream
@@ -132,11 +133,15 @@ class SignalSender(private val app: Application) {
         recipient: SignalServiceAddress,
         dataMessage: SignalServiceDataMessage,
     ): SendMessageResult = app.coroutineScope.async(IO) {
-        messageSenderOf(sender).sendMessage(
-            recipient,
-            Optional.absent(),
-            dataMessage
-        )
+        try {
+            messageSenderOf(sender).sendMessage(
+                recipient,
+                Optional.absent(),
+                dataMessage
+            )
+        } catch (e: UntrustedIdentityException) {
+            SendMessageResult.identityFailure(recipient, e.identityKey)
+        }
     }.await()
 
     private fun List<SocketRequest.Send.Attachment>.asSignalAttachments(): List<SignalServiceAttachment> =

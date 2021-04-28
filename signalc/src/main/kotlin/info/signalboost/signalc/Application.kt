@@ -259,7 +259,9 @@ class Application(val config: Config.App){
             coEvery { publishPreKeys(any()) } returns mockk()
         }
         val protocolStore: ProtocolStore.() -> Unit = {
-            every { of(any()) } returns mockk()
+            every { of(any()) } returns mockk {
+                every { saveIdentity(any(), any()) } returns mockk()
+            }
         }
         val signalReceiver: SignalReceiver.() -> Unit = {
             coEvery { subscribe(any()) } returns mockk()

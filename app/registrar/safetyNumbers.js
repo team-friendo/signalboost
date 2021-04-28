@@ -11,7 +11,10 @@ const { sdMessageOf } = require('../signal/constants')
 /** UpdatableFingerprint -> Promsie<SignalboostStatus> **/
 const updateFingerprint = async updatableFingerprint => {
   // TODO(aguestuser|2020-07-09): add a metrics counter here to monitor rekey successes/errors?
-  const { channelPhoneNumber, memberPhoneNumber } = updatableFingerprint
+  const { channelPhoneNumber, memberPhoneNumber, fingerprint } = updatableFingerprint
+  logger.log(
+    `Received new fingerprint for channel ${channelPhoneNumber}, member ${memberPhoneNumber}: ${fingerprint}`,
+  )
   try {
     const type = await membershipRepository.resolveMemberType(channelPhoneNumber, memberPhoneNumber)
     if (type === memberTypes.ADMIN) return deauthorize(updatableFingerprint)

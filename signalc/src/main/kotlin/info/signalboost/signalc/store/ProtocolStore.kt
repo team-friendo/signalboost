@@ -7,6 +7,7 @@ import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
 import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
+import info.signalboost.signalc.db.Identities.name
 import info.signalboost.signalc.db.Sessions.sessionBytes
 import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.model.Account
@@ -16,8 +17,10 @@ import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.protocol.CiphertextMessage
 import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
+import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 class ProtocolStore(private val db: Database) {
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
@@ -57,11 +60,28 @@ class ProtocolStore(private val db: Database) {
                 }.resultedValues!![0]
             }
 
+        fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) =
+            transaction(db) {
+                Identities.update({
+                    (name eq address.identifier)
+                        .and(Identities.accountId eq this@AccountProtocolStore.accountId)
+                }) {
+                    it[identityKeyBytes] = fingerprint
+                }
+            }
+
+        fun trustFingerprintForAllIdentities(fingerprint: ByteArray) =
+            transaction(db) {
+                Identities.update({ identityKeyBytes eq fingerprint }) {
+                    it[isTrusted] = true
+                }
+            }
+
         override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
         // Insert or update an idenity key and:
         // - trust the first identity key seen for a given address
         // - deny trust for subsequent identity keys for same address
-            // Return whether or not this save was an update to an existing record.
+            // Returns true if this save was an update to an existing record, false otherwise
             transaction(db) {
                 Identities.findByAddress(accountId, address)
                     ?.let { existingKey ->
@@ -91,7 +111,7 @@ class ProtocolStore(private val db: Database) {
             // trust a key if...
             Identities.findByAddress(accountId, address)?.let{
                 // it matches a key we have seen before
-                it[identityKeyBytes] contentEquals  identityKey.serialize() &&
+                it[identityKeyBytes] contentEquals identityKey.serialize() &&
                     // and we have not flagged it as untrusted
                     it[isTrusted]
             } ?: true // or it is the first key we ever seen for a person (TOFU!)
@@ -100,7 +120,7 @@ class ProtocolStore(private val db: Database) {
         override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
             transaction(db) {
                 Identities.findByAddress(accountId, address)?.let{
-                    IdentityKey(it[Identities.identityKeyBytes], 0) }
+                    IdentityKey(it[identityKeyBytes], 0) }
             }
 
         fun removeIdentity(address: SignalProtocolAddress) {
@@ -253,7 +273,11 @@ class ProtocolStore(private val db: Database) {
 
         override fun containsSession(address: SignalProtocolAddress): Boolean =
             transaction(db) {
-                Sessions.findByAddress(accountId, address)?.let { true } ?: false
+                Sessions.findByAddress(accountId, address)?.let {
+                    val sessionRecord = SessionRecord(it[Sessions.sessionBytes])
+                    sessionRecord.hasSenderChain()
+                        && sessionRecord.sessionVersion == CiphertextMessage.CURRENT_VERSION;
+                } ?: false
             }
 
 
@@ -272,10 +296,11 @@ class ProtocolStore(private val db: Database) {
         }
 
         override fun archiveSession(address: SignalProtocolAddress) {
-            // TODO: WRITE A TEST FOR THIS!!!!!!!!!!!!!!!!!!
-            loadSession(address).let {
-                it.archiveCurrentState()
-                storeSession(address, it)
+            transaction(db) {
+                loadSession(address).let {
+                    it.archiveCurrentState()
+                    storeSession(address, it)
+                }
             }
         }
     }

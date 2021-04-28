@@ -12,12 +12,12 @@ const messenger = require('./messenger')
 const resend = require('./resend')
 const logger = require('./logger')
 const util = require('../util')
-const { messagesIn } = require('./strings/messages')
 const { get, isEmpty, isNumber } = require('lodash')
 const { emphasize, redact } = require('../util')
 const metrics = require('../metrics')
 const { counters, labels } = metrics
 const { isCommand } = require('./strings/commands')
+const { messagesIn } = require('./strings/messages')
 const { commands } = require('./commands/constants')
 const {
   counters: { SIGNALD_MESSAGES, RELAYABLE_MESSAGES, ERRORS },
@@ -142,8 +142,7 @@ const detectInterventions = async (channel, sender, inboundMsg) => {
   const rateLimitedMessage = detectRateLimitedMessage(inboundMsg)
   if (rateLimitedMessage) return () => logAndResendRateLimitedMessage(rateLimitedMessage)
 
-  const updatableFingerprint = await detectUpdatableFingerprint(inboundMsg)
-  if (updatableFingerprint) return () => safetyNumbers.updateFingerprint(updatableFingerprint)
+  if (hasInboundIdentityFailure(inboundMsg)) return () => handleInboundIdentityFailure(inboundMsg)
 
   // early return if user is banned
   const isBanned = await detectBanned(inboundMsg)
@@ -264,31 +263,43 @@ const detectHealthcheckResponse = inboundMsg =>
       get(inboundMsg, 'data.dataMessage.body', '').match(signal.messageTypes.HEALTHCHECK_RESPONSE),
   )
 
-/** InboundSdMessage -> UpdatableFingerprint | null **/
-const detectUpdatableFingerprint = async inSdMessage => {
-  if (inSdMessage.type !== signal.messageTypes.INBOUND_IDENTITY_FAILURE) return null
+const hasInboundIdentityFailure = inSdMessage =>
+  inSdMessage.type === signal.messageTypes.INBOUND_IDENTITY_FAILURE
 
+const handleInboundIdentityFailure = async inSdMessage => {
   const channelPhoneNumber = get(inSdMessage, 'data.local_address.number', '')
   const memberPhoneNumber = get(inSdMessage, 'data.remote_address.number', '')
+
   const membership = await membershipRepository.findMembership(
     channelPhoneNumber,
     memberPhoneNumber,
   )
+
+  const socketId = await channelRepository.getSocketId(channelPhoneNumber)
   const language = membership ? membership.language : defaultLanguage
   const fingerprint = get(inSdMessage, 'data.fingerprint', '')
 
-  logger.log(`Received new fingerprint for channel ${channelPhoneNumber}: ${fingerprint}`)
+  const header = messagesIn(language).prefixes.notificationHeader
+  const messageBody = messagesIn(language).notifications.safetyNumberChanged
+  const message = `[${header}]\n${messageBody}`
 
-  return {
-    channelPhoneNumber,
-    memberPhoneNumber,
-    fingerprint,
-    sdMessage: {
-      type: signal.messageTypes.SEND,
-      username: channelPhoneNumber,
-      recipientAddress: { number: memberPhoneNumber },
-      messageBody: messagesIn(language).notifications.safetyNumberChanged,
-    },
+  const sdMessage = {
+    type: signal.messageTypes.SEND,
+    username: channelPhoneNumber,
+    recipientAddress: { number: memberPhoneNumber },
+    messageBody: message,
+  }
+
+  if (isEmpty(fingerprint)) {
+    // force reset of session by sending message to user
+    await signal.sendMessage(sdMessage, socketId)
+  } else {
+    await safetyNumbers.updateFingerprint({
+      channelPhoneNumber,
+      memberPhoneNumber,
+      fingerprint,
+      sdMessage,
+    })
   }
 }
 

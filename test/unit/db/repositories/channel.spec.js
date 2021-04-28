@@ -295,7 +295,7 @@ describe('channel repository', () => {
         await channelRepository.findAllHealthcheckable(),
         'phoneNumber',
       )
-      expect(healthcheckableNumbers).to.eql(map(included, 'phoneNumber'))
+      expect(healthcheckableNumbers.sort()).to.eql(map(included, 'phoneNumber').sort())
       numbersToExcludeFromHealthcheck.forEach(number =>
         expect(healthcheckableNumbers).not.to.contain(number),
       )

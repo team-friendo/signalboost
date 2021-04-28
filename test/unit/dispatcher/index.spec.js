@@ -112,7 +112,8 @@ describe('dispatcher module', () => {
     dispatchStub,
     enqueueResendStub,
     respondToHealthcheckStub,
-    isBannedStub
+    isBannedStub,
+    sendMessageStub
 
   before(async () => await app.run(testApp))
 
@@ -140,7 +141,7 @@ describe('dispatcher module', () => {
 
     dispatchStub = sinon.stub(messenger, 'dispatch').returns(Promise.resolve())
 
-    sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
+    sendMessageStub = sinon.stub(signal, 'sendMessage').returns(Promise.resolve())
 
     enqueueResendStub = sinon.stub(resend, 'enqueueResend')
   })
@@ -419,6 +420,9 @@ describe('dispatcher module', () => {
             safety_number: genSafetyNumber(),
           },
         }
+        const responseMsg =
+          `[${messagesIn(languages.FR).prefixes.notificationHeader}]\n` +
+          `${messagesIn(languages.FR).notifications.safetyNumberChanged}`
 
         let updateFingerprintStub
         beforeEach(async () => {
@@ -426,23 +430,52 @@ describe('dispatcher module', () => {
           updateFingerprintStub = sinon
             .stub(safetyNumbers, 'updateFingerprint')
             .returns(Promise.resolve({ status: 'SUCCESS', message: 'yay!' }))
+          sinon.stub(channelRepository, 'getSocketId').returns(Promise.resolve(channel.socketId))
         })
 
-        it('updates the fingerprint of the new identity', async () => {
-          await dispatch(JSON.stringify(identityFailureMsg))
-          expect(updateFingerprintStub.getCall(0).args).to.eql([
-            {
-              channelPhoneNumber: channel.phoneNumber,
-              memberPhoneNumber: subscriberPhoneNumber,
-              fingerprint,
-              sdMessage: {
+        describe('when identity failure has a fingerprint', () => {
+          it('updates the fingerprint of the new identity', async () => {
+            await dispatch(JSON.stringify(identityFailureMsg))
+            expect(updateFingerprintStub.getCall(0).args).to.eql([
+              {
+                channelPhoneNumber: channel.phoneNumber,
+                memberPhoneNumber: subscriberPhoneNumber,
+                fingerprint,
+                sdMessage: {
+                  type: messageTypes.SEND,
+                  username: channel.phoneNumber,
+                  recipientAddress: { number: subscriberPhoneNumber },
+                  messageBody: responseMsg,
+                },
+              },
+            ])
+          })
+        })
+
+        describe('when identity failure does not have a fingerprint', () => {
+          const identityFailureMsg = {
+            type: 'inbound_identity_failure',
+            data: {
+              local_address: { number: channel.phoneNumber, uuid: genUuid() },
+              remote_address: { number: subscriberPhoneNumber },
+              fingerprint: null,
+              safety_number: genSafetyNumber(),
+            },
+          }
+
+          it('forces a reset of the session by sending message to user', async () => {
+            await dispatch(JSON.stringify(identityFailureMsg))
+
+            expect(sendMessageStub.getCall(0).args).to.eql([
+              {
                 type: messageTypes.SEND,
                 username: channel.phoneNumber,
                 recipientAddress: { number: subscriberPhoneNumber },
-                messageBody: messagesIn(languages.FR).notifications.safetyNumberChanged,
+                messageBody: responseMsg,
               },
-            },
-          ])
+              channel.socketId,
+            ])
+          })
         })
       })
 

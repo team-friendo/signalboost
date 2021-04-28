@@ -68,3 +68,10 @@ CREATE TABLE IF NOT EXISTS signedprekeys
 );
 -- rollback drop table signedprekeys;
 
+-- changeset fdbk:1618858708962-1 failOnError:false
+CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes)
+-- rollback drop index identities_identity_key_bytes;
+
+-- changeset fdbk:1618858708962-2 failOnError:false
+CREATE INDEX identities_account_id_name ON identities (account_id, "name")
+-- rollback drop index identities_account_id_name;

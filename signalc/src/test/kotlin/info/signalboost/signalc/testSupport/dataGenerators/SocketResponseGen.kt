@@ -117,6 +117,12 @@ object SocketResponseGen {
         }
     )
 
+    fun genInboundIdentityFailure(
+        localAddress: SignalcAddress = genSignalcAddress(),
+        remoteAddress: SignalcAddress = genSignalcAddress(),
+        fingerprint: String = genFingerprint()
+    ) = SocketResponse.InboundIdentityFailure.of(localAddress, remoteAddress, fingerprint)
+
     fun genRegistrationSuccess(
         id: String = genUuidStr(),
         data : SocketResponse.UserData = genUserData(),
@@ -197,7 +203,7 @@ object SocketResponseGen {
 
     fun genTrustSuccess(
         id: String = genUuidStr(),
-        data: SocketResponse.TrustSuccess.TrustData = SocketResponse.TrustSuccess.TrustData(
+        data: SocketResponse.TrustSuccess.Data = SocketResponse.TrustSuccess.Data(
             message = genPhrase(),
             request = genTrustRequest(id = id)
         ),
