@@ -17,6 +17,7 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
@@ -109,10 +110,9 @@ class SocketReceiver(private val app: Application) {
     // HANDLE COMMANDS
 
     private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
-        logger.info("Received `abort`. Exiting.")
+        logger.info("Received `abort`, exiting...")
         app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
-        app.stop()
-        app.exit()
+        app.exit(0)
     }
 
     private suspend fun isAlive(request: SocketRequest.IsAlive) {
@@ -209,7 +209,7 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun unsubscribe(request: SocketRequest.Unsubscribe) {
         val (id, username) = request
-        val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
+        app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
 
         logger.info("Unsubscribing to messages for ${username}...")
         try {

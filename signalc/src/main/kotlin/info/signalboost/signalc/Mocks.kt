@@ -42,6 +42,7 @@ object Mocks {
     val signalReceiver: SignalReceiver.() -> Unit = {
         coEvery { subscribe(any()) } returns mockk()
         coEvery { unsubscribe(any()) } returns mockk()
+        coEvery { unsubscribeAll() } returns mockk()
     }
     val signalSender: SignalSender.() -> Unit = {
         coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {

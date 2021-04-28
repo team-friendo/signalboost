@@ -148,13 +148,16 @@ class SocketReceiverTest : FreeSpec({
 
             "ABORT request" - {
                 val request = genAbortRequest()
+                beforeTest {
+                    mockkObject(Application.Exit)
+                    every { Application.Exit.process(any(), any()) } returns null
+                }
 
                 "shuts down the app" {
                     client.send(request.toJson())
                     eventually(timeout) {
-                        coVerify {
-                            app.socketSender.send(any<SocketResponse.AbortWarning>())
-                            app.socketServer.stop()
+                        verify {
+                            Application.Exit.process(0,false)
                         }
                     }
                 }

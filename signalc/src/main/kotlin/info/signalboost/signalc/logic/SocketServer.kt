@@ -40,16 +40,16 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                 val connection = try {
                     socket.accept() as Socket
                 } catch (e: Throwable) {
-                    logger.error("Connection disrupted: ${e.message}")
+                    logger.error("...connection disrupted: ${e.message}")
                     return@launch stop()
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
-                logger.info("Got connection on socket $socketHash")
+                logger.info("...got connection on socket $socketHash")
                 launch(IO) {
                     app.socketReceiver.connect(connection)
-                    logger.info("Connected receiver to socket $socketHash")
+                    logger.info("...connected receiver to socket $socketHash")
                     app.socketSender.connect(connection)
-                    logger.info("Connected sender to socket $socketHash")
+                    logger.info("...connected sender to socket $socketHash")
                 }
             }
         }
@@ -58,11 +58,11 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     }
 
     suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
-        logger.info("Closing connection on socket $socketHash...")
+        logger.info("...closing connection on socket $socketHash...")
         app.socketSender.close(socketHash)
         app.socketReceiver.close(socketHash)
         closeConnection(socketHash)
-        logger.info("... closed connection on socket $socketHash")
+        logger.info("...... closed connection on socket $socketHash")
     }
 
     suspend fun stop(): Unit = app.coroutineScope.async(IO) {
@@ -72,7 +72,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         app.socketSender.stop()
         closeAllConnections()
         socket.close()
-        logger.info("... socket server stopped.")
+        logger.info("...socket server stopped.")
     }.await()
 
     internal suspend fun closeAllConnections(): Unit =

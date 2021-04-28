@@ -41,7 +41,6 @@ class Application(val config: Config.App){
         val availableProcessors by lazy {
             Runtime.getRuntime().availableProcessors()
         }
-        val queueParallelism = availableProcessors + 1
         val connectionPoolParallelism = (2 * availableProcessors) + 1
         val maxParallelism = availableProcessors * 256
     }
@@ -258,29 +257,35 @@ class Application(val config: Config.App){
     }
 
     suspend fun stop(): Application {
+        logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
         logger.info { "Stopping application..."}
 
         // first stop the flow of incoming messages from signal...
         // (which will in turn stop new messages from signalboost and thus freeze our outgoing send queue)
+        logger.info { "Unsubscribing from messages..."}
         signalReceiver.unsubscribeAll()
+        logger.info { "... Unsubscribed from messages."}
 
         // then drain the send queue...
+        logger.info { "Draining send queue..."}
         signalSender.drain().let { (didDrain, numToDrain, numDropped) ->
-            if(didDrain) logger.info { "SignaldSender drained $numToDrain messages before shutdown."}
-            else logger.error { "SignalSender failed to drain $numToDrain messages before shutdown. $numDropped messages dropped."}
+            if(didDrain) logger.info { "...Drained $numToDrain messages from send queue."}
+            else logger.error { "...Failed to drain $numToDrain messages from send queue. $numDropped messages dropped."}
         }
 
         // then shutdown all resources...
-        // (we need to wait until now to close the socket b/c it is needed to report results of draining send queue)
         socketServer.stop()
         dataSource.closeQuietly()
-
         logger.info { "...application stopped!"}
+        logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
+
         return this
     }
 
-    fun exit() {
-        if(config.toggles.shouldExit) exitProcess(1)
+    fun exit(status: Int): Nothing? = Exit.process(status, config.toggles.shouldExit)
+
+    object Exit {
+        fun process(status: Int, shouldExit: Boolean): Nothing? = if(shouldExit) exitProcess(status) else null
     }
 }
 

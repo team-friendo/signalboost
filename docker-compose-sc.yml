@@ -36,6 +36,7 @@ x-signalc-base: &signalc-base
     - signalc_gradle_cache:/home/gradle/.gradle
     - signalc_build_cache:/signalc/build
     - signalc_sock:/signalc/sock
+  restart: always
 
 services:
 
@@ -47,7 +48,7 @@ services:
 
   signalc_pinned:
     # pinned commit: bakes jar into image, faster boot sequence, cannot iterate w/o rebuilding image:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:42cfbc9e
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:3d7486fc
     container_name: signalc_pinned
     <<: *signalc-base
 
@@ -67,6 +68,7 @@ services:
       SHOULD_RUN_HEALTHCHECKS: 0
       NODE_ENV: ${NODE_ENV:-development}
       PROJECT_ROOT: ${PWD}
+      SIGNAL_CLIENT: SIGNALC
       SIGNALBOOST_DEV_DB_NAME: sc_signalboost_development
       SHARD_COUNT: 1
       SOCKET_POOL_SIZE: 8

@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 import dispatcher from '../../app/dispatcher'
-import { createPool } from 'generic-pool'
-import { times } from 'lodash'
+
+const { createNConnectionPools } = require('../../app/sockets')
 const {
-  socket: { poolSize, availableSockets },
+  socket: { availableSockets },
 } = require('../../app/config')
 
 const stubOf = (resource = defaultResource) => ({
@@ -24,23 +24,16 @@ const dbResource = {
   },
 }
 
-const socketPoolsResource = () =>
-  times(availableSockets, idx => {
-    const pool = createPool(
-      {
-        create: () => {
-          const sock = new EventEmitter().setMaxListeners(0)
-          sock.on('data', dispatcher.dispatcherOf(idx))
-          sock.write = (msg, cb) => cb(null, true)
-          return sock
-        },
-        destroy: x => x.removeAllListeners(),
-      },
-      { min: poolSize, max: poolSize },
-    )
-    pool.stop = () => Promise.resolve()
-    return pool
-  })
+const socketsResource = () => {
+  const createPool = idx => {
+    const sock = new EventEmitter().setMaxListeners(0)
+    sock.on('data', dispatcher.dispatcherOf(idx))
+    sock.write = (msg, cb) => cb(null, true)
+    return sock
+  }
+  const destroyPool = emitter => emitter.removeAllListeners()
+  return createNConnectionPools(availableSockets, createPool, destroyPool)
+}
 
 const metricsResource = () => {
   const counterStub = { labels: () => ({ inc: () => null }) }
@@ -70,7 +63,7 @@ const metricsResource = () => {
 
 module.exports = {
   db: stubOf(dbResource),
-  socketPools: stubOf(socketPoolsResource()),
+  sockets: stubOf(socketsResource()),
   api: stubOf(defaultResource),
   metrics: metricsResource(),
   jobs: stubOf(defaultResource),

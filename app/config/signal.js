@@ -3,6 +3,7 @@ const defaults = {
   broadcastBatchInterval: 1300, // 1.3 seconds
   broadcastBatchSize: 1,
   broadcastSpacing: 100, // 100 millis
+  client: process.env.SIGNAL_CLIENT || 'SIGNALD',
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   defaultSubscriberLimit: 500,
   expiryUpdateDelay: 200, // 200 millis

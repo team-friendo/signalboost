@@ -9,7 +9,6 @@ import signal, {
   parseOutboundAttachment,
   parseVerificationCode,
 } from '../../../app/signal'
-import socket from '../../../app/socket/write'
 import util from '../../../app/util'
 import metrics from '../../../app/metrics'
 import channelRepository from '../../../app/db/repositories/channel'
@@ -25,6 +24,7 @@ import {
 } from '../../support/factories/sdMessage'
 import { channelFactory } from '../../support/factories/channel'
 import { adminMembershipFactory } from '../../support/factories/membership'
+
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../../../app/config')
@@ -39,9 +39,9 @@ describe('signal module', () => {
   let writeStub
 
   const emit = async msg => {
-    const sock = await app.socketPools[0].acquire()
+    const sock = await app.sockets[0].acquire()
     sock.emit('data', JSON.stringify(msg) + '\n')
-    app.socketPools[0].release(sock)
+    app.sockets[0].release(sock)
   }
   const emitWithDelay = (delay, msg) => wait(delay).then(() => emit(msg))
 
@@ -50,7 +50,7 @@ describe('signal module', () => {
       await app.run({ ...testApp, signal })
     })
     beforeEach(async () => {
-      writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(uuid))
+      writeStub = sinon.stub(app.sockets, 'write').returns(Promise.resolve(uuid))
       sinon.stub(channelRepository, 'findDeep').returns(Promise.resolve(channel))
       sinon
         .stub(membershipRepository, 'findMembership')

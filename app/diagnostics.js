@@ -94,7 +94,7 @@ const _restartAndNotify = async (socketId, channelPhoneNumbers) => {
     await notifier.notifyMaintainers(
       `Restarting shard ${socketId} due to failed healthchecks on ${channelPhoneNumbers}.`,
     )
-    await restart(socketId)
+    await (process.env.SIGNAL_CLIENT !== 'SIGNALC' ? restartLegacy(socketId) : restart(socketId))
     return notifier.notifyMaintainers(`Shard ${socketId} restarted successfully!`)
   } catch (err) {
     const msg = `Failed to restart shard: ${err.message || err}`
@@ -107,8 +107,8 @@ const _restartAndNotify = async (socketId, channelPhoneNumbers) => {
 const restartAll = () => Promise.all(times(availableSockets, restart))
 
 // string => Promise<string>
-const restart = async socketId => {
-  logger.log(`--- RESTARTING SHARD ${socketId}`)
+const restartLegacy = async socketId => {
+  logger.log(`--- RESTARTING SHARD ${socketId} (w/ SIGNALD abort protocol)`)
   const channelsOnSocket = await channelRepository.getChannelsOnSocket(socketId)
   if (isEmpty(channelsOnSocket)) return console.log(`--- DID NOT RESTART EMPTY SHARD ${socketId}`)
   /******** STOP *********/
@@ -117,16 +117,39 @@ const restart = async socketId => {
   // send signald instances listening on this socket a poison pill (docker-compose will restart them)
   await signal.abort(socketId)
   // stop talking on this socket
-  await app.stopSocket(socketId)
+  await app.sockets.stopSocket(socketId)
 
   /******* START *********/
   // wait for signald to spin up so that connecting to socket (and subscribing) works
   await util.wait(restartDelay)
   // connect to signald on this socket
-  await app.restartSocket(socketId)
+  await app.sockets.restartSocket(socketId)
   // re-subscribe
   await Promise.all(channelsOnSocket.map(ch => signal.subscribe(ch.phoneNumber, socketId)))
   // make sure it worked!
+  await signal.isAlive(socketId)
+  logger.log(`--- SHARD ${socketId} RESTART SUCCEEDED`)
+}
+
+const restart = async socketId => {
+  logger.log(`--- RESTARTING SHARD ${socketId} (w/ SIGNALC abort protocol)`)
+  const channelsOnSocket = await channelRepository.getChannelsOnSocket(socketId)
+  if (isEmpty(channelsOnSocket)) return console.log(`--- DID NOT RESTART EMPTY SHARD ${socketId}`)
+
+  logger.log('--- sending abort...')
+  await signal.abort(socketId)
+
+  logger.log('--- waiting for signalc to restart...')
+  await app.sockets.awaitClose(socketId)
+
+  logger.log('--- reestablishing socket connection...')
+  await app.sockets.stopSocket(socketId)
+  await app.sockets.restartSocket(socketId)
+
+  logger.log('--- re-subscribing to channels...')
+  await Promise.all(channelsOnSocket.map(ch => signal.subscribe(ch.phoneNumber, socketId)))
+
+  logger.log('--- checking for life...')
   await signal.isAlive(socketId)
   logger.log(`--- SHARD ${socketId} RESTART SUCCEEDED`)
 }

@@ -7,7 +7,7 @@ import smsSenderRepository from '../../app/db/repositories/smsSender'
 import hotlineMessageRepository from '../../app/db/repositories/hotlineMessage'
 import jobs from '../../app/jobs'
 import diagnostics from '../../app/diagnostics'
-import sharding from '../../app/socket/sharding'
+import sharding from '../../app/sharding'
 import util from '../../app/util'
 const {
   jobs: { testInterval },

@@ -4,7 +4,6 @@ import sinon from 'sinon'
 import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
-import socket from '../../app/socket/write'
 import signal from '../../app/signal'
 import { channelFactory } from '../support/factories/channel'
 import { times } from 'lodash'
@@ -59,14 +58,14 @@ describe('dispatcher service', () => {
 
   before(async () => await app.run({ ...testApp, db, signal }))
   beforeEach(async () => {
-    readSock = await app.socketPools[socketId].acquire()
-    writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
+    readSock = await app.sockets[socketId].acquire()
+    writeStub = sinon.stub(app.sockets, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
     try {
       sinon.restore()
       await destroyAllChannels(app.db)
-      await app.socketPools[socketId].release(readSock)
+      await app.sockets[socketId].release(readSock)
     } catch (ignored) {
       /**/
     }

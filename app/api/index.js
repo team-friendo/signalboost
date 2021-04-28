@@ -6,7 +6,7 @@ const { configureAuthenticator } = require('./middleware/authenticator')
 const routesOf = require('./routes')
 const logger = require('../registrar/logger')
 const {
-  api: { port },
+  api: { host, port },
 } = require('../config')
 
 const run = async () => {
@@ -18,8 +18,13 @@ const run = async () => {
   configureRoutes(app)
 
   const server = await app.listen(port).on('error', logger.error)
-  const stop = () => server.close()
-  return Promise.resolve({ app, server, stop })
+
+  return {
+    address: { host, port },
+    app,
+    server,
+    stop: () => server.close(),
+  }
 }
 
 const configureLogger = app => process.env.NODE_ENV === 'development' && app.use(requestLogger())

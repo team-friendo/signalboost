@@ -1,4 +1,3 @@
-const socketWriter = require('../socket/write')
 const channelRepository = require('../db/repositories/channel')
 const callbacks = require('./callbacks')
 const { pick, isEmpty } = require('lodash')
@@ -8,6 +7,7 @@ const { statuses, loggerOf } = util
 const {
   signal: { diagnosticsPhoneNumber },
 } = require('../config')
+const app = require('../../app')
 
 /**
  *
@@ -116,7 +116,7 @@ const healthcheck = async (channelPhoneNumber, socketId) => {
   //   (1) the response time (in seconds) of the healthcheck
   ///  (2) -1 if the the healthcheck timed out
   const id = util.genUuid()
-  socketWriter.write(
+  app.sockets.write(
     {
       type: messageTypes.SEND,
       username: diagnosticsPhoneNumber,
@@ -144,13 +144,13 @@ const healthcheck = async (channelPhoneNumber, socketId) => {
 // string => Promise<string>
 const abort = socketId =>
   // sends a poison pill to signald, causing it to shut down
-  socketWriter.write({ type: messageTypes.ABORT }, socketId)
+  app.sockets.write({ type: messageTypes.ABORT }, socketId)
 
 // string => Promise<string>
 const isAlive = async socketId => {
   // checks to see if signald is a live by pinging and waiting for echo back
   // resolves with success or rejects with timeout
-  const id = await socketWriter.write({ type: messageTypes.IS_ALIVE }, socketId).catch(e => e)
+  const id = await app.sockets.write({ type: messageTypes.IS_ALIVE }, socketId).catch(e => e)
   return new Promise((resolve, reject) =>
     callbacks.register({
       id,
@@ -163,7 +163,7 @@ const isAlive = async socketId => {
 
 // (string, string || null) -> Promise<SignalboostStatus>
 const register = async (phoneNumber, captchaToken) => {
-  socketWriter.write(
+  app.sockets.write(
     {
       type: messageTypes.REGISTER,
       username: phoneNumber,
@@ -188,23 +188,23 @@ const register = async (phoneNumber, captchaToken) => {
 const verify = (phoneNumber, code) =>
   // This function is only called from twilio callback as fire-and-forget.
   // Its response will be picked up by the callback for the REGISTER command that triggered it.
-  // Therefore, all we need to do with this response is signal to twilio whether socketWriter socketWriter.write worked.
-  socketWriter
+  // Therefore, all we need to do with this response is signal to twilio whether app.sockets app.sockets.write worked.
+  app.sockets
     .write({ type: messageTypes.VERIFY, username: phoneNumber, code }, 0)
     .then(() => ({ status: statuses.SUCCESS, message: 'OK' }))
     .catch(e => ({ status: statuses.ERROR, message: e.message }))
 
 // (string, number) -> Promise<string>
 const subscribe = (phoneNumber, socketId) =>
-  socketWriter.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber }, socketId)
+  app.sockets.write({ type: messageTypes.SUBSCRIBE, username: phoneNumber }, socketId)
 
 // (string, number) -> Promise<string>
 const unsubscribe = (phoneNumber, socketId) =>
-  socketWriter.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber }, socketId)
+  app.sockets.write({ type: messageTypes.UNSUBSCRIBE, username: phoneNumber }, socketId)
 
 // (OutboundSignaldMessage, number) -> Promise<string>
 const sendMessage = async (sdMessage, socketId) => {
-  const id = await socketWriter.write(sdMessage, socketId)
+  const id = await app.sockets.write(sdMessage, socketId)
   callbacks.register({
     id,
     messageType: messageTypes.SEND,
@@ -219,7 +219,7 @@ const sendMessage = async (sdMessage, socketId) => {
 }
 
 const setExpiration = async (channelPhoneNumber, memberPhoneNumber, expiresInSeconds, socketId) => {
-  const id = await socketWriter.write(
+  const id = await app.sockets.write(
     {
       type: messageTypes.SET_EXPIRATION,
       username: channelPhoneNumber,
@@ -233,7 +233,7 @@ const setExpiration = async (channelPhoneNumber, memberPhoneNumber, expiresInSec
 
 // (String, String, String, number) -> Promise<SignalboostStatus>
 const trust = async (channelPhoneNumber, memberPhoneNumber, fingerprint, socketId) => {
-  const id = await socketWriter.write(
+  const id = await app.sockets.write(
     {
       type: messageTypes.TRUST,
       username: channelPhoneNumber,

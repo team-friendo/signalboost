@@ -42,7 +42,7 @@ class TestSocketServer(
                             logger.error { e.stackTraceToString() }
                             return@launch
                         }
-                        logger.debug("Got connection on ${connection.hashCode()}")
+                        logger.debug("...Got connection on ${connection.hashCode()}")
                         connections.send(connection)
                     }
                 }

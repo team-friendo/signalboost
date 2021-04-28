@@ -26,6 +26,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.lang.Exception
+import java.io.IOException
 import java.nio.file.Files
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -92,7 +93,7 @@ class SignalReceiver(private val app: Application) {
     suspend fun subscribe(account: VerifiedAccount): Job? {
         // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmtpy()`?)
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
-        return app.coroutineScope.launch {
+        return app.coroutineScope.launch sub@ {
             val subscription = this
 
             // try to estabilish a message pipe with signal
@@ -111,7 +112,12 @@ class SignalReceiver(private val app: Application) {
                 // handle new messages...
                 while (subscription.isActive) {
                     // read (and cache) one envelope from the message pipe (we cache so we can retry if decryption fails)
-                    val (envelope, cacheId) = receiveOnce(messagePipe, account)
+                    val (envelope, cacheId) = try {
+                        receiveOnce(messagePipe, account)
+                    } catch(e: IOException) {
+                        logger.warn { "Connection closed on websocket for ${account.username}" }
+                        return@launch subscription.cancel()
+                    }
                     // handle the envelope, decrypting and relaying if possible
                     dispatch(account, envelope)
                     // delete envelope cache, but don't wait for deletion to complete before handling next message
@@ -138,7 +144,7 @@ class SignalReceiver(private val app: Application) {
         }
     }.await()
 
-    suspend fun unsubscribeAll() = subscriptions.keys.forEach { unsubscribe(it) }
+    suspend fun unsubscribeAll() = subscriptions.keys.map { unsubscribe(it) }
 
     // HELPERS
 
