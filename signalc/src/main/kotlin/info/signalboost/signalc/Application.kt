@@ -247,11 +247,9 @@ class Application(val config: Config.App){
         socketServer = initializeHotComponent(SocketServer::class, Mocks.socketServer).run()
 
         // handle SIGTERM gracefully
-        Runtime.getRuntime().addShutdownHook(object : Thread() {
-            override fun run() {
-                runBlocking {
-                    this@Application.stop()
-                }
+        Runtime.getRuntime().addShutdownHook(Thread {
+            runBlocking {
+                this@Application.stop()
             }
         })
 
