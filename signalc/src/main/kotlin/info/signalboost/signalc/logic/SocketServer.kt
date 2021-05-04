@@ -28,6 +28,9 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     override suspend fun run(): SocketServer {
         val socketFile = File(app.config.socket.path)
         socket = app.coroutineScope.async {
+            // We delete the socket descriptor here because:
+            // (1) there might be a file left over at this path from a previous one
+            // (2) `bind` will throw if there is already a file at the descriptor location
             Files.deleteIfExists(socketFile.toPath())
             AFUNIXServerSocket.newInstance().apply {
                 bind(AFUNIXSocketAddress(socketFile))
