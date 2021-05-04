@@ -1,5 +1,6 @@
 package info.signalboost.signalc.store
 
+import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.NewAccount
@@ -31,7 +32,7 @@ class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
         val testScope = this
         val accountId = genPhoneNumber()
-        val config = Config.mockAllExcept(ProtocolStore::class)
+        val config = Config.mockAllExcept(ProtocolStore::class, HikariDataSource::class)
         val app = Application(config).run(testScope)
         val store = app.protocolStore.of(NewAccount(accountId))
 

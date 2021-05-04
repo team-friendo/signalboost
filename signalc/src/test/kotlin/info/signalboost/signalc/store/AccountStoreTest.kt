@@ -1,5 +1,6 @@
 package info.signalboost.signalc.store
 
+import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
@@ -28,7 +29,7 @@ import kotlin.time.ExperimentalTime
 class AccountStoreTest : FreeSpec({
     runBlockingTest {
         val testScope = this
-        val config = Config.mockAllExcept(AccountStore::class)
+        val config = Config.mockAllExcept(AccountStore::class, HikariDataSource::class)
         val app = Application(config).run(this)
         val store = app.accountStore
 
