@@ -90,7 +90,7 @@
     tags: prepare
 
   - name: Setup database, run migrations
-    command: "docker-compose run --entrypoint /signalboost/bin/db/setup app"
+    command: "docker-compose run --entrypoint /signalboost/bin/db/setup-sb app"
     args:
       chdir: "{{ homedir }}"
     tags: prepare
