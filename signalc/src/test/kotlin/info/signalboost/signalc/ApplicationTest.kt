@@ -1,15 +1,16 @@
 package info.signalboost.signalc
 
+import info.signalboost.signalc.logic.MessageQueue
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
-import io.mockk.unmockkAll
+import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
@@ -50,11 +51,23 @@ class ApplicationTest : FreeSpec({
         }
 
         "#stop" - {
+            // TODO: we could do some more interesting setup here to make the
+            // below assertions about unsubscribing and draining prove something interesting...
             val res = app.stop()
 
             "closes down all 'hot' app components" {
                 app.socketServer.listenJob.isActive shouldBe false
                 app.socketServer.socket.isClosed shouldBe true
+            }
+
+            "unsubscribes from all incoming messages" {
+                app.signalReceiver.messagePipeCount shouldBe 0
+            }
+
+
+            "drains signal receive and send message queues" {
+                app.signalSender.messagesInFlight.get() shouldBe 0
+                app.signalReceiver.messagesInFlight.get() shouldBe 0
             }
 
             "returns a reference to the application for restarting" {

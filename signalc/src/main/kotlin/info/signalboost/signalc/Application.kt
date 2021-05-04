@@ -263,11 +263,17 @@ class Application(val config: Config.App){
         signalReceiver.unsubscribeAll()
         logger.info { "... Unsubscribed from messages."}
 
-        // then drain the send queue...
-        logger.info { "Draining send queue..."}
+        // then drain the receive and send queues...
+        logger.info { "Draining RECEIVE queue..."}
+        signalReceiver.drain().let { (didDrain, numToDrain, numDropped) ->
+            if(didDrain) logger.info { "...Drained $numToDrain messages from RECEIVE queue."}
+            else logger.error { "...Failed to drain $numToDrain messages from RECEIVE queue. $numDropped messages dropped."}
+        }
+
+        logger.info { "Draining SEND queue..."}
         signalSender.drain().let { (didDrain, numToDrain, numDropped) ->
-            if(didDrain) logger.info { "...Drained $numToDrain messages from send queue."}
-            else logger.error { "...Failed to drain $numToDrain messages from send queue. $numDropped messages dropped."}
+            if(didDrain) logger.info { "...Drained $numToDrain messages from SEND queue."}
+            else logger.error { "...Failed to drain $numToDrain messages from SEND queue. $numDropped messages dropped."}
         }
 
         // then shutdown all resources...
