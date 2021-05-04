@@ -40,7 +40,6 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
-import java.util.*
 import kotlin.io.path.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
@@ -52,7 +51,15 @@ import kotlin.time.milliseconds
 class SignalReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this
-        val config = Config.mockAllExcept(SignalReceiver::class)
+        val drainPollInterval = 10.milliseconds
+        val drainTimeout = 50.milliseconds
+        val config = Config.mockAllExcept(SignalReceiver::class).copy(
+            timers = Config.default.timers.copy(
+                drainPollInterval = drainPollInterval,
+                drainTimeout = drainTimeout,
+            )
+        )
+
         val app = Application(config).run(testScope)
         val messageReceiver = app.signalReceiver
 
@@ -113,6 +120,37 @@ class SignalReceiverTest : FreeSpec({
             testScope.teardown()
         }
 
+        "#drain" - {
+            beforeTest {
+                app.signalReceiver.messagesInFlight.set(3)
+            }
+            afterTest {
+                app.signalReceiver.messagesInFlight.set(0)
+            }
+
+            "when all messages can be drained before timeout" - {
+                "returns true and the number of messages drained" {
+                    launch {
+                        delay(drainPollInterval)
+                        repeat(3) {
+                            app.signalReceiver.messagesInFlight.getAndDecrement()
+                        }
+                    }
+                    app.signalReceiver.drain() shouldBe Triple(true, 3, 0)
+                }
+            }
+
+            "when all messages cannot be drained before timeout" - {
+                "returns false and number messages remaining" {
+                    launch {
+                        delay(drainPollInterval)
+                        app.signalReceiver.messagesInFlight.getAndDecrement()
+                    }
+                    app.signalReceiver.drain() shouldBe Triple(false, 3, 2)
+                }
+            }
+        }
+
         "#subscribe" - {
             afterTest {
                 messageReceiver.unsubscribe(recipientAccount.username)
@@ -159,9 +197,9 @@ class SignalReceiverTest : FreeSpec({
                     "and decryption succeeds" - {
                         val cleartextBody = "a screaming comes across the sky..."
                         decryptionYields(listOf(cleartextBody))
-                        messageReceiver.subscribe(recipientAccount)
 
                         "relays Cleartext to socket sender" {
+                            messageReceiver.subscribe(recipientAccount)
                             eventually(timeout, pollInterval) {
                                 coVerify {
                                     app.socketSender.send(
@@ -171,6 +209,22 @@ class SignalReceiverTest : FreeSpec({
                                             cleartextBody
                                         )
                                     )
+                                }
+                            }
+                        }
+
+                        "increments and decrements a counter for tracking in-flight queue size"  {
+                            mockkObject(app.signalReceiver.messagesInFlight).also {
+                                every { app.signalReceiver.messagesInFlight.getAndIncrement() } returns 1
+                                every { app.signalReceiver.messagesInFlight.getAndDecrement() } returns 0
+                                every { app.signalReceiver.messagesInFlight.set(any()) } returns Unit
+                            }
+                            messageReceiver.subscribe(recipientAccount)
+
+                            eventually(timeout, pollInterval) {
+                                verify {
+                                    app.signalReceiver.messagesInFlight.getAndIncrement()
+                                    app.signalReceiver.messagesInFlight.getAndDecrement()
                                 }
                             }
                         }

@@ -35,6 +35,7 @@ object Mocks {
         coEvery { subscribe(any()) } returns mockk()
         coEvery { unsubscribe(any()) } returns mockk()
         coEvery { unsubscribeAll() } returns mockk()
+        coEvery { drain() } returns Triple(true,0,0)
     }
     val signalSender: SignalSender.() -> Unit = {
         coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {

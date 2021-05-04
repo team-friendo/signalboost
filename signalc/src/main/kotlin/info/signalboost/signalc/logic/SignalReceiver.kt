@@ -31,6 +31,7 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
@@ -48,7 +49,9 @@ class SignalReceiver(private val app: Application) {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
 
-    // FACTORIES
+    // FIELDS/FACTORIES
+
+    internal val messagesInFlight = AtomicInteger(0)
 
     private val subscriptions = ConcurrentHashMap<String,Job>()
     private val messageReceivers = ConcurrentHashMap<String,SignalServiceMessageReceiver>()
@@ -89,6 +92,12 @@ class SignalReceiver(private val app: Application) {
 
     internal val messagePipeCount: Int
         get() = messagePipes.size
+
+    suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
+        messagesInFlight,
+        app.config.timers.drainTimeout,
+        app.config.timers.drainPollInterval,
+    )
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
         // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmtpy()`?)
@@ -165,6 +174,7 @@ class SignalReceiver(private val app: Application) {
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
         return app.coroutineScope.launch(IO) {
             try {
+                messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
                 val body = dataMessage.body?.orNull() ?: ""
@@ -201,6 +211,8 @@ class SignalReceiver(private val app: Application) {
                         logger.error { "Decryption Error:\n ${e.stackTraceToString()}" }
                     }
                 }
+            } finally {
+                messagesInFlight.getAndDecrement()
             }
         }
     }

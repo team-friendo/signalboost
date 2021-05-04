@@ -123,20 +123,11 @@ class SignalSender(private val app: Application) {
                 .build()
         )
 
-    suspend fun drain(): Triple<Boolean,Int,Int> {
-        // attempt to drain the sender of in-flight messages before a timeout is reached
-        // return tuple indicating:
-        // - if drain completed (true if yes)
-        // - number of messages attempted to drain
-        // - number of undrained messages remaining at completion
-        val numToDrain = messagesInFlight.get()
-        val end = Monotonic.markNow().plus(app.config.timers.drainTimeout)
-        while(true) {
-            if(end.hasPassedNow()) return Triple(false, numToDrain, messagesInFlight.get())
-            if(messagesInFlight.get() == 0) return Triple(true, numToDrain, 0)
-            delay(app.config.timers.drainPollInterval)
-        }
-    }
+    suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
+        messagesInFlight,
+        app.config.timers.drainTimeout,
+        app.config.timers.drainPollInterval,
+    )
 
     /***********
      * HELPERS
