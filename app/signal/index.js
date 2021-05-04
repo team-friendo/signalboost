@@ -150,7 +150,7 @@ const abort = socketId =>
 const isAlive = async socketId => {
   // checks to see if signald is a live by pinging and waiting for echo back
   // resolves with success or rejects with timeout
-  const id = await app.sockets.write({ type: messageTypes.IS_ALIVE }, socketId).catch(e => e)
+  const id = await app.sockets.write({ type: messageTypes.IS_ALIVE }, socketId)
   return new Promise((resolve, reject) =>
     callbacks.register({
       id,
