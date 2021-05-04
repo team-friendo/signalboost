@@ -2,7 +2,6 @@ package info.signalboost.signalc
 
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
-import info.signalboost.signalc.store.EnvelopeStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
@@ -26,11 +25,6 @@ object Mocks {
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
-    }
-    val envelopeStore: EnvelopeStore.() -> Unit = {
-        every { create(any(), any()) } returns mockk()
-        coEvery { delete(any()) } returns Unit
-        coEvery { findAll(any()) } returns emptyList()
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {

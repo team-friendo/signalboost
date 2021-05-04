@@ -5,7 +5,6 @@ import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
-import info.signalboost.signalc.store.EnvelopeStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -140,7 +139,6 @@ class Application(val config: Config.App){
     // STORE //
 
     lateinit var accountStore: AccountStore
-    lateinit var envelopeStore: EnvelopeStore
     lateinit var protocolStore: ProtocolStore
 
     private lateinit var dataSource: HikariDataSource
@@ -229,7 +227,6 @@ class Application(val config: Config.App){
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
         accountStore = initializeStore(AccountStore::class)
-        envelopeStore = initializeStore(EnvelopeStore::class, Mocks.envelopeStore)
         protocolStore = initializeStore(ProtocolStore::class, Mocks.protocolStore)
 
         // network resources

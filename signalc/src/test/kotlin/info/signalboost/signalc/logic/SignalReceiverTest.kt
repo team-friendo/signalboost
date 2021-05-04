@@ -58,7 +58,6 @@ class SignalReceiverTest : FreeSpec({
 
         val recipientAccount = genVerifiedAccount()
         val senderAddress = genSignalServiceAddress()
-        val cacheId = genUuid()
 
         val timeout = 40.milliseconds
         val pollInterval = 1.milliseconds
@@ -72,10 +71,7 @@ class SignalReceiverTest : FreeSpec({
             )
 
             val mockMessagePipe = mockk<SignalServiceMessagePipe> {
-                every { read(any(), any(), any()) } answers {
-                    this.thirdArg<SignalServiceMessagePipe.MessagePipeCallback>().onMessage(envelope)
-                    envelope
-                }
+                every { read(any(), any()) } returns envelope
                 every { shutdown() } returns Unit
             }
 
@@ -123,58 +119,17 @@ class SignalReceiverTest : FreeSpec({
             }
 
             "in all cases" - {
-                val (junkEnvelope) = signalSendsJunkEnvelopes()
-                coEvery {
-                    app.envelopeStore.create(recipientAccount.username, junkEnvelope)
-                } returns cacheId
+                signalSendsJunkEnvelopes()
 
                 lateinit var sub: Job
                 beforeTest {
                     sub = messageReceiver.subscribe(recipientAccount)!!
                 }
 
-                "attempts to retrieve cached envelopes from previous subscriptions" {
-                    coVerify {
-                        app.envelopeStore.findAll(recipientAccount.username)
-                    }
-                }
-
                 "creates a message pipe and listens for messages in a coroutine" {
                     messageReceiver.subscriptionCount shouldBe 1
                     messageReceiver.messagePipeCount shouldBe 1
                     sub.isActive shouldBe true
-                }
-
-                "caches each envelope it receives before attempting decryption" {
-                    verify {
-                        app.envelopeStore.create(recipientAccount.username, junkEnvelope)
-                    }
-                }
-
-                "deletes the cached envelope after attempting decryption" {
-                    coVerify {
-                        app.envelopeStore.delete(cacheId)
-                    }
-                }
-            }
-
-            "when the recipient account has cached (unprocessed) envelopes" - {
-                coEvery {
-                    app.envelopeStore.findAll(recipientAccount.username)
-                } returns List(3) { genEnvelope(type = CIPHERTEXT_VALUE) }
-                decryptionYields(listOf("msg1", "msg2", "msg3"))
-                signalSendsJunkEnvelopes()
-
-                "dispatches cached envelopes before processing new messages" {
-                    messageReceiver.subscribe(recipientAccount)!!
-                    eventually(timeout, pollInterval) {
-                        coVerifyOrder {
-                            app.socketSender.send(cleartext(body = "msg1"))
-                            app.socketSender.send(cleartext(body ="msg2"))
-                            app.socketSender.send(cleartext(body ="msg3"))
-                            app.socketSender.send(any<SocketResponse.Dropped>())
-                        }
-                    }
                 }
             }
 
@@ -270,7 +225,6 @@ class SignalReceiverTest : FreeSpec({
                                 }
                             }
                             "and does not have a fingerprint on the untrusted identity" - {
-                                val identityKey = KeyUtil.genIdentityKeyPair().publicKey
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
                                     UntrustedIdentityException(recipientAccount.username),
                                     senderAddress.identifier,
@@ -323,28 +277,6 @@ class SignalReceiverTest : FreeSpec({
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-
-                "when caching envelope fails" - {
-                    every {
-                        app.envelopeStore.create(any(),any())
-                    } throws Error("oh noes!")
-                    decryptionYields(listOf("hello", "world"))
-                    messageReceiver.subscribe(recipientAccount)!!
-
-                    "does not disrupt message listening loop" {
-                        eventually(timeout, pollInterval) {
-                            coVerifyOrder {
-                                app.socketSender.send(cleartext(body = "hello"))
-                                app.socketSender.send(cleartext(body = "world"))
-                            }
-                        }
-                    }
-                    "does not try to delete cache entry" {
-                        coVerify(exactly = 0) {
-                            app.envelopeStore.delete(any())
                         }
                     }
                 }
@@ -507,7 +439,7 @@ class SignalReceiverTest : FreeSpec({
         }
 
         "#unsubscribeAll" - {
-            val (_, messagePipe) = signalSendsJunkEnvelopes()
+            signalSendsJunkEnvelopes()
             val sub1 = messageReceiver.subscribe(genVerifiedAccount())!!
             val sub2 = messageReceiver.subscribe(genVerifiedAccount())!!
             val sub3 = messageReceiver.subscribe(genVerifiedAccount())!!

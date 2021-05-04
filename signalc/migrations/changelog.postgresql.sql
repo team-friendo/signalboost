@@ -85,3 +85,13 @@ CREATE TABLE IF NOT EXISTS envelopes
     server_delivered_timestamp BIGINT NOT NULL
 );
 -- rollback drop table envelopes;
+
+-- changeset aguestuser:1620095897702-1 failOnError:false
+drop table envelopes;
+-- rollback CREATE TABLE IF NOT EXISTS envelopes
+-- rollback (
+-- rollback    id uuid PRIMARY KEY,
+-- rollback    account_id VARCHAR(255) NOT NULL,
+-- rollback    envelope_bytes bytea NOT NULL,
+-- rollback    server_delivered_timestamp BIGINT NOT NULL
+-- rollback    );

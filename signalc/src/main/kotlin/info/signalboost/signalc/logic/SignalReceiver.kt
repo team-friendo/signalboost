@@ -106,24 +106,15 @@ class SignalReceiver(private val app: Application) {
 
             // handle messages from the pipe...
             launch(IO) {
-                // first, retry all envelopes previously cached but unhandled (due to interruption during handling)
-                // (join on each retry job to prevent handling new message before cached ones are processed)
-                app.envelopeStore.findAll(account.username).map { dispatch(account, it)?.join() }
-                // handle new messages...
                 while (subscription.isActive) {
-                    // read (and cache) one envelope from the message pipe (we cache so we can retry if decryption fails)
-                    val (envelope, cacheId) = try {
-                        receiveOnce(messagePipe, account)
+                    val envelope = try {
+                        messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
                     } catch(e: IOException) {
+                        // TODO: handle TimeoutException and IOExceptions caused by server disconnect
                         logger.warn { "Connection closed on websocket for ${account.username}" }
                         return@launch subscription.cancel()
                     }
-                    // handle the envelope, decrypting and relaying if possible
                     dispatch(account, envelope)
-                    // delete envelope cache, but don't wait for deletion to complete before handling next message
-                    cacheId?.let {
-                        launch(IO) { app.envelopeStore.delete(it) }
-                    }
                 }
             }
         }.also {
@@ -147,21 +138,6 @@ class SignalReceiver(private val app: Application) {
     suspend fun unsubscribeAll() = subscriptions.keys.map { unsubscribe(it) }
 
     // HELPERS
-
-    private fun receiveOnce(messagePipe: SignalServiceMessagePipe, account: VerifiedAccount): Pair<SignalServiceEnvelope,UUID?> {
-        var cacheId: UUID? = null
-        val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS) {
-            // cache new envelopes before acknowledging receipt to server or decrypting (see docs for #read)
-            cacheId = try {
-                app.envelopeStore.create(account.username, it)
-            } catch (err: Throwable) {
-                // don't propagate error b/c we don't want to disrupt the message-listening loop!
-                logger.error { "Failed to cache envelope for ${account.username}:\n${err.stackTraceToString()}" }
-                null
-            }
-        }
-        return Pair(envelope, cacheId)
-    }
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
         logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
