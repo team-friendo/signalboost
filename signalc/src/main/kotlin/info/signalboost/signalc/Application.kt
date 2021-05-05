@@ -285,10 +285,13 @@ class Application(val config: Config.App){
         return this
     }
 
-    fun exit(status: Int): Nothing? = Exit.withStatus(status, config.toggles.shouldExit)
+    fun exit(status: Int): Unit = Exit.withStatus(status)
 
     object Exit {
-        fun withStatus(status: Int, shouldExit: Boolean): Nothing? = if(shouldExit) exitProcess(status) else null
+        // testing seam
+        fun withStatus(status: Int)  {
+            exitProcess(status)
+        }
     }
 }
 

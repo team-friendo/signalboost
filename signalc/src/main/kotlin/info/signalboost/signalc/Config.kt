@@ -44,7 +44,6 @@ object Config {
         val mocked: Set<KClass<out Any>>,
         val signal: Signal,
         val socket: Socket,
-        val toggles: Toggles,
         val timers: Timers,
     )
 
@@ -72,10 +71,6 @@ object Config {
 
     data class Socket(
         val path: String,
-    )
-
-    data class Toggles(
-        val shouldExit: Boolean,
     )
 
     data class Timers(
@@ -135,9 +130,6 @@ object Config {
         socket = Socket(
           path = "/signalc/sock/signald.sock"
         ),
-        toggles = Toggles(
-            shouldExit = true,
-        ),
         timers = Timers(
             drainTimeout = 2.minutes,
             drainPollInterval = 200.milliseconds,
@@ -152,9 +144,6 @@ object Config {
         socket = default.socket.copy(
             path = "/signalc/sock/test.sock"
         ),
-        toggles = default.toggles.copy(
-            shouldExit = false
-        )
     )
     val load = default.copy(
         signal = default.signal.copy(
