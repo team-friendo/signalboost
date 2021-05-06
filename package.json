@@ -33,7 +33,7 @@
     "koa-logger": "^3.2.1",
     "koa-router": "^10.0.0",
     "libphonenumber-js": "^1.9.6",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "mnemonist": "^0.38.1",
     "mocha": "^8.2.1",
     "moment": "^2.29.1",
