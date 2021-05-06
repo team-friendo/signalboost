@@ -264,17 +264,23 @@ class Application(val config: Config.App){
         logger.info { "... Unsubscribed from messages."}
 
         // then drain the receive and send queues...
-        logger.info { "Draining RECEIVE queue..."}
-        signalReceiver.drain().let { (didDrain, numToDrain, numDropped) ->
-            if(didDrain) logger.info { "...Drained $numToDrain messages from RECEIVE queue."}
-            else logger.error { "...Failed to drain $numToDrain messages from RECEIVE queue. $numDropped messages dropped."}
+        val receiveDrainJob = coroutineScope.launch {
+            logger.info { "Draining RECEIVE queue..."}
+            signalReceiver.drain().let { (didDrain, numToDrain, numDropped) ->
+                if(didDrain) logger.info { "...Drained $numToDrain messages from RECEIVE queue."}
+                else logger.error { "...Failed to drain $numToDrain messages from RECEIVE queue. $numDropped messages dropped."}
+            }
         }
 
-        logger.info { "Draining SEND queue..."}
-        signalSender.drain().let { (didDrain, numToDrain, numDropped) ->
-            if(didDrain) logger.info { "...Drained $numToDrain messages from SEND queue."}
-            else logger.error { "...Failed to drain $numToDrain messages from SEND queue. $numDropped messages dropped."}
+        val sendDrainJob = coroutineScope.launch {
+            logger.info { "Draining SEND queue..."}
+            signalSender.drain().let { (didDrain, numToDrain, numDropped) ->
+                if(didDrain) logger.info { "...Drained $numToDrain messages from SEND queue."}
+                else logger.error { "...Failed to drain $numToDrain messages from SEND queue. $numDropped messages dropped."}
+            }
         }
+
+        listOf(receiveDrainJob, sendDrainJob).joinAll()
 
         // then shutdown all resources...
         socketServer.stop()
