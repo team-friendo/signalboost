@@ -33,8 +33,8 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Jar> {
     val commitHash = System.getenv("COMMIT_HASH") ?: run {
-        println("ERROR building jar: please supply a value for COMMIT_HASH")
-        exitProcess(1)
+        println("WARNING no value provided for for COMMIT_HASH")
+        "NO_VERSION"
     }
     archiveFileName.set("signalc-$commitHash.jar")
     manifest {
