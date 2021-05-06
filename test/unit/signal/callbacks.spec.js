@@ -15,7 +15,7 @@ const {
     diagnosticsPhoneNumber,
     healthcheckTimeout,
     signaldRequestTimeout,
-    signaldRestartTimeout,
+    isAliveTimeout,
     signaldSendTimeout,
     signaldVerifyTimeout,
   },
@@ -178,36 +178,8 @@ describe('callback registry', () => {
           resolve: resolveStub,
           reject: rejectStub,
         })
-        await util.wait(signaldRestartTimeout)
+        await util.wait(isAliveTimeout)
         expect(callbacks.registry[`${messageTypes.IS_ALIVE}-${id}`]).to.eql(undefined)
-      })
-    })
-
-    describe('for a VERSION message', () => {
-      it('registers a VERSION response handler', () => {
-        callbacks.register({
-          messageType: messageTypes.VERSION,
-          id: 0,
-          resolve: resolveStub,
-          reject: rejectStub,
-        })
-        expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql({
-          callback: callbacks._handleVersionResponse,
-          resolve: resolveStub,
-          reject: rejectStub,
-          state: undefined,
-        })
-      })
-
-      it('deletes the handler after a timeout', async () => {
-        callbacks.register({
-          messageType: messageTypes.VERSION,
-          id,
-          resolve: resolveStub,
-          reject: rejectStub,
-        })
-        await util.wait(signaldRequestTimeout)
-        expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql(undefined)
       })
     })
   })
@@ -440,36 +412,6 @@ describe('callback registry', () => {
 
     it('deletes the registry entry', () => {
       expect(callbacks.registry[`${messageTypes.VERSION}-${isAliveMessage.id}`]).to.eql(undefined)
-    })
-  })
-
-  describe('a VERSION response', () => {
-    const version = '+git2020-10-06r6cf17ecb.0'
-    const versionResponse = {
-      type: messageTypes.VERSION,
-      data: {
-        name: 'signald',
-        version,
-        branch: 'master',
-        commit: '6cf17ecb7b82f2ba209a0b9059c7355d88773b78',
-      },
-    }
-    beforeEach(() => {
-      callbacks.register({
-        id: 42,
-        messageType: messageTypes.VERSION,
-        resolve: resolveStub,
-        reject: rejectStub,
-      })
-      callbacks.handle(versionResponse, 42)
-    })
-
-    it('resolves a promise with the running signald version', () => {
-      expect(resolveStub.getCall(0).args).to.eql([version])
-    })
-
-    it('deletes the registry entry', () => {
-      expect(callbacks.registry[`${messageTypes.VERSION}-0`]).to.eql(undefined)
     })
   })
 

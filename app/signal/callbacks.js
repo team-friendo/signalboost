@@ -9,8 +9,8 @@ const { get } = require('lodash')
 const {
   signal: {
     healthcheckTimeout,
+    isAliveTimeout,
     signaldRequestTimeout,
-    signaldRestartTimeout,
     signaldSendTimeout,
     signaldVerifyTimeout,
   },
@@ -77,18 +77,16 @@ const _callbackFor = messageType =>
     [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
-    [messageTypes.VERSION]: _handleVersionResponse,
   }[messageType])
 
 // SignaldMessageType => number
 const _timeoutFor = messageType =>
   ({
     [messageTypes.HEALTHCHECK]: healthcheckTimeout,
-    [messageTypes.IS_ALIVE]: signaldRestartTimeout, // TODO: use restart timeout (for now)
+    [messageTypes.IS_ALIVE]: isAliveTimeout,
     [messageTypes.SEND]: signaldSendTimeout,
     [messageTypes.TRUST]: signaldRequestTimeout,
     [messageTypes.VERIFY]: signaldVerifyTimeout,
-    [messageTypes.VERSION]: signaldRestartTimeout,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse, number) -> CallbackRoute

@@ -25,7 +25,6 @@ const messageTypes = {
   VERIFICATION_REQUIRED: 'verification_required',
   VERIFICATION_SUCCESS: 'verification_succeeded',
   VERIFY: 'verify',
-  VERSION: 'version',
 }
 
 const trustLevels = {
