@@ -20,7 +20,7 @@ if [ -z $(docker ps -qf name=loadtest_db) ];then
 
 else
   echo "--- running psql (for sender_signalc db)..."
-  docker-compose -f docker-compose-dev.yml -f docker-compose.yml \
+  docker-compose -f docker-compose-loadtest.yml \
     exec db psql -U postgres -d loadtest_sender_signalc
 fi
 
