@@ -1,5 +1,6 @@
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import kotlin.system.exitProcess
 
 group = "info.signalboost"
 version = "0.0.3"
@@ -31,7 +32,10 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Jar> {
-    val commitHash = System.getenv("COMMIT_HASH") ?: "NO_VERSION"
+    val commitHash = System.getenv("COMMIT_HASH") ?: run {
+        println("ERROR building jar: please supply a value for COMMIT_HASH")
+        exitProcess(1)
+    }
     archiveFileName.set("signalc-$commitHash.jar")
     manifest {
         attributes["Main-Class"] = application.mainClass
