@@ -1,5 +1,6 @@
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import kotlin.system.exitProcess
 
 group = "info.signalboost"
 version = "0.0.3"
@@ -31,6 +32,11 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.withType<Jar> {
+    val commitHash = System.getenv("COMMIT_HASH") ?: run {
+        println("WARNING no value provided for for COMMIT_HASH")
+        "NO_VERSION"
+    }
+    archiveFileName.set("signalc-$commitHash.jar")
     manifest {
         attributes["Main-Class"] = application.mainClass
     }
@@ -131,7 +137,6 @@ dependencies {
 
 liquibase {
     val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
-
     val dbName = System.getenv("SIGNALC_DB_NAME")
         ?: when(System.getenv("SIGNALC_ENV")) {
             "development" -> "signalc_development"
@@ -139,7 +144,6 @@ liquibase {
             "load" -> "loadtest_sender_signalc"
             else -> "signalc"
         }
-
     activities.register("main") {
         this.arguments = mapOf(
 //            "logLevel" to "info",

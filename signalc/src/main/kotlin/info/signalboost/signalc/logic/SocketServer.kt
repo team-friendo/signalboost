@@ -9,9 +9,12 @@ import org.newsclub.net.unix.AFUNIXServerSocket
 import org.newsclub.net.unix.AFUNIXSocketAddress
 import java.io.File
 import java.net.Socket
+import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -23,9 +26,14 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     internal val connections = ConcurrentHashMap<SocketHashCode,Socket>()
 
     override suspend fun run(): SocketServer {
+        val socketFile = File(app.config.socket.path)
         socket = app.coroutineScope.async {
+            // We delete the socket descriptor here because:
+            // (1) there might be a file left over at this path from a previous one
+            // (2) `bind` will throw if there is already a file at the descriptor location
+            Files.deleteIfExists(socketFile.toPath())
             AFUNIXServerSocket.newInstance().apply {
-                bind(AFUNIXSocketAddress(File(app.config.socket.path)))
+                bind(AFUNIXSocketAddress(socketFile))
             }
         }.await()
 
@@ -35,16 +43,16 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                 val connection = try {
                     socket.accept() as Socket
                 } catch (e: Throwable) {
-                    logger.error("Connection disrupted: ${e.message}")
+                    logger.error("...connection disrupted: ${e.message}")
                     return@launch stop()
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
-                logger.info("Got connection on socket $socketHash")
+                logger.info("...got connection on socket $socketHash")
                 launch(IO) {
                     app.socketReceiver.connect(connection)
-                    logger.info("Connected receiver to socket $socketHash")
+                    logger.info("...connected receiver to socket $socketHash")
                     app.socketSender.connect(connection)
-                    logger.info("Connected sender to socket $socketHash")
+                    logger.info("...connected sender to socket $socketHash")
                 }
             }
         }
@@ -53,11 +61,11 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
     }
 
     suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatchers.IO) {
-        logger.info("Closing connection on socket $socketHash...")
+        logger.info("...closing connection on socket $socketHash...")
         app.socketSender.close(socketHash)
         app.socketReceiver.close(socketHash)
         closeConnection(socketHash)
-        logger.info("... closed connection on socket $socketHash")
+        logger.info("...... closed connection on socket $socketHash")
     }
 
     suspend fun stop(): Unit = app.coroutineScope.async(IO) {
@@ -67,7 +75,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         app.socketSender.stop()
         closeAllConnections()
         socket.close()
-        logger.info("... socket server stopped.")
+        logger.info("...socket server stopped.")
     }.await()
 
     internal suspend fun closeAllConnections(): Unit =

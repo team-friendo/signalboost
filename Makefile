@@ -176,6 +176,10 @@ dev.restart.metrics: ## force stop and start the app again (with prometheus/graf
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
 	up -d
 
+dev.nc: ## get a netcat terminal on a running signald instance in dev stack
+	docker-compose -f docker-compose.yml -f docker-compose-dev.yml \
+	exec signald_0 nc -U /var/run/signald/signald.sock
+
 ##################
 # docker-related #
 ##################
@@ -197,8 +201,11 @@ docker.build.base: ## build the base docker image (accepts optional TAG=#.#.# ar
 docker.build.signalboost: ## build the signalboost docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signalboost $(TAG)
 
-docker.build.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build signalc $(TAG)
+docker.build.signalc: ## build the signalc production image (accepts optional TAG=#.#.# argument)
+	echo "use `make sc.build` instead!"
+
+docker.build.signalc.dev: ## build the signalc dev image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalc-dev $(TAG)
 
 docker.build.signald: ## build the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signald $(TAG)
@@ -215,8 +222,11 @@ docker.push.base: ## push the base docker image (accepts optional TAG=#.#.# argu
 docker.push.signalboost: ## push the signalboost docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signalboost $(TAG)
 
-docker.push.signalc: ## build the test runner image (accepts optional TAG=#.#.# argument)
-	./bin/docker-push signalc $(TAG)
+docker.push.signalc: ## push the signalc production image (accepts optional TAG=#.#.# argument)
+	echo "use `make sc.build` instead!"
+
+docker.push.signalc.dev: ## push the signalc dev image (accepts optional TAG=#.#.# argument)
+	./bin/docker-build signalc-dev $(TAG)
 
 docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signald $(TAG)
@@ -249,6 +259,9 @@ load.nc.simulator: ## get a netcat shell inside the loadtest simulator
 load.db.up: ## start load test db
 	docker-compose -f docker-compose-loadtest.yml up -d db
 
+load.db.psql: ## get a psql shell on loadtest db
+	./bin/load/psql
+
 load.up: ## start
 	./bin/load/run
 
@@ -273,9 +286,6 @@ load.restart: ## restart loadtest stack
 load.reseed: ## clean signalc + signal-server databases
 	./bin/load/reseed
 
-load.psql: 
-	docker-compose -f docker-compose-loadtest.yml exec db psql postgresql://postgres@localhost:5432
-
 load.test.lag.signald: ## run load tests to measure lag in a client
 	TEST_SUBJECT=sender_signald ./bin/load/test-lag
 
@@ -293,23 +303,31 @@ load.test.concurrency.signalc:
 # signalc #
 ###########
 
+sc.build: ## build jar and docker image for signalc
+	./bin/sc/build
+
 sc.jar: ## build
 	docker-compose -f docker-compose-sc.yml \
 	run --entrypoint 'gradle shadowJar' signalc && \
 	echo "> jar available in signalc/build/libs"
 
-sc.run: ## run signalc in dev mode
+sc.run: ## run signalc in isloation in dev mode
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=development --entrypoint 'rm /signalc/message.sock && gradle --console=plain run' signalc
+	run -e SIGNALC_ENV=development --entrypoint 'rm /signalc/message.sock && gradle --console=plain run' \
+	signalc_dev
 
-sc.client: ## open a netcat session on the signalc unix socket
-	nc -U /signalc/sock/signald.sock
+sc.nc: ## open a netcat session on the signalc unix socket
+	docker-compose -f docker-compose-sc.yml \
+	exec signalc nc -U /signalc/sock/signald.sock
 
-sc.up: ## run signalboost against signalc in dev mode
-	docker-compose -f docker-compose-sc.yml up -d
+sc.up.dev: ## run signalboost against signalc in dev mode
+	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
 
-sc.up.debug: ## run signalboost against signalc in dev mode
-	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d
+sc.up.debug: ## run signalboost against signalc in dev mode w/ debug flags on
+	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
+
+sc.up.pinned: ## run signalboost against pinned signalc commit (for faster boot)
+	docker-compose -f docker-compose-sc.yml up -d signalc_pinned signalboost ngrok
 
 sc.down: # stop signalc stack
 	docker-compose -f docker-compose-sc.yml down
@@ -317,12 +335,18 @@ sc.down: # stop signalc stack
 sc.logs: ## view logs for signalc stack
 	docker-compose -f docker-compose-sc.yml logs -f
 
-sc.restart: ## restart signalc stack
-	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d
+sc.restart.dev: ## restart signalc stack in dev mode
+	docker-compose -f docker-compose-sc.yml down && \
+	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
 
-sc.restart.debug: ## restart signalc stack
-	docker-compose -f docker-compose-sc.yml down && docker-compose -f docker-compose-sc.yml up -d && \
-	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d
+sc.restart.debug: ## restart signalc stack in dev mode w/ debug flags on
+	docker-compose -f docker-compose-sc.yml down && \
+	DEBUG_MODE=1 LOG_LEVEL=debug \
+	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
+
+sc.restart.pinned: ## restart signalc stack w/ signalc pinned to latest commit (for faster boot)
+	docker-compose -f docker-compose-sc.yml down && \
+	docker-compose -f docker-compose-sc.yml up -d signalc_pinned signalboost ngrok
 
 sc.db.up: ## run the signalc db in isolation (useful for tests)
 	docker-compose -f docker-compose-sc.yml up -d db
@@ -333,10 +357,11 @@ sc.db.down: ## stop the signalc db in isolation (useful for tests)
 sc.db.migrate: ## run migrations
 	echo "----- running development migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc && \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc_pinned && \
 	echo "----- running test migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc_pinned && \
+	echo "----- run migrations for loadtests w/ 'make load.reseed'"
 
 # TODO: inject the DB_NAME here!!!!
 sc.db.rollback: ## run migrations

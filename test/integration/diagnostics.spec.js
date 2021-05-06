@@ -5,7 +5,6 @@ import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
 import signal from '../../app/signal'
-import socket from '../../app/socket/write'
 import util from '../../app/util'
 import { map, take, times } from 'lodash'
 import { channelFactory, deepChannelFactory } from '../support/factories/channel'
@@ -66,7 +65,7 @@ describe('diagnostics jobs', () => {
     beforeEach(async () => {
       // await destroyAllChannels(app.db)
       await createChannels()
-      readSock = await app.socketPools[socketId].acquire()
+      readSock = await app.sockets[socketId].acquire()
       const genUuidStub = sinon.stub(util, 'genUuid')
       uuids.forEach((uuid, idx) => genUuidStub.onCall(idx).returns(uuid))
     })
@@ -74,7 +73,7 @@ describe('diagnostics jobs', () => {
       try {
         sinon.restore()
         await destroyAllChannels(app.db)
-        await app.socketPools[socketId].release(readSock)
+        await app.sockets[socketId].release(readSock)
       } catch (ignored) {
         /**/
       }
@@ -82,7 +81,7 @@ describe('diagnostics jobs', () => {
 
     describe('in a healthy state', () => {
       beforeEach(async () => {
-        writeStub = sinon.stub(socket, 'write').callsFake(echoBackToSocket)
+        writeStub = sinon.stub(app.sockets, 'write').callsFake(echoBackToSocket)
         await sendHealthchecks()
         await util.wait(healthcheckTimeout - 1)
       })
@@ -117,7 +116,7 @@ describe('diagnostics jobs', () => {
 
     describe('when a healtcheck fails for the first time', () => {
       beforeEach(async () => {
-        writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(''))
+        writeStub = sinon.stub(app.sockets, 'write').returns(Promise.resolve(''))
         await sendHealthchecks()
         await util.wait(healthcheckTimeout)
       })
@@ -133,7 +132,7 @@ describe('diagnostics jobs', () => {
 
     describe('when a healtcheck fails twice in a row', function() {
       beforeEach(async () => {
-        writeStub = sinon.stub(socket, 'write').returns(Promise.resolve(''))
+        writeStub = sinon.stub(app.sockets, 'write').returns(Promise.resolve(''))
         await sendHealthchecks()
         await util.wait(1.2 * healthcheckTimeout)
         await sendHealthchecks()
@@ -344,25 +343,25 @@ describe('diagnostics jobs', () => {
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[0].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[1].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[2].socketId,
             ],
             [
               {
-                type: 'version',
+                type: 'is_alive',
               },
               channels[3].socketId,
             ],

@@ -5,7 +5,6 @@ import app from '../../app'
 import testApp from '../support/testApp'
 import db from '../../app/db'
 import signal from '../../app/signal'
-import socket from '../../app/socket/write'
 import util from '../../app/util'
 import phoneNumberRegistrar from '../../app/registrar/phoneNumber'
 import { getSentMessages } from '../support/socket'
@@ -31,13 +30,13 @@ describe('channel destruction', () => {
     await createChannels(app.db, 1).then(([_channels]) => {
       channel = _channels[0]
     })
-    readSock = await app.socketPools[socketId].acquire()
-    writeStub = sinon.stub(socket, 'write').returns(Promise.resolve())
+    readSock = await app.sockets[socketId].acquire()
+    writeStub = sinon.stub(app.sockets, 'write').returns(Promise.resolve())
   })
   afterEach(async () => {
     try {
       await destroyAllChannels(app.db)
-      await app.socketPools[socketId].release(readSock)
+      await app.sockets[socketId].release(readSock)
       if (cancel) await cancel()
       sinon.restore()
     } catch (ignored) {

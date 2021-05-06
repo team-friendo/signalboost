@@ -6,6 +6,7 @@ const messageTypes = {
   HEALTHCHECK_RESPONSE: 'healthcheck_response',
   IDENTITIES: 'identities',
   INBOUND_IDENTITY_FAILURE: 'inbound_identity_failure',
+  IS_ALIVE: 'is_alive',
   MESSAGE: 'message',
   REGISTER: 'register',
   REGISTRATION_ERROR: 'registration_error',
@@ -24,7 +25,6 @@ const messageTypes = {
   VERIFICATION_REQUIRED: 'verification_required',
   VERIFICATION_SUCCESS: 'verification_succeeded',
   VERIFY: 'verify',
-  VERSION: 'version',
 }
 
 const trustLevels = {

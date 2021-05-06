@@ -11,6 +11,21 @@ else
   echo "--- localdev docker network already exists!"
 fi
 
+docker_compose_version=1.29.1
+
+if [[ -z `docker-compose -v | grep ${docker_compose_version}` ]];then
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "WARNING:"
+  echo "   signalboost requires docker-compose version ${docker_compose_version} or greater"
+  echo "   you are using `docker-compose -v`"
+  echo "   please update if your version is not above the required version"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  docker network create localdev --subnet 10.0.1.0/24
+else
+  echo "--- localdev docker network already exists!"
+fi
+
+
 echo "--- decrypting secrets..."
 ./bin/blackbox/decrypt_all_files
 
@@ -61,6 +76,14 @@ echo "--- removing db containers..."
 docker rm -f signalboost_db
 docker rm -f test_db
 docker rm -f signalc_db
+
+echo "--- creating directories for local signalc runs..."
+
+sudo mkdir -p -- /signalc/sock
+sudo chown `whoami`:`whoami` /signalc/sock
+
+sudo mkdir -p -- /signalc/attachments
+sudo chown `whoami`:`whoami` /signalc/attachments
 
 echo "--- DONE!"
 

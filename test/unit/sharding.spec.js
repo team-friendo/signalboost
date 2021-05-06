@@ -2,9 +2,9 @@ import { expect } from 'chai'
 import sinon from 'sinon'
 import { map } from 'lodash'
 import { afterEach, beforeEach, describe, it } from 'mocha'
-import { groupEvenly, assignChannelsToSockets } from '../../../app/socket/sharding'
-import channelRepository from '../../../app/db/repositories/channel'
-import metrics, { gauges } from '../../../app/metrics'
+import { groupEvenly, assignChannelsToSockets } from '../../app/sharding'
+import channelRepository from '../../app/db/repositories/channel'
+import metrics, { gauges } from '../../app/metrics'
 
 describe('sharding module', () => {
   /*************************

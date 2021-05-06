@@ -8,7 +8,6 @@ import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genLong
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genSocketHash
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genAbortRequest
-import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genCloseRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSubscribeRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genTrustRequest
@@ -28,9 +27,8 @@ object SocketResponseGen {
         username = genPhoneNumber()
     )
 
-    fun genRequest() = listOf(
+    private fun genRequest() = listOf(
        genAbortRequest(),
-       genCloseRequest(),
        genSendRequest(),
        genSubscribeRequest(),
     ).random()
@@ -90,6 +88,9 @@ object SocketResponseGen {
         genCleartextAttachment()
     }
 
+    fun genIsAliveResponse(
+        id: String = genUuidStr()
+    ) = SocketResponse.IsAlive(id)
 
     fun genRequestHandlingError(
         id: String = genUuidStr(),

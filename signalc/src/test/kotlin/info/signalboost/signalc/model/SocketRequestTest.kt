@@ -44,11 +44,11 @@ class SocketRequestTest : FreeSpec({
             }
         }
 
-        "CLOSE request" - {
+        "IS_ALIVE request" - {
             "decodes from JSON" {
                 SocketRequest.fromJson(
-                    """{"type":"close","id":"$requestId"}"""
-                ) shouldBe SocketRequest.Close(requestId)
+                    """{"type":"is_alive","id":"$requestId"}"""
+                ) shouldBe SocketRequest.IsAlive(requestId)
             }
         }
 
@@ -263,15 +263,6 @@ class SocketRequestTest : FreeSpec({
                 }
             }
         }
-
-        "VERSION request" - {
-            "decodes from JSON" {
-                SocketRequest.fromJson(
-                    """{"type":"version","id":"$requestId"}"""
-                ) shouldBe SocketRequest.Version(requestId)
-            }
-        }
-
 
         "invalid requests" - {
 

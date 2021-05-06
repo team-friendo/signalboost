@@ -17,7 +17,10 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.system.exitProcess
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -71,19 +74,17 @@ class SocketReceiver(private val app: Application) {
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
+                is SocketRequest.IsAlive -> isAlive(request)
                 is SocketRequest.ParseError -> parseError(request)
                 is SocketRequest.Register -> register(request)
-                is SocketRequest.Send -> send(request)  // NOTE: this signals errors in return value and Throwable
+                is SocketRequest.Send -> send(request)  // this signals errors as both `SendResult` and `Throwable`
                 is SocketRequest.SetExpiration -> setExpiration(request)
                 is SocketRequest.Subscribe -> subscribe(request)
                 is SocketRequest.Trust -> trust(request)
                 is SocketRequest.Unsubscribe -> unsubscribe(request)
                 is SocketRequest.Verify -> verify(request)
-                // TODO://////////////////////////////////////////////
-                is SocketRequest.Version -> unimplemented(request)
             }
         } catch(e: Throwable) {
-            // TODO: dispatch errors here (and fan-in with `ResultStatus` returned from `send`)
             logger.error("ERROR handling request $request from socket $socketHash:\n ${e.stackTraceToString()}")
             app.socketSender.send(
                 SocketResponse.RequestHandlingError(request.id(), e, request)
@@ -109,9 +110,13 @@ class SocketReceiver(private val app: Application) {
     // HANDLE COMMANDS
 
     private suspend fun abort(request: SocketRequest.Abort, socketHash: SocketHashCode) {
-        logger.info("Received `abort`. Exiting.")
+        logger.info("Received `abort`, exiting...")
         app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
-        app.stop()
+        app.exit(0)
+    }
+
+    private suspend fun isAlive(request: SocketRequest.IsAlive) {
+        app.socketSender.send(SocketResponse.IsAlive(request.id))
     }
 
     private suspend fun register(request: SocketRequest.Register): Unit = try {
@@ -204,11 +209,11 @@ class SocketReceiver(private val app: Application) {
 
     private suspend fun unsubscribe(request: SocketRequest.Unsubscribe) {
         val (id, username) = request
-        val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
+        app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
 
         logger.info("Unsubscribing to messages for ${username}...")
         try {
-            app.signalReceiver.unsubscribe(account)
+            app.signalReceiver.unsubscribe(username)
             app.socketSender.send(SocketResponse.UnsubscribeSuccess(id, username))
             logger.info("...unsubscribed to messages for $username")
         } catch (err: Throwable) {

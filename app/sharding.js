@@ -1,11 +1,11 @@
-const channelRepository = require('../db/repositories/channel')
-const metrics = require('../metrics')
+const channelRepository = require('./db/repositories/channel')
+const metrics = require('./metrics')
 const { gauges } = metrics
 const { times, isEmpty } = require('lodash')
 const { MinHeap } = require('mnemonist/heap')
 const {
   socket: { availableSockets },
-} = require('../config')
+} = require('./config')
 
 // () => Promise<Array<number>>
 const assignChannelsToSockets = async () => {

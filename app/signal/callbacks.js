@@ -9,8 +9,8 @@ const { get } = require('lodash')
 const {
   signal: {
     healthcheckTimeout,
+    isAliveTimeout,
     signaldRequestTimeout,
-    signaldRestartTimeout,
     signaldSendTimeout,
     signaldVerifyTimeout,
   },
@@ -73,26 +73,27 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 const _callbackFor = messageType =>
   ({
     [messageTypes.HEALTHCHECK]: _handleHealthcheckResponse,
+    [messageTypes.IS_ALIVE]: _handleIsAliveResponse,
     [messageTypes.SEND]: _handleSendResponse,
     [messageTypes.TRUST]: _handleTrustResponse,
     [messageTypes.VERIFY]: _handleVerifyResponse,
-    [messageTypes.VERSION]: _handleVersionResponse,
   }[messageType])
 
 // SignaldMessageType => number
 const _timeoutFor = messageType =>
   ({
     [messageTypes.HEALTHCHECK]: healthcheckTimeout,
+    [messageTypes.IS_ALIVE]: isAliveTimeout,
     [messageTypes.SEND]: signaldSendTimeout,
     [messageTypes.TRUST]: signaldRequestTimeout,
     [messageTypes.VERIFY]: signaldVerifyTimeout,
-    [messageTypes.VERSION]: signaldRestartTimeout,
   }[messageType])
 
 // (IncomingSignaldMessage | SendResponse, number) -> CallbackRoute
 const handle = (message, socketId) => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
+    [messageTypes.IS_ALIVE]: registry[`${messageTypes.IS_ALIVE}-${message.id}`],
     [messageTypes.MESSAGE]:
       registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`],
     [messageTypes.SEND_RESULTS]: registry[`${messageTypes.SEND}-${message.id}`],
@@ -108,6 +109,8 @@ const handle = (message, socketId) => {
 }
 
 // CALLBACKS
+
+const _handleIsAliveResponse = ({ resolve }) => resolve(messageTypes.IS_ALIVE)
 
 const _handleSendResponse = ({ message, state }) => {
   delete registry[`${messageTypes.SEND}-${message.id}`]
@@ -196,6 +199,7 @@ module.exports = {
   handle,
   register,
   _handleHealthcheckResponse,
+  _handleIsAliveResponse,
   _handleSendResponse,
   _handleTrustResponse,
   _handleVerifyResponse,

@@ -7,7 +7,9 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import java.io.File
 import java.io.InputStream
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 @ExperimentalPathApi

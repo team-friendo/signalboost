@@ -4,10 +4,10 @@ import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalc
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.NumGen.genInt
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
-import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDecryptionError
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genIsAliveResponse
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genInboundIdentityFailure
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationSuccess
@@ -22,7 +22,6 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.gen
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genTrustSuccess
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVerificationError
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVerificationSuccess
-import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genVersionResponse
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genPhrase
 import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.util.TimeUtil.nowInMillis
@@ -188,6 +187,18 @@ class SocketResponseTest : FreeSpec({
                       |"cause":"${response.error.javaClass.name}",
                       |"message":"${response.error.message}"
                    |}
+                |}""".flatten()
+            }
+        }
+
+        "of IsAlive" - {
+            val response = genIsAliveResponse()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                   |"type":"is_alive",
+                   |"id":"${response.id}"
                 |}""".flatten()
             }
         }
@@ -544,22 +555,6 @@ class SocketResponseTest : FreeSpec({
                   |"error":{
                     |"cause":"java.lang.Error",
                     |"message":"${response.error.message}"
-                  |}
-                |}
-                """.flatten()
-            }
-        }
-
-        "of Version" - {
-            val response = genVersionResponse()
-
-            "encodes to JSON" {
-                response.toJson() shouldBe """
-                |{
-                  |"type":"version",
-                  |"id":"${response.id}",
-                  |"data":{
-                    |"version":"${response.data.version}"
                   |}
                 |}
                 """.flatten()

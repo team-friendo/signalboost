@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
 
-echo "Starting reseed!"
+echo "--- Starting reseed!"
 
-echo "Stopping local services..."
+echo "--- Stopping local services..."
 docker-compose -f docker-compose-loadtest.yml down
 
-echo "Reseeding signal server..."
+echo "--- Reseeding signal server..."
 ssh sb_staging "/srv/signalserver/reseed"
 
-echo "Spinning up db service..."
+echo "--- Spinning up db service..."
 docker-compose -f docker-compose-loadtest.yml up -d db
 
-echo "Reseeding signalc receiver..."
+echo "--- Reseeding signalc receiver..."
 psql postgresql://postgres@localhost:5432 -U postgres -c "drop database loadtest_receiver_signalc;"
 psql postgresql://postgres@localhost:5432 -U postgres -c "create database loadtest_receiver_signalc;"
 docker-compose -f docker-compose-loadtest.yml exec -T db psql -U postgres loadtest_receiver_signalc < simulator/seed-data/signalc-1000-numbers-for-subscribers.sql
+docker-compose -f docker-compose-loadtest.yml run --entrypoint 'gradle --console=plain update' receiver_signalc
 
 echo "Reseeding signalc sender..."
 psql postgresql://postgres@localhost:5432 -U postgres -c "drop database loadtest_sender_signalc;"
 psql postgresql://postgres@localhost:5432 -U postgres -c "create database loadtest_sender_signalc;"
 docker-compose -f docker-compose-loadtest.yml exec -T db psql -U postgres loadtest_sender_signalc < simulator/seed-data/signalc-10-numbers-for-channels.sql
+docker-compose -f docker-compose-loadtest.yml run --entrypoint 'gradle --console=plain update' sender_signalc
 
 echo "Reseeding signald sender..."
 unzip simulator/seed-data/signald-10-numbers-for-channels.zip -d simulator/seed-data

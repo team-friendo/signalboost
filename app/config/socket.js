@@ -1,4 +1,6 @@
 const defaults = {
+  awaitCloseInterval: 10, // milliseconds
+  awaitCloseMaxAttempts: 100 * 60 * 5, // enough attempts to timeout after 5 min
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
   poolSize: parseInt(process.env.SOCKET_POOL_SIZE) || 1,
@@ -9,6 +11,8 @@ const defaults = {
 
 const test = {
   ...defaults,
+  awaitCloseInterval: 5,
+  awaitCloseMaxAttempts: 3,
   connectionInterval: 10, // 10 milli
   maxConnectionAttempts: 10,
   poolSize: 5,

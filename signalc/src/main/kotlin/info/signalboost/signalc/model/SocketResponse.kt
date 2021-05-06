@@ -121,6 +121,10 @@ sealed class SocketResponse {
     ): SocketResponse()
 
     @Serializable
+    @SerialName("is_alive")
+    data class IsAlive(val id: String): SocketResponse()
+
+    @Serializable
     @SerialName("inbound_identity_failure")
     data class InboundIdentityFailure(
         val data: Data,

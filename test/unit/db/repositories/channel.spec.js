@@ -429,7 +429,9 @@ describe('channel repository', () => {
     it('returns all channels who have not used in the TTL period (1 week) - except SUPPORT & DIAGNOSTICS', async () => {
       const fetchedStaleChannels = await channelRepository.getStaleChannels()
       expect(fetchedStaleChannels.length).to.eql(2)
-      expect(map(fetchedStaleChannels, 'phoneNumber')).to.eql(map(staleChannels, 'phoneNumber'))
+      expect(map(fetchedStaleChannels, 'phoneNumber')).to.have.deep.members(
+        map(staleChannels, 'phoneNumber'),
+      )
     })
   })
 

@@ -3,9 +3,11 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
-import info.signalboost.signalc.model.*
+import info.signalboost.signalc.model.EnvelopeType
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SocketResponse
+import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.FileUtil.readToFile
 import kotlinx.coroutines.*
@@ -22,14 +24,19 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPoin
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
-import java.io.*
+import java.io.File
 import java.lang.Exception
+import java.io.IOException
 import java.nio.file.Files
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
@@ -42,7 +49,9 @@ class SignalReceiver(private val app: Application) {
         private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
 
-    // FACTORIES
+    // FIELDS/FACTORIES
+
+    internal val messagesInFlight = AtomicInteger(0)
 
     private val subscriptions = ConcurrentHashMap<String,Job>()
     private val messageReceivers = ConcurrentHashMap<String,SignalServiceMessageReceiver>()
@@ -84,65 +93,88 @@ class SignalReceiver(private val app: Application) {
     internal val messagePipeCount: Int
         get() = messagePipes.size
 
+    suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
+        messagesInFlight,
+        app.config.timers.drainTimeout,
+        app.config.timers.drainPollInterval,
+    )
+
     suspend fun subscribe(account: VerifiedAccount): Job? {
-        // TODO(aguestuser|2021-01-21) handle:
-        //  - timeout
-        //  - closed connection (understand `readyOrEmtpy()`?)
-        //  - random runtime error
+        // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmtpy()`?)
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
-        return app.coroutineScope.launch {
+        return app.coroutineScope.launch sub@ {
             val subscription = this
+
+            // try to estabilish a message pipe with signal
             val messagePipe = try {
                 messagePipeOf(account)
             } catch (e: Throwable) {
                 logger.error { "Failed to create message pipe:\n ${e.stackTraceToString()}" }
                 throw SignalcError.MessagePipeNotCreated(e)
             }
+
+            // handle messages from the pipe...
             launch(IO) {
                 while (subscription.isActive) {
-                    // TODO: handle TimeoutException here and then keep reading
-                    val envelope = messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
-                    logger.debug {
-                        "Got ${envelope.type.asEnum()} message from ${envelope.sourceAddress.number} to ${account.username}"
+                    val envelope = try {
+                        messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                    } catch(e: IOException) {
+                        // TODO: handle TimeoutException and IOExceptions caused by server disconnect
+                        logger.warn { "Connection closed on websocket for ${account.username}" }
+                        return@launch subscription.cancel()
                     }
                     dispatch(account, envelope)
                 }
             }
         }.also {
+            // cache the subscription to aid in cleanup later
             subscriptions[account.username] = it
         }
     }
 
-    suspend fun unsubscribe(account: VerifiedAccount) = app.coroutineScope.async(IO) {
+
+    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(IO) {
         try {
-            messagePipes[account.username]?.shutdown()
-            subscriptions[account.username]?.cancel(SignalcCancellation.SubscriptionCancelled)
+            messagePipes[accountId]?.shutdown()
+            subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
         } finally {
             listOf(subscriptions, messageReceivers, messagePipes, ciphers).forEach {
-                it.remove(account.username)
+                it.remove(accountId)
             }
         }
     }.await()
 
-    // MESSAGE HANDLING
+    suspend fun unsubscribeAll() = subscriptions.keys.map { unsubscribe(it) }
 
-    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
-        when(envelope.type.asEnum()) {
+    // HELPERS
+
+    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
+        logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+        return when (envelope.type.asEnum()) {
             EnvelopeType.CIPHERTEXT,
-            EnvelopeType.PREKEY_BUNDLE -> handleCiphertext(envelope, account)
+            EnvelopeType.PREKEY_BUNDLE -> {
+                handleCiphertext(envelope, account)
+            }
             // TODO(aguestuser|2021-03-04): handle any of these?
             EnvelopeType.KEY_EXCHANGE,
             EnvelopeType.RECEIPT,
             EnvelopeType.UNIDENTIFIED_SENDER,
-            EnvelopeType.UNKNOWN -> drop(envelope, account)
+            EnvelopeType.UNKNOWN -> {
+                app.socketSender.send(
+                    SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+                )
+                null
+            }
         }
     }
 
-    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount){
+
+    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        app.coroutineScope.launch(IO) {
+        return app.coroutineScope.launch(IO) {
             try {
+                messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
                 val body = dataMessage.body?.orNull() ?: ""
@@ -179,6 +211,8 @@ class SignalReceiver(private val app: Application) {
                         logger.error { "Decryption Error:\n ${e.stackTraceToString()}" }
                     }
                 }
+            } finally {
+                messagesInFlight.getAndDecrement()
             }
         }
     }
@@ -210,11 +244,6 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        app.socketSender.send(
-            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
-        )
-    }
 }
 
 /*[1]**********

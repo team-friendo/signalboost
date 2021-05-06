@@ -41,7 +41,7 @@ services:
       - ./yarn.lock:/signalboost/yarn.lock
 
   signalc:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:latest
+    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
     container_name: test_signalc
     env_file: .env.test
     environment:

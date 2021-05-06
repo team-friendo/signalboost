@@ -33,7 +33,8 @@ describe('diagnostics module', () => {
     restartSocketStub,
     stopSocketStub,
     unsubscribeStub,
-    subscribeStub
+    subscribeStub,
+    awaitCloseStub
 
   beforeEach(() => {
     sinon
@@ -49,13 +50,19 @@ describe('diagnostics module', () => {
       .returns(Promise.resolve(['1', '2', '3']))
     healthcheckStub = sinon.stub(signal, 'healthcheck')
     abortStub = sinon.stub(signal, 'abort').returns(Promise.resolve('42'))
-    // stopStub = sinon.stub(app, 'stop').returns(Promise.resolve())
-    // runStub = sinon.stub(app, 'run').returns(Promise.resolve())
-    subscribeStub = sinon.stub(signal, 'unsubscribe').returns(Promise.resolve('42'))
-    unsubscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve('42'))
-    stopSocketStub = sinon.stub(app, 'stopSocket').returns(Promise.resolve())
-    restartSocketStub = sinon.stub(app, 'restartSocket').returns(Promise.resolve())
+    subscribeStub = sinon.stub(signal, 'subscribe').returns(Promise.resolve('42'))
+    unsubscribeStub = sinon.stub(signal, 'unsubscribe').returns(Promise.resolve('42'))
+    awaitCloseStub = sinon.stub().returns(Promise.resolve(true))
+    stopSocketStub = sinon.stub().returns(Promise.resolve())
+    restartSocketStub = sinon.stub().returns(Promise.resolve())
     isAliveStub = sinon.stub(signal, 'isAlive').returns(Promise.resolve('v0.0.1'))
+
+    // TODO: we could do this more cleanly by borrowing from signalc app/config setup! (but we are shipping!!!)
+    app.sockets = {
+      awaitClose: awaitCloseStub,
+      stopSocket: stopSocketStub,
+      restartSocket: restartSocketStub,
+    }
   })
 
   afterEach(() => {
@@ -117,8 +124,45 @@ describe('diagnostics module', () => {
         stubHealthchecksWith(responseTimes)
       })
 
-      describe('when restart succeeds', () => {
+      describe('when restart succeeds (for SIGNALC client)', () => {
         beforeEach(async () => {
+          process.env.SIGNAL_CLIENT = 'SIGNALC'
+          await sendHealthchecks()
+        })
+
+        it('notifies maintainers of restart attempt', () => {
+          expect(notifyMaintainersStub.getCall(0).args).to.eql([
+            `Restarting shard ${socketId} due to failed healthchecks on ${channels[0].phoneNumber},${channels[1].phoneNumber}.`,
+          ])
+        })
+
+        it('restarts shard that experienced failure', () => {
+          // assert we restart signald and socket pool for shard in which failure occurred
+          ;[abortStub, awaitCloseStub, stopSocketStub, restartSocketStub, isAliveStub].forEach(
+            stub => {
+              expect(stub.callCount).to.eql(1)
+              expect(stub.getCall(0).args).to.eql([socketId])
+            },
+          )
+          // assert we resubscribe to all channels in shard
+          expect(subscribeStub.callCount).to.eql(3)
+          expect(map(subscribeStub.getCalls(0), 'args')).to.have.deep.members([
+            [channels[0].phoneNumber, socketId],
+            [channels[1].phoneNumber, socketId],
+            [channels[2].phoneNumber, socketId],
+          ])
+        })
+
+        it('notifies maintainers when restart succeeds', () => {
+          expect(notifyMaintainersStub.getCall(1).args).to.eql([
+            `Shard ${socketId} restarted successfully!`,
+          ])
+        })
+      })
+
+      describe('when restart succeeds (for SIGNALD client)', () => {
+        beforeEach(async () => {
+          process.env.SIGNAL_CLIENT = 'SIGNALD'
           await sendHealthchecks()
         })
 
@@ -152,7 +196,7 @@ describe('diagnostics module', () => {
         })
       })
 
-      describe('and restart fails', () => {
+      describe('when restart fails', () => {
         beforeEach(async () => {
           isAliveStub.callsFake(() => Promise.reject('not alive!'))
           await sendHealthchecks()

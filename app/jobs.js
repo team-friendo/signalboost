@@ -5,7 +5,7 @@ const smsSenderRepository = require('./db/repositories/smsSender')
 const hotlineMessageRepository = require('./db/repositories/hotlineMessage')
 const diagnostics = require('./diagnostics')
 const util = require('./util')
-const sharding = require('./socket/sharding')
+const sharding = require('./sharding')
 const { values } = require('lodash')
 const {
   jobs: {

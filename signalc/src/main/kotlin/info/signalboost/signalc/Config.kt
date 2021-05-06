@@ -1,5 +1,6 @@
 package info.signalboost.signalc
 
+import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
@@ -7,8 +8,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
+import kotlin.time.*
 
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
@@ -18,11 +21,11 @@ object Config {
 
     private val appComponents = listOf(
         // resources
+        HikariDataSource::class,
         AccountStore::class,
         ProtocolStore::class,
         // components
         AccountManager::class,
-        // note: we exclude Signal::class b/c currently we never need to mock it
         SignalReceiver::class,
         SignalSender::class,
         SocketReceiver::class,
@@ -34,10 +37,10 @@ object Config {
 
     data class App(
         val db: Database,
+        val mocked: Set<KClass<out Any>>,
         val signal: Signal,
         val socket: Socket,
-        /*******************************/
-        val mocked: Set<KClass<out Any>>,
+        val timers: Timers,
     )
 
     data class Database(
@@ -64,6 +67,11 @@ object Config {
 
     data class Socket(
         val path: String,
+    )
+
+    data class Timers(
+        val drainTimeout: Duration,
+        val drainPollInterval: Duration,
     )
 
     // FACTORY HELPERS
@@ -93,12 +101,13 @@ object Config {
 
     private val dbHost = System.getenv("DB_HOST") ?: "localhost:5432"
 
-    private val default  = App(
+    val default  = App(
         db = Database(
             driver = "com.impossibl.postgres.jdbc.PGDriver",
             url = "jdbc:pgsql://$dbHost/$dbName",
             user= "postgres"
         ),
+        mocked = emptySet(),
         signal= Signal(
             addSecurityProvider = true,
             agent = "signalc",
@@ -117,7 +126,10 @@ object Config {
         socket = Socket(
           path = "/signalc/sock/signald.sock"
         ),
-        mocked = emptySet(),
+        timers = Timers(
+            drainTimeout = envIntOr("SIGNALC_DRAIN_TIMEOUT", 120).seconds,
+            drainPollInterval = 200.milliseconds,
+        )
     )
 
     // FACTORIES
@@ -155,4 +167,6 @@ object Config {
         return withMocked(appComponents.filter { !_unmocked.contains(it) })
     }
 
+    private fun envIntOr(envVarName: String, default: Int) =
+        (System.getenv(envVarName) ?: "").toIntOrNull() ?: default
 }

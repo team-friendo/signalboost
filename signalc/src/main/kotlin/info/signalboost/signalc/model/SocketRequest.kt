@@ -28,7 +28,7 @@ sealed class SocketRequest {
         // - so... we provide this hacky way to access the id of a `SocketRequest` regardless of type
         // - perhaps we will dig into `@Serializable` at some point to come up w/ a cleaner solution!
         is Abort -> id
-        is Close -> id
+        is IsAlive -> id
         is ParseError -> id
         is Register -> id
         is Send -> id
@@ -37,7 +37,6 @@ sealed class SocketRequest {
         is Trust -> id
         is Unsubscribe -> id
         is Verify -> id
-        is Version -> id
     }
 
     fun username(): String? = when(this) {
@@ -58,8 +57,8 @@ sealed class SocketRequest {
     data class Abort(val id: String): SocketRequest()
 
     @Serializable
-    @SerialName("close")
-    data class Close(val id: String): SocketRequest()
+    @SerialName("is_alive")
+    data class IsAlive(val id: String): SocketRequest()
 
     @Serializable
     data class ParseError(
@@ -144,8 +143,4 @@ sealed class SocketRequest {
         val username: String, // e164 number
         val code: String,
     ): SocketRequest()
-
-    @Serializable
-    @SerialName("version")
-    data class Version(val id: String): SocketRequest()
 }

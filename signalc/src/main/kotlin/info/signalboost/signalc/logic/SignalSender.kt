@@ -7,7 +7,7 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
-import mu.KLoggable
+import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
@@ -20,26 +20,25 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
-import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.*
+import kotlin.time.TimeSource.*
 
 
+@ExperimentalTime
 @ExperimentalPathApi
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {
-    companion object: KLoggable {
-        override val logger = logger()
-        fun String.asAddress() = SignalServiceAddress(null, this)
-        fun UUID.asAddress() = SignalServiceAddress(this, null)
-    }
+    companion object: KLogging()
 
-    /**************
-     * FACTORIES
-     **************/
-
+    /********************
+     * FIELDS/FACTORIES
+     *******************/
+    internal val messagesInFlight = AtomicInteger(0)
     private val messageSenders = ConcurrentHashMap<String,SignalServiceMessageSender>()
 
     private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
@@ -124,6 +123,12 @@ class SignalSender(private val app: Application) {
                 .build()
         )
 
+    suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
+        messagesInFlight,
+        app.config.timers.drainTimeout,
+        app.config.timers.drainPollInterval,
+    )
+
     /***********
      * HELPERS
      ***********/
@@ -134,6 +139,7 @@ class SignalSender(private val app: Application) {
         dataMessage: SignalServiceDataMessage,
     ): SendMessageResult = app.coroutineScope.async(IO) {
         try {
+            messagesInFlight.getAndIncrement()
             messageSenderOf(sender).sendMessage(
                 recipient,
                 Optional.absent(),
@@ -141,6 +147,8 @@ class SignalSender(private val app: Application) {
             )
         } catch (e: UntrustedIdentityException) {
             SendMessageResult.identityFailure(recipient, e.identityKey)
+        } finally {
+            messagesInFlight.getAndDecrement()
         }
     }.await()
 
