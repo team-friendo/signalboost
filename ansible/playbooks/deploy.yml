@@ -54,7 +54,7 @@
   ########
 
   - name: Stop app
-    command: ./bin/shutdown
+    command: "docker-compose down"
     args:
       chdir: "{{ homedir }}"
     tags: stop
