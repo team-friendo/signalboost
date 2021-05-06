@@ -1,5 +1,5 @@
 const defaults = {
-  awaitCloseInterval: 10,
+  awaitCloseInterval: 10, // milliseconds
   awaitCloseMaxAttempts: 100 * 60 * 5, // enough attempts to timeout after 5 min
   connectionInterval: 1000, // 1 sec
   maxConnectionAttempts: 30, // 30 tries/ 30 seconds
