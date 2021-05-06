@@ -8,10 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
-import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
-import kotlin.time.minutes
+import kotlin.time.*
 
 
 @ExperimentalTime
@@ -29,7 +26,6 @@ object Config {
         ProtocolStore::class,
         // components
         AccountManager::class,
-        // note: we exclude Signal::class b/c currently we never need to mock it
         SignalReceiver::class,
         SignalSender::class,
         SocketReceiver::class,
@@ -131,7 +127,7 @@ object Config {
           path = "/signalc/sock/signald.sock"
         ),
         timers = Timers(
-            drainTimeout = 2.minutes,
+            drainTimeout = envIntOr("SIGNALC_DRAIN_TIMEOUT", 120).seconds,
             drainPollInterval = 200.milliseconds,
         )
     )
@@ -171,4 +167,6 @@ object Config {
         return withMocked(appComponents.filter { !_unmocked.contains(it) })
     }
 
+    private fun envIntOr(envVarName: String, default: Int) =
+        (System.getenv(envVarName) ?: "").toIntOrNull() ?: default
 }
