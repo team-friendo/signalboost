@@ -50,7 +50,7 @@ services:
 
   signalc_pinned:
     # pinned commit: bakes jar into image, faster boot sequence, cannot iterate w/o rebuilding image:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc:3d7486fc
+    image: registry.0xacab.org/team-friendo/signalboost/signalc:cd9ec285
     container_name: signalc_pinned
     <<: *signalc-base
 

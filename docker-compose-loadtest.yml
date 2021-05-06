@@ -46,7 +46,7 @@ services:
 
   receiver_signalc:
     image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
-    # image: registry.0xacab.org/team-friendo/signalboost/signalc:6e779088
+    # image: registry.0xacab.org/team-friendo/signalboost/signalc:cd9ec285
     container_name: loadtest_receiver_signalc
     env_file: .env.dev
     environment:
