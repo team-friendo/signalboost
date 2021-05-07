@@ -1,7 +1,7 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.db.Accounts
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -24,7 +24,7 @@ class AccountStore(private val db: Database) {
         findByUsername(username) ?: NewAccount(username).also { save(it) }
 
     internal suspend fun save(account: NewAccount): Unit =
-        newSuspendedTransaction(Dispatcher.General, db){
+        newSuspendedTransaction(Concurrency.Dispatcher, db){
             // Throws if we try to create an already-existing account.
             // For this reason, we mark it `internal` and only call from `findOrCreate`
             // where we have a strong guarantee of not calling for an already-existing account.
@@ -40,7 +40,7 @@ class AccountStore(private val db: Database) {
 
 
     suspend fun save(account: RegisteredAccount): Unit =
-        newSuspendedTransaction(Dispatcher.General, db) {
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Accounts.update({
                 Accounts.username eq account.username
             }) {
@@ -50,7 +50,7 @@ class AccountStore(private val db: Database) {
 
 
     suspend fun save(account: VerifiedAccount): Unit =
-        newSuspendedTransaction(Dispatcher.General, db) {
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Accounts.update({
                 Accounts.username eq account.username
             }) {
@@ -61,7 +61,7 @@ class AccountStore(private val db: Database) {
 
 
     suspend fun findByUsername(username: String): Account? =
-        newSuspendedTransaction(Dispatcher.General, db) {
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Accounts.select {
                 Accounts.username eq username
             }.singleOrNull()?.let {
@@ -75,7 +75,7 @@ class AccountStore(private val db: Database) {
         }
 
     suspend fun findByUuid(uuid: UUID): VerifiedAccount? =
-        newSuspendedTransaction(Dispatcher.General, db) {
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Accounts.select {
                 Accounts.uuid eq uuid
             }.singleOrNull()?.let {
@@ -85,7 +85,7 @@ class AccountStore(private val db: Database) {
 
     // testing helpers
     internal suspend fun count(): Long =
-        newSuspendedTransaction(Dispatcher.General, db) { Accounts.selectAll().count() }
+        newSuspendedTransaction(Concurrency.Dispatcher, db) { Accounts.selectAll().count() }
     internal suspend fun clear(): Int =
-        newSuspendedTransaction(Dispatcher.General, db) { Accounts.deleteAll() }
+        newSuspendedTransaction(Concurrency.Dispatcher, db) { Accounts.deleteAll() }
 }

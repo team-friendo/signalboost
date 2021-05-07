@@ -283,7 +283,7 @@ load.setup: ## start
 load.restart: ## restart loadtest stack
 	docker-compose -f docker-compose-loadtest.yml down && ./bin/load/run
 
-load.restart.signalc:
+load.restart.sender_signalc:
 	docker-compose -f docker-compose-loadtest.yml stop sender_signalc && docker-compose -f docker-compose-loadtest.yml up -d sender_signalc
 
 load.reseed: ## clean signalc + signal-server databases

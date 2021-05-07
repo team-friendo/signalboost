@@ -4,7 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.EnvelopeType
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
@@ -66,7 +66,7 @@ class SignalReceiver(private val app: Application) {
                 account.credentialsProvider,
                 app.signal.agent,
                 null, // TODO: see [1] below
-                UptimeSleepTimer(Metrics.LibSignal.numberOfSleeps),
+                UptimeSleepTimer(),
                 app.signal.clientZkOperations?.profileOperations,
                 true
             )
@@ -115,7 +115,7 @@ class SignalReceiver(private val app: Application) {
             }
 
             // handle messages from the pipe...
-            launch(Dispatcher.General) {
+            launch(Concurrency.Dispatcher) {
                 while (subscription.isActive) {
                     val envelope = try {
                         messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -134,7 +134,7 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(Dispatcher.General) {
+    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(Concurrency.Dispatcher) {
         try {
             messagePipes[accountId]?.shutdown()
             subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
@@ -173,7 +173,7 @@ class SignalReceiver(private val app: Application) {
     private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        return app.coroutineScope.launch(Dispatcher.General) {
+        return app.coroutineScope.launch(Concurrency.Dispatcher) {
             try {
                 messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()

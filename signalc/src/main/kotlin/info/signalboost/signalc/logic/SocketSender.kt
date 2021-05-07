@@ -2,7 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcError
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
@@ -25,7 +25,7 @@ class SocketSender(private val app: Application) {
 
     // this is mostly here as a testing seam
     internal object Writer {
-        suspend fun to(socket: Socket, coroutineScope: CoroutineScope): PrintWriter = coroutineScope.async(Dispatcher.General) {
+        suspend fun to(socket: Socket, coroutineScope: CoroutineScope): PrintWriter = coroutineScope.async(Concurrency.Dispatcher) {
             PrintWriter(socket.getOutputStream(), true)
         }.await()
     }
@@ -79,7 +79,7 @@ class SocketSender(private val app: Application) {
         }
 
         // Here we use an actor to enforce threadsafe mutation of our pool of writers.
-        private val input = app.coroutineScope.actor<Message>(Dispatcher.General) {
+        private val input = app.coroutineScope.actor<Message>(Concurrency.Dispatcher) {
             for(msg in channel) {
                 when (msg) {
                     is Message.Add -> {
@@ -154,7 +154,7 @@ class SocketSender(private val app: Application) {
 
         // Here we use an actor to enforce threadsafe usage of our PrintWriter resource
         // and to get "for-free" FIFO queueing of messages to be written by it.
-        private val input: SendChannel<Message> = coroutineScope.actor(Dispatcher.General) {
+        private val input: SendChannel<Message> = coroutineScope.actor(Concurrency.Dispatcher) {
             for (msg in channel) {
                 when (msg) {
                     is Message.Send -> {

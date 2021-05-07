@@ -1,7 +1,7 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.VerifiedAccount
@@ -11,7 +11,6 @@ import kotlinx.coroutines.*
 import mu.KLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.asExecutor
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
@@ -25,7 +24,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.*
@@ -56,7 +54,7 @@ class SignalSender(private val app: Application) {
                 Optional.absent(), // unidentifiedPipe
                 Optional.absent(), // eventListener
                 null,
-                Dispatcher.General.asExecutor() as? ExecutorService,
+                Concurrency.Executor,
                 -1L,
                 true,
                 Metrics.LibSignal
@@ -141,7 +139,7 @@ class SignalSender(private val app: Application) {
         sender: VerifiedAccount,
         recipient: SignalServiceAddress,
         dataMessage: SignalServiceDataMessage,
-    ): SendMessageResult = app.coroutineScope.async(Dispatcher.General) {
+    ): SendMessageResult = app.coroutineScope.async(Concurrency.Dispatcher) {
         try {
             Metrics.SignalSender.numberOfMessageSends.inc()
             messagesInFlight.getAndIncrement()

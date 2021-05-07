@@ -3,7 +3,7 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.SendResultType.Companion.type
@@ -41,7 +41,7 @@ class SocketReceiver(private val app: Application) {
      ************/
 
     suspend fun connect(socket: Socket): Job =
-        app.coroutineScope.launch(Dispatcher.General) {
+        app.coroutineScope.launch(Concurrency.Dispatcher) {
             ReaderFactory.readerOn(socket).use { reader ->
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
@@ -49,7 +49,7 @@ class SocketReceiver(private val app: Application) {
                         close(socketHash)
                         return@launch
                     }
-                    app.coroutineScope.launch(Dispatcher.General) {
+                    app.coroutineScope.launch(Concurrency.Dispatcher) {
                         dispatch(socketMessage, socketHash)
                     }
                 }
@@ -144,7 +144,7 @@ class SocketReceiver(private val app: Application) {
             ?: return request.rejectUnverified()
         timeToLoadAccountTimer.observeDuration()
 
-        val sendResult: SendMessageResult = withContext(Dispatcher.General) {
+        val sendResult: SendMessageResult = withContext(Concurrency.Dispatcher) {
             app.signalSender.send(
                 senderAccount,
                 recipientAddress.asSignalServiceAddress(),
@@ -194,7 +194,7 @@ class SocketReceiver(private val app: Application) {
 
         subscribeJob.invokeOnCompletion {
             val error = it?.cause ?: return@invokeOnCompletion
-            app.coroutineScope.launch(Dispatcher.General) {
+            app.coroutineScope.launch(Concurrency.Dispatcher) {
                 when(error) {
                     is SignalcCancellation.SubscriptionCancelled -> {
                         logger.info { "...subscription job for ${account.username} cancelled." }

@@ -1,7 +1,7 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.dispatchers.Dispatcher
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.util.*
 import kotlinx.coroutines.*
 import mu.KLogging
@@ -37,7 +37,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
             }
         }.await()
 
-        listenJob = app.coroutineScope.launch(Dispatcher.General) {
+        listenJob = app.coroutineScope.launch(Concurrency.Dispatcher) {
             while (this.isActive && !socket.isClosed) {
                 logger.info("Listening on ${app.config.socket.path}...")
                 val connection = try {
@@ -48,7 +48,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
                 }
                 val socketHash = connection.hashCode().also { connections[it] = connection }
                 logger.info("...got connection on socket $socketHash")
-                launch(Dispatcher.General) {
+                launch(Concurrency.Dispatcher) {
                     app.socketReceiver.connect(connection)
                     logger.info("...connected receiver to socket $socketHash")
                     app.socketSender.connect(connection)
@@ -60,7 +60,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         return this
     }
 
-    suspend fun close(socketHash: SocketHashCode): Unit = withContext(Dispatcher.General) {
+    suspend fun close(socketHash: SocketHashCode): Unit = withContext(Concurrency.Dispatcher) {
         logger.info("...closing connection on socket $socketHash...")
         app.socketSender.close(socketHash)
         app.socketReceiver.close(socketHash)
@@ -68,7 +68,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         logger.info("...... closed connection on socket $socketHash")
     }
 
-    suspend fun stop(): Unit = app.coroutineScope.async(Dispatcher.General) {
+    suspend fun stop(): Unit = app.coroutineScope.async(Concurrency.Dispatcher) {
         logger.info("Stopping socket server...")
         listenJob.cancel() // cancel listen loop first so we don't handle any messages during shutdown
         app.socketReceiver.stop()
@@ -82,7 +82,7 @@ class SocketServer(val app: Application): Application.ReturningRunnable<SocketSe
         connections.keys.forEach { closeConnection(it) }
 
     private suspend fun closeConnection(socketHash: SocketHashCode): Socket? =
-        app.coroutineScope.async(Dispatcher.General) {
+        app.coroutineScope.async(Concurrency.Dispatcher) {
             connections[socketHash]?.close()
             connections.remove(socketHash)
         }.await()
