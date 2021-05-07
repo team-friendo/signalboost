@@ -29,7 +29,6 @@ volumes:
   loadtest_sender_signalc_gradle_cache:
   loadtest_sender_signalc_build_cache:
   loadtest_signald_data:
-  loadtest_receiver_sock:
   loadtest_grafana_data:
   loadtest_prometheus_data:
 

@@ -7,6 +7,9 @@ version = "0.0.3"
 val entrypoint = "info.signalboost.signalc.MainKt"
 
 repositories {
+    // note: to modify a local version of libsignal-service-java and use it in a signalc container,
+    // uncomment mavenLocal() and mount the local maven directory (~/.m2) as a volume into the container
+    // mavenLocal()
     maven {
         url = URI("https://0xacab.org/api/v4/projects/1563/packages/maven")
     }
