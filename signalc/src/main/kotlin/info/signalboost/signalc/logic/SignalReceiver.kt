@@ -14,7 +14,6 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.FileUtil.readToFile
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.postgresql.util.Base64
 import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
@@ -116,7 +115,7 @@ class SignalReceiver(private val app: Application) {
             }
 
             // handle messages from the pipe...
-            launch(Dispatcher.Main) {
+            launch(Dispatcher.General) {
                 while (subscription.isActive) {
                     val envelope = try {
                         messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -135,7 +134,7 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(IO) {
+    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(Dispatcher.General) {
         try {
             messagePipes[accountId]?.shutdown()
             subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
@@ -174,7 +173,7 @@ class SignalReceiver(private val app: Application) {
     private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        return app.coroutineScope.launch(Dispatcher.Main) {
+        return app.coroutineScope.launch(Dispatcher.General) {
             try {
                 messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()

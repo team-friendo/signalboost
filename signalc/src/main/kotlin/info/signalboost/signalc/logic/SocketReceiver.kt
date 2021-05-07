@@ -18,7 +18,6 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
@@ -42,7 +41,7 @@ class SocketReceiver(private val app: Application) {
      ************/
 
     suspend fun connect(socket: Socket): Job =
-        app.coroutineScope.launch(Dispatcher.Main) {
+        app.coroutineScope.launch(Dispatcher.General) {
             ReaderFactory.readerOn(socket).use { reader ->
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
@@ -50,7 +49,7 @@ class SocketReceiver(private val app: Application) {
                         close(socketHash)
                         return@launch
                     }
-                    app.coroutineScope.launch(Dispatcher.Main) {
+                    app.coroutineScope.launch(Dispatcher.General) {
                         dispatch(socketMessage, socketHash)
                     }
                 }
@@ -145,7 +144,7 @@ class SocketReceiver(private val app: Application) {
             ?: return request.rejectUnverified()
         timeToLoadAccountTimer.observeDuration()
 
-        val sendResult: SendMessageResult = withContext(Dispatcher.Main) {
+        val sendResult: SendMessageResult = withContext(Dispatcher.General) {
             app.signalSender.send(
                 senderAccount,
                 recipientAddress.asSignalServiceAddress(),
@@ -195,7 +194,7 @@ class SocketReceiver(private val app: Application) {
 
         subscribeJob.invokeOnCompletion {
             val error = it?.cause ?: return@invokeOnCompletion
-            app.coroutineScope.launch(Dispatcher.Main) {
+            app.coroutineScope.launch(Dispatcher.General) {
                 when(error) {
                     is SignalcCancellation.SubscriptionCancelled -> {
                         logger.info { "...subscription job for ${account.username} cancelled." }

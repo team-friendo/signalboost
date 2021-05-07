@@ -56,7 +56,7 @@ class SignalSender(private val app: Application) {
                 Optional.absent(), // unidentifiedPipe
                 Optional.absent(), // eventListener
                 null,
-                Dispatcher.Main.asExecutor() as? ExecutorService,
+                Dispatcher.General.asExecutor() as? ExecutorService,
                 -1L,
                 true,
                 Metrics.LibSignal
@@ -141,7 +141,7 @@ class SignalSender(private val app: Application) {
         sender: VerifiedAccount,
         recipient: SignalServiceAddress,
         dataMessage: SignalServiceDataMessage,
-    ): SendMessageResult = app.coroutineScope.async(Dispatcher.Main) {
+    ): SendMessageResult = app.coroutineScope.async(Dispatcher.General) {
         try {
             Metrics.SignalSender.numberOfMessageSends.inc()
             messagesInFlight.getAndIncrement()

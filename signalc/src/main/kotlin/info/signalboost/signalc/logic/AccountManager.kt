@@ -71,7 +71,7 @@ class AccountManager(private val app: Application) {
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {
-        app.coroutineScope.async(Dispatcher.Main) {
+        app.coroutineScope.async(Dispatcher.General) {
             accountManagerOf(account).requestSmsVerificationCode(
                 false,
                 captcha?.let { Optional.of(it) } ?: Optional.absent(),
@@ -84,7 +84,7 @@ class AccountManager(private val app: Application) {
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
     suspend fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
         val verifyResponse: VerifyAccountResponse = try {
-            app.coroutineScope.async(Dispatcher.Main) {
+            app.coroutineScope.async(Dispatcher.General) {
                 accountManagerOf(account).verifyAccountWithCode(
                     code,
                     null,
@@ -117,7 +117,7 @@ class AccountManager(private val app: Application) {
                 val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE) // TODO: use an incrementing int here?
                 val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, signedPrekeyId)
                 val oneTimePreKeys = KeyUtil.genPreKeys(0, 100)
-                withContext(Dispatcher.Main) {
+                withContext(Dispatcher.General) {
                     // switch to IO-friendly dispatcher to...
                     // store prekeys
                     accountProtocolStore.storeSignedPreKey(signedPreKey.id,signedPreKey)

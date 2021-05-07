@@ -19,5 +19,5 @@ object Dispatcher {
         return Executors.newCachedThreadPool(threadFactory).asCoroutineDispatcher()
     }
 
-    val Main = dispatcherOf("Main")
+    val General = dispatcherOf("General")
 }
