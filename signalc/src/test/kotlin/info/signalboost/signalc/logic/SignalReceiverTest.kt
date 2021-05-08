@@ -254,7 +254,7 @@ class SignalReceiverTest : FreeSpec({
                             "and has a fingerprint on the untrusted identity" - {
                                 val identityKey = KeyUtil.genIdentityKeyPair().publicKey
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
-                                    UntrustedIdentityException("", identityKey),
+                                    UntrustedIdentityException(recipientAccount.username, identityKey),
                                     senderAddress.identifier,
                                     genDeviceId()
                                 )

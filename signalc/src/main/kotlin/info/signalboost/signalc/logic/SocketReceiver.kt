@@ -3,12 +3,13 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
+import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import mu.KLogging
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import java.io.BufferedReader
@@ -17,7 +18,6 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.Error
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.system.exitProcess
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
@@ -41,7 +41,7 @@ class SocketReceiver(private val app: Application) {
      ************/
 
     suspend fun connect(socket: Socket): Job =
-        app.coroutineScope.launch(IO) {
+        app.coroutineScope.launch(Concurrency.Dispatcher) {
             ReaderFactory.readerOn(socket).use { reader ->
                 val socketHash = socket.hashCode().also { readers[it] = reader }
                 while (this.isActive && readers[socketHash] != null) {
@@ -49,8 +49,7 @@ class SocketReceiver(private val app: Application) {
                         close(socketHash)
                         return@launch
                     }
-                    logger.debug { "got message on socket $socketHash: $socketMessage" }
-                    app.coroutineScope.launch(IO) {
+                    app.coroutineScope.launch(Concurrency.Dispatcher) {
                         dispatch(socketMessage, socketHash)
                     }
                 }
@@ -139,16 +138,21 @@ class SocketReceiver(private val app: Application) {
     // TODO: likely return Unit here instead of Job? (do we ever want to cancel it?)
     private suspend fun send(request: SocketRequest.Send) {
         val (_, _, recipientAddress, messageBody, attachments, expiresInSeconds) = request
+
+        val timeToLoadAccountTimer = Metrics.AccountManager.timeToLoadVerifiedAccount.startTimer()
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
             ?: return request.rejectUnverified()
+        timeToLoadAccountTimer.observeDuration()
 
-        val sendResult: SendMessageResult = app.signalSender.send(
-            senderAccount,
-            recipientAddress.asSignalServiceAddress(),
-            messageBody,
-            expiresInSeconds,
-            attachments,
-        )
+        val sendResult: SendMessageResult = withContext(Concurrency.Dispatcher) {
+            app.signalSender.send(
+                senderAccount,
+                recipientAddress.asSignalServiceAddress(),
+                messageBody,
+                expiresInSeconds,
+                attachments,
+            )
+        }
 
         when(sendResult.type()) {
             // TODO: sendResult has 5 variant cases. should we handle: network failure, unregistered, unknown?
@@ -156,6 +160,9 @@ class SocketReceiver(private val app: Application) {
                 recipientAddress.asSignalServiceAddress(),
                 sendResult.identityFailure.identityKey.serialize(),
             )
+            SendResultType.SUCCESS -> {
+                Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.success.duration.toDouble())
+            }
         }
 
         app.socketSender.send(SocketResponse.SendResults.of(request, sendResult))
@@ -187,7 +194,7 @@ class SocketReceiver(private val app: Application) {
 
         subscribeJob.invokeOnCompletion {
             val error = it?.cause ?: return@invokeOnCompletion
-            app.coroutineScope.launch(IO) {
+            app.coroutineScope.launch(Concurrency.Dispatcher) {
                 when(error) {
                     is SignalcCancellation.SubscriptionCancelled -> {
                         logger.info { "...subscription job for ${account.username} cancelled." }

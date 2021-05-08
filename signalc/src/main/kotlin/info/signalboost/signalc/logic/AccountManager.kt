@@ -2,6 +2,8 @@ package info.signalboost.signalc.logic
 
 
 import info.signalboost.signalc.Application
+import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -10,13 +12,11 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
-import kotlinx.coroutines.Dispatchers.IO
 import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
-import org.whispersystems.signalservice.api.profiles.SignalServiceProfile
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
@@ -71,7 +71,7 @@ class AccountManager(private val app: Application) {
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {
-        app.coroutineScope.async(IO) {
+        app.coroutineScope.async(Concurrency.Dispatcher) {
             accountManagerOf(account).requestSmsVerificationCode(
                 false,
                 captcha?.let { Optional.of(it) } ?: Optional.absent(),
@@ -84,7 +84,7 @@ class AccountManager(private val app: Application) {
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
     suspend fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
         val verifyResponse: VerifyAccountResponse = try {
-            app.coroutineScope.async(IO) {
+            app.coroutineScope.async(Concurrency.Dispatcher) {
                 accountManagerOf(account).verifyAccountWithCode(
                     code,
                     null,
@@ -117,7 +117,7 @@ class AccountManager(private val app: Application) {
                 val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE) // TODO: use an incrementing int here?
                 val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, signedPrekeyId)
                 val oneTimePreKeys = KeyUtil.genPreKeys(0, 100)
-                withContext(IO) {
+                withContext(Concurrency.Dispatcher) {
                     // switch to IO-friendly dispatcher to...
                     // store prekeys
                     accountProtocolStore.storeSignedPreKey(signedPreKey.id,signedPreKey)

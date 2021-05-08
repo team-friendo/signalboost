@@ -106,7 +106,7 @@ const sendMessage = async (recipientNumber, sdMessage) => {
     )
     return result
   } catch (e) {
-    logger.error(`Error sending to ${recipientNumber}: ${e}`)
+    logger.error(`Error sending to ${recipientNumber}: ${JSON.stringify(e, null, 4)}`)
     return null
   }
 }

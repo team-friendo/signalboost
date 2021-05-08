@@ -4,6 +4,9 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.EnvelopeType
+import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.metrics.Metrics
+import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
@@ -11,7 +14,6 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.FileUtil.readToFile
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
 import mu.KLoggable
 import org.postgresql.util.Base64
 import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
@@ -28,7 +30,6 @@ import java.io.File
 import java.lang.Exception
 import java.io.IOException
 import java.nio.file.Files
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -100,7 +101,7 @@ class SignalReceiver(private val app: Application) {
     )
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
-        // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmtpy()`?)
+        // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmpty()`?)
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
         return app.coroutineScope.launch sub@ {
             val subscription = this
@@ -114,7 +115,7 @@ class SignalReceiver(private val app: Application) {
             }
 
             // handle messages from the pipe...
-            launch(IO) {
+            launch(Concurrency.Dispatcher) {
                 while (subscription.isActive) {
                     val envelope = try {
                         messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
@@ -133,7 +134,7 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(IO) {
+    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(Concurrency.Dispatcher) {
         try {
             messagePipes[accountId]?.shutdown()
             subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
@@ -172,7 +173,7 @@ class SignalReceiver(private val app: Application) {
     private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        return app.coroutineScope.launch(IO) {
+        return app.coroutineScope.launch(Concurrency.Dispatcher) {
             try {
                 messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
