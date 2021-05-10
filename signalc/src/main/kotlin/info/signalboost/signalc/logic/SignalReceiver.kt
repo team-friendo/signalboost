@@ -1,13 +1,12 @@
 package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.EnvelopeType
-import info.signalboost.signalc.dispatchers.Concurrency
-import info.signalboost.signalc.metrics.Metrics
-import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
+import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.model.VerifiedAccount
@@ -27,7 +26,6 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
-import java.lang.Exception
 import java.io.IOException
 import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
@@ -153,24 +151,15 @@ class SignalReceiver(private val app: Application) {
         logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
         return when (envelope.type.asEnum()) {
             EnvelopeType.CIPHERTEXT,
-            EnvelopeType.PREKEY_BUNDLE -> {
-                handleCiphertext(envelope, account)
-            }
-            // TODO(aguestuser|2021-03-04): handle any of these?
+            EnvelopeType.PREKEY_BUNDLE -> relay(envelope, account)
             EnvelopeType.KEY_EXCHANGE,
             EnvelopeType.RECEIPT,
-            EnvelopeType.UNIDENTIFIED_SENDER,
-            EnvelopeType.UNKNOWN -> {
-                app.socketSender.send(
-                    SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
-                )
-                null
-            }
+            EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we likely want to handle sealed sender messages!
+            EnvelopeType.UNKNOWN -> drop(envelope, account)
         }
     }
 
-
-    private suspend fun handleCiphertext(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
+    private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
         return app.coroutineScope.launch(Concurrency.Dispatcher) {
@@ -191,31 +180,26 @@ class SignalReceiver(private val app: Application) {
                         dataMessage.timestamp,
                     )
                 )
-            } catch(e: Exception) {
-                when(e) {
-                    is ProtocolUntrustedIdentityException -> {
-                        // untrustedIdentity is usually null on the exception here, need to trigger send to reset session
-                        // see libsignal intialization of exception: https://github.com/signalapp/libsignal-client/blob/113e849d7620c7a0ad8aa29a43e6243026bfdb89/rust/bridge/shared/src/jni/mod.rs#L106
-                        // see signal-android handling: https://github.com/signalapp/Signal-Android/blob/763aeabdddcbeff526589afa964d61defdd3e589/app/src/main/java/org/thoughtcrime/securesms/messages/MessageDecryptionUtil.java#L82
-                        val untrustedIdentityException = e.cause as UntrustedIdentityException
-                        val fingerprint = untrustedIdentityException.untrustedIdentity?.fingerprint
-
-                        app.socketSender.send(
-                            SocketResponse.InboundIdentityFailure.of(
-                                recipient,
-                                sender,
-                                fingerprint
-                            )
-                        )
-                    } else -> {
-                        app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, e))
-                        logger.error { "Decryption Error:\n ${e.stackTraceToString()}" }
-                    }
-                }
+            } catch(err: Throwable) {
+                handleError(err, sender, recipient)
             } finally {
                 messagesInFlight.getAndDecrement()
             }
         }
+    }
+
+    private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
+        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
+        try {
+             cipherOf(account).decrypt(envelope)
+        } catch(err: Throwable) {
+            handleDecryptionError(err, sender, recipient)
+        } finally {
+            app.socketSender.send(
+                SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+            )
+        }
+        return null
     }
 
     private fun SignalServiceAttachment.retrieveFor(account: VerifiedAccount): SocketResponse.Cleartext.Attachment? {
@@ -244,7 +228,34 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
+    private suspend fun handleError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
+        when(err) {
+            is ProtocolUntrustedIdentityException -> {
+                // UntrustedIdentity is usually null here. In which case, we return a null fingerprint, with the
+                // intention of causing the client to send a garbage message that will force a session reset
+                // and raise another identity exception. That exception will include the fingerprint corresponding
+                // to the new session, and can be handled (and trusted) from the send path (rather than the receive path,
+                // which we are on here). See:
+                // - libsignal exception creation: https://github.com/signalapp/libsignal-client/blob/113e849d7620c7a0ad8aa29a43e6243026bfdb89/rust/bridge/shared/src/jni/mod.rs#L106
+                // - signal-android handling: https://github.com/signalapp/Signal-Android/blob/763aeabdddcbeff526589afa964d61defdd3e589/app/src/main/java/org/thoughtcrime/securesms/messages/MessageDecryptionUtil.java#L82
+                val untrustedIdentityException = err.cause as UntrustedIdentityException
+                val fingerprint = untrustedIdentityException.untrustedIdentity?.fingerprint
 
+                app.socketSender.send(
+                    SocketResponse.InboundIdentityFailure.of(
+                        recipient,
+                        sender,
+                        fingerprint
+                    )
+                )
+            } else -> handleDecryptionError(err, sender, recipient)
+        }
+    }
+
+    private suspend fun handleDecryptionError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
+        app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, err))
+        logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
+    }
 }
 
 /*[1]**********
