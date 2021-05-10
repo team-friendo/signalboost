@@ -5,6 +5,7 @@ import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.EnvelopeType
+import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
@@ -17,6 +18,7 @@ import mu.KLoggable
 import org.postgresql.util.Base64
 import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
 import org.whispersystems.libsignal.UntrustedIdentityException
+import java.util.concurrent.CancellationException
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
@@ -28,8 +30,10 @@ import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -45,7 +49,6 @@ class SignalReceiver(private val app: Application) {
         private const val TMP_FILE_PREFIX = "___"
         private const val TMP_FILE_SUFFIX = ".tmp"
         private const val MAX_ATTACHMENT_SIZE = 150L * 1024 * 1024 // 150MB
-        private const val TIMEOUT = 1000L * 60 * 60 // 1 hr (copied from signald)
     }
 
     // FIELDS/FACTORIES
@@ -116,11 +119,27 @@ class SignalReceiver(private val app: Application) {
             launch(Concurrency.Dispatcher) {
                 while (subscription.isActive) {
                     val envelope = try {
-                        messagePipe.read(TIMEOUT, TimeUnit.MILLISECONDS)
+                        messagePipe.read(
+                            app.config.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
+                            TimeUnit.MILLISECONDS
+                        )
                     } catch(e: IOException) {
-                        // TODO: handle TimeoutException and IOExceptions caused by server disconnect
-                        logger.warn { "Connection closed on websocket for ${account.username}" }
-                        return@launch subscription.cancel()
+                        if (app.inShutdownMode) {
+                            // on io error (caused by shutdown), cancel job and stop reading from signal
+                            logger.warn {
+                                "Connection closed on websocket for ${account.username}, cancelling subscription..."
+                            }
+                            return@launch subscription.cancel()
+                        } else {
+                            // on io error (caused by server), unsubscribe so that we can resubscribe
+                            logger.warn { "Connection error on websocket for ${account.username}, unsubscribing..." }
+                            unsubscribe(account.username, SignalcCancellation.SubscriptionDisrupted(e))
+                            return@launch
+                        }
+                    } catch(e: TimeoutException) {
+                        // on timeout, setup message pipe again, as we want to keep reading
+                        logger.warn { "Read timeout on websocket for ${account.username}, keep reading..." }
+                        continue
                     }
                     dispatch(account, envelope)
                 }
@@ -132,16 +151,17 @@ class SignalReceiver(private val app: Application) {
     }
 
 
-    suspend fun unsubscribe(accountId: String) = app.coroutineScope.async(Concurrency.Dispatcher) {
-        try {
-            messagePipes[accountId]?.shutdown()
-            subscriptions[accountId]?.cancel(SignalcCancellation.SubscriptionCancelled)
-        } finally {
-            listOf(subscriptions, messageReceivers, messagePipes, ciphers).forEach {
-                it.remove(accountId)
+    suspend fun unsubscribe(accountId: String, error: CancellationException = SignalcCancellation.SubscriptionCancelledByClient) =
+        app.coroutineScope.async(Concurrency.Dispatcher) {
+            try {
+                messagePipes[accountId]?.shutdown()
+                subscriptions[accountId]?.cancel(error)
+            } finally {
+                listOf(subscriptions, messageReceivers, messagePipes, ciphers).forEach {
+                    it.remove(accountId)
+                }
             }
-        }
-    }.await()
+        }.await()
 
     suspend fun unsubscribeAll() = subscriptions.keys.map { unsubscribe(it) }
 

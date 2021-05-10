@@ -7,6 +7,7 @@ import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import java.lang.Long
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
 import kotlin.time.*
@@ -75,6 +76,8 @@ object Config {
     data class Timers(
         val drainTimeout: Duration,
         val drainPollInterval: Duration,
+        val readTimeout: Duration,
+        val retryResubscribeDelay: Duration,
     )
 
     // FACTORY HELPERS
@@ -132,6 +135,8 @@ object Config {
         timers = Timers(
             drainTimeout = envIntOr("SIGNALC_DRAIN_TIMEOUT", 120).seconds,
             drainPollInterval = 200.milliseconds,
+            readTimeout = (1000 * 55).milliseconds, // slightly less than 1 minute signal server idle timeout
+            retryResubscribeDelay = 10.seconds,
         )
     )
 

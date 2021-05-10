@@ -40,6 +40,8 @@ import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelo
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.fileSize
+import java.io.IOException
+import java.util.concurrent.TimeoutException
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -70,14 +72,18 @@ class SignalReceiverTest : FreeSpec({
         val now = nowInMillis()
         val expiryTime = genInt()
 
-        fun signalSendsEnvelopeOf(envelopeType: Int): Pair<SignalServiceEnvelope,SignalServiceMessagePipe> {
+        fun signalSendsEnvelopeOf(envelopeType: Int, err: Throwable? = null): Pair<SignalServiceEnvelope,SignalServiceMessagePipe> {
             val envelope = genEnvelope(
                 type = envelopeType,
                 sender = senderAddress,
             )
 
             val mockMessagePipe = mockk<SignalServiceMessagePipe> {
-                every { read(any(), any()) } returns envelope
+                err?.let {
+                    every { read(any(), any()) } throws err
+                } ?: run {
+                    every { read(any(), any()) } returns envelope
+                }
                 every { shutdown() } returns Unit
             }
 
@@ -89,6 +95,11 @@ class SignalReceiverTest : FreeSpec({
         }
 
         fun signalSendsJunkEnvelopes() = signalSendsEnvelopeOf(UNKNOWN_VALUE)
+        fun signalThrowsTimeout() =
+            signalSendsEnvelopeOf(UNKNOWN_VALUE, TimeoutException("oh no, timeout!"))
+        val ioException = IOException("oh no, io error!")
+        fun signalThrowsIO() =
+            signalSendsEnvelopeOf(UNKNOWN_VALUE, ioException)
 
         fun decryptionYields(cleartexts: List<String?>) =
             every {
@@ -167,6 +178,60 @@ class SignalReceiverTest : FreeSpec({
                     messageReceiver.subscriptionCount shouldBe 1
                     messageReceiver.messagePipeCount shouldBe 1
                     sub.isActive shouldBe true
+                }
+            }
+
+            "when signal connection times out" - {
+                val (_, messagePipe) = signalThrowsTimeout()
+
+                lateinit var sub: Job
+                beforeTest {
+                    sub = messageReceiver.subscribe(recipientAccount)!!
+                }
+
+                "keeps reading from signal" {
+                    verify(atLeast = 2) {
+                        messagePipe.read(any(), any())
+                    }
+                }
+            }
+
+            "when signal connection has a connection error (caused by server)" - {
+                val (_, messagePipe) = signalThrowsIO()
+
+                lateinit var sub: Job
+                beforeTest {
+                    sub = messageReceiver.subscribe(recipientAccount)!!
+                }
+
+                "does not keep reading from signal" {
+                    verify(exactly = 1) {
+                        messagePipe.read(any(), any())
+                    }
+                }
+
+                "unsubscribes the message receiver" {
+                    sub.isCancelled shouldBe true
+                }
+            }
+
+            "when signal connection has a connection error (caused by shutdown)" - {
+                val (_, messagePipe) = signalThrowsIO()
+
+                lateinit var sub: Job
+                beforeTest {
+                    app.inShutdownMode = true
+                    sub = messageReceiver.subscribe(recipientAccount)!!
+                }
+
+                "does not keep reading from signal" {
+                    verify(exactly = 1) {
+                        messagePipe.read(any(), any())
+                    }
+                }
+
+                "cancels the subscription" {
+                    sub.isCancelled shouldBe true
                 }
             }
 

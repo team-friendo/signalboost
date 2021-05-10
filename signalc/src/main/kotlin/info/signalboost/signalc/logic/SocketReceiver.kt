@@ -182,7 +182,7 @@ class SocketReceiver(private val app: Application) {
             else -> app.socketSender.send(SocketResponse.SetExpirationFailed.of(request, resultType))
         }
     }
-    private suspend fun subscribe(request: SocketRequest.Subscribe, retryDelay: Long = 1 /*millis*/) {
+    private suspend fun subscribe(request: SocketRequest.Subscribe) {
         val (id,username) = request
         val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
 
@@ -193,21 +193,27 @@ class SocketReceiver(private val app: Application) {
         logger.info("...subscribed to messages for ${account.username}.")
 
         subscribeJob.invokeOnCompletion {
-            val error = it?.cause ?: return@invokeOnCompletion
+            // if job did not error, return early, else get either the error or its wrapped cause
+            val error = it?.let {  it.cause ?: it } ?: return@invokeOnCompletion
             app.coroutineScope.launch(Concurrency.Dispatcher) {
                 when(error) {
-                    is SignalcCancellation.SubscriptionCancelled -> {
+                    is SignalcCancellation.SubscriptionCancelledByClient -> {
                         logger.info { "...subscription job for ${account.username} cancelled." }
+                    }
+                    is SignalcCancellation.SubscriptionDisrupted -> {
+                        logger.error { "Subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
+                        Metrics.SocketReceiver.numberOfResubscribes.inc()
+                        app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
+                        delay(app.config.timers.retryResubscribeDelay)
+                        subscribe(request)
                     }
                     is SignalcError.MessagePipeNotCreated -> {
                         logger.error { "...error subscribing to messages for ${account.username}: ${error}." }
                         app.socketSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                     else -> {
-                        logger.error { "Subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
-                        app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
-                        delay(retryDelay)
-                        subscribe(request, retryDelay * 2)
+                        logger.error { "Subscription to ${account.username} unexpectedly cancelled: ${error.cause}." }
+                        app.socketSender.send(SocketResponse.SubscriptionFailed(id, error))
                     }
                 }
             }

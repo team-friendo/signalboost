@@ -63,6 +63,13 @@ object Metrics {
 
     }
 
+    object SocketReceiver {
+        val numberOfResubscribes: Counter = counterOf(
+            "socket_receiver__number_of_resubscribes",
+            "Counts number of attempts to resubscribe an account"
+        )
+    }
+
     object SocketSender {
         val timeWaitingToSendMessageOverSocket= histogramOf(
             "socket_sender__time_waiting_to_send_message_over_socket",

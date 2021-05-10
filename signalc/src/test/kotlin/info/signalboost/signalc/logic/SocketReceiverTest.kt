@@ -62,7 +62,12 @@ class SocketReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this
         val serverScope = genTestScope()
-        val config = Config.mockAllExcept(SocketReceiver::class)
+        val config = Config.mockAllExcept(SocketReceiver::class).copy(
+            timers = Config.default.timers.copy(
+                retryResubscribeDelay = 1.milliseconds
+            )
+        )
+
         val app = Application(config).run(testScope)
 
         val senderPhoneNumber = genPhoneNumber()
@@ -534,7 +539,7 @@ class SocketReceiverTest : FreeSpec({
                     }
 
                     "when connection to signal is broken" - {
-                        val error = IOException("whoops!")
+                        val error = SignalcCancellation.SubscriptionDisrupted(IOException("oh noes!"))
                         val disruptedJob = Job()
                         coEvery {
                             app.signalReceiver.subscribe(recipientAccount)
@@ -565,7 +570,7 @@ class SocketReceiverTest : FreeSpec({
                         } returns sub
 
                         client.send(requestJson)
-                        sub.cancel(SignalcCancellation.SubscriptionCancelled)
+                        sub.cancel(SignalcCancellation.SubscriptionCancelledByClient)
                         delay(40.milliseconds)
 
                         "does not attempt to resubscribe".config(invocations = 3) {
