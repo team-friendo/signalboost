@@ -4,6 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.EnvelopeType
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
@@ -174,6 +175,8 @@ class SignalReceiver(private val app: Application) {
             // of which might have depleted our prekey reserves below the level we want to keep on hand
             // to start new sessions. So: launch a job to check our prekey reserve and replenish it if needed!
             if(it == EnvelopeType.PREKEY_BUNDLE) app.coroutineScope.launch(Concurrency.Dispatcher) {
+                // count jobs so we can throttle them if they are starving network/db resources needed for message handling
+                Metrics.SignalReceiver.numberOfInboundPreKeyBundles.inc()
                 app.accountManager.refreshPreKeysIfDepleted(account)
             }
             // Then continue to handle messages...

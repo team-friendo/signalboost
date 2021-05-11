@@ -55,6 +55,14 @@ object Metrics {
         )
     }
 
+    object SignalReceiver {
+        val numberOfInboundPreKeyBundles: Counter = counterOf(
+            "signal_receiver__number_of_inbound_prekey_bundles",
+            "Counts number of inbound PREKEY_BUNDLE messages we receive from signal server when users try to establish new sessions." +
+                    "If we often receive a high number of these in quick succession, consider throttling prekey replenish jobs."
+        )
+    }
+
     object SignalSender {
         val numberOfMessageSends: Counter = counterOf(
             "signal_sender__number_of_message_sends",

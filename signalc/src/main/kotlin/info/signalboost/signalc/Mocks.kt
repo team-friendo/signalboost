@@ -72,6 +72,7 @@ object Mocks {
         mockkObject(Metrics.AccountManager)
         mockkObject(Metrics.LibSignal)
         mockkObject(Metrics.SignalSender)
+        mockkObject(Metrics.SignalReceiver)
         mockkObject(Metrics.SocketSender)
     }
 }
