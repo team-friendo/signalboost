@@ -15,6 +15,11 @@ object Metrics {
         Counter.build().name(name).help(help).register()
 
     object AccountManager {
+        val numberOfPreKeyRefreshes = counterOf(
+            "account_manager__number_of_prekey_refreshes",
+        "Number of times AccountManager publishes new prekeys because reserves have dipped below 10",
+        )
+
         val timeToLoadVerifiedAccount =
             histogramOf(
                 "account_manager__time_to_load_verified_account",

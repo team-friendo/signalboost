@@ -3,6 +3,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -143,7 +144,10 @@ class AccountManager(private val app: Application) {
      **/
     @Throws(IOException::class)
     suspend fun refreshPreKeysIfDepleted(account: VerifiedAccount) {
+        logger.info { "Checking whether to refresh prekeys for ${account.username}"}
         if(accountManagerOf(account).preKeysCount >= PREKEY_MIN_RESERVE) return
+        Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
+        logger.info { "Refreshing prekeys for ${account.username}"}
         return publishPreKeys(account)
     }
 }
