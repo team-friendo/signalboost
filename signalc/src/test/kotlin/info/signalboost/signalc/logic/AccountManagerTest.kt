@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.logic.AccountManager.Companion.PREKEY_MIN_RESERVE
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
@@ -13,7 +14,6 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.IdentityKey
@@ -164,7 +164,7 @@ class AccountManagerTest : FreeSpec({
             }
         }
 
-        "#publishFirstPrekeys" - {
+        "prekey management" - {
             val mockPublicKey: IdentityKey = mockk()
             val mockPreKeys: List<PreKeyRecord> = List(100) {
                 mockk {
@@ -189,25 +189,74 @@ class AccountManagerTest : FreeSpec({
                 anyConstructed<SignalServiceAccountManager>().setPreKeys(any(), any(), any())
             } returns Unit
 
-            "stores 100 prekeys locally" {
-                accountManager.publishPreKeys(verifiedAccount)
-                verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any()) }
-            }
 
-            "stores a signed prekey locally" {
-                accountManager.publishPreKeys(verifiedAccount)
-                verify(exactly = 1) { mockProtocolStore.storeSignedPreKey(any(), any()) }
-            }
-
-            "publishes prekeys to signal" {
-                accountManager.publishPreKeys(verifiedAccount)
-                verify {
-                    anyConstructed<SignalServiceAccountManager>().setPreKeys(
-                        mockPublicKey,
-                        mockSignedPreKey,
-                        mockPreKeys,
-                    )
+            "#publishPrekeys" - {
+                "stores 100 prekeys locally" {
+                    accountManager.publishPreKeys(verifiedAccount)
+                    verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any()) }
                 }
+
+                "stores a signed prekey locally" {
+                    accountManager.publishPreKeys(verifiedAccount)
+                    verify(exactly = 1) { mockProtocolStore.storeSignedPreKey(any(), any()) }
+                }
+
+                "publishes prekeys to signal" {
+                    accountManager.publishPreKeys(verifiedAccount)
+                    verify {
+                        anyConstructed<SignalServiceAccountManager>().setPreKeys(
+                            mockPublicKey,
+                            mockSignedPreKey,
+                            mockPreKeys,
+                        )
+                    }
+                }
+            }
+
+            "#replenishPreKeysIfDepleted" - {
+                "when prekey reserve is below min threshold" - {
+                    every {
+                        anyConstructed<SignalServiceAccountManager>().preKeysCount
+                    } returns PREKEY_MIN_RESERVE - 1
+
+                    "publishes new prekeys" {
+                        accountManager.refreshPreKeysIfDepleted(verifiedAccount)
+                        verify() {
+                            anyConstructed<SignalServiceAccountManager>().setPreKeys(
+                                mockPublicKey,
+                                mockSignedPreKey,
+                                mockPreKeys,
+                            )
+                        }
+                    }
+                }
+
+                "when prekey reserve is above min threshold" - {
+                    every {
+                        anyConstructed<SignalServiceAccountManager>().preKeysCount
+                    } returns PREKEY_MIN_RESERVE + 1
+
+                    "nothing happens" {
+                        accountManager.refreshPreKeysIfDepleted(verifiedAccount)
+                        verify(exactly = 0) {
+                            anyConstructed<SignalServiceAccountManager>().setPreKeys(any(), any(), any())
+                        }
+                    }
+                }
+
+                "when prekey reserve is at min threshold" - {
+                    every {
+                        anyConstructed<SignalServiceAccountManager>().preKeysCount
+                    } returns PREKEY_MIN_RESERVE
+
+                    "nothing happens" {
+                        accountManager.refreshPreKeysIfDepleted(verifiedAccount)
+                        verify(exactly = 0) {
+                            anyConstructed<SignalServiceAccountManager>().setPreKeys(any(), any(),any())
+                        }
+                    }
+                }
+
             }
         }
     }

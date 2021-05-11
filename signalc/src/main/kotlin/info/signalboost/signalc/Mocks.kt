@@ -23,7 +23,8 @@ object Mocks {
         coEvery { load(any()) } returns mockk()
         coEvery { register(any(), any()) } returns mockk()
         coEvery { verify(any(), any()) } returns mockk()
-        coEvery { publishPreKeys(any()) } returns mockk()
+        coEvery { publishPreKeys(any()) } returns Unit
+        coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit

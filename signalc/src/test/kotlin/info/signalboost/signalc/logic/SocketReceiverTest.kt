@@ -765,10 +765,6 @@ class SocketReceiverTest : FreeSpec({
                             app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
                         } returns verifiedSenderAccount
 
-                        coEvery {
-                            app.accountManager.publishPreKeys(any())
-                        } returns verifiedSenderAccount
-
                         "publishes prekeys for verified account" {
                             client.send(request.toJson())
                             eventually(timeout) {

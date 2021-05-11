@@ -3,7 +3,6 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.dispatchers.Concurrency
-import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -11,9 +10,7 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Default
 import mu.KLoggable
-import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
@@ -21,9 +18,11 @@ import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.jvm.Throws
 import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
@@ -36,7 +35,9 @@ class AccountManager(private val app: Application) {
 
     companion object: Any(), KLoggable {
         override val logger = logger()
-        const val MAX_PREKEY_ID: Int = 0xFFFFF
+        const val PREKEY_MAX_ID: Int = 0xFFFFF
+        const val PREKEY_MIN_RESERVE = 10
+        const val PREKEY_BATCH_SIZE = 100
     }
 
     private val accountStore = app.accountStore
@@ -112,30 +113,38 @@ class AccountManager(private val app: Application) {
         return VerifiedAccount.fromRegistered(account, uuid).also{ accountStore.save(it) }
     }
 
-    // generate prekeys, store them locally and publish them to signal
-    suspend fun publishPreKeys(account: VerifiedAccount): VerifiedAccount {
+
+
+    /**
+     * generate prekeys, store them locally and publish them to signal
+     **/
+    @Throws(IOException::class)
+    suspend fun publishPreKeys(account: VerifiedAccount) {
         val accountProtocolStore = protocolStore.of(account)
-        return app.coroutineScope.async {
-            withContext(Default) {
-                // generate prekeys on CPU-friendly dispatcher
-                val signedPrekeyId = Random.nextInt(0, MAX_PREKEY_ID) // TODO: use an incrementing int here?
-                val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, signedPrekeyId)
-                val oneTimePreKeys = KeyUtil.genPreKeys(0, 100)
-                withContext(Concurrency.Dispatcher) {
-                    // switch to IO-friendly dispatcher to...
-                    // store prekeys
-                    accountProtocolStore.storeSignedPreKey(signedPreKey.id,signedPreKey)
-                    oneTimePreKeys.onEach { accountProtocolStore.storePreKey(it.id, it) }
-                    // publish prekeys to signal server
-                    accountManagerOf(account).setPreKeys(
-                        accountProtocolStore.identityKeyPair.publicKey,
-                        signedPreKey,
-                        oneTimePreKeys
-                    )
-                    account
-                }
-            }
+        return app.coroutineScope.async(Concurrency.Dispatcher) {
+            // generate prekeys
+            val id = Random.nextInt(0, PREKEY_MAX_ID)
+            val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, id)
+            val oneTimePreKeys = KeyUtil.genPreKeys(0, PREKEY_BATCH_SIZE)
+            // store prekeys
+            accountProtocolStore.storeSignedPreKey(signedPreKey.id, signedPreKey)
+            oneTimePreKeys.onEach { accountProtocolStore.storePreKey(it.id, it) }
+            // publish prekeys to signal server
+            accountManagerOf(account).setPreKeys(
+                accountProtocolStore.identityKeyPair.publicKey,
+                signedPreKey,
+                oneTimePreKeys
+            )
         }.await()
+    }
+
+    /**
+     * check the server to see if our reserve of prekeys has been depleted, if so, replenish them
+     **/
+    @Throws(IOException::class)
+    suspend fun refreshPreKeysIfDepleted(account: VerifiedAccount) {
+        if(accountManagerOf(account).preKeysCount >= PREKEY_MIN_RESERVE) return
+        return publishPreKeys(account)
     }
 }
 
