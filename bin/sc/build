@@ -29,13 +29,12 @@ docker build \
   --build-arg commit_hash=${commit_hash} \
   -t ${registry}/signalc:${commit_hash} \
   -f ./docker/signalc.dockerfile .
-echo "> ... built signalc docker image."
+docker tag ${registry}/signalc:${commit_hash} ${registry}/signalc:dev
+echo "> ... built signalc docker image"
 
-echo "> pushing signalc docker image..."
-docker push ${registry}/signalc:${commit_hash}
-echo "> ... pushed signalc docker image."
 
-echo "> ... signalc docker image available as:"
+echo "> DONE! signalc docker image available as:"
 echo "  ${registry}/signalc:${commit_hash}"
+echo "  ${registry}/signalc:dev"
 
 popd > /dev/null

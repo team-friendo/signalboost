@@ -13,7 +13,8 @@ enum class EnvelopeType {
     companion object {
         fun fromInt(int: Int): EnvelopeType = when(int) {
             UNKNOWN_VALUE -> UNKNOWN // 0
-            CIPHERTEXT_VALUE, PREKEY_BUNDLE_VALUE -> CIPHERTEXT // 1, 3
+            CIPHERTEXT_VALUE -> CIPHERTEXT // 1
+            PREKEY_BUNDLE_VALUE -> PREKEY_BUNDLE // 3
             KEY_EXCHANGE_VALUE -> KEY_EXCHANGE // 2
             RECEIPT_VALUE -> RECEIPT // 5
             UNIDENTIFIED_SENDER_VALUE -> UNIDENTIFIED_SENDER // 6

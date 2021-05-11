@@ -223,7 +223,7 @@ docker.push.signalboost: ## push the signalboost docker image (accepts optional 
 	./bin/docker-push signalboost $(TAG)
 
 docker.push.signalc: ## push the signalc production image (accepts optional TAG=#.#.# argument)
-	echo "use `make sc.build` instead!"
+	./bin/docker-push signalc $(TAG)
 
 docker.push.signalc.dev: ## push the signalc dev image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signalc-dev $(TAG)
@@ -323,14 +323,11 @@ sc.nc: ## open a netcat session on the signalc unix socket
 	docker-compose -f docker-compose-sc.yml \
 	exec signalc nc -U /signalc/sock/signald.sock
 
-sc.up.dev: ## run signalboost against signalc in dev mode
-	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
-
 sc.up.debug: ## run signalboost against signalc in dev mode w/ debug flags on
-	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
+	DEBUG_MODE=1 LOG_LEVEL=debug docker-compose -f docker-compose-sc.yml up -d signalc signalboost ngrok
 
-sc.up.pinned: ## run signalboost against pinned signalc commit (for faster boot)
-	docker-compose -f docker-compose-sc.yml up -d signalc_pinned signalboost ngrok
+sc.up: ## run signalboost against pinned signalc commit (for faster boot)
+	docker-compose -f docker-compose-sc.yml up -d signalc signalboost ngrok
 
 sc.down: # stop signalc stack
 	docker-compose -f docker-compose-sc.yml down
@@ -338,18 +335,14 @@ sc.down: # stop signalc stack
 sc.logs: ## view logs for signalc stack
 	docker-compose -f docker-compose-sc.yml logs -f
 
-sc.restart.dev: ## restart signalc stack in dev mode
-	docker-compose -f docker-compose-sc.yml down && \
-	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
-
 sc.restart.debug: ## restart signalc stack in dev mode w/ debug flags on
 	docker-compose -f docker-compose-sc.yml down && \
 	DEBUG_MODE=1 LOG_LEVEL=debug \
 	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
 
-sc.restart.pinned: ## restart signalc stack w/ signalc pinned to latest commit (for faster boot)
+sc.restart: ## restart signalc stack
 	docker-compose -f docker-compose-sc.yml down && \
-	docker-compose -f docker-compose-sc.yml up -d signalc_pinned signalboost ngrok
+	docker-compose -f docker-compose-sc.yml up -d signalc signalboost ngrok
 
 sc.db.up: ## run the signalc db in isolation (useful for tests)
 	docker-compose -f docker-compose-sc.yml up -d db
@@ -360,10 +353,10 @@ sc.db.down: ## stop the signalc db in isolation (useful for tests)
 sc.db.migrate: ## run migrations
 	echo "----- running development migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc_pinned && \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain update' signalc && \
 	echo "----- running test migrations" && \
 	docker-compose -f docker-compose-sc.yml \
-	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc_pinned && \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain update' signalc && \
 	echo "----- run migrations for loadtests w/ 'make load.reseed'"
 
 # TODO: inject the DB_NAME here!!!!

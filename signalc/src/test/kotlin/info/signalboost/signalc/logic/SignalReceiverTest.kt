@@ -3,13 +3,10 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
-import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
-import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
-import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuid
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.deleteAllAttachments
@@ -40,7 +37,9 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
-import kotlin.io.path.*
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
+import kotlin.io.path.fileSize
 import kotlin.time.ExperimentalTime
 import kotlin.time.milliseconds
 
@@ -173,7 +172,17 @@ class SignalReceiverTest : FreeSpec({
 
             "when signal sends an envelope of type UNKNOWN" - {
                 val (envelope) = signalSendsEnvelopeOf(UNKNOWN_VALUE)
-                messageReceiver.subscribe(recipientAccount)!!
+                beforeTest {
+                    messageReceiver.subscribe(recipientAccount)!!
+                }
+
+                "attempts to decrypt the envelope" {
+                    eventually(timeout, pollInterval) {
+                        verify {
+                            anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                        }
+                    }
+                }
 
                 "relays a DroppedMessage to the socket sender" {
                     eventually(timeout, pollInterval) {
@@ -346,7 +355,7 @@ class SignalReceiverTest : FreeSpec({
                     val attachmentId = genUuidStr()
                     val cleartextAttachment = genCleartextAttachment(
                         id = attachmentId,
-                        filename = "$attachmentId",
+                        filename = attachmentId,
                         // the size of `resources/.../tiny-pink-square.jpg` is 628 bytes
                         size = 628,
                     )
