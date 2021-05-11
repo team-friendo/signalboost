@@ -31,10 +31,6 @@ docker build \
   -f ./docker/signalc.dockerfile .
 echo "> ... built signalc docker image."
 
-echo "> pushing signalc docker image..."
-docker push ${registry}/signalc:${commit_hash}
-echo "> ... pushed signalc docker image."
-
 echo "> ... signalc docker image available as:"
 echo "  ${registry}/signalc:${commit_hash}"
 

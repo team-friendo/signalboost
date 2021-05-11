@@ -223,7 +223,7 @@ docker.push.signalboost: ## push the signalboost docker image (accepts optional 
 	./bin/docker-push signalboost $(TAG)
 
 docker.push.signalc: ## push the signalc production image (accepts optional TAG=#.#.# argument)
-	echo "use `make sc.build` instead!"
+	./bin/docker-push signalc $(TAG)
 
 docker.push.signalc.dev: ## push the signalc dev image (accepts optional TAG=#.#.# argument)
 	./bin/docker-build signalc-dev $(TAG)
