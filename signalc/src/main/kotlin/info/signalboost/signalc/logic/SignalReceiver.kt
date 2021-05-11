@@ -168,18 +168,31 @@ class SignalReceiver(private val app: Application) {
     // HELPERS
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
-        logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
-        return when (envelope.type.asEnum()) {
-            EnvelopeType.CIPHERTEXT,
-            EnvelopeType.PREKEY_BUNDLE -> relay(envelope, account)
-            EnvelopeType.KEY_EXCHANGE,
-            EnvelopeType.RECEIPT,
-            EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we likely want to handle sealed sender messages!
-            EnvelopeType.UNKNOWN -> drop(envelope, account)
+        envelope.type.asEnum().let {
+            logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+            // of which might have depleted our prekey reserves below the level we want to keep on hand
+            // to start new sessions. So: launch a job to check our prekey reserve and replenish it if needed!
+            if(it == EnvelopeType.PREKEY_BUNDLE) app.coroutineScope.launch(Concurrency.Dispatcher) {
+                app.accountManager.refreshPreKeysIfDepleted(account)
+            }
+            // Then continue to handle messages...
+            return when (it) {
+                EnvelopeType.CIPHERTEXT,
+                EnvelopeType.PREKEY_BUNDLE -> relay(envelope, account)
+                EnvelopeType.KEY_EXCHANGE,
+                EnvelopeType.RECEIPT,
+                EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we likely want to handle sealed sender messages!
+                EnvelopeType.UNKNOWN -> drop(envelope, account)
+            }
         }
     }
 
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
+
+        app.coroutineScope.launch(Concurrency.Dispatcher) {
+
+        }
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
         return app.coroutineScope.launch(Concurrency.Dispatcher) {

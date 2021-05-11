@@ -497,17 +497,21 @@ class SignalReceiverTest : FreeSpec({
 
             "when signal sends an envelope of type PREKEY_BUNDLE" - {
                 val (envelope) = signalSendsEnvelopeOf(PREKEY_BUNDLE_VALUE)
+                decryptionYields(listOf(null))
 
-                every {
-                    anyConstructed<SignalServiceCipher>().decrypt(any())
-                }  returns  mockk {
-                    every { dataMessage.orNull() } returns null
+                "launches a job to refresh prekeys if necessary" {
+                    messageReceiver.subscribe(recipientAccount)
+                    eventually(timeout, pollInterval) {
+                        coVerify {
+                            app.accountManager.refreshPreKeysIfDepleted(recipientAccount)
+                        }
+                    }
                 }
 
-                "it is handled as CIPHERTEXT" {
+                "attempts to decrypt the envelope" {
                     messageReceiver.subscribe(recipientAccount)
-                    eventually(timeout, pollInterval){
-                        verify {
+                    eventually(timeout, pollInterval) {
+                        coVerify {
                             anyConstructed<SignalServiceCipher>().decrypt(envelope)
                         }
                     }
