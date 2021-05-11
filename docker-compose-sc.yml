@@ -14,45 +14,35 @@ volumes:
   signalc_build_cache:
   signalc_sock:
 
-x-signalc-base: &signalc-base
-  env_file: .env.dev
-  environment:
-    SIGNALC_ENV: development
-    SIGNALC_DRAIN_TIMEOUT: ${SIGNALC_DRAIN_TIMEOUT:-120}
-    GRADLE_USER_HOME: /home/gradle/.gradle
-    LOG_LEVEL: ${LOG_LEVEL:-info}
-    DEBUG_MODE: ${DEBUG_MODE:-0}
-    DB_HOST: db
-  depends_on:
-    - db
-  ports:
-    - 0.0.0.0:5005:5005 # for remote debugger
-  volumes:
-    - ./bin:/signalc/bin
-    - ./signalc/src:/signalc/src
-    - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
-    - ./signalc/gradle.properties:/signalc/gradle.properties
-    - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
-    - ./signalc/migrations:/signalc/migrations
-    - signalc_gradle_cache:/home/gradle/.gradle
-    - signalc_build_cache:/signalc/build
-    - signalc_sock:/signalc/sock
-  stop_grace_period: ${SIGNALC_STOP_GRACE_PERIOD:-125s}
-  restart: always
-
 services:
 
-  signalc_dev:
-    # floating commit: will build jar on every run (w/ gradle), slower boot sequence, allows iterations:
-    image: registry.0xacab.org/team-friendo/signalboost/signalc-dev:latest
-    container_name: signalc_dev
-    <<: *signalc-base
-
-  signalc_pinned:
-    # pinned commit: bakes jar into image, faster boot sequence, cannot iterate w/o rebuilding image:
+  signalc:
     image: registry.0xacab.org/team-friendo/signalboost/signalc:dev
-    container_name: signalc_pinned
-    <<: *signalc-base
+    container_name: signalc
+    env_file: .env.dev
+    environment:
+      SIGNALC_ENV: development
+      SIGNALC_DRAIN_TIMEOUT: ${SIGNALC_DRAIN_TIMEOUT:-120}
+      GRADLE_USER_HOME: /home/gradle/.gradle
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEBUG_MODE: ${DEBUG_MODE:-0}
+      DB_HOST: db
+    depends_on:
+      - db
+    ports:
+      - 0.0.0.0:5005:5005 # for remote debugger
+    volumes:
+      - ./bin:/signalc/bin
+      - ./signalc/src:/signalc/src
+      - ./signalc/build.gradle.kts:/signalc/build.gradle.kts
+      - ./signalc/gradle.properties:/signalc/gradle.properties
+      - ./signalc/settings.gradle.kts:/signalc/settings.gradle.kts
+      - ./signalc/migrations:/signalc/migrations
+      - signalc_gradle_cache:/home/gradle/.gradle
+      - signalc_build_cache:/signalc/build
+      - signalc_sock:/signalc/sock
+    stop_grace_period: ${SIGNALC_STOP_GRACE_PERIOD:-125s}
+    restart: always
 
   signalboost:
     image: registry.0xacab.org/team-friendo/signalboost/signalboost:latest
