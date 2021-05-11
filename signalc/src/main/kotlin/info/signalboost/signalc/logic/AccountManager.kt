@@ -12,6 +12,7 @@ import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
+import mu.KLoggable
 import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
@@ -33,7 +34,10 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 class AccountManager(private val app: Application) {
 
-    companion object: KLogging()
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+        const val MAX_PREKEY_ID: Int = 0xFFFFF
+    }
 
     private val accountStore = app.accountStore
     private val protocolStore = app.protocolStore
@@ -114,7 +118,7 @@ class AccountManager(private val app: Application) {
         return app.coroutineScope.async {
             withContext(Default) {
                 // generate prekeys on CPU-friendly dispatcher
-                val signedPrekeyId = Random.nextInt(0, Integer.MAX_VALUE) // TODO: use an incrementing int here?
+                val signedPrekeyId = Random.nextInt(0, MAX_PREKEY_ID) // TODO: use an incrementing int here?
                 val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, signedPrekeyId)
                 val oneTimePreKeys = KeyUtil.genPreKeys(0, 100)
                 withContext(Concurrency.Dispatcher) {
