@@ -1,6 +1,7 @@
 package info.signalboost.signalc.testSupport.db
 
 import info.signalboost.signalc.db.Identities
+import info.signalboost.signalc.db.SenderKeys
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -16,7 +17,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
  * - add sql to `migrations/changelog.postgresql.sql`
  * - also add appropriate comments in metadata:
  *   - prefix comment to include in line above each sql statement you want to consider a "change:
- *     `-- changeset <username><millis-since-epoch><nth-migration-run-at-that-time> failOnError:fase`
+ *     `-- changeset <username><millis-since-epoch><nth-migration-run-at-that-time> failOnError:false`
  *   - postfix comment to include in line below each change:
  *     `-- rollback <sql to execute to rollback the sql below prefix comment>`
  * - run `gradle update` (or `make sc.db.migrate`)
@@ -29,7 +30,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 fun main() {
     // change this assignment to
-    val table = Identities
+    val table = SenderKeys
     val db = Database.connect(
         driver = "com.impossibl.postgres.jdbc.PGDriver",
         url = "jdbc:pgsql://localhost:5432/signalc_scratch",

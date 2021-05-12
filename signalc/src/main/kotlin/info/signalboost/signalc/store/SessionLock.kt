@@ -1,0 +1,13 @@
+package info.signalboost.signalc.store
+
+import org.whispersystems.signalservice.api.SignalSessionLock
+import java.util.concurrent.locks.ReentrantLock
+
+class SessionLock(): SignalSessionLock {
+    private val lock = ReentrantLock()
+
+    override fun acquire(): SignalSessionLock.Lock {
+        lock.lock()
+        return SignalSessionLock.Lock { lock.unlock() }
+    }
+}

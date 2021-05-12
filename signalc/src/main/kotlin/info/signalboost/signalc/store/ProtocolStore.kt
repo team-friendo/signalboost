@@ -9,18 +9,25 @@ import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.Identities.name
 import info.signalboost.signalc.db.Sessions.sessionBytes
-import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.model.Account
+import info.signalboost.signalc.util.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.groups.state.SenderKeyRecord
 import org.whispersystems.libsignal.protocol.CiphertextMessage
-import org.whispersystems.libsignal.state.*
+import org.whispersystems.libsignal.state.IdentityKeyStore
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.SessionRecord
+import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
+import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import java.util.UUID
+
 
 class ProtocolStore(private val db: Database) {
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
@@ -33,23 +40,29 @@ class ProtocolStore(private val db: Database) {
         private val accountId: String,
     ): SignalServiceProtocolStore {
 
+        val lock: SignalSessionLock = SessionLock()
+
         /********* IDENTITIES *********/
 
         override fun getIdentityKeyPair(): IdentityKeyPair =
-            transaction(db) {
-                OwnIdentities.select {
-                    OwnIdentities.accountId eq accountId
-                }.singleOrNull() ?: createOwnIdentity()
-            }.let {
-                IdentityKeyPair(it[OwnIdentities.keyPairBytes])
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    OwnIdentities.select {
+                        OwnIdentities.accountId eq accountId
+                    }.singleOrNull() ?: createOwnIdentity()
+                }.let {
+                    IdentityKeyPair(it[OwnIdentities.keyPairBytes])
+                }
             }
 
         override fun getLocalRegistrationId(): Int =
-            transaction(db) {
-                OwnIdentities.select {
-                    OwnIdentities.accountId eq accountId
-                }.singleOrNull() ?: createOwnIdentity()
-            }[OwnIdentities.registrationId]
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    OwnIdentities.select {
+                        OwnIdentities.accountId eq accountId
+                    }.singleOrNull() ?: createOwnIdentity()
+                }[OwnIdentities.registrationId]
+            }
 
         private fun createOwnIdentity(): ResultRow =
             transaction(db) {
@@ -61,45 +74,51 @@ class ProtocolStore(private val db: Database) {
             }
 
         fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) =
-            transaction(db) {
-                Identities.update({
-                    (name eq address.identifier)
-                        .and(Identities.accountId eq this@AccountProtocolStore.accountId)
-                }) {
-                    it[identityKeyBytes] = fingerprint
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Identities.update({
+                        (name eq address.identifier)
+                            .and(Identities.accountId eq this@AccountProtocolStore.accountId)
+                    }) {
+                        it[identityKeyBytes] = fingerprint
+                    }
                 }
             }
 
         fun trustFingerprintForAllIdentities(fingerprint: ByteArray) =
-            transaction(db) {
-                Identities.update({ identityKeyBytes eq fingerprint }) {
-                    it[isTrusted] = true
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Identities.update({ identityKeyBytes eq fingerprint }) {
+                        it[isTrusted] = true
+                    }
                 }
             }
 
         override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
-        // Insert or update an idenity key and:
-        // - trust the first identity key seen for a given address
-        // - deny trust for subsequent identity keys for same address
+            // Insert or update an idenity key and:
+            // - trust the first identity key seen for a given address
+            // - deny trust for subsequent identity keys for same address
             // Returns true if this save was an update to an existing record, false otherwise
-            transaction(db) {
-                Identities.findByAddress(accountId, address)
-                    ?.let { existingKey ->
-                        Identities.updateByAddress(accountId, address) {
-                            // store the new existingKey key in all cases
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Identities.findByAddress(accountId, address)
+                        ?.let { existingKey ->
+                            Identities.updateByAddress(accountId, address) {
+                                // store the new existingKey key in all cases
+                                it[identityKeyBytes] = identityKey.serialize()
+                                // only trust it if it matches the existing key
+                                it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
+                            }
+                            true
+                        } ?: run {
+                        Identities.insert {
+                            it[accountId] = this@AccountProtocolStore.accountId
+                            it[name] = address.name
+                            it[deviceId] = address.deviceId
                             it[identityKeyBytes] = identityKey.serialize()
-                            // only trust it if it matches the existing key
-                            it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
                         }
-                        true
-                    } ?: run {
-                    Identities.insert {
-                        it[accountId] = this@AccountProtocolStore.accountId
-                        it[name] = address.name
-                        it[deviceId] = address.deviceId
-                        it[identityKeyBytes] = identityKey.serialize()
+                        false
                     }
-                    false
                 }
             }
 
@@ -107,32 +126,43 @@ class ProtocolStore(private val db: Database) {
             address: SignalProtocolAddress,
             identityKey: IdentityKey,
             direction: IdentityKeyStore.Direction
-        ): Boolean = transaction(db) {
-            // trust a key if...
-            Identities.findByAddress(accountId, address)?.let{
-                // it matches a key we have seen before
-                it[identityKeyBytes] contentEquals identityKey.serialize() &&
-                    // and we have not flagged it as untrusted
-                    it[isTrusted]
-            } ?: true // or it is the first key we ever seen for a person (TOFU!)
-        }
+        ): Boolean =
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    // trust a key if...
+                    Identities.findByAddress(accountId, address)?.let {
+                        // it matches a key we have seen before
+                        it[identityKeyBytes] contentEquals identityKey.serialize() &&
+                                // and we have not flagged it as untrusted
+                                it[isTrusted]
+                    } ?: true // or it is the first key we ever seen for a person (TOFU!)
+                }
+            }
 
         override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
-            transaction(db) {
-                Identities.findByAddress(accountId, address)?.let{
-                    IdentityKey(it[identityKeyBytes], 0) }
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Identities.findByAddress(accountId, address)?.let {
+                        IdentityKey(it[identityKeyBytes], 0)
+                    }
+                }
             }
 
         fun removeIdentity(address: SignalProtocolAddress) {
-            transaction(db) {
-                Identities.deleteByAddress(accountId, address)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Identities.deleteByAddress(accountId, address)
+                }
             }
         }
 
+
         fun removeOwnIdentity() {
-            transaction(db) {
-                OwnIdentities.deleteWhere {
-                    OwnIdentities.accountId eq accountId
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    OwnIdentities.deleteWhere {
+                        OwnIdentities.accountId eq accountId
+                    }
                 }
             }
         }
@@ -140,27 +170,31 @@ class ProtocolStore(private val db: Database) {
         /********* PREKEYS *********/
 
         override fun loadPreKey(preKeyId: Int): PreKeyRecord =
-            transaction(db) {
-                PreKeys.select {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }.singleOrNull()?.let {
-                    PreKeyRecord(it[PreKeys.preKeyBytes])
-                } ?: throw InvalidKeyException()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    PreKeys.select {
+                        PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+                    }.singleOrNull()?.let {
+                        PreKeyRecord(it[PreKeys.preKeyBytes])
+                    } ?: throw InvalidKeyException()
+                }
             }
 
 
         override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
-            transaction(db) {
-                PreKeys.update({
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }) {
-                    it[preKeyBytes] = record.serialize()
-                }.let { numUpdated ->
-                    if(numUpdated == 0) {
-                        PreKeys.insert {
-                            it[accountId] = this@AccountProtocolStore.accountId
-                            it[this.preKeyId] = preKeyId
-                            it[preKeyBytes] = record.serialize()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    PreKeys.update({
+                        PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+                    }) {
+                        it[preKeyBytes] = record.serialize()
+                    }.let { numUpdated ->
+                        if (numUpdated == 0) {
+                            PreKeys.insert {
+                                it[accountId] = this@AccountProtocolStore.accountId
+                                it[this.preKeyId] = preKeyId
+                                it[preKeyBytes] = record.serialize()
+                            }
                         }
                     }
                 }
@@ -168,17 +202,21 @@ class ProtocolStore(private val db: Database) {
         }
 
         override fun containsPreKey(preKeyId: Int): Boolean =
-            transaction(db) {
-                PreKeys.select {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }.count() > 0
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    PreKeys.select {
+                        PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+                    }.count() > 0
+                }
             }
 
 
         override fun removePreKey(preKeyId: Int) {
-            transaction(db) {
-                PreKeys.deleteWhere {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    PreKeys.deleteWhere {
+                        PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+                    }
                 }
             }
         }
@@ -187,34 +225,40 @@ class ProtocolStore(private val db: Database) {
         /********* SIGNED PREKEYS *********/
 
         override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord =
-            transaction(db) {
-                SignedPreKeys.select {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
-                }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
-            }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SignedPreKeys.select {
+                        SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+                    }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
+                }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
+            }
+
 
         override fun loadSignedPreKeys(): MutableList<SignedPreKeyRecord> =
-            transaction(db) {
-                SignedPreKeys.selectAll().map {
-                    it[SignedPreKeys.signedPreKeyBytes]
-                }
-            }.mapTo(mutableListOf()) { SignedPreKeyRecord(it) }
-
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SignedPreKeys.selectAll().map {
+                        it[SignedPreKeys.signedPreKeyBytes]
+                    }
+                }.mapTo(mutableListOf()) { SignedPreKeyRecord(it) }
+            }
 
         override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord) {
-            transaction(db) {
-                SignedPreKeys.update ({
-                    SignedPreKeys.accountId eq accountId and (
-                        SignedPreKeys.preKeyId eq signedPreKeyId
-                        )
-                }) {
-                    it[signedPreKeyBytes] = record.serialize()
-                }.let{ numUpdated ->
-                    if (numUpdated == 0) {
-                        SignedPreKeys.insert {
-                            it[accountId] = this@AccountProtocolStore.accountId
-                            it[preKeyId] = signedPreKeyId
-                            it[signedPreKeyBytes] = record.serialize()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SignedPreKeys.update({
+                        SignedPreKeys.accountId eq accountId and (
+                                SignedPreKeys.preKeyId eq signedPreKeyId
+                                )
+                    }) {
+                        it[signedPreKeyBytes] = record.serialize()
+                    }.let { numUpdated ->
+                        if (numUpdated == 0) {
+                            SignedPreKeys.insert {
+                                it[accountId] = this@AccountProtocolStore.accountId
+                                it[preKeyId] = signedPreKeyId
+                                it[signedPreKeyBytes] = record.serialize()
+                            }
                         }
                     }
                 }
@@ -222,49 +266,103 @@ class ProtocolStore(private val db: Database) {
         }
 
         override fun containsSignedPreKey(signedPreKeyId: Int): Boolean =
-            transaction(db) {
-                SignedPreKeys.select {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
-                }.singleOrNull()?.let { true } ?: false
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SignedPreKeys.select {
+                        SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+                    }.singleOrNull()?.let { true } ?: false
+                }
             }
 
         override fun removeSignedPreKey(signedPreKeyId: Int) {
-            transaction(db) {
-                SignedPreKeys.deleteWhere {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SignedPreKeys.deleteWhere {
+                        SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+                    }
                 }
             }
         }
 
+        /********* SENDER KEYS *********/
+
+        override fun storeSenderKey(sender: SignalProtocolAddress, distributionId: UUID, record: SenderKeyRecord) {
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SenderKeys.update ({
+                        (SenderKeys.accountId eq accountId)
+                            .and(SenderKeys.name eq sender.name)
+                            .and(SenderKeys.deviceId eq sender.deviceId)
+                            .and( SenderKeys.distributionId eq distributionId)
+                    }) {
+                        it[senderKeyBytes] = record.serialize()
+                    }.let { numUpdated ->
+                        if(numUpdated == 0) createSenderKey(sender, distributionId)
+                    }
+                }
+            }
+        }
+
+        override fun loadSenderKey(sender: SignalProtocolAddress, distributionId: UUID): SenderKeyRecord =
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    SenderKeys.select {
+                        (SenderKeys.accountId eq accountId)
+                            .and(SenderKeys.name eq sender.name)
+                            .and(SenderKeys.deviceId eq sender.deviceId)
+                            .and( SenderKeys.distributionId eq distributionId)
+                    }.singleOrNull()
+                        ?: createSenderKey(sender, distributionId)
+                }.let {
+                    SenderKeyRecord(it[SenderKeys.senderKeyBytes])
+                }
+            }
+
+        private fun createSenderKey(sender: SignalProtocolAddress, distributionId: UUID): ResultRow =
+            SenderKeys.insert {
+                it[accountId] = this@AccountProtocolStore.accountId
+                it[name] = sender.name
+                it[deviceId] = sender.deviceId
+                it[this.distributionId] = distributionId
+                it[senderKeyBytes] = SenderKeyRecord().serialize()
+            }.resultedValues!![0]
+
+
         /********* SESSIONS *********/
 
         override fun loadSession(address: SignalProtocolAddress): SessionRecord =
-            transaction(db) {
-                Sessions.findByAddress(accountId, address)?.let {
-                    SessionRecord(it[Sessions.sessionBytes])
-                } ?: SessionRecord()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Sessions.findByAddress(accountId, address)?.let {
+                        SessionRecord(it[sessionBytes])
+                    } ?: SessionRecord()
+                }
             }
 
         override fun getSubDeviceSessions(name: String): MutableList<Int> {
-            return transaction(db) {
-                Sessions.select{
-                    Sessions.accountId eq accountId and (Sessions.name eq name)
-                }.mapTo(mutableListOf()) { it[Sessions.deviceId] }
+            lock.acquire().use { _ ->
+                return transaction(db) {
+                    Sessions.select {
+                        Sessions.accountId eq accountId and (Sessions.name eq name)
+                    }.mapTo(mutableListOf()) { it[Sessions.deviceId] }
+                }
             }
         }
 
         override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
             // upsert the session record for a given address
-            transaction(db) {
-                Sessions.updateByAddress(accountId, address) {
-                    it[sessionBytes] = record.serialize()
-                }.let { numUpdated ->
-                    if(numUpdated == 0) {
-                        Sessions.insert {
-                            it[accountId] = this@AccountProtocolStore.accountId
-                            it[name] = address.name
-                            it[deviceId] = address.deviceId
-                            it[sessionBytes] = record.serialize()
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Sessions.updateByAddress(accountId, address) {
+                        it[sessionBytes] = record.serialize()
+                    }.let { numUpdated ->
+                        if (numUpdated == 0) {
+                            Sessions.insert {
+                                it[accountId] = this@AccountProtocolStore.accountId
+                                it[name] = address.name
+                                it[deviceId] = address.deviceId
+                                it[sessionBytes] = record.serialize()
+                            }
                         }
                     }
                 }
@@ -272,34 +370,42 @@ class ProtocolStore(private val db: Database) {
         }
 
         override fun containsSession(address: SignalProtocolAddress): Boolean =
-            transaction(db) {
-                Sessions.findByAddress(accountId, address)?.let {
-                    val sessionRecord = SessionRecord(it[Sessions.sessionBytes])
-                    sessionRecord.hasSenderChain()
-                        && sessionRecord.sessionVersion == CiphertextMessage.CURRENT_VERSION;
-                } ?: false
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Sessions.findByAddress(accountId, address)?.let {
+                        val sessionRecord = SessionRecord(it[sessionBytes])
+                        sessionRecord.hasSenderChain()
+                                && sessionRecord.sessionVersion == CiphertextMessage.CURRENT_VERSION;
+                    } ?: false
+                }
             }
 
 
         override fun deleteSession(address: SignalProtocolAddress) {
-            transaction(db) {
-                Sessions.deleteByAddress(accountId, address)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Sessions.deleteByAddress(accountId, address)
+                }
             }
         }
 
         override fun deleteAllSessions(name: String) {
-            transaction(db) {
-                Sessions.deleteWhere {
-                    Sessions.accountId eq accountId and (Sessions.name eq name)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    Sessions.deleteWhere {
+                        Sessions.accountId eq accountId and (Sessions.name eq name)
+                    }
                 }
             }
         }
 
         override fun archiveSession(address: SignalProtocolAddress) {
-            transaction(db) {
-                loadSession(address).let {
-                    it.archiveCurrentState()
-                    storeSession(address, it)
+            lock.acquire().use { _ ->
+                transaction(db) {
+                    loadSession(address).let {
+                        it.archiveCurrentState()
+                        storeSession(address, it)
+                    }
                 }
             }
         }

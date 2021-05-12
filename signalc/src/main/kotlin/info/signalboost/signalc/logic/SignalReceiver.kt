@@ -81,9 +81,11 @@ class SignalReceiver(private val app: Application) {
 
     private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =
         getMemoized(ciphers, account.username) {
+            val store = app.protocolStore.of(account)
             SignalServiceCipher(
                 account.address,
-                app.protocolStore.of(account),
+                store,
+                store.lock,
                 app.signal.certificateValidator
             )
         }

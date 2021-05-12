@@ -31,6 +31,7 @@ object Mocks {
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
+            every { lock } returns mockk()
             every { saveIdentity(any(), any()) } returns mockk()
         }
     }

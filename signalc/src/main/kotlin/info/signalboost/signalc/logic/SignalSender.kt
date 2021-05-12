@@ -13,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
+import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
 import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
@@ -27,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.*
+import org.whispersystems.signalservice.internal.push.http.CancelationSignal
+import org.whispersystems.signalservice.internal.push.http.ResumableUploadSpec
 
 
 @ExperimentalTime
@@ -44,10 +47,12 @@ class SignalSender(private val app: Application) {
 
     private fun messageSenderOf(account: VerifiedAccount): SignalServiceMessageSender =
         getMemoized(messageSenders, account.username) {
+            val store = app.protocolStore.of(account)
             SignalServiceMessageSender(
                 app.signal.configs,
                 account.credentialsProvider,
-                app.protocolStore.of(account),
+                store,
+                store.lock,
                 app.signal.agent,
                 true,
                 Optional.absent(), // pipe
@@ -71,15 +76,16 @@ class SignalSender(private val app: Application) {
                 Optional.of(file.name),
                 sendAttachment.voiceNote,
                 false, // borderless
+                false, // gif
                 Optional.absent(), // preview (we don't support those!)
                 sendAttachment.width,
                 sendAttachment.height,
-                TimeUtil.nowInMillis(),
+                TimeUtil.nowInMillis(), //uploadTimestamp
                 Optional.fromNullable(sendAttachment.caption),
                 Optional.fromNullable(sendAttachment.blurHash),
-                null, // listener
+                null, // progressListener
                 null, // cancelationSignal
-                Optional.absent() // ResumableUploadSpec
+                Optional.absent(), // ResumableUploadSpec
             )
     }
 

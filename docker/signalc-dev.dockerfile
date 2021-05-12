@@ -2,7 +2,7 @@
 # --- Build Gradle Image
 # ------------------------------------------------------
 
-ARG GRADLE_VERSION="6.7.1"
+ARG GRADLE_VERSION="7.0.2"
 FROM gradle:${GRADLE_VERSION}-jdk11 as gradle-image
 
 MAINTAINER Signalboost <signalboost@riseup.net>
@@ -12,13 +12,19 @@ LABEL description="Image for running signalc -- kotlin signal client -- in JVM"
 # --- Build JDK Image
 # ------------------------------------------------------
 
-FROM azul/zulu-openjdk-debian:11
+FROM ubuntu:20.04
+
+ENV ARCH "x64"
+
+RUN apt-get update -qq
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y locales openjdk-11-jdk
+# azul/zulu-openjdk-debian:11
 
 # ------------------------------------------------------
 # --- Copy Gradle files into JDK Image
 
 ENV GRADLE_HOME /opt/gradle
-ENV GRADLE_VERSION "6.7.1"
+ENV GRADLE_VERSION "7.0.2"
 
 # copy gradle user files
 COPY --from=gradle-image /home/gradle /home/gradle
@@ -58,5 +64,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netcat-openbsd
 # ---------------
 # --- version
 
-LABEL version="1.0.5"
+LABEL version="1.0.6"
 ENTRYPOINT ["/signalc/bin/entrypoint/signalc"]
