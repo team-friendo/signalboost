@@ -24,7 +24,7 @@ services:
       SIGNALC_ENV: development
       SIGNALC_DRAIN_TIMEOUT: ${SIGNALC_DRAIN_TIMEOUT:-120}
       GRADLE_USER_HOME: /home/gradle/.gradle
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
       DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
