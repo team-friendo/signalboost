@@ -52,6 +52,13 @@ class Application(val config: Config.App){
     }
 
     /**************
+     * FIELDS
+     *************/
+
+    @Volatile
+    var inShutdownMode = false
+
+    /**************
      * COMPONENTS
      *************/
 
@@ -265,6 +272,7 @@ class Application(val config: Config.App){
     }
 
     suspend fun stop(): Application {
+        inShutdownMode = true
         logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
         logger.info { "Stopping application..."}
 
