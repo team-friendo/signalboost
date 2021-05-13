@@ -79,4 +79,12 @@ class SignalcPreKeyStore(
         }
     }
 
+    fun removePreKeys() {
+        lock.acquireForTransaction(db) {
+            PreKeys.deleteWhere {
+                PreKeys.accountId eq accountId
+            }
+        }
+    }
+
 }

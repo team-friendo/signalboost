@@ -11,6 +11,7 @@ const inviteRepository = require('../../db/repositories/invite')
 const membershipRepository = require('../../db/repositories/membership')
 const phoneNumberRegistrar = require('../../registrar/phoneNumber')
 const channelRegistrar = require('../../registrar/channel')
+const { issuerTypes } = require("../../registrar/phoneNumber/destroy")
 const signal = require('../../signal')
 const logger = require('../logger')
 const util = require('../../util')
@@ -426,6 +427,7 @@ const actuallyDestroy = async (channel, sender) => {
   const result = await phoneNumberRegistrar.destroy({
     phoneNumber: channel.phoneNumber,
     sender,
+    issuer: issuerTypes.ADMIN,
     notifyOnFailure: true,
   })
   if (get(result, 'status') === statuses.SUCCESS) {

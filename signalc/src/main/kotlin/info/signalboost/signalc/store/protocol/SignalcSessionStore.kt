@@ -76,6 +76,14 @@ class SignalcSessionStore(
         }
     }
 
+    fun deleteAllSessionsOfAccount() {
+        lock.acquireForTransaction(db) {
+            Sessions.deleteWhere {
+                Sessions.accountId eq accountId
+            }
+        }
+    }
+
     override fun archiveSession(address: SignalProtocolAddress) {
         lock.acquireForTransaction(db) {
             Sessions.findByAddress(accountId, address)?.let {

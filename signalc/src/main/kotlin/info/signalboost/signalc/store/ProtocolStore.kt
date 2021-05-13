@@ -2,23 +2,25 @@ package info.signalboost.signalc.store
 
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.db.*
+import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.store.protocol.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.groups.state.SenderKeyStore
-import org.whispersystems.libsignal.state.*
+import org.whispersystems.libsignal.state.IdentityKeyStore
+import org.whispersystems.libsignal.state.PreKeyRecord
+import org.whispersystems.libsignal.state.PreKeyStore
+import org.whispersystems.libsignal.state.SignedPreKeyStore
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
-import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
-
 
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
@@ -54,6 +56,7 @@ class ProtocolStore(app: Application) {
         private val scIdentityStore = identityStore as SignalcIdentityStore
         val countIdentitities: () -> Long = scIdentityStore::countIdentities
         val removeIdentity: (SignalProtocolAddress) -> Unit = scIdentityStore::removeIdentity
+        val removeIdentities: () -> Unit = scIdentityStore::removeIdentities
         val removeOwnIdentity: () -> Unit = scIdentityStore::removeOwnIdentity
         val trustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::trustFingerprint
         val untrustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::untrustFingerprint
@@ -61,12 +64,23 @@ class ProtocolStore(app: Application) {
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
         val getLastPreKeyId: () -> Int = scPreKeyStore::getLastPreKeyId
+        val removePreKeys: () -> Unit = scPreKeyStore::removePreKeys
         val storePreKeys: (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
 
         private val scSessionStore = sessionStore as SignalcSessionStore
         val archiveAllSessions: (SignalProtocolAddress) -> Unit = scSessionStore::archiveAllSessions
+        val deleteAllSessionsOfAccount: () -> Unit = scSessionStore::deleteAllSessionsOfAccount
 
         private val scSignedPreKeyStore = signedPreKeyStore as SignalcSignedPreKeyStore
         val getLastSignedPreKeyId: () -> Int = scSignedPreKeyStore::getLastPreKeyId
+        val removeSignedPreKeys: () -> Unit = scSignedPreKeyStore::removeSignedPreKeys
+
+        fun deleteAllRecordsOfAccount() {
+            removeOwnIdentity()
+            removeIdentities()
+            deleteAllSessionsOfAccount()
+            removePreKeys()
+            removeSignedPreKeys()
+        }
     }
 }

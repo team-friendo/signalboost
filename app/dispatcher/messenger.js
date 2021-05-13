@@ -77,6 +77,10 @@ const handleHotlineMessage = async ({ commandResult, dispatchable }) => {
 
 const handleCommandResult = async ({ commandResult, dispatchable }) => {
   const { command, message, notifications, status } = commandResult
+
+  // we can't say anything on a channel that doesn't exist!
+  if (command === commands.DESTROY_CONFIRM && status === statuses.SUCCESS) return
+
   // We don't respond to REPLY or PRIVATE commands b/c their senders receive notifications instead.
   // Rationale: these commands are more like relayable messages than they are actual commands.
   const relayableException =

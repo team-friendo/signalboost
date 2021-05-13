@@ -23,7 +23,7 @@ const { eventTypes } = require('../../db/models/event')
 const {
   defaultLanguage,
   jobs: { channelDestructionGracePeriod },
-  signal: { keystorePath },
+  signal: { client, keystorePath },
 } = require('../../config')
 const { memberTypes } = require('../../db/repositories/membership')
 
@@ -87,7 +87,8 @@ const processDestructionRequests = async () => {
     // - in future, we might consider refactoring to hold a single lock for all destroy calls in this job?
     const toDestroy = await destructionRequestRepository.getMatureDestructionRequests()
     const destructionResults = await sequence(
-      toDestroy.map(({ channelPhoneNumber }) => () => destroy({ phoneNumber: channelPhoneNumber })),
+      toDestroy.map(({ channelPhoneNumber }) =>
+        () => destroy({ phoneNumber: channelPhoneNumber, issuer: issuerTypes.SYSTEM })),
     )
     await destructionRequestRepository.destroyMany(map(toDestroy, 'channelPhoneNumber'))
 
@@ -151,7 +152,7 @@ const redeem = async channel => {
   }
 }
 
-// ({ phoneNumber: string, sender: Membership, notifyOnFailure: boolean, issuer: 'SYSTEM' | 'ADMIN'}) -> SignalboostStatus
+// ({ phoneNumber: string, sender: Membership | null, notifyOnFailure: boolean, issuer: 'SYSTEM' | 'ADMIN'}) -> SignalboostStatus
 const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
   const tx = await app.db.sequelize.transaction()
 
@@ -186,25 +187,24 @@ const destroy = async ({ phoneNumber, sender, notifyOnFailure, issuer }) => {
       )
       logger.log(`...logged destruction of ${phoneNumber}`)
 
-      logger.log(`sending deletion notice to members of: ${phoneNumber} in background...`)
-
-      // it's important to not await channel destruction notifications because we might need to send out several thousand (which will take a long time!)
-      // we don't want to block execution of the deletion job
-
-      notifyMembersOfDeletion(channel, sender, issuer)
-        .then(() => logger.log(`...sent deletion notice to members of: ${phoneNumber}.`))
-        .catch(err =>
-          logger.error(`... error sending deletion notices members of ${phoneNumber}: ${err}`),
-        )
-
       logger.log(`unsubscribing from ${phoneNumber}...`)
       await signal.unsubscribe(phoneNumber, channel.socketId)
       logger.log(`unsubscribed from ${phoneNumber}.`)
+
+      logger.log(`sending deletion notice to members of: ${phoneNumber}...`)
+      await notifyMembersOfDeletion(channel, sender, issuer)
+      logger.log(`...sent deletion notice to members of: ${phoneNumber}.`)
     }
 
-    logger.log(`destroying signald data for ${phoneNumber}...`)
-    await deleteSignalKeystore(phoneNumber)
-    logger.log(`destroyed signald data for ${phoneNumber}.`)
+    if (client === 'SIGNALD') {
+      logger.log(`destroying signald data for ${phoneNumber}...`)
+      await deleteSignalKeystore(phoneNumber)
+      logger.log(`destroyed signald data for ${phoneNumber}.`)
+    } else if (client === 'SIGNALC' && channel) {
+      logger.log(`destroying signalc data for ${phoneNumber}...`)
+      await signal.deleteAccount(phoneNumber, channel.socketId)
+      logger.log(`destroyed signalc data for ${phoneNumber}.`)
+    }
 
     await tx.commit()
     return {
@@ -235,18 +235,19 @@ const deleteVestigalKeystoreEntries = async () => {
 
 // HELPERS
 
-const notifyMembersOfDeletion = (channel, sender, issuer) =>
-  issuer === issuerTypes.ADMIN
+const notifyMembersOfDeletion = (channel, sender, issuer) => {
+  return issuer === issuerTypes.ADMIN
     ? Promise.all([
-        notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
-          memberTypes.ADMIN,
-          sender.adminId,
-        ]),
-        notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
-          memberTypes.SUBSCRIBER,
-        ]),
-      ]).catch(logger.error)
-    : notifier.notifyMembersExcept(channel, sender, notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM)
+      notifier.notifyAdmins(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
+        memberTypes.ADMIN,
+        sender.adminId,
+      ]),
+      notifier.notifySubscribers(channel, notificationKeys.CHANNEL_DESTROYED_BY_ADMIN, [
+        memberTypes.SUBSCRIBER,
+      ]),
+    ]).catch(logger.error)
+    : notifier.notifyMembers(channel, notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM)
+}
 
 // (string) -> Promise<void>
 const deleteSignalKeystore = async phoneNumber => {

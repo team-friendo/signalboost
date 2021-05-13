@@ -2,6 +2,7 @@ package info.signalboost.signalc.store
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.db.Accounts
+import info.signalboost.signalc.db.Sessions
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
@@ -11,7 +12,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import mu.KLogging
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -91,6 +94,11 @@ class AccountStore(app: Application) {
             }.singleOrNull()?.let {
                 VerifiedAccount.fromDb(it)
             }
+        }
+
+    fun delete(username: String) =
+        transaction(db) {
+            Accounts.deleteWhere { Accounts.username eq username }
         }
 
     // testing helpers

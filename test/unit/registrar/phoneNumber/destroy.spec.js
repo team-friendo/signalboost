@@ -59,6 +59,7 @@ describe('phone number registrar -- destroy module', () => {
     notifySubscribersStub,
     removeDirStub,
     rollbackStub,
+    signaldeleteAccountStub,
     signaldUnsubscribeStub,
     twilioRemoveStub,
     updatePhoneNumberStub
@@ -94,7 +95,9 @@ describe('phone number registrar -- destroy module', () => {
       incomingPhoneNumbers: () => ({ remove: twilioRemoveStub }),
     }))
     removeDirStub = sinon.stub(fs, 'remove').returns(['/var/lib'])
+    signaldeleteAccountStub = sinon.stub(signal, 'deleteAccount')
     signaldUnsubscribeStub = sinon.stub(signal, 'unsubscribe')
+
     logEventStub = sinon
       .stub(eventRepository, 'log')
       .returns(Promise.resolve(eventFactory({ type: eventTypes.CHANNEL_DESTROYED })))
@@ -172,6 +175,7 @@ describe('phone number registrar -- destroy module', () => {
           notifyAdminsStub.returns(Promise.resolve())
           notifySubscribersStub.returns(Promise.resolve())
           removeDirStub.returns(Promise.resolve())
+          signaldeleteAccountStub.returns(Promise.resolve())
           twilioRemoveStub.returns(Promise.resolve())
           destroyPhoneNumberStub.returns(Promise.resolve())
         })
@@ -179,9 +183,8 @@ describe('phone number registrar -- destroy module', () => {
         describe('destroy command called from the system', () => {
           it('notifies all the members of the channel of destruction', async () => {
             await destroy({ phoneNumber })
-            expect(notifyMembersExceptStub.getCall(0).args).to.eql([
+            expect(notifyMembersStub.getCall(0).args).to.eql([
               channel,
-              undefined, // b/c sent by system!
               notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
             ])
           })
@@ -205,11 +208,10 @@ describe('phone number registrar -- destroy module', () => {
         })
 
         describe('destroy command called from admin of channel', () => {
-          it('notifies all members of the channel except for the sender', async () => {
+          it('notifies all members of the channel', async () => {
             await destroy({ phoneNumber, sender: admin })
-            expect(notifyMembersExceptStub.getCall(0).args).to.eql([
+            expect(notifyMembersStub.getCall(0).args).to.eql([
               channel,
-              admin,
               notificationKeys.CHANNEL_DESTROYED_BY_SYSTEM,
             ])
           })
@@ -232,12 +234,23 @@ describe('phone number registrar -- destroy module', () => {
           ])
         })
 
-        it("deletes the channel's signal keystore", async () => {
-          await destroy({ phoneNumber })
-          expect(map(removeDirStub.getCalls(), 'args')).to.eql([
-            [`/var/lib/signald/data/${phoneNumber}`],
-            [`/var/lib/signald/data/${phoneNumber}.d`],
-          ])
+        describe("when the signal client is SIGNALD", () => {
+          it("deletes the channel's signal keystore", async () => {
+            await destroy({ phoneNumber })
+            expect(map(removeDirStub.getCalls(), 'args')).to.eql([
+              [`/var/lib/signald/data/${phoneNumber}`],
+              [`/var/lib/signald/data/${phoneNumber}.d`],
+            ])
+          })
+        })
+
+        // TODO: why doesn't this work for overriding the env?
+        describe("when the signal client is SIGNALC", () => {
+          it("makes a delete account request to signalc", async () => {
+            process.env.SIGNAL_CLIENT = 'SIGNALC'
+            await destroy({ phoneNumber })
+            expect(signaldeleteAccountStub.callCount).to.eql(1)
+          })
         })
 
         it('releases the phone number to twilio', async () => {

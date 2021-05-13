@@ -12,6 +12,7 @@ import { outboundAttachmentFactory } from '../../support/factories/sdMessage'
 import { sdMessageOf } from '../../../app/signal/constants'
 const {
   signal: {
+    deleteAccountTimeout,
     diagnosticsPhoneNumber,
     healthcheckTimeout,
     signaldRequestTimeout,
@@ -180,6 +181,34 @@ describe('callback registry', () => {
         })
         await util.wait(isAliveTimeout)
         expect(callbacks.registry[`${messageTypes.IS_ALIVE}-${id}`]).to.eql(undefined)
+      })
+    })
+
+    describe('for a DELETE_ACCOUNT request', () => {
+      it('registers an DELETE_ACCOUNT response handler', () => {
+        callbacks.register({
+          messageType: messageTypes.DELETE_ACCOUNT,
+          id: channelPhoneNumber,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        expect(callbacks.registry[`${messageTypes.DELETE_ACCOUNT}-${channelPhoneNumber}`]).to.eql({
+          callback: callbacks._handleDeleteAccountResponse,
+          resolve: resolveStub,
+          reject: rejectStub,
+          state: undefined,
+        })
+      })
+
+      it('deletes the handler after a timeout', async () => {
+        callbacks.register({
+          messageType: messageTypes.DELETE_ACCOUNT,
+          id: channelPhoneNumber,
+          resolve: resolveStub,
+          reject: rejectStub,
+        })
+        await util.wait(deleteAccountTimeout)
+        expect(callbacks.registry[`${messageTypes.DELETE_ACCOUNT}-${channelPhoneNumber}`]).to.eql(undefined)
       })
     })
   })
@@ -412,6 +441,60 @@ describe('callback registry', () => {
 
     it('deletes the registry entry', () => {
       expect(callbacks.registry[`${messageTypes.VERSION}-${isAliveMessage.id}`]).to.eql(undefined)
+    })
+  })
+
+  describe('a DELETE_ACCOUNT response', () => {
+    const deleteAccountSuccessMessage = {
+      type: messageTypes.DELETE_ACCOUNT_SUCCESS,
+      id,
+      data: {
+        username: channelPhoneNumber
+      }
+    }
+
+    const deleteAccountFailureMessage = {
+      type: messageTypes.DELETE_ACCOUNT_FAILURE,
+      id,
+      data: {
+        username: channelPhoneNumber
+      },
+    }
+
+    beforeEach(() => {
+      callbacks.register({
+        id: channelPhoneNumber,
+        messageType: messageTypes.DELETE_ACCOUNT,
+        resolve: resolveStub,
+        reject: rejectStub,
+      })
+    })
+
+    describe('when deleting the account succeeded', () => {
+      it('resolves a promise with a `delete_account` message', () => {
+        callbacks.handle(deleteAccountSuccessMessage, 0)
+        expect(resolveStub.getCall(0).args).to.eql([{
+          message: callbacks.messages.deleteAccount.success(deleteAccountSuccessMessage.id),
+          status: statuses.SUCCESS
+        }])
+      })
+
+      it('deletes the registry entry', () => {
+        callbacks.handle(deleteAccountSuccessMessage, 0)
+        expect(callbacks.registry[`${messageTypes.DELETE_ACCOUNT}-${deleteAccountSuccessMessage.id}`]).to.eql(undefined)
+      })
+    })
+
+    describe('when deleting the account failed', () => {
+      it('rejects a promise with a `delete_account` message', () => {
+        callbacks.handle(deleteAccountFailureMessage, 0)
+        expect(rejectStub.getCall(0).args[0]).to.be.an('Error')
+      })
+
+      it('deletes the registry entry', () => {
+        callbacks.handle(deleteAccountFailureMessage, 0)
+        expect(callbacks.registry[`${messageTypes.DELETE_ACCOUNT}-${deleteAccountFailureMessage.id}`]).to.eql(undefined)
+      })
     })
   })
 

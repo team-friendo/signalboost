@@ -119,6 +119,37 @@ sealed class SocketResponse {
     ): SocketResponse()
 
     @Serializable
+    @SerialName("delete_account_succeeded")
+    data class DeleteAccountSuccess(
+        val id: String,
+        val data: UserData,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.DeleteAccount) = DeleteAccountSuccess(
+                request.id,
+                UserData(request.username),
+            )
+        }
+    }
+
+    @Serializable
+    @SerialName("delete_account_failed")
+    data class DeleteAccountFailure(
+        val id: String,
+        val data: UserData,
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse() {
+        companion object {
+            fun of(request: SocketRequest.DeleteAccount, error: Throwable) = DeleteAccountFailure(
+                request.id,
+                UserData(request.username),
+                error
+            )
+        }
+    }
+
+    @Serializable
     @SerialName("is_alive")
     data class IsAlive(val id: String): SocketResponse()
 

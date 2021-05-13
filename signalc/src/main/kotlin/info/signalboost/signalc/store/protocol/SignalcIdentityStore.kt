@@ -142,6 +142,14 @@ class SignalcIdentityStore(
         }
     }
 
+    fun removeIdentities() {
+        lock.acquireForTransaction(db) {
+            Identities.deleteWhere {
+                Identities.accountId eq accountId
+            }
+        }
+    }
+
     fun removeOwnIdentity() {
         lock.acquireForTransaction(db) {
             OwnIdentities.deleteWhere {

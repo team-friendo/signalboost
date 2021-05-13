@@ -11,6 +11,7 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import mu.KLoggable
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
@@ -69,6 +70,18 @@ class AccountManager(private val app: Application) {
             else -> null
         }
 
+    suspend fun deleteAccountFromSignal(account: Account) {
+        return app.coroutineScope.async(Concurrency.Dispatcher) {
+            accountManagerOf(account).deleteAccount()
+        }.await()
+    }
+
+    suspend fun deleteAccountFromDatabase(account: Account) {
+        transaction(app.db) {
+            app.protocolStore.of(account).deleteAllRecordsOfAccount()
+            app.accountStore.delete(account.username)
+        }
+    }
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {

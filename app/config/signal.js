@@ -6,6 +6,7 @@ const defaults = {
   client: process.env.SIGNAL_CLIENT || 'SIGNALD',
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   defaultSubscriberLimit: 500,
+  deleteAccountTimeout: 1000 * 30, // 30 seconds
   diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(/"/g, ''),
   expiryUpdateDelay: 200, // 200 millis
   healthcheckTimeout: 1000 * 60 * 15, // 15 min
@@ -36,6 +37,7 @@ const test = {
   attachmentSendDelay: 10, // 10 millis
   broadcastBatchInterval: 10, // 10 millis
   broadcastBatchSize: 1,
+  deleteAccountTimeout: 1, // millis
   expiryUpdateDelay: 1, // millis
   healthcheckTimeout: 20, // millis
   healthcheckSpacing: 1, // millis

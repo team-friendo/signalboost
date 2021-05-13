@@ -8,6 +8,7 @@ const { statuses } = util
 const { get } = require('lodash')
 const {
   signal: {
+    deleteAccountTimeout,
     healthcheckTimeout,
     isAliveTimeout,
     signaldRequestTimeout,
@@ -41,7 +42,12 @@ const {
  ***/
 
 const messages = {
-  timeout: messageType => `Singald response timed out for request of type: ${messageType}`,
+  deleteAccount: {
+    error: (phoneNumber, reason) => `Failed to delete account for ${phoneNumber}. Reason: ${reason}`,
+    success: phoneNumber => `Successfully deleted account for ${phoneNumber}`,
+  },
+  send: (sender, recipient) => `Successfully sent message from ${sender} to ${recipient}`,
+  timeout: messageType => `Signald response timed out for request of type: ${messageType}`,
   verification: {
     error: (phoneNumber, reason) =>
       `Signal registration failed for ${phoneNumber}. Reason: ${reason}`,
@@ -72,6 +78,7 @@ const register = async ({ messageType, id, resolve, reject, state }) => {
 // SignaldMessageType -> Callback
 const _callbackFor = messageType =>
   ({
+    [messageTypes.DELETE_ACCOUNT]: _handleDeleteAccountResponse,
     [messageTypes.HEALTHCHECK]: _handleHealthcheckResponse,
     [messageTypes.IS_ALIVE]: _handleIsAliveResponse,
     [messageTypes.SEND]: _handleSendResponse,
@@ -82,6 +89,7 @@ const _callbackFor = messageType =>
 // SignaldMessageType => number
 const _timeoutFor = messageType =>
   ({
+    [messageTypes.DELETE_ACCOUNT]: deleteAccountTimeout,
     [messageTypes.HEALTHCHECK]: healthcheckTimeout,
     [messageTypes.IS_ALIVE]: isAliveTimeout,
     [messageTypes.SEND]: signaldSendTimeout,
@@ -93,6 +101,10 @@ const _timeoutFor = messageType =>
 const handle = (message, socketId) => {
   // called from dispatcher.relay
   const { callback, resolve, reject, state } = {
+    [messageTypes.DELETE_ACCOUNT_FAILURE]:
+      registry[`${messageTypes.DELETE_ACCOUNT}-${get(message, 'data.username')}`],
+    [messageTypes.DELETE_ACCOUNT_SUCCESS]:
+      registry[`${messageTypes.DELETE_ACCOUNT}-${get(message, 'data.username')}`],
     [messageTypes.IS_ALIVE]: registry[`${messageTypes.IS_ALIVE}-${message.id}`],
     [messageTypes.MESSAGE]:
       registry[`${messageTypes.HEALTHCHECK}-${_parseHealthcheckResponseId(message)}`],
@@ -110,9 +122,21 @@ const handle = (message, socketId) => {
 
 // CALLBACKS
 
+// (IncomingSignaldMessage, function, function) -> void
+const _handleDeleteAccountResponse = ({ message, resolve, reject }) => {
+  delete registry[`${messageTypes.DELETE_ACCOUNT}-${message.id}`]
+  if (message.type === messageTypes.DELETE_ACCOUNT_FAILURE)
+    reject(new Error(messages.deleteAccount.error(message.id, message.error)))
+  if (message.type === messageTypes.DELETE_ACCOUNT_SUCCESS)
+    resolve({
+      status: statuses.SUCCESS,
+      message: messages.deleteAccount.success(message.id),
+    })
+}
+
 const _handleIsAliveResponse = ({ resolve }) => resolve(messageTypes.IS_ALIVE)
 
-const _handleSendResponse = ({ message, state }) => {
+const _handleSendResponse = ({ message, resolve, state }) => {
   delete registry[`${messageTypes.SEND}-${message.id}`]
 
   if (get(message, 'data.0.identityFailure')) {
@@ -120,6 +144,13 @@ const _handleSendResponse = ({ message, state }) => {
   }
 
   _measureRoundTrip(state)
+
+  if (resolve) {
+    resolve({
+      status: statuses.SUCCESS,
+      message: messages.send(get(message, 'data.0.address.number'))
+    })
+  }
 }
 
 // (SendResult, CbState) => void
@@ -198,6 +229,7 @@ module.exports = {
   clear,
   handle,
   register,
+  _handleDeleteAccountResponse,
   _handleHealthcheckResponse,
   _handleIsAliveResponse,
   _handleSendResponse,

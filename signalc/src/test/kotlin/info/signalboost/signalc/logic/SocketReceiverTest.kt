@@ -14,6 +14,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genRegiste
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genAbortRequest
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genDeleteAccountRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genIsAliveRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
@@ -45,6 +46,7 @@ import kotlinx.coroutines.test.runBlockingTest
 import okio.ByteString.Companion.decodeHex
 import org.whispersystems.signalservice.api.push.exceptions.CaptchaRequiredException
 import java.io.IOException
+import java.lang.Exception
 import java.net.Socket
 import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
@@ -163,6 +165,84 @@ class SocketReceiverTest : FreeSpec({
                     eventually(timeout) {
                         verify {
                             Application.Exit.withStatus(0)
+                        }
+                    }
+                }
+            }
+
+            "DELETE_ACCOUNT request" - {
+                val request = genDeleteAccountRequest(username = senderPhoneNumber)
+                coEvery { app.accountManager.load(senderPhoneNumber) } returns verifiedSenderAccount
+                val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
+                    every { deleteAllRecordsOfAccount() } returns mockk()
+                }
+                every {
+                    app.protocolStore.of(verifiedSenderAccount)
+                } returns mockProtocolStore
+
+                "all tasks succeed" - {
+                    "loads an account" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.accountManager.load(senderPhoneNumber)
+                            }
+                        }
+                    }
+
+                    "deletes account from signal server" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.accountManager.deleteAccountFromSignal(verifiedSenderAccount)
+                            }
+                        }
+                    }
+
+                    "deletes all account + protocol store data for account" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.accountStore.delete(senderPhoneNumber)
+                                mockProtocolStore.deleteAllRecordsOfAccount()
+                            }
+                        }
+                    }
+
+                    "vacuums the database to remove dead rows and clean up indices" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.databaseUtil.vacuumDatabase()
+                            }
+                        }
+                    }
+
+                    "sends delete account success response to socket" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.socketSender.send(SocketResponse.DeleteAccountSuccess.of(request))
+                            }
+                        }
+                    }
+                }
+
+                "a deletion task fails" - {
+                    "sends delete account failure reponse to socket" {
+                        val error = Exception("oh noes!")
+                        every { mockProtocolStore.deleteAllRecordsOfAccount() } throws error
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.socketSender.send(SocketResponse.DeleteAccountFailure.of(request, error))
+                            }
                         }
                     }
                 }

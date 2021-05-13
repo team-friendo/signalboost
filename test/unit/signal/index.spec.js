@@ -72,6 +72,14 @@ describe('signal module', () => {
       expect(writeStub.getCall(0).args).to.eql([{ type: messageTypes.ABORT }, 42])
     })
 
+    it('sends a delete_account command', () => {
+      signal.deleteAccount(channelPhoneNumber, 42)
+      expect(writeStub.getCall(0).args).to.eql([{
+        type: messageTypes.DELETE_ACCOUNT,
+        username: channelPhoneNumber
+      }, 42])
+    })
+
     it('sends a subscribe command', () => {
       signal.subscribe(channelPhoneNumber)
 
@@ -363,7 +371,7 @@ describe('signal module', () => {
       describe('when signald is not alive', () => {
         it('rejects with an error', async () => {
           expect(await signal.isAlive().catch(e => e)).to.eql({
-            message: 'Singald response timed out for request of type: is_alive',
+            message: 'Signald response timed out for request of type: is_alive',
             status: 'ERROR',
           })
         })

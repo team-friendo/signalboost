@@ -452,10 +452,19 @@ const notifications = {
 
   channelDestroyedByAdmin: (audience, adminId) =>
     ({
-      ADMIN: `ADMIN ${adminId} has destroyed this channel. All associated data has been deleted.`,
+      ADMIN:
+        `[NOTIFICATION]\nADMIN ${adminId} has initiated the destruction of this channel and all associated user data.
+This will be completed momentarily, and you will no longer be able to send or receive messages.
+For any questions, please visit https://signalboost.info/.`,
+
       SUBSCRIBER:
-        'Channel and all associated data has been permanently destroyed by the admins of this channel.',
+        `[NOTIFICATION]\nThis channel and all associated user data is being destroyed.
+This will be completed momentarily, and you will no longer be able to send or receive messages.
+For any questions, please visit https://signalboost.info/.`,
     }[audience]),
+
+  channelDestroyedBySystem:
+    '[NOTIFICATION]\nChannel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelDestructionScheduled: hoursToLive =>
     `Hello! This channel will be destroyed in ${hoursToLive} hours due to lack of use.
@@ -469,9 +478,6 @@ For more information, visit signalboost.info/how-to.`,
   channelDestructionFailed: (phoneNumber, error) =>
     `Failed to destroy channel for phone number: ${phoneNumber}.
 ERROR: ${error}`,
-
-  channelDestroyedBySystem:
-    'Channel destroyed due to lack of use. To create a new channel, visit https://signalboost.info',
 
   channelRedeemed:
     'This channel was scheduled to be destroyed due to lack of use. However, since you used the channel recently, it will no longer be destroyed. Yay!',

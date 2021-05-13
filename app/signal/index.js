@@ -147,6 +147,19 @@ const abort = socketId =>
   app.sockets.write({ type: messageTypes.ABORT }, socketId)
 
 // string => Promise<string>
+const deleteAccount = async (phoneNumber, socketId) => {
+  await app.sockets.write({ type: messageTypes.DELETE_ACCOUNT, username: phoneNumber }, socketId)
+  return new Promise((resolve, reject) =>
+    callbacks.register({
+      id: phoneNumber,
+      messageType: messageTypes.DELETE_ACCOUNT,
+      resolve,
+      reject,
+    }),
+  )
+}
+
+// string => Promise<string>
 const isAlive = async socketId => {
   // checks to see if signald is a live by pinging and waiting for echo back
   // resolves with success or rejects with timeout
@@ -216,6 +229,28 @@ const sendMessage = async (sdMessage, socketId) => {
     },
   })
   return id
+}
+
+// (OutboundSignaldMessage, number) -> Promise<string>
+const sendMessageAndWait = async (sdMessage, socketId) => {
+  const id = await app.sockets.write(sdMessage, socketId)
+
+  console.log("GOT HERE IN SENDMESSAGEANDWAIT, ID: ", id)
+
+  return new Promise((resolve, reject) =>
+    callbacks.register({
+      id,
+      messageType: messageTypes.SEND,
+      resolve,
+      reject,
+      state: {
+        channelPhoneNumber: sdMessage.username,
+        messageBody: sdMessage.messageBody,
+        attachments: sdMessage.attachments,
+        whenSent: util.nowInMillis(),
+      },
+    })
+  )
 }
 
 const setExpiration = async (channelPhoneNumber, memberPhoneNumber, expiresInSeconds, socketId) => {
@@ -315,6 +350,7 @@ module.exports = {
   messageTypes,
   trustLevels,
   abort,
+  deleteAccount,
   healthcheck,
   isAlive,
   parseOutboundSdMessage,
@@ -323,6 +359,7 @@ module.exports = {
   register,
   run,
   sendMessage,
+  sendMessageAndWait,
   subscribe,
   trust,
   verify,

@@ -71,6 +71,7 @@ class SocketReceiver(private val app: Application) {
         try {
             when (request) {
                 is SocketRequest.Abort -> abort(request, socketHash)
+                is SocketRequest.DeleteAccount -> deleteAccount(request)
                 is SocketRequest.IsAlive -> isAlive(request)
                 is SocketRequest.ParseError -> parseError(request)
                 is SocketRequest.Register -> register(request)
@@ -110,6 +111,27 @@ class SocketReceiver(private val app: Application) {
         logger.info("Received `abort`, exiting...")
         app.socketSender.send(SocketResponse.AbortWarning(request.id, socketHash))
         app.exit(0)
+    }
+
+    private suspend fun deleteAccount(request: SocketRequest.DeleteAccount) {
+        val (id, username) = request
+        try {
+            logger.info { "Starting account deletion for $username..." }
+            val account = app.accountManager.load(username)
+
+            // database deletions
+            app.accountManager.deleteAccountFromDatabase(account)
+            app.databaseUtil.vacuumDatabase()
+
+            // server deletion, always do this last since we can't roll this back!
+            app.accountManager.deleteAccountFromSignal(account)
+
+            app.socketSender.send(SocketResponse.DeleteAccountSuccess.of(request))
+            logger.info { "... account deleted for $username!" }
+        } catch (e: Throwable) {
+            logger.error { "Failed to delete all records of account for $username:\n ${e.stackTraceToString()}" }
+            app.socketSender.send(SocketResponse.DeleteAccountFailure.of(request, e))
+        }
     }
 
     private suspend fun isAlive(request: SocketRequest.IsAlive) {

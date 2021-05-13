@@ -9,6 +9,7 @@ import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProfileStore
 import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.util.DatabaseUtil
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.*
@@ -159,6 +160,7 @@ class Application(val config: Config.App){
     val db by lazy {
         Database.connect(dataSource)
     }
+    lateinit var databaseUtil: DatabaseUtil
 
     /**************
      * LIFECYCLE
@@ -188,6 +190,13 @@ class Application(val config: Config.App){
     ):  T =
         if(config.mocked.contains(component)) mockk(block = mockAnswers)
         else (component.primaryConstructor!!::call)(arrayOf(this@Application))
+
+    private inline fun <reified T: Any>initializeDataSourceComponent(
+        component: KClass<T>,
+        mockAnswers: T.() -> Unit = {}
+    ):  T =
+        if(config.mocked.contains(component)) mockk(block = mockAnswers)
+        else (component.primaryConstructor!!::call)(arrayOf(dataSource))
 
     interface ReturningRunnable<T> {
         suspend fun run(): T
@@ -239,6 +248,7 @@ class Application(val config: Config.App){
 
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
+        databaseUtil = initializeDataSourceComponent(DatabaseUtil::class, Mocks.databaseUtil)
         accountStore = initializeColdComponent(AccountStore::class)
         profileStore = initializeColdComponent(ProfileStore::class, Mocks.profileStore)
         protocolStore = initializeColdComponent(ProtocolStore::class, Mocks.protocolStore)

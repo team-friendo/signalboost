@@ -1,5 +1,8 @@
 const messageTypes = {
   ABORT: 'abort',
+  DELETE_ACCOUNT: 'delete_account',
+  DELETE_ACCOUNT_FAILURE: 'delete_account_failed',
+  DELETE_ACCOUNT_SUCCESS: 'delete_account_succeeded',
   ERROR: 'unexpected_error',
   GET_IDENTITIES: 'get_identities',
   HEALTHCHECK: 'healthcheck',

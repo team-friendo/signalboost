@@ -6,7 +6,9 @@ import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SignalcSendResult
 import info.signalboost.signalc.store.ProfileStore
+import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
+import info.signalboost.signalc.util.DatabaseUtil
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -23,6 +25,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalPathApi
 object Mocks {
     val accountManager: AccountManager.() -> Unit = {
+        coEvery { deleteAccountFromSignal(any()) } returns mockk()
         coEvery { load(any()) } returns mockk()
         coEvery { register(any(), any()) } returns mockk()
         coEvery { verify(any(), any()) } returns mockk()
@@ -31,8 +34,17 @@ object Mocks {
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
         coEvery { getUnidentifiedAccessPair(any(), any()) } returns mockk()
     }
+    val accountStore: AccountStore.() -> Unit = {
+        coEvery { delete(any()) } returns mockk()
+    }
+    val databaseUtil: DatabaseUtil.() -> Unit = {
+        every { vacuumDatabase() } returns mockk()
+    }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
+        every { connection } returns mockk {
+            every { autoCommit } returns false
+        }
     }
     val profileStore: ProfileStore.() -> Unit = {
         coEvery { storeProfileKey(any(), any(), any())} returns Unit
@@ -41,6 +53,7 @@ object Mocks {
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
             every { lock } returns mockk()
+            every { deleteAllRecordsOfAccount() } returns mockk()
             every { saveIdentity(any(), any()) } returns mockk()
             every { archiveAllSessions(any()) } returns Unit
             coEvery { getLastPreKeyId() } returns 0

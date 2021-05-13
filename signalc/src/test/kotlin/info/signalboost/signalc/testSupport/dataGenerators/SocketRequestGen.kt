@@ -17,6 +17,9 @@ object SocketRequestGen {
 
     fun genAbortRequest() = SocketRequest.Abort(genUuidStr())
 
+    fun genDeleteAccountRequest(id: String = genUuidStr(), username: String = genPhoneNumber()) =
+        SocketRequest.DeleteAccount(id, username)
+
     fun genIsAliveRequest(id: String = genUuidStr()) = SocketRequest.IsAlive(id)
 
     fun genRegisterRequest(

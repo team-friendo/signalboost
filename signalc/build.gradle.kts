@@ -30,7 +30,6 @@ application {
     mainClass.set(entrypoint)
     mainClassName = entrypoint
     applicationDefaultJvmArgs = listOf("-Dkotlinx.coroutines.debug")
-
 }
 
 tasks.withType<KotlinCompile> {
