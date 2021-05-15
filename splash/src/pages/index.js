@@ -15,6 +15,21 @@ import {
 const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: communicate with mass audiences securely and directly via message broadcasts and hotlines" />
+    <p className={indexStyles.outageAlert}>
+      *******************************************
+    </p>
+    <h2 className={indexStyles.outageAlert}>OUTAGE ALERT</h2>
+    <p>
+      Signalboost is currently experiencing a systemwide outage. We are
+      investigating the cause of the problem, which we suspect to be related to
+      recent upstream changes in the Signal service itself. We hope to get the
+      system back up and running as soon as we can, and apologize for any
+      inconvenience caused by this!
+    </p>
+    <p className={indexStyles.outageAlert}>
+      *******************************************
+    </p>
+
     <div className={indexStyles.personas}>
       <img
         className={indexStyles.icon__left}
