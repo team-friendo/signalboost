@@ -22,9 +22,16 @@ const IndexPage = () => (
     <p>
       Signalboost is currently experiencing a systemwide outage. We are
       investigating the cause of the problem, which we suspect to be related to
-      recent upstream changes in the Signal service itself. We hope to get the
-      system back up and running as soon as we can, and apologize for any
-      inconvenience caused by this!
+      recent upstream changes in the Signal service introduced to combat
+      spammers. We hope to get the system back up and running as soon as we can,
+      but suspect it might take several days.{' '}
+    </p>
+    <p>
+      We care very deeply about supporting the work our amazing users do, so the
+      prospect of a prolonged outage makes us as deeply sad and frustrated as it
+      might make you. As such, you can rest assured, we will be working as hard
+      as we can to get things back up and running as soon as is possible under
+      the circumstances! Stay tuned here for any updates.1
     </p>
     <p className={indexStyles.outageAlert}>
       *******************************************
