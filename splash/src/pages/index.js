@@ -31,7 +31,7 @@ const IndexPage = () => (
       prospect of a prolonged outage makes us as deeply sad and frustrated as it
       might make you. As such, you can rest assured, we will be working as hard
       as we can to get things back up and running as soon as is possible under
-      the circumstances! Stay tuned here for any updates.1
+      the circumstances! Stay tuned here for updates.
     </p>
     <p className={indexStyles.outageAlert}>
       *******************************************
