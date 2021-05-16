@@ -97,10 +97,14 @@ describe('jobs service', () => {
         expect(deleteInvitesStub.callCount).to.be.at.least(2)
       })
       it('launches a destruction request issuing job', () => {
-        expect(requestDestructionStub.callCount).to.be.at.least(2)
+        // TODO: Restore after spam outage resolved!
+        // expect(requestDestructionStub.callCount).to.be.at.least(2)
+        expect(requestDestructionStub.callCount).to.eql(0)
       })
-      it('lauches a destruction request processing job', () => {
-        expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
+      it('launches a destruction request processing job', () => {
+        // TODO: restore after spam outage resolved!
+        // expect(processDestructionRequestsStub.callCount).to.be.at.least(2)
+        expect(processDestructionRequestsStub.callCount).to.eql(0)
       })
       it('launches a healtcheck job', async () => {
         expect(sendHealthchecksStub.callCount).to.be.at.least(2)
