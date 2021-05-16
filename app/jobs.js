@@ -9,7 +9,6 @@ const sharding = require('./sharding')
 const { values } = require('lodash')
 const {
   jobs: {
-    channelDestructionInterval,
     healthcheckInterval,
     inviteDeletionInterval,
     shouldRunKeystoreDeletion,
@@ -70,17 +69,24 @@ const run = async () => {
   )
   logger.log('----- Launched invite scrubbing job.')
 
-  logger.log('---- Launching job to issue destruction requests for stale channels...')
-  cancelations.requestDestructionsJob = util.repeatUntilCancelled(() => {
-    phoneNumberRegistrar.requestToDestroyStaleChannels().catch(logger.error)
-  }, channelDestructionInterval)
-  logger.log('---- Launched job to issue destruction requests for stale channels.')
+  /**
+   * TODO(agustuser|2021-05-16):
+   *   restore these jobs once spam-related outage is fixed
+   *   (we comment them during outage b/c admins won't receive notification and can't respond
+   *    to prevent channel desctruction.)
+   **/
 
-  logger.log('---- Launching job to process channel destruction requests...')
-  cancelations.processDestructionRequestsJob = util.repeatUntilCancelled(() => {
-    phoneNumberRegistrar.processDestructionRequests().catch(logger.error)
-  }, channelDestructionInterval)
-  logger.log('---- Launched job to process channel destruction requests.')
+  // logger.log('---- Launching job to issue destruction requests for stale channels...')
+  // cancelations.requestDestructionsJob = util.repeatUntilCancelled(() => {
+  //   phoneNumberRegistrar.requestToDestroyStaleChannels().catch(logger.error)
+  // }, channelDestructionInterval)
+  // logger.log('---- Launched job to issue destruction requests for stale channels.')
+  //
+  // logger.log('---- Launching job to process channel destruction requests...')
+  // cancelations.processDestructionRequestsJob = util.repeatUntilCancelled(() => {
+  //   phoneNumberRegistrar.processDestructionRequests().catch(logger.error)
+  // }, channelDestructionInterval)
+  // logger.log('---- Launched job to process channel destruction requests.')
 
   if (shouldRunHealthchecks) {
     logger.log('---- Launching healthcheck job...')
@@ -100,6 +106,9 @@ const run = async () => {
   return { stop }
 }
 
-const stop = () => values(cancelations).forEach(fn => fn())
+const stop = () =>
+  values(cancelations).forEach(fn => {
+    if (typeof fn === 'function') fn()
+  })
 
 module.exports = { run, stop }
