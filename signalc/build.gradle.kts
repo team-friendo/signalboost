@@ -78,6 +78,7 @@ object Versions {
     const val kotlin = "1.4.30"
     const val h2 = "1.4.199"
     const val hikariCp = "4.0.3"
+    const val lettuce = "6.1.2.RELEASE"
     const val libsignal = "2.15.3_unofficial_19_sb_3"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
@@ -126,6 +127,8 @@ dependencies {
     implementation("io.prometheus:simpleclient:0.9.0")
     implementation("io.prometheus:simpleclient_hotspot:0.9.0")
     implementation("io.prometheus:simpleclient_httpserver:0.9.0")
+
+    implementation("io.lettuce:lettuce-core:${Versions.lettuce}")
 
     // migrations
     implementation("org.liquibase:liquibase-core:${Versions.liquibase}")

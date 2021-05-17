@@ -33,6 +33,11 @@ volumes:
   loadtest_prometheus_data:
 
 services:
+  cache:
+    image: redis:6
+    container_name: signalc_cache
+    ports:
+      - 0.0.0.0:6379:6379
 
   db:
     image: postgres:12
@@ -52,11 +57,13 @@ services:
     environment:
       SIGNALC_ENV: ${SIGNALC_ENV:-load}
       SIGNALC_DB_NAME: loadtest_receiver_signalc
+      SIGNALC_CACHE_NAME: receiver
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
+      - cache
       - db
     ports:
       - 0.0.0.0:5005:5005 # for remote debugger
@@ -160,11 +167,13 @@ services:
     environment:
       SIGNALC_ENV: ${SIGNALC_ENV:-load}
       SIGNALC_DB_NAME: loadtest_sender_signalc
+      SIGNALC_CACHE_NAME: sender
       GRADLE_USER_HOME: /home/gradle/.gradle
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       DEBUG_MODE: ${DEBUG_MODE:-0}
       DB_HOST: db
     depends_on:
+      - cache
       - db
     ports:
       - 0.0.0.0:5006:5005 # for remote debugger

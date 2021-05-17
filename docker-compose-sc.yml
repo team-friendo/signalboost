@@ -92,6 +92,12 @@ services:
       - ./bin/db/:/bin/db/
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+  
+  cache:
+    image: redis:6
+    container_name: signalc_cache
+    ports:
+      - 0.0.0.0:6379:6379
 
   ngrok:
     container_name: signalboost_ngrok # todo: this should just be ngrok?

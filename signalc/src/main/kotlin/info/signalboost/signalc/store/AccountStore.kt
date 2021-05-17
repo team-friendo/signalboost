@@ -6,12 +6,13 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
+import io.lettuce.core.api.sync.RedisCommands
 import mu.KLogging
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.util.*
 
-class AccountStore(private val db: Database) {
+class AccountStore(private val db: Database, private val cache: RedisCommands<String, String>) {
     companion object: KLogging()
 
     enum class Status(val asString: String) {

@@ -5,7 +5,7 @@ const { signalcPhoneNumbers, signaldPhoneNumbers } = require('./constants')
 const { nowTimestamp, loggerOf, wait } = require('../app/util')
 const logger = loggerOf('testLag')
 
-const numRecipients = 100
+const numRecipients = 1000
 
 ;(async () => {
   logger.log('STARTING LOAD TEST...')

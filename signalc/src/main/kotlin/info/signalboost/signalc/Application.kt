@@ -8,6 +8,9 @@ import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
+import io.lettuce.core.RedisClient
+import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.api.sync.RedisCommands
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.*
@@ -152,9 +155,13 @@ class Application(val config: Config.App){
     lateinit var protocolStore: ProtocolStore
 
     private lateinit var dataSource: HikariDataSource
-    private val db by lazy {
+    val db by lazy {
         Database.connect(dataSource)
     }
+
+    private lateinit var redisClient: RedisClient
+    private lateinit var connection: StatefulRedisConnection<String, String>
+    private lateinit var cacheClient: RedisCommands<String, String>
 
     /**************
      * LIFECYCLE
@@ -177,13 +184,19 @@ class Application(val config: Config.App){
             }
         )
 
+    private fun initializeCache(): RedisCommands<String, String> {
+        redisClient = RedisClient.create("redis://cache:6379/0")
+        connection = redisClient.connect()
+        return connection.sync()
+    }
+
 
     private inline fun <reified T: Any>initializeStore(
         component: KClass<T>,
         mockAnswers: T.() -> Unit = {}
     ):  T =
         if(config.mocked.contains(component)) mockk(block = mockAnswers)
-        else (component.primaryConstructor!!::call)(arrayOf(db))
+        else (component.primaryConstructor!!::call)(arrayOf(db, cacheClient))
 
 
     private inline fun <reified T: Any>initializeColdComponent(
@@ -243,6 +256,7 @@ class Application(val config: Config.App){
 
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
+        cacheClient = initializeCache()
         accountStore = initializeStore(AccountStore::class)
         protocolStore = initializeStore(ProtocolStore::class, Mocks.protocolStore)
 
@@ -304,6 +318,8 @@ class Application(val config: Config.App){
         // then shutdown all resources...
         socketServer.stop()
         dataSource.closeQuietly()
+        connection.close()
+        redisClient.shutdown()
         logger.info { "...application stopped!"}
         logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
 
