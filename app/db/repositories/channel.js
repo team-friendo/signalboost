@@ -3,7 +3,7 @@ const util = require('../../util')
 const { Op } = require('sequelize')
 const { loggerOf } = require('../../util')
 const { memberTypes } = require('./membership')
-const { map } = require('lodash')
+const { isEmpty, map } = require('lodash')
 const {
   jobs: { channelExpiryInMillis },
   signal: { diagnosticsPhoneNumber, numbersToExcludeFromHealthcheck, supportPhoneNumber },
@@ -97,7 +97,7 @@ const findDeep = phoneNumber =>
 
 // string => Promise<boolean>
 const isMaintainer = async phoneNumber => {
-  if (!diagnosticsPhoneNumber) return false
+  if (isEmpty(diagnosticsPhoneNumber)) return false
   try {
     const maintainerPhoneNumbers = getAdminPhoneNumbers(await getDiagnosticsChannel())
     return maintainerPhoneNumbers.includes(phoneNumber)
@@ -162,13 +162,13 @@ const getChannelsOnSocket = socketId => app.db.channel.findAll({ where: { socket
 
 // () => Promise<Channel>
 const getDiagnosticsChannel = async () => {
-  if (!diagnosticsPhoneNumber) return null
+  if (isEmpty(diagnosticsPhoneNumber)) return null
   return findDeep(diagnosticsPhoneNumber)
 }
 
 // () => Promise<Array<Membership>>
 const getMaintainers = async () => {
-  if (!diagnosticsPhoneNumber) return []
+  if (isEmpty(diagnosticsPhoneNumber)) return []
   return getAdminMemberships(await getDiagnosticsChannel())
 }
 

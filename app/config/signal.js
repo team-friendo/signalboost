@@ -6,6 +6,7 @@ const defaults = {
   client: process.env.SIGNAL_CLIENT || 'SIGNALD',
   defaultMessageExpiryTime: 60 * 60 * 24 * 7, // 1 week
   defaultSubscriberLimit: 500,
+  diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(/"/g, ''),
   expiryUpdateDelay: 200, // 200 millis
   healthcheckTimeout: 1000 * 60 * 15, // 15 min
   healthcheckSpacing: 100, // 100 millis
@@ -27,7 +28,6 @@ const defaults = {
   signaldSendTimeout: 1000 * 60 * 60, // 60 min
   signaldStartupTime: 3000 * 60, // 3 min
   supportPhoneNumber: (process.env.SUPPORT_CHANNEL_NUMBER || '').replace(/"/g, ''),
-  diagnosticsPhoneNumber: (process.env.DIAGNOSTICS_CHANNEL_NUMBER || '').replace(/"/g, ''),
   welcomeDelay: 3000, // 3 sec
 }
 
