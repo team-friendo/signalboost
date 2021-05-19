@@ -5,6 +5,8 @@ set -euo pipefail
 # throat-clearing #
 ###################
 
+export NODE_ENV=production
+
 project_root="/srv/signalboost"
 docker_compose="docker-compose --env-file .env -f ${project_root}/docker-compose.yml"
 
