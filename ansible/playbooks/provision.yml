@@ -8,6 +8,7 @@
     secrets_method: copy
     backup_dir: /srv/backups
     # docker dependencies (pip packages)
+    pip_package: python3-pip
     pip_install_packages:
       - name: docker
       - name: docker-compose
@@ -56,7 +57,6 @@
         - lsof
         - rsync
         - python3
-        - python3-pip
         - python3-setuptools
         - emacs-nox
     tags: packages
@@ -221,7 +221,16 @@
       line: "/swapfile   none    swap    sw    0   0"
       state: present
 
+  ################
+  # MISC CLEANUP #
+  ################
+
   # https://github.com/grafana/loki/blob/v1.5.0/docs/clients/docker-driver/README.md
   - name: Install Loki docker driver plugin
     command: docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
     tags: docker
+
+  # this is intended to avoid EAI_AGAIN errors on node install attempts
+  # in deploy step that can usually be fixed manually by restarting docker (which we here attempt to automate)
+  - name: Restart docker
+    command: systemctl restart docker
