@@ -64,11 +64,6 @@ echo "--- moving backups to target..."
 keypath=/root/.ssh/id_sb_deploy
 target_dir="/srv/backups"
 
-echo "--- making target backup dir..."
-
-# make target backup directory
-ssh -i ${keypath} sb_backup "mkdir -p ${target_dir}"
-
 echo "--- scp-ing to backup dir..."
 
 # here, we use the `sb_backup` host defined in /root/.ssh/config
