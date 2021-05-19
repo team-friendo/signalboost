@@ -417,9 +417,10 @@ class ProtocolStore(private val db: Database) {
         override fun archiveSession(address: SignalProtocolAddress) {
             lock.acquire().use { _ ->
                 transaction(db) {
-                    loadSession(address).let {
-                        it.archiveCurrentState()
-                        storeSession(address, it)
+                    Sessions.findByAddress(accountId, address)?.let {
+                        val session = SessionRecord(it[sessionBytes])
+                        session.archiveCurrentState()
+                        storeSession(address, session)
                     }
                 }
             }
