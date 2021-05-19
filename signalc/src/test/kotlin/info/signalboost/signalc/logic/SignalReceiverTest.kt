@@ -241,14 +241,6 @@ class SignalReceiverTest : FreeSpec({
                     messageReceiver.subscribe(recipientAccount)!!
                 }
 
-                "attempts to decrypt the envelope" {
-                    eventually(timeout, pollInterval) {
-                        verify {
-                            anyConstructed<SignalServiceCipher>().decrypt(envelope)
-                        }
-                    }
-                }
-
                 "relays a DroppedMessage to the socket sender" {
                     eventually(timeout, pollInterval) {
                         coVerify {
@@ -345,7 +337,7 @@ class SignalReceiverTest : FreeSpec({
                                                 inboundIdentityFailure(
                                                     senderAddress.asSignalcAddress(),
                                                     recipientAccount.asSignalcAddress(),
-                                                    identityKey.fingerprint
+                                                    null
                                                 )
                                             )
                                         }
