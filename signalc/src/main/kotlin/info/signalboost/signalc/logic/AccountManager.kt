@@ -120,13 +120,15 @@ class AccountManager(private val app: Application) {
      * generate prekeys, store them locally and publish them to signal
      **/
     @Throws(IOException::class)
-    suspend fun publishPreKeys(account: VerifiedAccount) {
+    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0) {
         val accountProtocolStore = protocolStore.of(account)
         return app.coroutineScope.async(Concurrency.Dispatcher) {
             // generate prekeys
-            val id = Random.nextInt(0, PREKEY_MAX_ID)
-            val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, id)
-            val oneTimePreKeys = KeyUtil.genPreKeys(0, PREKEY_BATCH_SIZE)
+            val signedPreKey = KeyUtil.genSignedPreKey(
+                accountProtocolStore.identityKeyPair,
+                Random.nextInt(0, PREKEY_MAX_ID)
+            )
+            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE)
             // store prekeys
             accountProtocolStore.storeSignedPreKey(signedPreKey.id, signedPreKey)
             oneTimePreKeys.onEach { accountProtocolStore.storePreKey(it.id, it) }
@@ -145,10 +147,15 @@ class AccountManager(private val app: Application) {
     @Throws(IOException::class)
     suspend fun refreshPreKeysIfDepleted(account: VerifiedAccount) {
         logger.info { "Checking whether to refresh prekeys for ${account.username}"}
+
         if(accountManagerOf(account).preKeysCount >= PREKEY_MIN_RESERVE) return
         Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
         logger.info { "Refreshing prekeys for ${account.username}"}
-        return publishPreKeys(account)
+
+        return publishPreKeys(
+            account,
+            app.protocolStore.of(account).getLastPreKeyId() + 1
+        )
     }
 }
 

@@ -168,7 +168,7 @@ class AccountManagerTest : FreeSpec({
             val mockPublicKey: IdentityKey = mockk()
             val mockPreKeys: List<PreKeyRecord> = List(100) {
                 mockk {
-                    every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
+                    every { id } returns it
                 }
             }
             val mockSignedPreKey: SignedPreKeyRecord = mockk {
@@ -214,6 +214,17 @@ class AccountManagerTest : FreeSpec({
             }
 
             "#replenishPreKeysIfDepleted" - {
+                val mockSecondRoundPrekeys: List<PreKeyRecord> = List(100) {
+                    mockk {
+                        every { id } returns it + 100
+                    }
+                }
+                mockProtocolStore.let {
+                    coEvery { it.getLastPreKeyId() } returns mockPreKeys.last().id
+                }
+                // prekeys are 0-indexed, so mockPrekeys.size == mockPrekeys.last().id + 1
+                every { KeyUtil.genPreKeys(mockPreKeys.size, 100) } returns mockSecondRoundPrekeys
+
                 "when prekey reserve is below min threshold" - {
                     every {
                         anyConstructed<SignalServiceAccountManager>().preKeysCount
@@ -221,11 +232,12 @@ class AccountManagerTest : FreeSpec({
 
                     "publishes new prekeys" {
                         accountManager.refreshPreKeysIfDepleted(verifiedAccount)
-                        verify() {
+                        verify {
+                            KeyUtil.genPreKeys(mockPreKeys.size, 100)
                             anyConstructed<SignalServiceAccountManager>().setPreKeys(
                                 mockPublicKey,
                                 mockSignedPreKey,
-                                mockPreKeys,
+                                mockSecondRoundPrekeys,
                             )
                         }
                     }

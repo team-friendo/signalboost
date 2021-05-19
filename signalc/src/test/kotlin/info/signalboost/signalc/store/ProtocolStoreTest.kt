@@ -148,32 +148,33 @@ class ProtocolStoreTest: FreeSpec({
 
 
         "Prekey Store" - {
-            val keyId = 42
+            val signedKeyId = 42
             val nonExistentId = 1312
-            val (prekey) = KeyUtil.genPreKeys(0, 1)
+            val prekeys = KeyUtil.genPreKeys(0, 2)
+            val prekey = prekeys[0]
 
             afterTest {
-                store.removePreKey(keyId)
+                prekeys.forEach { store.removePreKey(it.id) }
             }
 
             "checks for prekey existence" {
-                store.containsPreKey(keyId) shouldBe false
+                store.containsPreKey(prekey.id) shouldBe false
             }
 
             "stores a prekey" {
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
             }
 
             "stores the same prekey twice without error" {
-                store.storePreKey(keyId, prekey)
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
             }
 
             "loads a prekey" {
-                store.storePreKey(keyId, prekey)
-                val loadedKey = store.loadPreKey(keyId)
+                store.storePreKey(prekey.id, prekey)
+                val loadedKey = store.loadPreKey(prekey.id)
                 loadedKey.serialize() shouldBe prekey.serialize()
             }
 
@@ -184,11 +185,16 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "removes a prekey" {
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
 
-                store.removePreKey(keyId)
-                store.containsPreKey(keyId) shouldBe false
+                store.removePreKey(prekey.id)
+                store.containsPreKey(prekey.id) shouldBe false
+            }
+
+            "retrieves the last-created profile key id" {
+                prekeys.forEach { store.storePreKey(it.id, it) }
+                store.getLastPreKeyId() shouldBe prekeys.last().id
             }
         }
 

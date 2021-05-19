@@ -9,9 +9,11 @@ import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.Identities.name
 import info.signalboost.signalc.db.Sessions.sessionBytes
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.util.KeyUtil
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
@@ -27,6 +29,7 @@ import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.util.UUID
+import kotlin.jvm.Throws
 
 
 class ProtocolStore(private val db: Database) {
@@ -169,6 +172,7 @@ class ProtocolStore(private val db: Database) {
 
         /********* PREKEYS *********/
 
+        @Throws(InvalidKeyException::class)
         override fun loadPreKey(preKeyId: Int): PreKeyRecord =
             lock.acquire().use { _ ->
                 transaction(db) {
@@ -180,6 +184,17 @@ class ProtocolStore(private val db: Database) {
                 }
             }
 
+        suspend fun getLastPreKeyId(): Int =
+            lock.acquire().use { _ ->
+                newSuspendedTransaction(Concurrency.Dispatcher, db) {
+                    PreKeys
+                        .slice(PreKeys.preKeyId)
+                        .select { PreKeys.accountId eq accountId }
+                        .orderBy(PreKeys.preKeyId to SortOrder.DESC)
+                        .limit(1)
+                        .singleOrNull()?.let { it[PreKeys.preKeyId] } ?: 0
+                }
+            }
 
         override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
             lock.acquire().use { _ ->
