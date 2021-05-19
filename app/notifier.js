@@ -1,5 +1,6 @@
 const channelRepository = require('./db/repositories/channel')
 const signal = require('./signal')
+const { isEmpty } = require('lodash')
 const { sequence } = require('./util')
 const { getAdminMemberships, getSubscriberMemberships } = require('./db/repositories/channel')
 const { messagesIn } = require('./dispatcher/strings/messages')
@@ -23,7 +24,7 @@ const notifyMembersExcept = async (channel, sender, notificationKey) => {
 
 // (string) -> Promise<Array<string>>
 const notifyMaintainers = async message => {
-  if (!diagnosticsPhoneNumber) return Promise.resolve([])
+  if (isEmpty(diagnosticsPhoneNumber)) return Promise.resolve([])
   const channel = await channelRepository.findDeep(diagnosticsPhoneNumber)
   const recipients = getAdminMemberships(channel)
   return notifyMany({ channel, recipients, message })

@@ -5,8 +5,7 @@ const signal = require('./signal')
 const { messageTypes } = require('./signal/constants')
 const metrics = require('./metrics')
 const notifier = require('./notifier')
-const { isEmpty } = require('lodash/lang')
-const { times, filter, map, partition, zip, groupBy, mapValues, head } = require('lodash')
+const { isEmpty, times, filter, map, partition, zip, groupBy, mapValues, head } = require('lodash')
 const { sdMessageOf } = require('./signal/constants')
 const {
   signal: { diagnosticsPhoneNumber, healthcheckSpacing, healthcheckTimeout, restartDelay },
@@ -20,8 +19,8 @@ const failedHealthchecks = new Set()
 
 // () => Promise<string>
 const sendHealthchecks = async () => {
+  if (isEmpty(diagnosticsPhoneNumber)) return
   logger.log('Healthcheck job running...')
-
   try {
     const [[diagnosticsChannel], channels] = partition(
       await channelRepository.findAllHealthcheckable(),
