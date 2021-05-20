@@ -1,4 +1,4 @@
-package info.signalboost.signalc.store
+package info.signalboost.signalc.store.protocol
 
 import org.whispersystems.signalservice.api.SignalSessionLock
 import java.util.concurrent.locks.ReentrantLock
