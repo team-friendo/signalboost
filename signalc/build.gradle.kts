@@ -86,7 +86,6 @@ object Versions {
     const val logging = "2.0.2"
     const val mockk = "1.10.3"
     const val postgres = "42.2.18"
-    const val pgjdbc = "0.8.3"
     const val shadowJar = "5.2.0"
     const val slf4j = "1.7.30"
     const val junixSocket = "2.3.2"
@@ -108,7 +107,6 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:${Versions.exposed}")
     implementation("org.jetbrains.exposed:exposed-jdbc:${Versions.exposed}")
     implementation("com.h2database:h2:${Versions.h2}")
-    implementation("com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
@@ -117,12 +115,8 @@ dependencies {
     // Note: `kotlin-logback` wraps sl4j, which is an abstract facade that needs a concrete impl...
     implementation ("io.github.microutils:kotlin-logging-jvm:${Versions.logging}")
     // Logback is our current choice b/c (1) easier to configure, (2) https://www.marcobehler.com/guides/java-logging
-     implementation("ch.qos.logback:logback-classic:${Versions.logback}")
     // Log4j2 is benched b/c harder to configure, but might be better according to : https://medium.com/@arunmannuru/java-logging-frameworks-ad07e0602de3
-    // implementation("org.apache.logging.log4j:log4j-api:${Versions.log4j}")
-    // implementation("org.apache.logging.log4j:log4j-core:${Versions.log4j}")
-    // implementation("org.apache.logging.log4j:log4j-slf4j-impl:${Versions.log4j}")
-
+    implementation("ch.qos.logback:logback-classic:${Versions.logback}")
     implementation("io.prometheus:simpleclient:0.9.0")
     implementation("io.prometheus:simpleclient_hotspot:0.9.0")
     implementation("io.prometheus:simpleclient_httpserver:0.9.0")
@@ -133,7 +127,6 @@ dependencies {
     implementation("org.postgresql:postgresql:${Versions.postgres}")
     add("liquibaseRuntime", "org.liquibase:liquibase-core:${Versions.liquibase}")
     add("liquibaseRuntime", "org.liquibase:liquibase-gradle-plugin:${Versions.liquibasePlugin}")
-    add("liquibaseRuntime", "com.impossibl.pgjdbc-ng:pgjdbc-ng:${Versions.pgjdbc}")
     add("liquibaseRuntime", "org.postgresql:postgresql:42.2.5")
 
     // yes, we declare mocck as `implementation` not `testImplementation` on purpose! (see Application.kt)

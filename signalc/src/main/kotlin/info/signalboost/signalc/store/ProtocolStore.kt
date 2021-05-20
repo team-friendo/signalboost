@@ -47,5 +47,6 @@ class ProtocolStore(private val db: Database) {
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
         val getLastPreKeyId = scPreKeyStore::getLastPreKeyId
+        val storePreKeys = scPreKeyStore::storePreKeys
     }
 }

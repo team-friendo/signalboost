@@ -109,8 +109,8 @@ object Config {
 
     val default  = App(
         db = Database(
-            driver = "com.impossibl.postgres.jdbc.PGDriver",
-            url = "jdbc:pgsql://$dbHost/$dbName",
+            driver = "org.postgresql.Driver",
+            url = "jdbc:postgresql://$dbHost/$dbName?reWriteBatchInserts=true",
             user= "postgres"
         ),
         mocked = emptySet(),

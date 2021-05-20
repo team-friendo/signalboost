@@ -172,6 +172,13 @@ class ProtocolStoreTest: FreeSpec({
                 store.containsPreKey(prekey.id) shouldBe true
             }
 
+            "stores many prekeys in a batch" {
+                store.storePreKeys(prekeys)
+                prekeys.forEach {
+                    store.containsPreKey(it.id) shouldBe true
+                }
+            }
+
             "loads a prekey" {
                 store.storePreKey(prekey.id, prekey)
                 val loadedKey = store.loadPreKey(prekey.id)
