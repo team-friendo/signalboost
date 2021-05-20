@@ -14,40 +14,37 @@ import java.util.UUID
 class SignalcSenderKeyStore(
     val db: Database,
     val accountId: String,
-    val lock: SignalSessionLock,
+    val lock: SessionLock,
     ): SenderKeyStore {
 
     override fun storeSenderKey(sender: SignalProtocolAddress, distributionId: UUID, record: SenderKeyRecord) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SenderKeys.update ({
-                    (SenderKeys.accountId eq accountId)
-                        .and(SenderKeys.name eq sender.name)
-                        .and(SenderKeys.deviceId eq sender.deviceId)
-                        .and( SenderKeys.distributionId eq distributionId)
-                }) {
-                    it[senderKeyBytes] = record.serialize()
-                }.let { numUpdated ->
-                    if(numUpdated == 0) createSenderKey(sender, distributionId)
-                }
+        lock.acquireForTransaction(db) {
+            SenderKeys.update ({
+                (SenderKeys.accountId eq accountId)
+                    .and(SenderKeys.name eq sender.name)
+                    .and(SenderKeys.deviceId eq sender.deviceId)
+                    .and( SenderKeys.distributionId eq distributionId)
+            }) {
+                it[senderKeyBytes] = record.serialize()
+            }.let { numUpdated ->
+                if(numUpdated == 0) createSenderKey(sender, distributionId)
             }
         }
     }
 
     override fun loadSenderKey(sender: SignalProtocolAddress, distributionId: UUID): SenderKeyRecord =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SenderKeys.select {
-                    (SenderKeys.accountId eq accountId)
-                        .and(SenderKeys.name eq sender.name)
-                        .and(SenderKeys.deviceId eq sender.deviceId)
-                        .and( SenderKeys.distributionId eq distributionId)
-                }.singleOrNull()
-                    ?: createSenderKey(sender, distributionId)
-            }.let {
-                SenderKeyRecord(it[SenderKeys.senderKeyBytes])
-            }
+        lock.acquireForTransaction(db) {
+            SenderKeys.select {
+                (SenderKeys.accountId eq accountId)
+                    .and(SenderKeys.name eq sender.name)
+                    .and(SenderKeys.deviceId eq sender.deviceId)
+                    .and( SenderKeys.distributionId eq distributionId)
+            }.singleOrNull()
+                ?: createSenderKey(sender, distributionId)
+        }.let {
+            SenderKeyRecord(it[SenderKeys.senderKeyBytes])
         }
+
 
     private fun createSenderKey(sender: SignalProtocolAddress, distributionId: UUID): ResultRow =
         SenderKeys.insert {

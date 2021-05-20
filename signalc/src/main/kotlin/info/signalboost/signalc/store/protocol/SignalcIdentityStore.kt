@@ -16,34 +16,32 @@ import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore
-import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 
 class SignalcIdentityStore(
     val db: Database,
     val accountId: String,
-    val lock: SignalSessionLock,
+    val lock: SessionLock,
 ): IdentityKeyStore{
+
     override fun getIdentityKeyPair(): IdentityKeyPair =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                OwnIdentities.select {
-                    OwnIdentities.accountId eq accountId
-                }.singleOrNull() ?: createOwnIdentity()
-            }.let {
-                IdentityKeyPair(it[OwnIdentities.keyPairBytes])
-            }
+        lock.acquireForTransaction(db) {
+            OwnIdentities.select {
+                OwnIdentities.accountId eq accountId
+            }.singleOrNull() ?: createOwnIdentity()
+        }.let {
+            IdentityKeyPair(it[OwnIdentities.keyPairBytes])
         }
 
+
     override fun getLocalRegistrationId(): Int =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                OwnIdentities.select {
-                    OwnIdentities.accountId eq accountId
-                }.singleOrNull() ?: createOwnIdentity()
-            }[OwnIdentities.registrationId]
-        }
+        lock.acquireForTransaction(db) {
+            OwnIdentities.select {
+                OwnIdentities.accountId eq accountId
+            }.singleOrNull() ?: createOwnIdentity()
+        }[OwnIdentities.registrationId]
+
 
     private fun createOwnIdentity(): ResultRow =
         transaction(db) {
@@ -55,51 +53,45 @@ class SignalcIdentityStore(
         }
 
     fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                Identities.update({
-                    (name eq address.identifier)
-                        .and(Identities.accountId eq this@SignalcIdentityStore.accountId)
-                }) {
-                    it[identityKeyBytes] = fingerprint
-                }
+        lock.acquireForTransaction(db) {
+            Identities.update({
+                (name eq address.identifier)
+                    .and(Identities.accountId eq this@SignalcIdentityStore.accountId)
+            }) {
+                it[identityKeyBytes] = fingerprint
             }
         }
 
     fun trustFingerprintForAllIdentities(fingerprint: ByteArray) =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                Identities.update({ identityKeyBytes eq fingerprint }) {
-                    it[isTrusted] = true
-                }
+        lock.acquireForTransaction(db) {
+            Identities.update({ identityKeyBytes eq fingerprint }) {
+                it[isTrusted] = true
             }
         }
 
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
-    // Insert or update an idenity key and:
-    // - trust the first identity key seen for a given address
-    // - deny trust for subsequent identity keys for same address
+        // Insert or update an idenity key and:
+        // - trust the first identity key seen for a given address
+        // - deny trust for subsequent identity keys for same address
         // Returns true if this save was an update to an existing record, false otherwise
-        lock.acquire().use { _ ->
-            transaction(db) {
-                Identities.findByAddress(accountId, address)
-                    ?.let { existingKey ->
-                        Identities.updateByAddress(accountId, address) {
-                            // store the new existingKey key in all cases
-                            it[identityKeyBytes] = identityKey.serialize()
-                            // only trust it if it matches the existing key
-                            it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
-                        }
-                        true
-                    } ?: run {
-                    Identities.insert {
-                        it[accountId] = this@SignalcIdentityStore.accountId
-                        it[name] = address.name
-                        it[deviceId] = address.deviceId
+        lock.acquireForTransaction(db) {
+            Identities.findByAddress(accountId, address)
+                ?.let { existingKey ->
+                    Identities.updateByAddress(accountId, address) {
+                        // store the new existingKey key in all cases
                         it[identityKeyBytes] = identityKey.serialize()
+                        // only trust it if it matches the existing key
+                        it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
                     }
-                    false
+                    true
+                } ?: run {
+                Identities.insert {
+                    it[accountId] = this@SignalcIdentityStore.accountId
+                    it[name] = address.name
+                    it[deviceId] = address.deviceId
+                    it[identityKeyBytes] = identityKey.serialize()
                 }
+                false
             }
         }
 
@@ -108,43 +100,36 @@ class SignalcIdentityStore(
         identityKey: IdentityKey,
         direction: IdentityKeyStore.Direction
     ): Boolean =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                // trust a key if...
-                Identities.findByAddress(accountId, address)?.let {
-                    // it matches a key we have seen before
-                    it[identityKeyBytes] contentEquals identityKey.serialize() &&
-                            // and we have not flagged it as untrusted
-                            it[isTrusted]
-                } ?: true // or it is the first key we ever seen for a person (TOFU!)
-            }
+        lock.acquireForTransaction(db) {
+            // trust a key if...
+            Identities.findByAddress(accountId, address)?.let {
+                // it matches a key we have seen before
+                it[identityKeyBytes] contentEquals identityKey.serialize() &&
+                        // and we have not flagged it as untrusted
+                        it[isTrusted]
+            } ?: true // or it is the first key we ever seen for a person (TOFU!)
         }
 
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                Identities.findByAddress(accountId, address)?.let {
-                    IdentityKey(it[identityKeyBytes], 0)
-                }
+        lock.acquireForTransaction(db) {
+            Identities.findByAddress(accountId, address)?.let {
+                IdentityKey(it[identityKeyBytes], 0)
             }
         }
 
     fun removeIdentity(address: SignalProtocolAddress) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                Identities.deleteByAddress(accountId, address)
-            }
+        lock.acquireForTransaction(db) {
+            Identities.deleteByAddress(accountId, address)
         }
     }
 
     fun removeOwnIdentity() {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                OwnIdentities.deleteWhere {
-                    OwnIdentities.accountId eq accountId
-                }
+        lock.acquireForTransaction(db) {
+            OwnIdentities.deleteWhere {
+                OwnIdentities.accountId eq accountId
             }
         }
     }
+
 
 }

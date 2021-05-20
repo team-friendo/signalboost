@@ -13,47 +13,42 @@ import org.whispersystems.signalservice.api.SignalSessionLock
 class SignalcPreKeyStore(
     val db: Database,
     val accountId: String,
-    val lock: SignalSessionLock,
+    val lock: SessionLock,
 ): PreKeyStore {
 
     @Throws(InvalidKeyException::class)
     override fun loadPreKey(preKeyId: Int): PreKeyRecord =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                PreKeys.select {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }.singleOrNull()?.let {
-                    PreKeyRecord(it[PreKeys.preKeyBytes])
-                } ?: throw InvalidKeyException()
-            }
+        lock.acquireForTransaction(db) {
+            PreKeys.select {
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+            }.singleOrNull()?.let {
+                PreKeyRecord(it[PreKeys.preKeyBytes])
+            } ?: throw InvalidKeyException()
         }
 
+
     suspend fun getLastPreKeyId(): Int =
-        lock.acquire().use { _ ->
-            newSuspendedTransaction(Concurrency.Dispatcher, db) {
-                PreKeys
-                    .slice(PreKeys.preKeyId)
-                    .select { PreKeys.accountId eq accountId }
-                    .orderBy(PreKeys.preKeyId to SortOrder.DESC)
-                    .limit(1)
-                    .singleOrNull()?.let { it[PreKeys.preKeyId] } ?: 0
-            }
+        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
+            PreKeys
+                .slice(PreKeys.preKeyId)
+                .select { PreKeys.accountId eq accountId }
+                .orderBy(PreKeys.preKeyId to SortOrder.DESC)
+                .limit(1)
+                .singleOrNull()?.let { it[PreKeys.preKeyId] } ?: 0
         }
 
     override fun storePreKey(preKeyId: Int, record: PreKeyRecord) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                PreKeys.update({
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }) {
-                    it[preKeyBytes] = record.serialize()
-                }.let { numUpdated ->
-                    if (numUpdated == 0) {
-                        PreKeys.insert {
-                            it[accountId] = this@SignalcPreKeyStore.accountId
-                            it[this.preKeyId] = preKeyId
-                            it[preKeyBytes] = record.serialize()
-                        }
+        lock.acquireForTransaction(db) {
+            PreKeys.update({
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+            }) {
+                it[preKeyBytes] = record.serialize()
+            }.let { numUpdated ->
+                if (numUpdated == 0) {
+                    PreKeys.insert {
+                        it[accountId] = this@SignalcPreKeyStore.accountId
+                        it[this.preKeyId] = preKeyId
+                        it[preKeyBytes] = record.serialize()
                     }
                 }
             }
@@ -61,21 +56,16 @@ class SignalcPreKeyStore(
     }
 
     override fun containsPreKey(preKeyId: Int): Boolean =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                PreKeys.select {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }.count() > 0
-            }
+        lock.acquireForTransaction(db) {
+            PreKeys.select {
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
+            }.count() > 0
         }
 
-
     override fun removePreKey(preKeyId: Int) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                PreKeys.deleteWhere {
-                    PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
-                }
+        lock.acquireForTransaction(db) {
+            PreKeys.deleteWhere {
+                PreKeys.accountId eq accountId and (PreKeys.preKeyId eq preKeyId)
             }
         }
     }

@@ -2,53 +2,45 @@ package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.SignedPreKeys
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.InvalidKeyException
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyStore
-import org.whispersystems.signalservice.api.SignalSessionLock
 
 
 class SignalcSignedPreKeyStore(
     val db: Database,
     val accountId: String,
-    val lock: SignalSessionLock,
+    val lock: SessionLock,
 ): SignedPreKeyStore {
 
     override fun loadSignedPreKey(signedPreKeyId: Int): SignedPreKeyRecord =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SignedPreKeys.select {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
-                }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
-            }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
-        }
+        lock.acquireForTransaction(db) {
+            SignedPreKeys.select {
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+            }.singleOrNull()?.get(SignedPreKeys.signedPreKeyBytes)
+        }?.let { SignedPreKeyRecord(it) } ?: throw InvalidKeyException()
 
     override fun loadSignedPreKeys(): MutableList<SignedPreKeyRecord> =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SignedPreKeys.selectAll().map {
-                    it[SignedPreKeys.signedPreKeyBytes]
-                }
-            }.mapTo(mutableListOf()) { SignedPreKeyRecord(it) }
-        }
+        lock.acquireForTransaction(db) {
+            SignedPreKeys.selectAll().map {
+                it[SignedPreKeys.signedPreKeyBytes]
+            }
+        }.mapTo(mutableListOf()) { SignedPreKeyRecord(it) }
 
     override fun storeSignedPreKey(signedPreKeyId: Int, record: SignedPreKeyRecord) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SignedPreKeys.update({
-                    SignedPreKeys.accountId eq accountId and (
-                            SignedPreKeys.preKeyId eq signedPreKeyId
-                            )
-                }) {
-                    it[signedPreKeyBytes] = record.serialize()
-                }.let { numUpdated ->
-                    if (numUpdated == 0) {
-                        SignedPreKeys.insert {
-                            it[accountId] = this@SignalcSignedPreKeyStore.accountId
-                            it[preKeyId] = signedPreKeyId
-                            it[signedPreKeyBytes] = record.serialize()
-                        }
+        lock.acquireForTransaction(db) {
+            SignedPreKeys.update({
+                SignedPreKeys.accountId eq accountId and (
+                        SignedPreKeys.preKeyId eq signedPreKeyId
+                        )
+            }) {
+                it[signedPreKeyBytes] = record.serialize()
+            }.let { numUpdated ->
+                if (numUpdated == 0) {
+                    SignedPreKeys.insert {
+                        it[accountId] = this@SignalcSignedPreKeyStore.accountId
+                        it[preKeyId] = signedPreKeyId
+                        it[signedPreKeyBytes] = record.serialize()
                     }
                 }
             }
@@ -56,20 +48,17 @@ class SignalcSignedPreKeyStore(
     }
 
     override fun containsSignedPreKey(signedPreKeyId: Int): Boolean =
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SignedPreKeys.select {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
-                }.singleOrNull()?.let { true } ?: false
-            }
+        lock.acquireForTransaction(db) {
+            SignedPreKeys.select {
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
+            }.singleOrNull()?.let { true } ?: false
         }
 
+
     override fun removeSignedPreKey(signedPreKeyId: Int) {
-        lock.acquire().use { _ ->
-            transaction(db) {
-                SignedPreKeys.deleteWhere {
-                    SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
-                }
+        lock.acquireForTransaction(db) {
+            SignedPreKeys.deleteWhere {
+                SignedPreKeys.accountId eq accountId and (SignedPreKeys.preKeyId eq signedPreKeyId)
             }
         }
     }

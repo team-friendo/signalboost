@@ -22,7 +22,7 @@ class ProtocolStore(private val db: Database) {
     class AccountProtocolStore(
         private val db: Database,
         private val accountId: String,
-        val lock: SignalSessionLock = SessionLock(),
+        val lock: SessionLock = SessionLock(),
         private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock),
         private val preKeyStore: PreKeyStore = SignalcPreKeyStore(db, accountId, lock),
         private val senderKeyStore: SenderKeyStore = SignalcSenderKeyStore(db, accountId, lock),
