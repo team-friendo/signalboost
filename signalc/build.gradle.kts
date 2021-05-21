@@ -78,7 +78,7 @@ object Versions {
     const val kotlin = "1.4.30"
     const val h2 = "1.4.199"
     const val hikariCp = "4.0.3"
-    const val libsignal = "2.15.3_unofficial_21_sb_4_WIP"
+    const val libsignal = "2.15.3_unofficial_t23_m1"
     const val liquibase = "4.2.2"
     const val liquibasePlugin = "2.0.4"
     const val logback = "1.2.3"
