@@ -9,6 +9,7 @@ import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.Identities.name
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
+import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.util.KeyUtil
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -52,8 +53,8 @@ class SignalcIdentityStore(
             }.resultedValues!![0]
         }
 
-    fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) =
-        lock.acquireForTransaction(db) {
+    suspend fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) {
+        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
             Identities.update({
                 (name eq address.identifier)
                     .and(Identities.accountId eq this@SignalcIdentityStore.accountId)
@@ -61,13 +62,15 @@ class SignalcIdentityStore(
                 it[identityKeyBytes] = fingerprint
             }
         }
+    }
 
-    fun trustFingerprintForAllIdentities(fingerprint: ByteArray) =
-        lock.acquireForTransaction(db) {
+    suspend fun trustFingerprintForAllIdentities(fingerprint: ByteArray) {
+        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
             Identities.update({ identityKeyBytes eq fingerprint }) {
                 it[isTrusted] = true
             }
         }
+    }
 
     override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean =
         // Insert or update an idenity key and:

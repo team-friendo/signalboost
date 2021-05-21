@@ -209,6 +209,7 @@ class ProtocolStoreTest: FreeSpec({
             val keyId = 42
             val nonExistentId = 1312
             val signedPrekey = KeyUtil.genSignedPreKey(store.identityKeyPair, keyId)
+            val otherSignedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, keyId + 1)
 
             afterTest {
                 store.removeSignedPreKey(keyId)
@@ -244,6 +245,12 @@ class ProtocolStoreTest: FreeSpec({
                 store.storeSignedPreKey(keyId, signedPrekey)
                 store.removeSignedPreKey(keyId)
                 store.containsSignedPreKey(keyId) shouldBe false
+            }
+
+            "retrieves the last-created profile key id" {
+                store.storeSignedPreKey(signedPrekey.id, signedPrekey)
+                store.storeSignedPreKey(otherSignedPreKey.id, otherSignedPreKey)
+                store.getLastSignedPreKeyId() shouldBe otherSignedPreKey.id
             }
         }
 

@@ -121,23 +121,18 @@ class AccountManager(private val app: Application) {
      **/
     @Throws(IOException::class)
     suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0) {
-        val accountProtocolStore = protocolStore.of(account)
+        val store = protocolStore.of(account)
         return app.coroutineScope.async(Concurrency.Dispatcher) {
-            // generate prekeys
-            val signedPreKey = KeyUtil.genSignedPreKey(
-                accountProtocolStore.identityKeyPair,
-                Random.nextInt(0, PREKEY_MAX_ID)
-            )
-            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE)
-            // store prekeys
-            accountProtocolStore.storeSignedPreKey(signedPreKey.id, signedPreKey)
-            oneTimePreKeys.onEach { accountProtocolStore.storePreKey(it.id, it) }
+            // generate and store prekeys
+            val signedPreKeyId = store.getLastSignedPreKeyId() + 1 % PREKEY_MAX_ID
+            val signedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, signedPreKeyId).also {
+                store.storeSignedPreKey(it.id, it)
+            }
+            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE).also {
+                store.storePreKeys(it)
+            }
             // publish prekeys to signal server
-            accountManagerOf(account).setPreKeys(
-                accountProtocolStore.identityKeyPair.publicKey,
-                signedPreKey,
-                oneTimePreKeys
-            )
+            accountManagerOf(account).setPreKeys(store.identityKeyPair.publicKey, signedPreKey, oneTimePreKeys)
         }.await()
     }
 

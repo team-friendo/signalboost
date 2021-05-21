@@ -34,6 +34,8 @@ object Mocks {
             every { lock } returns mockk()
             every { saveIdentity(any(), any()) } returns mockk()
             coEvery { getLastPreKeyId() } returns 0
+            coEvery { getLastSignedPreKeyId() } returns 0
+            coEvery { storePreKeys(any()) } returns Unit
         }
     }
     val signalReceiver: SignalReceiver.() -> Unit = {

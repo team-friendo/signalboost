@@ -6,11 +6,12 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.store.protocol.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.groups.state.SenderKeyStore
 import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
-import org.whispersystems.signalservice.api.SignalSessionLock
+import org.whispersystems.signalservice.api.push.SignalServiceAddress
 
 
 class ProtocolStore(private val db: Database) {
@@ -36,17 +37,22 @@ class ProtocolStore(private val db: Database) {
         SignedPreKeyStore by signedPreKeyStore {
 
         /**
-         * NON-INTERFACE (DECORATOR) FUNCTIONS
+         * DECORATOR FUNCTIONS
          **/
 
         private val scIdentityStore = identityStore as SignalcIdentityStore
-        val removeIdentity = scIdentityStore::removeIdentity
-        val removeOwnIdentity = scIdentityStore::removeOwnIdentity
-        val saveFingerprintForAllIdentities = scIdentityStore::saveFingerprintForAllIdentities
-        val trustFingerprintForAllIdentities = scIdentityStore::trustFingerprintForAllIdentities
+        val removeIdentity: (SignalProtocolAddress) -> Unit = scIdentityStore::removeIdentity
+        val removeOwnIdentity: () -> Unit = scIdentityStore::removeOwnIdentity
+        val saveFingerprintForAllIdentities: suspend (SignalServiceAddress, ByteArray) -> Unit =
+            scIdentityStore::saveFingerprintForAllIdentities
+        val trustFingerprintForAllIdentities: suspend (ByteArray) -> Unit =
+           scIdentityStore::trustFingerprintForAllIdentities
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
-        val getLastPreKeyId = scPreKeyStore::getLastPreKeyId
-        val storePreKeys = scPreKeyStore::storePreKeys
+        val getLastPreKeyId: suspend () -> Int = scPreKeyStore::getLastPreKeyId
+        val storePreKeys: suspend (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
+
+        private val scSignedPreKeyStore = signedPreKeyStore as SignalcSignedPreKeyStore
+        val getLastSignedPreKeyId: suspend () -> Int = scSignedPreKeyStore::getLastPreKeyId
     }
 }

@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.logic.AccountManager.Companion.PREKEY_MAX_ID
 import info.signalboost.signalc.logic.AccountManager.Companion.PREKEY_MIN_RESERVE
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
@@ -171,29 +172,30 @@ class AccountManagerTest : FreeSpec({
                     every { id } returns it
                 }
             }
+            val lastSignedPreKeyId = Random.nextInt(0, PREKEY_MAX_ID - 1)
             val mockSignedPreKey: SignedPreKeyRecord = mockk {
-                every { id } returns Random.nextInt(0, Integer.MAX_VALUE)
+                every { id } returns lastSignedPreKeyId + 1
             }
 
             mockProtocolStore.let {
-                every { it.storePreKey(any(), any()) } returns Unit
+                coEvery { it.getLastSignedPreKeyId() } returns lastSignedPreKeyId
+                coEvery { it.storePreKeys(any()) } returns Unit
                 every { it.storeSignedPreKey(any(), any()) } returns Unit
                 every { it.identityKeyPair } returns mockk {
                     every { publicKey } returns mockPublicKey
                 }
             }
 
-            every { KeyUtil.genPreKeys(0, 100) } returns mockPreKeys
+            every { KeyUtil.genPreKeys(any(), any()) } returns mockPreKeys
             every { KeyUtil.genSignedPreKey(any(), any()) } returns mockSignedPreKey
             every {
                 anyConstructed<SignalServiceAccountManager>().setPreKeys(any(), any(), any())
             } returns Unit
 
-
             "#publishPrekeys" - {
                 "stores 100 prekeys locally" {
                     accountManager.publishPreKeys(verifiedAccount)
-                    verify(exactly = 100) { mockProtocolStore.storePreKey(any(), any()) }
+                    mockProtocolStore.storePreKeys(mockPreKeys)
                 }
 
                 "stores a signed prekey locally" {
