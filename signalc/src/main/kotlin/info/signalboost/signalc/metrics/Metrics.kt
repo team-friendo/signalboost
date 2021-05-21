@@ -5,9 +5,10 @@ import io.prometheus.client.Histogram
 import org.whispersystems.signalservice.api.LibSignalMetrics
 
 object Metrics {
-    // CONVENTIONS
-    // Name: Location of metric, namespaced by module, use the function name or what code the metric is wrapping
-    // Help: Time spent in X place, doing Y thing(s)
+    /******** CONVENTIONS ************
+     * Name: Location of metric, namespaced by module, use the function name or what code the metric is wrapping
+     * Help: Time spent in X place, doing Y thing(s)
+     *********************************/
     private fun histogramOf(name: String, help: String): Histogram =
         Histogram.build().name(name).help(help).register()
 

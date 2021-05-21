@@ -3,12 +3,10 @@ package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.SenderKeys
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.groups.state.SenderKeyRecord
 import org.whispersystems.libsignal.groups.state.SenderKeyStore
-import org.whispersystems.signalservice.api.SignalSessionLock
-import java.util.UUID
+import java.util.*
 
 
 class SignalcSenderKeyStore(
