@@ -147,7 +147,7 @@ class SignalSender(private val app: Application) {
         dataMessage: SignalServiceDataMessage,
     ): SendMessageResult = app.coroutineScope.async(Concurrency.Dispatcher) {
         try {
-            Metrics.SignalSender.numberOfMessageSends.inc()
+            Metrics.SignalSender.numberOfMessagesSent.inc()
             messagesInFlight.getAndIncrement()
             messageSenderOf(sender).sendMessage(
                 recipient,

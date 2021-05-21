@@ -11,8 +11,8 @@ object Metrics {
     private fun histogramOf(name: String, help: String): Histogram =
         Histogram.build().name(name).help(help).register()
 
-    private fun counterOf(name: String, help: String): Counter =
-        Counter.build().name(name).help(help).register()
+    private fun counterOf(name: String, help: String, vararg labelNames: String): Counter =
+        Counter.build().name(name).help(help).labelNames(*labelNames).register()
 
     object AccountManager {
         val numberOfPreKeyRefreshes = counterOf(
@@ -61,19 +61,19 @@ object Metrics {
     }
 
     object SignalReceiver {
-        val numberOfInboundPreKeyBundles: Counter = counterOf(
-            "signal_receiver__number_of_inbound_prekey_bundles",
+        val numberOfMessagesReceived: Counter = counterOf(
+            "signal_receiver__number_of_messages_received",
             "Counts number of inbound PREKEY_BUNDLE messages we receive from signal server when users try to establish new sessions." +
-                    "If we often receive a high number of these in quick succession, consider throttling prekey replenish jobs."
+                    "If we often receive a high number of these in quick succession, consider throttling prekey replenish jobs.",
+            "envelope_type",
         )
     }
 
     object SignalSender {
-        val numberOfMessageSends: Counter = counterOf(
-            "signal_sender__number_of_message_sends",
-            "Counts number of attempted messages sent through libsignal"
+        val numberOfMessagesSent: Counter = counterOf(
+            "signal_sender__number_of_messages_sent",
+            "Counts number of attempted messages sent through libsignal",
         )
-
     }
 
     object SocketReceiver {

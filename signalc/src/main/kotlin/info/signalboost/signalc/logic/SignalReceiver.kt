@@ -166,19 +166,13 @@ class SignalReceiver(private val app: Application) {
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
         envelope.type.asEnum().let {
             logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
-            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
-            // of which might have depleted our prekey reserves below the level we want to keep on hand
-            // to start new sessions. So: launch a job to check our prekey reserve and replenish it if needed!
-            if(it == EnvelopeType.PREKEY_BUNDLE) app.coroutineScope.launch(Concurrency.Dispatcher) {
-                // count jobs so we can throttle them if they are starving network/db resources needed for message handling
-                Metrics.SignalReceiver.numberOfInboundPreKeyBundles.inc()
-                app.accountManager.refreshPreKeysIfDepleted(account)
-            }
-            // Then continue to handle messages...
-            // if (envelope.isPreKeySignalMessage() || envelope.isSignalMessage() || envelope.isUnidentifiedSender()) {
+            Metrics.SignalReceiver.numberOfMessagesReceived.labels(it.asString).inc()
             return when (it) {
-                EnvelopeType.CIPHERTEXT,
-                EnvelopeType.PREKEY_BUNDLE -> relay(envelope, account)
+                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
+                EnvelopeType.PREKEY_BUNDLE -> {
+                    relay(envelope, account)
+                    maybeRefreshPreKeys(account)
+                }
                 EnvelopeType.KEY_EXCHANGE, // handle this to process "reset secure session" events
                 EnvelopeType.RECEIPT, // signal android basically drops these, so do we!
                 EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we very much want to handle these!!!
@@ -187,6 +181,13 @@ class SignalReceiver(private val app: Application) {
 
         }
     }
+
+    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
+            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+            // of which might have depleted our prekey reserves below the level we want to keep on hand
+            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+            app.accountManager.refreshPreKeysIfDepleted(account)
+        }
 
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
@@ -228,13 +229,10 @@ class SignalReceiver(private val app: Application) {
     private suspend fun handleRelayError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
         when (err) {
             is ProtocolUntrustedIdentityException -> {
-                // UntrustedIdentity is usually null here. In which case, we return a null fingerprint, with the
-                // intention of causing the client to send a garbage message that will force a session reset
-                // and raise another identity exception. That exception will include the fingerprint corresponding
-                // to the new session, and can be handled (and trusted) from the send path (rather than the receive path,
-                // which we are on here). See:
-                // - libsignal exception creation: https://github.com/signalapp/libsignal-client/blob/113e849d7620c7a0ad8aa29a43e6243026bfdb89/rust/bridge/shared/src/jni/mod.rs#L106
-                // - signal-android handling: https://github.com/signalapp/Signal-Android/blob/763aeabdddcbeff526589afa964d61defdd3e589/app/src/main/java/org/thoughtcrime/securesms/messages/MessageDecryptionUtil.java#L82
+                // When we get this exception we return a null fingerprint to the client, with the intention of causing
+                // it to send a garbage message that will force a session reset and raise another identity exception.
+                // That exception (unlike this one) will include the fingerprint corresponding to the new session,
+                // and can be handled (and trusted) from the send path.
                 app.socketSender.send(
                     SocketResponse.InboundIdentityFailure.of(
                         recipient,
