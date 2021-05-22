@@ -24,7 +24,6 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.jvm.Throws
-import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
 
@@ -38,7 +37,7 @@ class AccountManager(private val app: Application) {
         override val logger = logger()
         const val PREKEY_MAX_ID: Int = 0xFFFFF
         const val PREKEY_MIN_RESERVE = 10
-        const val PREKEY_BATCH_SIZE = 100
+        const val PREKEY_MAX_RESERVE = 100
     }
 
     private val accountStore = app.accountStore
@@ -120,7 +119,7 @@ class AccountManager(private val app: Application) {
      * generate prekeys, store them locally and publish them to signal
      **/
     @Throws(IOException::class)
-    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0) {
+    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0, batchSize: Int = PREKEY_MAX_RESERVE) {
         val store = protocolStore.of(account)
         return app.coroutineScope.async(Concurrency.Dispatcher) {
             // generate and store prekeys
@@ -128,7 +127,7 @@ class AccountManager(private val app: Application) {
             val signedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, signedPreKeyId).also {
                 store.storeSignedPreKey(it.id, it)
             }
-            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE).also {
+            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, batchSize).also {
                 store.storePreKeys(it)
             }
             // publish prekeys to signal server
@@ -142,15 +141,15 @@ class AccountManager(private val app: Application) {
     @Throws(IOException::class)
     suspend fun refreshPreKeysIfDepleted(account: VerifiedAccount) {
         logger.info { "Checking whether to refresh prekeys for ${account.username}"}
+        val numPreKeysOnServer = accountManagerOf(account).preKeysCount
+        logger.debug { "Number of preKeys on server for ${account.username}: $numPreKeysOnServer"}
+        if( numPreKeysOnServer >= PREKEY_MIN_RESERVE) return
 
-        if(accountManagerOf(account).preKeysCount >= PREKEY_MIN_RESERVE) return
-        Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
         logger.info { "Refreshing prekeys for ${account.username}"}
-
-        return publishPreKeys(
-            account,
-            app.protocolStore.of(account).getLastPreKeyId() + 1
-        )
+        Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
+        val nextPreKeyId  = app.protocolStore.of(account).getLastPreKeyId() + 1
+        val batchSize = PREKEY_MAX_RESERVE - numPreKeysOnServer
+        return publishPreKeys(account, nextPreKeyId, batchSize)
     }
 }
 
