@@ -8,7 +8,6 @@ import {
   selfieIcon,
   moneyIcon,
   calyxLogo,
-  emersonLogo,
   mozillaLogo,
 } from '../images/'
 
@@ -128,7 +127,6 @@ const IndexPage = () => (
         src={mozillaLogo}
         alt="mozilla logo"
       />
-      <img src={emersonLogo} alt="emerson logo" />
       <img src={calyxLogo} height="130" alt="calyx logo" />
     </div>
   </Layout>
