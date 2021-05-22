@@ -8,34 +8,22 @@ import {
   selfieIcon,
   moneyIcon,
   calyxLogo,
-  emersonLogo,
   mozillaLogo,
 } from '../images/'
 
 const IndexPage = () => (
   <Layout>
     <SEO title="Signalboost: communicate with mass audiences securely and directly via message broadcasts and hotlines" />
-    <p className={indexStyles.outageAlert}>
-      *******************************************
-    </p>
-    <h2 className={indexStyles.outageAlert}>OUTAGE ALERT</h2>
-    <p>
-      Signalboost is currently experiencing a systemwide outage. We are
-      investigating the cause of the problem, which we suspect to be related to
-      recent upstream changes in the Signal service introduced to combat
-      spammers. We hope to get the system back up and running as soon as we can,
-      but suspect it might take several days.{' '}
-    </p>
-    <p>
-      We care very deeply about supporting the work our amazing users do, so the
-      prospect of a prolonged outage makes us as deeply sad and frustrated as it
-      might make you. As such, you can rest assured, we will be working as hard
-      as we can to get things back up and running as soon as is possible under
-      the circumstances! Stay tuned here for updates.
-    </p>
-    <p className={indexStyles.outageAlert}>
-      *******************************************
-    </p>
+    {/*<p className={indexStyles.outageAlert}>*/}
+    {/*  ********************************************/}
+    {/*</p>*/}
+    {/*<h2 className={indexStyles.outageAlert}>OUTAGE ALERT</h2>*/}
+    {/*<p>*/}
+    {/*  (REASON FOR OUTAGE HERE)*/}
+    {/*</p>*/}
+    {/*<p className={indexStyles.outageAlert}>*/}
+    {/*  ********************************************/}
+    {/*</p>*/}
 
     <div className={indexStyles.personas}>
       <img
@@ -139,7 +127,6 @@ const IndexPage = () => (
         src={mozillaLogo}
         alt="mozilla logo"
       />
-      <img src={emersonLogo} alt="emerson logo" />
       <img src={calyxLogo} height="130" alt="calyx logo" />
     </div>
   </Layout>
