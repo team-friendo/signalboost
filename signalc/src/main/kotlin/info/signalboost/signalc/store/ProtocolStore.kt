@@ -43,16 +43,16 @@ class ProtocolStore(private val db: Database) {
         private val scIdentityStore = identityStore as SignalcIdentityStore
         val removeIdentity: (SignalProtocolAddress) -> Unit = scIdentityStore::removeIdentity
         val removeOwnIdentity: () -> Unit = scIdentityStore::removeOwnIdentity
-        val saveFingerprintForAllIdentities: suspend (SignalServiceAddress, ByteArray) -> Unit =
+        val saveFingerprintForAllIdentities: (SignalServiceAddress, ByteArray) -> Unit =
             scIdentityStore::saveFingerprintForAllIdentities
-        val trustFingerprintForAllIdentities: suspend (ByteArray) -> Unit =
+        val trustFingerprintForAllIdentities: (ByteArray) -> Unit =
            scIdentityStore::trustFingerprintForAllIdentities
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
-        val getLastPreKeyId: suspend () -> Int = scPreKeyStore::getLastPreKeyId
-        val storePreKeys: suspend (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
+        val getLastPreKeyId: () -> Int = scPreKeyStore::getLastPreKeyId
+        val storePreKeys: (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
 
         private val scSignedPreKeyStore = signedPreKeyStore as SignalcSignedPreKeyStore
-        val getLastSignedPreKeyId: suspend () -> Int = scSignedPreKeyStore::getLastPreKeyId
+        val getLastSignedPreKeyId: () -> Int = scSignedPreKeyStore::getLastPreKeyId
     }
 }

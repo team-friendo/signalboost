@@ -1,7 +1,6 @@
 package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.SignedPreKeys
-import info.signalboost.signalc.dispatchers.Concurrency
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -17,8 +16,8 @@ class SignalcSignedPreKeyStore(
     val lock: SessionLock,
 ): SignedPreKeyStore {
 
-    suspend fun getLastPreKeyId(): Int =
-        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
+    fun getLastPreKeyId(): Int =
+        lock.acquireForTransaction(db) {
             SignedPreKeys
                 .slice(SignedPreKeys.preKeyId)
                 .select { SignedPreKeys.accountId eq accountId }

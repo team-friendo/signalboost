@@ -1,7 +1,6 @@
 package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.PreKeys
-import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.serialization.ByteArrayEncoding.toPostgresHex
 import org.jetbrains.exposed.sql.*
 import org.whispersystems.libsignal.InvalidKeyException
@@ -25,8 +24,8 @@ class SignalcPreKeyStore(
             } ?: throw InvalidKeyException()
         }
 
-    suspend fun getLastPreKeyId(): Int =
-        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
+    fun getLastPreKeyId(): Int =
+        lock.acquireForTransaction(db) {
             PreKeys
                 .slice(PreKeys.preKeyId)
                 .select { PreKeys.accountId eq accountId }
@@ -53,8 +52,8 @@ class SignalcPreKeyStore(
         }
     }
 
-    suspend fun storePreKeys(records: List<PreKeyRecord>) {
-        lock.acquireForSuspendTransaction(Concurrency.Dispatcher, db) {
+    fun storePreKeys(records: List<PreKeyRecord>) {
+        lock.acquireForTransaction(db) {
             // we revert to raw SQL here b/c exposed's `batchInsert` helper does not
             // actually batch insert: https://github.com/JetBrains/Exposed/wiki/DSL#batch-insert
             exec("INSERT INTO prekeys (account_id, prekey_id, prekey_bytes) VALUES" +
