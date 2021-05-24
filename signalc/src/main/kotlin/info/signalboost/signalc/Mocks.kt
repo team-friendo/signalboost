@@ -24,6 +24,7 @@ object Mocks {
         coEvery { register(any(), any()) } returns mockk()
         coEvery { verify(any(), any()) } returns mockk()
         coEvery { publishPreKeys(any()) } returns Unit
+        coEvery { publishPreKeys(any(), any()) } returns Unit
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
     }
     val dataSource: HikariDataSource.() -> Unit = {

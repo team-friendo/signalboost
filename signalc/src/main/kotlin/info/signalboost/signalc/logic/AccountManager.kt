@@ -37,7 +37,7 @@ class AccountManager(private val app: Application) {
         override val logger = logger()
         const val PREKEY_MAX_ID: Int = 0xFFFFF
         const val PREKEY_MIN_RESERVE = 10
-        const val PREKEY_MAX_RESERVE = 100
+        const val PREKEY_BATCH_SIZE = 100
     }
 
     private val accountStore = app.accountStore
@@ -119,7 +119,7 @@ class AccountManager(private val app: Application) {
      * generate prekeys, store them locally and publish them to signal
      **/
     @Throws(IOException::class)
-    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0, batchSize: Int = PREKEY_MAX_RESERVE) {
+    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0) {
         val store = protocolStore.of(account)
         return app.coroutineScope.async(Concurrency.Dispatcher) {
             // generate and store prekeys
@@ -127,7 +127,7 @@ class AccountManager(private val app: Application) {
             val signedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, signedPreKeyId).also {
                 store.storeSignedPreKey(it.id, it)
             }
-            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, batchSize).also {
+            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE).also {
                 store.storePreKeys(it)
             }
             // publish prekeys to signal server
@@ -148,8 +148,7 @@ class AccountManager(private val app: Application) {
         logger.info { "Refreshing prekeys for ${account.username}"}
         Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
         val nextPreKeyId  = app.protocolStore.of(account).getLastPreKeyId() + 1
-        val batchSize = PREKEY_MAX_RESERVE - numPreKeysOnServer
-        return publishPreKeys(account, nextPreKeyId, batchSize)
+        return publishPreKeys(account, nextPreKeyId)
     }
 }
 
