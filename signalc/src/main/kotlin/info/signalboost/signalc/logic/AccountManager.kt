@@ -44,26 +44,20 @@ class AccountManager(private val app: Application) {
     private val protocolStore = app.protocolStore
     private val signal = app.signal
 
-    private val accountManagers = ConcurrentHashMap<String,SignalServiceAccountManager>()
-
-    private fun accountManagerOf(account: Account): SignalServiceAccountManager {
-        // Return a Signal account manager instance for an account.
-        // For verified accounts, return or create memoized references to account managers.
-        val createAccountManager =  {
-            SignalServiceAccountManager(
-                signal.configs,
-                account.credentialsProvider,
-                signal.agent,
-                signal.groupsV2Operations,
-                true, // automaticNetworkRetry
-                UptimeSleepTimer()
-            )
-        }
-        return when(account) {
-            is VerifiedAccount -> getMemoized(accountManagers, account.username, createAccountManager)
-            else -> createAccountManager()
-        }
-    }
+    // NOTE(aguestuser|2020-05-23):
+    // We used to memoize account managers, but suspect it created some odd state w/ refreshing PreKeys.
+    // Since there is (1) little benefit from caching objects that we so rarely use, (2) little cost to creating them
+    // every time we need them, and (3) some potential cost to keeping unused objects cached, we will henceforth simply
+    // construct account managers on demand, and leave this note in case we ever want to reconsider the trade-offs!
+    private fun accountManagerOf(account: Account): SignalServiceAccountManager =
+        SignalServiceAccountManager(
+            signal.configs,
+            account.credentialsProvider,
+            signal.agent,
+            signal.groupsV2Operations,
+            true, // automaticNetworkRetry
+            UptimeSleepTimer()
+        )
 
     suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
