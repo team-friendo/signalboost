@@ -70,16 +70,16 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "creates account's identity keypair on first call, retrieves it on subsequent calls" {
-                app.protocolStore.countOwnIdentities() shouldBe 0
+                val startingCount = app.protocolStore.countOwnIdentities()
                 val keyPair = store.identityKeyPair
-                app.protocolStore.countOwnIdentities() shouldBe 1
+                app.protocolStore.countOwnIdentities() shouldBe startingCount + 1
                 store.identityKeyPair.serialize() shouldBe keyPair.serialize()
             }
 
             "retrieves account's registration id on first call, retrieves it on subsquent calls" {
-                app.protocolStore.countOwnIdentities() shouldBe 0
+                val startingCount = app.protocolStore.countOwnIdentities()
                 val registrationId = store.localRegistrationId
-                app.protocolStore.countOwnIdentities() shouldBe 1
+                app.protocolStore.countOwnIdentities() shouldBe startingCount + 1
                 store.localRegistrationId shouldBe registrationId
             }
 
