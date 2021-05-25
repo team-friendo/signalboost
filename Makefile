@@ -226,7 +226,7 @@ docker.push.signalc: ## push the signalc production image (accepts optional TAG=
 	./bin/docker-push signalc $(TAG)
 
 docker.push.signalc.dev: ## push the signalc dev image (accepts optional TAG=#.#.# argument)
-	./bin/docker-build signalc-dev $(TAG)
+	./bin/docker-push signalc-dev $(TAG)
 
 docker.push.signald: ## push the signald docker image (accepts optional TAG=#.#.# argument)
 	./bin/docker-push signald $(TAG)
