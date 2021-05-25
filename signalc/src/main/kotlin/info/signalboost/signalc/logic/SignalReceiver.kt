@@ -4,8 +4,8 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
+import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.EnvelopeType
-import info.signalboost.signalc.model.*
 import info.signalboost.signalc.model.EnvelopeType.Companion.asEnum
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
@@ -17,8 +17,6 @@ import kotlinx.coroutines.*
 import mu.KLoggable
 import org.postgresql.util.Base64
 import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
-import org.whispersystems.libsignal.UntrustedIdentityException
-import java.util.concurrent.CancellationException
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
@@ -30,7 +28,7 @@ import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
-import java.util.*
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -51,6 +49,14 @@ class SignalReceiver(private val app: Application) {
         private const val MAX_ATTACHMENT_SIZE = 150L * 1024 * 1024 // 150MB
     }
 
+    // INNER CLASS(ES)
+
+    enum class SubscribeErrorContinuation {
+        CONTINUE,
+        RETURN,
+        RETURN_AND_CANCEL;
+    }
+
     // FIELDS/FACTORIES
 
     internal val messagesInFlight = AtomicInteger(0)
@@ -66,7 +72,7 @@ class SignalReceiver(private val app: Application) {
                 app.signal.configs,
                 account.credentialsProvider,
                 app.signal.agent,
-                null, // TODO: see [1] below
+                null, // ConnectivityListender (left unimplemented) see [1] below
                 UptimeSleepTimer(),
                 app.signal.clientZkOperations?.profileOperations,
                 true
@@ -80,9 +86,11 @@ class SignalReceiver(private val app: Application) {
 
     private fun cipherOf(account: VerifiedAccount): SignalServiceCipher =
         getMemoized(ciphers, account.username) {
+            val store = app.protocolStore.of(account)
             SignalServiceCipher(
                 account.address,
-                app.protocolStore.of(account),
+                store,
+                store.lock,
                 app.signal.certificateValidator
             )
         }
@@ -102,7 +110,6 @@ class SignalReceiver(private val app: Application) {
     )
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
-        // TODO(aguestuser|2021-01-21) handle: timeout, closed connection (understand `readyOrEmpty()`?)
         if(subscriptions.containsKey(account.username)) return null // block attempts to re-subscribe to same account
         return app.coroutineScope.launch sub@ {
             val subscription = this
@@ -123,23 +130,12 @@ class SignalReceiver(private val app: Application) {
                             app.config.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS
                         )
-                    } catch(e: IOException) {
-                        if (app.inShutdownMode) {
-                            // on io error (caused by shutdown), cancel job and stop reading from signal
-                            logger.warn {
-                                "Connection closed on websocket for ${account.username}, cancelling subscription..."
-                            }
-                            return@launch subscription.cancel()
-                        } else {
-                            // on io error (caused by server), unsubscribe so that we can resubscribe
-                            logger.warn { "Connection error on websocket for ${account.username}, unsubscribing..." }
-                            unsubscribe(account.username, SignalcCancellation.SubscriptionDisrupted(e))
-                            return@launch
+                    } catch(err: Throwable) {
+                        when(handleSubscribeError(err, account)) {
+                            SubscribeErrorContinuation.CONTINUE -> continue
+                            SubscribeErrorContinuation.RETURN -> return@launch
+                            SubscribeErrorContinuation.RETURN_AND_CANCEL -> return@launch subscription.cancel()
                         }
-                    } catch(e: TimeoutException) {
-                        // on timeout, setup message pipe again, as we want to keep reading
-                        logger.warn { "Read timeout on websocket for ${account.username}, keep reading..." }
-                        continue
                     }
                     dispatch(account, envelope)
                 }
@@ -168,16 +164,30 @@ class SignalReceiver(private val app: Application) {
     // HELPERS
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
-        logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
-        return when (envelope.type.asEnum()) {
-            EnvelopeType.CIPHERTEXT,
-            EnvelopeType.PREKEY_BUNDLE -> relay(envelope, account)
-            EnvelopeType.KEY_EXCHANGE,
-            EnvelopeType.RECEIPT,
-            EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we likely want to handle sealed sender messages!
-            EnvelopeType.UNKNOWN -> drop(envelope, account)
+        envelope.type.asEnum().let {
+            logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+            Metrics.SignalReceiver.numberOfMessagesReceived.labels(it.asString).inc()
+            return when (it) {
+                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
+                EnvelopeType.PREKEY_BUNDLE -> {
+                    relay(envelope, account)
+                    maybeRefreshPreKeys(account)
+                }
+                EnvelopeType.KEY_EXCHANGE, // handle this to process "reset secure session" events
+                EnvelopeType.RECEIPT, // signal android basically drops these, so do we!
+                EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we very much want to handle these!!!
+                EnvelopeType.UNKNOWN -> drop(envelope, account)
+            }
+
         }
     }
+
+    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
+            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+            // of which might have depleted our prekey reserves below the level we want to keep on hand
+            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+            app.accountManager.refreshPreKeysIfDepleted(account)
+        }
 
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
@@ -189,6 +199,7 @@ class SignalReceiver(private val app: Application) {
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
+                // TODO: read and store profileKeys here...
 
                 app.socketSender.send(
                     SocketResponse.Cleartext.of(
@@ -201,7 +212,7 @@ class SignalReceiver(private val app: Application) {
                     )
                 )
             } catch(err: Throwable) {
-                handleError(err, sender, recipient)
+                handleRelayError(err, sender, recipient)
             } finally {
                 messagesInFlight.getAndDecrement()
             }
@@ -209,18 +220,52 @@ class SignalReceiver(private val app: Application) {
     }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
-        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
-        try {
-             cipherOf(account).decrypt(envelope)
-        } catch(err: Throwable) {
-            handleDecryptionError(err, sender, recipient)
-        } finally {
-            app.socketSender.send(
-                SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
-            )
-        }
+        app.socketSender.send(
+            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+        )
         return null
     }
+
+    private suspend fun handleRelayError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
+        when (err) {
+            is ProtocolUntrustedIdentityException -> {
+                // When we get this exception we return a null fingerprint to the client, with the intention of causing
+                // it to send a garbage message that will force a session reset and raise another identity exception.
+                // That exception (unlike this one) will include the fingerprint corresponding to the new session,
+                // and can be handled (and trusted) from the send path.
+                app.socketSender.send(
+                    SocketResponse.InboundIdentityFailure.of(
+                        recipient,
+                        sender,
+                        null,
+                    )
+                )
+            }
+            else -> {
+                app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, err))
+                logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
+            }
+        }
+    }
+
+    private suspend fun handleSubscribeError(e: Throwable, account: VerifiedAccount): SubscribeErrorContinuation =
+        when (e) {
+            // on timeout, setup message pipe again, as we want to keep reading
+            is TimeoutException -> SubscribeErrorContinuation.CONTINUE
+            is IOException -> run {
+                if (app.inShutdownMode) {
+                    // on io error caused by client shutdown, cancel job and stop reading from signal
+                    logger.warn { "Connection closed on websocket for ${account.username}, cancelling subscription..." }
+                    SubscribeErrorContinuation.RETURN_AND_CANCEL
+                } else {
+                    // on io error caused by disrupted connection to server, unsubscribe so that we can resubscribe
+                    logger.warn { "Connection error on websocket for ${account.username}, unsubscribing..." }
+                    unsubscribe(account.username, SignalcCancellation.SubscriptionDisrupted(e))
+                    SubscribeErrorContinuation.RETURN
+                }
+            }
+            else -> throw e // this will be handled as a disrupted subscription in `SocketReceiver`
+        }
 
     private fun SignalServiceAttachment.retrieveFor(account: VerifiedAccount): SocketResponse.Cleartext.Attachment? {
         val pointer: SignalServiceAttachmentPointer = this.asPointer() ?: return null
@@ -247,40 +292,10 @@ class SignalReceiver(private val app: Application) {
             Files.deleteIfExists(tmpFile.toPath())
         }
     }
-
-    private suspend fun handleError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
-        when(err) {
-            is ProtocolUntrustedIdentityException -> {
-                // UntrustedIdentity is usually null here. In which case, we return a null fingerprint, with the
-                // intention of causing the client to send a garbage message that will force a session reset
-                // and raise another identity exception. That exception will include the fingerprint corresponding
-                // to the new session, and can be handled (and trusted) from the send path (rather than the receive path,
-                // which we are on here). See:
-                // - libsignal exception creation: https://github.com/signalapp/libsignal-client/blob/113e849d7620c7a0ad8aa29a43e6243026bfdb89/rust/bridge/shared/src/jni/mod.rs#L106
-                // - signal-android handling: https://github.com/signalapp/Signal-Android/blob/763aeabdddcbeff526589afa964d61defdd3e589/app/src/main/java/org/thoughtcrime/securesms/messages/MessageDecryptionUtil.java#L82
-                val untrustedIdentityException = err.cause as UntrustedIdentityException
-                val fingerprint = untrustedIdentityException.untrustedIdentity?.fingerprint
-
-                app.socketSender.send(
-                    SocketResponse.InboundIdentityFailure.of(
-                        recipient,
-                        sender,
-                        fingerprint
-                    )
-                )
-            } else -> handleDecryptionError(err, sender, recipient)
-        }
-    }
-
-    private suspend fun handleDecryptionError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
-        app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, err))
-        logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
-    }
 }
 
 /*[1]**********
- * TODO: signald (and thus we) leave ConnectivityListener unimplemented.
- *  We likely should not follow suit. Here is what a ConnectivityListener does:
+ * Here is what a ConnectivityListener does:
  *
  *  public interface ConnectivityListener {
  *    void onConnected();

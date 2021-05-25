@@ -11,9 +11,7 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Default
 import mu.KLoggable
-import mu.KLogging
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
@@ -21,10 +19,11 @@ import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
+import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.random.Random
+import kotlin.jvm.Throws
 import kotlin.time.ExperimentalTime
 
 
@@ -36,33 +35,29 @@ class AccountManager(private val app: Application) {
 
     companion object: Any(), KLoggable {
         override val logger = logger()
-        const val MAX_PREKEY_ID: Int = 0xFFFFF
+        const val PREKEY_MAX_ID: Int = 0xFFFFF
+        const val PREKEY_MIN_RESERVE = 10
+        const val PREKEY_BATCH_SIZE = 100
     }
 
     private val accountStore = app.accountStore
     private val protocolStore = app.protocolStore
     private val signal = app.signal
 
-    private val accountManagers = ConcurrentHashMap<String,SignalServiceAccountManager>()
-
-    private fun accountManagerOf(account: Account): SignalServiceAccountManager {
-        // Return a Signal account manager instance for an account.
-        // For verified accounts, return or create memoized references to account managers.
-        val createAccountManager =  {
-            SignalServiceAccountManager(
-                signal.configs,
-                account.credentialsProvider,
-                signal.agent,
-                signal.groupsV2Operations,
-                true, // automaticNetworkRetry
-                UptimeSleepTimer()
-            )
-        }
-        return when(account) {
-            is VerifiedAccount -> getMemoized(accountManagers, account.username, createAccountManager)
-            else -> createAccountManager()
-        }
-    }
+    // NOTE(aguestuser|2020-05-23):
+    // We used to memoize account managers, but suspect it created some odd state w/ refreshing PreKeys.
+    // Since there is (1) little benefit from caching objects that we so rarely use, (2) little cost to creating them
+    // every time we need them, and (3) some potential cost to keeping unused objects cached, we will henceforth simply
+    // construct account managers on demand, and leave this note in case we ever want to reconsider the trade-offs!
+    private fun accountManagerOf(account: Account): SignalServiceAccountManager =
+        SignalServiceAccountManager(
+            signal.configs,
+            account.credentialsProvider,
+            signal.agent,
+            signal.groupsV2Operations,
+            true, // automaticNetworkRetry
+            UptimeSleepTimer()
+        )
 
     suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
@@ -112,30 +107,42 @@ class AccountManager(private val app: Application) {
         return VerifiedAccount.fromRegistered(account, uuid).also{ accountStore.save(it) }
     }
 
-    // generate prekeys, store them locally and publish them to signal
-    suspend fun publishPreKeys(account: VerifiedAccount): VerifiedAccount {
-        val accountProtocolStore = protocolStore.of(account)
-        return app.coroutineScope.async {
-            withContext(Default) {
-                // generate prekeys on CPU-friendly dispatcher
-                val signedPrekeyId = Random.nextInt(0, MAX_PREKEY_ID) // TODO: use an incrementing int here?
-                val signedPreKey = KeyUtil.genSignedPreKey(accountProtocolStore.identityKeyPair, signedPrekeyId)
-                val oneTimePreKeys = KeyUtil.genPreKeys(0, 100)
-                withContext(Concurrency.Dispatcher) {
-                    // switch to IO-friendly dispatcher to...
-                    // store prekeys
-                    accountProtocolStore.storeSignedPreKey(signedPreKey.id,signedPreKey)
-                    oneTimePreKeys.onEach { accountProtocolStore.storePreKey(it.id, it) }
-                    // publish prekeys to signal server
-                    accountManagerOf(account).setPreKeys(
-                        accountProtocolStore.identityKeyPair.publicKey,
-                        signedPreKey,
-                        oneTimePreKeys
-                    )
-                    account
-                }
+
+
+    /**
+     * generate prekeys, store them locally and publish them to signal
+     **/
+    @Throws(IOException::class)
+    suspend fun publishPreKeys(account: VerifiedAccount, preKeyIdOffset: Int = 0) {
+        val store = protocolStore.of(account)
+        return app.coroutineScope.async(Concurrency.Dispatcher) {
+            // generate and store prekeys
+            val signedPreKeyId = store.getLastSignedPreKeyId() + 1 % PREKEY_MAX_ID
+            val signedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, signedPreKeyId).also {
+                store.storeSignedPreKey(it.id, it)
             }
+            val oneTimePreKeys = KeyUtil.genPreKeys(preKeyIdOffset, PREKEY_BATCH_SIZE).also {
+                store.storePreKeys(it)
+            }
+            // publish prekeys to signal server
+            accountManagerOf(account).setPreKeys(store.identityKeyPair.publicKey, signedPreKey, oneTimePreKeys)
         }.await()
+    }
+
+    /**
+     * check the server to see if our reserve of prekeys has been depleted, if so, replenish them
+     **/
+    @Throws(IOException::class)
+    suspend fun refreshPreKeysIfDepleted(account: VerifiedAccount) {
+        logger.info { "Checking whether to refresh prekeys for ${account.username}"}
+        val numPreKeysOnServer = accountManagerOf(account).preKeysCount
+        logger.debug { "Number of preKeys on server for ${account.username}: $numPreKeysOnServer"}
+        if( numPreKeysOnServer >= PREKEY_MIN_RESERVE) return
+
+        logger.info { "Refreshing prekeys for ${account.username}"}
+        Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
+        val nextPreKeyId  = app.protocolStore.of(account).getLastPreKeyId() + 1
+        return publishPreKeys(account, nextPreKeyId)
     }
 }
 

@@ -70,16 +70,16 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "creates account's identity keypair on first call, retrieves it on subsequent calls" {
-                app.protocolStore.countOwnIdentities() shouldBe 0
+                val startingCount = app.protocolStore.countOwnIdentities()
                 val keyPair = store.identityKeyPair
-                app.protocolStore.countOwnIdentities() shouldBe 1
+                app.protocolStore.countOwnIdentities() shouldBe startingCount + 1
                 store.identityKeyPair.serialize() shouldBe keyPair.serialize()
             }
 
             "retrieves account's registration id on first call, retrieves it on subsquent calls" {
-                app.protocolStore.countOwnIdentities() shouldBe 0
+                val startingCount = app.protocolStore.countOwnIdentities()
                 val registrationId = store.localRegistrationId
-                app.protocolStore.countOwnIdentities() shouldBe 1
+                app.protocolStore.countOwnIdentities() shouldBe startingCount + 1
                 store.localRegistrationId shouldBe registrationId
             }
 
@@ -148,32 +148,40 @@ class ProtocolStoreTest: FreeSpec({
 
 
         "Prekey Store" - {
-            val keyId = 42
+            val signedKeyId = 42
             val nonExistentId = 1312
-            val (prekey) = KeyUtil.genPreKeys(0, 1)
+            val prekeys = KeyUtil.genPreKeys(0, 2)
+            val prekey = prekeys[0]
 
             afterTest {
-                store.removePreKey(keyId)
+                prekeys.forEach { store.removePreKey(it.id) }
             }
 
             "checks for prekey existence" {
-                store.containsPreKey(keyId) shouldBe false
+                store.containsPreKey(prekey.id) shouldBe false
             }
 
             "stores a prekey" {
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
             }
 
             "stores the same prekey twice without error" {
-                store.storePreKey(keyId, prekey)
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
+            }
+
+            "stores many prekeys in a batch" {
+                store.storePreKeys(prekeys)
+                prekeys.forEach {
+                    store.containsPreKey(it.id) shouldBe true
+                }
             }
 
             "loads a prekey" {
-                store.storePreKey(keyId, prekey)
-                val loadedKey = store.loadPreKey(keyId)
+                store.storePreKey(prekey.id, prekey)
+                val loadedKey = store.loadPreKey(prekey.id)
                 loadedKey.serialize() shouldBe prekey.serialize()
             }
 
@@ -184,11 +192,16 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "removes a prekey" {
-                store.storePreKey(keyId, prekey)
-                store.containsPreKey(keyId) shouldBe true
+                store.storePreKey(prekey.id, prekey)
+                store.containsPreKey(prekey.id) shouldBe true
 
-                store.removePreKey(keyId)
-                store.containsPreKey(keyId) shouldBe false
+                store.removePreKey(prekey.id)
+                store.containsPreKey(prekey.id) shouldBe false
+            }
+
+            "retrieves the last-created profile key id" {
+                prekeys.forEach { store.storePreKey(it.id, it) }
+                store.getLastPreKeyId() shouldBe prekeys.last().id
             }
         }
 
@@ -196,6 +209,7 @@ class ProtocolStoreTest: FreeSpec({
             val keyId = 42
             val nonExistentId = 1312
             val signedPrekey = KeyUtil.genSignedPreKey(store.identityKeyPair, keyId)
+            val otherSignedPreKey = KeyUtil.genSignedPreKey(store.identityKeyPair, keyId + 1)
 
             afterTest {
                 store.removeSignedPreKey(keyId)
@@ -231,6 +245,12 @@ class ProtocolStoreTest: FreeSpec({
                 store.storeSignedPreKey(keyId, signedPrekey)
                 store.removeSignedPreKey(keyId)
                 store.containsSignedPreKey(keyId) shouldBe false
+            }
+
+            "retrieves the last-created profile key id" {
+                store.storeSignedPreKey(signedPrekey.id, signedPrekey)
+                store.storeSignedPreKey(otherSignedPreKey.id, otherSignedPreKey)
+                store.getLastSignedPreKeyId() shouldBe otherSignedPreKey.id
             }
         }
 

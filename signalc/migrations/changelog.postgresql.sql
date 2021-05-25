@@ -95,3 +95,15 @@ drop table envelopes;
 -- rollback    envelope_bytes bytea NOT NULL,
 -- rollback    server_delivered_timestamp BIGINT NOT NULL
 -- rollback    );
+
+-- changeset aguestuser:1620958605837-1 failOnError:false
+CREATE TABLE IF NOT EXISTS senderkeys
+(
+    account_id VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    device_id INT NOT NULL,
+    distribution_id uuid NOT NULL,
+    identity_key_bytes bytea NOT NULL,
+    CONSTRAINT pk_SenderKeys PRIMARY KEY (account_id, "name", device_id, distribution_id)
+);
+-- rollback drop table senderkeys;

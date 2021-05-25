@@ -5,16 +5,22 @@ import io.prometheus.client.Histogram
 import org.whispersystems.signalservice.api.LibSignalMetrics
 
 object Metrics {
-    // CONVENTIONS
-    // Name: Location of metric, namespaced by module, use the function name or what code the metric is wrapping
-    // Help: Time spent in X place, doing Y thing(s)
+    /******** CONVENTIONS ************
+     * Name: Location of metric, namespaced by module, use the function name or what code the metric is wrapping
+     * Help: Time spent in X place, doing Y thing(s)
+     *********************************/
     private fun histogramOf(name: String, help: String): Histogram =
         Histogram.build().name(name).help(help).register()
 
-    private fun counterOf(name: String, help: String): Counter =
-        Counter.build().name(name).help(help).register()
+    private fun counterOf(name: String, help: String, vararg labelNames: String): Counter =
+        Counter.build().name(name).help(help).labelNames(*labelNames).register()
 
     object AccountManager {
+        val numberOfPreKeyRefreshes = counterOf(
+            "account_manager__number_of_prekey_refreshes",
+        "Number of times AccountManager publishes new prekeys because reserves have dipped below 10",
+        )
+
         val timeToLoadVerifiedAccount =
             histogramOf(
                 "account_manager__time_to_load_verified_account",
@@ -55,12 +61,20 @@ object Metrics {
         )
     }
 
-    object SignalSender {
-        val numberOfMessageSends: Counter = counterOf(
-            "signal_sender__number_of_message_sends",
-            "Counts number of attempted messages sent through libsignal"
+    object SignalReceiver {
+        val numberOfMessagesReceived: Counter = counterOf(
+            "signal_receiver__number_of_messages_received",
+            "Counts number of inbound PREKEY_BUNDLE messages we receive from signal server when users try to establish new sessions." +
+                    "If we often receive a high number of these in quick succession, consider throttling prekey replenish jobs.",
+            "envelope_type",
         )
+    }
 
+    object SignalSender {
+        val numberOfMessagesSent: Counter = counterOf(
+            "signal_sender__number_of_messages_sent",
+            "Counts number of attempted messages sent through libsignal",
+        )
     }
 
     object SocketReceiver {

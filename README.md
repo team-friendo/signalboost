@@ -19,13 +19,13 @@ Hi! This is mainly a developer-facing document. If you'd prefer less jargon, che
 
 **Issue tracking and bug reports** live in our [gitlab repo on 0xacab.org](https://0xacab.org/team-friendo/signalboost) You can track **ongoing work** on the [project's kanban board](https://0xacab.org/team-friendo/signalboost/boards).
 
-**Want to use Signalboost for social justice work?**  Send us a Signal message at `+1 (938) 444-8536` or email us at `team-friendo [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
+**Want to use Signalboost for social justice work?**  Send us a Signal message at `+1 (947) 800-5717` (947-BOOSTIT!) or email us at `signalboost [AT] riseup [DOT] net` ([pgp key here](https://pgp.mit.edu/pks/lookup?op=get&search=0xE726A156229F56F1)) to request a Signalboost channel for your group. We're also happy to help you learn how to install and maintain your own instance of a Signalboost sever so you can run your own channel and not trust Team Friendo with storing your subscriber list(s). :)
 
 **NOTE: this project is not officially affiliated with the Signal App or Foundation.** We are just some humble rad techies trying to help our friends. We are grateful to Moxie, Trevor, and the Signal Foundation for maintaining a generous free/open ecosystem that makes projects like this possible. <@3
 __________________
 
 <a name="txtmob_joke"></a>
-[1] *If you are a child of the (anarchist) 90's, you might usefully think of Signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."*
+[1] *If you are a child of the WTO-protesting 90's, you might usefully think of Signalboost as "Like TXTMOB, but on Signal." If you cut your teeth on Occupy Wall Street, try "Like Celly, but on Signal." If you were born digital, try "Like Signal, but with text blasts."*
 
 # Application Design <a name="design"></a>
 

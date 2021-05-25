@@ -23,14 +23,20 @@ object Mocks {
         coEvery { load(any()) } returns mockk()
         coEvery { register(any(), any()) } returns mockk()
         coEvery { verify(any(), any()) } returns mockk()
-        coEvery { publishPreKeys(any()) } returns mockk()
+        coEvery { publishPreKeys(any()) } returns Unit
+        coEvery { publishPreKeys(any(), any()) } returns Unit
+        coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
+            every { lock } returns mockk()
             every { saveIdentity(any(), any()) } returns mockk()
+            coEvery { getLastPreKeyId() } returns 0
+            coEvery { getLastSignedPreKeyId() } returns 0
+            coEvery { storePreKeys(any()) } returns Unit
         }
     }
     val signalReceiver: SignalReceiver.() -> Unit = {
@@ -71,6 +77,7 @@ object Mocks {
         mockkObject(Metrics.AccountManager)
         mockkObject(Metrics.LibSignal)
         mockkObject(Metrics.SignalSender)
+        mockkObject(Metrics.SignalReceiver)
         mockkObject(Metrics.SocketSender)
     }
 }

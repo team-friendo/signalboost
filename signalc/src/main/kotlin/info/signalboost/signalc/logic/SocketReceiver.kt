@@ -155,7 +155,6 @@ class SocketReceiver(private val app: Application) {
         }
 
         when(sendResult.type()) {
-            // TODO: sendResult has 5 variant cases. should we handle: network failure, unregistered, unknown?
             SendResultType.IDENTITY_FAILURE -> app.protocolStore.of(senderAccount).saveFingerprintForAllIdentities(
                 recipientAddress.asSignalServiceAddress(),
                 sendResult.identityFailure.identityKey.serialize(),
@@ -163,6 +162,8 @@ class SocketReceiver(private val app: Application) {
             SendResultType.SUCCESS -> {
                 Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.success.duration.toDouble())
             }
+            // (currently) ignore 3 remaining variants: NETWORK_FAILURE, UNREGISTERED_FAILURE, UNKNOWN_ERROR
+            else -> {}
         }
 
         app.socketSender.send(SocketResponse.SendResults.of(request, sendResult))

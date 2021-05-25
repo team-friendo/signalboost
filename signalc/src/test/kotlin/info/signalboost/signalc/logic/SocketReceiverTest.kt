@@ -358,7 +358,7 @@ class SocketReceiverTest : FreeSpec({
                         }
 
                         val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
-                            every { saveFingerprintForAllIdentities(any(), any()) } returns 1
+                            coEvery { saveFingerprintForAllIdentities(any(), any()) } returns Unit
                         }
 
                         every {
@@ -379,7 +379,7 @@ class SocketReceiverTest : FreeSpec({
                         "saves the new identity key" {
                             client.send(sendRequestJson)
                             eventually(timeout) {
-                                verify {
+                                coVerify {
                                    mockProtocolStore.saveFingerprintForAllIdentities(
                                        recipientAccount.address,
                                        newIdentityKey.serialize(),
@@ -608,7 +608,7 @@ class SocketReceiverTest : FreeSpec({
                     coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
                     coEvery {
                         app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(any())
-                    } returns 1
+                    } returns Unit
 
                     "attempts to trust the correct fingerprint" {
                         client.send(requestJson)
@@ -763,10 +763,6 @@ class SocketReceiverTest : FreeSpec({
                     "when verification succeeds" - {
                         coEvery {
                             app.accountManager.verify(registeredSenderAccount, request.code.asSanitizedCode())
-                        } returns verifiedSenderAccount
-
-                        coEvery {
-                            app.accountManager.publishPreKeys(any())
                         } returns verifiedSenderAccount
 
                         "publishes prekeys for verified account" {

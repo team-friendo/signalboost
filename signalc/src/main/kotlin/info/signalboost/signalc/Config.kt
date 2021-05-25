@@ -7,7 +7,6 @@ import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import java.lang.Long
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.reflect.KClass
 import kotlin.time.*
@@ -109,8 +108,8 @@ object Config {
 
     val default  = App(
         db = Database(
-            driver = "com.impossibl.postgres.jdbc.PGDriver",
-            url = "jdbc:pgsql://$dbHost/$dbName",
+            driver = "org.postgresql.Driver",
+            url = "jdbc:postgresql://$dbHost/$dbName?reWriteBatchInserts=true",
             user= "postgres"
         ),
         mocked = emptySet(),
