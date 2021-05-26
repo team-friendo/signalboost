@@ -335,20 +335,26 @@ sc.down: # stop signalc stack
 sc.logs: ## view logs for signalc stack
 	docker-compose -f docker-compose-sc.yml logs -f
 
-sc.restart.debug: ## restart signalc stack in dev mode w/ debug flags on
-	docker-compose -f docker-compose-sc.yml down && \
-	DEBUG_MODE=1 LOG_LEVEL=debug \
-	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
 
 sc.restart: ## restart signalc stack
 	docker-compose -f docker-compose-sc.yml down && \
 	docker-compose -f docker-compose-sc.yml up -d signalc signalboost ngrok
 
+sc.restart.rebuild: ## restart signalc stack after rebuilding signalc
+	docker-compose -f docker-compose-sc.yml down && \
+	./bin/sc/build && \
+	docker-compose -f docker-compose-sc.yml up -d signalc signalboost ngrok
+
+sc.restart.debug: ## restart signalc stack in dev mode w/ debug flags on
+	docker-compose -f docker-compose-sc.yml down && \
+	DEBUG_MODE=1 LOG_LEVEL=debug \
+	docker-compose -f docker-compose-sc.yml up -d signalc_dev signalboost ngrok
+
 sc.db.up: ## run the signalc db in isolation (useful for tests)
 	docker-compose -f docker-compose-sc.yml up -d db
 
 sc.db.down: ## stop the signalc db in isolation (useful for tests)
-	docker-compose -f docker-compose-sc.yml down db
+	docker-compose -f docker-compose-sc.yml stop db
 
 sc.db.migrate: ## run migrations
 	echo "----- running development migrations" && \
