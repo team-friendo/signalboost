@@ -3,6 +3,7 @@ package info.signalboost.signalc
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
+import info.signalboost.signalc.store.ProfileStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
@@ -29,6 +30,10 @@ object Mocks {
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
+    }
+    val profileStore: ProfileStore.() -> Unit = {
+        coEvery { storeProfileKey(any(), any(), any())} returns Unit
+        coEvery { loadProfileKey(any(), any())} returns mockk()
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {

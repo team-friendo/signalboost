@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.store.ProfileStore
 import info.signalboost.signalc.store.ProtocolStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -25,6 +26,7 @@ object Config {
         HikariDataSource::class,
         AccountStore::class,
         ProtocolStore::class,
+        ProfileStore::class,
         // components
         AccountManager::class,
         SignalReceiver::class,

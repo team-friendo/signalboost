@@ -1,9 +1,12 @@
 package info.signalboost.signalc.store
 
 
+import info.signalboost.signalc.Application
 import info.signalboost.signalc.db.*
 import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.store.protocol.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.SignalProtocolAddress
@@ -12,9 +15,16 @@ import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
 
-class ProtocolStore(private val db: Database) {
+@ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
+@ExperimentalPathApi
+@ExperimentalTime
+class ProtocolStore(app: Application) {
+    val db = app.db
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
 
     fun countOwnIdentities(): Long =
