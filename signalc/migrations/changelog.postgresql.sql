@@ -135,3 +135,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     CONSTRAINT pk_Profiles PRIMARY KEY (account_id, contact_id)
 );
 -- rollback drop table profiles;
+
+-- changeset aguestuser:1622064839669-1 failOnError:false
+SQL: CREATE TABLE IF NOT EXISTS ownprofiles (
+    account_id VARCHAR(255) PRIMARY KEY,
+    profile_key_bytes bytea NOT NULL
+);
+-- rollback drop table ownprofiles;
