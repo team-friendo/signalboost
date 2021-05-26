@@ -12,12 +12,15 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
 
-//TODO: make all DAT variants inner classes of `Account` (and change their names to be shorter)
-
 sealed class Account {
     abstract val username: String
     abstract val password: String
     abstract val signalingKey: String
+    // TODO(aguestuser|2021-05-26): consider storing profileKey as ByteArray
+    //  then adding a (lazy?) property to access the object form
+    //  why? we most often want the byte array and would like to avoid
+    //  unnecessary serialization / deserialization roundtrips when a db call
+    //  yields the already-deserialized version!
     abstract val profileKey: ProfileKey
     abstract val deviceId: Int
     abstract val credentialsProvider: DynamicCredentialsProvider
@@ -140,6 +143,10 @@ data class VerifiedAccount(
             this.deviceId
         )
     }
+
+    // TODO(aguestuser|2021-05-26): refactor to prefer UUIDS once we migrate off phone numbers!
+    val id: String
+      get() = username
 
     val address by lazy {
         SignalServiceAddress(uuid, username)

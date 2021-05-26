@@ -165,29 +165,24 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
         envelope.type.asEnum().let {
-            logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+            logger.debug { "Got ${it.asString} from ${envelope.sourceIdentifier ?: "SEALED"} to ${account.username}" }
             Metrics.SignalReceiver.numberOfMessagesReceived.labels(it.asString).inc()
             return when (it) {
-                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
                 EnvelopeType.PREKEY_BUNDLE -> {
                     relay(envelope, account)
                     maybeRefreshPreKeys(account)
                 }
-                EnvelopeType.KEY_EXCHANGE, // handle this to process "reset secure session" events
+
+                EnvelopeType.UNIDENTIFIED_SENDER,
+                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
+
+                EnvelopeType.KEY_EXCHANGE, // TODO: handle this to process "reset secure session" events
                 EnvelopeType.RECEIPT, // signal android basically drops these, so do we!
-                EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we very much want to handle these!!!
                 EnvelopeType.UNKNOWN -> drop(envelope, account)
             }
 
         }
     }
-
-    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
-            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
-            // of which might have depleted our prekey reserves below the level we want to keep on hand
-            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
-            app.accountManager.refreshPreKeysIfDepleted(account)
-        }
 
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
@@ -197,9 +192,12 @@ class SignalReceiver(private val app: Application) {
                 messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
+
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
-                // TODO: read and store profileKeys here...
+                dataMessage.profileKey.orNull()?.let {
+                    app.profileStore.storeProfileKey(recipient.id, sender.id, it)
+                }
 
                 app.socketSender.send(
                     SocketResponse.Cleartext.of(
@@ -217,6 +215,13 @@ class SignalReceiver(private val app: Application) {
                 messagesInFlight.getAndDecrement()
             }
         }
+    }
+
+    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
+        // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+        // of which might have depleted our prekey reserves below the level we want to keep on hand
+        // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+        app.accountManager.refreshPreKeysIfDepleted(account)
     }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
