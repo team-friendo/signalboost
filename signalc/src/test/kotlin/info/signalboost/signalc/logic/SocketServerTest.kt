@@ -16,9 +16,8 @@ import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
 import java.net.SocketException
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
-import kotlin.time.seconds
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -30,8 +29,8 @@ class SocketServerTest : FreeSpec({
         val config = Config.mockAllExcept(SocketServer::class)
         val app = Application(config).run(testScope)
 
-        val closingDelay = 20.milliseconds
-        val timeout = 1.seconds
+        val closingDelay = Duration.milliseconds(20)
+        val timeout = Duration.seconds(1)
         val socketPath = config.socket.path
 
         afterTest {
@@ -45,7 +44,7 @@ class SocketServerTest : FreeSpec({
             testScope.teardown()
         }
 
-         suspend fun getFirstConnection(numAttempts: Int): Socket = try {
+        suspend fun getFirstConnection(numAttempts: Int): Socket = try {
             // tries to get a connection 10 times, giving up after timeout
             app.socketServer.connections.values.first()
         } catch (error: Throwable) {
@@ -132,7 +131,7 @@ class SocketServerTest : FreeSpec({
         }
 
         "#disconnect" - {
-            TestSocketClient.connect(socketPath,testScope)
+            TestSocketClient.connect(socketPath, testScope)
             val socket = getFirstConnection(0)
             val socketHash = socket.hashCode()
 

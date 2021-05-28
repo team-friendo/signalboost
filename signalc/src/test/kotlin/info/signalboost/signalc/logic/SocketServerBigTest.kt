@@ -22,16 +22,21 @@ import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
-import io.mockk.*
-import kotlinx.coroutines.*
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
 import java.net.Socket
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.deleteIfExists
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.seconds
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -57,7 +62,7 @@ class SocketServerBigTest : FreeSpec({
         val recipientAccount = genVerifiedAccount(recipientPhone)
 
         val socketPath = app.config.socket.path
-        val timeout = 1.seconds
+        val timeout = Duration.seconds(1)
 
         suspend fun getFirstNConnections(numConnections: Int, numAttempts: Int = 0): List<Socket> = try {
             // tries to get a connection 100 times, giving up after 10 times and timeout
@@ -72,7 +77,7 @@ class SocketServerBigTest : FreeSpec({
             coEvery {
                 app.accountManager.loadVerified(any())
             } answers {
-                when(firstArg<String>()) {
+                when (firstArg<String>()) {
                     verifiedSenderPhone -> verifiedSenderAccount
                     recipientPhone -> recipientAccount
                     else -> null
@@ -81,7 +86,7 @@ class SocketServerBigTest : FreeSpec({
             coEvery {
                 app.accountManager.load(any())
             } answers {
-                when(firstArg<String>()) {
+                when (firstArg<String>()) {
                     newSenderPhone -> newSenderAccount
                     registeredSenderPhone -> registeredSenderAccount
                     verifiedSenderPhone -> verifiedSenderAccount
@@ -109,7 +114,7 @@ class SocketServerBigTest : FreeSpec({
                 receivedMessages = Channel<String>()
                 client1 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
                 client2 = TestSocketClient.connect(socketPath, testScope, receivedMessages)
-                getFirstNConnections(2,0)
+                getFirstNConnections(2, 0)
             }
 
             afterTest {

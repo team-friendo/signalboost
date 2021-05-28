@@ -32,8 +32,9 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.io.File
 import java.io.InputStream
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
+
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -43,8 +44,8 @@ class SignalSenderTest : FreeSpec({
     runBlockingTest {
 
         val testScope = this
-        val drainPollInterval = 10.milliseconds
-        val drainTimeout = 50.milliseconds
+        val drainPollInterval = Duration.milliseconds(10)
+        val drainTimeout = Duration.milliseconds(50)
         val config = Config.mockAllExcept(SignalSender::class).copy(
             timers = Config.default.timers.copy(
                 drainPollInterval = drainPollInterval,
@@ -170,7 +171,13 @@ class SignalSenderTest : FreeSpec({
                     every { app.signalSender.messagesInFlight.getAndDecrement() } returns 0
                     every { app.signalSender.messagesInFlight.set(any()) } returns Unit
                 }
-                messageSender.send(verifiedAccount, recipientPhone.asSignalServiceAddress(),"", DEFAULT_EXPIRY_TIME, emptyList())
+                messageSender.send(
+                    verifiedAccount,
+                    recipientPhone.asSignalServiceAddress(),
+                    "",
+                    DEFAULT_EXPIRY_TIME,
+                    emptyList()
+                )
 
                 verify {
                     app.signalSender.messagesInFlight.getAndIncrement()
