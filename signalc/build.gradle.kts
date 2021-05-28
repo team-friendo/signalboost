@@ -20,8 +20,8 @@ repositories {
 plugins {
     application
     java
-    kotlin("jvm") version "1.4.30"
-    kotlin("plugin.serialization") version "1.4.30"
+    kotlin("jvm") version "1.5.10"
+    kotlin("plugin.serialization") version "1.5.10"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("org.liquibase.gradle") version "2.0.4"
 }
@@ -69,13 +69,13 @@ tasks.withType<Wrapper> {
 
 object Versions {
     const val bouncyCastle = "1.66"
-    const val coroutines = "1.4.2"
+    const val coroutines = "1.5.0"
     const val exposed = "0.25.1"
     const val googleProtobuf = "3.10.0"
-    const val jsonSerialization = "1.0.1"
     const val kaml = "0.26.0"
-    const val kotest = "4.3.1"
-    const val kotlin = "1.4.30"
+    const val kotest = "4.6.0"
+    const val kotlin = "1.5.10"
+    const val kotlinSerialization = "1.2.1"
     const val h2 = "1.4.199"
     const val hikariCp = "4.0.3"
     const val libsignal = "2.15.3_unofficial_t23_m1"
@@ -84,7 +84,7 @@ object Versions {
     const val logback = "1.2.3"
     const val log4j = "2.14.0"
     const val logging = "2.0.2"
-    const val mockk = "1.10.3"
+    const val mockk = "1.10.6"
     const val postgres = "42.2.18"
     const val shadowJar = "5.2.0"
     const val slf4j = "1.7.30"
@@ -108,7 +108,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:${Versions.exposed}")
     implementation("com.h2database:h2:${Versions.h2}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.jsonSerialization}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")
     implementation("com.kohlschutter.junixsocket:junixsocket-core:${Versions.junixSocket}")
     implementation("com.zaxxer:HikariCP:${Versions.hikariCp}")
     implementation("com.google.protobuf:protobuf-javalite:${Versions.googleProtobuf}")
