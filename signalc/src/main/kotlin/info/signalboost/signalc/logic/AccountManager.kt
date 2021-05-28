@@ -8,7 +8,6 @@ import info.signalboost.signalc.model.Account
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
-import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.*
 import mu.KLoggable
@@ -16,12 +15,12 @@ import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
+import org.whispersystems.signalservice.api.crypto.UnidentifiedAccessPair
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.io.IOException
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.jvm.Throws
 import kotlin.time.ExperimentalTime
@@ -58,6 +57,9 @@ class AccountManager(private val app: Application) {
             true, // automaticNetworkRetry
             UptimeSleepTimer()
         )
+
+    private suspend fun accountManagerOf(accountId: String): SignalServiceAccountManager =
+        accountManagerOf(load(accountId))
 
     suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
@@ -143,6 +145,35 @@ class AccountManager(private val app: Application) {
         Metrics.AccountManager.numberOfPreKeyRefreshes.inc()
         val nextPreKeyId  = app.protocolStore.of(account).getLastPreKeyId() + 1
         return publishPreKeys(account, nextPreKeyId)
+    }
+
+    /**
+     * Retrieve profile keys both for this account and a given contact, and use them to derive the
+     * pair of sender-cert/delivery-token tuples necessary to send sealed-sender messages to the contact.
+     * For details see:
+     * - https://signal.org/blog/sealed-sender/
+     * - https://0xacab.org/team-friendo/signalboost/-/issues/483
+     **/
+    @Throws(IOException::class) // if network call to retreive sender cert fails
+    suspend fun getUnidentifiedAccessPair(accountId: String, contactId: String): UnidentifiedAccessPair? {
+        val contactAccessKey = app.profileStore.loadProfileKey(accountId, contactId)?.let {
+            UnidentifiedAccess.deriveAccessKeyFrom(it)
+        } ?: run {
+            logger.error { "Could not derive delivery token for $contactId: no profile key found." }
+            return null
+        }
+
+        val account = load(accountId)
+        // TODO(aguestuser|2020-05-26):
+        //  We could avoid a network call below by storing the sender cert locally and rotating it every 24 hours as per:
+        //  https://github.com/signalapp/Signal-Android/blob/master/app/src/main/java/org/thoughtcrime/securesms/jobs/RotateCertificateJob.java
+        val senderCert = accountManagerOf(account).senderCertificate
+        val accountAccessKey = UnidentifiedAccess.deriveAccessKeyFrom(account.profileKey)
+
+        return UnidentifiedAccessPair(
+            UnidentifiedAccess(contactAccessKey, senderCert),
+            UnidentifiedAccess(accountAccessKey, senderCert),
+        )
     }
 }
 
