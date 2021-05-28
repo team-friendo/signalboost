@@ -1,11 +1,9 @@
 package info.signalboost.signalc.model
 
-import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.serialization.ThrowableSerializer
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import info.signalboost.signalc.util.SocketHashCode
-import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
 @Serializable
@@ -211,7 +209,7 @@ sealed class SocketResponse {
 
     // TODO(aguestuser|2021-02-24): gross!
     //  - "address" (which refers to recipient address) is highly ambiguous (recipient v. sender)
-    //  - why don't we walso pass the sender address?
+    //  - why don't we also pass the sender address?
     //  - this collapsing of success and failure variants into separate fields denoted by boolean flags
     //    is not very great...
     //  - we should have separate classes for SendSuccess/SendError cases? each error variant gets a type?
@@ -227,54 +225,44 @@ sealed class SocketResponse {
         @Required
         val unregisteredFailure: Boolean = false,
         @Required
-        val unknownError: Boolean = false
+        val unknownError: Boolean = false,
+        @Required
+        val blocked: Boolean = false,
     ) {
         companion object {
-            internal fun of(request: SocketRequest.Send, signalSendResult: SendMessageResult): SendResult =
-                when(signalSendResult.type()) {
-                    SendResultType.SUCCESS -> success(request)
-                    SendResultType.IDENTITY_FAILURE -> identityFailure(
-                        request,
-                        signalSendResult.identityFailure.identityKey.fingerprint
-                    )
-                    SendResultType.NETWORK_FAILURE -> networkFailure(request)
-                    SendResultType.UNREGISTERED_FAILURE -> unregisteredFailure(request)
-                    SendResultType.UNKNOWN_ERROR -> unknownError(request)
+            internal fun of(signalcSendResult: SignalcSendResult): SendResult {
+                val sr = SendResult(signalcSendResult.address)
+                return when(signalcSendResult) {
+                    is SignalcSendResult.Blocked ->
+                        sr.copy(blocked = true)
+                    is SignalcSendResult.IdentityFailure ->
+                        sr.copy(identityFailure = signalcSendResult.identityKey.fingerprint)
+                    is SignalcSendResult.NetworkFailure ->
+                        sr.copy(networkFailure = true)
+                    is SignalcSendResult.Success ->
+                        sr.copy(success = Success.from(signalcSendResult))
+                    is SignalcSendResult.UnregisteredFailure ->
+                        sr.copy(unregisteredFailure = true)
+                    is SignalcSendResult.UnknownError ->
+                        sr.copy(unknownError = true)
+                }
             }
-
-            internal fun success(request: SocketRequest.Send) = SendResult(
-                request.recipientAddress,
-                success = Success(),
-            )
-
-            internal fun identityFailure(request: SocketRequest.Send, fingerprint: String) = SendResult(
-                request.recipientAddress,
-                identityFailure = fingerprint
-            )
-
-            internal fun unregisteredFailure(request: SocketRequest.Send) = SendResult(
-                request.recipientAddress,
-                unregisteredFailure = true,
-            )
-
-            internal fun networkFailure(request: SocketRequest.Send) = SendResult(
-                request.recipientAddress,
-                networkFailure = true,
-            )
-
-            internal fun unknownError(request: SocketRequest.Send) = SendResult(
-                request.recipientAddress,
-                unknownError = true,
-            )
         }
 
         @Serializable
         data class Success(
             @Required
-            val unidentified: Boolean = false,
+            val unidentified: Boolean = false, // TODO: default this to true in sealed-sender world?
             @Required
-            val needsSync: Boolean = true, // TODO: default this to false in post-signald world
-        )
+            val needsSync: Boolean = true, // TODO: default this to false in post-signald world?
+        ) {
+           companion object {
+               fun from(sc: SignalcSendResult.Success) = Success(
+                   sc.isUnidentified,
+                   sc.isNeedsSync,
+               )
+           }
+        }
     }
 
     // TODO: we have literally no use for this list format and should simply use SendResult once we
@@ -286,29 +274,9 @@ sealed class SocketResponse {
         val data: List<SendResult>,
     ): SocketResponse() {
         companion object {
-            fun of(request: SocketRequest.Send, signalSendResult: SendMessageResult) = SendResults(
+            fun of(request: SocketRequest.Send, signalcSendResult: SignalcSendResult) = SendResults(
                id =  request.id,
-               data = listOf(SendResult.of(request, signalSendResult))
-            )
-
-            fun success(request: SocketRequest.Send) = SendResults(
-                id =  request.id,
-                data = listOf(SendResult.success(request))
-            )
-
-            fun identityFailure(request: SocketRequest.Send, fingerprint: String) = SendResults(
-                id =  request.id,
-                data = listOf(SendResult.identityFailure(request, fingerprint))
-            )
-
-            fun unregisteredFailure(request: SocketRequest.Send) = SendResults(
-                id =  request.id,
-                data = listOf(SendResult.unregisteredFailure(request))
-            )
-
-            fun networkFailure(request: SocketRequest.Send) = SendResults(
-                id =  request.id,
-                data = listOf(SendResult.networkFailure(request))
+               data = listOf(SendResult.of(signalcSendResult))
             )
         }
     }
@@ -319,14 +287,14 @@ sealed class SocketResponse {
         val id: String,
         val username: String,
         val recipientAddress: SignalcAddress,
-        val resultType: SendResultType,
+        val resultType: String,
     ): SocketResponse() {
         companion object {
-            fun of(request: SocketRequest.SetExpiration, resultType: SendResultType) = SetExpirationFailed(
+            fun of(request: SocketRequest.SetExpiration, result: SignalcSendResult) = SetExpirationFailed(
                 request.id,
                 request.username,
                 request.recipientAddress,
-                resultType,
+                result::class.simpleName ?: "UNKNOWN",
             )
         }
     }

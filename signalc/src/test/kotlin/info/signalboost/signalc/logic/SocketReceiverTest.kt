@@ -4,8 +4,7 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.exception.SignalcCancellation
 import info.signalboost.signalc.exception.SignalcError
-import info.signalboost.signalc.model.SendResultType
-import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SignalcSendResult
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.store.ProtocolStore
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.genTestScope
@@ -267,18 +266,18 @@ class SocketReceiverTest : FreeSpec({
 
             "SEND request" - {
                 val messageBody = "hi there"
-                val sendRequest = genSendRequest(
+                val request = genSendRequest(
                     username = verifiedSenderAccount.username,
-                    recipientAddress = recipientAccount.address.asSignalcAddress(),
+                    recipientAddress = recipientAccount.address,
                     messageBody = messageBody,
                 )
-                val sendRequestJson = sendRequest.toJson()
+                val sendRequestJson = request.toJson()
 
                 "and account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns verifiedSenderAccount
 
                     "sends signal message" {
-                        client.send(sendRequest.toJson())
+                        client.send(request.toJson())
                         eventually(timeout) {
                             coVerify {
                                 app.signalSender.send(
@@ -298,7 +297,7 @@ class SocketReceiverTest : FreeSpec({
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
-                                    app.socketSender.send(sendSuccess(sendRequest))
+                                    app.socketSender.send(sendSuccess(request))
                                 }
                             }
                         }
@@ -317,7 +316,7 @@ class SocketReceiverTest : FreeSpec({
                                     // TODO(aguestuser|2021-02-04): we dont' actually want this.
                                     //  we want halting errors to be treated like SendResult statuses below!
                                     app.socketSender.send(
-                                        requestHandlingError(sendRequest, error)
+                                        requestHandlingError(request, error)
                                     )
                                 }
                             }
@@ -327,17 +326,17 @@ class SocketReceiverTest : FreeSpec({
                     "when sending signal message returns failure status" - {
                         coEvery {
                             app.signalSender.send(any(), any(), any(), any(), any(), any())
-                        } returns mockk {
-                            every { success } returns null
-                            every { isNetworkFailure } returns true
-                        }
+                        } returns SignalcSendResult.NetworkFailure(request.recipientAddress)
 
                         "sends error message to socket" {
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
                                     app.socketSender.send(
-                                        SocketResponse.SendResults.networkFailure(sendRequest)
+                                        SocketResponse.SendResults.of(
+                                            request,
+                                            SignalcSendResult.NetworkFailure(request.recipientAddress),
+                                        )
                                     )
                                 }
                             }
@@ -346,16 +345,13 @@ class SocketReceiverTest : FreeSpec({
 
                     "when sending signal message returns identity failure" - {
                         val newIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
+                        val identityFailure = SignalcSendResult.IdentityFailure(
+                            request.recipientAddress,
+                            newIdentityKey
+                        )
                         coEvery {
                             app.signalSender.send(any(), any(), any(), any(), any(), any())
-                        } returns mockk {
-                            every { success } returns null
-                            every { isNetworkFailure } returns false
-                            every { isUnregisteredFailure } returns false
-                            every { identityFailure } returns mockk {
-                                every { identityKey } returns newIdentityKey
-                            }
-                        }
+                        } returns identityFailure
 
                         val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
                             coEvery { saveFingerprintForAllIdentities(any(), any()) } returns Unit
@@ -370,9 +366,9 @@ class SocketReceiverTest : FreeSpec({
                             eventually(timeout) {
                                 coVerify {
                                     app.socketSender.send(
-                                        SocketResponse.SendResults.identityFailure(
-                                            sendRequest,
-                                            newIdentityKey.fingerprint
+                                        SocketResponse.SendResults.of(
+                                            request,
+                                            identityFailure
                                         )
                                     )
                                 }
@@ -384,7 +380,7 @@ class SocketReceiverTest : FreeSpec({
                             eventually(timeout) {
                                 coVerify {
                                     mockProtocolStore.saveFingerprintForAllIdentities(
-                                        recipientAccount.address,
+                                        recipientAccount.address.asSignalServiceAddress(),
                                         newIdentityKey.serialize(),
                                     )
                                 }
@@ -402,7 +398,7 @@ class SocketReceiverTest : FreeSpec({
                             coVerify {
                                 app.socketSender.send(
                                     requestHandlingError(
-                                        sendRequest,
+                                        request,
                                         Error("Can't send to $senderPhoneNumber: not registered.")
                                     )
                                 )
@@ -415,7 +411,7 @@ class SocketReceiverTest : FreeSpec({
             "SET_EXPIRATION request" - {
                 val request = genSetExpiration(
                     username = verifiedSenderAccount.username,
-                    recipientAddress = recipientAccount.address.asSignalcAddress(),
+                    recipientAddress = recipientAccount.address,
                     expiresInSeconds = 60,
                 )
 
@@ -449,17 +445,17 @@ class SocketReceiverTest : FreeSpec({
                     "when setting expiration fails" - {
                         coEvery {
                             app.signalSender.setExpiration(any(), any(), any())
-                        } returns mockk {
-                            every { success } returns null
-                            every { isNetworkFailure } returns true
-                        }
+                        } returns SignalcSendResult.NetworkFailure(request.recipientAddress)
 
                         "sends failure message to socket" {
                             client.send(request.toJson())
                             eventually(timeout) {
                                 coVerify {
                                     app.socketSender.send(
-                                        SocketResponse.SetExpirationFailed.of(request, SendResultType.NETWORK_FAILURE)
+                                        SocketResponse.SetExpirationFailed.of(
+                                            request,
+                                            SignalcSendResult.NetworkFailure(request.recipientAddress)
+                                        )
                                     )
                                 }
                             }

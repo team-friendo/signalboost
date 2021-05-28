@@ -2,10 +2,12 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SignalServiceAddressConverter.asSignalServiceAddress
+import info.signalboost.signalc.model.SignalcSendResult
 import info.signalboost.signalc.model.SocketRequest.Companion.DEFAULT_EXPIRY_TIME
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.asSignalServiceAddress
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.asSignalcAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.deleteAllAttachments
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.genJpegFile
@@ -14,9 +16,11 @@ import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signa
 import info.signalboost.signalc.testSupport.matchers.SignalMessageMatchers.signalExpirationUpdate
 import info.signalboost.signalc.util.KeyUtil.genUuidStr
 import info.signalboost.signalc.util.TimeUtil
+import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.beInstanceOf
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -24,8 +28,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runBlockingTest
 import org.whispersystems.libsignal.util.guava.Optional
-import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
+import org.whispersystems.signalservice.api.crypto.UnidentifiedAccessPair
+import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
@@ -55,7 +60,7 @@ class SignalSenderTest : FreeSpec({
 
         val app = Application(config).run(testScope)
         val verifiedAccount = genVerifiedAccount()
-        val messageSender = app.signalSender
+        val timeout = Duration.milliseconds(5)
 
         beforeSpec {
             mockkObject(TimeUtil)
@@ -109,6 +114,11 @@ class SignalSenderTest : FreeSpec({
             }
         }
 
+        val mockSuccess = mockk<SendMessageResult.Success> {
+            every { isNeedsSync } returns true
+            every { isUnidentified } returns false
+            every { duration } returns 0L
+        }
 
         "#send" - {
             val recipientPhone = genPhoneNumber()
@@ -120,38 +130,41 @@ class SignalSenderTest : FreeSpec({
                     capture(dataMessageSlot),
                 )
             } returns mockk {
-                every { success } returns mockk()
+                every { address } returns recipientPhone.asSignalServiceAddress()
+                every { success } returns mockSuccess
             }
 
+            val now = TimeUtil.nowInMillis()
+            suspend fun sendHello(): SignalcSendResult = app.signalSender.send(
+                sender = verifiedAccount,
+                recipient = recipientPhone.asSignalcAddress(),
+                body = "hello!",
+                expiration = 5000,
+                attachments = emptyList(),
+                timestamp = now,
+            )
+
             "sends a data message to intended recipient" {
-                val now = TimeUtil.nowInMillis()
-                val result = messageSender.send(
-                    sender = verifiedAccount,
-                    recipient = recipientPhone.asSignalServiceAddress(),
-                    body = "hello!",
-                    expiration = 5000,
-                    attachments = emptyList(),
-                    timestamp = now,
-                )
-                verify {
-                    anyConstructed<SignalServiceMessageSender>().sendMessage(
-                        SignalServiceAddress(null, recipientPhone),
-                        absent(),
-                        signalDataMessage(
-                            body = "hello!",
-                            timestamp = now,
-                            expiresInSeconds = 5000,
+                val result = sendHello()
+                    verify {
+                        anyConstructed<SignalServiceMessageSender>().sendMessage(
+                            SignalServiceAddress(null, recipientPhone),
+                            any(), // TODO: we actually pass something here!
+                            signalDataMessage(
+                                body = "hello!",
+                                timestamp = now,
+                                expiresInSeconds = 5000,
+                            )
                         )
-                    )
-                }
-                result.success shouldNotBe null
+                    }
+                result should beInstanceOf<SignalcSendResult.Success>()
             }
 
             "provides a default timestamp if none provided" {
                 every { TimeUtil.nowInMillis() } returns 1000L
-                messageSender.send(
+                app.signalSender.send(
                     verifiedAccount,
-                    recipientPhone.asSignalServiceAddress(),
+                    recipientPhone.asSignalcAddress(),
                     "hello!",
                     DEFAULT_EXPIRY_TIME,
                     emptyList()
@@ -171,17 +184,90 @@ class SignalSenderTest : FreeSpec({
                     every { app.signalSender.messagesInFlight.getAndDecrement() } returns 0
                     every { app.signalSender.messagesInFlight.set(any()) } returns Unit
                 }
-                messageSender.send(
+                app.signalSender.send(
                     verifiedAccount,
-                    recipientPhone.asSignalServiceAddress(),
+                    recipientPhone.asSignalcAddress(),
                     "",
                     DEFAULT_EXPIRY_TIME,
                     emptyList()
                 )
 
-                verify {
-                    app.signalSender.messagesInFlight.getAndIncrement()
-                    app.signalSender.messagesInFlight.getAndDecrement()
+                eventually(timeout) {
+                    verify {
+                        app.signalSender.messagesInFlight.getAndIncrement()
+                        app.signalSender.messagesInFlight.getAndDecrement()
+                    }
+                }
+            }
+
+            "handling sealed-/unsealed-sender messages" - {
+                "when sealed sender tokens can be derived from a recipient's profile key" - {
+                    val mockkUnidentifiedAccessPair = mockk<UnidentifiedAccessPair>()
+                    coEvery {
+                        app.accountManager.getUnidentifiedAccessPair(verifiedAccount.id, recipientPhone)
+                    } returns mockkUnidentifiedAccessPair
+
+                    "sends a sealed sender message with access tokens derived from key" {
+                        sendHello()
+                        verify {
+                            anyConstructed<SignalServiceMessageSender>().sendMessage(
+                                any(),
+                                Optional.of(mockkUnidentifiedAccessPair),
+                                any()
+                            )
+                        }
+                    }
+                }
+
+                "when sealed sender tokens cannot be derrived for a recipient (b/c missing profile key)" - {
+                    "when unsealed messages are allowed" - {
+                        coEvery {
+                            app.accountManager.getUnidentifiedAccessPair(verifiedAccount.id, recipientPhone)
+                        } returns null
+
+                        "sends an unsealed-sender message (with no access tokens)" {
+                            sendHello()
+                            verify {
+                                anyConstructed<SignalServiceMessageSender>().sendMessage(
+                                    any(),
+                                    Optional.absent(),
+                                    any()
+                                )
+                            }
+                        }
+                    }
+
+                    "when unsealed messages are not allowed" - {
+                        val config2 = config.copy(
+                            toggles = config.toggles.copy(
+                                blockUnsealedMessages = true,
+                            )
+                        )
+                        val app2 = Application(config2).run(testScope)
+                        coEvery {
+                            app2.accountManager.getUnidentifiedAccessPair(verifiedAccount.id, recipientPhone)
+                        } returns null
+
+                        val recipientAddress = recipientPhone.asSignalcAddress()
+
+                        afterTest {
+                            app2.stop()
+                        }
+
+                        "does not send any message" {
+                            app2.signalSender.send(
+                                sender = verifiedAccount,
+                                recipient = recipientAddress,
+                                body = "hello!",
+                                expiration = 5000,
+                                attachments = emptyList(),
+                                timestamp = now,
+                            ) shouldBe SignalcSendResult.Blocked(recipientAddress)
+                            verify(exactly = 0) {
+                                anyConstructed<SignalServiceMessageSender>().sendMessage(any(), any(), any())
+                            }
+                        }
+                    }
                 }
             }
 
@@ -209,9 +295,9 @@ class SignalSenderTest : FreeSpec({
                     deleteAllAttachments(app)
                 }
 
-                messageSender.send(
+                app.signalSender.send(
                     sender = verifiedAccount,
-                    recipient = recipientPhone.asSignalServiceAddress(),
+                    recipient = recipientPhone.asSignalcAddress(),
                     body = "hello!",
                     expiration = 5000,
                     attachments = listOf(sendAttachment),
@@ -253,23 +339,24 @@ class SignalSenderTest : FreeSpec({
             every {
                 anyConstructed<SignalServiceMessageSender>().sendMessage(any(), any(), any())
             } returns mockk {
-                every { success } returns mockk()
+                every { address } returns recipientPhone.asSignalServiceAddress()
+                every { success } returns mockSuccess
             }
 
             "sends an expiration update to intended recipient" {
-                val result = messageSender.setExpiration(
+                val result = app.signalSender.setExpiration(
                     sender = verifiedAccount,
-                    recipient = recipientPhone.asSignalServiceAddress(),
+                    recipient = recipientPhone.asSignalcAddress(),
                     expiresInSeconds = 60,
                 )
                 verify {
                     anyConstructed<SignalServiceMessageSender>().sendMessage(
                         SignalServiceAddress(null, recipientPhone),
-                        absent(),
+                        any(), // TODO: assert that we passed correct access pair here!
                         signalExpirationUpdate(60)
                     )
                 }
-                result.success shouldNotBe null
+                result should beInstanceOf<SignalcSendResult.Success>()
             }
         }
     }

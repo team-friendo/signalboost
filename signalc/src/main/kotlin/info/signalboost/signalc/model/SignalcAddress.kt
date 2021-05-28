@@ -1,7 +1,7 @@
 package info.signalboost.signalc.model
 
+import info.signalboost.signalc.serialization.UUIDSerializer
 import kotlinx.serialization.Serializable
-import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
@@ -11,18 +11,19 @@ import java.util.*
 @Serializable
 @Suppress("ACCIDENTAL_OVERRIDE")
 data class SignalcAddress(
-    val number: String?,
-    val uuid: String? = null,
+    val number: String? = null,
+    @Serializable(UUIDSerializer::class)
+    val uuid: UUID? = null,
 ) {
    companion object {
        fun SignalServiceAddress.asSignalcAddress() = SignalcAddress(
            this.number.orNull(),
-           this.uuid.orNull()?.toString(),
+           this.uuid.orNull(),
        )
 
        fun SignalServiceEnvelope.asSignalcAddress() = SignalcAddress(
            number = sourceE164.orNull(),
-           uuid = sourceUuid.orNull(),
+           uuid = sourceUuid.orNull()?.let{ if(it.isEmpty()) null else  UUID.fromString (it) },
        ).also {
            if (it.number == null && it.uuid == null) {
                throw IllegalStateException(
@@ -34,10 +35,10 @@ data class SignalcAddress(
 
    // TODO(aguestuser|2021-05-26): refactor to prefer UUID once we migrate away from phone numbers!
    val id: String
-     get() = number ?: uuid!!
+     get() = number ?: uuid!!.toString()
 
    fun asSignalServiceAddress() = SignalServiceAddress(
-       this.uuid?.let { Optional.of(UUID.fromString(it))} ?: Optional.absent(),
+       this.uuid?.let { Optional.of(it)} ?: Optional.absent(),
        this.number?.let { Optional.of(it) } ?: Optional.absent(),
    )
 }

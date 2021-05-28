@@ -88,7 +88,7 @@ class SignalReceiver(private val app: Application) {
         getMemoized(ciphers, account.username) {
             val store = app.protocolStore.of(account)
             SignalServiceCipher(
-                account.address,
+                account.address.asSignalServiceAddress(),
                 store,
                 store.lock,
                 app.signal.certificateValidator
@@ -105,8 +105,8 @@ class SignalReceiver(private val app: Application) {
 
     suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
         messagesInFlight,
-        app.config.timers.drainTimeout,
-        app.config.timers.drainPollInterval,
+        app.timers.drainTimeout,
+        app.timers.drainPollInterval,
     )
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
@@ -127,7 +127,7 @@ class SignalReceiver(private val app: Application) {
                 while (subscription.isActive) {
                     val envelope = try {
                         messagePipe.read(
-                            app.config.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
+                            app.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS
                         )
                     } catch(err: Throwable) {
@@ -186,7 +186,7 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
-        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
+        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.address)
         return app.coroutineScope.launch(Concurrency.Dispatcher) {
             try {
                 messagesInFlight.getAndIncrement()
@@ -226,7 +226,7 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(
-            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+            SocketResponse.Dropped(envelope.asSignalcAddress(), account.address, envelope)
         )
         return null
     }
@@ -258,7 +258,7 @@ class SignalReceiver(private val app: Application) {
             // on timeout, setup message pipe again, as we want to keep reading
             is TimeoutException -> SubscribeErrorContinuation.CONTINUE
             is IOException -> run {
-                if (app.inShutdownMode) {
+                if (app.isShuttingDown) {
                     // on io error caused by client shutdown, cancel job and stop reading from signal
                     logger.warn { "Connection closed on websocket for ${account.username}, cancelling subscription..." }
                     SubscribeErrorContinuation.RETURN_AND_CANCEL

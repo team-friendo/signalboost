@@ -4,8 +4,8 @@ import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.model.NewAccount
-import info.signalboost.signalc.model.SignalServiceAddressConverter.asSignalServiceAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.asSignalServiceAddress
 import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SessionGen

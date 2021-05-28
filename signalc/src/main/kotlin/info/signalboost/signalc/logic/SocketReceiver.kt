@@ -6,12 +6,10 @@ import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
-import info.signalboost.signalc.model.SendResultType.Companion.type
 import info.signalboost.signalc.util.SocketHashCode
 import info.signalboost.signalc.util.StringUtil.asSanitizedCode
 import kotlinx.coroutines.*
 import mu.KLogging
-import org.whispersystems.signalservice.api.messages.SendMessageResult
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.Socket
@@ -144,25 +142,17 @@ class SocketReceiver(private val app: Application) {
             ?: return request.rejectUnverified()
         timeToLoadAccountTimer.observeDuration()
 
-        val sendResult: SendMessageResult = withContext(Concurrency.Dispatcher) {
-            app.signalSender.send(
-                senderAccount,
-                recipientAddress.asSignalServiceAddress(),
-                messageBody,
-                expiresInSeconds,
-                attachments,
-            )
-        }
+        val sendResult = app.signalSender.send(senderAccount, recipientAddress, messageBody, expiresInSeconds, attachments)
 
-        when(sendResult.type()) {
-            SendResultType.IDENTITY_FAILURE -> app.protocolStore.of(senderAccount).saveFingerprintForAllIdentities(
+        when(sendResult) {
+            is SignalcSendResult.IdentityFailure -> app.protocolStore.of(senderAccount).saveFingerprintForAllIdentities(
                 recipientAddress.asSignalServiceAddress(),
-                sendResult.identityFailure.identityKey.serialize(),
+                sendResult.identityKey.serialize(),
             )
-            SendResultType.SUCCESS -> {
-                Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.success.duration.toDouble())
+            is SignalcSendResult.Success -> {
+                Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.duration.toDouble())
             }
-            // (currently) ignore 3 remaining variants: NETWORK_FAILURE, UNREGISTERED_FAILURE, UNKNOWN_ERROR
+            // (currently) ignore: Blocked, NetworkFailure, UnregisteredFailure, UnknownError
             else -> {}
         }
 
@@ -175,14 +165,15 @@ class SocketReceiver(private val app: Application) {
             ?: return request.rejectUnverified()
         val sendResult = app.signalSender.setExpiration(
             senderAccount,
-            recipientAddress.asSignalServiceAddress(),
+            recipientAddress,
             expiresInSeconds
         )
-        when(val resultType = sendResult.type()) {
-            SendResultType.SUCCESS -> app.socketSender.send(SocketResponse.SetExpirationSuccess.of(request))
-            else -> app.socketSender.send(SocketResponse.SetExpirationFailed.of(request, resultType))
+        when(sendResult) {
+            is SignalcSendResult.Success -> app.socketSender.send(SocketResponse.SetExpirationSuccess.of(request))
+            else -> app.socketSender.send(SocketResponse.SetExpirationFailed.of(request, sendResult))
         }
     }
+
     private suspend fun subscribe(request: SocketRequest.Subscribe) {
         val (id,username) = request
         val account: VerifiedAccount = app.accountManager.loadVerified(username) ?: return request.rejectUnverified()
@@ -205,7 +196,7 @@ class SocketReceiver(private val app: Application) {
                         logger.error { "Subscription to ${account.username} disrupted: ${error.cause}. Resubscribing..." }
                         Metrics.SocketReceiver.numberOfResubscribes.inc()
                         app.socketSender.send(SocketResponse.SubscriptionDisrupted(id, error))
-                        delay(app.config.timers.retryResubscribeDelay)
+                        delay(app.timers.retryResubscribeDelay)
                         subscribe(request)
                     }
                     is SignalcError.MessagePipeNotCreated -> {

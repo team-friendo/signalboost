@@ -149,8 +149,8 @@ data class VerifiedAccount(
       get() = username
 
     val address by lazy {
-        SignalServiceAddress(uuid, username)
+        SignalcAddress(username, uuid)
     }
 
-    fun asSignalcAddress() = address.asSignalcAddress()
+    fun asSignalServiceAddress() = address.asSignalServiceAddress()
 }

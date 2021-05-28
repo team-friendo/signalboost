@@ -24,7 +24,6 @@ class ProfileStoreTest: FreeSpec({
         val testScope = this
         val config = Config.mockAllExcept(ProfileStore::class, HikariDataSource::class)
         val app = Application(config).run(testScope)
-        val store = app.profileStore
 
         val accountId = genPhoneNumber()
         val contactId = genPhoneNumber()

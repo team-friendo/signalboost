@@ -3,7 +3,6 @@ package info.signalboost.signalc.testSupport.matchers
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
 import io.mockk.MockKMatcherScope
-import org.whispersystems.libsignal.fingerprint.DisplayableFingerprint
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 
 object SocketResponseMatchers {
@@ -99,7 +98,7 @@ object SocketResponseMatchers {
     fun MockKMatcherScope.sendSuccess(
         request: SocketRequest.Send,
     ): SocketResponse.SendResults = match {
-        it.id == request.id && it.data == listOf(SocketResponse.SendResult.success(request))
+        it.id == request.id && it.data == listOf(SocketResponse.SendResult.of(SignalcSendResult.Success(request.recipientAddress)))
     }
 
     fun MockKMatcherScope.trustSuccess(

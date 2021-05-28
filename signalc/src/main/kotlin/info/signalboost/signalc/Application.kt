@@ -57,7 +57,9 @@ class Application(val config: Config.App){
      *************/
 
     @Volatile
-    var inShutdownMode = false
+    var isShuttingDown = false
+    val timers = config.timers
+    val toggles = config.toggles
 
     /**************
      * COMPONENTS
@@ -267,7 +269,7 @@ class Application(val config: Config.App){
     }
 
     suspend fun stop(): Application {
-        inShutdownMode = true
+        isShuttingDown = true
         logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
         logger.info { "Stopping application..."}
 

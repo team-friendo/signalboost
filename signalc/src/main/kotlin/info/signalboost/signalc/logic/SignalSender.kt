@@ -3,23 +3,23 @@ package info.signalboost.signalc.logic
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.metrics.Metrics
+import info.signalboost.signalc.model.SignalcAddress
+import info.signalboost.signalc.model.SignalcSendResult
+import info.signalboost.signalc.model.SignalcSendResult.Companion.asSingalcSendResult
 import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
-import kotlinx.coroutines.*
-import mu.KLogging
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.async
+import mu.KLoggable
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceMessageSender
-import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
-import org.whispersystems.signalservice.api.messages.SendMessageResult
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
-import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -27,9 +27,7 @@ import java.nio.file.Files
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.time.*
-import org.whispersystems.signalservice.internal.push.http.CancelationSignal
-import org.whispersystems.signalservice.internal.push.http.ResumableUploadSpec
+import kotlin.time.ExperimentalTime
 
 
 @ExperimentalTime
@@ -37,7 +35,10 @@ import org.whispersystems.signalservice.internal.push.http.ResumableUploadSpec
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
 class SignalSender(private val app: Application) {
-    companion object: KLogging()
+    companion object: Any(), KLoggable {
+        override val logger = logger()
+        val metrics = Metrics.SignalSender
+    }
 
     /********************
      * FIELDS/FACTORIES
@@ -95,12 +96,12 @@ class SignalSender(private val app: Application) {
 
     suspend fun send(
         sender: VerifiedAccount,
-        recipient: SignalServiceAddress,
+        recipient: SignalcAddress,
         body: String,
         expiration: Int,
         attachments: List<SocketRequest.Send.Attachment> = emptyList(),
         timestamp: Long = TimeUtil.nowInMillis(),
-    ): SendMessageResult =
+    ): SignalcSendResult =
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
         sendDataMessage(
             sender,
@@ -113,14 +114,15 @@ class SignalSender(private val app: Application) {
                     if(attachments.isEmpty()) it
                     else it.withAttachments(attachments.asSignalAttachments())
                 }
+                .withProfileKey(sender.profileKey.serialize())
                 .build()
         )
 
     suspend fun setExpiration(
         sender: VerifiedAccount,
-        recipient: SignalServiceAddress,
+        recipient: SignalcAddress,
         expiresInSeconds: Int
-    ): SendMessageResult =
+    ): SignalcSendResult =
         sendDataMessage(
             sender,
             recipient,
@@ -128,36 +130,46 @@ class SignalSender(private val app: Application) {
                 .newBuilder()
                 .asExpirationUpdate()
                 .withExpiration(expiresInSeconds)
+                .withProfileKey(sender.profileKey.serialize())
                 .build()
         )
 
     suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
         messagesInFlight,
-        app.config.timers.drainTimeout,
-        app.config.timers.drainPollInterval,
+        app.timers.drainTimeout,
+        app.timers.drainPollInterval,
     )
 
     /***********
      * HELPERS
      ***********/
 
+
     private suspend fun sendDataMessage(
         sender: VerifiedAccount,
-        recipient: SignalServiceAddress,
+        recipient: SignalcAddress,
         dataMessage: SignalServiceDataMessage,
-    ): SendMessageResult = app.coroutineScope.async(Concurrency.Dispatcher) {
+    ): SignalcSendResult = app.coroutineScope.async(Concurrency.Dispatcher) {
+        // Try to send all messages sealed-sender by deriving `unidentifiedAccessPair`s from profile keys -- using e164 not UUUID
+        // to retrieve profile key as we did when we stored it. Since messages without such tokens are always sent unsealed and
+        // unsealed messages are rate limited by spam filters, we use a toggle to enable blocking all unsealed messages if needed.
+        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.id,recipient.id).also {
+            metrics.numberOfUnsealedMessagesProduced.labels(sender.id).inc()
+            if(it == null && app.toggles.blockUnsealedMessages) return@async SignalcSendResult.Blocked(recipient)
+        }
         try {
-            Metrics.SignalSender.numberOfMessagesSent.inc()
             messagesInFlight.getAndIncrement()
             messageSenderOf(sender).sendMessage(
-                recipient,
-                Optional.absent(),
+                recipient.asSignalServiceAddress(),
+                Optional.fromNullable(unidentifiedAccessPair),
                 dataMessage
-            )
+            ).asSingalcSendResult()
         } catch (e: UntrustedIdentityException) {
-            SendMessageResult.identityFailure(recipient, e.identityKey)
+            SignalcSendResult.IdentityFailure(recipient, e.identityKey)
         } finally {
             messagesInFlight.getAndDecrement()
+            metrics.numberOfMessagesSent.inc()
+            unidentifiedAccessPair ?: metrics.numberOfUnsealedMessagesSent.labels(sender.id).inc()
         }
     }.await()
 

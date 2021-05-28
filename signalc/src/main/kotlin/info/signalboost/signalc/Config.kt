@@ -46,6 +46,7 @@ object Config {
         val signal: Signal,
         val socket: Socket,
         val timers: Timers,
+        val toggles: Toggles,
     )
 
     data class Database(
@@ -79,6 +80,10 @@ object Config {
         val drainPollInterval: Duration,
         val readTimeout: Duration,
         val retryResubscribeDelay: Duration,
+    )
+
+    data class Toggles(
+        val blockUnsealedMessages: Boolean,
     )
 
     // FACTORY HELPERS
@@ -134,11 +139,14 @@ object Config {
           path = "/signalc/sock/signald.sock"
         ),
         timers = Timers(
-            drainTimeout = Duration.seconds(envIntOr("SIGNALC_DRAIN_TIMEOUT", 120)),
+            drainTimeout = Duration.seconds(envInt("SIGNALC_DRAIN_TIMEOUT", 120)),
             drainPollInterval = Duration.milliseconds(200),
             readTimeout = Duration.milliseconds((1000 * 55)), // slightly less than 1 minute signal server idle timeout
             retryResubscribeDelay = Duration.seconds(10),
-        )
+        ),
+        toggles = Toggles(
+            blockUnsealedMessages = envIntAsBoolean("BLOCK_UNSEALED_MESSAGES", false)
+        ),
     )
 
     // FACTORIES
@@ -176,6 +184,15 @@ object Config {
         return withMocked(appComponents.filter { !_unmocked.contains(it) })
     }
 
-    private fun envIntOr(envVarName: String, default: Int) =
+    private fun envInt(envVarName: String, default: Int) =
         (System.getenv(envVarName) ?: "").toIntOrNull() ?: default
+
+    private fun envIntAsBoolean(envVarName: String, default: Boolean): Boolean =
+        (System.getenv(envVarName) ?: "").toIntOrNull()?.let {
+            when(it) {
+                0 -> false
+                1 -> true
+                else -> null
+            }
+        } ?: default
 }

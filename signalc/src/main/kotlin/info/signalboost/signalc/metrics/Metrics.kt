@@ -71,6 +71,19 @@ object Metrics {
     }
 
     object SignalSender {
+        val numberOfUnsealedMessagesProduced: Counter = counterOf(
+            "signal_sender__number_of_unsealed_messages_produced",
+            "Counts number of unsealed-sender messages produced (though not necessarily sent), which we care about b/c these are counted against per-ip and per-sender rate limits",
+            "account_id",
+        )
+
+
+        val numberOfUnsealedMessagesSent: Counter = counterOf(
+            "signal_sender__number_of_unsealed_messages_sent",
+            "Counts number of unsealed-sender messages sent, which we care about b/c these are counted against per-ip and per-sender rate limits",
+        "account_id",
+        )
+
         val numberOfMessagesSent: Counter = counterOf(
             "signal_sender__number_of_messages_sent",
             "Counts number of attempted messages sent through libsignal",
@@ -80,14 +93,14 @@ object Metrics {
     object SocketReceiver {
         val numberOfResubscribes: Counter = counterOf(
             "socket_receiver__number_of_resubscribes",
-            "Counts number of attempts to resubscribe an account"
+            "Counts number of attempts to resubscribe an account",
         )
     }
 
     object SocketSender {
         val timeWaitingToSendMessageOverSocket= histogramOf(
             "socket_sender__time_waiting_to_send_message_over_socket",
-            "Time waiting in SocketSender queues to send a message over a socket."
+            "Time waiting in SocketSender queues to send a message over a socket.",
         )
     }
 }
