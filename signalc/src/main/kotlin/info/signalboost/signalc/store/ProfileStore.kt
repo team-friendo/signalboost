@@ -1,12 +1,9 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.Application
-import info.signalboost.signalc.db.OwnProfiles
 import info.signalboost.signalc.db.Profiles
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.serialization.ByteArrayEncoding.toPostgresHex
-import info.signalboost.signalc.store.ProfileStore.Companion.VALID_PROFILE_KEY_SIZE
-import info.signalboost.signalc.util.KeyUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import mu.KLoggable
@@ -14,7 +11,6 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.signal.zkgroup.profiles.ProfileKey
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.jvm.Throws
 import kotlin.time.ExperimentalTime
 
 @ExperimentalCoroutinesApi
