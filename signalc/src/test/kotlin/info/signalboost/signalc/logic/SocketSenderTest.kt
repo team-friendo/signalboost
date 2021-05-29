@@ -29,9 +29,9 @@ import java.io.PrintWriter
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
-import kotlin.time.seconds
+
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -54,7 +54,7 @@ class SocketSenderTest : FreeSpec({
             }
         }
         val mockWriter = mockWriters[0]
-        val timeout = 100.milliseconds
+        val timeout = Duration.milliseconds(100)
 
         beforeSpec {
             mockkObject(SocketSender.Writer)
@@ -196,7 +196,7 @@ class SocketSenderTest : FreeSpec({
                         }
                     }
 
-                    eventually(2.seconds) {
+                    eventually(Duration.seconds(2)) {
                         verify(atLeast = numMessages / 4) {
                             mockWriters[0].println(any<String>())
                         }

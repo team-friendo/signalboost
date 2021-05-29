@@ -37,13 +37,13 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
+import java.io.IOException
+import java.util.concurrent.TimeoutException
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.fileSize
-import java.io.IOException
-import java.util.concurrent.TimeoutException
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
 
 @ExperimentalPathApi
 @ExperimentalTime
@@ -52,8 +52,8 @@ import kotlin.time.milliseconds
 class SignalReceiverTest : FreeSpec({
     runBlockingTest {
         val testScope = this
-        val drainPollInterval = 10.milliseconds
-        val drainTimeout = 50.milliseconds
+        val drainPollInterval = Duration.milliseconds(10)
+        val drainTimeout = Duration.milliseconds(50)
         val config = Config.mockAllExcept(SignalReceiver::class).copy(
             timers = Config.default.timers.copy(
                 drainPollInterval = drainPollInterval,
@@ -67,12 +67,15 @@ class SignalReceiverTest : FreeSpec({
         val recipientAccount = genVerifiedAccount()
         val senderAddress = genSignalServiceAddress()
 
-        val timeout = 40.milliseconds
-        val pollInterval = 1.milliseconds
+        val timeout = Duration.milliseconds(40)
+        val pollInterval = Duration.milliseconds(1)
         val now = nowInMillis()
         val expiryTime = genInt()
 
-        fun signalSendsEnvelopeOf(envelopeType: Int, err: Throwable? = null): Pair<SignalServiceEnvelope,SignalServiceMessagePipe> {
+        fun signalSendsEnvelopeOf(
+            envelopeType: Int,
+            err: Throwable? = null
+        ): Pair<SignalServiceEnvelope, SignalServiceMessagePipe> {
             val envelope = genEnvelope(
                 type = envelopeType,
                 sender = senderAddress,
@@ -89,7 +92,7 @@ class SignalReceiverTest : FreeSpec({
 
             every {
                 anyConstructed<SignalServiceMessageReceiver>().createMessagePipe()
-            }  returns  mockMessagePipe
+            } returns mockMessagePipe
 
             return Pair(envelope, mockMessagePipe)
         }
@@ -97,6 +100,7 @@ class SignalReceiverTest : FreeSpec({
         fun signalSendsJunkEnvelopes() = signalSendsEnvelopeOf(UNKNOWN_VALUE)
         fun signalThrowsTimeout() =
             signalSendsEnvelopeOf(UNKNOWN_VALUE, TimeoutException("oh no, timeout!"))
+
         val ioException = IOException("oh no, io error!")
         fun signalThrowsIO() =
             signalSendsEnvelopeOf(UNKNOWN_VALUE, ioException)
@@ -211,7 +215,9 @@ class SignalReceiverTest : FreeSpec({
                 }
 
                 "unsubscribes the message receiver" {
-                    sub.isCancelled shouldBe true
+                    eventually(timeout) {
+                        sub.isCancelled shouldBe true
+                    }
                 }
             }
 
@@ -231,7 +237,9 @@ class SignalReceiverTest : FreeSpec({
                 }
 
                 "cancels the subscription" {
-                    sub.isCancelled shouldBe true
+                    eventually(timeout) {
+                        sub.isCancelled shouldBe true
+                    }
                 }
             }
 
@@ -548,7 +556,7 @@ class SignalReceiverTest : FreeSpec({
             }
 
             "when issued for a non-subscribed account" - {
-                val sub =messageReceiver.subscribe(recipientAccount)!!
+                val sub = messageReceiver.subscribe(recipientAccount)!!
                 messageReceiver.unsubscribe(genVerifiedAccount().username)
 
                 "does nothing" {

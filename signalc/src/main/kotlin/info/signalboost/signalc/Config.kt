@@ -132,10 +132,10 @@ object Config {
           path = "/signalc/sock/signald.sock"
         ),
         timers = Timers(
-            drainTimeout = envIntOr("SIGNALC_DRAIN_TIMEOUT", 120).seconds,
-            drainPollInterval = 200.milliseconds,
-            readTimeout = (1000 * 55).milliseconds, // slightly less than 1 minute signal server idle timeout
-            retryResubscribeDelay = 10.seconds,
+            drainTimeout = Duration.seconds(envIntOr("SIGNALC_DRAIN_TIMEOUT", 120)),
+            drainPollInterval = Duration.milliseconds(200),
+            readTimeout = Duration.milliseconds((1000 * 55)), // slightly less than 1 minute signal server idle timeout
+            retryResubscribeDelay = Duration.seconds(10),
         )
     )
 

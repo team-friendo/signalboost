@@ -50,8 +50,8 @@ import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
 import kotlin.io.path.deleteIfExists
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
 
 
 @ExperimentalPathApi
@@ -64,7 +64,7 @@ class SocketReceiverTest : FreeSpec({
         val serverScope = genTestScope()
         val config = Config.mockAllExcept(SocketReceiver::class).copy(
             timers = Config.default.timers.copy(
-                retryResubscribeDelay = 1.milliseconds
+                retryResubscribeDelay = Duration.milliseconds(1)
             )
         )
 
@@ -78,7 +78,7 @@ class SocketReceiverTest : FreeSpec({
         val recipientAccount = genVerifiedAccount(recipientPhoneNumber)
 
         val now = Instant.now().toEpochMilli()
-        val timeout = 500.milliseconds
+        val timeout = Duration.milliseconds(500)
 
         val socketPath = genSocketPath()
         val socketServer = TestSocketServer.run(socketPath, serverScope)
@@ -92,7 +92,7 @@ class SocketReceiverTest : FreeSpec({
                 every { TimeUtil.nowInMillis() } returns now
             }
         }
-        beforeTest{
+        beforeTest {
             client = TestSocketClient.connect(socketPath, testScope)
             socket = socketServer.receive()
             listenJob = app.socketReceiver.connect(socket)
@@ -370,7 +370,10 @@ class SocketReceiverTest : FreeSpec({
                             eventually(timeout) {
                                 coVerify {
                                     app.socketSender.send(
-                                        SocketResponse.SendResults.identityFailure(sendRequest, newIdentityKey.fingerprint)
+                                        SocketResponse.SendResults.identityFailure(
+                                            sendRequest,
+                                            newIdentityKey.fingerprint
+                                        )
                                     )
                                 }
                             }
@@ -380,10 +383,10 @@ class SocketReceiverTest : FreeSpec({
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
-                                   mockProtocolStore.saveFingerprintForAllIdentities(
-                                       recipientAccount.address,
-                                       newIdentityKey.serialize(),
-                                   )
+                                    mockProtocolStore.saveFingerprintForAllIdentities(
+                                        recipientAccount.address,
+                                        newIdentityKey.serialize(),
+                                    )
                                 }
                             }
                         }
@@ -445,7 +448,7 @@ class SocketReceiverTest : FreeSpec({
 
                     "when setting expiration fails" - {
                         coEvery {
-                            app.signalSender.setExpiration(any(),any(),any())
+                            app.signalSender.setExpiration(any(), any(), any())
                         } returns mockk {
                             every { success } returns null
                             every { isNetworkFailure } returns true
@@ -571,7 +574,7 @@ class SocketReceiverTest : FreeSpec({
 
                         client.send(requestJson)
                         sub.cancel(SignalcCancellation.SubscriptionCancelledByClient)
-                        delay(40.milliseconds)
+                        delay(Duration.milliseconds(40))
 
                         "does not attempt to resubscribe".config(invocations = 3) {
                             coVerify(exactly = 1) {
@@ -614,7 +617,8 @@ class SocketReceiverTest : FreeSpec({
                         client.send(requestJson)
                         eventually(timeout) {
                             coVerify {
-                                app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                                app.protocolStore.of(recipientAccount)
+                                    .trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
                             }
                         }
                     }
@@ -652,7 +656,8 @@ class SocketReceiverTest : FreeSpec({
                         client.send(requestJson)
                         eventually(timeout) {
                             coVerify(exactly = 0) {
-                                app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                                app.protocolStore.of(recipientAccount)
+                                    .trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
                             }
                         }
                     }
@@ -730,7 +735,10 @@ class SocketReceiverTest : FreeSpec({
                         eventually(timeout) {
                             coVerify {
                                 app.socketSender.send(
-                                    SocketResponse.UnsubscribeFailure(request.id, SignalcError.UnsubscribeUnregisteredUser)
+                                    SocketResponse.UnsubscribeFailure(
+                                        request.id,
+                                        SignalcError.UnsubscribeUnregisteredUser
+                                    )
                                 )
                             }
                         }
@@ -747,7 +755,7 @@ class SocketReceiverTest : FreeSpec({
                     } returns registeredSenderAccount
 
                     "sanitizes verification code and submits it to signal" {
-                        coEvery { app.accountManager.verify(any(), any())} returns mockk()
+                        coEvery { app.accountManager.verify(any(), any()) } returns mockk()
 
                         client.send(request.toJson())
                         eventually(timeout) {

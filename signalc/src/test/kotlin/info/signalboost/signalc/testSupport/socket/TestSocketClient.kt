@@ -15,7 +15,6 @@ import java.net.Socket
 import java.util.concurrent.Executors
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
-import kotlin.time.milliseconds
 
 @ExperimentalTime
 @ExperimentalCoroutinesApi
@@ -59,8 +58,7 @@ class TestSocketClient private constructor(
     }
 
 
-
-    suspend fun send(msg: String, wait: Duration = 0.milliseconds) = scope.async(dispatcher) {
+    suspend fun send(msg: String, wait: Duration = Duration.milliseconds(0)) = scope.async(dispatcher) {
         writer.println(msg)
         delay(wait)
     }.await()
