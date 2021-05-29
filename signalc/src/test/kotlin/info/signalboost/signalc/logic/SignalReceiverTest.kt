@@ -215,7 +215,9 @@ class SignalReceiverTest : FreeSpec({
                 }
 
                 "unsubscribes the message receiver" {
-                    sub.isCancelled shouldBe true
+                    eventually(timeout) {
+                        sub.isCancelled shouldBe true
+                    }
                 }
             }
 
@@ -235,7 +237,9 @@ class SignalReceiverTest : FreeSpec({
                 }
 
                 "cancels the subscription" {
-                    sub.isCancelled shouldBe true
+                    eventually(timeout) {
+                        sub.isCancelled shouldBe true
+                    }
                 }
             }
 
