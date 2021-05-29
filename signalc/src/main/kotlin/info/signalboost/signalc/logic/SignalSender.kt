@@ -114,7 +114,7 @@ class SignalSender(private val app: Application) {
                     if(attachments.isEmpty()) it
                     else it.withAttachments(attachments.asSignalAttachments())
                 }
-                .withProfileKey(sender.profileKey.serialize())
+                .withProfileKey(sender.profileKeyBytes)
                 .build()
         )
 
@@ -130,7 +130,7 @@ class SignalSender(private val app: Application) {
                 .newBuilder()
                 .asExpirationUpdate()
                 .withExpiration(expiresInSeconds)
-                .withProfileKey(sender.profileKey.serialize())
+                .withProfileKey(sender.profileKeyBytes)
                 .build()
         )
 

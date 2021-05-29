@@ -43,7 +43,7 @@ class AccountStore(app: Application) {
                 it[username] = account.username
                 it[password] = account.password
                 it[signalingKey] = account.signalingKey
-                it[profileKey] = account.profileKey.serialize()
+                it[profileKeyBytes] = account.profileKeyBytes
                 it[deviceId] = account.deviceId
             }
         }

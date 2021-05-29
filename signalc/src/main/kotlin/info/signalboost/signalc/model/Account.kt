@@ -1,13 +1,11 @@
 package info.signalboost.signalc.model
 
 import info.signalboost.signalc.db.Accounts
-import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.util.KeyUtil.genPassword
-import info.signalboost.signalc.util.KeyUtil.genProfileKey
+import info.signalboost.signalc.util.KeyUtil.genProfileKeyBytes
 import info.signalboost.signalc.util.KeyUtil.genSignalingKey
 import org.jetbrains.exposed.sql.ResultRow
 import org.signal.zkgroup.profiles.ProfileKey
-import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
@@ -15,15 +13,13 @@ import java.util.*
 sealed class Account {
     abstract val username: String
     abstract val password: String
-    abstract val signalingKey: String
-    // TODO(aguestuser|2021-05-26): consider storing profileKey as ByteArray
-    //  then adding a (lazy?) property to access the object form
-    //  why? we most often want the byte array and would like to avoid
-    //  unnecessary serialization / deserialization roundtrips when a db call
-    //  yields the already-deserialized version!
-    abstract val profileKey: ProfileKey
+    abstract val signalingKey: String // TODO: get rid of this! we never use it and it makes sd -> sc migration harder!
+    abstract val profileKeyBytes: ByteArray
     abstract val deviceId: Int
     abstract val credentialsProvider: DynamicCredentialsProvider
+
+    val profileKey: ProfileKey
+      get() = ProfileKey(profileKeyBytes)
 
     val unverifiedCredentialsProvider: DynamicCredentialsProvider
       get() = DynamicCredentialsProvider(
@@ -32,6 +28,33 @@ sealed class Account {
           this.password,
           this.deviceId
       )
+
+    // NOTE: we have to override equals/hashCode for all subclasses of Account b/c the `profileKey` field is a ByteArray
+    // this is a base implementation that works for everything except `VerifiedAccount` (which must modify it to
+    // also compare the UUID field that only it has).
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Account
+
+        if (username != other.username) return false
+        if (password != other.password) return false
+        if (signalingKey != other.signalingKey) return false
+        if (!profileKeyBytes.contentEquals(other.profileKeyBytes)) return false
+        if (deviceId != other.deviceId) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = username.hashCode()
+        result = 31 * result + password.hashCode()
+        result = 31 * result + signalingKey.hashCode()
+        result = 31 * result + profileKeyBytes.contentHashCode()
+        result = 31 * result + deviceId
+        return result
+    }
 }
 
 
@@ -39,7 +62,7 @@ data class NewAccount(
     override val username: String,
     override val password: String = genPassword(),
     override val signalingKey: String = genSignalingKey(),
-    override val profileKey: ProfileKey = genProfileKey(),
+    override val profileKeyBytes: ByteArray = genProfileKeyBytes(),
     override val deviceId: Int = SignalServiceAddress.DEFAULT_DEVICE_ID,
 ): Account() {
 
@@ -49,7 +72,7 @@ data class NewAccount(
                 row[Accounts.username],
                 row[Accounts.password],
                 row[Accounts.signalingKey],
-                ProfileKey(row[Accounts.profileKey]),
+                row[Accounts.profileKeyBytes],
                 row[Accounts.deviceId],
             )
         // sometimes we might need to treat a RegisteredAccount like a NewAccount to re-register it!
@@ -58,14 +81,21 @@ data class NewAccount(
                 username = username,
                 password = password,
                 signalingKey = signalingKey,
-                profileKey = profileKey,
+                profileKeyBytes = profileKeyBytes,
                 deviceId = deviceId,
             )
         }
     }
-
     override val credentialsProvider: DynamicCredentialsProvider by lazy {
         unverifiedCredentialsProvider
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return super.equals(other)
+    }
+
+    override fun hashCode(): Int {
+        return super.hashCode()
     }
 }
 
@@ -73,7 +103,7 @@ data class RegisteredAccount(
     override val username: String,
     override val password: String,
     override val signalingKey: String,
-    override val profileKey: ProfileKey,
+    override val profileKeyBytes: ByteArray,
     override val deviceId: Int,
 ): Account() {
 
@@ -83,7 +113,7 @@ data class RegisteredAccount(
                 username,
                 password,
                 signalingKey,
-                profileKey,
+                profileKeyBytes,
                 deviceId,
             )
         }
@@ -93,13 +123,21 @@ data class RegisteredAccount(
                 row[Accounts.username],
                 row[Accounts.password],
                 row[Accounts.signalingKey],
-                ProfileKey(row[Accounts.profileKey]),
+                row[Accounts.profileKeyBytes],
                 row[Accounts.deviceId],
             )
     }
 
     override val credentialsProvider: DynamicCredentialsProvider by lazy {
        unverifiedCredentialsProvider
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return super.equals(other)
+    }
+
+    override fun hashCode(): Int {
+        return super.hashCode()
     }
 }
 
@@ -108,7 +146,7 @@ data class VerifiedAccount(
     override val username: String,
     override val password: String,
     override val signalingKey: String,
-    override val profileKey: ProfileKey,
+    override val profileKeyBytes: ByteArray,
     override val deviceId: Int,
 ): Account(){
 
@@ -119,7 +157,7 @@ data class VerifiedAccount(
                 username,
                 password,
                 signalingKey,
-                profileKey,
+                profileKeyBytes,
                 deviceId,
             )
         }
@@ -130,7 +168,7 @@ data class VerifiedAccount(
                 row[Accounts.username],
                 row[Accounts.password],
                 row[Accounts.signalingKey],
-                ProfileKey(row[Accounts.profileKey]),
+                row[Accounts.profileKeyBytes],
                 row[Accounts.deviceId],
             )
     }
@@ -144,7 +182,20 @@ data class VerifiedAccount(
         )
     }
 
-    // TODO(aguestuser|2021-05-26): refactor to prefer UUIDS once we migrate off phone numbers!
+    override fun equals(other: Any?): Boolean {
+        return super.equals(other) &&  run {
+            other as VerifiedAccount
+            uuid == other.uuid
+        }
+    }
+
+    override fun hashCode(): Int {
+        return super.hashCode().let {
+            31 * it + uuid.hashCode()
+        }
+    }
+
+    // TODO(aguestuser|2021-05-26): refactor to prefer UUIDS instead of e164 numbers when/if we migrate off phone numbers!
     val id: String
       get() = username
 
