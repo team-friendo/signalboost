@@ -6,7 +6,7 @@ import org.whispersystems.libsignal.SignalProtocolAddress
 
 interface AccountWithAddress: FieldSet {
     val accountId: Column<String>
-    val name: Column<String>
+    val contactId: Column<String>
     val deviceId: Column<Int>
 
     companion object {
@@ -15,7 +15,7 @@ interface AccountWithAddress: FieldSet {
             val table = this
             return table.select {
                 (table.accountId eq accountId)
-                    .and(table.name eq address.name)
+                    .and(table.contactId eq address.name)
                     .and(table.deviceId eq address.deviceId)
             }.singleOrNull()
         }
@@ -28,7 +28,7 @@ interface AccountWithAddress: FieldSet {
             val table = this
             return (table as Table).update ({
                 (table.accountId eq accountId)
-                    .and(table.name eq address.name)
+                    .and(table.contactId eq address.name)
                     .and(table.deviceId eq address.deviceId)
             }, null, updateStatement)
         }
@@ -37,7 +37,7 @@ interface AccountWithAddress: FieldSet {
             val table = this
             return (table as Table).deleteWhere {
                 (table.accountId eq accountId)
-                    .and(table.name eq address.name)
+                    .and(table.contactId eq address.name)
                     .and(table.deviceId eq address.deviceId)
             }
         }

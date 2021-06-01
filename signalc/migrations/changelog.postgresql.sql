@@ -1,6 +1,6 @@
 -- liquibase formatted sql
 
--- changeset aguestuser:1610737575533-1 failOnError:false
+-- changeset aguestuser:1610737575533-1 failOnError:true
 CREATE TABLE IF NOT EXISTS accounts
 (
     uuid UUID,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS accounts
 );
 -- rollback drop table accounts;
 
--- changeset aguestuser:1610737575533-2 failOnError:false
+-- changeset aguestuser:1610737575533-2 failOnError:true
 CREATE TABLE IF NOT EXISTS identities
 (
     account_id VARCHAR(255) NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS identities
 );
 -- rollback drop table identities;
 
--- changeset aguestuser:1610737575533-3 failOnError:false
+-- changeset aguestuser:1610737575533-3 failOnError:true
 CREATE TABLE IF NOT EXISTS ownidentities
 (
     account_id VARCHAR(255) NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS ownidentities
 );
 -- rollback drop table ownidentities;
 
--- changeset aguestuser:1610737575533-4 failOnError:false
+-- changeset aguestuser:1610737575533-4 failOnError:true
 CREATE TABLE IF NOT EXISTS prekeys
 (
     account_id VARCHAR(255) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS prekeys
 );
 -- rollback drop table prekeys;
 
--- changeset aguestuser:1610737575533-5 failOnError:false
+-- changeset aguestuser:1610737575533-5 failOnError:true
 CREATE TABLE IF NOT EXISTS sessions
 (
     account_id VARCHAR(255) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS sessions
 );
 -- rollback drop table sessions;
 
--- changeset aguestuser:1610737575533-6 failOnError:false
+-- changeset aguestuser:1610737575533-6 failOnError:true
 CREATE TABLE IF NOT EXISTS signedprekeys
 (
     account_id VARCHAR(255) NOT NULL,
@@ -68,15 +68,15 @@ CREATE TABLE IF NOT EXISTS signedprekeys
 );
 -- rollback drop table signedprekeys;
 
--- changeset fdbk:1618858708962-1 failOnError:false
+-- changeset fdbk:1618858708962-1 failOnError:true
 CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes)
 -- rollback drop index identities_identity_key_bytes;
 
--- changeset fdbk:1618858708962-2 failOnError:false
+-- changeset fdbk:1618858708962-2 failOnError:true
 CREATE INDEX identities_account_id_name ON identities (account_id, "name")
 -- rollback drop index identities_account_id_name;
 
--- changeset aguestuser:1618854201895-1 failOnError:false
+-- changeset aguestuser:1618854201895-1 failOnError:true
 CREATE TABLE IF NOT EXISTS envelopes
 (
     id uuid PRIMARY KEY,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS envelopes
 );
 -- rollback drop table envelopes;
 
--- changeset aguestuser:1620095897702-1 failOnError:false
+-- changeset aguestuser:1620095897702-1 failOnError:true
 drop table envelopes;
 -- rollback CREATE TABLE IF NOT EXISTS envelopes
 -- rollback (
@@ -96,7 +96,7 @@ drop table envelopes;
 -- rollback    server_delivered_timestamp BIGINT NOT NULL
 -- rollback    );
 
--- changeset aguestuser:1620958605837-1 failOnError:false
+-- changeset aguestuser:1620958605837-1 failOnError:true
 CREATE TABLE IF NOT EXISTS senderkeys
 (
     account_id VARCHAR(255) NOT NULL,
@@ -107,3 +107,21 @@ CREATE TABLE IF NOT EXISTS senderkeys
     CONSTRAINT pk_SenderKeys PRIMARY KEY (account_id, "name", device_id, distribution_id)
 );
 -- rollback drop table senderkeys;
+
+-- changeset aguestuser:1622573292148-1 failOnError:true
+ALTER TABLE identities DROP CONSTRAINT pk_identities;
+DROP INDEX identities_account_id_name;
+ALTER TABLE identities RENAME COLUMN "name" TO contact_id;
+ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id, device_id);
+CREATE INDEX identities_account_id_contact_id ON identities (account_id, contact_id);
+ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+ALTER TABLE sessions RENAME COLUMN "name" TO contact_id;
+ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact_id, device_id);
+-- rollback ALTER TABLE identities DROP CONSTRAINT pk_identities;
+-- rollback DROP INDEX identities_account_id_contact_id;
+-- rollback ALTER TABLE identities RENAME COLUMN contact_id TO "name";
+-- rollback ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, "name", device_id);
+-- rollback CREATE INDEX identities_account_id_name ON identities (account_id, "name");
+-- rollback ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+-- rollback ALTER TABLE sessions RENAME COLUMN contact_id TO "name";
+-- rollback ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, "name", device_id);
