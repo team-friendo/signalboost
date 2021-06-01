@@ -10,7 +10,7 @@ object Accounts: Table() {
     val username = varchar("username", 255)
     val password = varchar("password", 255)
     val signalingKey = varchar("signaling_key", 255)
-    val profileKey = binary("profile_key_bytes", PROFILE_KEY_BYTE_ARRAY_LENGTH)
+    val profileKeyBytes = binary("profile_key_bytes", PROFILE_KEY_BYTE_ARRAY_LENGTH)
     val deviceId = integer("device_id")
 
     override val primaryKey = PrimaryKey(username)

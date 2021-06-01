@@ -7,6 +7,7 @@ import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
+import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalcAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
 import info.signalboost.signalc.testSupport.dataGenerators.FileGen.deleteAllAttachments
@@ -18,6 +19,7 @@ import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.decr
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.dropped
 import info.signalboost.signalc.testSupport.matchers.SocketResponseMatchers.inboundIdentityFailure
 import info.signalboost.signalc.util.KeyUtil
+import info.signalboost.signalc.util.KeyUtil.genRandomBytes
 import info.signalboost.signalc.util.TimeUtil.nowInMillis
 import io.kotest.assertions.timing.eventually
 import io.kotest.core.spec.style.FreeSpec
@@ -65,7 +67,8 @@ class SignalReceiverTest : FreeSpec({
         val messageReceiver = app.signalReceiver
 
         val recipientAccount = genVerifiedAccount()
-        val senderAddress = genSignalServiceAddress()
+        // val senderAddress = genSignalServiceAddress()
+        val senderAddress = genSignalcAddress()
 
         val timeout = Duration.milliseconds(40)
         val pollInterval = Duration.milliseconds(1)
@@ -78,7 +81,7 @@ class SignalReceiverTest : FreeSpec({
         ): Pair<SignalServiceEnvelope, SignalServiceMessagePipe> {
             val envelope = genEnvelope(
                 type = envelopeType,
-                sender = senderAddress,
+                sender = senderAddress.asSignalServiceAddress(),
             )
 
             val mockMessagePipe = mockk<SignalServiceMessagePipe> {
@@ -105,15 +108,20 @@ class SignalReceiverTest : FreeSpec({
         fun signalThrowsIO() =
             signalSendsEnvelopeOf(UNKNOWN_VALUE, ioException)
 
+        val mockDataMessage = mockk<SignalServiceDataMessage> {
+            every { expiresInSeconds } returns expiryTime
+            every { timestamp } returns now
+            every { body.orNull() } returns null
+            every { attachments.orNull() } returns null
+            every { profileKey.orNull() } returns null
+        }
+
         fun decryptionYields(cleartexts: List<String?>) =
             every {
                 anyConstructed<SignalServiceCipher>().decrypt(any())
             } returns mockk {
-                every { dataMessage.orNull() } returns mockk {
-                    every { expiresInSeconds } returns expiryTime
-                    every { timestamp } returns now
+                every { dataMessage.orNull() } returns mockDataMessage.apply {
                     every { body.orNull() } returnsMany cleartexts
-                    every { attachments.orNull() } returns null
                 }
             }
 
@@ -188,9 +196,8 @@ class SignalReceiverTest : FreeSpec({
             "when signal connection times out" - {
                 val (_, messagePipe) = signalThrowsTimeout()
 
-                lateinit var sub: Job
                 beforeTest {
-                    sub = messageReceiver.subscribe(recipientAccount)!!
+                    messageReceiver.subscribe(recipientAccount)!!
                 }
 
                 "keeps reading from signal" {
@@ -226,7 +233,7 @@ class SignalReceiverTest : FreeSpec({
 
                 lateinit var sub: Job
                 beforeTest {
-                    app.inShutdownMode = true
+                    app.isShuttingDown = true
                     sub = messageReceiver.subscribe(recipientAccount)!!
                 }
 
@@ -254,8 +261,8 @@ class SignalReceiverTest : FreeSpec({
                         coVerify {
                             app.socketSender.send(
                                 dropped(
-                                    senderAddress.asSignalcAddress(),
-                                    recipientAccount.asSignalcAddress(),
+                                    senderAddress,
+                                    recipientAccount.address,
                                     envelope
                                 )
                             )
@@ -278,8 +285,8 @@ class SignalReceiverTest : FreeSpec({
                                 coVerify {
                                     app.socketSender.send(
                                         cleartext(
-                                            senderAddress.asSignalcAddress(),
-                                            recipientAccount.asSignalcAddress(),
+                                            senderAddress,
+                                            recipientAccount.address,
                                             cleartextBody
                                         )
                                     )
@@ -313,8 +320,8 @@ class SignalReceiverTest : FreeSpec({
                                 coVerify {
                                     app.socketSender.send(
                                         cleartext(
-                                            senderAddress.asSignalcAddress(),
-                                            recipientAccount.asSignalcAddress(),
+                                            senderAddress,
+                                            recipientAccount.address,
                                             ""
                                         )
                                     )
@@ -329,7 +336,7 @@ class SignalReceiverTest : FreeSpec({
                                 val identityKey = KeyUtil.genIdentityKeyPair().publicKey
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
                                     UntrustedIdentityException(recipientAccount.username, identityKey),
-                                    senderAddress.identifier,
+                                    senderAddress.asSignalServiceAddress().identifier,
                                     genDeviceId()
                                 )
                                 every {
@@ -343,9 +350,9 @@ class SignalReceiverTest : FreeSpec({
                                         coVerify {
                                             app.socketSender.send(
                                                 inboundIdentityFailure(
-                                                    senderAddress.asSignalcAddress(),
-                                                    recipientAccount.asSignalcAddress(),
-                                                    null
+                                                    senderAddress,
+                                                    recipientAccount.address,
+                                                    null,
                                                 )
                                             )
                                         }
@@ -355,7 +362,7 @@ class SignalReceiverTest : FreeSpec({
                             "and does not have a fingerprint on the untrusted identity" - {
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
                                     UntrustedIdentityException(recipientAccount.username),
-                                    senderAddress.identifier,
+                                    senderAddress.asSignalServiceAddress().identifier,
                                     genDeviceId()
                                 )
                                 every {
@@ -369,8 +376,8 @@ class SignalReceiverTest : FreeSpec({
                                         coVerify {
                                             app.socketSender.send(
                                                 inboundIdentityFailure(
-                                                    senderAddress.asSignalcAddress(),
-                                                    recipientAccount.asSignalcAddress(),
+                                                    senderAddress,
+                                                    recipientAccount.address,
                                                     null
                                                 )
                                             )
@@ -383,7 +390,7 @@ class SignalReceiverTest : FreeSpec({
                         "and is a non specified exception" - {
                             val error = ProtocolDuplicateMessageException(
                                 Exception("FAKE ERROR! oh no!"),
-                                senderAddress.identifier,
+                                senderAddress.asSignalServiceAddress().identifier,
                                 42
                             )
                             every {
@@ -397,13 +404,37 @@ class SignalReceiverTest : FreeSpec({
                                     coVerify {
                                         app.socketSender.send(
                                             decryptionError(
-                                                senderAddress.asSignalcAddress(),
-                                                recipientAccount.asSignalcAddress(),
+                                                senderAddress,
+                                                recipientAccount.address,
                                                 error
                                             )
                                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+
+                "containing a profile key update" - {
+                    val fakeProfileKey = genRandomBytes(32)
+                    every {
+                        anyConstructed<SignalServiceCipher>().decrypt(any())
+                    } returns mockk {
+                        every { dataMessage.orNull() } returns mockDataMessage.apply {
+                            every { profileKey.orNull() } returns fakeProfileKey
+                        }
+                    }
+
+                    "stores the profile key" {
+                        messageReceiver.subscribe(recipientAccount)
+                        eventually(timeout) {
+                            coVerify {
+                                app.profileStore.storeProfileKey(
+                                    recipientAccount.address.id,
+                                    senderAddress.id,
+                                    fakeProfileKey,
+                                )
                             }
                         }
                     }
@@ -434,9 +465,7 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     } returns mockk {
-                        every { dataMessage.orNull() } returns mockk<SignalServiceDataMessage> {
-                            every { expiresInSeconds } returns expiryTime
-                            every { timestamp } returns now
+                        every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { body.orNull() } returns cleartextBody
                             every { attachments.orNull() } returns listOf(
                                 mockk {
@@ -464,8 +493,6 @@ class SignalReceiverTest : FreeSpec({
                         }
                     }
 
-
-
                     afterTest {
                         deleteAllAttachments(app)
                     }
@@ -483,8 +510,8 @@ class SignalReceiverTest : FreeSpec({
                             coVerify {
                                 app.socketSender.send(
                                     cleartext(
-                                        senderAddress.asSignalcAddress(),
-                                        recipientAccount.asSignalcAddress(),
+                                        senderAddress,
+                                        recipientAccount.address,
                                         cleartextBody,
                                         listOf(cleartextAttachment),
                                     )

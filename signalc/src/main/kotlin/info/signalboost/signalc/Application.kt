@@ -7,6 +7,7 @@ import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.store.ProfileStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -56,7 +57,9 @@ class Application(val config: Config.App){
      *************/
 
     @Volatile
-    var inShutdownMode = false
+    var isShuttingDown = false
+    val timers = config.timers
+    val toggles = config.toggles
 
     /**************
      * COMPONENTS
@@ -149,10 +152,11 @@ class Application(val config: Config.App){
     // STORE //
 
     lateinit var accountStore: AccountStore
+    lateinit var profileStore: ProfileStore
     lateinit var protocolStore: ProtocolStore
 
     private lateinit var dataSource: HikariDataSource
-    private val db by lazy {
+    val db by lazy {
         Database.connect(dataSource)
     }
 
@@ -176,14 +180,6 @@ class Application(val config: Config.App){
                 validate()
             }
         )
-
-
-    private inline fun <reified T: Any>initializeStore(
-        component: KClass<T>,
-        mockAnswers: T.() -> Unit = {}
-    ):  T =
-        if(config.mocked.contains(component)) mockk(block = mockAnswers)
-        else (component.primaryConstructor!!::call)(arrayOf(db))
 
 
     private inline fun <reified T: Any>initializeColdComponent(
@@ -243,8 +239,9 @@ class Application(val config: Config.App){
 
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
-        accountStore = initializeStore(AccountStore::class)
-        protocolStore = initializeStore(ProtocolStore::class, Mocks.protocolStore)
+        accountStore = initializeColdComponent(AccountStore::class)
+        profileStore = initializeColdComponent(ProfileStore::class, Mocks.profileStore)
+        protocolStore = initializeColdComponent(ProtocolStore::class, Mocks.protocolStore)
 
         // network resources
         signal = initializeSignal()
@@ -272,7 +269,7 @@ class Application(val config: Config.App){
     }
 
     suspend fun stop(): Application {
-        inShutdownMode = true
+        isShuttingDown = true
         logger.info { "<@3<@3<@3<@3<@3<@3<@3<@3"}
         logger.info { "Stopping application..."}
 

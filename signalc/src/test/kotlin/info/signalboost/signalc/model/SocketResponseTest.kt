@@ -29,7 +29,6 @@ import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.beOfType
-import org.whispersystems.signalservice.api.messages.SendMessageResult
 
 class SocketResponseTest : FreeSpec({
     val requestId = genUuidStr()
@@ -52,47 +51,53 @@ class SocketResponseTest : FreeSpec({
         "for SendResult" - {
             val request = genSendRequest()
             val recipientAddress = request.recipientAddress
-            val recipientSignalAddress = recipientAddress.asSignalServiceAddress()
 
-            "constructs a SendResult from a SUCCESS" {
+            "constructs a SendResult from a Blocked" {
                 SocketResponse.SendResult.of(
-                    request,
-                    SendMessageResult.success(recipientSignalAddress, false, true, 1)
+                    SignalcSendResult.Blocked(recipientAddress)
                 ) shouldBe SocketResponse.SendResult(
                     address = recipientAddress,
-                    success = SocketResponse.SendResult.Success()
+                    blocked = true,
                 )
             }
 
-            "constructs a SendResult from a IDENTITY_FAILURE" {
+            "constructs a SendResult from a Sent.Success" {
+                SocketResponse.SendResult.of(
+                    SignalcSendResult.Success(
+                        recipientAddress,
+                        isUnidentified = false,
+                        isNeedsSync = true,
+                        duration = 0L
+                    )
+                ) shouldBe SocketResponse.SendResult(
+                    address = recipientAddress,
+                    success = SocketResponse.SendResult.Success(),
+                )
+            }
+
+            "constructs a SendResult from a Sent.IdentityFailure" {
                 val newIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
 
                 SocketResponse.SendResult.of(
-                    request,
-                    SendMessageResult.identityFailure(
-                        recipientSignalAddress,
-                        newIdentityKey
-                    )
+                    SignalcSendResult.IdentityFailure(recipientAddress, newIdentityKey)
                 ) shouldBe SocketResponse.SendResult(
                     address = recipientAddress,
                     identityFailure = newIdentityKey.fingerprint
                 )
             }
 
-            "constructs a SendResult from an  NETWORK_FAILURE" {
+            "constructs a SendResult from a Sent.NetworkFailure" {
                 SocketResponse.SendResult.of(
-                    request,
-                    SendMessageResult.networkFailure(recipientSignalAddress)
+                    SignalcSendResult.NetworkFailure(recipientAddress),
                 ) shouldBe SocketResponse.SendResult(
                     address = recipientAddress,
                     networkFailure = true
                 )
             }
 
-            "constructs a SendResult from an  UNREGISTERED_FAILURE" {
+            "constructs a SendResult from a Sent.UnregisteredFailure" {
                 SocketResponse.SendResult.of(
-                    request,
-                    SendMessageResult.unregisteredFailure(recipientSignalAddress)
+                    SignalcSendResult.UnregisteredFailure(recipientAddress),
                 ) shouldBe SocketResponse.SendResult(
                     address = recipientAddress,
                     unregisteredFailure = true
@@ -294,8 +299,33 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of SendResults" - {
-            "of type SUCCESS" - {
-                val response = genSendResults(type = SendResultType.SUCCESS)
+            "of type Blocked" - {
+                val response = genSendResults(SignalcSendResult.Blocked::class)
+
+                "encodes JSON" {
+                    response.toJson() shouldBe """
+                    |{
+                       |"type":"send_results",
+                       |"id":"${response.id}",
+                       |"data":[{
+                         |"address":{
+                           |"number":"${response.data[0].address.number}",
+                           |"uuid":"${response.data[0].address.uuid}"
+                         |},
+                         |"success":null,
+                         |"identityFailure":null,
+                         |"networkFailure":false,
+                         |"unregisteredFailure":false,
+                         |"unknownError":false,
+                         |"blocked":true
+                       |}]
+                    |}""".flatten()
+                }
+            }
+
+
+            "of type Sent.Success" - {
+                val response = genSendResults(SignalcSendResult.Success::class)
 
                 "encodes JSON" {
                     response.toJson() shouldBe """
@@ -314,14 +344,15 @@ class SocketResponseTest : FreeSpec({
                          |"identityFailure":null,
                          |"networkFailure":false,
                          |"unregisteredFailure":false,
-                         |"unknownError":false
+                         |"unknownError":false,
+                         |"blocked":false
                        |}]
                     |}""".flatten()
                 }
             }
 
-            "of type IDENTITY_FAILURE" - {
-                val response = genSendResults(type = SendResultType.IDENTITY_FAILURE)
+            "of type Sent.IdentityFailure" - {
+                val response = genSendResults(SignalcSendResult.IdentityFailure::class)
 
                 "encodes JSON" {
                     response.toJson() shouldBe """
@@ -337,14 +368,15 @@ class SocketResponseTest : FreeSpec({
                          |"identityFailure":"${response.data[0].identityFailure}",
                          |"networkFailure":false,
                          |"unregisteredFailure":false,
-                         |"unknownError":false
+                         |"unknownError":false,
+                         |"blocked":false
                        |}]
                     |}""".flatten()
                 }
             }
 
-            "of type NETWORK_ERROR" - {
-                val response = genSendResults(type = SendResultType.NETWORK_FAILURE)
+            "of type Sent.NetworkFailure" - {
+                val response = genSendResults(SignalcSendResult.NetworkFailure::class)
 
                 "encodes JSON" {
                     response.toJson() shouldBe """
@@ -360,14 +392,15 @@ class SocketResponseTest : FreeSpec({
                          |"identityFailure":null,
                          |"networkFailure":true,
                          |"unregisteredFailure":false,
-                         |"unknownError":false
+                         |"unknownError":false,
+                         |"blocked":false
                        |}]
                     |}""".flatten()
                 }
             }
 
-            "of type UNREGISTERED_FAILURE" - {
-                val response = genSendResults(type = SendResultType.UNREGISTERED_FAILURE)
+            "of type Sent.UnregisteredFailure" - {
+                val response = genSendResults(SignalcSendResult.UnregisteredFailure::class)
 
                 "encodes JSON" {
                     response.toJson() shouldBe """
@@ -383,14 +416,15 @@ class SocketResponseTest : FreeSpec({
                          |"identityFailure":null,
                          |"networkFailure":false,
                          |"unregisteredFailure":true,
-                         |"unknownError":false
+                         |"unknownError":false,
+                         |"blocked":false
                        |}]
                     |}""".flatten()
                 }
             }
 
-            "of type UNKNOWN_ERROR" - {
-                val response = genSendResults(type = SendResultType.UNKNOWN_ERROR)
+            "of type Sent.UnknownError" - {
+                val response = genSendResults(SignalcSendResult.UnknownError::class)
 
                 "encodes JSON" {
                     response.toJson() shouldBe """
@@ -406,7 +440,8 @@ class SocketResponseTest : FreeSpec({
                          |"identityFailure":null,
                          |"networkFailure":false,
                          |"unregisteredFailure":false,
-                         |"unknownError":true
+                         |"unknownError":true,
+                         |"blocked":false
                        |}]
                     |}""".flatten()
                 }
@@ -414,7 +449,7 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of SetExpirationFailed" - {
-            val response = genSetExpirationFailed()
+            val response = genSetExpirationFailed(SignalcSendResult.NetworkFailure::class)
 
             "encodes to JSON" {
                 response.toJson() shouldBe """
@@ -426,7 +461,7 @@ class SocketResponseTest : FreeSpec({
                     |"number":"${response.recipientAddress.number}",
                     |"uuid":"${response.recipientAddress.uuid}"
                   |},
-                  |"resultType":"NETWORK_FAILURE"
+                  |"resultType":"NetworkFailure"
                 |}
                 """.flatten()
             }

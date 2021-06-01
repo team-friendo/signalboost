@@ -1,6 +1,7 @@
 package info.signalboost.signalc.testSupport.db
 
 import info.signalboost.signalc.db.Identities
+import info.signalboost.signalc.db.Profiles
 import info.signalboost.signalc.db.SenderKeys
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -30,10 +31,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 fun main() {
     // change this assignment to
-    val table = SenderKeys
+    val table = Profiles
     val db = Database.connect(
-        driver = "com.impossibl.postgres.jdbc.PGDriver",
-        url = "jdbc:pgsql://localhost:5432/signalc_scratch",
+        driver = "org.postgresql.Driver",
+        url = "jdbc:postgresql://localhost:5432/signalc_scratch",
         user= "postgres",
     )
 

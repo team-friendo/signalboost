@@ -16,10 +16,14 @@ import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFileName
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genFingerprint
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genPhrase
 import info.signalboost.signalc.testSupport.dataGenerators.StringGen.genVersionStr
+import info.signalboost.signalc.util.KeyUtil.genIdentityKeyPair
 import info.signalboost.signalc.util.SocketHashCode
 import io.mockk.every
 import io.mockk.mockk
+import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
+import kotlin.reflect.KClass
+import kotlin.reflect.full.primaryConstructor
 
 object SocketResponseGen {
 
@@ -137,43 +141,33 @@ object SocketResponseGen {
 
 
     fun genSendResults(
+        resultKClass:  KClass<out SignalcSendResult> = SignalcSendResult.Success::class,
         id: String = genUuidStr(),
         address: SignalcAddress = genSignalcAddress(),
-        type: SendResultType = SendResultType.SUCCESS,
-        untrustedFingerprint: String = genFingerprint(),
-    ) = SocketResponse.SendResults(
-        id = id,
-        data = listOf(
-            genSendResult(
-                address,
-                type,
-                untrustedFingerprint
-            )
+        untrustedIdentityKey: IdentityKey = genIdentityKeyPair().publicKey
+    ): SocketResponse.SendResults  {
+        val constructWith = resultKClass.primaryConstructor!!::call
+        val concreteScSendResult = when(resultKClass) {
+            SignalcSendResult.IdentityFailure::class -> (constructWith)(arrayOf(address, untrustedIdentityKey))
+            SignalcSendResult.Success::class -> (constructWith)(arrayOf(address, false, true, 0L))
+            else -> (constructWith)(arrayOf(address))
+        }
+        return SocketResponse.SendResults(
+            id = id,
+            data = listOf(SocketResponse.SendResult.of(concreteScSendResult))
         )
-    )
-
-    private fun genSendResult(
-        address: SignalcAddress = genSignalcAddress(),
-        type: SendResultType = SendResultType.SUCCESS,
-        untrustedFingerprint: String? = null,
-    ) = when(type) {
-        SendResultType.SUCCESS -> SocketResponse.SendResult(address, SocketResponse.SendResult.Success())
-        SendResultType.IDENTITY_FAILURE -> SocketResponse.SendResult(address, identityFailure = untrustedFingerprint)
-        SendResultType.NETWORK_FAILURE -> SocketResponse.SendResult(address, networkFailure = true)
-        SendResultType.UNREGISTERED_FAILURE -> SocketResponse.SendResult(address, unregisteredFailure = true)
-        SendResultType.UNKNOWN_ERROR -> SocketResponse.SendResult(address, unknownError = true)
     }
 
     fun genSetExpirationFailed(
+        resultKClass: KClass<out SignalcSendResult> = SignalcSendResult.Success::class,
         id: String = genUuidStr(),
         username: String = genPhoneNumber(),
         recipientAddress: SignalcAddress = genSignalcAddress(),
-        resultType: SendResultType = SendResultType.NETWORK_FAILURE,
     ) = SocketResponse.SetExpirationFailed(
         id = id,
         username = username,
         recipientAddress = recipientAddress,
-        resultType = resultType,
+        resultType = resultKClass.simpleName ?: "Unknown"
     )
 
     fun genSetExpirationSuccess(

@@ -25,9 +25,11 @@ object KeyUtil {
         SecureRandom.getInstance("SHA1PRNG").nextBytes(bytes)
         return bytes
     }
+
     fun genSignalingKey(): String = Base64.encodeBytes(genRandomBytes(52))
     fun genPassword(): String = Base64.encodeBytes(genRandomBytes(18))
     fun genProfileKey(): ProfileKey = ProfileKey(genRandomBytes(32))
+    fun genProfileKeyBytes(): ByteArray = genRandomBytes(32)
     fun genRegistrationId(): Int = KeyHelper.generateRegistrationId(false)
 
     // The following three functions were pulled from: https://github.com/signalapp/Signal-Android/blob/master/app/src/main/java/org/thoughtcrime/securesms/crypto/IdentityKeyUtil.java

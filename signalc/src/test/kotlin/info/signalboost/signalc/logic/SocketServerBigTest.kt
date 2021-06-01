@@ -2,7 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
+import info.signalboost.signalc.model.SignalcSendResult
 import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.SocketResponse
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
@@ -171,7 +171,7 @@ class SocketServerBigTest : FreeSpec({
                 fun sendRequestOf(msg: String): SocketRequest.Send = genSendRequest(
                     id = genUuidStr(),
                     username = verifiedSenderAccount.username,
-                    recipientAddress = recipientAccount.address.asSignalcAddress(),
+                    recipientAddress = recipientAccount.address,
                     messageBody = msg,
                 )
 
@@ -185,11 +185,18 @@ class SocketServerBigTest : FreeSpec({
                     client2.send(worldRequest.toJson())
                 }
 
+                receiveN(2) shouldBe setOf(
+                    SocketResponse.SendResults.of(
+                        helloRequest,
+                        SignalcSendResult.Success(helloRequest.recipientAddress)
+                    ).toJson(),
+                    SocketResponse.SendResults.of(
+                        worldRequest,
+                        SignalcSendResult.Success(worldRequest.recipientAddress)
+                    ).toJson(),
+                )
+
                 eventually(timeout) {
-                    receiveN(2) shouldBe setOf(
-                        SocketResponse.SendResults.success(helloRequest).toJson(),
-                        SocketResponse.SendResults.success(worldRequest).toJson(),
-                    )
                     coVerify {
                         app.signalSender.send(
                             verifiedSenderAccount,

@@ -88,7 +88,7 @@ class SignalReceiver(private val app: Application) {
         getMemoized(ciphers, account.username) {
             val store = app.protocolStore.of(account)
             SignalServiceCipher(
-                account.address,
+                account.address.asSignalServiceAddress(),
                 store,
                 store.lock,
                 app.signal.certificateValidator
@@ -105,8 +105,8 @@ class SignalReceiver(private val app: Application) {
 
     suspend fun drain(): Triple<Boolean,Int,Int> = MessageQueue.drain(
         messagesInFlight,
-        app.config.timers.drainTimeout,
-        app.config.timers.drainPollInterval,
+        app.timers.drainTimeout,
+        app.timers.drainPollInterval,
     )
 
     suspend fun subscribe(account: VerifiedAccount): Job? {
@@ -127,7 +127,7 @@ class SignalReceiver(private val app: Application) {
                 while (subscription.isActive) {
                     val envelope = try {
                         messagePipe.read(
-                            app.config.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
+                            app.timers.readTimeout.toLong(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS
                         )
                     } catch(err: Throwable) {
@@ -165,41 +165,39 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
         envelope.type.asEnum().let {
-            logger.debug { "Got ${envelope.type.asEnum()} from ${envelope.sourceAddress.number} to ${account.username}" }
+            logger.debug { "Got ${it.asString} from ${envelope.sourceIdentifier ?: "SEALED"} to ${account.username}" }
             Metrics.SignalReceiver.numberOfMessagesReceived.labels(it.asString).inc()
             return when (it) {
-                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
                 EnvelopeType.PREKEY_BUNDLE -> {
                     relay(envelope, account)
                     maybeRefreshPreKeys(account)
                 }
-                EnvelopeType.KEY_EXCHANGE, // handle this to process "reset secure session" events
+
+                EnvelopeType.UNIDENTIFIED_SENDER,
+                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
+
+                EnvelopeType.KEY_EXCHANGE, // TODO: handle this to process "reset secure session" events
                 EnvelopeType.RECEIPT, // signal android basically drops these, so do we!
-                EnvelopeType.UNIDENTIFIED_SENDER, // TODO: we very much want to handle these!!!
                 EnvelopeType.UNKNOWN -> drop(envelope, account)
             }
 
         }
     }
 
-    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
-            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
-            // of which might have depleted our prekey reserves below the level we want to keep on hand
-            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
-            app.accountManager.refreshPreKeysIfDepleted(account)
-        }
-
     private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
-        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.asSignalcAddress())
+        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.address)
         return app.coroutineScope.launch(Concurrency.Dispatcher) {
             try {
                 messagesInFlight.getAndIncrement()
                 val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
+
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
-                // TODO: read and store profileKeys here...
+                dataMessage.profileKey.orNull()?.let {
+                    app.profileStore.storeProfileKey(recipient.id, sender.id, it)
+                }
 
                 app.socketSender.send(
                     SocketResponse.Cleartext.of(
@@ -219,9 +217,16 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
+    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
+        // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+        // of which might have depleted our prekey reserves below the level we want to keep on hand
+        // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+        app.accountManager.refreshPreKeysIfDepleted(account)
+    }
+
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(
-            SocketResponse.Dropped(envelope.asSignalcAddress(), account.asSignalcAddress(), envelope)
+            SocketResponse.Dropped(envelope.asSignalcAddress(), account.address, envelope)
         )
         return null
     }
@@ -253,7 +258,7 @@ class SignalReceiver(private val app: Application) {
             // on timeout, setup message pipe again, as we want to keep reading
             is TimeoutException -> SubscribeErrorContinuation.CONTINUE
             is IOException -> run {
-                if (app.inShutdownMode) {
+                if (app.isShuttingDown) {
                     // on io error caused by client shutdown, cancel job and stop reading from signal
                     logger.warn { "Connection closed on websocket for ${account.username}, cancelling subscription..." }
                     SubscribeErrorContinuation.RETURN_AND_CANCEL

@@ -3,6 +3,9 @@ package info.signalboost.signalc
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
+import info.signalboost.signalc.model.SignalcAddress
+import info.signalboost.signalc.model.SignalcSendResult
+import info.signalboost.signalc.store.ProfileStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
@@ -26,9 +29,14 @@ object Mocks {
         coEvery { publishPreKeys(any()) } returns Unit
         coEvery { publishPreKeys(any(), any()) } returns Unit
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
+        coEvery { getUnidentifiedAccessPair(any(), any()) } returns mockk()
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
+    }
+    val profileStore: ProfileStore.() -> Unit = {
+        coEvery { storeProfileKey(any(), any(), any())} returns Unit
+        coEvery { loadProfileKey(any(), any())} returns mockk()
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
@@ -46,13 +54,18 @@ object Mocks {
         coEvery { drain() } returns Triple(true,0,0)
     }
     val signalSender: SignalSender.() -> Unit = {
-        coEvery { send(any(), any(), any(), any(), any(), any()) } returns mockk {
-            every { success } returns  mockk {
-                every { duration } returns 1
+        fun mockkSuccessOf(recipientAddress: SignalcAddress) =
+            mockk<SignalcSendResult.Success> {
+                every { address } returns recipientAddress
+                every { duration } returns 0L
+                every { isUnidentified } returns false
+                every { isNeedsSync } returns true
             }
+        coEvery { send(any(), any(), any(), any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
         }
-        coEvery { setExpiration(any(), any(), any()) } returns mockk {
-            every { success } returns mockk()
+        coEvery { setExpiration(any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
         }
         coEvery { drain() } returns Triple(true,0,0)
     }

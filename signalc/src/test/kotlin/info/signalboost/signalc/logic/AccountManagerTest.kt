@@ -10,18 +10,22 @@ import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.store.ProtocolStore
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
+import info.signalboost.signalc.testSupport.dataGenerators.CertGen.genSenderCert
 import info.signalboost.signalc.util.KeyUtil
+import info.signalboost.signalc.util.KeyUtil.genRandomBytes
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
+import org.signal.zkgroup.profiles.ProfileKey
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.libsignal.util.guava.Optional.absent
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
+import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException
 import java.util.*
 import kotlin.io.path.ExperimentalPathApi
@@ -271,6 +275,57 @@ class AccountManagerTest : FreeSpec({
                     }
                 }
 
+            }
+        }
+
+        "#getUnidentifiedAccessPair" - {
+            val senderCert = genSenderCert()
+            val contactProfileKey = ProfileKey(genRandomBytes(32))
+            val knownContactId = genPhoneNumber()
+            val unknownContactId = genPhoneNumber()
+
+            coEvery {
+                app.accountStore.findOrCreate(verifiedAccount.id)
+            } returns verifiedAccount
+
+            every {
+                anyConstructed<SignalServiceAccountManager>().senderCertificate
+            } returns senderCert.serialized
+
+            coEvery {
+                app.profileStore.loadProfileKey(verifiedAccount.id, any())
+            } coAnswers  {
+                if (secondArg<String>() == knownContactId) contactProfileKey
+                else null
+            }
+
+            "when contact has a profile key stored locally" - {
+                "returns a pair of unidentified access token/cert tuples derrived from profile keys" {
+                    val accessPair = app.accountManager.getUnidentifiedAccessPair(
+                        verifiedAccount.id,
+                        knownContactId
+                    )!!
+
+                    accessPair.targetUnidentifiedAccess.get().unidentifiedAccessKey shouldBe
+                            UnidentifiedAccess.deriveAccessKeyFrom(contactProfileKey)
+                    accessPair.targetUnidentifiedAccess.get().unidentifiedCertificate.serialized shouldBe
+                            senderCert.serialized
+
+                    accessPair.selfUnidentifiedAccess.get().unidentifiedAccessKey shouldBe
+                            UnidentifiedAccess.deriveAccessKeyFrom(verifiedAccount.profileKey)
+                    accessPair.selfUnidentifiedAccess.get().unidentifiedCertificate.serialized shouldBe
+                            senderCert.serialized
+
+                }
+            }
+
+            "when contact does not have a profile key stored locally" - {
+                "returns null" {
+                    app.accountManager.getUnidentifiedAccessPair(
+                        verifiedAccount.id,
+                        unknownContactId
+                    ) shouldBe null
+                }
             }
         }
     }

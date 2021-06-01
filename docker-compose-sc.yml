@@ -21,6 +21,7 @@ services:
     container_name: signalc
     env_file: .env.dev
     environment:
+      BLOCK_UNSEALED_MESSAGES: 0
       SIGNALC_ENV: development
       SIGNALC_DRAIN_TIMEOUT: ${SIGNALC_DRAIN_TIMEOUT:-120}
       GRADLE_USER_HOME: /home/gradle/.gradle

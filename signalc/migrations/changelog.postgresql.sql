@@ -125,3 +125,13 @@ ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact
 -- rollback ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
 -- rollback ALTER TABLE sessions RENAME COLUMN contact_id TO "name";
 -- rollback ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, "name", device_id);
+
+
+-- changeset aguestuser:1621982248825-1 failOnError:false
+CREATE TABLE IF NOT EXISTS profiles (
+    account_id VARCHAR(255),
+    contact_id VARCHAR(255),
+    profile_key_bytes bytea NOT NULL,
+    CONSTRAINT pk_Profiles PRIMARY KEY (account_id, contact_id)
+);
+-- rollback drop table profiles;
