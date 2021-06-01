@@ -1,12 +1,12 @@
 package info.signalboost.signalc.store.protocol
 
-import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
-import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
-import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
+import info.signalboost.signalc.db.ContactRecord.Companion.deleteByContactId
+import info.signalboost.signalc.db.ContactRecord.Companion.findByContactId
+import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Identities
+import info.signalboost.signalc.db.Identities.contactId
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
-import info.signalboost.signalc.db.Identities.contactId
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
 import info.signalboost.signalc.util.KeyUtil
@@ -77,9 +77,10 @@ class SignalcIdentityStore(
         // - deny trust for subsequent identity keys for same address
         // Returns true if this save was an update to an existing record, false otherwise
         lock.acquireForTransaction(db) {
-            Identities.findByAddress(accountId, address)
+            val contactId = address.name
+            Identities.findByContactId(accountId, contactId)
                 ?.let { existingKey ->
-                    Identities.updateByAddress(accountId, address) {
+                    Identities.updateByContactId(accountId, contactId) {
                         // store the new existingKey key in all cases
                         it[identityKeyBytes] = identityKey.serialize()
                         // only trust it if it matches the existing key
@@ -89,8 +90,7 @@ class SignalcIdentityStore(
                 } ?: run {
                 Identities.insert {
                     it[accountId] = this@SignalcIdentityStore.accountId
-                    it[contactId] = address.name
-                    it[deviceId] = address.deviceId
+                    it[Identities.contactId] = contactId
                     it[identityKeyBytes] = identityKey.serialize()
                 }
                 false
@@ -104,7 +104,7 @@ class SignalcIdentityStore(
     ): Boolean =
         lock.acquireForTransaction(db) {
             // trust a key if...
-            Identities.findByAddress(accountId, address)?.let {
+            Identities.findByContactId(accountId, address.name)?.let {
                 // it matches a key we have seen before
                 it[identityKeyBytes] contentEquals identityKey.serialize() &&
                         // and we have not flagged it as untrusted
@@ -114,14 +114,14 @@ class SignalcIdentityStore(
 
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
         lock.acquireForTransaction(db) {
-            Identities.findByAddress(accountId, address)?.let {
+            Identities.findByContactId(accountId, address.name)?.let {
                 IdentityKey(it[identityKeyBytes], 0)
             }
         }
 
     fun removeIdentity(address: SignalProtocolAddress) {
         lock.acquireForTransaction(db) {
-            Identities.deleteByAddress(accountId, address)
+            Identities.deleteByContactId(accountId, address.name)
         }
     }
 
@@ -132,6 +132,4 @@ class SignalcIdentityStore(
             }
         }
     }
-
-
 }
