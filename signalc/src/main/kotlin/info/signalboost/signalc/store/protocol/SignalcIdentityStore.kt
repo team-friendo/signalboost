@@ -1,8 +1,8 @@
 package info.signalboost.signalc.store.protocol
 
-import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
 import info.signalboost.signalc.db.Identities
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted

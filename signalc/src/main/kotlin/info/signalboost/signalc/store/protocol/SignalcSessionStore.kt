@@ -1,9 +1,9 @@
 package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.*
-import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
 import info.signalboost.signalc.db.Sessions.sessionBytes
 import org.jetbrains.exposed.sql.*
 import org.whispersystems.libsignal.SignalProtocolAddress

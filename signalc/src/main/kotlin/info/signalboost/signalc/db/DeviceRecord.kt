@@ -4,14 +4,14 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.whispersystems.libsignal.SignalProtocolAddress
 
-interface AccountWithAddress: FieldSet {
+interface DeviceRecord: FieldSet {
     val accountId: Column<String>
     val contactId: Column<String>
     val deviceId: Column<Int>
 
     companion object {
 
-        fun AccountWithAddress.findByAddress(accountId: String, address: SignalProtocolAddress): ResultRow? {
+        fun DeviceRecord.findByAddress(accountId: String, address: SignalProtocolAddress): ResultRow? {
             val table = this
             return table.select {
                 (table.accountId eq accountId)
@@ -20,7 +20,7 @@ interface AccountWithAddress: FieldSet {
             }.singleOrNull()
         }
 
-        fun AccountWithAddress.updateByAddress(
+        fun DeviceRecord.updateByAddress(
             accountId: String,
             address: SignalProtocolAddress,
             updateStatement: Table.(UpdateStatement) -> Unit
@@ -33,7 +33,7 @@ interface AccountWithAddress: FieldSet {
             }, null, updateStatement)
         }
 
-        fun AccountWithAddress.deleteByAddress(accountId: String, address: SignalProtocolAddress): Int {
+        fun DeviceRecord.deleteByAddress(accountId: String, address: SignalProtocolAddress): Int {
             val table = this
             return (table as Table).deleteWhere {
                 (table.accountId eq accountId)

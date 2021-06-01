@@ -2,7 +2,7 @@ package info.signalboost.signalc.db
 
 import org.jetbrains.exposed.sql.Table
 
-object Identities: Table(), AccountWithAddress {
+object Identities: Table(), DeviceRecord {
     private const val IDENTITY_KEY_BYTE_ARRAY_LENGTH = 33
 
     override val accountId = varchar("account_id", 255)
