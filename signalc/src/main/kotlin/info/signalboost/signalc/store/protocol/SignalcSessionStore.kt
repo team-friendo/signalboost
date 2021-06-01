@@ -1,17 +1,15 @@
 package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.*
-import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
 import info.signalboost.signalc.db.Sessions.sessionBytes
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.protocol.CiphertextMessage
 import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
-import org.whispersystems.signalservice.api.SignalSessionLock
 
 class SignalcSessionStore(
     val db: Database,
@@ -29,7 +27,7 @@ class SignalcSessionStore(
     override fun getSubDeviceSessions(name: String): MutableList<Int> =
         lock.acquireForTransaction(db) {
             Sessions.select {
-                Sessions.accountId eq accountId and (Sessions.name eq name)
+                Sessions.accountId eq accountId and (Sessions.contactId eq name)
             }.mapTo(mutableListOf()) { it[Sessions.deviceId] }
         }
 
@@ -42,7 +40,7 @@ class SignalcSessionStore(
                     if (numUpdated == 0) {
                         Sessions.insert {
                             it[accountId] = this@SignalcSessionStore.accountId
-                            it[name] = address.name
+                            it[contactId] = address.name
                             it[deviceId] = address.deviceId
                             it[sessionBytes] = record.serialize()
                         }
@@ -72,7 +70,7 @@ class SignalcSessionStore(
     override fun deleteAllSessions(name: String) {
         lock.acquireForTransaction(db) {
             Sessions.deleteWhere {
-                Sessions.accountId eq accountId and (Sessions.name eq name)
+                Sessions.accountId eq accountId and (Sessions.contactId eq name)
             }
         }
     }

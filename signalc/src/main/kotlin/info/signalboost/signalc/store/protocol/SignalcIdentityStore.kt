@@ -1,12 +1,12 @@
 package info.signalboost.signalc.store.protocol
 
-import info.signalboost.signalc.db.AccountWithAddress.Companion.deleteByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.findByAddress
-import info.signalboost.signalc.db.AccountWithAddress.Companion.updateByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
+import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
 import info.signalboost.signalc.db.Identities
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
-import info.signalboost.signalc.db.Identities.name
+import info.signalboost.signalc.db.Identities.contactId
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
 import info.signalboost.signalc.util.KeyUtil
@@ -55,7 +55,7 @@ class SignalcIdentityStore(
     fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) {
         lock.acquireForTransaction(db) {
             Identities.update({
-                (name eq address.identifier)
+                (contactId eq address.identifier)
                     .and(Identities.accountId eq this@SignalcIdentityStore.accountId)
             }) {
                 it[identityKeyBytes] = fingerprint
@@ -89,7 +89,7 @@ class SignalcIdentityStore(
                 } ?: run {
                 Identities.insert {
                     it[accountId] = this@SignalcIdentityStore.accountId
-                    it[name] = address.name
+                    it[contactId] = address.name
                     it[deviceId] = address.deviceId
                     it[identityKeyBytes] = identityKey.serialize()
                 }
