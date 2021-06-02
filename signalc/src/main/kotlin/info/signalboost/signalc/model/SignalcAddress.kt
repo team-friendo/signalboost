@@ -22,7 +22,7 @@ data class SignalcAddress(
        )
 
        fun SignalServiceEnvelope.asSignalcAddress() = SignalcAddress(
-           number = sourceE164.orNull(),
+           number = sourceE164.orNull()?.let{ if(it.isEmpty()) null else it},
            uuid = sourceUuid.orNull()?.let{ if(it.isEmpty()) null else  UUID.fromString (it) },
        ).also {
            if (it.number == null && it.uuid == null) {

@@ -10,6 +10,8 @@ import info.signalboost.signalc.db.Identities.contactId
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
 import info.signalboost.signalc.util.KeyUtil
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
@@ -17,8 +19,14 @@ import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
+@ExperimentalTime
+@ExperimentalPathApi
 class SignalcIdentityStore(
     val db: Database,
     val accountId: String,

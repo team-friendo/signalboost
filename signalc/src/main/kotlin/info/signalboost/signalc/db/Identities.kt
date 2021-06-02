@@ -1,7 +1,15 @@
 package info.signalboost.signalc.db
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import org.jetbrains.exposed.sql.Table
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.time.ExperimentalTime
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
+@ExperimentalTime
+@ExperimentalPathApi
 object Identities: Table(), DeviceRecord {
     private const val IDENTITY_KEY_BYTE_ARRAY_LENGTH = 33
 

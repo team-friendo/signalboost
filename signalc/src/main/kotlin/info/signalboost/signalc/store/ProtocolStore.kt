@@ -15,6 +15,7 @@ import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import java.util.*
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
@@ -29,6 +30,40 @@ class ProtocolStore(app: Application) {
 
     fun countOwnIdentities(): Long =
         transaction(db) { OwnIdentities.selectAll().count() }
+
+    companion object {
+        fun resolveId(contactId: String): String {
+            return when {
+                isUUID(contactId) -> {
+                    when (contactId) {
+                        "362feb8e-17a0-402b-92d8-773df1b38a74" -> "+16154804259"
+                        "1b2f2a81-38ee-49db-8be4-b450f83bfcf9" -> "+18319176400"
+                        else -> throw Exception("oh noes! don't know this UUID: $contactId")
+                    }
+                }
+                isE164(contactId) -> {
+                    contactId
+                }
+                else -> {
+                    throw Exception("what the h*** is this? don't know this contact id type, contact id: $contactId")
+                }
+            }
+        }
+
+        private fun isE164(contactId: String): Boolean {
+            val regex = """^\+\d{9,15}$""".toRegex()
+            return regex.matches(contactId)
+        }
+
+        private fun isUUID(contactId: String): Boolean {
+            return try {
+                UUID.fromString(contactId)
+                true
+            } catch (e: Throwable) {
+                false
+            }
+        }
+    }
 
     class AccountProtocolStore(
         private val db: Database,
