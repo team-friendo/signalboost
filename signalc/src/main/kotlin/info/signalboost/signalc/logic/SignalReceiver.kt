@@ -196,7 +196,7 @@ class SignalReceiver(private val app: Application) {
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
                 dataMessage.profileKey.orNull()?.let {
-                    app.profileStore.storeProfileKey(recipient.id, sender.id, it)
+                    app.profileStore.storeProfileKey(recipient.identifier, sender.identifier, it)
                 }
 
                 app.socketSender.send(

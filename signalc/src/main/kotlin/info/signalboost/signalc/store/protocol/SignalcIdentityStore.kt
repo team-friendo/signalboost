@@ -4,12 +4,13 @@ import info.signalboost.signalc.db.ContactRecord.Companion.deleteByContactId
 import info.signalboost.signalc.db.ContactRecord.Companion.findByContactId
 import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Identities
-import info.signalboost.signalc.db.Identities.contactId
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.util.KeyUtil
+import liquibase.pro.packaged.db
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
@@ -17,6 +18,8 @@ import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import sun.misc.Signal
+import kotlin.jvm.Throws
 
 
 class SignalcIdentityStore(
@@ -52,22 +55,34 @@ class SignalcIdentityStore(
             }.resultedValues!![0]
         }
 
-    fun saveFingerprintForAllIdentities(address: SignalServiceAddress, fingerprint: ByteArray) {
+    @Throws(SignalcError.UpdateToNonExistentFingerprint::class)
+    fun trustFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
         lock.acquireForTransaction(db) {
-            Identities.update({
-                (contactId eq address.identifier)
-                    .and(Identities.accountId eq this@SignalcIdentityStore.accountId)
-            }) {
-                it[identityKeyBytes] = fingerprint
+            rejectUnknownFingerprint(address, fingerprint)
+            Identities.updateByContactId(accountId, address.name) {
+                it[isTrusted] = true
             }
         }
     }
 
-    fun trustFingerprintForAllIdentities(fingerprint: ByteArray) {
+    @Throws(SignalcError.UpdateToNonExistentFingerprint::class)
+    fun untrustFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
         lock.acquireForTransaction(db) {
-            Identities.update({ identityKeyBytes eq fingerprint }) {
-                it[isTrusted] = true
+            rejectUnknownFingerprint(address, fingerprint)
+            Identities.updateByContactId(accountId, address.name) {
+                it[isTrusted] = false
             }
+        }
+    }
+
+    private fun rejectUnknownFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
+        transaction(db) {
+            val contactId = address.name
+            val knownFingerprint = Identities.findByContactId(accountId, contactId)?.let {
+                it[identityKeyBytes]
+            }
+            if (!fingerprint.contentEquals(knownFingerprint))
+                throw SignalcError.UpdateToNonExistentFingerprint(contactId, fingerprint)
         }
     }
 
@@ -132,4 +147,10 @@ class SignalcIdentityStore(
             }
         }
     }
+
+    fun countIdentities(): Long =
+        transaction(db) {
+            Identities.selectAll().count()
+        }
+
 }

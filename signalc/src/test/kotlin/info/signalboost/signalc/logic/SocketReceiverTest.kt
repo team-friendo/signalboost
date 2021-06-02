@@ -42,6 +42,7 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runBlockingTest
+import okio.ByteString.Companion.decodeHex
 import org.whispersystems.signalservice.api.push.exceptions.CaptchaRequiredException
 import java.io.IOException
 import java.net.Socket
@@ -354,7 +355,7 @@ class SocketReceiverTest : FreeSpec({
                         } returns identityFailure
 
                         val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
-                            coEvery { saveFingerprintForAllIdentities(any(), any()) } returns Unit
+                            every { saveIdentity(any(), any()) } returns true
                         }
 
                         every {
@@ -379,9 +380,9 @@ class SocketReceiverTest : FreeSpec({
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
-                                    mockProtocolStore.saveFingerprintForAllIdentities(
-                                        recipientAccount.address.asSignalServiceAddress(),
-                                        newIdentityKey.serialize(),
+                                    mockProtocolStore.saveIdentity(
+                                        recipientAccount.address.asSignalProtocolAddress(),
+                                        newIdentityKey,
                                     )
                                 }
                             }
@@ -606,15 +607,17 @@ class SocketReceiverTest : FreeSpec({
                 "account is verified" - {
                     coEvery { app.accountManager.loadVerified(any()) } returns recipientAccount
                     coEvery {
-                        app.protocolStore.of(recipientAccount).trustFingerprintForAllIdentities(any())
+                        app.protocolStore.of(recipientAccount).trustFingerprint(any(), any())
                     } returns Unit
 
                     "attempts to trust the correct fingerprint" {
                         client.send(requestJson)
                         eventually(timeout) {
                             coVerify {
-                                app.protocolStore.of(recipientAccount)
-                                    .trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                                app.protocolStore.of(recipientAccount).trustFingerprint(
+                                    recipientAccount.address.asSignalProtocolAddress(),
+                                    request.fingerprint.toByteArray(),
+                                )
                             }
                         }
                     }
@@ -653,7 +656,10 @@ class SocketReceiverTest : FreeSpec({
                         eventually(timeout) {
                             coVerify(exactly = 0) {
                                 app.protocolStore.of(recipientAccount)
-                                    .trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+                                    .trustFingerprint(
+                                        recipientAccount.address.asSignalProtocolAddress(),
+                                        request.fingerprint.toByteArray(),
+                                    )
                             }
                         }
                     }

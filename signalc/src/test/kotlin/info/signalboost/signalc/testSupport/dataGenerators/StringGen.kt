@@ -23,9 +23,7 @@ object StringGen {
                 fileExtensions.random()
     }
 
-    fun genFingerprint() = List(32) {
-        "${HEX_CHARS.random()}${HEX_CHARS.random()}"
-    }.joinToString(" ")
+    fun genFingerprint(): String = KeyUtil.genIdentityKeyPair().publicKey.fingerprint
 
     fun genPhrase(): String = listOf(
         "a screaming comes across the sky",

@@ -6,6 +6,7 @@ import info.signalboost.signalc.util.KeyUtil.genProfileKeyBytes
 import info.signalboost.signalc.util.KeyUtil.genSignalingKey
 import org.jetbrains.exposed.sql.ResultRow
 import org.signal.zkgroup.profiles.ProfileKey
+import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.util.DynamicCredentialsProvider
 import java.util.*
@@ -195,9 +196,8 @@ data class VerifiedAccount(
         }
     }
 
-    // TODO(aguestuser|2021-05-26): refactor to prefer UUIDS instead of e164 numbers when/if we migrate off phone numbers!
-    val id: String
-      get() = username
+    val identifier: String
+      get() = uuid.toString()
 
     val address by lazy {
         SignalcAddress(username, uuid)

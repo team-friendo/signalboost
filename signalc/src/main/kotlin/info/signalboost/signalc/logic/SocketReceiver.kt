@@ -145,10 +145,17 @@ class SocketReceiver(private val app: Application) {
         val sendResult = app.signalSender.send(senderAccount, recipientAddress, messageBody, expiresInSeconds, attachments)
 
         when(sendResult) {
-            is SignalcSendResult.IdentityFailure -> app.protocolStore.of(senderAccount).saveFingerprintForAllIdentities(
-                recipientAddress.asSignalServiceAddress(),
-                sendResult.identityKey.serialize(),
-            )
+            // TODO: QA this as part of https://0xacab.org/team-friendo/signalboost/-/issues/419
+            is SignalcSendResult.IdentityFailure -> app.protocolStore.of(senderAccount).saveIdentity(
+                recipientAddress.asSignalProtocolAddress(),
+                sendResult.identityKey,
+            ).also { didUpdateExisting ->
+                if(!didUpdateExisting) logger.warn {
+                    // TODO(aguestuser|2021-06-02): maybe error here?
+                    val (fingerprint, id) = Pair(sendResult.identityKey.fingerprint, recipientAddress.identifier)
+                    "Expected to update identity key for contact $id, but instead created identity key $fingerprint."
+                }
+            }
             is SignalcSendResult.Success -> {
                 Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.duration.toDouble())
             }
@@ -252,7 +259,12 @@ class SocketReceiver(private val app: Application) {
     private suspend fun trust(request: SocketRequest.Trust) {
         val senderAccount: VerifiedAccount = app.accountManager.loadVerified(request.username)
             ?: return request.rejectUnverified()
-        app.protocolStore.of(senderAccount).trustFingerprintForAllIdentities(request.fingerprint.toByteArray())
+        app.protocolStore.of(senderAccount).trustFingerprint(
+            senderAccount.address.asSignalProtocolAddress(),
+            // WARNING/NOTE: the below call works b/c signal encodes fingerprint with non-standard hex-encoding!
+            // (Using spaces between each octet.) Don't try to use normal hex encoding/decoding or this will break!
+            request.fingerprint.toByteArray(),
+        )
         app.socketSender.send(SocketResponse.TrustSuccess.of(request))
     }
 

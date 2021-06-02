@@ -51,12 +51,11 @@ class ProtocolStore(app: Application) {
          **/
 
         private val scIdentityStore = identityStore as SignalcIdentityStore
+        val countIdentitities: () -> Long = scIdentityStore::countIdentities
         val removeIdentity: (SignalProtocolAddress) -> Unit = scIdentityStore::removeIdentity
         val removeOwnIdentity: () -> Unit = scIdentityStore::removeOwnIdentity
-        val saveFingerprintForAllIdentities: (SignalServiceAddress, ByteArray) -> Unit =
-            scIdentityStore::saveFingerprintForAllIdentities
-        val trustFingerprintForAllIdentities: (ByteArray) -> Unit =
-           scIdentityStore::trustFingerprintForAllIdentities
+        val trustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::trustFingerprint
+        val untrustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::untrustFingerprint
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
         val getLastPreKeyId: () -> Int = scPreKeyStore::getLastPreKeyId

@@ -3,13 +3,13 @@ package info.signalboost.signalc.store
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
-import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.asSignalServiceAddress
-import info.signalboost.signalc.util.KeyUtil
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.SessionGen
 import info.signalboost.signalc.testSupport.dataGenerators.SessionGen.genActiveSession
+import info.signalboost.signalc.util.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
 import io.kotest.matchers.shouldBe
@@ -40,7 +40,7 @@ class ProtocolStoreTest: FreeSpec({
         val senderTwoAddress = SignalProtocolAddress(genPhoneNumber(), 15)
         // NOTE: An address is a combination of a username (uuid or e164-format phone number) and a device id.
         // This is how Signal represents that a user may have many devices and each device has its own session.
-        val recipient = object {
+        val contact = object {
             val phoneNumber = genPhoneNumber()
             val addresses = listOf(
                 SignalProtocolAddress(phoneNumber, 0),
@@ -51,11 +51,15 @@ class ProtocolStoreTest: FreeSpec({
                 SessionRecord(),
             )
         }
+        val contactAddress = contact.addresses[0]
 
         afterSpec {
             app.stop()
             testScope.teardown()
         }
+
+        // TODO: all of the Identity tests (confusingly) assert on addresses for "sender"s
+        //  (but the only identities we care about are for recipients)
 
         "Identities store" - {
             val identityKey = KeyUtil.genIdentityKeyPair().publicKey
@@ -64,8 +68,8 @@ class ProtocolStoreTest: FreeSpec({
             afterTest {
                 store.removeIdentity(senderOneAddress)
                 store.removeIdentity(senderTwoAddress)
-                store.removeIdentity(recipient.addresses[0])
-                store.removeIdentity(recipient.addresses[1])
+                store.removeIdentity(contact.addresses[0])
+                store.removeIdentity(contact.addresses[1])
                 store.removeOwnIdentity()
             }
 
@@ -83,38 +87,22 @@ class ProtocolStoreTest: FreeSpec({
                 store.localRegistrationId shouldBe registrationId
             }
 
-            "stores and retrieves an identity key" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.getIdentity(senderOneAddress) shouldBe identityKey
+            "stores and retrieves a contact's identity key" {
+                store.saveIdentity(contactAddress, identityKey)
+                store.getIdentity(contactAddress) shouldBe identityKey
             }
 
             "stores and retrieves the same identity key twice without error" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.getIdentity(senderOneAddress) shouldBe identityKey
+                store.saveIdentity(contactAddress, identityKey)
+                store.saveIdentity(contactAddress, identityKey)
+                store.getIdentity(contactAddress) shouldBe identityKey
             }
 
-            "updates the key for all identities with name + accountId" {
-                store.saveIdentity(recipient.addresses[0], identityKey)
-                store.saveIdentity(recipient.addresses[1], identityKey)
-                store.saveFingerprintForAllIdentities(recipient.addresses[0].name.asSignalServiceAddress(), rotatedIdentityKey.serialize())
-                store.getIdentity(recipient.addresses[0])!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
-                store.getIdentity(recipient.addresses[1])!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
-            }
-
-            "trusts a key for all identities with the same fingerprint" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.saveIdentity(senderTwoAddress, identityKey)
-                store.saveIdentity(senderOneAddress, rotatedIdentityKey)
-                store.saveIdentity(senderTwoAddress, rotatedIdentityKey)
-
-                store.isTrustedIdentity(senderOneAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
-                store.isTrustedIdentity(senderTwoAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
-
-                store.trustFingerprintForAllIdentities(rotatedIdentityKey.serialize())
-
-                store.isTrustedIdentity(senderOneAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe true
-                store.isTrustedIdentity(senderTwoAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe true
+            "only stores one identity per contact" {
+                val startingCount = store.countIdentitities()
+                store.saveIdentity(contact.addresses[0], identityKey)
+                store.saveIdentity(contact.addresses[1], identityKey)
+                store.countIdentitities() shouldBe startingCount + 1
             }
 
             "trusts the first key it sees for an address" {
@@ -127,22 +115,51 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "trusts the same identity key for multiple devices" {
-                store.saveIdentity(recipient.addresses[0], identityKey)
-                store.saveIdentity(recipient.addresses[1], identityKey)
+                store.saveIdentity(contact.addresses[0], identityKey)
 
-                store.isTrustedIdentity(recipient.addresses[0], identityKey, Direction.RECEIVING) shouldBe true
-                store.isTrustedIdentity(recipient.addresses[1], identityKey, Direction.RECEIVING) shouldBe true
+                store.isTrustedIdentity(contact.addresses[0], identityKey, Direction.RECEIVING) shouldBe true
+                store.isTrustedIdentity(contact.addresses[1], identityKey, Direction.RECEIVING) shouldBe true
             }
 
             "does not trust an unknown identity key for an existing address" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.isTrustedIdentity(senderOneAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
+                store.saveIdentity(contactAddress, identityKey)
+                store.isTrustedIdentity(contactAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
             }
 
-            "does not trust an updated identity key for an existing address" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.saveIdentity(senderOneAddress, rotatedIdentityKey)
-                store.isTrustedIdentity(senderOneAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
+            "saves a new identity key for a contact, causing the old identity key to become untrusted" {
+                store.saveIdentity(contactAddress, identityKey)
+                store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe true
+
+                store.saveIdentity(contactAddress, rotatedIdentityKey)
+                store.getIdentity(contactAddress)!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
+
+                store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe false
+            }
+
+            "udpates a known, untrusted identity key to become trusted" {
+                store.saveIdentity(contactAddress, identityKey)
+                store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe true
+
+                store.saveIdentity(contactAddress, rotatedIdentityKey)
+                store.isTrustedIdentity(contactAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe false
+
+                store.trustFingerprint(contactAddress, rotatedIdentityKey.serialize())
+                store.isTrustedIdentity(contactAddress, rotatedIdentityKey, Direction.RECEIVING) shouldBe true
+            }
+
+            "udpates a known, untrusted identity key to become untrusted" {
+                store.saveIdentity(contactAddress, identityKey)
+                store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe true
+
+                store.untrustFingerprint(contactAddress, identityKey.serialize())
+                store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe false
+            }
+
+            "throws if trying to update the trust an unknown (likely outdated) fingerprint for a known identity" {
+                store.saveIdentity(contactAddress, rotatedIdentityKey)
+                shouldThrow<SignalcError.UpdateToNonExistentFingerprint> {
+                    store.trustFingerprint(contactAddress, identityKey.serialize())
+                }
             }
         }
 
@@ -256,55 +273,55 @@ class ProtocolStoreTest: FreeSpec({
 
         "Session Store" - {
             afterTest {
-                store.deleteAllSessions(recipient.phoneNumber)
+                store.deleteAllSessions(contact.phoneNumber)
             }
 
             "checks for existence of a session with an address" {
-                store.containsSession(recipient.addresses[0]) shouldBe false
+                store.containsSession(contact.addresses[0]) shouldBe false
             }
 
             "checks that a session no longer exists after archiving" {
                 val activeSessionRecord = SessionGen.genActiveSession()
-                store.storeSession(recipient.addresses[0], activeSessionRecord)
+                store.storeSession(contact.addresses[0], activeSessionRecord)
 
-                store.containsSession(recipient.addresses[0]) shouldBe true
+                store.containsSession(contact.addresses[0]) shouldBe true
 
-                store.archiveSession(recipient.addresses[0])
+                store.archiveSession(contact.addresses[0])
 
-                store.containsSession(recipient.addresses[0]) shouldBe false
+                store.containsSession(contact.addresses[0]) shouldBe false
             }
 
             "stores and retrieves a *copy* of a session with an address" {
-                store.storeSession(recipient.addresses[0], recipient.sessions[0])
-                store.storeSession(recipient.addresses[1], recipient.sessions[1])
-                val sessionCopy = store.loadSession(recipient.addresses[0])
+                store.storeSession(contact.addresses[0], contact.sessions[0])
+                store.storeSession(contact.addresses[1], contact.sessions[1])
+                val sessionCopy = store.loadSession(contact.addresses[0])
 
-                sessionCopy shouldNotBe recipient.sessions[0] // it's a different object...
-                sessionCopy.serialize() shouldBe recipient.sessions[0].serialize() // ...with same underlying values
+                sessionCopy shouldNotBe contact.sessions[0] // it's a different object...
+                sessionCopy.serialize() shouldBe contact.sessions[0].serialize() // ...with same underlying values
             }
 
             "stores the same session record twice without error" {
-                store.storeSession(recipient.addresses[0], genActiveSession())
-                store.storeSession(recipient.addresses[0], genActiveSession())
+                store.storeSession(contact.addresses[0], genActiveSession())
+                store.storeSession(contact.addresses[0], genActiveSession())
 
-                store.containsSession(recipient.addresses[0]) shouldBe true
+                store.containsSession(contact.addresses[0]) shouldBe true
             }
 
             "retrieves device ids for all sessions with a given user" {
-                store.storeSession(recipient.addresses[0], recipient.sessions[0])
-                store.storeSession(recipient.addresses[1], recipient.sessions[1])
+                store.storeSession(contact.addresses[0], contact.sessions[0])
+                store.storeSession(contact.addresses[1], contact.sessions[1])
 
-                store.getSubDeviceSessions(recipient.phoneNumber) shouldBe listOf(0, 1)
+                store.getSubDeviceSessions(contact.phoneNumber) shouldBe listOf(0, 1)
             }
 
             "deletes sessions across all devices for a given user" {
-                store.storeSession(recipient.addresses[0], recipient.sessions[0])
-                store.storeSession(recipient.addresses[1], recipient.sessions[1])
-                store.deleteAllSessions(recipient.phoneNumber)
+                store.storeSession(contact.addresses[0], contact.sessions[0])
+                store.storeSession(contact.addresses[1], contact.sessions[1])
+                store.deleteAllSessions(contact.phoneNumber)
 
-                store.containsSession(recipient.addresses[0]) shouldBe false
-                store.containsSession(recipient.addresses[1]) shouldBe false
-                store.getSubDeviceSessions(recipient.phoneNumber) shouldBe emptyList()
+                store.containsSession(contact.addresses[0]) shouldBe false
+                store.containsSession(contact.addresses[1]) shouldBe false
+                store.getSubDeviceSessions(contact.phoneNumber) shouldBe emptyList()
             }
         }
 
@@ -319,13 +336,13 @@ class ProtocolStoreTest: FreeSpec({
                 store.removeIdentity(senderOneAddress)
                 store.removePreKey(ids[0])
                 store.removeSignedPreKey(ids[0])
-                store.deleteAllSessions(recipient.phoneNumber)
+                store.deleteAllSessions(contact.phoneNumber)
 
                 otherStore.removeOwnIdentity()
                 otherStore.removeIdentity(otherAddress)
                 otherStore.removePreKey(ids[0])
                 otherStore.removeSignedPreKey(ids[0])
-                otherStore.deleteAllSessions(recipient.phoneNumber)
+                otherStore.deleteAllSessions(contact.phoneNumber)
             }
 
             "support separate and distinct identities" {
@@ -363,11 +380,11 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "support separate and distinct sessions" {
-                store.storeSession(recipient.addresses[0], recipient.sessions[0])
-                otherStore.storeSession(recipient.addresses[1], recipient.sessions[1])
+                store.storeSession(contact.addresses[0], contact.sessions[0])
+                otherStore.storeSession(contact.addresses[1], contact.sessions[1])
 
-                store.containsSession(recipient.addresses[1]) shouldBe false
-                otherStore.containsSession(recipient.addresses[0]) shouldBe false
+                store.containsSession(contact.addresses[1]) shouldBe false
+                otherStore.containsSession(contact.addresses[0]) shouldBe false
             }
         }
     }
