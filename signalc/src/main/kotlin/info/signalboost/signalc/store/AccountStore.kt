@@ -48,7 +48,6 @@ class AccountStore(app: Application) {
             }
         }
 
-
     suspend fun save(account: RegisteredAccount): Unit =
         newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Accounts.update({
@@ -92,6 +91,23 @@ class AccountStore(app: Application) {
                 VerifiedAccount.fromDb(it)
             }
         }
+
+    internal suspend fun import(account: VerifiedAccount): Unit =
+        newSuspendedTransaction(Concurrency.Dispatcher, db){
+            // Throws if we try to create an already-existing account.
+            // For this reason, we mark it `internal` and only call from `findOrCreate`
+            // where we have a strong guarantee of not calling for an already-existing account.
+            Accounts.insert {
+                it[status] = Status.NEW.asString
+                it[username] = account.username
+                it[password] = account.password
+                it[signalingKey] = account.signalingKey
+                it[profileKeyBytes] = account.profileKeyBytes
+                it[deviceId] = account.deviceId
+                it[uuid] = account.uuid
+            }
+        }
+
 
     // testing helpers
     internal suspend fun count(): Long =

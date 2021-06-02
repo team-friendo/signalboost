@@ -1,0 +1,22 @@
+{
+  "username" : "+19549980141",
+  "password" : "FLTP5a6jDQDu4bBuA3UJbPyI",
+  "address" : {
+    "number" : "+19549980141"
+  },
+  "profileKey" : "6ztkmyTGWPy4o6n3+Ox4oYpHgar9WTEvlYuWXJrEF0Q=",
+  "axolotlStore" : {
+    "preKeys" : [ ],
+    "sessionStore" : [ ],
+    "signedPreKeyStore" : [ ],
+    "identityKeyStore" : {
+      "registrationId" : 11848,
+      "identityKey" : "CiEFlgnrgSnC9YBdp9sx80rtjpjYXTqlw1TzpXzxjSkj3V4SIPAZd/rD1Vq6Wez8KzNDufH7YistmGeHuhBVqIS+5ZxS"
+    }
+  },
+  "groupStore" : {
+    "groups" : [ ]
+  },
+  "contactStore" : { },
+  "recipientStore" : [ ]
+}
