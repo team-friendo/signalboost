@@ -285,7 +285,7 @@ class AccountManagerTest : FreeSpec({
             val unknownContactId = genPhoneNumber()
 
             coEvery {
-                app.accountStore.findOrCreate(verifiedAccount.id)
+                app.accountStore.findOrCreate(verifiedAccount.identifier)
             } returns verifiedAccount
 
             every {
@@ -293,7 +293,7 @@ class AccountManagerTest : FreeSpec({
             } returns senderCert.serialized
 
             coEvery {
-                app.profileStore.loadProfileKey(verifiedAccount.id, any())
+                app.profileStore.loadProfileKey(verifiedAccount.identifier, any())
             } coAnswers  {
                 if (secondArg<String>() == knownContactId) contactProfileKey
                 else null
@@ -302,7 +302,7 @@ class AccountManagerTest : FreeSpec({
             "when contact has a profile key stored locally" - {
                 "returns a pair of unidentified access token/cert tuples derrived from profile keys" {
                     val accessPair = app.accountManager.getUnidentifiedAccessPair(
-                        verifiedAccount.id,
+                        verifiedAccount.identifier,
                         knownContactId
                     )!!
 
@@ -322,7 +322,7 @@ class AccountManagerTest : FreeSpec({
             "when contact does not have a profile key stored locally" - {
                 "returns null" {
                     app.accountManager.getUnidentifiedAccessPair(
-                        verifiedAccount.id,
+                        verifiedAccount.identifier,
                         unknownContactId
                     ) shouldBe null
                 }

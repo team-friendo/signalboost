@@ -135,3 +135,23 @@ CREATE TABLE IF NOT EXISTS profiles (
     CONSTRAINT pk_Profiles PRIMARY KEY (account_id, contact_id)
 );
 -- rollback drop table profiles;
+
+-- changeset aguestuser:1622583774849-1 failOnError:true
+DELETE FROM identities WHERE device_id <> 1;
+ALTER TABLE identities DROP CONSTRAINT pk_identities;
+ALTER TABLE identities DROP COLUMN device_id;
+DROP INDEX identities_account_id_contact_id;
+ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id);
+-- rollback ALTER TABLE identities DROP CONSTRAINT pk_identities;
+-- rollback ALTER TABLE identities ADD COLUMN device_id INTEGER;
+-- rollback UPDATE identities set device_id = 1;
+-- rollback ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id, device_id);
+-- rollback CREATE INDEX identities_account_id_contact_id ON identities (account_id, contact_id);
+
+-- changeset aguestuser:1622683725211-1 failOnError:true
+ALTER TABLE identities
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+-- rollback ALTER TABLE identities
+-- rollback     DROP COLUMN created_at,
+-- rollback     DROP COLUMN updated_at;

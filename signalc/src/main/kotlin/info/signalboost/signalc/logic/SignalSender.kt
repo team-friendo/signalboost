@@ -150,11 +150,11 @@ class SignalSender(private val app: Application) {
         recipient: SignalcAddress,
         dataMessage: SignalServiceDataMessage,
     ): SignalcSendResult = app.coroutineScope.async(Concurrency.Dispatcher) {
-        // Try to send all messages sealed-sender by deriving `unidentifiedAccessPair`s from profile keys -- using e164 not UUUID
-        // to retrieve profile key as we did when we stored it. Since messages without such tokens are always sent unsealed and
-        // unsealed messages are rate limited by spam filters, we use a toggle to enable blocking all unsealed messages if needed.
-        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.id,recipient.id).also {
-            metrics.numberOfUnsealedMessagesProduced.labels(sender.id).inc()
+        // Try to send all messages sealed-sender by deriving `unidentifiedAccessPair`s from profile keys. Without such
+        // tokens, message are sent unsealed, and are treated by Signal as spam. To avoid being blocked by Signal,
+        // we expose a toggle to prevent all unsealed messages from being sent.
+        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.identifier,recipient.identifier).also {
+            metrics.numberOfUnsealedMessagesProduced.labels(sender.identifier).inc()
             if(it == null && app.toggles.blockUnsealedMessages) return@async SignalcSendResult.Blocked(recipient)
         }
         try {
@@ -169,7 +169,7 @@ class SignalSender(private val app: Application) {
         } finally {
             messagesInFlight.getAndDecrement()
             metrics.numberOfMessagesSent.inc()
-            unidentifiedAccessPair ?: metrics.numberOfUnsealedMessagesSent.labels(sender.id).inc()
+            unidentifiedAccessPair ?: metrics.numberOfUnsealedMessagesSent.labels(sender.identifier).inc()
         }
     }.await()
 

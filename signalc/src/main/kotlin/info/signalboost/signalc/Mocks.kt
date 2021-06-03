@@ -42,6 +42,7 @@ object Mocks {
         every { of(any()) } returns mockk {
             every { lock } returns mockk()
             every { saveIdentity(any(), any()) } returns mockk()
+            every { archiveAllSessions(any()) } returns Unit
             coEvery { getLastPreKeyId() } returns 0
             coEvery { getLastSignedPreKeyId() } returns 0
             coEvery { storePreKeys(any()) } returns Unit

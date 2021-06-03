@@ -2,11 +2,9 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
-import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalServiceAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genSignalcAddress
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
 import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
@@ -431,8 +429,8 @@ class SignalReceiverTest : FreeSpec({
                         eventually(timeout) {
                             coVerify {
                                 app.profileStore.storeProfileKey(
-                                    recipientAccount.address.id,
-                                    senderAddress.id,
+                                    recipientAccount.address.identifier,
+                                    senderAddress.identifier,
                                     fakeProfileKey,
                                 )
                             }

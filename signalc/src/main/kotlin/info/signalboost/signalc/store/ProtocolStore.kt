@@ -15,6 +15,7 @@ import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
 
@@ -51,16 +52,19 @@ class ProtocolStore(app: Application) {
          **/
 
         private val scIdentityStore = identityStore as SignalcIdentityStore
+        val countIdentitities: () -> Long = scIdentityStore::countIdentities
         val removeIdentity: (SignalProtocolAddress) -> Unit = scIdentityStore::removeIdentity
         val removeOwnIdentity: () -> Unit = scIdentityStore::removeOwnIdentity
-        val saveFingerprintForAllIdentities: (SignalServiceAddress, ByteArray) -> Unit =
-            scIdentityStore::saveFingerprintForAllIdentities
-        val trustFingerprintForAllIdentities: (ByteArray) -> Unit =
-           scIdentityStore::trustFingerprintForAllIdentities
+        val trustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::trustFingerprint
+        val untrustFingerprint: (SignalProtocolAddress, ByteArray) -> Unit = scIdentityStore::untrustFingerprint
+        val whenIdentityLastUpdated: (SignalProtocolAddress) -> Instant? = scIdentityStore::whenIdentityLastUpdated
 
         private val scPreKeyStore = preKeyStore as SignalcPreKeyStore
         val getLastPreKeyId: () -> Int = scPreKeyStore::getLastPreKeyId
         val storePreKeys: (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
+
+        private val scSessionStore = sessionStore as SignalcSessionStore
+        val archiveAllSessions: (SignalProtocolAddress) -> Unit = scSessionStore::archiveAllSessions
 
         private val scSignedPreKeyStore = signedPreKeyStore as SignalcSignedPreKeyStore
         val getLastSignedPreKeyId: () -> Int = scSignedPreKeyStore::getLastPreKeyId
