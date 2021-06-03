@@ -168,3 +168,21 @@ CREATE TABLE IF NOT EXISTS contacts (
 CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
 CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
 -- rollback DROP TABLE contacts;
+
+
+----------------------------------------------------------------------------------------------
+-- TODO --------------------------------------------------------------------------------------
+-- Figure out how to deal with fact that changes in IdentityStore and SessionStore (in this commit)
+-- require (1) changing the type of the `contact_id` field on `identities` and `sessions` tables
+-- from a string to an integer and (2) backfilling those ids with the autoincrementing integers
+-- from contact records that don't currently exist.
+--
+-- We could either:
+-- (a) backfill the contacts table using `account_id` and `contact_id` fields from the `sessions` table
+--     to populate the `account_id` and `phone_number` fields (respectively) and then write a complicated
+--     update statement to backfill the `contact_id` fields of the `sessions` and `identities` tables
+--     with the int ids of the rows from `contacts` that have the `phone_numbers` that (by writing a join
+--     on phone number values that we want to update... yikes!)
+-- (b) declare bankrupcy on all existing identity and session records and start our dev envs from scratch....
+--
+-- I'm slightly inclined toward (b) b/c (a) seems like a lot of work for not that much value.

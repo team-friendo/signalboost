@@ -293,7 +293,7 @@ class AccountManagerTest : FreeSpec({
             } returns senderCert.serialized
 
             coEvery {
-                app.profileStore.loadProfileKey(verifiedAccount.identifier, any())
+                app.contactStore.loadProfileKey(verifiedAccount.identifier, any())
             } coAnswers  {
                 if (secondArg<String>() == knownContactId) contactProfileKey
                 else null

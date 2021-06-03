@@ -8,9 +8,10 @@ object SignalcError {
     object RegistrationOfRegsisteredUser: Exception("Cannot register account that is already registered")
     object SubscriptionOfUnregisteredUser: Exception("Cannot subscribe to messages for unregistered account")
     class UpdateToNonExistentFingerprint(
-        contactId: String,
+        accountId: String,
+        contactId: Int,
         fingerprint: ByteArray,
-    ): Exception("Cannot update non-existent fingerprint ${fingerprint.toHex()} for contact $contactId")
+    ): Exception("Cannot update non-existent fingerprint ${fingerprint.toHex()} for contact $contactId of account $accountId")
     object UnsubscribeUnregisteredUser: Exception("Cannot unsubscribe to messages for unregistered account")
     object VerificationOfNewUser: Exception("Cannot verify a new (unregistered) account")
     object VerificationOfVerifiedUser: Exception("Cannot verify account that is already verified")

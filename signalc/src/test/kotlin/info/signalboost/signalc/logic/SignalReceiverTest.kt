@@ -428,7 +428,7 @@ class SignalReceiverTest : FreeSpec({
                         messageReceiver.subscribe(recipientAccount)
                         eventually(timeout) {
                             coVerify {
-                                app.profileStore.storeProfileKey(
+                                app.contactStore.storeProfileKey(
                                     recipientAccount.address.identifier,
                                     senderAddress.identifier,
                                     fakeProfileKey,

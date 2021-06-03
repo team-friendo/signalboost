@@ -34,6 +34,10 @@ data class SignalcAddress(
             }
         }
     }
+
+    val id: String
+       get() = number!!
+
     val identifier: String
         get() = uuid?.toString() ?: number!!
 

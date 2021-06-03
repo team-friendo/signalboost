@@ -153,8 +153,8 @@ class SignalSender(private val app: Application) {
         // Try to send all messages sealed-sender by deriving `unidentifiedAccessPair`s from profile keys. Without such
         // tokens, message are sent unsealed, and are treated by Signal as spam. To avoid being blocked by Signal,
         // we expose a toggle to prevent all unsealed messages from being sent.
-        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.identifier,recipient.identifier).also {
-            metrics.numberOfUnsealedMessagesProduced.labels(sender.identifier).inc()
+        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.id, recipient.identifier).also {
+            metrics.numberOfUnsealedMessagesProduced.labels(sender.id).inc()
             if(it == null && app.toggles.blockUnsealedMessages) return@async SignalcSendResult.Blocked(recipient)
         }
         try {
