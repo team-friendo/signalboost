@@ -155,3 +155,16 @@ ALTER TABLE identities
 -- rollback ALTER TABLE identities
 -- rollback     DROP COLUMN created_at,
 -- rollback     DROP COLUMN updated_at;
+
+-- changeset aguestuser:1622741296513-1 failOnError:true
+CREATE TABLE IF NOT EXISTS contacts (
+    account_id VARCHAR(255),
+    contact_id SERIAL,
+    uuid uuid NULL,
+    phone_number VARCHAR(255) NOT NULL,
+    profile_key_bytes bytea NULL,
+    CONSTRAINT pk_Contacts PRIMARY KEY (contact_id, account_id)
+);
+CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
+-- rollback DROP TABLE contacts;
