@@ -156,7 +156,7 @@ class AccountManager(private val app: Application) {
      **/
     @Throws(IOException::class) // if network call to retreive sender cert fails
     suspend fun getUnidentifiedAccessPair(accountId: String, contactId: String): UnidentifiedAccessPair? {
-        val contactAccessKey = app.profileStore.loadProfileKey(accountId, contactId)?.let {
+        val contactAccessKey = app.contactStore.loadProfileKey(accountId, contactId)?.let {
             UnidentifiedAccess.deriveAccessKeyFrom(it)
         } ?: run {
             logger.error { "Could not derive delivery token for $contactId: no profile key found." }

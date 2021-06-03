@@ -168,3 +168,50 @@ CREATE TABLE IF NOT EXISTS contacts (
 CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
 CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
 -- rollback DROP TABLE contacts;
+
+
+-- changeset aguestuser:1623100049239-1 failOnError:true
+DELETE FROM accounts;
+DELETE FROM contacts;
+DELETE FROM identities;
+DELETE FROM ownidentities;
+DELETE FROM prekeys;
+DELETE FROM profiles;
+DELETE FROM senderkeys;
+DELETE FROM sessions;
+DELETE FROM signedprekeys;
+
+ALTER TABLE identities DROP CONSTRAINT pk_identities;
+ALTER TABLE identities DROP COLUMN contact_id;
+ALTER TABLE identities ADD COLUMN contact_id INT;
+ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id);
+
+ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+ALTER TABLE sessions DROP COLUMN contact_id;
+ALTER TABLE sessions ADD COLUMN contact_id INT;
+ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact_id, device_id);
+-- rollback DELETE FROM accounts;
+-- rollback DELETE FROM contacts;
+-- rollback DELETE FROM identities;
+-- rollback DELETE FROM ownidentities;
+-- rollback DELETE FROM prekeys;
+-- rollback DELETE FROM profiles;
+-- rollback DELETE FROM senderkeys;
+-- rollback DELETE FROM sessions;
+-- rollback DELETE FROM signedprekeys;
+-- rollback
+-- rollback ALTER TABLE identities DROP CONSTRAINT pk_identities;
+-- rollback ALTER TABLE identities DROP COLUMN contact_id;
+-- rollback ALTER TABLE identities ADD COLUMN contact_id VARCHAR(255) NOT NULL;
+-- rollback ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id);
+-- rollback
+-- rollback ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+-- rollback ALTER TABLE sessions DROP COLUMN contact_id;
+-- rollback ALTER TABLE sessions ADD COLUMN contact_id VARCHAR(255) NOT NULL;
+-- rollback ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact_id, device_id);
+
+-- changeset aguestuser:1623100049239-2 failOnError:true
+DROP INDEX identities_identity_key_bytes;
+-- rollback CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes);
+
+-- TODO: uniqueness constraint on contacts account_id_uuid

@@ -14,7 +14,6 @@ import org.whispersystems.libsignal.groups.state.SenderKeyStore
 import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
-import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -24,9 +23,15 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalPathApi
 @ExperimentalTime
-class ProtocolStore(app: Application) {
+class ProtocolStore(val app: Application) {
     val db = app.db
-    fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
+    fun of(account: Account): AccountProtocolStore = AccountProtocolStore(
+        db,
+        account.username,
+        // TODO: if we need to resolve race in signal sender for first incoming message,
+        //  we might need to construct this in the constructor such that it consumes a session lock (for the account)...
+        app.contactStore::resolveContactIdBlocking
+    )
 
     fun countOwnIdentities(): Long =
         transaction(db) { OwnIdentities.selectAll().count() }
@@ -34,11 +39,13 @@ class ProtocolStore(app: Application) {
     class AccountProtocolStore(
         private val db: Database,
         private val accountId: String,
+        private val resolveContactId: (String, String) -> Int,
         val lock: SessionLock = SessionLock(),
-        private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock),
+        // if we need to do above, we ahve to construct ContactStore
+        private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock, resolveContactId),
         private val preKeyStore: PreKeyStore = SignalcPreKeyStore(db, accountId, lock),
         private val senderKeyStore: SenderKeyStore = SignalcSenderKeyStore(db, accountId, lock),
-        private val sessionStore: SignalServiceSessionStore = SignalcSessionStore(db, accountId, lock),
+        private val sessionStore: SignalServiceSessionStore = SignalcSessionStore(db, accountId, lock, resolveContactId),
         private val signedPreKeyStore: SignedPreKeyStore = SignalcSignedPreKeyStore(db, accountId, lock),
     ) : SignalServiceProtocolStore,
         IdentityKeyStore by identityStore,

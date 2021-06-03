@@ -25,6 +25,7 @@ class SignalcIdentityStore(
     val db: Database,
     val accountId: String,
     val lock: SessionLock,
+    val resolveContactId: (String, String) -> Int,
 ): IdentityKeyStore{
 
     override fun getIdentityKeyPair(): IdentityKeyPair =
@@ -57,8 +58,9 @@ class SignalcIdentityStore(
     @Throws(SignalcError.UpdateToNonExistentFingerprint::class)
     fun trustFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
         lock.acquireForTransaction(db) {
-            rejectUnknownFingerprint(address, fingerprint)
-            Identities.updateByContactId(accountId, address.name) {
+            val contactId = resolveContactId(accountId, address.name)
+            rejectUnknownFingerprint(contactId, fingerprint)
+            Identities.updateByContactId(accountId, contactId) {
                 it[isTrusted] = true
                 it[updatedAt] = Instant.now()
             }
@@ -68,22 +70,22 @@ class SignalcIdentityStore(
     @Throws(SignalcError.UpdateToNonExistentFingerprint::class)
     fun untrustFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
         lock.acquireForTransaction(db) {
-            rejectUnknownFingerprint(address, fingerprint)
-            Identities.updateByContactId(accountId, address.name) {
+            val contactId = resolveContactId(accountId, address.name)
+            rejectUnknownFingerprint(contactId, fingerprint)
+            Identities.updateByContactId(accountId, contactId) {
                 it[isTrusted] = false
                 it[updatedAt] = Instant.now()
             }
         }
     }
 
-    private fun rejectUnknownFingerprint(address: SignalProtocolAddress, fingerprint: ByteArray) {
+    private fun rejectUnknownFingerprint(contactId: Int, fingerprint: ByteArray) {
         transaction(db) {
-            val contactId = address.name
             val knownFingerprint = Identities.findByContactId(accountId, contactId)?.let {
                 it[identityKeyBytes]
             }
             if (!fingerprint.contentEquals(knownFingerprint))
-                throw SignalcError.UpdateToNonExistentFingerprint(contactId, fingerprint)
+                throw SignalcError.UpdateToNonExistentFingerprint(accountId, contactId, fingerprint)
         }
     }
 
@@ -93,7 +95,7 @@ class SignalcIdentityStore(
         // - deny trust for subsequent identity keys for same address
         // Returns true if this save was an update to an existing record, false otherwise
         lock.acquireForTransaction(db) {
-            val contactId = address.name
+            val contactId = resolveContactId(accountId, address.name)
             Identities.findByContactId(accountId, contactId)
                 ?.let { existingKey ->
                     Identities.updateByContactId(accountId, contactId) {
@@ -121,7 +123,7 @@ class SignalcIdentityStore(
     ): Boolean =
         lock.acquireForTransaction(db) {
             // trust a key if...
-            Identities.findByContactId(accountId, address.name)?.let {
+            Identities.findByContactId(accountId, resolveContactId(accountId, address.name))?.let {
                 // it matches a key we have seen before
                 it[identityKeyBytes] contentEquals identityKey.serialize() &&
                         // and we have not flagged it as untrusted
@@ -131,14 +133,14 @@ class SignalcIdentityStore(
 
     override fun getIdentity(address: SignalProtocolAddress): IdentityKey? =
         lock.acquireForTransaction(db) {
-            Identities.findByContactId(accountId, address.name)?.let {
+            Identities.findByContactId(accountId, resolveContactId(accountId, address.name))?.let {
                 IdentityKey(it[identityKeyBytes], 0)
             }
         }
 
     fun removeIdentity(address: SignalProtocolAddress) {
         lock.acquireForTransaction(db) {
-            Identities.deleteByContactId(accountId, address.name)
+            Identities.deleteByContactId(accountId, resolveContactId(accountId, address.name))
         }
     }
 
@@ -158,8 +160,7 @@ class SignalcIdentityStore(
 
     fun whenIdentityLastUpdated(address: SignalProtocolAddress): Instant? =
         transaction(db) {
-            val contactId = address.name
-            Identities.findByContactId(accountId, contactId)?.let {
+            Identities.findByContactId(accountId, resolveContactId(accountId, address.name))?.let {
                 it[updatedAt]
             }
         }

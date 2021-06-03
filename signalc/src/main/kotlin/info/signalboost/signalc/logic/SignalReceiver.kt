@@ -22,12 +22,12 @@ import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer
-import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -168,41 +168,43 @@ class SignalReceiver(private val app: Application) {
             logger.debug { "Got ${it.asString} from ${envelope.sourceIdentifier ?: "SEALED"} to ${account.username}" }
             Metrics.SignalReceiver.numberOfMessagesReceived.labels(it.asString).inc()
             return when (it) {
+                EnvelopeType.CIPHERTEXT,
+                EnvelopeType.UNIDENTIFIED_SENDER -> processMessage(envelope, account)
+
                 EnvelopeType.PREKEY_BUNDLE -> {
-                    relay(envelope, account)
-                    maybeRefreshPreKeys(account)
+                    processPreKeyBundle(envelope, account)
+                    processMessage(envelope, account)
                 }
 
-                EnvelopeType.UNIDENTIFIED_SENDER,
-                EnvelopeType.CIPHERTEXT -> relay(envelope, account)
+                EnvelopeType.RECEIPT -> processReceipt(envelope, account)
 
                 EnvelopeType.KEY_EXCHANGE, // TODO: handle this to process "reset secure session" events
-                EnvelopeType.RECEIPT, // signal android basically drops these, so do we!
                 EnvelopeType.UNKNOWN -> drop(envelope, account)
             }
-
         }
     }
 
-    private suspend fun relay(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
+    private suspend fun processMessage(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
         // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
-        val (sender, recipient) = Pair(envelope.asSignalcAddress(), account.address)
         return app.coroutineScope.launch(Concurrency.Dispatcher) {
+            var contactAddress: SignalcAddress? = null // not available until after decryption for sealed-sender msgs
             try {
                 messagesInFlight.getAndIncrement()
-                val dataMessage: SignalServiceDataMessage = cipherOf(account).decrypt(envelope).dataMessage.orNull()
+                val contents = cipherOf(account).decrypt(envelope)
+                val dataMessage = contents.dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
 
+                contactAddress = contents.sender.asSignalcAddress()
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
                 dataMessage.profileKey.orNull()?.let {
-                    app.profileStore.storeProfileKey(recipient.identifier, sender.identifier, it)
+                    app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 }
 
                 app.socketSender.send(
                     SocketResponse.Cleartext.of(
-                        sender,
-                        recipient,
+                        contactAddress,
+                        account.address,
                         body, // we allow empty message bodies b/c that's how expiry timer changes are sent
                         attachments.mapNotNull { it.retrieveFor(account) },
                         dataMessage.expiresInSeconds,
@@ -210,19 +212,43 @@ class SignalReceiver(private val app: Application) {
                     )
                 )
             } catch(err: Throwable) {
-                handleRelayError(err, sender, recipient)
+                // TODO: we don't always have a contactAddress here anymore... wat do?
+                handleRelayError(err, account.address, contactAddress)
             } finally {
                 messagesInFlight.getAndDecrement()
             }
         }
     }
 
-    private fun maybeRefreshPreKeys(account: VerifiedAccount) = app.coroutineScope.launch(Concurrency.Dispatcher) {
-        // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
-        // of which might have depleted our prekey reserves below the level we want to keep on hand
-        // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
-        app.accountManager.refreshPreKeysIfDepleted(account)
+    private suspend fun processReceipt(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
+        if(!envelope.isUnidentifiedSender) {
+            // NOTE: we should only receive N of these upon initiating a conversation with a new contact...
+            // (where N is the number of devices a recipient has)
+            // - q: should this also be able to store a phone number if we only have a UUID?
+            app.contactStore.storeUuid(
+                accountId = account.username,
+                contactPhoneNumber =  envelope.sourceE164.get(),
+                contactUuid =  UUID.fromString(envelope.sourceUuid.get()),
+            )
+        }
+        return null
     }
+
+
+    // TODO: make this function suspend and async/await!!
+    private fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
+        // here: app.coroutineScope.async(...)
+        app.coroutineScope.launch(Concurrency.Dispatcher) {
+            app.contactStore.create(
+                accountId = account.username,
+                phoneNumber = envelope.sourceE164.get(),
+                uuid = UUID.fromString(envelope.sourceUuid.get()),
+            )
+            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+            // of which might have depleted our prekey reserves below the level we want to keep on hand
+            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+            app.accountManager.refreshPreKeysIfDepleted(account)
+        }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(
@@ -231,7 +257,7 @@ class SignalReceiver(private val app: Application) {
         return null
     }
 
-    private suspend fun handleRelayError(err: Throwable, sender: SignalcAddress, recipient: SignalcAddress) {
+    private suspend fun handleRelayError(err: Throwable, account: SignalcAddress, contact: SignalcAddress?) {
         when (err) {
             is ProtocolUntrustedIdentityException -> {
                 // When we get this exception we return a null fingerprint to the client, with the intention of causing
@@ -240,14 +266,14 @@ class SignalReceiver(private val app: Application) {
                 // and can be handled (and trusted) from the send path.
                 app.socketSender.send(
                     SocketResponse.InboundIdentityFailure.of(
-                        recipient,
-                        sender,
+                        account,
+                        contact,
                         null,
                     )
                 )
             }
             else -> {
-                app.socketSender.send(SocketResponse.DecryptionError(sender, recipient, err))
+                app.socketSender.send(SocketResponse.DecryptionError(account, contact, err))
                 logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
             }
         }

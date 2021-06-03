@@ -196,6 +196,11 @@ data class VerifiedAccount(
         }
     }
 
+    // accessor that returns what signalboost (currently) uses: a phone number
+    val id: String
+      get() = username
+
+    // accessor that returns what signalservice address would return: a uuid
     val identifier: String
       get() = uuid.toString()
 

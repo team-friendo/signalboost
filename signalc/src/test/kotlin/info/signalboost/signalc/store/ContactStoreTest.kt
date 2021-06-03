@@ -1,7 +1,6 @@
 package info.signalboost.signalc.store
 
 import info.signalboost.signalc.util.KeyUtil.genRandomBytes
-import org.signal.zkgroup.profiles.ProfileKey
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
@@ -19,10 +18,10 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalCoroutinesApi
-class ProfileStoreTest: FreeSpec({
+class ContactStoreTest: FreeSpec({
     runBlockingTest {
         val testScope = this
-        val config = Config.mockAllExcept(ProfileStore::class, HikariDataSource::class)
+        val config = Config.mockAllExcept(ContactStore::class, HikariDataSource::class)
         val app = Application(config).run(testScope)
 
         val accountId = genPhoneNumber()
@@ -37,45 +36,45 @@ class ProfileStoreTest: FreeSpec({
 
         "Profile store" - {
             afterTest {
-                app.profileStore.deleteAllFor(accountId)
+                app.contactStore.deleteAllFor(accountId)
             }
 
             "#loadProfileKey" - {
                 beforeTest {
-                    app.profileStore.storeProfileKey(accountId, contactId, contactProfileKey)
+                    app.contactStore.storeProfileKey(accountId, contactId, contactProfileKey)
                 }
 
                 "returns profile key for a contact if it exists" {
-                    app.profileStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
+                    app.contactStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
                 }
 
                 "returns null if no profile key exists for contact" {
-                    app.profileStore.loadProfileKey(accountId, genPhoneNumber()) shouldBe null
+                    app.contactStore.loadProfileKey(accountId, genPhoneNumber()) shouldBe null
                 }
             }
 
             "#storeProfileKey" - {
                 "stores a new profile key for a new contact" {
-                    val startingCount = app.profileStore.count()
-                    app.profileStore.storeProfileKey(accountId, contactId, contactProfileKey)
-                    app.profileStore.count() shouldBe startingCount + 1
-                    app.profileStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
+                    val startingCount = app.contactStore.count()
+                    app.contactStore.storeProfileKey(accountId, contactId, contactProfileKey)
+                    app.contactStore.count() shouldBe startingCount + 1
+                    app.contactStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
                 }
 
                 "overwrites the old profile key for an existing contact" {
-                    val startingCount = app.profileStore.count()
-                    app.profileStore.storeProfileKey(accountId, contactId, contactProfileKey)
-                    app.profileStore.storeProfileKey(accountId, contactId, contactUpdatedProfileKey)
-                    app.profileStore.count() shouldBe startingCount + 1
-                    app.profileStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactUpdatedProfileKey
+                    val startingCount = app.contactStore.count()
+                    app.contactStore.storeProfileKey(accountId, contactId, contactProfileKey)
+                    app.contactStore.storeProfileKey(accountId, contactId, contactUpdatedProfileKey)
+                    app.contactStore.count() shouldBe startingCount + 1
+                    app.contactStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactUpdatedProfileKey
                 }
 
                 "safely stores the same profile key twice" {
-                    val startingCount = app.profileStore.count()
-                    app.profileStore.storeProfileKey(accountId, contactId, contactProfileKey)
-                    app.profileStore.storeProfileKey(accountId, contactId, contactProfileKey)
-                    app.profileStore.count() shouldBe startingCount + 1
-                    app.profileStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
+                    val startingCount = app.contactStore.count()
+                    app.contactStore.storeProfileKey(accountId, contactId, contactProfileKey)
+                    app.contactStore.storeProfileKey(accountId, contactId, contactProfileKey)
+                    app.contactStore.count() shouldBe startingCount + 1
+                    app.contactStore.loadProfileKey(accountId, contactId)?.serialize() shouldBe contactProfileKey
                 }
             }
         }

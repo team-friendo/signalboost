@@ -7,7 +7,7 @@ import info.signalboost.signalc.logging.LibSignalLogger
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.store.AccountStore
-import info.signalboost.signalc.store.ProfileStore
+import info.signalboost.signalc.store.ContactStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -152,7 +152,7 @@ class Application(val config: Config.App){
     // STORE //
 
     lateinit var accountStore: AccountStore
-    lateinit var profileStore: ProfileStore
+    lateinit var contactStore: ContactStore
     lateinit var protocolStore: ProtocolStore
 
     private lateinit var dataSource: HikariDataSource
@@ -240,7 +240,7 @@ class Application(val config: Config.App){
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
         accountStore = initializeColdComponent(AccountStore::class)
-        profileStore = initializeColdComponent(ProfileStore::class, Mocks.profileStore)
+        contactStore = initializeColdComponent(ContactStore::class, Mocks.contactStore)
         protocolStore = initializeColdComponent(ProtocolStore::class, Mocks.protocolStore)
 
         // network resources

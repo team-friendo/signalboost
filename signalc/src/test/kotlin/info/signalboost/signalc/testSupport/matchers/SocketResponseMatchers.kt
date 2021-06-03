@@ -52,7 +52,7 @@ object SocketResponseMatchers {
         fingerprint: String?
     ): SocketResponse.InboundIdentityFailure = match {
         it.data.local_address.number == recipient.number &&
-                it.data.remote_address.number == sender.number &&
+                it.data.remote_address?.number == sender.number &&
                 it.data.fingerprint == fingerprint
     }
 

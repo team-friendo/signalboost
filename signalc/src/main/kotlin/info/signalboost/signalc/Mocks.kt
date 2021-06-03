@@ -5,7 +5,7 @@ import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.SignalcSendResult
-import info.signalboost.signalc.store.ProfileStore
+import info.signalboost.signalc.store.ContactStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
@@ -34,7 +34,7 @@ object Mocks {
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
     }
-    val profileStore: ProfileStore.() -> Unit = {
+    val contactStore: ContactStore.() -> Unit = {
         coEvery { storeProfileKey(any(), any(), any())} returns Unit
         coEvery { loadProfileKey(any(), any())} returns mockk()
     }

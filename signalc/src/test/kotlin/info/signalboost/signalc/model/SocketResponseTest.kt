@@ -181,8 +181,8 @@ class SocketResponseTest : FreeSpec({
                 |{
                    |"type":"decryption_error",
                    |"sender":{
-                      |"number":"${response.sender.number}",
-                      |"uuid":"${response.sender.uuid}"
+                      |"number":"${response.sender?.number}",
+                      |"uuid":"${response.sender?.uuid}"
                    |},
                    |"recipient":{
                       |"number":"${response.recipient.number}",
@@ -219,7 +219,7 @@ class SocketResponseTest : FreeSpec({
                       |"number":"${response.data.local_address.number}"
                     |},
                     |"remote_address":{
-                      |"number":"${response.data.remote_address.number}"
+                      |"number":"${response.data.remote_address?.number}"
                     |},
                     |"fingerprint":"${response.data.fingerprint}"
                   |}
