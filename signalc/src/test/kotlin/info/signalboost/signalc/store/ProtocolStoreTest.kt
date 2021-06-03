@@ -12,6 +12,7 @@ import info.signalboost.signalc.testSupport.dataGenerators.SessionGen.genActiveS
 import info.signalboost.signalc.util.KeyUtil
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -134,6 +135,14 @@ class ProtocolStoreTest: FreeSpec({
                 store.getIdentity(contactAddress)!!.fingerprint shouldBe rotatedIdentityKey.fingerprint
 
                 store.isTrustedIdentity(contactAddress, identityKey, Direction.RECEIVING) shouldBe false
+            }
+
+            "increments the updatedAt field when saving a new identity key" {
+                store.saveIdentity(contactAddress, identityKey)
+                val whenFirstUpdated = store.whenIdentityLastUpdated(contactAddress)!!
+
+                store.saveIdentity(contactAddress, rotatedIdentityKey)
+                store.whenIdentityLastUpdated(contactAddress)!! shouldBeGreaterThan whenFirstUpdated
             }
 
             "udpates a known, untrusted identity key to become trusted" {

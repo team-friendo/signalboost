@@ -6,19 +6,18 @@ import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Identities
 import info.signalboost.signalc.db.Identities.identityKeyBytes
 import info.signalboost.signalc.db.Identities.isTrusted
+import info.signalboost.signalc.db.Identities.updatedAt
 import info.signalboost.signalc.db.OwnIdentities
 import info.signalboost.signalc.db.PreKeys
 import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.util.KeyUtil
-import liquibase.pro.packaged.db
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SignalProtocolAddress
 import org.whispersystems.libsignal.state.IdentityKeyStore
-import org.whispersystems.signalservice.api.push.SignalServiceAddress
-import sun.misc.Signal
+import java.time.Instant
 import kotlin.jvm.Throws
 
 
@@ -61,6 +60,7 @@ class SignalcIdentityStore(
             rejectUnknownFingerprint(address, fingerprint)
             Identities.updateByContactId(accountId, address.name) {
                 it[isTrusted] = true
+                it[updatedAt] = Instant.now()
             }
         }
     }
@@ -71,6 +71,7 @@ class SignalcIdentityStore(
             rejectUnknownFingerprint(address, fingerprint)
             Identities.updateByContactId(accountId, address.name) {
                 it[isTrusted] = false
+                it[updatedAt] = Instant.now()
             }
         }
     }
@@ -100,6 +101,7 @@ class SignalcIdentityStore(
                         it[identityKeyBytes] = identityKey.serialize()
                         // only trust it if it matches the existing key
                         it[isTrusted] = existingKey[identityKeyBytes] contentEquals identityKey.serialize()
+                        it[updatedAt] = Instant.now()
                     }
                     true
                 } ?: run {
@@ -153,4 +155,12 @@ class SignalcIdentityStore(
             Identities.selectAll().count()
         }
 
+
+    fun whenIdentityLastUpdated(address: SignalProtocolAddress): Instant? =
+        transaction(db) {
+            val contactId = address.name
+            Identities.findByContactId(accountId, contactId)?.let {
+                it[updatedAt]
+            }
+        }
 }

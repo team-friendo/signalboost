@@ -70,7 +70,7 @@ tasks.withType<Wrapper> {
 object Versions {
     const val bouncyCastle = "1.66"
     const val coroutines = "1.5.0"
-    const val exposed = "0.25.1"
+    const val exposed = "0.31.1"
     const val googleProtobuf = "3.10.0"
     const val kaml = "0.26.0"
     const val kotest = "4.6.0"
@@ -106,6 +106,7 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncyCastle}")
     implementation("org.jetbrains.exposed:exposed-core:${Versions.exposed}")
     implementation("org.jetbrains.exposed:exposed-jdbc:${Versions.exposed}")
+    implementation("org.jetbrains.exposed:exposed-java-time:${Versions.exposed}")
     implementation("com.h2database:h2:${Versions.h2}")
     implementation("org.slf4j:slf4j-nop:${Versions.slf4j}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${Versions.kotlinSerialization}")

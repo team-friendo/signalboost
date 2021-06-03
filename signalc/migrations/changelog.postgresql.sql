@@ -147,3 +147,11 @@ ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, con
 -- rollback UPDATE identities set device_id = 1;
 -- rollback ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id, device_id);
 -- rollback CREATE INDEX identities_account_id_contact_id ON identities (account_id, contact_id);
+
+-- changeset aguestuser:1622683725211-1 failOnError:true
+ALTER TABLE identities
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+-- rollback ALTER TABLE identities
+-- rollback     DROP COLUMN created_at,
+-- rollback     DROP COLUMN updated_at;
