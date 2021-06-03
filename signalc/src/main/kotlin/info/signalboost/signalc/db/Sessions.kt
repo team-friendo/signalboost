@@ -4,7 +4,7 @@ import org.jetbrains.exposed.sql.Table
 
 
 
-object Sessions: Table(), DeviceRecord  {
+object Sessions: Table(), ContactRecord, DeviceRecord  {
     private const val SESSION_BYTE_ARRAY_LENGTH = 32
 
     override val accountId = varchar("account_id", 255)

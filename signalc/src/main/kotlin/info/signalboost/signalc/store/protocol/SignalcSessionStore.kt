@@ -1,9 +1,12 @@
 package info.signalboost.signalc.store.protocol
 
 import info.signalboost.signalc.db.*
+import info.signalboost.signalc.db.ContactRecord.Companion.findByContactId
+import info.signalboost.signalc.db.ContactRecord.Companion.findManyByContactId
 import info.signalboost.signalc.db.DeviceRecord.Companion.deleteByAddress
 import info.signalboost.signalc.db.DeviceRecord.Companion.findByAddress
 import info.signalboost.signalc.db.DeviceRecord.Companion.updateByAddress
+import info.signalboost.signalc.db.Sessions.deviceId
 import info.signalboost.signalc.db.Sessions.sessionBytes
 import org.jetbrains.exposed.sql.*
 import org.whispersystems.libsignal.SignalProtocolAddress
@@ -84,4 +87,17 @@ class SignalcSessionStore(
             }
         }
     }
+
+    fun archiveAllSessions(address: SignalProtocolAddress) {
+        lock.acquireForTransaction(db) {
+            val contactId = address.name
+            Sessions.findManyByContactId(accountId, contactId).forEach {
+                val session = SessionRecord(it[sessionBytes])
+                session.archiveCurrentState()
+                storeSession(address, session)
+            }
+        }
+    }
+
+
 }

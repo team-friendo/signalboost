@@ -356,6 +356,7 @@ class SocketReceiverTest : FreeSpec({
 
                         val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
                             every { saveIdentity(any(), any()) } returns true
+                            every { archiveAllSessions(any()) } returns Unit
                         }
 
                         every {
@@ -379,10 +380,21 @@ class SocketReceiverTest : FreeSpec({
                         "saves the new identity key" {
                             client.send(sendRequestJson)
                             eventually(timeout) {
-                                coVerify {
+                                verify {
                                     mockProtocolStore.saveIdentity(
                                         recipientAccount.address.asSignalProtocolAddress(),
                                         newIdentityKey,
+                                    )
+                                }
+                            }
+                        }
+
+                        "archives all sessions for the contact with the new identity" {
+                            client.send(sendRequestJson)
+                            eventually(timeout) {
+                                verify {
+                                    mockProtocolStore.archiveAllSessions(
+                                        recipientAccount.address.asSignalProtocolAddress()
                                     )
                                 }
                             }

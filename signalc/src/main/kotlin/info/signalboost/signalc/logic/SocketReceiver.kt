@@ -149,12 +149,14 @@ class SocketReceiver(private val app: Application) {
             is SignalcSendResult.IdentityFailure -> app.protocolStore.of(senderAccount).saveIdentity(
                 recipientAddress.asSignalProtocolAddress(),
                 sendResult.identityKey,
-            ).also { didUpdateExisting ->
-                if(!didUpdateExisting) logger.warn {
-                    // TODO(aguestuser|2021-06-02): maybe error here?
-                    val (fingerprint, id) = Pair(sendResult.identityKey.fingerprint, recipientAddress.identifier)
-                    "Expected to update identity key for contact $id, but instead created identity key $fingerprint."
-                }
+            ).also { didUpdate ->
+                if (didUpdate)
+                    app.protocolStore.of(senderAccount).archiveAllSessions(recipientAddress.asSignalProtocolAddress())
+                else
+                    logger.warn { // TODO(aguestuser|2021-06-02): maybe error here?
+                        "Expected to update identity key for contact ${recipientAddress.identifier}," +
+                                " but instead created identity key ${sendResult.identityKey.fingerprint}."
+                    }
             }
             is SignalcSendResult.Success -> {
                 Metrics.LibSignal.timeSpentSendingMessage.observe(sendResult.duration.toDouble())

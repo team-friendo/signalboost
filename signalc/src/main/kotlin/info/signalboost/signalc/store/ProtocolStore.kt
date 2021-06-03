@@ -63,6 +63,9 @@ class ProtocolStore(app: Application) {
         val getLastPreKeyId: () -> Int = scPreKeyStore::getLastPreKeyId
         val storePreKeys: (List<PreKeyRecord>) -> Unit = scPreKeyStore::storePreKeys
 
+        private val scSessionStore = sessionStore as SignalcSessionStore
+        val archiveAllSessions: (SignalProtocolAddress) -> Unit = scSessionStore::archiveAllSessions
+
         private val scSignedPreKeyStore = signedPreKeyStore as SignalcSignedPreKeyStore
         val getLastSignedPreKeyId: () -> Int = scSignedPreKeyStore::getLastPreKeyId
     }

@@ -21,6 +21,13 @@ interface ContactRecord: FieldSet {
             }.singleOrNull()
         }
 
+        fun ContactRecord.findManyByContactId(accountId: String, contactId: String): List<ResultRow> {
+            val table = this
+            return table.select {
+                (table.accountId eq accountId).and(table.contactId eq contactId)
+            }.toList()
+        }
+
         fun ContactRecord.updateByContactId(
             accountId: String,
             contactId: String,
