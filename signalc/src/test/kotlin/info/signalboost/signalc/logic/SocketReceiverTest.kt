@@ -173,12 +173,6 @@ class SocketReceiverTest : FreeSpec({
             "DELETE_ACCOUNT request" - {
                 val request = genDeleteAccountRequest(username = senderPhoneNumber)
                 coEvery { app.accountManager.load(senderPhoneNumber) } returns verifiedSenderAccount
-                val mockProtocolStore = mockk<ProtocolStore.AccountProtocolStore> {
-                    every { deleteAllRecordsOfAccount() } returns mockk()
-                }
-                every {
-                    app.protocolStore.of(verifiedSenderAccount)
-                } returns mockProtocolStore
 
                 "all tasks succeed" - {
                     "loads an account" {
@@ -191,23 +185,12 @@ class SocketReceiverTest : FreeSpec({
                         }
                     }
 
-                    "deletes account from signal server" {
-                        client.send(request.toJson())
-
-                        eventually(timeout) {
-                            coVerify {
-                                app.accountManager.deleteAccountFromSignal(verifiedSenderAccount)
-                            }
-                        }
-                    }
-
                     "deletes all account + protocol store data for account" {
                         client.send(request.toJson())
 
                         eventually(timeout) {
                             coVerify {
-                                app.accountStore.delete(senderPhoneNumber)
-                                mockProtocolStore.deleteAllRecordsOfAccount()
+                                app.accountManager.deleteAccountFromDatabase(verifiedSenderAccount)
                             }
                         }
                     }
@@ -218,6 +201,16 @@ class SocketReceiverTest : FreeSpec({
                         eventually(timeout) {
                             coVerify {
                                 app.databaseUtil.vacuumDatabase()
+                            }
+                        }
+                    }
+
+                    "deletes account from signal server" {
+                        client.send(request.toJson())
+
+                        eventually(timeout) {
+                            coVerify {
+                                app.accountManager.deleteAccountFromSignal(verifiedSenderAccount)
                             }
                         }
                     }
@@ -236,7 +229,7 @@ class SocketReceiverTest : FreeSpec({
                 "a deletion task fails" - {
                     "sends delete account failure reponse to socket" {
                         val error = Exception("oh noes!")
-                        every { mockProtocolStore.deleteAllRecordsOfAccount() } throws error
+                        coEvery { app.accountManager.deleteAccountFromDatabase(verifiedSenderAccount) } throws error
                         client.send(request.toJson())
 
                         eventually(timeout) {

@@ -26,6 +26,7 @@ import kotlin.time.ExperimentalTime
 object Mocks {
     val accountManager: AccountManager.() -> Unit = {
         coEvery { deleteAccountFromSignal(any()) } returns mockk()
+        coEvery { deleteAccountFromDatabase(any()) } returns mockk()
         coEvery { load(any()) } returns mockk()
         coEvery { register(any(), any()) } returns mockk()
         coEvery { verify(any(), any()) } returns mockk()
