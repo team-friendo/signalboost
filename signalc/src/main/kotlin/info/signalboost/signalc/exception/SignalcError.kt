@@ -4,6 +4,7 @@ import info.signalboost.signalc.serialization.ByteArrayEncoding.toHex
 
 object SignalcError {
     class MessagePipeNotCreated(val error: Throwable): Exception(error.message, error)
+    class AccountNotFound(username: String): Exception("Account not found for $username")
     object AuthorizationFailed: Exception("Authorization with Signal Service failed.")
     object RegistrationOfRegsisteredUser: Exception("Cannot register account that is already registered")
     object SubscriptionOfUnregisteredUser: Exception("Cannot subscribe to messages for unregistered account")

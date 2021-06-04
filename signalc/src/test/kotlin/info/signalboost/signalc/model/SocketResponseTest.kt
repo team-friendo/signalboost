@@ -7,6 +7,8 @@ import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genS
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genAbortWarning
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genCleartext
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDecryptionError
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDeleteAccountFailure
+import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genDeleteAccountSuccess
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genIsAliveResponse
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genInboundIdentityFailure
 import info.signalboost.signalc.testSupport.dataGenerators.SocketResponseGen.genRegistrationError
@@ -169,6 +171,36 @@ class SocketResponseTest : FreeSpec({
                       |]
                     |}
                   |}
+                |}""".flatten()
+            }
+        }
+
+        "of DeleteAccountFailure" - {
+            val response = genDeleteAccountFailure()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                   |"type":"delete_account_failed",
+                   |"id":"${response.id}",
+                   |"data":{"username":"${response.data.username}"},
+                   |"error":{
+                      |"cause":"${response.error.javaClass.name}",
+                      |"message":"${response.error.message}"
+                   |}
+                |}""".flatten()
+            }
+        }
+
+        "of DeleteAccountSuccess" - {
+            val response = genDeleteAccountSuccess()
+
+            "encodes to JSON" {
+                response.toJson() shouldBe """
+                |{
+                   |"type":"delete_account_succeeded",
+                   |"id":"${response.id}",
+                   |"data":{"username":"${response.data.username}"}
                 |}""".flatten()
             }
         }

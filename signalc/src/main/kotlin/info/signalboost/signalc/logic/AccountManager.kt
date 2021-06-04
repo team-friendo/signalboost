@@ -9,9 +9,12 @@ import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.KeyUtil
-import kotlinx.coroutines.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import mu.KLoggable
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.account.AccountAttributes
@@ -21,9 +24,8 @@ import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedE
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.io.IOException
-import java.util.UUID
+import java.util.*
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.jvm.Throws
 import kotlin.time.ExperimentalTime
 
 
@@ -62,6 +64,8 @@ class AccountManager(private val app: Application) {
     private suspend fun accountManagerOf(accountId: String): SignalServiceAccountManager =
         accountManagerOf(load(accountId))
 
+    suspend fun find(accountId: String): Account? = accountStore.findByUsername(accountId)
+
     suspend fun load(accountId: String): Account = accountStore.findOrCreate(accountId)
 
     suspend fun loadVerified (accountId: String): VerifiedAccount? =
@@ -71,13 +75,19 @@ class AccountManager(private val app: Application) {
         }
 
     suspend fun deleteAccountFromSignal(account: Account) {
-        return app.coroutineScope.async(Concurrency.Dispatcher) {
-            accountManagerOf(account).deleteAccount()
-        }.await()
+        try {
+            withContext(Concurrency.Dispatcher) {
+                accountManagerOf(account).deleteAccount()
+            }
+        } catch (e: IOException) {
+            logger.warn {
+                "Account deletion from Signal server failed for ${account.username}:\n ${e.stackTraceToString()}"
+            }
+        }
     }
 
     suspend fun deleteAccountFromDatabase(account: Account) {
-        transaction(app.db) {
+        newSuspendedTransaction(Concurrency.Dispatcher, app.db) {
             app.protocolStore.of(account).deleteAllRecordsOfAccount()
             app.accountStore.delete(account.username)
         }

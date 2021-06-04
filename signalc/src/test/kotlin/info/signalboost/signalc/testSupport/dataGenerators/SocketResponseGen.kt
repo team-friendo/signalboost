@@ -92,6 +92,19 @@ object SocketResponseGen {
         genCleartextAttachment()
     }
 
+    fun genDeleteAccountFailure(
+        id: String = genUuidStr(),
+        data : SocketResponse.UserData = genUserData(),
+        error: Throwable = genError()
+    ) = SocketResponse.DeleteAccountFailure(id, data, error)
+
+    fun genDeleteAccountSuccess(
+        id: String = genUuidStr(),
+        data : SocketResponse.UserData = genUserData(),
+    ) = SocketResponse.DeleteAccountSuccess(id, data)
+
+    private fun genError(error: Throwable = Error(genPhrase())) = error
+
     fun genIsAliveResponse(
         id: String = genUuidStr()
     ) = SocketResponse.IsAlive(id)

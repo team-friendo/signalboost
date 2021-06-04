@@ -2,8 +2,8 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.exception.SignalcCancellation
-import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.exception.SignalcError
 import info.signalboost.signalc.metrics.Metrics
 import info.signalboost.signalc.model.*
 import info.signalboost.signalc.util.SocketHashCode
@@ -117,7 +117,7 @@ class SocketReceiver(private val app: Application) {
         val (id, username) = request
         try {
             logger.info { "Starting account deletion for $username..." }
-            val account = app.accountManager.load(username)
+            val account = app.accountManager.find(username) ?: throw SignalcError.AccountNotFound(username)
 
             // database deletions
             app.accountManager.deleteAccountFromDatabase(account)
@@ -127,7 +127,7 @@ class SocketReceiver(private val app: Application) {
             app.accountManager.deleteAccountFromSignal(account)
 
             app.socketSender.send(SocketResponse.DeleteAccountSuccess.of(request))
-            logger.info { "... account deleted for $username!" }
+            logger.info { "... finished account deletion for $username!" }
         } catch (e: Throwable) {
             logger.error { "Failed to delete all records of account for $username:\n ${e.stackTraceToString()}" }
             app.socketSender.send(SocketResponse.DeleteAccountFailure.of(request, e))

@@ -1,6 +1,7 @@
 package info.signalboost.signalc.model
 
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuidStr
+import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genDeleteAccountRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genRegisterRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSendRequest
 import info.signalboost.signalc.testSupport.dataGenerators.SocketRequestGen.genSetExpiration
@@ -41,6 +42,15 @@ class SocketRequestTest : FreeSpec({
                 SocketRequest.fromJson(
                     """{"type":"abort","id":"$requestId"}"""
                 ) shouldBe SocketRequest.Abort(requestId)
+            }
+        }
+
+        "DELETE_ACCOUNT request" - {
+            val request = genDeleteAccountRequest()
+            "decodes from JSON" {
+                SocketRequest.fromJson(
+                    """{"type":"delete_account","id":"${request.id}","username":"${request.username}"}"""
+                ) shouldBe SocketRequest.DeleteAccount(request.id, request.username)
             }
         }
 
