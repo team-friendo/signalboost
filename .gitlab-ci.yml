@@ -48,13 +48,17 @@
     POSTGRES_PASSWORD: ""
     POSTGRES_HOST_AUTH_METHOD: trust
 
+.docker-job:
+  image:
+    name: docker:20
+
 ##########
 # STAGES #
 ##########
 
 stages:
+  - deploy
   - test
-  # - deploy (coming soon!)
 
 ########
 # JOBS #
@@ -87,7 +91,6 @@ sb:integration:
     - npx sequelize db:migrate --env test
     - find test/integration -name '*.spec.js' | shuf | xargs npx mocha -R spec -r babel-register --reporter dot --exit
 
-
 sc:test:
   stage: test
   extends:
@@ -97,3 +100,10 @@ sc:test:
     - cd signalc
     - gradle update
     - gradle test
+
+sc:build:
+  stage: deploy
+  extends:
+    - .docker-job
+  script:
+    - docker ps
