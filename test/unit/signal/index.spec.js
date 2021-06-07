@@ -542,6 +542,13 @@ describe('signal module', () => {
         ])
       })
 
+      it('parses a signal verification code without a dassh from an sms message', () => {
+        expect(parseVerificationCode('Your Signal verification code: 123456')).to.eql([
+          true,
+          '123456',
+        ])
+      })
+
       it('returns an error from an sms message that is not a verification code', () => {
         expect(parseVerificationCode('JOIN')).to.eql([false, 'JOIN'])
       })
