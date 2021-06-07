@@ -69,7 +69,7 @@ sc:build-image:
   extends:
     - .docker-job
   script:
-    - docker ps
+    - ./bin/sc/build
 
 sb:lint:
   stage: test
