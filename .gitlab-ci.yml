@@ -52,9 +52,13 @@
   image:
     name: docker:20
   services:
-    - docker:dind
+    - name: docker:18.09.7-dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
   variables:
+    DOCKER_HOST: tcp://localhost:2375
     DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
   extends: .mr-only
 
 ##########
