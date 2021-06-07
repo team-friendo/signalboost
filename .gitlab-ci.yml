@@ -49,13 +49,12 @@
     POSTGRES_HOST_AUTH_METHOD: trust
 
 .docker-job:
-  image:
-    name: docker:20
   services:
     - name: docker:18.09.7-dind
       entrypoint: ["env", "-u", "DOCKER_HOST"]
       command: ["dockerd-entrypoint.sh"]
   variables:
+    DOCKER_HOST: tcp://docker:2375
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
   extends: .mr-only
