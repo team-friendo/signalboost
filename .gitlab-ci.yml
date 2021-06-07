@@ -51,6 +51,7 @@
 .docker-job:
   image:
     name: docker:20
+  extends: .mr-only
 
 ##########
 # STAGES #
