@@ -63,6 +63,12 @@ stages:
 ########
 # JOBS #
 ########
+sc:build-image:
+  stage: deploy
+  extends:
+    - .docker-job
+  script:
+    - docker ps
 
 sb:lint:
   stage: test
@@ -100,10 +106,3 @@ sc:test:
     - cd signalc
     - gradle update
     - gradle test
-
-sc:build:
-  stage: deploy
-  extends:
-    - .docker-job
-  script:
-    - docker ps
