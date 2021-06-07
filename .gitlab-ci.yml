@@ -51,6 +51,10 @@
 .docker-job:
   image:
     name: docker:20
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
   extends: .mr-only
 
 ##########
