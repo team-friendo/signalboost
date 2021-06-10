@@ -7,6 +7,15 @@ export default () => (
     <h2 id="getting-started" className="anchor">
       Getting Started
     </h2>
+    <blockquote className="command blockquote-skinny">
+      <p>
+        Signalboost is currently at capacity and existing channels may be
+        experiencing intermittent downtime as a result. New channel requests
+        will be added to our waitlist while we're working to make our service
+        more reliable. Thanks for your patience while we tackle these thorny
+        technical issues!
+      </p>
+    </blockquote>
     <h3 className="getting-started-header">
       1.{' '}
       <a className="download-signal-link" href="https://signal.org/download/">
