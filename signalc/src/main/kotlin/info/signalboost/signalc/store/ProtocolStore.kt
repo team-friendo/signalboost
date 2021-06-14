@@ -28,9 +28,7 @@ class ProtocolStore(val app: Application) {
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(
         db,
         account.username,
-        // TODO: if we need to resolve race in signal sender for first incoming message,
-        //  we might need to construct this in the constructor such that it consumes a session lock (for the account)...
-        app.contactStore::resolveContactIdBlocking
+        app.contactStore::resolveOrCreateContactIdBlocking
     )
 
     fun countOwnIdentities(): Long =

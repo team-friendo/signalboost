@@ -6,7 +6,7 @@ object Contacts: Table(), ContactRecord {
     override val accountId = varchar("account_id", 255)
     override val contactId = integer("contact_id").autoIncrement()
     val uuid = uuid("uuid").nullable()
-    val phoneNumber = varchar("phone_number", 255)
+    val phoneNumber = varchar("phone_number", 255).nullable()
     val profileKeyBytes = binary("profile_key_bytes").nullable()
 
     override val primaryKey = PrimaryKey(accountId, contactId)

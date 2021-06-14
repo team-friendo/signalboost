@@ -214,4 +214,9 @@ ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact
 DROP INDEX identities_identity_key_bytes;
 -- rollback CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes);
 
+
+-- changeset fdbk:1623280052786-1 failOnError:true
+ALTER TABLE contacts ALTER COLUMN phone_number DROP NOT NULL;
+-- rollback ALTER TABLE contacts ALTER COLUMN phone_number SET NOT NULL;
+
 -- TODO: uniqueness constraint on contacts account_id_uuid

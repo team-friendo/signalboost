@@ -194,10 +194,23 @@ class SignalReceiver(private val app: Application) {
                 val dataMessage = contents.dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
 
+                if (dataMessage.profileKey.isPresent) {
+                    logger.info { "Profile key: ${dataMessage.profileKey.get()}" }
+                } else {
+                    logger.info { "Profile key: NOT PRESENT" }
+                }
+
+                if (dataMessage.isProfileKeyUpdate) {
+                    logger.info { "Profile key update!!!" }
+                }
+
                 contactAddress = contents.sender.asSignalcAddress()
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
+
+                // TODO: check to see if we already have a profile key for sender, if no then write, if yes then only write if profile key update
                 dataMessage.profileKey.orNull()?.let {
+                    logger.info { "About to store profile key: ${dataMessage.profileKey}" }
                     app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 }
 
@@ -225,7 +238,7 @@ class SignalReceiver(private val app: Application) {
             // NOTE: we should only receive N of these upon initiating a conversation with a new contact...
             // (where N is the number of devices a recipient has)
             // - q: should this also be able to store a phone number if we only have a UUID?
-            app.contactStore.storeUuid(
+            app.contactStore.storeUuidOrPhoneNumber(
                 accountId = account.username,
                 contactPhoneNumber =  envelope.sourceE164.get(),
                 contactUuid =  UUID.fromString(envelope.sourceUuid.get()),
@@ -234,21 +247,22 @@ class SignalReceiver(private val app: Application) {
         return null
     }
 
-
-    // TODO: make this function suspend and async/await!!
-    private fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
-        // here: app.coroutineScope.async(...)
-        app.coroutineScope.launch(Concurrency.Dispatcher) {
-            app.contactStore.create(
-                accountId = account.username,
-                phoneNumber = envelope.sourceE164.get(),
-                uuid = UUID.fromString(envelope.sourceUuid.get()),
-            )
+    private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
+        app.coroutineScope.async(Concurrency.Dispatcher) {
+            logger.info { "phoneNumber = ${envelope.sourceE164.get()}, uuid = ${envelope.sourceUuid.get()}" }
+            app.contactStore.resolveContactIdSuspend(account.username, envelope.sourceIdentifier) ?: run {
+                app.contactStore.create(
+                    accountId = account.username,
+                    phoneNumber = envelope.sourceE164.get(),
+                    uuid = UUID.fromString(envelope.sourceUuid.get()),
+                )
+                app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+            }
             // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
             // of which might have depleted our prekey reserves below the level we want to keep on hand
             // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
             app.accountManager.refreshPreKeysIfDepleted(account)
-        }
+        }.await()
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(

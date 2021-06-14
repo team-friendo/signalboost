@@ -159,7 +159,7 @@ class AccountManager(private val app: Application) {
         val contactAccessKey = app.contactStore.loadProfileKey(accountId, contactId)?.let {
             UnidentifiedAccess.deriveAccessKeyFrom(it)
         } ?: run {
-            logger.error { "Could not derive delivery token for $contactId: no profile key found." }
+            logger.warn { "Could not derive delivery token for $contactId: no profile key found." }
             return null
         }
 

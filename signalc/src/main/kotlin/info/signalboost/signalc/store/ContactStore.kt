@@ -50,38 +50,46 @@ class ContactStore(
             }
         }.resultedValues!!.single()[Contacts.contactId]
 
-    suspend fun resolveContactIdSuspend(accountId: String, identifier: String): Int =
+    private suspend fun resolveOrCreateContactIdSuspend(accountId: String, identifier: String): Int =
+        newSuspendedTransaction (dispatcher, db) {
+            resolveOrCreateContactId(accountId, identifier)
+        }
+
+    fun resolveOrCreateContactIdBlocking(accountId: String, identifier: String): Int =
+        transaction(db) {
+            resolveOrCreateContactId(accountId, identifier)
+        }
+
+    private fun resolveOrCreateContactId(accountId: String, identifier: String): Int {
+        val uuid = parseUuid(identifier)
+        return resolveContactId(accountId, identifier) ?: runBlocking {
+            if(uuid == null) {
+                create(accountId, identifier, null)
+            } else {
+                create(accountId, null, uuid)
+            }
+        }
+    }
+
+    suspend fun resolveContactIdSuspend(accountId: String, identifier: String): Int? =
         newSuspendedTransaction (dispatcher, db) {
             resolveContactId(accountId, identifier)
         }
 
-    fun resolveContactIdBlocking(accountId: String, identifier: String): Int =
-        transaction(db) {
-            resolveContactId(accountId, identifier)
-        }
-
-    private fun resolveContactId(accountId: String, identifier: String): Int {
+    // resolve contact id when one identifier available
+    private fun resolveContactId(accountId: String, identifier: String): Int? {
         val uuid = parseUuid(identifier)
         return run {
             uuid
                 ?.let {
-                    logger.debug { "Found uuid: $uuid" }
+                    // logger.debug { "Found uuid: $uuid" }
                     Contacts.select { (Contacts.accountId eq accountId).and(Contacts.uuid eq it) }
                 }
                 ?: Contacts.select {
-                    logger.debug { "Found phone number: $identifier" }
+                    // logger.debug { "Found phone number: $identifier" }
                     (Contacts.accountId eq accountId).and(Contacts.phoneNumber eq identifier)
                 }
-        }.single().let { it[Contacts.contactId] }
-//            }.singleOrNull()
-//            ?.let {
-//                it[Contacts.contactId]
-//            }
-//            ?: runBlocking {
-//                logger.debug { "Creating new contact w/ identifier: $uuid" }
-//                val phoneNumber: String? = if(uuid == null) identifier else null
-//                create(accountId, phoneNumber, uuid)
-//            }
+        }.singleOrNull()?.let { it[Contacts.contactId] }
     }
 
     private fun parseUuid(identifier: String): UUID? =
@@ -91,13 +99,17 @@ class ContactStore(
             null
         }
 
-    suspend fun storeUuid(accountId: String, contactPhoneNumber: String, contactUuid: UUID) {
-        // TODO: this currently only adds a uuid to a phonenumber-based contact record
-        // it shoudl be able to add either a uuid or aphonenumber
-        newSuspendedTransaction(dispatcher, db) {
+    suspend fun storeUuidOrPhoneNumber(accountId: String, contactPhoneNumber: String, contactUuid: UUID) {
+        newSuspendedTransaction(dispatcher, db){
             val contactId = resolveContactId(accountId, contactPhoneNumber)
+                ?: resolveContactId(accountId, contactUuid.toString())
+                ?: run {
+                    logger.warn { "No contact ID found for phone number: $contactPhoneNumber, uuid: $contactUuid" }
+                    return@newSuspendedTransaction
+                }
             Contacts.updateByContactId(accountId, contactId) {
                 it[Contacts.uuid] = contactUuid
+                it[Contacts.phoneNumber] = contactPhoneNumber
             }
         }
     }
@@ -107,7 +119,7 @@ class ContactStore(
             logger.warn { "Received profile key of invalid size ${profileKey.size} for account: $contactIdentifier" }
             return
         }
-        val contactId = resolveContactIdSuspend(accountId, contactIdentifier)
+        val contactId = resolveOrCreateContactIdSuspend(accountId, contactIdentifier)
         return newSuspendedTransaction(dispatcher, db) {
             Contacts.updateByContactId(accountId, contactId) {
                 it[Contacts.profileKeyBytes] = profileKey
@@ -117,9 +129,9 @@ class ContactStore(
 
     suspend fun loadProfileKey(accountId: String, contactIdentifier: String): ProfileKey? =
         newSuspendedTransaction(dispatcher, db) {
-            val contactId = resolveContactIdSuspend(accountId, contactIdentifier)
-            Contacts.findByContactId(accountId, contactId)?.let {
-                ProfileKey(it[Contacts.profileKeyBytes])
+            val contactId = resolveOrCreateContactIdSuspend(accountId, contactIdentifier)
+            Contacts.findByContactId(accountId, contactId)?.let { resultRow ->
+                resultRow[Contacts.profileKeyBytes]?.let{ ProfileKey(it) }
             }
         }
 

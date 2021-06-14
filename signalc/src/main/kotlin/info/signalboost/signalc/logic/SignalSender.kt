@@ -118,6 +118,22 @@ class SignalSender(private val app: Application) {
                 .build()
         )
 
+    suspend fun sendProfileKey(
+        sender: VerifiedAccount,
+        recipient: SignalcAddress,
+        timestamp: Long = TimeUtil.nowInMillis(),
+    ): SignalcSendResult =
+        sendDataMessage(
+            sender,
+            recipient,
+            SignalServiceDataMessage
+                .newBuilder()
+                .asProfileKeyUpdate(true)
+                .withTimestamp(timestamp)
+                .withProfileKey(sender.profileKeyBytes)
+                .build()
+        )
+
     suspend fun setExpiration(
         sender: VerifiedAccount,
         recipient: SignalcAddress,
