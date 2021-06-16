@@ -194,24 +194,18 @@ class SignalReceiver(private val app: Application) {
                 val dataMessage = contents.dataMessage.orNull()
                     ?: return@launch // drop other message types (eg: typing message, sync message, etc)
 
-                if (dataMessage.profileKey.isPresent) {
-                    logger.info { "Profile key: ${dataMessage.profileKey.get()}" }
-                } else {
-                    logger.info { "Profile key: NOT PRESENT" }
-                }
-
-                if (dataMessage.isProfileKeyUpdate) {
-                    logger.info { "Profile key update!!!" }
-                }
-
                 contactAddress = contents.sender.asSignalcAddress()
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
 
-                // TODO: check to see if we already have a profile key for sender, if no then write, if yes then only write if profile key update
-                dataMessage.profileKey.orNull()?.let {
-                    logger.info { "About to store profile key: ${dataMessage.profileKey}" }
-                    app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
+                if(dataMessage.isProfileKeyUpdate) {
+                    // TODO: metrics instead of loglines below?
+                    dataMessage.profileKey.orNull()
+                        ?.let {
+                            logger.debug { "Storing profile key for ${contactAddress.identifier}}" }
+                            app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
+                        }
+                        ?: logger.error { "Received profile key update with no key for ${contactAddress.identifier}!" }
                 }
 
                 app.socketSender.send(
