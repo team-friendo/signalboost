@@ -235,9 +235,6 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun processReceipt(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         if(!envelope.isUnidentifiedSender) {
-            // NOTE: we should only receive N of these upon initiating a conversation with a new contact...
-            // (where N is the number of devices a recipient has)
-            // - q: should this also be able to store a phone number if we only have a UUID?
             app.contactStore.storeUuidOrPhoneNumber(
                 accountId = account.username,
                 contactPhoneNumber =  envelope.sourceE164.get(),
@@ -257,7 +254,7 @@ class SignalReceiver(private val app: Application) {
                     uuid = UUID.fromString(envelope.sourceUuid.get()),
                 )
                 // we don't think this actually does anything meaningful... might restore!
-                // app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+                 app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
             }
             // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
             // of which might have depleted our prekey reserves below the level we want to keep on hand
