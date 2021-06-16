@@ -248,7 +248,7 @@ class SignalReceiver(private val app: Application) {
     }
 
     private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
-        app.coroutineScope.async(Concurrency.Dispatcher) {
+        withContext(app.coroutineScope.coroutineContext + Concurrency.Dispatcher) {
             logger.info { "phoneNumber = ${envelope.sourceE164.get()}, uuid = ${envelope.sourceUuid.get()}" }
             app.contactStore.resolveContactIdSuspend(account.username, envelope.sourceIdentifier) ?: run {
                 app.contactStore.create(
@@ -256,13 +256,14 @@ class SignalReceiver(private val app: Application) {
                     phoneNumber = envelope.sourceE164.get(),
                     uuid = UUID.fromString(envelope.sourceUuid.get()),
                 )
-                app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+                // we don't think this actually does anything meaningful... might restore!
+                // app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
             }
             // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
             // of which might have depleted our prekey reserves below the level we want to keep on hand
             // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
             app.accountManager.refreshPreKeysIfDepleted(account)
-        }.await()
+        }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(
