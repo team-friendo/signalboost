@@ -44,12 +44,14 @@ Create a new desktop entry file:
 sudo touch /usr/share/applications/signal-desktop-alice
 ```
 
-Edit that file to have the following contents
+Edit that file to have the following contents:
+
+(note -- it is necessary to provide the absolute path to your home directory)
 
 ```
 [Desktop Entry]
 Name=Signal-Alice
-Exec=/opt/Signal/signal-desktop --no-sandbox --user-data-dir=$HOME/.config/Signal-Alice %U
+Exec=/opt/Signal-Alice/signal-desktop --no-sandbox --user-data-dir=<absolute-path-to-$HOME>/.config/Signal-Alice %U
 Terminal=false
 Type=Application
 Icon=signal-desktop
