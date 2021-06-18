@@ -6,6 +6,7 @@ import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Contacts
 import info.signalboost.signalc.db.Profiles
 import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.model.VerifiedAccount
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -49,6 +50,11 @@ class ContactStore(
                 it[profileKeyBytes] = profileKey
             }
         }.resultedValues!!.single()[Contacts.contactId]
+
+    suspend fun createOwnContact(account: VerifiedAccount) = with(account) {
+        create(accountId = username, phoneNumber = username, uuid = uuid, profileKey = profileKeyBytes)
+    }
+
 
     private suspend fun resolveOrCreateContactIdSuspend(accountId: String, identifier: String): Int =
         newSuspendedTransaction (dispatcher, db) {

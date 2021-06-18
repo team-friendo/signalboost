@@ -3,8 +3,8 @@ package info.signalboost.signalc
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
-import info.signalboost.signalc.model.SignalcAddress
-import info.signalboost.signalc.model.SignalcSendResult
+import info.signalboost.signalc.model.*
+import info.signalboost.signalc.store.AccountStore
 import info.signalboost.signalc.store.ContactStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
@@ -31,10 +31,16 @@ object Mocks {
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
         coEvery { getUnidentifiedAccessPair(any(), any()) } returns mockk()
     }
+    val accountStore: AccountStore.() -> Unit = {
+        coEvery { save(any<NewAccount>()) } returns Unit
+        coEvery { save(any<RegisteredAccount>()) } returns Unit
+        coEvery { save(any<VerifiedAccount>()) } returns Unit
+    }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
     }
     val contactStore: ContactStore.() -> Unit = {
+        coEvery { createOwnContact(any()) } returns 0
         coEvery { storeProfileKey(any(), any(), any())} returns Unit
         coEvery { loadProfileKey(any(), any())} returns mockk()
     }

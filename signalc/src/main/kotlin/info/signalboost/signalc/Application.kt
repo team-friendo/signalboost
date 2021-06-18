@@ -239,7 +239,7 @@ class Application(val config: Config.App){
 
         // storage resources
         dataSource = initializeDataSource(Mocks.dataSource)
-        accountStore = initializeColdComponent(AccountStore::class)
+        accountStore = initializeColdComponent(AccountStore::class, Mocks.accountStore)
         contactStore = initializeColdComponent(ContactStore::class, Mocks.contactStore)
         protocolStore = initializeColdComponent(ProtocolStore::class, Mocks.protocolStore)
 
