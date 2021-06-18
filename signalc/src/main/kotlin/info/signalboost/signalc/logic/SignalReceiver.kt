@@ -184,8 +184,10 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
+    /**
+     * Attempt to decrypt envelope and process data message then relay result to socket for handling by client.
+     */
     private suspend fun processMessage(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
-        // Attempt to decrypt envelope in a new coroutine then relay result to socket message sender for handling.
         return app.coroutineScope.launch(Concurrency.Dispatcher) {
             var contactAddress: SignalcAddress? = null // not available until after decryption for sealed-sender msgs
             try {
@@ -195,7 +197,7 @@ class SignalReceiver(private val app: Application) {
                 val dataMessage = contents.dataMessage.orNull()?: return@launch // drop non-data msgs (eg: typing, sync)
                 contactAddress = contents.sender.asSignalcAddress()
 
-                val body = dataMessage.body?.orNull() ?: ""
+                val body = dataMessage.body?.orNull() ?: "" // expiry timer changes contain empty message bodies
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
                 dataMessage.profileKey.orNull()?.let {
                     // dataMessage.isProfileKeyUpdate is flaky on 1st message, so we store profile key on every message
@@ -210,14 +212,13 @@ class SignalReceiver(private val app: Application) {
                     SocketResponse.Cleartext.of(
                         contactAddress,
                         account.address,
-                        body, // we allow empty message bodies b/c that's how expiry timer changes are sent
+                        body,
                         attachments.mapNotNull { it.retrieveFor(account) },
                         dataMessage.expiresInSeconds,
                         dataMessage.timestamp,
                     )
                 )
             } catch(err: Throwable) {
-                // TODO: we don't always have a contactAddress here anymore... wat do?
                 handleRelayError(err, account.address, contactAddress)
             } finally {
                 messagesInFlight.getAndDecrement()
@@ -225,9 +226,32 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
+    private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
+        withContext(app.coroutineScope.coroutineContext + Concurrency.Dispatcher) {
+            // This is our first (and only!) chance to store both the UUID and phone number that will be necessary
+            // to successfully decrypt subsequent messages in a session that may refer either to UUID or number.
+            // Store them here so we can resolve either to an int id in the protocol store!
+            if(!app.contactStore.hasContact(account.username, envelope.sourceIdentifier)) {
+                app.contactStore.create(
+                    accountId = account.username,
+                    phoneNumber = envelope.sourceE164.orNull(),
+                    uuid = UUID.fromString(envelope.sourceUuid.orNull()),
+                )
+                // We also want new contacts to be able to send us sealed sender messages as soon as possible, so
+                // send them our profile key (which enalbes sealed-sender message sending) now.
+                app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+            }
+            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
+            // of which might have depleted our prekey reserves below the level we want to keep on hand
+            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
+            app.accountManager.refreshPreKeysIfDepleted(account)
+        }
+
     private suspend fun processReceipt(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
+        // An unsealed receipt is the first contact we will have if we initiated a conversation with a contact, so use the
+        // opportunity to store their UUID and phone number!
         if(!envelope.isUnidentifiedSender) {
-            app.contactStore.storeUuidOrPhoneNumber(
+            app.contactStore.storeMissingIdentifier(
                 accountId = account.username,
                 contactPhoneNumber =  envelope.sourceE164.get(),
                 contactUuid =  UUID.fromString(envelope.sourceUuid.get()),
@@ -235,24 +259,6 @@ class SignalReceiver(private val app: Application) {
         }
         return null
     }
-
-    private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
-        withContext(app.coroutineScope.coroutineContext + Concurrency.Dispatcher) {
-            logger.info { "phoneNumber = ${envelope.sourceE164.get()}, uuid = ${envelope.sourceUuid.get()}" }
-            app.contactStore.resolveContactIdSuspend(account.username, envelope.sourceIdentifier) ?: run {
-                app.contactStore.create(
-                    accountId = account.username,
-                    phoneNumber = envelope.sourceE164.get(),
-                    uuid = UUID.fromString(envelope.sourceUuid.get()),
-                )
-                // we don't think this actually does anything meaningful... might restore!
-                 app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
-            }
-            // If we are receiving a prekey bundle, this is the beginning of a new session, the initiation
-            // of which might have depleted our prekey reserves below the level we want to keep on hand
-            // to start new sessions. So: launch a background job to check our prekey reserve and replenish it if needed!
-            app.accountManager.refreshPreKeysIfDepleted(account)
-        }
 
     private suspend fun drop(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job? {
         app.socketSender.send(

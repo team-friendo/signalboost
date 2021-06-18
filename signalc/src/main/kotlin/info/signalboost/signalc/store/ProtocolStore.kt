@@ -28,18 +28,22 @@ class ProtocolStore(val app: Application) {
     fun of(account: Account): AccountProtocolStore = AccountProtocolStore(
         db,
         account.username,
-        app.contactStore::resolveOrCreateContactIdBlocking
+        app.contactStore::resolveContactId
     )
 
     fun countOwnIdentities(): Long =
         transaction(db) { OwnIdentities.selectAll().count() }
 
+    /**
+     * Implements the 4 stores required by the SignalServiceProtocolSTore interface and some decorator functions used
+     * only by signalc. Each instance of this class provides a protocol store for a single account. Since any instance
+     * of signalc has many accounts, any singalc instance will also have many protocol stores.
+     **/
     class AccountProtocolStore(
         private val db: Database,
         private val accountId: String,
         private val resolveContactId: (String, String) -> Int,
         val lock: SessionLock = SessionLock(),
-        // if we need to do above, we ahve to construct ContactStore
         private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock, resolveContactId),
         private val preKeyStore: PreKeyStore = SignalcPreKeyStore(db, accountId, lock),
         private val senderKeyStore: SenderKeyStore = SignalcSenderKeyStore(db, accountId, lock),
@@ -52,9 +56,7 @@ class ProtocolStore(val app: Application) {
         SignalServiceSessionStore by sessionStore,
         SignedPreKeyStore by signedPreKeyStore {
 
-        /**
-         * DECORATOR FUNCTIONS
-         **/
+        // DECORATOR FUNCTIONS
 
         private val scIdentityStore = identityStore as SignalcIdentityStore
         val countIdentitities: () -> Long = scIdentityStore::countIdentities

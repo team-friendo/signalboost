@@ -4,7 +4,6 @@ import info.signalboost.signalc.Application
 import info.signalboost.signalc.db.ContactRecord.Companion.findByContactId
 import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Contacts
-import info.signalboost.signalc.db.Profiles
 import info.signalboost.signalc.dispatchers.Concurrency
 import info.signalboost.signalc.model.VerifiedAccount
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,6 +14,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.signal.zkgroup.profiles.ProfileKey
+import java.lang.IllegalStateException
 import java.util.UUID
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -23,10 +23,7 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalPathApi
 @ExperimentalTime
-class ContactStore(
-    app: Application,
-    // TODO: need to consume session lock for a given account?
-) {
+class ContactStore(app: Application) {
 
     companion object: Any(), KLoggable {
         override val logger = logger()
@@ -36,13 +33,10 @@ class ContactStore(
     val dispatcher = Concurrency.Dispatcher
     val db = app.db
 
-    suspend fun create(
-        accountId: String,
-        phoneNumber: String? = null,
-        uuid: UUID? = null,
-        profileKey: ByteArray? = null
-    ): Int =
-        newSuspendedTransaction(dispatcher, db) {
+    suspend fun create(accountId: String, phoneNumber: String?, uuid: UUID?, profileKey: ByteArray? = null): Int =
+        if (phoneNumber == null && uuid == null)
+            throw IllegalStateException("Cannot create contact w/o phone number or uuid")
+        else newSuspendedTransaction(dispatcher, db) {
             Contacts.insert {
                 it[Contacts.accountId] = accountId
                 it[Contacts.phoneNumber] = phoneNumber
@@ -55,68 +49,70 @@ class ContactStore(
         create(accountId = username, phoneNumber = username, uuid = uuid, profileKey = profileKeyBytes)
     }
 
-
-    private suspend fun resolveOrCreateContactIdSuspend(accountId: String, identifier: String): Int =
-        newSuspendedTransaction (dispatcher, db) {
-            resolveOrCreateContactId(accountId, identifier)
+    /**
+     * Given a string identifier that may be either a uuid or a phone number,
+     * Report whether a contact exists containing either that uuid or phone number.
+     */
+    suspend fun hasContact(accountId: String, contactIdentifier: String): Boolean =
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
+            Contacts.select {
+                (Contacts.accountId eq accountId).and(
+                    (Contacts.uuid eq parseUuid(contactIdentifier)).or(Contacts.phoneNumber eq contactIdentifier)
+                )
+            }.count() > 0
         }
 
-    fun resolveOrCreateContactIdBlocking(accountId: String, identifier: String): Int =
-        transaction(db) {
-            resolveOrCreateContactId(accountId, identifier)
+    /**
+     * Given a string identifier -- which may be either a uuid or a phone number -- retrieve the contact having
+     * that uuid or phone number if it exists or create a new contact if it does not exist.
+     * This function accepts a Transaction as an argument so that it may be called from either a blocking or
+     * suspend contexts. Since most callers will be signal protocol store functions (which are all blocking),
+     * the argument defaults to a blocking transaction.
+     **/
+    fun resolveContactId(accountId: String, contactIdentifier: String, tx: Transaction? = null): Int {
+        val uuid = parseUuid(contactIdentifier)
+        val statement = {
+            run {
+                uuid
+                    ?.let { Contacts.select { (Contacts.accountId eq accountId).and(Contacts.uuid eq it) } }
+                    ?: Contacts.select { (Contacts.accountId eq accountId).and(Contacts.phoneNumber eq contactIdentifier) }
+            }.singleOrNull()
+                ?.let { it[Contacts.contactId] }
+                ?: runBlocking {
+                    if (uuid == null) create(accountId, contactIdentifier, null)
+                    else create(accountId, null, uuid)
+                }
         }
-
-    private fun resolveOrCreateContactId(accountId: String, identifier: String): Int {
-        val uuid = parseUuid(identifier)
-        return resolveContactId(accountId, identifier) ?: runBlocking {
-            if(uuid == null) {
-                create(accountId, identifier, null)
-            } else {
-                create(accountId, null, uuid)
-            }
-        }
+        return tx?.let  { statement() } ?: transaction(db) {  statement() }
     }
 
-    suspend fun resolveContactIdSuspend(accountId: String, identifier: String): Int? =
-        newSuspendedTransaction (dispatcher, db) {
-            resolveContactId(accountId, identifier)
-        }
+   /**
+    * Given a uuid and a phone number, store the uuid if we already have the phone number, or the phone number
+    * if we already have the uuid. Since most contacts start with a phone number, attempt to store the uuid first
+    * and return early if we succeed. Throw if we cannot find a contact with either uuid or phone number.
+    **/
+    suspend fun storeMissingIdentifier(accountId: String, contactPhoneNumber: String, contactUuid: UUID) {
+        newSuspendedTransaction(dispatcher, db) {
 
-    // resolve contact id when one identifier available
-    private fun resolveContactId(accountId: String, identifier: String): Int? {
-        val uuid = parseUuid(identifier)
-        return run {
-            uuid
-                ?.let {
-                    // logger.debug { "Found uuid: $uuid" }
-                    Contacts.select { (Contacts.accountId eq accountId).and(Contacts.uuid eq it) }
-                }
-                ?: Contacts.select {
-                    // logger.debug { "Found phone number: $identifier" }
-                    (Contacts.accountId eq accountId).and(Contacts.phoneNumber eq identifier)
-                }
-        }.singleOrNull()?.let { it[Contacts.contactId] }
-    }
-
-    private fun parseUuid(identifier: String): UUID? =
-        try {
-            UUID.fromString(identifier)
-        } catch(ignored: Throwable) {
-            null
-        }
-
-    suspend fun storeUuidOrPhoneNumber(accountId: String, contactPhoneNumber: String, contactUuid: UUID) {
-        newSuspendedTransaction(dispatcher, db){
-            val contactId = resolveContactId(accountId, contactPhoneNumber)
-                ?: resolveContactId(accountId, contactUuid.toString())
-                ?: run {
-                    logger.warn { "No contact ID found for phone number: $contactPhoneNumber, uuid: $contactUuid" }
-                    return@newSuspendedTransaction
-                }
-            Contacts.updateByContactId(accountId, contactId) {
-                it[Contacts.uuid] = contactUuid
-                it[Contacts.phoneNumber] = contactPhoneNumber
+            Contacts.update({
+                (Contacts.accountId eq accountId).and(Contacts.phoneNumber eq contactPhoneNumber)
+            }){
+                it[uuid] = contactUuid
+            }.let {
+                if(it > 0) return@newSuspendedTransaction
             }
+
+            Contacts.update({
+                (Contacts.accountId eq accountId).and(Contacts.uuid eq contactUuid)
+            }){
+                it[phoneNumber] = contactPhoneNumber
+            }.let {
+                if(it > 0) return@newSuspendedTransaction
+            }
+
+            throw IllegalStateException(
+                "Can't store missing identifier without a known identifier- PN: $contactPhoneNumber, UUID: $contactUuid"
+            )
         }
     }
 
@@ -125,8 +121,8 @@ class ContactStore(
             logger.warn { "Received profile key of invalid size ${profileKey.size} for account: $contactIdentifier" }
             return
         }
-        val contactId = resolveOrCreateContactIdSuspend(accountId, contactIdentifier)
         return newSuspendedTransaction(dispatcher, db) {
+            val contactId = resolveContactId(accountId, contactIdentifier, this)
             Contacts.updateByContactId(accountId, contactId) {
                 it[Contacts.profileKeyBytes] = profileKey
             }
@@ -135,20 +131,25 @@ class ContactStore(
 
     suspend fun loadProfileKey(accountId: String, contactIdentifier: String): ProfileKey? =
         newSuspendedTransaction(dispatcher, db) {
-            val contactId = resolveOrCreateContactIdSuspend(accountId, contactIdentifier)
+            val contactId = resolveContactId(accountId, contactIdentifier, this)
             Contacts.findByContactId(accountId, contactId)?.let { resultRow ->
                 resultRow[Contacts.profileKeyBytes]?.let{ ProfileKey(it) }
             }
         }
 
+    // HELPERS
+
+    private fun parseUuid(identifier: String): UUID? =
+        try { UUID.fromString(identifier) } catch(ignored: Throwable) { null }
+
     // TESTING FUNCTIONS
     internal suspend fun count(): Long = newSuspendedTransaction(dispatcher, db) {
-        Profiles.selectAll().count()
+        Contacts.selectAll().count()
     }
 
     internal suspend fun deleteAllFor(accountId: String) = newSuspendedTransaction(dispatcher, db) {
-        Profiles.deleteWhere {
-            Profiles.accountId eq accountId
+        Contacts.deleteWhere {
+            Contacts.accountId eq accountId
         }
     }
 }
