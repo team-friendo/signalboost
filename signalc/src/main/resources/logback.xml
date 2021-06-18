@@ -22,6 +22,10 @@
         <appender-ref ref="stdout" />
     </logger>
 
+    <logger name="info.signalboost.signalc.logging.LibSignalLogger" level="error" additivity="false">
+        <appender-ref ref="stdout" />
+    </logger>
+
     <logger name="io.netty" level="info" additivity="false">
          <appender-ref ref="stdout" />
     </logger>
