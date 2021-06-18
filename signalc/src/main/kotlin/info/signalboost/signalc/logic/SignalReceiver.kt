@@ -197,9 +197,9 @@ class SignalReceiver(private val app: Application) {
 
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
-                if(dataMessage.isProfileKeyUpdate) {
-                    logger.debug { "Storing profile key for ${contactAddress.identifier}}" } // TODO: metrics here!
-                    app.contactStore.storeProfileKey(account.id, contactAddress.identifier, dataMessage.profileKey.get())
+                dataMessage.profileKey.orNull()?.let {
+                    // dataMessage.isProfileKeyUpdate is flaky on 1st message, so we store profile key on every message
+                    app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 }
 
                 launch {
