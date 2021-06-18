@@ -190,22 +190,20 @@ class SignalReceiver(private val app: Application) {
             var contactAddress: SignalcAddress? = null // not available until after decryption for sealed-sender msgs
             try {
                 messagesInFlight.getAndIncrement()
-                val contents = cipherOf(account).decrypt(envelope)
-                val dataMessage = contents.dataMessage.orNull()
-                    ?: return@launch // drop other message types (eg: typing message, sync message, etc)
 
+                val contents = cipherOf(account).decrypt(envelope)
+                val dataMessage = contents.dataMessage.orNull()?: return@launch // drop non-data msgs (eg: typing, sync)
                 contactAddress = contents.sender.asSignalcAddress()
+
                 val body = dataMessage.body?.orNull() ?: ""
                 val attachments = dataMessage.attachments.orNull() ?: emptyList()
-
                 if(dataMessage.isProfileKeyUpdate) {
-                    // TODO: metrics instead of loglines below?
-                    dataMessage.profileKey.orNull()
-                        ?.let {
-                            logger.debug { "Storing profile key for ${contactAddress.identifier}}" }
-                            app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
-                        }
-                        ?: logger.error { "Received profile key update with no key for ${contactAddress.identifier}!" }
+                    logger.debug { "Storing profile key for ${contactAddress.identifier}}" } // TODO: metrics here!
+                    app.contactStore.storeProfileKey(account.id, contactAddress.identifier, dataMessage.profileKey.get())
+                }
+
+                launch {
+                    app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
                 }
 
                 app.socketSender.send(

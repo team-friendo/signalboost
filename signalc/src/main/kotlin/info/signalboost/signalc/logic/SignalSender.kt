@@ -10,6 +10,7 @@ import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
+import info.signalboost.signalc.util.TimeUtil.nowInMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
@@ -20,10 +21,12 @@ import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
+import org.whispersystems.signalservice.api.messages.SignalServiceReceiptMessage
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
@@ -132,6 +135,14 @@ class SignalSender(private val app: Application) {
                 .withTimestamp(timestamp)
                 .withProfileKey(sender.profileKeyBytes)
                 .build()
+        )
+
+    /* send a read receipt (so sender sees "2 checks" -- but only if we can send it as a sealed sender message */
+    suspend fun sendReceipt(sender: VerifiedAccount, recipient: SignalcAddress, timestamp: Long) =
+        messageSenderOf(sender).sendReceipt(
+            recipient.asSignalServiceAddress(),
+            Optional.fromNullable(app.accountManager.getUnidentifiedAccessPair(sender.id, recipient.identifier)),
+            SignalServiceReceiptMessage(SignalServiceReceiptMessage.Type.READ, listOf(timestamp), timestamp),
         )
 
     suspend fun setExpiration(
