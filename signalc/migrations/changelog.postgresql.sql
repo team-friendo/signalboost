@@ -219,4 +219,41 @@ DROP INDEX identities_identity_key_bytes;
 ALTER TABLE contacts ALTER COLUMN phone_number DROP NOT NULL;
 -- rollback ALTER TABLE contacts ALTER COLUMN phone_number SET NOT NULL;
 
--- TODO: uniqueness constraint on contacts account_id_uuid
+-- changeset aguestuser:1624301616527-1 failOnError:true
+--
+-- NOTE: This migration introduces uniqueness constraints that will fail if there are any duplicate account_id/uuid or
+-- account_id/phone_number combinations for any contact rows. Such dupes constitute an illegal state.
+-- They are associated with bugs that we have now eradicated from the code. However, we nevertheless
+-- begin this migration with 2 queries to clear all contacts having such an illegal state so that dev environments
+-- created before the bug was eradicated may successfully run this migration.
+--
+-- Here we remove all contacts with duplicate account_id/uuid combos:
+with uuid_counts as (
+    select count(*), account_id, uuid from contacts
+    group by account_id, uuid
+    order by count(*)
+),
+uuid_dupes as (
+    select account_id, uuid from uuid_counts where uuid_counts.count > 1
+)
+delete from contacts where (account_id, uuid) in (select * from uuid_dupes);
+-- Here we remove all contacts with duplicate account_id/phone_number combos:
+with phone_number_counts as (
+    select count(*), account_id, phone_number from contacts
+    group by account_id, phone_number
+    order by count(*)
+),
+phone_number_dupes as (
+    select account_id, phone_number from phone_number_counts where phone_number_counts.count > 1
+)
+delete from contacts where (account_id, phone_number) in (select * from phone_number_dupes);
+--
+-- And now we proceed to the migration!
+DROP INDEX contacts_account_id_uuid;
+CREATE UNIQUE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+DROP INDEX contacts_account_id_phone_number;
+CREATE UNIQUE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
+-- rollback DROP INDEX contacts_account_id_uuid;
+-- rollback CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+-- rollback DROP INDEX contacts_account_id_phone_number;
+-- rollback CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
