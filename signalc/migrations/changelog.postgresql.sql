@@ -258,3 +258,8 @@ CREATE UNIQUE INDEX contacts_account_id_phone_number ON contacts (account_id, ph
 -- changeset aguestuser:1624301616527-2 failOnError:true
 ALTER TABLE contacts ALTER COLUMN phone_number DROP DEFAULT;
 -- rollback ALTER TABLE contacts ALTER COLUMN phone_number SET DEFAULT '';
+
+-- changeset aguestuser:1624301616527-3 failOnError:true
+ALTER TABLE contacts ADD CONSTRAINT phone_number_regex CHECK(phone_number ~ '^\+\d{9,15}\Z');
+-- rollback ALTER TABLE contacts DROP CONSTRAINT phone_number_regex;
+

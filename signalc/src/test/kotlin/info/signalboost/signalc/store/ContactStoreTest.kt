@@ -84,6 +84,14 @@ class ContactStoreTest: FreeSpec({
                         }
                     }
                 }
+
+                "given an invalid phone number" - {
+                    "throws a sql exception" {
+                        shouldThrow<ExposedSQLException> {
+                            app.contactStore.create(genPhoneNumber(), "foo", null)
+                        }
+                    }
+                }
             }
 
             "#hasContact" - {
@@ -163,6 +171,14 @@ class ContactStoreTest: FreeSpec({
                     "creates a new phone number with that uuid and returns its numeric id" {
                         app.contactStore.resolveContactId(accountId, newPhoneNumber) shouldBeGreaterThan contactId
                         app.contactStore.count() shouldBeGreaterThan initCount
+                    }
+                }
+
+                "given a junk string for a phone number" - {
+                    "throws SQL error" {
+                        shouldThrow<ExposedSQLException> {
+                            app.contactStore.resolveContactId(accountId, "foo")
+                        }
                     }
                 }
             }
