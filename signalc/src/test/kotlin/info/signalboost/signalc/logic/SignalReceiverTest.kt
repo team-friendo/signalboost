@@ -2,6 +2,7 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
+import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
@@ -38,6 +39,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.TimeoutException
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
@@ -118,6 +120,7 @@ class SignalReceiverTest : FreeSpec({
             every {
                 anyConstructed<SignalServiceCipher>().decrypt(any())
             } returns mockk {
+                every { sender } returns senderAddress.asSignalServiceAddress()
                 every { dataMessage.orNull() } returns mockDataMessage.apply {
                     every { body.orNull() } returnsMany cleartexts
                 }
@@ -538,6 +541,47 @@ class SignalReceiverTest : FreeSpec({
                     eventually(timeout, pollInterval) {
                         coVerify {
                             anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                        }
+                    }
+                }
+
+                "when the receiving account does has not stored a contact for the sender" - {
+                    coEvery {
+                        app.contactStore.hasContact(recipientAccount.id, envelope.sourceIdentifier)
+                    } returns false
+
+                    "creates a contact for the sender" {
+                        messageReceiver.subscribe(recipientAccount)
+                        eventually(timeout, pollInterval) {
+                            coVerify {
+                                app.contactStore.create(recipientAccount, envelope)
+                            }
+                        }
+                    }
+
+                    "sends the contact a profile key" {
+                        messageReceiver.subscribe(recipientAccount)
+                        eventually(timeout * 4, pollInterval) {
+                            coVerify {
+                                app.signalSender.sendProfileKey(recipientAccount, any())
+                            }
+                        }
+                    }
+                }
+            }
+
+            "when signal sends a RECEIPT" - {
+                val (envelope) = signalSendsEnvelopeOf(RECEIPT_VALUE)
+
+                "stores an missing identifiers contained in the receipt" {
+                    messageReceiver.subscribe(recipientAccount)
+                    eventually(timeout, pollInterval) {
+                        coVerify {
+                            app.contactStore.storeMissingIdentifier(
+                                recipientAccount.id,
+                                envelope.sourceE164.get(),
+                                UUID.fromString(envelope.sourceUuid.get()),
+                            )
                         }
                     }
                 }

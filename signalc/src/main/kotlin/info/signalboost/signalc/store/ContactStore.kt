@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.signal.zkgroup.profiles.ProfileKey
+import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import java.lang.IllegalStateException
 import java.util.UUID
 import kotlin.io.path.ExperimentalPathApi
@@ -44,6 +45,9 @@ class ContactStore(app: Application) {
                 it[profileKeyBytes] = profileKey
             }
         }.resultedValues!!.single()[Contacts.contactId]
+
+    suspend fun create(account: VerifiedAccount, envelope: SignalServiceEnvelope): Int =
+        create(account.id, envelope.sourceE164.orNull(), envelope.sourceUuid.orNull()?.let { UUID.fromString(it) } )
 
     suspend fun createOwnContact(account: VerifiedAccount) = with(account) {
         create(accountId = username, phoneNumber = username, uuid = uuid, profileKey = profileKeyBytes)

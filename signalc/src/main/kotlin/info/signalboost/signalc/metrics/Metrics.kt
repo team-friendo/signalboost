@@ -64,9 +64,19 @@ object Metrics {
     object SignalReceiver {
         val numberOfMessagesReceived: Counter = counterOf(
             "signal_receiver__number_of_messages_received",
-            "Counts number of inbound PREKEY_BUNDLE messages we receive from signal server when users try to establish new sessions." +
-                    "If we often receive a high number of these in quick succession, consider throttling prekey replenish jobs.",
+            "Counts number of inbound messages received from signal server and categorizes them by type",
             "envelope_type",
+        )
+
+        val numberOfMessagesWithoutProfileKey = counterOf(
+            "signal_receiver__number_of_messages_without_profile_key",
+            "Counts number of messages received without profile key. " +
+                    "The 'is_sealed_sender' label allow us to track unsealed messages without profile keys " +
+                    "which are worrisome because this is the signature of sessions initiated from a desktop client " +
+                    "but not confirmed on a phone by tapping 'continue'. Without such confirmation, we will " +
+                    "never be able to initiate sealed sender sessions, and thus risk getting blocked " +
+                    "if the number of such messages gets too high.",
+            "is_sealed_sender"
         )
     }
 

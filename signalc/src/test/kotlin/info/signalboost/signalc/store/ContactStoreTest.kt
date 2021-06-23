@@ -5,8 +5,10 @@ import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
+import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genPhoneNumber
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genUuid
+import info.signalboost.signalc.testSupport.dataGenerators.EnvelopeGen.genEnvelope
 import info.signalboost.signalc.util.KeyUtil.genProfileKeyBytes
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FreeSpec
@@ -33,7 +35,8 @@ class ContactStoreTest: FreeSpec({
         val config = Config.mockAllExcept(ContactStore::class, HikariDataSource::class)
         val app = Application(config).run(testScope)
 
-        val accountId = genPhoneNumber()
+        val account = genVerifiedAccount()
+        val accountId = account.id
         val contactProfileKey = genRandomBytes(32)
         val contactUpdatedProfileKey = genRandomBytes(32)
 
@@ -90,6 +93,18 @@ class ContactStoreTest: FreeSpec({
                         shouldThrow<ExposedSQLException> {
                             app.contactStore.create(genPhoneNumber(), "foo", null)
                         }
+                    }
+                }
+
+                "given an account and an envelope" - {
+                    val envelope = genEnvelope()
+                    val id = app.contactStore.create(account, envelope)
+
+                    "creates a contact and returns its id" {
+                        id shouldBeGreaterThan 0
+                        app.contactStore.count() shouldBeGreaterThan initCount
+                        app.contactStore.hasContact(accountId, envelope.sourceE164.get()) shouldBe true
+                        app.contactStore.hasContact(accountId, envelope.sourceUuid.get()) shouldBe true
                     }
                 }
             }

@@ -29,7 +29,7 @@ object Mocks {
         coEvery { publishPreKeys(any()) } returns Unit
         coEvery { publishPreKeys(any(), any()) } returns Unit
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
-        coEvery { getUnidentifiedAccessPair(any(), any()) } returns mockk()
+        coEvery { getUnidentifiedAccessPair(any(), any()) } returns null
     }
     val accountStore: AccountStore.() -> Unit = {
         coEvery { save(any<NewAccount>()) } returns Unit
@@ -40,9 +40,13 @@ object Mocks {
         every { closeQuietly() } returns Unit
     }
     val contactStore: ContactStore.() -> Unit = {
+        coEvery { create(any(), any()) } returns 0
+        coEvery { create(any(), any(), any(), any()) } returns 0
         coEvery { createOwnContact(any()) } returns 0
-        coEvery { storeProfileKey(any(), any(), any())} returns Unit
+        coEvery { hasContact(any(), any()) } returns true
         coEvery { loadProfileKey(any(), any())} returns mockk()
+        coEvery { storeMissingIdentifier(any(), any(), any())} returns Unit
+        coEvery { storeProfileKey(any(), any(), any())} returns Unit
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
@@ -69,6 +73,12 @@ object Mocks {
                 every { isNeedsSync } returns true
             }
         coEvery { send(any(), any(), any(), any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
+        }
+        coEvery { sendProfileKey(any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
+        }
+        coEvery { sendReceipt(any(), any(), any()) } answers {
             mockkSuccessOf(secondArg())
         }
         coEvery { setExpiration(any(), any(), any()) } answers {

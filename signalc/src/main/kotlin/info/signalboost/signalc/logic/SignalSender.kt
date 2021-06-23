@@ -84,7 +84,7 @@ class SignalSender(private val app: Application) {
                 Optional.absent(), // preview (we don't support those!)
                 sendAttachment.width,
                 sendAttachment.height,
-                TimeUtil.nowInMillis(), //uploadTimestamp
+                nowInMillis(), //uploadTimestamp
                 Optional.fromNullable(sendAttachment.caption),
                 Optional.fromNullable(sendAttachment.blurHash),
                 null, // progressListener
@@ -103,7 +103,7 @@ class SignalSender(private val app: Application) {
         body: String,
         expiration: Int,
         attachments: List<SocketRequest.Send.Attachment> = emptyList(),
-        timestamp: Long = TimeUtil.nowInMillis(),
+        timestamp: Long = nowInMillis(),
     ): SignalcSendResult =
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
         sendDataMessage(
@@ -124,7 +124,7 @@ class SignalSender(private val app: Application) {
     suspend fun sendProfileKey(
         sender: VerifiedAccount,
         recipient: SignalcAddress,
-        timestamp: Long = TimeUtil.nowInMillis(),
+        timestamp: Long = nowInMillis(),
     ): SignalcSendResult =
         sendDataMessage(
             sender,
