@@ -108,7 +108,6 @@ sealed class SocketResponse {
         }
     }
 
-    // TODO: what does signald do here?
     @Serializable
     @SerialName("decryption_error")
     data class DecryptionError(
@@ -205,7 +204,6 @@ sealed class SocketResponse {
         }
     }
 
-    // TODO: what does signald do here? "unrecognized"?
     @Serializable
     @SerialName("request_invalid") // TODO: invalidRequest
     data class RequestInvalidError(

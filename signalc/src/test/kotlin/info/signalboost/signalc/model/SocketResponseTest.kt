@@ -122,7 +122,6 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of Cleartext" - {
-            // TODO: modify to match signald
             val response = genCleartext()
 
             "encodes to JSON" {

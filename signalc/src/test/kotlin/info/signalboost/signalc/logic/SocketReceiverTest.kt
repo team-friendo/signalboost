@@ -314,8 +314,6 @@ class SocketReceiverTest : FreeSpec({
                             client.send(sendRequestJson)
                             eventually(timeout) {
                                 coVerify {
-                                    // TODO(aguestuser|2021-02-04): we dont' actually want this.
-                                    //  we want halting errors to be treated like SendResult statuses below!
                                     app.socketSender.send(
                                         requestHandlingError(request, error)
                                     )
