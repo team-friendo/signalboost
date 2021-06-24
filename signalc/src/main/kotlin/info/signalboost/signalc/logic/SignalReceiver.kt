@@ -206,6 +206,7 @@ class SignalReceiver(private val app: Application) {
 
                 // store sender's profile key if present and acknowledge message receipt to them
                 dataMessage.profileKey.orNull()?.let {
+                    // TODO: we'd like to only make this db call if `dataMessage.isProfileKeyUpdate`, but that is flaky
                     app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 } ?: run {
                     metrics.numberOfMessagesWithoutProfileKey.labels(envelope.isUnidentifiedSender.toString()).inc()

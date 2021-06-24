@@ -67,6 +67,10 @@ class ContactStore(app: Application) {
             }.count() > 0
         }
 
+    /**
+     * Given a string identifier that may be either a uuid or a phone number,
+     * Retrieve a contact having either such identifier and convert it into a SignalcAddress
+     */
     suspend fun getContactAddress(accountId: String, contactIdentifier: String): SignalcAddress? =
         newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Contacts.select {
