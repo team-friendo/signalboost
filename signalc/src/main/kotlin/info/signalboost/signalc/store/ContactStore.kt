@@ -62,7 +62,7 @@ class ContactStore(app: Application) {
         newSuspendedTransaction(Concurrency.Dispatcher, db) {
             Contacts.select {
                 (Contacts.accountId eq accountId).and(
-                    (Contacts.uuid eq parseUuid(contactIdentifier)).or(Contacts.phoneNumber eq contactIdentifier)
+                    (Contacts.phoneNumber eq contactIdentifier).or(Contacts.uuid eq parseUuid(contactIdentifier))
                 )
             }.count() > 0
         }

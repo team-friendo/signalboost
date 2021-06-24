@@ -211,7 +211,7 @@ class SignalReceiver(private val app: Application) {
                 } ?: run {
                     metrics.numberOfMessagesWithoutProfileKey.labels(envelope.isUnidentifiedSender.toString()).inc()
                 }
-                launch {
+                launch(Concurrency.Dispatcher) {
                     app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
                 }
 
@@ -236,23 +236,24 @@ class SignalReceiver(private val app: Application) {
         }
     }
 
-    private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
-        // Prekey buncles are received (once per device) from new contacts before we initiate a sealed sender session
-        // with them. As such, this is our first (and only!) chance to store both the UUID and phone number
-        // that will be necessary to successfully decrypt subsequent messages in a session that may refer to the same
-        // user by *either* UUID or phone number (and will switch between the two during thes same session).
-        // We store both here so we can resolve either UUID or phone number to the same contact later.
-        // We also want new contacts to be able to send us sealed sender messages as soon as possible, so
-        // we send them our profile key, which enables sealed-sender message sending.
-        if(!app.contactStore.hasContact(account.id, envelope.sourceIdentifier)) {
-            app.contactStore.create(account, envelope)
-            app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+    private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
+        withContext(Concurrency.Dispatcher) {
+            // Prekey bundles are received (once per device) from new contacts before we initiate a sealed sender session
+            // with them. As such, this is our first (and only!) chance to store both the UUID and phone number
+            // that will be necessary to successfully decrypt subsequent messages in a session that may refer to the same
+            // user by *either* UUID or phone number (and will switch between the two during thes same session).
+            // We store both here so we can resolve either UUID or phone number to the same contact later.
+            // We also want new contacts to be able to send us sealed sender messages as soon as possible, so
+            // we send them our profile key, which enables sealed-sender message sending.
+            if(!app.contactStore.hasContact(account.id, envelope.sourceIdentifier)) {
+                app.contactStore.create(account, envelope)
+                app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
+            }
+            // If we are receiving a prekey bundle, this is also the beginning of a new session, which consumes one of the
+            // recipient's one-time prekeys. Since this might have depleted the recipient's prekeys below the number needed
+            // to start new sessions, we launch a background job to check the prekey reserve and replenish it if needed!
+            app.accountManager.refreshPreKeysIfDepleted(account)
         }
-        // If we are receiving a prekey bundle, this is also the beginning of a new session, which consumes one of the
-        // recipient's one-time prekeys. Since this might have depleted the recipient's prekeys below the number needed
-        // to start new sessions, we launch a background job to check the prekey reserve and replenish it if needed!
-        app.accountManager.refreshPreKeysIfDepleted(account)
-    }
 
     private suspend fun processReceipt(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
         // An unsealed receipt is the first contact we will have if we initiated a conversation with a contact, so
