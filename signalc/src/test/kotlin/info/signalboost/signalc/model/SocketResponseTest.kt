@@ -179,13 +179,13 @@ class SocketResponseTest : FreeSpec({
                 response.toJson() shouldBe """
                 |{
                    |"type":"decryption_error",
-                   |"sender":{
-                      |"number":"${response.sender?.number}",
-                      |"uuid":"${response.sender?.uuid}"
-                   |},
                    |"recipient":{
                       |"number":"${response.recipient.number}",
                       |"uuid":"${response.recipient.uuid}"
+                   |},
+                   |"sender":{
+                      |"number":"${response.sender?.number}",
+                      |"uuid":"${response.sender?.uuid}"
                    |},
                    |"error":{
                       |"cause":"${response.error.javaClass.name}",

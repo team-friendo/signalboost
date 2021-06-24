@@ -5,6 +5,7 @@ import info.signalboost.signalc.db.ContactRecord.Companion.findByContactId
 import info.signalboost.signalc.db.ContactRecord.Companion.updateByContactId
 import info.signalboost.signalc.db.Contacts
 import info.signalboost.signalc.dispatchers.Concurrency
+import info.signalboost.signalc.model.SignalcAddress
 import info.signalboost.signalc.model.VerifiedAccount
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -65,6 +66,15 @@ class ContactStore(app: Application) {
                 )
             }.count() > 0
         }
+
+    suspend fun getContactAddress(accountId: String, contactIdentifier: String): SignalcAddress? =
+        newSuspendedTransaction(Concurrency.Dispatcher, db) {
+            Contacts.select {
+                (Contacts.accountId eq accountId).and(
+                    (Contacts.uuid eq parseUuid(contactIdentifier)).or(Contacts.phoneNumber eq contactIdentifier)
+                )
+            }.singleOrNull()
+        }?.let { SignalcAddress(uuid = it[Contacts.uuid], number = it[Contacts.phoneNumber]) }
 
     /**
      * Given a string identifier -- which may be either a uuid or a phone number -- retrieve the contact having

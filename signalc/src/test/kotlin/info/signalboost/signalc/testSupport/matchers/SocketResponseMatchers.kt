@@ -48,10 +48,10 @@ object SocketResponseMatchers {
 
     fun MockKMatcherScope.inboundIdentityFailure(
         sender: SignalcAddress,
-        recipient: SignalcAddress,
+        recipient: SignalcAddress?,
         fingerprint: String?
     ): SocketResponse.InboundIdentityFailure = match {
-        it.data.local_address.number == recipient.number &&
+        it.data.local_address.number == recipient?.number &&
                 it.data.remote_address?.number == sender.number &&
                 it.data.fingerprint == fingerprint
     }

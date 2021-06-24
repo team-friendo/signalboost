@@ -32,13 +32,11 @@ import kotlin.time.ExperimentalTime
 class ProtocolStoreTest: FreeSpec({
     runBlockingTest {
         val testScope = this
-        val accountId = genPhoneNumber()
-        val config = Config.mockAllExcept(ProtocolStore::class, HikariDataSource::class)
+        val config = Config.mockAllExcept(HikariDataSource::class, ProtocolStore::class, ContactStore::class)
         val app = Application(config).run(testScope)
-        val store = app.protocolStore.of(NewAccount(accountId))
 
-        val senderOneAddress = SignalProtocolAddress(accountId, 42)
-        val senderTwoAddress = SignalProtocolAddress(genPhoneNumber(), 15)
+        val accountId = genPhoneNumber()
+        val accountAddress = SignalProtocolAddress(accountId, 42)
         // NOTE: An address is a combination of a username (uuid or e164-format phone number) and a device id.
         // This is how Signal represents that a user may have many devices and each device has its own session.
         val contact = object {
@@ -53,22 +51,22 @@ class ProtocolStoreTest: FreeSpec({
             )
         }
         val contactAddress = contact.addresses[0]
+        val store = app.protocolStore.of(NewAccount(accountId))
 
+        beforeSpec {
+            app.contactStore.create(accountId, contact.phoneNumber, null)
+        }
         afterSpec {
             app.stop()
             testScope.teardown()
         }
-
-        // TODO: all of the Identity tests (confusingly) assert on addresses for "sender"s
-        //  (but the only identities we care about are for recipients)
 
         "Identities store" - {
             val identityKey = KeyUtil.genIdentityKeyPair().publicKey
             val rotatedIdentityKey = KeyUtil.genIdentityKeyPair().publicKey
 
             afterTest {
-                store.removeIdentity(senderOneAddress)
-                store.removeIdentity(senderTwoAddress)
+                store.removeIdentity(accountAddress)
                 store.removeIdentity(contact.addresses[0])
                 store.removeIdentity(contact.addresses[1])
                 store.removeOwnIdentity()
@@ -107,12 +105,12 @@ class ProtocolStoreTest: FreeSpec({
             }
 
             "trusts the first key it sees for an address" {
-                store.isTrustedIdentity(senderOneAddress, identityKey, Direction.RECEIVING) shouldBe true
+                store.isTrustedIdentity(accountAddress, identityKey, Direction.RECEIVING) shouldBe true
             }
 
             "trusts a key it has stored for an address" {
-                store.saveIdentity(senderOneAddress, identityKey)
-                store.isTrustedIdentity(senderOneAddress, identityKey, Direction.RECEIVING) shouldBe true
+                store.saveIdentity(accountAddress, identityKey)
+                store.isTrustedIdentity(accountAddress, identityKey, Direction.RECEIVING) shouldBe true
             }
 
             "trusts the same identity key for multiple devices" {
@@ -342,7 +340,7 @@ class ProtocolStoreTest: FreeSpec({
 
             afterTest {
                 store.removeOwnIdentity()
-                store.removeIdentity(senderOneAddress)
+                store.removeIdentity(accountAddress)
                 store.removePreKey(ids[0])
                 store.removeSignedPreKey(ids[0])
                 store.deleteAllSessions(contact.phoneNumber)
@@ -357,12 +355,12 @@ class ProtocolStoreTest: FreeSpec({
             "support separate and distinct identities" {
                 store.identityKeyPair.serialize() shouldNotBe otherStore.identityKeyPair.serialize()
 
-                store.saveIdentity(senderOneAddress, KeyUtil.genIdentityKeyPair().publicKey)
+                store.saveIdentity(accountAddress, KeyUtil.genIdentityKeyPair().publicKey)
                 otherStore.saveIdentity(otherAddress, KeyUtil.genIdentityKeyPair().publicKey)
 
-                store.getIdentity(senderOneAddress) shouldNotBe otherStore.getIdentity(otherAddress)
+                store.getIdentity(accountAddress) shouldNotBe otherStore.getIdentity(otherAddress)
                 store.getIdentity(otherAddress) shouldBe null
-                otherStore.getIdentity(senderOneAddress) shouldBe null
+                otherStore.getIdentity(accountAddress) shouldBe null
             }
 
             "support separate and distinct prekeys" {

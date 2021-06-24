@@ -216,7 +216,7 @@ class SignalSenderTest : FreeSpec({
                 "when sealed sender tokens can be derived from a recipient's profile key" - {
                     val mockkUnidentifiedAccessPair = mockk<UnidentifiedAccessPair>()
                     coEvery {
-                        app.accountManager.getUnidentifiedAccessPair(verifiedAccount.identifier, contactPhoneNumber)
+                        app.accountManager.getUnidentifiedAccessPair(verifiedAccount.id, contactPhoneNumber)
                     } returns mockkUnidentifiedAccessPair
 
                     "sends a sealed sender message with access tokens derived from key" {
@@ -234,7 +234,7 @@ class SignalSenderTest : FreeSpec({
                 "when sealed sender tokens cannot be derrived for a recipient (b/c missing profile key)" - {
                     "when unsealed messages are allowed" - {
                         coEvery {
-                            app.accountManager.getUnidentifiedAccessPair(verifiedAccount.identifier, contactPhoneNumber)
+                            app.accountManager.getUnidentifiedAccessPair(verifiedAccount.id, contactPhoneNumber)
                         } returns null
 
                         "sends an unsealed-sender message (with no access tokens)" {

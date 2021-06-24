@@ -2,7 +2,6 @@ package info.signalboost.signalc.logic
 
 import info.signalboost.signalc.Application
 import info.signalboost.signalc.Config
-import info.signalboost.signalc.model.SignalcAddress.Companion.asSignalcAddress
 import info.signalboost.signalc.testSupport.coroutines.CoroutineUtil.teardown
 import info.signalboost.signalc.testSupport.dataGenerators.AccountGen.genVerifiedAccount
 import info.signalboost.signalc.testSupport.dataGenerators.AddressGen.genDeviceId
@@ -70,7 +69,7 @@ class SignalReceiverTest : FreeSpec({
         // val senderAddress = genSignalServiceAddress()
         val senderAddress = genSignalcAddress()
 
-        val timeout = Duration.milliseconds(40)
+        val timeout = Duration.milliseconds(20)
         val pollInterval = Duration.milliseconds(1)
         val now = nowInMillis()
         val expiryTime = genInt()
@@ -123,6 +122,7 @@ class SignalReceiverTest : FreeSpec({
                 every { sender } returns senderAddress.asSignalServiceAddress()
                 every { dataMessage.orNull() } returns mockDataMessage.apply {
                     every { body.orNull() } returnsMany cleartexts
+
                 }
             }
 
@@ -337,16 +337,21 @@ class SignalReceiverTest : FreeSpec({
                                 val identityKey = KeyUtil.genIdentityKeyPair().publicKey
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
                                     UntrustedIdentityException(recipientAccount.username, identityKey),
-                                    senderAddress.asSignalServiceAddress().identifier,
+                                    senderAddress.identifier,
                                     genDeviceId()
                                 )
+
                                 every {
                                     anyConstructed<SignalServiceCipher>().decrypt(any())
                                 } throws untrustedIdentityError
 
-                                beforeTest { messageReceiver.subscribe(recipientAccount)!! }
+                                coEvery {
+                                    app.contactStore.getContactAddress(recipientAccount.username, senderAddress.identifier)
+                                } returns senderAddress
+
 
                                 "relays InboundIdentityFailure to socket sender" {
+                                    messageReceiver.subscribe(recipientAccount)!!
                                     eventually(timeout, pollInterval) {
                                         coVerify {
                                             app.socketSender.send(
@@ -422,6 +427,7 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     } returns mockk {
+                        every { sender } returns senderAddress.asSignalServiceAddress()
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { profileKey.orNull() } returns fakeProfileKey
                         }
@@ -429,10 +435,10 @@ class SignalReceiverTest : FreeSpec({
 
                     "stores the profile key" {
                         messageReceiver.subscribe(recipientAccount)
-                        eventually(timeout) {
+                        eventually(timeout, pollInterval) {
                             coVerify {
                                 app.contactStore.storeProfileKey(
-                                    recipientAccount.address.identifier,
+                                    recipientAccount.address.id,
                                     senderAddress.identifier,
                                     fakeProfileKey,
                                 )
@@ -466,6 +472,7 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     } returns mockk {
+                        every { sender } returns senderAddress.asSignalServiceAddress()
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { body.orNull() } returns cleartextBody
                             every { attachments.orNull() } returns listOf(

@@ -16,6 +16,7 @@ import info.signalboost.signalc.util.FileUtil.readToFile
 import kotlinx.coroutines.*
 import mu.KLoggable
 import org.postgresql.util.Base64
+import org.signal.libsignal.metadata.ProtocolException
 import org.signal.libsignal.metadata.ProtocolUntrustedIdentityException
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
@@ -203,12 +204,14 @@ class SignalReceiver(private val app: Application) {
                 val dataMessage = contents.dataMessage.orNull()?: return@launch
                 contactAddress = contents.sender.asSignalcAddress()
 
-                // acknowledge receipt to sender and store their profile key if present
-                app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
+                // store sender's profile key if present and acknowledge message receipt to them
                 dataMessage.profileKey.orNull()?.let {
                     app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 } ?: run {
                     metrics.numberOfMessagesWithoutProfileKey.labels(envelope.isUnidentifiedSender.toString()).inc()
+                }
+                launch {
+                    app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
                 }
 
                 // extract contents of message and relay to client
@@ -265,18 +268,24 @@ class SignalReceiver(private val app: Application) {
             SocketResponse.Dropped(envelope.asSignalcAddress(), account.address, envelope)
         )
 
-    private suspend fun handleRelayError(err: Throwable, account: SignalcAddress, contact: SignalcAddress?) {
+    private suspend fun handleRelayError(err: Throwable, account: SignalcAddress, decryptedContact: SignalcAddress?) {
         when (err) {
             is ProtocolUntrustedIdentityException -> {
                 // When we get this exception we return a null fingerprint to the client, with the intention of causing
                 // it to send a garbage message that will force a session reset and raise another identity exception.
                 // That exception (unlike this one) will include the fingerprint corresponding to the new session,
                 // and can be handled (and trusted) from the send path.
-                app.socketSender.send(SocketResponse.InboundIdentityFailure.of(account, contact,null))
+                val contactAddress = app.contactStore.getContactAddress(account.id, err.sender)
+                app.socketSender.send(SocketResponse.InboundIdentityFailure.of(account, contactAddress,null))
+            }
+            is ProtocolException -> {
+                val contactAddress = app.contactStore.getContactAddress(account.id, err.sender)
+                app.socketSender.send(SocketResponse.DecryptionError(account, contactAddress, err))
+                logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
             }
             else -> {
-                app.socketSender.send(SocketResponse.DecryptionError(account, contact, err))
-                logger.error { "Decryption Error:\n ${err.stackTraceToString()}" }
+                app.socketSender.send(SocketResponse.MessageHandlingError(account, decryptedContact, err))
+                logger.error { "Error handling incoming message from signal:\n ${err.stackTraceToString()}" }
             }
         }
     }

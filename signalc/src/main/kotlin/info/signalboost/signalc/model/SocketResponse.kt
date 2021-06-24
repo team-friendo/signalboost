@@ -149,12 +149,22 @@ sealed class SocketResponse {
                 InboundIdentityFailure(
                     Data(
                         LocalAddress(localAddress.number!!),
-                        remoteAddress?.let{ RemoteAddress(it.identifier) },
+                        remoteAddress?.let{ RemoteAddress(it.number!!) },
                         fingerprint
                     )
                 )
         }
     }
+
+    @Serializable
+    @SerialName("message_handling_error")
+    data class MessageHandlingError(
+        val recipient: SignalcAddress,
+        @Required
+        val sender: SignalcAddress?,
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse()
 
     @Serializable
     @SerialName("registration_succeeded")
