@@ -108,12 +108,12 @@ sealed class SocketResponse {
         }
     }
 
-    // TODO: what does signald do here?
     @Serializable
     @SerialName("decryption_error")
     data class DecryptionError(
-        val sender: SignalcAddress,
         val recipient: SignalcAddress,
+        @Required
+        val sender: SignalcAddress?,
         @Serializable(ThrowableSerializer::class)
         val error: Throwable,
     ): SocketResponse()
@@ -130,7 +130,8 @@ sealed class SocketResponse {
         @Serializable
         data class Data(
             val local_address: LocalAddress,
-            val remote_address: RemoteAddress,
+            @Required
+            val remote_address: RemoteAddress?,
             @Required
             val fingerprint: String?
         )
@@ -144,10 +145,26 @@ sealed class SocketResponse {
         data class RemoteAddress(val number: String)
 
         companion object {
-            fun of(localAddress: SignalcAddress, remoteAddress: SignalcAddress, fingerprint: String? = null) =
-                InboundIdentityFailure(Data(LocalAddress(localAddress.number!!), RemoteAddress(remoteAddress.number!!), fingerprint))
+            fun of(localAddress: SignalcAddress, remoteAddress: SignalcAddress?, fingerprint: String? = null) =
+                InboundIdentityFailure(
+                    Data(
+                        LocalAddress(localAddress.number!!),
+                        remoteAddress?.let{ RemoteAddress(it.number!!) },
+                        fingerprint
+                    )
+                )
         }
     }
+
+    @Serializable
+    @SerialName("message_handling_error")
+    data class MessageHandlingError(
+        val recipient: SignalcAddress,
+        @Required
+        val sender: SignalcAddress?,
+        @Serializable(ThrowableSerializer::class)
+        val error: Throwable,
+    ): SocketResponse()
 
     @Serializable
     @SerialName("registration_succeeded")
@@ -197,7 +214,6 @@ sealed class SocketResponse {
         }
     }
 
-    // TODO: what does signald do here? "unrecognized"?
     @Serializable
     @SerialName("request_invalid") // TODO: invalidRequest
     data class RequestInvalidError(

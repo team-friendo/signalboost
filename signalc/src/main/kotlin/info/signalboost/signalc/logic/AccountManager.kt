@@ -9,7 +9,10 @@ import info.signalboost.signalc.model.NewAccount
 import info.signalboost.signalc.model.RegisteredAccount
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.KeyUtil
-import kotlinx.coroutines.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import mu.KLoggable
 import org.whispersystems.libsignal.util.guava.Optional
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
@@ -20,9 +23,8 @@ import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedE
 import org.whispersystems.signalservice.api.util.UptimeSleepTimer
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.io.IOException
-import java.util.UUID
+import java.util.*
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.jvm.Throws
 import kotlin.time.ExperimentalTime
 
 
@@ -72,20 +74,20 @@ class AccountManager(private val app: Application) {
 
     // register an account with signal server and request an sms token to use to verify it (storing account in db)
     suspend fun register(account: NewAccount, captcha: String? = null): RegisteredAccount {
-        app.coroutineScope.async(Concurrency.Dispatcher) {
+        withContext(app.coroutineScope.coroutineContext + Concurrency.Dispatcher) {
             accountManagerOf(account).requestSmsVerificationCode(
                 false,
                 captcha?.let { Optional.of(it) } ?: Optional.absent(),
                 Optional.absent()
             )
-        }.await()
+        }
         return RegisteredAccount.fromNew(account).also { accountStore.save(it) }
     }
 
     // provide a verification code, retrieve and store a UUID (storing account in db when done)
     suspend fun verify(account: RegisteredAccount, code: String): VerifiedAccount? {
         val verifyResponse: VerifyAccountResponse = try {
-            app.coroutineScope.async(Concurrency.Dispatcher) {
+            withContext(app.coroutineScope.coroutineContext + Concurrency.Dispatcher) {
                 accountManagerOf(account).verifyAccountWithCode(
                     code,
                     null,
@@ -98,7 +100,7 @@ class AccountManager(private val app: Application) {
                     AccountAttributes.Capabilities(true, false, false, false),
                     true
                 )
-            }.await()
+            }
         } catch(e: AuthorizationFailedException) {
             return null
         }
@@ -106,9 +108,11 @@ class AccountManager(private val app: Application) {
         // TODO(aguestuser|2020-12-23):
         //  - as a privacy matter, we might eventually want to throw away phone numbers once we have a UUID
         //  - if so, consider udpating `accountId` in protocol store to this uuid at this point?
-        return VerifiedAccount.fromRegistered(account, uuid).also{ accountStore.save(it) }
+        return VerifiedAccount.fromRegistered(account, uuid).also{
+            accountStore.save(it)
+            app.contactStore.createOwnContact(it)
+        }
     }
-
 
 
     /**
@@ -156,10 +160,10 @@ class AccountManager(private val app: Application) {
      **/
     @Throws(IOException::class) // if network call to retreive sender cert fails
     suspend fun getUnidentifiedAccessPair(accountId: String, contactId: String): UnidentifiedAccessPair? {
-        val contactAccessKey = app.profileStore.loadProfileKey(accountId, contactId)?.let {
+        val contactAccessKey = app.contactStore.loadProfileKey(accountId, contactId)?.let {
             UnidentifiedAccess.deriveAccessKeyFrom(it)
         } ?: run {
-            logger.error { "Could not derive delivery token for $contactId: no profile key found." }
+            logger.warn { "Could not derive delivery token for $contactId: no profile key found." }
             return null
         }
 

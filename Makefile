@@ -382,6 +382,14 @@ sc.db.rollback_n: ## run migrations
 	docker-compose -f docker-compose-sc.yml \
 	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain rollbackCount -PliquibaseCommandValue=$(N)' signalc
 
+sc.db.clear_checksums: ## run migrations
+	echo "----- rolling back 1 development migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=development --entrypoint 'gradle --console=plain clearCheckSums' signalc && \
+	echo "----- rolling back 1 test migration" && \
+	docker-compose -f docker-compose-sc.yml \
+	run -e SIGNALC_ENV=test --entrypoint 'gradle --console=plain clearCheckSums' signalc
+
 sc.db.psql: # get a psql shell on signalc db
 	./bin/sc/psql
 

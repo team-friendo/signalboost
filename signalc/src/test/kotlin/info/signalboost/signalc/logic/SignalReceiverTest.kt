@@ -38,6 +38,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.TimeoutException
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.Path
@@ -68,7 +69,7 @@ class SignalReceiverTest : FreeSpec({
         // val senderAddress = genSignalServiceAddress()
         val senderAddress = genSignalcAddress()
 
-        val timeout = Duration.milliseconds(40)
+        val timeout = Duration.milliseconds(20)
         val pollInterval = Duration.milliseconds(1)
         val now = nowInMillis()
         val expiryTime = genInt()
@@ -118,8 +119,10 @@ class SignalReceiverTest : FreeSpec({
             every {
                 anyConstructed<SignalServiceCipher>().decrypt(any())
             } returns mockk {
+                every { sender } returns senderAddress.asSignalServiceAddress()
                 every { dataMessage.orNull() } returns mockDataMessage.apply {
                     every { body.orNull() } returnsMany cleartexts
+
                 }
             }
 
@@ -334,16 +337,21 @@ class SignalReceiverTest : FreeSpec({
                                 val identityKey = KeyUtil.genIdentityKeyPair().publicKey
                                 val untrustedIdentityError = ProtocolUntrustedIdentityException(
                                     UntrustedIdentityException(recipientAccount.username, identityKey),
-                                    senderAddress.asSignalServiceAddress().identifier,
+                                    senderAddress.identifier,
                                     genDeviceId()
                                 )
+
                                 every {
                                     anyConstructed<SignalServiceCipher>().decrypt(any())
                                 } throws untrustedIdentityError
 
-                                beforeTest { messageReceiver.subscribe(recipientAccount)!! }
+                                coEvery {
+                                    app.contactStore.getContactAddress(recipientAccount.username, senderAddress.identifier)
+                                } returns senderAddress
+
 
                                 "relays InboundIdentityFailure to socket sender" {
+                                    messageReceiver.subscribe(recipientAccount)!!
                                     eventually(timeout, pollInterval) {
                                         coVerify {
                                             app.socketSender.send(
@@ -419,6 +427,7 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     } returns mockk {
+                        every { sender } returns senderAddress.asSignalServiceAddress()
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { profileKey.orNull() } returns fakeProfileKey
                         }
@@ -426,10 +435,10 @@ class SignalReceiverTest : FreeSpec({
 
                     "stores the profile key" {
                         messageReceiver.subscribe(recipientAccount)
-                        eventually(timeout) {
+                        eventually(timeout, pollInterval) {
                             coVerify {
-                                app.profileStore.storeProfileKey(
-                                    recipientAccount.address.identifier,
+                                app.contactStore.storeProfileKey(
+                                    recipientAccount.address.id,
                                     senderAddress.identifier,
                                     fakeProfileKey,
                                 )
@@ -463,6 +472,7 @@ class SignalReceiverTest : FreeSpec({
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
                     } returns mockk {
+                        every { sender } returns senderAddress.asSignalServiceAddress()
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { body.orNull() } returns cleartextBody
                             every { attachments.orNull() } returns listOf(
@@ -538,6 +548,47 @@ class SignalReceiverTest : FreeSpec({
                     eventually(timeout, pollInterval) {
                         coVerify {
                             anyConstructed<SignalServiceCipher>().decrypt(envelope)
+                        }
+                    }
+                }
+
+                "when the receiving account does has not stored a contact for the sender" - {
+                    coEvery {
+                        app.contactStore.hasContact(recipientAccount.id, envelope.sourceIdentifier)
+                    } returns false
+
+                    "creates a contact for the sender" {
+                        messageReceiver.subscribe(recipientAccount)
+                        eventually(timeout, pollInterval) {
+                            coVerify {
+                                app.contactStore.create(recipientAccount, envelope)
+                            }
+                        }
+                    }
+
+                    "sends the contact a profile key" {
+                        messageReceiver.subscribe(recipientAccount)
+                        eventually(timeout * 4, pollInterval) {
+                            coVerify {
+                                app.signalSender.sendProfileKey(recipientAccount, any())
+                            }
+                        }
+                    }
+                }
+            }
+
+            "when signal sends a RECEIPT" - {
+                val (envelope) = signalSendsEnvelopeOf(RECEIPT_VALUE)
+
+                "stores an missing identifiers contained in the receipt" {
+                    messageReceiver.subscribe(recipientAccount)
+                    eventually(timeout, pollInterval) {
+                        coVerify {
+                            app.contactStore.storeMissingIdentifier(
+                                recipientAccount.id,
+                                envelope.sourceE164.get(),
+                                UUID.fromString(envelope.sourceUuid.get()),
+                            )
                         }
                     }
                 }

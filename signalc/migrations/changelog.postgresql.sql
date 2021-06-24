@@ -155,3 +155,111 @@ ALTER TABLE identities
 -- rollback ALTER TABLE identities
 -- rollback     DROP COLUMN created_at,
 -- rollback     DROP COLUMN updated_at;
+
+-- changeset aguestuser:1622741296513-1 failOnError:true
+CREATE TABLE IF NOT EXISTS contacts (
+    account_id VARCHAR(255),
+    contact_id SERIAL,
+    uuid uuid NULL,
+    phone_number VARCHAR(255) NOT NULL,
+    profile_key_bytes bytea NULL,
+    CONSTRAINT pk_Contacts PRIMARY KEY (contact_id, account_id)
+);
+CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
+-- rollback DROP TABLE contacts;
+
+
+-- changeset aguestuser:1623100049239-1 failOnError:true
+DELETE FROM accounts;
+DELETE FROM contacts;
+DELETE FROM identities;
+DELETE FROM ownidentities;
+DELETE FROM prekeys;
+DELETE FROM profiles;
+DELETE FROM senderkeys;
+DELETE FROM sessions;
+DELETE FROM signedprekeys;
+
+ALTER TABLE identities DROP CONSTRAINT pk_identities;
+ALTER TABLE identities DROP COLUMN contact_id;
+ALTER TABLE identities ADD COLUMN contact_id INT;
+ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id);
+
+ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+ALTER TABLE sessions DROP COLUMN contact_id;
+ALTER TABLE sessions ADD COLUMN contact_id INT;
+ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact_id, device_id);
+-- rollback DELETE FROM accounts;
+-- rollback DELETE FROM contacts;
+-- rollback DELETE FROM identities;
+-- rollback DELETE FROM ownidentities;
+-- rollback DELETE FROM prekeys;
+-- rollback DELETE FROM profiles;
+-- rollback DELETE FROM senderkeys;
+-- rollback DELETE FROM sessions;
+-- rollback DELETE FROM signedprekeys;
+-- rollback
+-- rollback ALTER TABLE identities DROP CONSTRAINT pk_identities;
+-- rollback ALTER TABLE identities DROP COLUMN contact_id;
+-- rollback ALTER TABLE identities ADD COLUMN contact_id VARCHAR(255) NOT NULL;
+-- rollback ALTER TABLE identities ADD CONSTRAINT pk_identities PRIMARY KEY (account_id, contact_id);
+-- rollback
+-- rollback ALTER TABLE sessions DROP CONSTRAINT pk_sessions;
+-- rollback ALTER TABLE sessions DROP COLUMN contact_id;
+-- rollback ALTER TABLE sessions ADD COLUMN contact_id VARCHAR(255) NOT NULL;
+-- rollback ALTER TABLE sessions ADD CONSTRAINT pk_sessions PRIMARY KEY (account_id, contact_id, device_id);
+
+-- changeset aguestuser:1623100049239-2 failOnError:true
+DROP INDEX identities_identity_key_bytes;
+-- rollback CREATE INDEX identities_identity_key_bytes ON identities (identity_key_bytes);
+
+
+-- changeset fdbk:1623280052786-1 failOnError:true
+ALTER TABLE contacts ALTER COLUMN phone_number DROP NOT NULL;
+-- rollback ALTER TABLE contacts ALTER COLUMN phone_number SET NOT NULL;
+
+-- changeset aguestuser:1624301616527-1 failOnError:true
+-- NOTE: This migration introduces uniqueness constraints that will fail if there are any duplicate account_id/uuid or
+-- account_id/phone_number combinations for any contact rows. Such dupes constitute an illegal state.
+-- They are associated with bugs that we have now eradicated from the code. However, we nevertheless
+-- begin this migration with 2 queries to clear all contacts having such an illegal state so that dev environments
+-- created before the bug was eradicated may successfully run this migration.
+-- Here we remove all contacts with duplicate account_id/uuid combos:
+with uuid_counts as (
+    select count(*), account_id, uuid from contacts
+    group by account_id, uuid
+    order by count(*)
+),
+uuid_dupes as (
+    select account_id, uuid from uuid_counts where uuid_counts.count > 1
+)
+delete from contacts where (account_id, uuid) in (select * from uuid_dupes);
+-- Here we remove all contacts with duplicate account_id/phone_number combos:
+with phone_number_counts as (
+    select count(*), account_id, phone_number from contacts
+    group by account_id, phone_number
+    order by count(*)
+),
+phone_number_dupes as (
+    select account_id, phone_number from phone_number_counts where phone_number_counts.count > 1
+)
+delete from contacts where (account_id, phone_number) in (select * from phone_number_dupes);
+-- And now we proceed to the migration!
+DROP INDEX contacts_account_id_uuid;
+CREATE UNIQUE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+DROP INDEX contacts_account_id_phone_number;
+CREATE UNIQUE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
+-- rollback DROP INDEX contacts_account_id_uuid;
+-- rollback CREATE INDEX contacts_account_id_uuid ON contacts (account_id, uuid);
+-- rollback DROP INDEX contacts_account_id_phone_number;
+-- rollback CREATE INDEX contacts_account_id_phone_number ON contacts (account_id, phone_number);
+
+-- changeset aguestuser:1624301616527-2 failOnError:true
+ALTER TABLE contacts ALTER COLUMN phone_number DROP DEFAULT;
+-- rollback ALTER TABLE contacts ALTER COLUMN phone_number SET DEFAULT '';
+
+-- changeset aguestuser:1624301616527-3 failOnError:true
+ALTER TABLE contacts ADD CONSTRAINT phone_number_regex CHECK(phone_number ~ '^\+\d{9,15}\Z');
+-- rollback ALTER TABLE contacts DROP CONSTRAINT phone_number_regex;
+

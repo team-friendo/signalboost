@@ -3,9 +3,9 @@ package info.signalboost.signalc
 import com.zaxxer.hikari.HikariDataSource
 import info.signalboost.signalc.logic.*
 import info.signalboost.signalc.metrics.Metrics
-import info.signalboost.signalc.model.SignalcAddress
-import info.signalboost.signalc.model.SignalcSendResult
-import info.signalboost.signalc.store.ProfileStore
+import info.signalboost.signalc.model.*
+import info.signalboost.signalc.store.AccountStore
+import info.signalboost.signalc.store.ContactStore
 import info.signalboost.signalc.store.ProtocolStore
 import io.mockk.coEvery
 import io.mockk.every
@@ -29,14 +29,24 @@ object Mocks {
         coEvery { publishPreKeys(any()) } returns Unit
         coEvery { publishPreKeys(any(), any()) } returns Unit
         coEvery { refreshPreKeysIfDepleted(any()) } returns Unit
-        coEvery { getUnidentifiedAccessPair(any(), any()) } returns mockk()
+        coEvery { getUnidentifiedAccessPair(any(), any()) } returns null
+    }
+    val accountStore: AccountStore.() -> Unit = {
+        coEvery { save(any<NewAccount>()) } returns Unit
+        coEvery { save(any<RegisteredAccount>()) } returns Unit
+        coEvery { save(any<VerifiedAccount>()) } returns Unit
     }
     val dataSource: HikariDataSource.() -> Unit = {
         every { closeQuietly() } returns Unit
     }
-    val profileStore: ProfileStore.() -> Unit = {
-        coEvery { storeProfileKey(any(), any(), any())} returns Unit
+    val contactStore: ContactStore.() -> Unit = {
+        coEvery { create(any(), any()) } returns 0
+        coEvery { create(any(), any(), any(), any()) } returns 0
+        coEvery { createOwnContact(any()) } returns 0
+        coEvery { hasContact(any(), any()) } returns true
         coEvery { loadProfileKey(any(), any())} returns mockk()
+        coEvery { storeMissingIdentifier(any(), any(), any())} returns Unit
+        coEvery { storeProfileKey(any(), any(), any())} returns Unit
     }
     val protocolStore: ProtocolStore.() -> Unit = {
         every { of(any()) } returns mockk {
@@ -63,6 +73,12 @@ object Mocks {
                 every { isNeedsSync } returns true
             }
         coEvery { send(any(), any(), any(), any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
+        }
+        coEvery { sendProfileKey(any(), any(), any()) } answers {
+            mockkSuccessOf(secondArg())
+        }
+        coEvery { sendReceipt(any(), any(), any()) } answers {
             mockkSuccessOf(secondArg())
         }
         coEvery { setExpiration(any(), any(), any()) } answers {

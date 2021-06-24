@@ -10,6 +10,7 @@ import info.signalboost.signalc.model.SocketRequest
 import info.signalboost.signalc.model.VerifiedAccount
 import info.signalboost.signalc.util.CacheUtil.getMemoized
 import info.signalboost.signalc.util.TimeUtil
+import info.signalboost.signalc.util.TimeUtil.nowInMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
@@ -20,10 +21,12 @@ import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
+import org.whispersystems.signalservice.api.messages.SignalServiceReceiptMessage
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.io.path.ExperimentalPathApi
@@ -81,7 +84,7 @@ class SignalSender(private val app: Application) {
                 Optional.absent(), // preview (we don't support those!)
                 sendAttachment.width,
                 sendAttachment.height,
-                TimeUtil.nowInMillis(), //uploadTimestamp
+                nowInMillis(), //uploadTimestamp
                 Optional.fromNullable(sendAttachment.caption),
                 Optional.fromNullable(sendAttachment.blurHash),
                 null, // progressListener
@@ -100,7 +103,7 @@ class SignalSender(private val app: Application) {
         body: String,
         expiration: Int,
         attachments: List<SocketRequest.Send.Attachment> = emptyList(),
-        timestamp: Long = TimeUtil.nowInMillis(),
+        timestamp: Long = nowInMillis(),
     ): SignalcSendResult =
         // TODO: handle `signalservice.api.push.exceptions.NotFoundException` here
         sendDataMessage(
@@ -116,6 +119,30 @@ class SignalSender(private val app: Application) {
                 }
                 .withProfileKey(sender.profileKeyBytes)
                 .build()
+        )
+
+    suspend fun sendProfileKey(
+        sender: VerifiedAccount,
+        recipient: SignalcAddress,
+        timestamp: Long = nowInMillis(),
+    ): SignalcSendResult =
+        sendDataMessage(
+            sender,
+            recipient,
+            SignalServiceDataMessage
+                .newBuilder()
+                .asProfileKeyUpdate(true)
+                .withTimestamp(timestamp)
+                .withProfileKey(sender.profileKeyBytes)
+                .build()
+        )
+
+    /* send a read receipt (so sender sees "2 checks" -- but only if we can send it as a sealed sender message */
+    suspend fun sendReceipt(sender: VerifiedAccount, recipient: SignalcAddress, timestamp: Long) =
+        messageSenderOf(sender).sendReceipt(
+            recipient.asSignalServiceAddress(),
+            Optional.fromNullable(app.accountManager.getUnidentifiedAccessPair(sender.id, recipient.identifier)),
+            SignalServiceReceiptMessage(SignalServiceReceiptMessage.Type.READ, listOf(timestamp), timestamp),
         )
 
     suspend fun setExpiration(
@@ -153,8 +180,8 @@ class SignalSender(private val app: Application) {
         // Try to send all messages sealed-sender by deriving `unidentifiedAccessPair`s from profile keys. Without such
         // tokens, message are sent unsealed, and are treated by Signal as spam. To avoid being blocked by Signal,
         // we expose a toggle to prevent all unsealed messages from being sent.
-        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.identifier,recipient.identifier).also {
-            metrics.numberOfUnsealedMessagesProduced.labels(sender.identifier).inc()
+        val unidentifiedAccessPair = app.accountManager.getUnidentifiedAccessPair(sender.id, recipient.identifier).also {
+            metrics.numberOfUnsealedMessagesProduced.labels(sender.id).inc()
             if(it == null && app.toggles.blockUnsealedMessages) return@async SignalcSendResult.Blocked(recipient)
         }
         try {

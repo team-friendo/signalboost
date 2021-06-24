@@ -122,7 +122,6 @@ class SocketResponseTest : FreeSpec({
         }
 
         "of Cleartext" - {
-            // TODO: modify to match signald
             val response = genCleartext()
 
             "encodes to JSON" {
@@ -180,13 +179,13 @@ class SocketResponseTest : FreeSpec({
                 response.toJson() shouldBe """
                 |{
                    |"type":"decryption_error",
-                   |"sender":{
-                      |"number":"${response.sender.number}",
-                      |"uuid":"${response.sender.uuid}"
-                   |},
                    |"recipient":{
                       |"number":"${response.recipient.number}",
                       |"uuid":"${response.recipient.uuid}"
+                   |},
+                   |"sender":{
+                      |"number":"${response.sender?.number}",
+                      |"uuid":"${response.sender?.uuid}"
                    |},
                    |"error":{
                       |"cause":"${response.error.javaClass.name}",
@@ -219,7 +218,7 @@ class SocketResponseTest : FreeSpec({
                       |"number":"${response.data.local_address.number}"
                     |},
                     |"remote_address":{
-                      |"number":"${response.data.remote_address.number}"
+                      |"number":"${response.data.remote_address?.number}"
                     |},
                     |"fingerprint":"${response.data.fingerprint}"
                   |}

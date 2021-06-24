@@ -14,7 +14,6 @@ import org.whispersystems.libsignal.groups.state.SenderKeyStore
 import org.whispersystems.libsignal.state.*
 import org.whispersystems.signalservice.api.SignalServiceProtocolStore
 import org.whispersystems.signalservice.api.SignalServiceSessionStore
-import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import java.time.Instant
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.time.ExperimentalTime
@@ -24,21 +23,31 @@ import kotlin.time.ExperimentalTime
 @ObsoleteCoroutinesApi
 @ExperimentalPathApi
 @ExperimentalTime
-class ProtocolStore(app: Application) {
+class ProtocolStore(val app: Application) {
     val db = app.db
-    fun of(account: Account): AccountProtocolStore = AccountProtocolStore(db, account.username)
+    fun of(account: Account): AccountProtocolStore = AccountProtocolStore(
+        db,
+        account.username,
+        app.contactStore::resolveContactId
+    )
 
     fun countOwnIdentities(): Long =
         transaction(db) { OwnIdentities.selectAll().count() }
 
+    /**
+     * Implements the 4 stores required by the SignalServiceProtocolSTore interface and some decorator functions used
+     * only by signalc. Each instance of this class provides a protocol store for a single account. Since any instance
+     * of signalc has many accounts, any singalc instance will also have many protocol stores.
+     **/
     class AccountProtocolStore(
         private val db: Database,
         private val accountId: String,
+        private val resolveContactId: (String, String) -> Int,
         val lock: SessionLock = SessionLock(),
-        private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock),
+        private val identityStore: IdentityKeyStore = SignalcIdentityStore(db, accountId, lock, resolveContactId),
         private val preKeyStore: PreKeyStore = SignalcPreKeyStore(db, accountId, lock),
         private val senderKeyStore: SenderKeyStore = SignalcSenderKeyStore(db, accountId, lock),
-        private val sessionStore: SignalServiceSessionStore = SignalcSessionStore(db, accountId, lock),
+        private val sessionStore: SignalServiceSessionStore = SignalcSessionStore(db, accountId, lock, resolveContactId),
         private val signedPreKeyStore: SignedPreKeyStore = SignalcSignedPreKeyStore(db, accountId, lock),
     ) : SignalServiceProtocolStore,
         IdentityKeyStore by identityStore,
@@ -47,9 +56,7 @@ class ProtocolStore(app: Application) {
         SignalServiceSessionStore by sessionStore,
         SignedPreKeyStore by signedPreKeyStore {
 
-        /**
-         * DECORATOR FUNCTIONS
-         **/
+        // DECORATOR FUNCTIONS
 
         private val scIdentityStore = identityStore as SignalcIdentityStore
         val countIdentitities: () -> Long = scIdentityStore::countIdentities

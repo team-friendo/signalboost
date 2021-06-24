@@ -10,18 +10,18 @@ import org.jetbrains.exposed.sql.statements.UpdateStatement
 
 interface ContactRecord: FieldSet {
     val accountId: Column<String>
-    val contactId: Column<String>
+    val contactId: Column<Int>
 
     companion object {
 
-        fun ContactRecord.findByContactId(accountId: String, contactId: String): ResultRow? {
+        fun ContactRecord.findByContactId(accountId: String, contactId: Int): ResultRow? {
             val table = this
             return table.select {
                 (table.accountId eq accountId).and(table.contactId eq contactId)
             }.singleOrNull()
         }
 
-        fun ContactRecord.findManyByContactId(accountId: String, contactId: String): List<ResultRow> {
+        fun ContactRecord.findManyByContactId(accountId: String, contactId: Int): List<ResultRow> {
             val table = this
             return table.select {
                 (table.accountId eq accountId).and(table.contactId eq contactId)
@@ -30,7 +30,7 @@ interface ContactRecord: FieldSet {
 
         fun ContactRecord.updateByContactId(
             accountId: String,
-            contactId: String,
+            contactId: Int,
             updateStatement: Table.(UpdateStatement) -> Unit
         ): Int {
             val table = this
@@ -39,7 +39,7 @@ interface ContactRecord: FieldSet {
             }, null, updateStatement)
         }
 
-        fun ContactRecord.deleteByContactId(accountId: String, contactId: String): Int {
+        fun ContactRecord.deleteByContactId(accountId: String, contactId: Int): Int {
             val table = this
             return (table as Table).deleteWhere {
                 (table.accountId eq accountId).and(table.contactId eq contactId)

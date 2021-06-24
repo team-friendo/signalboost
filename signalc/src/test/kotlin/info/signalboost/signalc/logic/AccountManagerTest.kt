@@ -107,8 +107,6 @@ class AccountManagerTest : FreeSpec({
 
         "#verify" - {
             val code = "1312"
-            val saveSlot = slot<VerifiedAccount>()
-            coEvery { app.accountStore.save(account = capture(saveSlot)) } returns Unit
             every { mockProtocolStore.localRegistrationId } returns 42
 
             "when given correct code" - {
@@ -132,9 +130,15 @@ class AccountManagerTest : FreeSpec({
                 "updates the account store" {
                     accountManager.verify(registeredAccount, code)
                     coVerify {
-                        app.accountStore.save(ofType(VerifiedAccount::class))
+                        app.accountStore.save(verifiedAccount)
                     }
-                    saveSlot.captured shouldBe verifiedAccount
+                }
+
+                "saves a self-referrential contact" {
+                    accountManager.verify(registeredAccount, code)
+                    coVerify {
+                        app.contactStore.createOwnContact(verifiedAccount)
+                    }
                 }
 
                 "returns a verified account" {
@@ -293,7 +297,7 @@ class AccountManagerTest : FreeSpec({
             } returns senderCert.serialized
 
             coEvery {
-                app.profileStore.loadProfileKey(verifiedAccount.identifier, any())
+                app.contactStore.loadProfileKey(verifiedAccount.identifier, any())
             } coAnswers  {
                 if (secondArg<String>() == knownContactId) contactProfileKey
                 else null
