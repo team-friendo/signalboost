@@ -40,7 +40,6 @@ object Mocks {
         every { closeQuietly() } returns Unit
     }
     val contactStore: ContactStore.() -> Unit = {
-        coEvery { create(any(), any()) } returns 0
         coEvery { create(any(), any(), any(), any()) } returns 0
         coEvery { createOwnContact(any()) } returns 0
         coEvery { hasContact(any(), any()) } returns true

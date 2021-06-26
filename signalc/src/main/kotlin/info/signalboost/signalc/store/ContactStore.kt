@@ -60,12 +60,17 @@ class ContactStore(app: Application) {
      */
     suspend fun hasContact(accountId: String, contactIdentifier: String): Boolean =
         newSuspendedTransaction(Concurrency.Dispatcher, db) {
-            Contacts.select {
-                (Contacts.accountId eq accountId).and(
-                    (Contacts.phoneNumber eq contactIdentifier).or(Contacts.uuid eq parseUuid(contactIdentifier))
-                )
+            run {
+                parseUuid(contactIdentifier)
+                    ?.let { Contacts.select {
+                        (Contacts.accountId eq accountId).and(Contacts.uuid eq it) }
+                    }
+                    ?: Contacts.select {
+                        (Contacts.accountId eq accountId).and(Contacts.phoneNumber eq contactIdentifier)
+                    }
             }.count() > 0
         }
+
 
     /**
      * Given a string identifier that may be either a uuid or a phone number,

@@ -34,6 +34,7 @@ import org.whispersystems.signalservice.api.SignalServiceMessagePipe
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemoteId
+import org.whispersystems.signalservice.api.messages.SignalServiceContent
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage
 import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type.*
@@ -107,6 +108,11 @@ class SignalReceiverTest : FreeSpec({
         fun signalThrowsIO() =
             signalSendsEnvelopeOf(UNKNOWN_VALUE, ioException)
 
+        val mockContents = mockk<SignalServiceContent> {
+            every { sender } returns senderAddress.asSignalServiceAddress()
+            every { isNeedsReceipt } returns true
+        }
+
         val mockDataMessage = mockk<SignalServiceDataMessage> {
             every { expiresInSeconds } returns expiryTime
             every { timestamp } returns now
@@ -118,11 +124,9 @@ class SignalReceiverTest : FreeSpec({
         fun decryptionYields(cleartexts: List<String?>) =
             every {
                 anyConstructed<SignalServiceCipher>().decrypt(any())
-            } returns mockk {
-                every { sender } returns senderAddress.asSignalServiceAddress()
+            } returns mockContents.apply {
                 every { dataMessage.orNull() } returns mockDataMessage.apply {
                     every { body.orNull() } returnsMany cleartexts
-
                 }
             }
 
@@ -426,8 +430,7 @@ class SignalReceiverTest : FreeSpec({
                     val fakeProfileKey = genRandomBytes(32)
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
-                    } returns mockk {
-                        every { sender } returns senderAddress.asSignalServiceAddress()
+                    } returns mockContents.apply {
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { profileKey.orNull() } returns fakeProfileKey
                         }
@@ -471,8 +474,7 @@ class SignalReceiverTest : FreeSpec({
 
                     every {
                         anyConstructed<SignalServiceCipher>().decrypt(any())
-                    } returns mockk {
-                        every { sender } returns senderAddress.asSignalServiceAddress()
+                    } returns mockContents.apply {
                         every { dataMessage.orNull() } returns mockDataMessage.apply {
                             every { body.orNull() } returns cleartextBody
                             every { attachments.orNull() } returns listOf(
@@ -561,7 +563,11 @@ class SignalReceiverTest : FreeSpec({
                         messageReceiver.subscribe(recipientAccount)
                         eventually(timeout, pollInterval) {
                             coVerify {
-                                app.contactStore.create(recipientAccount, envelope)
+                                app.contactStore.create(
+                                    recipientAccount.id,
+                                    envelope.sourceE164.get(),
+                                    UUID.fromString(envelope.sourceUuid.get())
+                                )
                             }
                         }
                     }
