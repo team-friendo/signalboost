@@ -95,18 +95,6 @@ class ContactStoreTest: FreeSpec({
                         }
                     }
                 }
-
-                "given an account and an envelope" - {
-                    val envelope = genEnvelope()
-                    val id = app.contactStore.create(account, envelope)
-
-                    "creates a contact and returns its id" {
-                        id shouldBeGreaterThan 0
-                        app.contactStore.count() shouldBeGreaterThan initCount
-                        app.contactStore.hasContact(accountId, envelope.sourceE164.get()) shouldBe true
-                        app.contactStore.hasContact(accountId, envelope.sourceUuid.get()) shouldBe true
-                    }
-                }
             }
 
             "#hasContact" - {

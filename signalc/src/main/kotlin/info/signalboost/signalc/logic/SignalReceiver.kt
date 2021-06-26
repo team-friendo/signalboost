@@ -164,28 +164,20 @@ class SignalReceiver(private val app: Application) {
 
     // HELPERS
 
-    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope): Job?  {
+    private suspend fun dispatch(account: VerifiedAccount, envelope: SignalServiceEnvelope) {
         envelope.type.asEnum().let {
             logger.debug { "Got ${it.asString} from ${envelope.sourceIdentifier ?: "SEALED"} to ${account.username}" }
             metrics.numberOfMessagesReceived.labels(it.asString).inc()
-            return when (it) {
-                EnvelopeType.CIPHERTEXT,
-                EnvelopeType.UNIDENTIFIED_SENDER -> {
-                    processMessage(envelope, account)
-                }
+            when (it) {
                 EnvelopeType.PREKEY_BUNDLE -> {
                     processPreKeyBundle(envelope, account)
                     processMessage(envelope, account)
                 }
-                EnvelopeType.RECEIPT -> {
-                    processReceipt(envelope, account)
-                    null
-                }
+                EnvelopeType.CIPHERTEXT,
+                EnvelopeType.UNIDENTIFIED_SENDER -> processMessage(envelope, account)
+                EnvelopeType.RECEIPT -> processReceipt(envelope, account)
                 EnvelopeType.KEY_EXCHANGE, // TODO: handle KEY_EXCHANGE to process "reset secure session" events
-                EnvelopeType.UNKNOWN ->  {
-                    drop(envelope, account)
-                    null
-                }
+                EnvelopeType.UNKNOWN -> drop(envelope, account)
             }
         }
     }
@@ -193,37 +185,38 @@ class SignalReceiver(private val app: Application) {
     /**
      * Attempt to decrypt envelope and process data message then relay result to socket for handling by client.
      */
-    private suspend fun processMessage(envelope: SignalServiceEnvelope, account: VerifiedAccount): Job {
-        return app.coroutineScope.launch(Concurrency.Dispatcher) {
-            var contactAddress: SignalcAddress? = null // not available until after decryption for sealed-sender msgs
+    private suspend fun processMessage(envelope: SignalServiceEnvelope, account: VerifiedAccount) {
+        app.coroutineScope.launch(Concurrency.Dispatcher) {
+            messagesInFlight.getAndIncrement()
+            var contactAddress: SignalcAddress? = null // not available until after decryption for sealed-sender messages
             try {
-                messagesInFlight.getAndIncrement()
-
                 // decrypt data message (returning early if not data message -- eg: typing notification, etc.)
                 val contents = cipherOf(account).decrypt(envelope)
                 val dataMessage = contents.dataMessage.orNull()?: return@launch
                 contactAddress = contents.sender.asSignalcAddress()
 
-                // store sender's profile key if present and acknowledge message receipt to them
+                // store sender's profile key if present
                 dataMessage.profileKey.orNull()?.let {
                     // TODO: we'd like to only make this db call if `dataMessage.isProfileKeyUpdate`, but that is flaky
                     app.contactStore.storeProfileKey(account.id, contactAddress.identifier, it)
                 } ?: run {
                     metrics.numberOfMessagesWithoutProfileKey.labels(envelope.isUnidentifiedSender.toString()).inc()
                 }
+
+                // send receipt in background if applicable
                 launch(Concurrency.Dispatcher) {
-                    app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
+                    if(contents.isNeedsReceipt) app.signalSender.sendReceipt(account, contactAddress, dataMessage.timestamp)
                 }
 
-                // extract contents of message and relay to client
+                // extract message contents and relay to client
                 val body = dataMessage.body?.orNull() ?: "" // expiry timer changes contain empty message bodies
-                val attachments = dataMessage.attachments.orNull() ?: emptyList()
+                val attachments = (dataMessage.attachments.orNull() ?: emptyList()).mapNotNull { it.retrieve(account) }
                 app.socketSender.send(
                     SocketResponse.Cleartext.of(
                         contactAddress,
                         account.address,
                         body,
-                        attachments.mapNotNull { it.retrieveFor(account) },
+                        attachments,
                         dataMessage.expiresInSeconds,
                         dataMessage.timestamp,
                     )
@@ -238,15 +231,18 @@ class SignalReceiver(private val app: Application) {
 
     private suspend fun processPreKeyBundle(envelope: SignalServiceEnvelope, account: VerifiedAccount) =
         withContext(Concurrency.Dispatcher) {
-            // Prekey bundles are received (once per device) from new contacts before we initiate a sealed sender session
+            // Prekey bundles are received from new contacts before we initiate a sealed sender session
             // with them. As such, this is our first (and only!) chance to store both the UUID and phone number
-            // that will be necessary to successfully decrypt subsequent messages in a session that may refer to the same
-            // user by *either* UUID or phone number (and will switch between the two during thes same session).
-            // We store both here so we can resolve either UUID or phone number to the same contact later.
-            // We also want new contacts to be able to send us sealed sender messages as soon as possible, so
-            // we send them our profile key, which enables sealed-sender message sending.
+            // that will be necessary to successfully decrypt subsequent messages in a session which will
+            // switch from using a contact's phone number as its identifier (in unsealed messages) to using its
+            // UUID (in sealed messages). We store both here so we can resolve either UUID or phone number to the same
+            // contact id, and thus maintain the continuity of sessions =that switch from unsealed to sealed. Since
+            // a contact will send several prekey bundles (one per device), we add a check to see if we have already
+            // created a contact record for a given identifier before storing.
             if(!app.contactStore.hasContact(account.id, envelope.sourceIdentifier)) {
-                app.contactStore.create(account, envelope)
+                app.contactStore.create(account.id, envelope.sourceE164.get(), UUID.fromString(envelope.sourceUuid.get()))
+                // We also want new contacts to be able to send us sealed-sender messages as soon as possible, so
+                // we send them our profile key, which enables sealed-sender message sending.
                 app.signalSender.sendProfileKey(account, envelope.asSignalcAddress())
             }
             // If we are receiving a prekey bundle, this is also the beginning of a new session, which consumes one of the
@@ -311,7 +307,7 @@ class SignalReceiver(private val app: Application) {
             else -> throw e // this will be handled as a disrupted subscription in `SocketReceiver`
         }
 
-    private fun SignalServiceAttachment.retrieveFor(account: VerifiedAccount): SocketResponse.Cleartext.Attachment? {
+    private fun SignalServiceAttachment.retrieve(account: VerifiedAccount): SocketResponse.Cleartext.Attachment? {
         val pointer: SignalServiceAttachmentPointer = this.asPointer() ?: return null
 
         val outputFile = File(app.signal.attachmentsPath, pointer.remoteId.toString())
