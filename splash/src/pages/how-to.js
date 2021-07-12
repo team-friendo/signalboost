@@ -7,43 +7,23 @@ export default () => (
     <h2 id="getting-started" className="anchor">
       Getting Started
     </h2>
-    <blockquote className="command blockquote-skinny">
+    <blockquote className="command blockquote">
+      <p>Signalboost is taking a break in order to get better.</p>
+
       <p>
-        Signalboost is currently at capacity and existing channels may be
-        experiencing intermittent downtime as a result. New channel requests
-        will be added to our waitlist while we're working to make our service
-        more reliable. Thanks for your patience while we tackle these thorny
-        technical issues!
+        The Signalboost service is currently down for some much needed
+        infrastructure improvements. We've been deeply inspired by the demand
+        for this tool and hearing about the amazing things our community has
+        been able to accomplish with it.
       </p>
-    </blockquote>
-    <h3 className="getting-started-header">
-      1.{' '}
-      <a className="download-signal-link" href="https://signal.org/download/">
-        Download Signal
-      </a>
-    </h3>
-    <h3 className="getting-started-header anchor">
-      2. Subscribe to the Signalboost Announcements and Helpline channel
-    </h3>
-    <p>
-      Send <span className="command">HELLO</span> to{' '}
-      <span className="purple">+1-947-800-5717</span> (that's 947-BOOST-IT!){' '}
-    </p>
-    <p>
-      Send <span className="command">INFO</span> to see details about the
-      channel.
-    </p>{' '}
-    <p>
-      Send <span className="command">HELP</span> to see the other commands you
-      can use.
-    </p>
-    <h3 className="getting-started-header">3. Request your own channel:</h3>
-    <p>
-      Send a Signal message saying "REQUEST" to{' '}
-      <span className="purple">+1-947-800-5717</span>{' '}
-    </p>
-    <blockquote className="command blockquote-skinny">
-      <p>REQUEST</p>
+      <p>
+        In order to better serve you and prioritize the wellbeing of our team,
+        we've decided to pause operations until we can offer a stable and
+        reliable service. We anticipate this downtime will extend for the rest
+        of the month, and we'll post updates as we know more. Thanks for bearing
+        with us! You can reach us at signalboost@protonmail.com with any
+        questions.
+      </p>
     </blockquote>
     <h2>Signalboost Guide</h2>
     <h3>Disappearing Messages</h3>

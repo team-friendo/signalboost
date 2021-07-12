@@ -84,32 +84,14 @@ export default () => (
       <Link to="/how-to">How-To Guide</Link>.
     </p>
     <p>
-      If you want to reach us, you can:
-      <ul>
-        <li>
-          write our helpline (on Signal):{' '}
-          <span className="purple">+1-947-800-5717</span>
-        </li>
-        <li>
-          Join our{' '}
-          <a href="https://matrix.to/#/!VtZeIpmCOYqKXopSNf:matrix.org?via=matrix.org">
-            {' '}
-            Matrix community.
-          </a>
-        </li>
-        <li>
-          Send us an email at{' '}
-          <a href="mailto:signalboost@protonmail.com">
-            signalboost@protonmail.com
-          </a>{' '}
-          (or, if you prefer old-school:{' '}
-          <a href="mailto:signalboost@riseup.net">signalboost@riseup.net</a> +{' '}
-          <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
-            PGP
-          </a>
-          ).
-        </li>
-      </ul>
+      If you want to reach us, you can send us an email at{' '}
+      <a href="mailto:signalboost@protonmail.com">signalboost@protonmail.com</a>{' '}
+      (or, if you prefer old-school:{' '}
+      <a href="mailto:signalboost@riseup.net">signalboost@riseup.net</a> +{' '}
+      <a href="http://keys.gnupg.net/pks/lookup?search=0xE726A156229F56F1&fingerprint=on&op=index">
+        PGP
+      </a>
+      ).
     </p>
     <p>
       Read our code of conduct{' '}
