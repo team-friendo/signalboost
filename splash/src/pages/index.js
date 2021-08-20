@@ -42,12 +42,12 @@ const IndexPage = () => (
       <p>The Signalboost Team</p>
     </blockquote>
 
-    <p style={{ textAlign: 'center' }}>
-      You can view an archived version of this site on the{' '}
-      <a href="https://web.archive.org/web/20210416110700/https://signalboost.info/">
-        Wayback Machine
-      </a>
-    </p>
+    {/*<p style={{ textAlign: 'center' }}>*/}
+    {/*  You can view an archived version of this site on the{' '}*/}
+    {/*  <a href="https://web.archive.org/web/20210416110700/https://signalboost.info/">*/}
+    {/*    Wayback Machine*/}
+    {/*  </a>*/}
+    {/*</p>*/}
   </Layout>
 )
 
