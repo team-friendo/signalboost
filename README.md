@@ -1,3 +1,12 @@
+
+# THIS REPOSITORY IS NO LONGER MAINTAINED
+
+**The maintainers of this repository ceased all work on Signalboost in June of 2021.**
+
+If you want to resurect the codebase, it would likely be a good idea to start with the tricky bits [here](https://0xacab.org/team-friendo/signalboost/-/merge_requests/599#bugs-not-resolved-but-deemed-acceptable) and [here](https://0xacab.org/team-friendo/signalboost/-/merge_requests) where we left off.
+
+But be warned: that way dragons lie. <3
+
 # Signalboost
 
 Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
