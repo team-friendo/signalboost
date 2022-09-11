@@ -1,15 +1,16 @@
-
 # THIS REPOSITORY IS NO LONGER MAINTAINED
 
 **The maintainers of this repository ceased all work on Signalboost in June of 2021.**
 
 If you want to resurect the codebase, it would likely be a good idea to start with the tricky bits [here](https://0xacab.org/team-friendo/signalboost/-/merge_requests/599#bugs-not-resolved-but-deemed-acceptable) and [here](https://0xacab.org/team-friendo/signalboost/-/merge_requests) where we left off.
 
+(At some point, you'll likely also want to think about things like [this](https://web.archive.org/web/20210612214214/https://signalboost.info/privacy/#legal-inquiries) and [this](https://0xacab.org/team-friendo/signalboost/-/wikis/Canopy-Protocol-Design)).
+
 But be warned: that way dragons lie. <3
 
 # Signalboost
 
-Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out https://signalboost.info
+Hi! This is mainly a developer-facing document. If you'd prefer less jargon, check out [https://signalboost.info](https://web.archive.org/web/20210612214214/https://signalboost.info)
 
 ## Table Of Contents:
 
