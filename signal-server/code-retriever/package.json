@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "pg": "^8.5.1",
     "pg-hstore": "^2.3.3",
     "sequelize": "^6.5.0"
