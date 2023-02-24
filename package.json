@@ -45,7 +45,7 @@
     "pg-native": "^3.0.0",
     "prettier": "^1.15.2",
     "prom-client": "^12.0.0",
-    "sequelize": "^6.3.5",
+    "sequelize": "^6.29.0",
     "sequelize-cli": "^6.2.0",
     "sinon": "^9.2.2",
     "string-hash": "^1.1.3",
