@@ -36,7 +36,7 @@
     "lodash": "^4.17.20",
     "mnemonist": "^0.38.1",
     "mocha": "^8.2.1",
-    "moment": "^2.29.1",
+    "moment": "^2.29.4",
     "node-fetch": "^2.6.1",
     "niceware": "^2.0.1",
     "nodemon": "^2.0.6",
